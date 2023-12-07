@@ -1,3 +1,1 @@
-from .hello import main
-
-__all__ = [main]
+"""Nextmv Python SDK."""
