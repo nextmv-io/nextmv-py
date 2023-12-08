@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling >= 1.13.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nextmv"
+description = "The Python SDK for Nextmv"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Nextmv", email = "tech@nextmv.io" }
+]
+keywords = ["nextmv", "optimization", "solver", "vehicle routing problem", "operations research", "decisions", "decision engineering"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+version = "0.1.0"
+
+[project.urls]
+Homepage = "https://www.nextmv.io"
+Documentation = "https://www.nextmv.io/docs"
+Repository = "https://github.com/nextmv-io/sdk-python"
+
+[tool.ruff]
+target-version = "py312"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP",  # pyupgrade
+]
+line-length = 120
