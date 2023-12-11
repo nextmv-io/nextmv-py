@@ -1,16 +1,14 @@
 """Defines the vehicle class."""
 
 
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from .base import _Base
-from .location import Location
+from nextmv.base_model import BaseModel
+from nextmv.nextroute.schema.location import Location
 
 
-@dataclass
-class InitialStop(_Base):
+class InitialStop(BaseModel):
     """Represents a stop that is already planned on a vehicle."""
 
     id: str
@@ -20,8 +18,7 @@ class InitialStop(_Base):
     """Whether the stop is fixed on the route."""
 
 
-@dataclass
-class VehicleDefaults(_Base):
+class VehicleDefaults(BaseModel):
     """Default values for vehicles."""
 
     activation_penalty: int | None = None
@@ -58,7 +55,6 @@ class VehicleDefaults(_Base):
     """Time when the vehicle starts its route."""
 
 
-@dataclass(kw_only=True)
 class Vehicle(VehicleDefaults):
     """A vehicle services stops in a Vehicle Routing Problem (VRP)."""
 

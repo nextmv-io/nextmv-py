@@ -1,13 +1,10 @@
 """Defines the location class."""
 
 
-from dataclasses import dataclass
-
-from .base import _Base
+from nextmv.base_model import BaseModel
 
 
-@dataclass
-class Location(_Base):
+class Location(BaseModel):
     """Location represents a geographical location."""
 
     lon: float

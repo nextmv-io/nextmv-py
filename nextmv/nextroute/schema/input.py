@@ -1,15 +1,13 @@
 """Defines the input class"""
 
-from dataclasses import dataclass
 from typing import Any
 
-from .base import _Base
-from .stop import AlternateStop, Stop, StopDefaults
-from .vehicle import Vehicle, VehicleDefaults
+from nextmv.base_model import BaseModel
+from nextmv.nextroute.schema.stop import AlternateStop, Stop, StopDefaults
+from nextmv.nextroute.schema.vehicle import Vehicle, VehicleDefaults
 
 
-@dataclass
-class Defaults(_Base):
+class Defaults(BaseModel):
     """Default values for vehicles and stops."""
 
     stops: StopDefaults | None = None
@@ -18,8 +16,7 @@ class Defaults(_Base):
     """Default values for vehicles."""
 
 
-@dataclass
-class DurationGroup(_Base):
+class DurationGroup(BaseModel):
     """Represents a group of stops that get additional duration whenever a stop
     of the group is approached for the first time."""
 
@@ -29,8 +26,7 @@ class DurationGroup(_Base):
     """Stop IDs contained in the group."""
 
 
-@dataclass
-class Input(_Base):
+class Input(BaseModel):
     """Input schema for Nextroute."""
 
     stops: list[Stop]

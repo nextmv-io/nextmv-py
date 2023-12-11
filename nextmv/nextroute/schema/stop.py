@@ -1,16 +1,14 @@
 """Defines the stop class."""
 
 
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from .base import _Base
-from .location import Location
+from nextmv.base_model import BaseModel
+from nextmv.nextroute.schema.location import Location
 
 
-@dataclass
-class StopDefaults(_Base):
+class StopDefaults(BaseModel):
     """Default values for a stop."""
 
     compatibility_attributes: list[str] | None = None
@@ -33,7 +31,6 @@ class StopDefaults(_Base):
     """Penalty for not planning a stop."""
 
 
-@dataclass(kw_only=True)
 class Stop(StopDefaults):
     """Stop is a location that must be visited by a vehicle in a Vehicle
     Routing Problem (VRP.)"""
@@ -53,7 +50,6 @@ class Stop(StopDefaults):
     """Stops that must be visited before this one on the same route."""
 
 
-@dataclass(kw_only=True)
 class AlternateStop(StopDefaults):
     """An alternate stop can be serviced instead of another stop."""
 
