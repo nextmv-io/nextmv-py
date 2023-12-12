@@ -9,8 +9,11 @@ import requests
 
 @dataclass
 class Client:
-    """Client that interacts directly with the Nextmv Cloud API. The API key
-    must be provided either in the constructor or via the NEXTMV_API_KEY"""
+    """
+    Client that interacts directly with the Nextmv Cloud API. The API key
+    must be provided either in the constructor or via the NEXTMV_API_KEY
+    environment variable.
+    """
 
     api_key: str | None = None
     """API key to use for authenticating with the Nextmv Cloud API. If not
