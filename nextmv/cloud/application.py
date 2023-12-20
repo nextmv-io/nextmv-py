@@ -56,12 +56,12 @@ class Metadata(BaseModel):
 class PollingOptions(BaseModel):
     """Options to use when polling for a run result."""
 
-    backoff: float = 1.5
+    backoff: float = 1
     """Backoff factor to use between polls."""
     delay: float = 1
     """Delay to use between polls, in seconds."""
     initial_delay: float = 1
-    """Initial delay to use between polls, in seconds."""
+    """Initial delay to use before polling, in seconds."""
     max_duration: float = 60
     """Maximum duration of the polling strategy, in seconds."""
     max_tries: int = 10

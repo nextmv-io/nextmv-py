@@ -8,7 +8,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - name: git clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
