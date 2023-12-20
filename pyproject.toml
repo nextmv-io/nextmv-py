@@ -27,7 +27,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
-version = "0.1.0-dev.0"
+version = "0.1.0-dev.1"
 dependencies = [
     "pydantic>=2.5.2,<3.0.0",
     "requests>=2.31.0,<3.0.0",
