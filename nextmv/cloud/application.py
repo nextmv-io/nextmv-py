@@ -56,15 +56,21 @@ class Metadata(BaseModel):
 class PollingOptions(BaseModel):
     """Options to use when polling for a run result."""
 
-    backoff: float = 1.5
-    """Backoff factor to use between polls."""
+    backoff: float = 1
+    """Backoff factor to use between polls. Leave this at 1 to poll at a
+    constant rate."""
     delay: float = 1
     """Delay to use between polls, in seconds."""
     initial_delay: float = 1
-    """Initial delay to use between polls, in seconds."""
+    """Initial delay to use before starting the polling strategy, in
+    seconds."""
+    max_delay: float = 20
+    """Maximum delay to use between polls, in seconds. This parameter is
+    activated when the backoff parameter is greater than 1, such that the delay
+    is increasing after each poll."""
     max_duration: float = 60
     """Maximum duration of the polling strategy, in seconds."""
-    max_tries: int = 10
+    max_tries: int = 20
     """Maximum number of tries to use."""
 
 
@@ -623,7 +629,8 @@ class Application:
                     f"run {run_id} did not succeed after {delay} seconds",
                 )
 
-            time.sleep(delay)
+            sleep_duration = min(delay, polling_options.max_delay)
+            time.sleep(sleep_duration)
             delay *= polling_options.backoff
 
         if not polling_ok:

@@ -1,4 +1,4 @@
-"""This module contains definitios for batch experiments."""
+"""This module contains definitions for batch experiments."""
 
 from datetime import datetime
 from typing import Any
@@ -60,4 +60,4 @@ class BatchExperimentMetadata(BatchExperimentInformation):
     created_at: datetime
     """Creation date of the batch experiment."""
     number_of_runs: int
-    """Number of runs of the batch experiment."""
+    """Number of runs in the batch experiment."""

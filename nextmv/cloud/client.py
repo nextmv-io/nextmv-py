@@ -1,9 +1,7 @@
 """Module with the client class."""
 
 import os
-import random
 import sys
-import time
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urljoin
@@ -20,31 +18,32 @@ class Client:
     environment variable.
     """
 
+    allowed_methods: list[str] = field(
+        default_factory=lambda: ["GET", "POST", "PUT", "DELETE"],
+    )
+    """Allowed HTTP methods to use for retries in requests to the Nextmv Cloud
+    API."""
     api_key: str | None = None
     """API key to use for authenticating with the Nextmv Cloud API. If not
     provided, the client will look for the NEXTMV_API_KEY environment
     variable."""
-    backoff_factor: float = 0.8
+    backoff_factor: float = 1
     """Exponential backoff factor to use for requests to the Nextmv Cloud
     API."""
     backoff_jitter: float = 0.1
     """Jitter to use for requests to the Nextmv Cloud API when backing off."""
+    backoff_max: float = 60
+    """Maximum backoff time to use for requests to the Nextmv Cloud API, in
+    seconds."""
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
-    initial_delay: float = 0.1
-    """Initial delay to use for requests to the Nextmv Cloud API when backing
-    off."""
     max_lambda_payload_size: int = 500 * 1024 * 1024
     """Maximum size of the payload handled by the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
     API."""
-    max_wait: int = 60
-    """Maximum number of seconds that a request will wait for when retrying. If
-    exponential backoff is used, this is the maximum value of the backoff.
-    After this value is achieved, the backof stops increasing."""
     status_forcelist: list[int] = field(
-        default_factory=lambda: [500, 502, 503, 504, 507, 509],
+        default_factory=lambda: [429, 500, 502, 503, 504, 507, 509],
     )
     """Status codes to retry for requests to the Nextmv Cloud API."""
     timeout: float = 20
@@ -120,7 +119,9 @@ class Client:
             total=self.max_retries,
             backoff_factor=self.backoff_factor,
             backoff_jitter=self.backoff_jitter,
+            backoff_max=self.backoff_max,
             status_forcelist=self.status_forcelist,
+            allowed_methods=self.allowed_methods,
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
@@ -137,16 +138,7 @@ class Client:
         if query_params is not None:
             kwargs["params"] = query_params
 
-        # Backoff logic for 429 responses.
-        delay = self.initial_delay
-        for n in range(1, self.max_retries + 1):
-            response = session.request(method=method, **kwargs)
-            if response.status_code == 429:
-                time.sleep(min(delay, self.max_wait))
-                delay = self.backoff_factor * 2**n + random.uniform(0, self.backoff_jitter)
-                continue
-
-            break
+        response = session.request(method=method, **kwargs)
 
         try:
             response.raise_for_status()
