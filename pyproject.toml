@@ -34,7 +34,7 @@ maintainers = [
 name = "nextmv"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
