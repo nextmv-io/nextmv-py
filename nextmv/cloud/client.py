@@ -1,13 +1,16 @@
 """Module with the client class."""
 
+import json
 import os
-import sys
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
+
+_MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
+"""Maximum size of the payload handled by the Nextmv Cloud API."""
 
 
 @dataclass
@@ -37,8 +40,6 @@ class Client:
     seconds."""
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
-    max_lambda_payload_size: int = 500 * 1024 * 1024
-    """Maximum size of the payload handled by the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
     API."""
@@ -102,16 +103,16 @@ class Client:
         if payload is not None and data is not None:
             raise ValueError("cannot use both data and payload")
 
-        if payload is not None and get_size(payload) > self.max_lambda_payload_size:
+        if payload is not None and get_size(payload) > _MAX_LAMBDA_PAYLOAD_SIZE:
             raise ValueError(
                 f"payload size of {get_size(payload)} bytes exceeds the maximum "
-                f"allowed size of {self.max_lambda_payload_size} bytes"
+                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
-        if data is not None and get_size(data) > self.max_lambda_payload_size:
+        if data is not None and get_size(data) > _MAX_LAMBDA_PAYLOAD_SIZE:
             raise ValueError(
                 f"data size of {get_size(data)} bytes exceeds the maximum "
-                f"allowed size of {self.max_lambda_payload_size} bytes"
+                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
         session = requests.Session()
@@ -150,24 +151,8 @@ class Client:
         return response
 
 
-def get_size(obj: dict | Any, seen: set | Any = None) -> int:
-    """Recursively finds size of objects"""
+def get_size(obj: dict[str, Any]) -> int:
+    """Finds the size of an object in bytes."""
 
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if isinstance(obj, dict):
-        size += sum([get_size(v, seen) for v in obj.values()])
-        size += sum([get_size(k, seen) for k in obj.keys()])
-    elif hasattr(obj, "__dict__"):
-        size += get_size(obj.__dict__, seen)
-    elif hasattr(obj, "__iter__") and not isinstance(obj, str | bytes | bytearray):
-        size += sum([get_size(i, seen) for i in obj])
-    return size
+    obj_str = json.dumps(obj, separators=(",", ":"))
+    return len(obj_str.encode("utf-8"))

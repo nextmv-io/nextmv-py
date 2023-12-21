@@ -34,7 +34,7 @@ class Comparison(str, Enum):
     """Not equal to metric type."""
 
 
-class AcceptanceTestParams(BaseModel):
+class MetricParams(BaseModel):
     """Parameters of an acceptance test."""
 
     operator: Comparison
@@ -49,14 +49,14 @@ class Metric(BaseModel):
     """Field of the metric."""
     metric_type: MetricType
     """Type of the metric."""
-    params: AcceptanceTestParams
+    params: MetricParams
     """Parameters of the metric."""
     statistic: str
     """Statistic of the metric."""
 
 
 class ComparisonInstance(BaseModel):
-    """An instance used for a comparison."""
+    """An app instance used for a comparison."""
 
     instance_id: str
     """ID of the instance."""

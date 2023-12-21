@@ -1,10 +1,10 @@
 """Functionality for interacting with the Nextmv Cloud."""
 
 from .acceptance_test import AcceptanceTest as AcceptanceTest
-from .acceptance_test import AcceptanceTestParams as AcceptanceTestParams
 from .acceptance_test import Comparison as Comparison
 from .acceptance_test import ComparisonInstance as ComparisonInstance
 from .acceptance_test import Metric as Metric
+from .acceptance_test import MetricParams as MetricParams
 from .acceptance_test import MetricType as MetricType
 from .application import Application as Application
 from .application import DownloadURL as DownloadURL
