@@ -1,37 +1,37 @@
 [build-system]
-requires = ["hatchling >= 1.13.0"]
 build-backend = "hatchling.build"
+requires = ["hatchling >= 1.13.0"]
 
 [project]
-name = "nextmv"
-description = "The Python SDK for Nextmv"
-readme = "README.md"
-requires-python = ">=3.10"
-license = {file = "LICENSE"}
 authors = [
-    { name = "Nextmv", email = "tech@nextmv.io" }
-]
-keywords = [
-    "nextmv", 
-    "optimization", 
-    "decision science",
-    "operations research", 
-    "solver", 
-    "vehicle routing problem",
-    "shift scheduling",
-    "decisions", 
-    "decision engineering", 
+    { email = "tech@nextmv.io", name = "Nextmv" }
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
 ]
-version = "0.1.0-dev.1"
 dependencies = [
-    "pydantic>=2.5.2,<3.0.0",
-    "requests>=2.31.0,<3.0.0",
+    "pydantic>=2.5.2",
+    "requests>=2.31.0",
 ]
+description = "The Python SDK for Nextmv"
+keywords = [
+    "decision engineering",
+    "decision science",
+    "decisions",
+    "nextmv",
+    "optimization",
+    "operations research",
+    "shift scheduling",
+    "solver",
+    "vehicle routing problem",
+]
+license = { file = "LICENSE" }
+name = "nextmv"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.1.0-dev.1"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"

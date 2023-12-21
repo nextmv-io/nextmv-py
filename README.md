@@ -23,7 +23,7 @@ Make sure that you have your API key set as an environment variable:
 export NEXTMV_API_KEY=<your-API-key>
 ```
 
-Additionally, you must have a valid app pushed to the Nextmv Cloud.
+Additionally, you must have a valid app in the Nextmv Cloud.
 
 - Make a run and get the results.
 
