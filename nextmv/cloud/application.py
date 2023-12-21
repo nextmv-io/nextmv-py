@@ -78,6 +78,10 @@ class PollingOptions(BaseModel):
     """Maximum number of tries to use."""
 
 
+_DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
+"""Default polling options to use when polling for a run result."""
+
+
 class RunInformation(BaseModel):
     """Information of a run."""
 
@@ -473,7 +477,7 @@ class Application:
         upload_id_used = upload_id is not None
         if not upload_id_used and input_size > _MAX_RUN_SIZE:
             upload_url = self.upload_url()
-            self.upload_large_input(upload_url=upload_url, input=input)
+            self.upload_large_input(input=input, upload_url=upload_url)
             upload_id = upload_url.upload_id
             upload_id_used = True
 
@@ -510,7 +514,7 @@ class Application:
         description: str | None = None,
         upload_id: str | None = None,
         run_options: dict[str, Any] | None = None,
-        polling_options: PollingOptions = None,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -526,8 +530,7 @@ class Application:
             description: Description of the run.
             upload_id: ID to use when running a large input.
             run_options: Options to use for the run.
-            polling_options: Options to use when polling for the run result. If
-                not provided, the default options will be used.
+            polling_options: Options to use when polling for the run result.
 
          Returns:
             Result of the run.
@@ -596,7 +599,7 @@ class Application:
     def run_result_with_polling(
         self,
         run_id: str,
-        polling_options: PollingOptions,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
     ) -> RunResult:
         """
         Get the result of a run. The result includes the run output. This
@@ -605,6 +608,7 @@ class Application:
 
         Args:
             run_id: ID of the run.
+            polling_options: Options to use when polling for the run result.
 
         Returns:
             Result of the run.
@@ -612,9 +616,6 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
-
-        if polling_options is None:
-            polling_options = PollingOptions()
 
         time.sleep(polling_options.initial_delay)
         delay = polling_options.delay
@@ -643,15 +644,15 @@ class Application:
 
     def upload_large_input(
         self,
-        upload_url: UploadURL,
         input: dict[str, Any],
+        upload_url: UploadURL,
     ) -> None:
         """
         Upload the file located at the given path to the provided upload URL.
 
         Args:
             upload_url: Upload URL to use for uploading the file.
-            input_path: Path to the input file.
+            input: Input to use for the run.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
