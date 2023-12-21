@@ -9,6 +9,9 @@ from urllib.parse import urljoin
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
+_MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
+"""Maximum size of the payload handled by the Nextmv Cloud API."""
+
 
 @dataclass
 class Client:
@@ -37,8 +40,6 @@ class Client:
     seconds."""
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
-    max_lambda_payload_size: int = 500 * 1024 * 1024
-    """Maximum size of the payload handled by the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
     API."""
@@ -102,16 +103,16 @@ class Client:
         if payload is not None and data is not None:
             raise ValueError("cannot use both data and payload")
 
-        if payload is not None and get_size(payload) > self.max_lambda_payload_size:
+        if payload is not None and get_size(payload) > _MAX_LAMBDA_PAYLOAD_SIZE:
             raise ValueError(
                 f"payload size of {get_size(payload)} bytes exceeds the maximum "
-                f"allowed size of {self.max_lambda_payload_size} bytes"
+                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
-        if data is not None and get_size(data) > self.max_lambda_payload_size:
+        if data is not None and get_size(data) > _MAX_LAMBDA_PAYLOAD_SIZE:
             raise ValueError(
                 f"data size of {get_size(data)} bytes exceeds the maximum "
-                f"allowed size of {self.max_lambda_payload_size} bytes"
+                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
         session = requests.Session()

@@ -11,6 +11,10 @@ from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetada
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
 
+_MAX_RUN_SIZE: int = 5 * 1024 * 1024
+"""Maximum size of the run input/output. This value is used to determine
+whether to use the large input upload and/or result download endpoints."""
+
 
 class DownloadURL(BaseModel):
     """Result of getting a download URL."""
@@ -122,9 +126,6 @@ class Application:
     """Base endpoint for the application."""
     experiments_endpoint: str = "{base}/experiments"
     """Base endpoint for the experiments in the application."""
-    max_run_size: int = 5 * 1024 * 1024
-    """Maximum size of the run input/output. This value is used to determine
-    whether to use the large input upload and/or result download endpoints."""
 
     def __post_init__(self):
         """Logic to run after the class is initialized."""
@@ -470,7 +471,7 @@ class Application:
             input_size = get_size(input)
 
         upload_id_used = upload_id is not None
-        if not upload_id_used and input_size > self.max_run_size:
+        if not upload_id_used and input_size > _MAX_RUN_SIZE:
             upload_url = self.upload_url()
             self.upload_large_input(upload_url=upload_url, input=input)
             upload_id = upload_url.upload_id
@@ -509,7 +510,7 @@ class Application:
         description: str | None = None,
         upload_id: str | None = None,
         run_options: dict[str, Any] | None = None,
-        polling_options: PollingOptions | None = None,
+        polling_options: PollingOptions = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -703,7 +704,7 @@ class Application:
         """
         query_params = None
         large_output = False
-        if run_information.metadata.output_size > self.max_run_size:
+        if run_information.metadata.output_size > _MAX_RUN_SIZE:
             query_params = {"format": "url"}
             large_output = True
 
