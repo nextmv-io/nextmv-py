@@ -1,21 +1,27 @@
 name: publish
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: "The version to release"
+        required: true
+      IS_PRE_RELEASE:
+        description: "Whether this is a pre-release"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     env:
-      VERSION: ""
+      VERSION: ${{ inputs.VERSION }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: get version from tag
-        run: |
-          VERSION=${{ github.ref_name }}
-          echo "Version = $VERSION"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: git clone develop
         uses: actions/checkout@v4
         with:
@@ -78,3 +84,15 @@ jobs:
           git push
           git tag $VERSION
           git push origin $VERSION
+
+      - name: create release
+        run: |
+          PRERELEASE_FLAG=""
+          if [ ${{ inputs.IS_PRE_RELEASE }} = true ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          gh release create -R nextmv-io/nextmv-py $VERSION \
+          --verify-tag \
+          --generate-notes \
+          --title $VERSION $PRERELEASE_FLAG
