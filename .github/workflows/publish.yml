@@ -54,10 +54,26 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload dist/*
 
+      - name: configure git with the bot credentials
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          echo ${{ secrets.NEXTMVBOT_SIGNING_KEY }} > ~/.ssh/signing.key
+          echo ${{ secrets.NEXTMVBOT_SSH_KEY }} > ~/.ssh/commit.key
+
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ~/.ssh/commit.key
+
+          git config --global user.name "nextmv-bot"
+          git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          git config --global gpg.format ssh
+          git config --global user.signingkey ~/.ssh/signing.key
+
       - name: commit new version
         run: |
-          git config --global user.name "Nextmv Bot"
-          git config --global user.email "bot@nextmv.io"
           git add nextmv/__about__.py
-          git commit -m "Bump version to $VERSION"
+          git commit -am "Bump version to $VERSION"
           git push
