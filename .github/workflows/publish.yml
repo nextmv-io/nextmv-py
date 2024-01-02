@@ -20,7 +20,7 @@ jobs:
       - name: git clone develop
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: feature/dynamic-version
 
       - name: Set up Python
         uses: actions/setup-python@v4
