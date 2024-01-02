@@ -60,7 +60,9 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
+          chmod 600 ~/.ssh/signing.key
           echo "${{ secrets.NEXTMVBOT_SSH_KEY }}" > ~/.ssh/commit.key
+          chmod 600 ~/.ssh/commit.key
 
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
