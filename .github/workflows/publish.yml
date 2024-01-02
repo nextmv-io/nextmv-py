@@ -13,11 +13,7 @@ jobs:
     steps:
       - name: get version from tag
         run: |
-          FULL_VERSION=${{  github.ref_name }}
-
-          # Remove the preceding "v" from the tag name
-          VERSION=${FULL_VERSION:1}
-
+          VERSION=${{  github.ref_name }}
           echo "Version = $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
