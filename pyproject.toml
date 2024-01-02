@@ -16,6 +16,9 @@ dependencies = [
     "requests>=2.31.0",
 ]
 description = "The Python SDK for Nextmv"
+dynamic = [
+    "version",
+]
 keywords = [
     "decision engineering",
     "decision science",
@@ -34,7 +37,6 @@ maintainers = [
 name = "nextmv"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.0.dev4"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
@@ -53,3 +55,6 @@ select = [
     "UP",  # pyupgrade
 ]
 line-length = 120
+
+[tool.hatch.version]
+path = "nextmv/__about__.py"

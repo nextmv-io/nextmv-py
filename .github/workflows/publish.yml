@@ -1,15 +1,30 @@
 name: publish
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      VERSION: ""
     steps:
-      - name: git clone
+      - name: get version from tag
+        run: |
+          FULL_VERSION=${{  github.ref_name }}
+
+          # Remove the preceding "v" from the tag name
+          VERSION=${FULL_VERSION:1}
+
+          echo "Version = $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: git clone develop
         uses: actions/checkout@v4
+        with:
+          ref: develop
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,7 +34,10 @@ jobs:
       - name: install dependencies
         run: |
           pip install --upgrade pip
-          pip install build twine
+          pip install build twine hatch
+
+      - name: upgrade version with hatch
+        run: hatch version $VERSION
 
       - name: build binary wheel and source tarball
         env:
@@ -39,3 +57,11 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload dist/*
+
+      - name: commit new version
+        run: |
+          git config --global user.name "Nextmv Bot"
+          git config --global user.email "bot@nextmv.io"
+          git add nextmv/__about__.py
+          git commit -m "Bump version to $VERSION"
+          git push
