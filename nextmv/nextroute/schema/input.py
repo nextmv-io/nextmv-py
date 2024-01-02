@@ -1,4 +1,4 @@
-"""Defines the input class"""
+"""Defines the input class."""
 
 from typing import Any
 
