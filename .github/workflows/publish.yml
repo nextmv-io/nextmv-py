@@ -23,12 +23,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     steps:
-      - name: git clone develop
-        uses: actions/checkout@v4
-        with:
-          ref: develop
-
-      - name: Set up Python
+      - name: set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
@@ -37,9 +32,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install build twine hatch
-
-      - name: upgrade version with hatch
-        run: hatch version ${{ env.VERSION }}
 
       - name: configure git with the bot credentials
         run: |
@@ -51,6 +43,12 @@ jobs:
           git config --global user.name "nextmv-bot"
           git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
 
+          git clone git@github.com:nextmv-io/nextmv-py.git
+
+      - name: upgrade version with hatch
+        run: hatch version ${{ env.VERSION }}
+        working-directory: ./nextmv-py
+
       - name: commit new version
         run: |
           git add nextmv/__about__.py
@@ -58,6 +56,7 @@ jobs:
           git push
           git tag $VERSION
           git push origin $VERSION
+        working-directory: ./nextmv-py
 
       - name: create release
         run: |
@@ -66,26 +65,29 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
 
-          gh release create -R nextmv-io/nextmv-py $VERSION \
+          gh release create $VERSION \
           --verify-tag \
           --generate-notes \
           --title $VERSION $PRERELEASE_FLAG
+        working-directory: ./nextmv-py
 
       - name: build binary wheel and source tarball
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python -m build
+        run: python -m build
+        working-directory: ./nextmv-py
 
       - name: publish to TestPyPI
         env:
           TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
         run: twine upload --repository testpypi dist/*
+        working-directory: ./nextmv-py
 
       - name: publish to PyPI
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload dist/*
+        working-directory: ./nextmv-py
