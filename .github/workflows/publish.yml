@@ -1,9 +1,8 @@
 name: publish
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  release:
+    types: [created]
 
 jobs:
   publish:
@@ -59,14 +58,12 @@ jobs:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
-          chmod 600 ~/.ssh/signing.key
-          echo "${{ secrets.NEXTMVBOT_SSH_KEY }}" > ~/.ssh/commit.key
-          chmod 600 ~/.ssh/commit.key
-
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ~/.ssh/commit.key
+          ssh-add - <<< "${{ secrets.NEXTMVBOT_SSH_KEY }}"
+
+          echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
+          chmod 600 ~/.ssh/signing.key
 
           git config --global user.name "nextmv-bot"
           git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
@@ -77,5 +74,7 @@ jobs:
       - name: commit new version
         run: |
           git add nextmv/__about__.py
-          git commit -am "Bump version to $VERSION"
+          git commit -S -m "Bump version to $VERSION"
           git push
+          git tag $VERSION
+          git push origin $VERSION
