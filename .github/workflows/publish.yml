@@ -17,8 +17,10 @@ jobs:
           echo "Version = $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: git clone
+      - name: git clone develop
         uses: actions/checkout@v4
+        with:
+          ref: develop
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -51,11 +53,6 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload dist/*
-
-      - name: git clone develop
-        uses: actions/checkout@v4
-        with:
-          ref: develop
 
       - name: commit new version
         run: |
