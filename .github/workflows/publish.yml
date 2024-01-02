@@ -33,6 +33,9 @@ jobs:
           pip install --upgrade pip
           pip install build twine hatch
 
+      - name: upgrade version with hatch
+        run: hatch version ${{ env.VERSION }}
+
       - name: configure git with the bot credentials
         run: |
           mkdir -p ~/.ssh
@@ -75,19 +78,17 @@ jobs:
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: python -m build
-        working-directory: ./nextmv-py
+        run: |
+          python -m build
 
       - name: publish to TestPyPI
         env:
           TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
         run: twine upload --repository testpypi dist/*
-        working-directory: ./nextmv-py
 
       - name: publish to PyPI
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: twine upload dist/*
-        working-directory: ./nextmv-py
