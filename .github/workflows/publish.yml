@@ -40,25 +40,6 @@ jobs:
       - name: upgrade version with hatch
         run: hatch version ${{ env.VERSION }}
 
-      - name: build binary wheel and source tarball
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python -m build
-
-      - name: publish to TestPyPI
-        env:
-          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
-        run: twine upload --repository testpypi dist/*
-
-      - name: publish to PyPI
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: twine upload dist/*
-
       - name: configure git with the bot credentials
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -70,7 +51,6 @@ jobs:
 
           git config --global user.name "nextmv-bot"
           git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
-          git config --global url."git@github.com:".insteadOf "https://github.com/"
 
       - name: commit new version
         run: |
@@ -91,3 +71,22 @@ jobs:
           --verify-tag \
           --generate-notes \
           --title $VERSION $PRERELEASE_FLAG
+
+      - name: build binary wheel and source tarball
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python -m build
+
+      - name: publish to TestPyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+        run: twine upload --repository testpypi dist/*
+
+      - name: publish to PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: twine upload dist/*
