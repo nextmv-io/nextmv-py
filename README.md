@@ -9,10 +9,16 @@ Visit the [docs][docs] for more information.
 
 ## Installation
 
-Install using `pip`:
+Requires Python `>=3.10`. Install using `pip3`:
 
 ```bash
-pip install nextmv
+pip3 install nextmv
+```
+
+Get the latest pre-release version:
+
+```bash
+pip3 install --pre nextmv
 ```
 
 ## Usage
@@ -20,17 +26,17 @@ pip install nextmv
 Make sure that you have your API key set as an environment variable:
 
 ```bash
-export NEXTMV_API_KEY=<your-API-key>
+export NEXTMV_API_KEY="<YOUR-API-KEY>"
 ```
 
-Additionally, you must have a valid app in the Nextmv Cloud.
+Additionally, you must have a valid app in Nextmv Cloud.
 
 - Make a run and get the results.
 
 ```python
 import os
 
-from nextmv.cloud import Application, Client
+from nextmv.cloud import Application, Client, PollingOptions
 
 input = {
     "defaults": {"vehicles": {"speed": 20}},
@@ -56,11 +62,12 @@ input = {
 }
 
 client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
-app = Application(client=client, id="your-app-id")
+app = Application(client=client, id="<YOUR-APP-ID>")
 result = app.new_run_with_result(
     input=input,
     instance_id="latest",
     run_options={"solve.duration": "1s"},
+    polling_options=PollingOptions(),  # Customize the polling options.
 )
 print(result.to_dict())
 

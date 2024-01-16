@@ -7,6 +7,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+import yaml
 from requests.adapters import HTTPAdapter, Retry
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
@@ -16,20 +17,21 @@ _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 @dataclass
 class Client:
     """
-    Client that interacts directly with the Nextmv Cloud API. The API key
-    must be provided either in the constructor or via the NEXTMV_API_KEY
-    environment variable.
+    Client that interacts directly with the Nextmv Cloud API. The API key will
+    be searched, in order of precedence, in: the api_key arg in the
+    constructor, the NEXTMV_API_KEY environment variable, the
+    ~/.nextmv/config.yaml file used by the Nextmv CLI.
     """
 
+    api_key: str | None = None
+    """API key to use for authenticating with the Nextmv Cloud API. If not
+    provided, the client will look for the NEXTMV_API_KEY environment
+    variable."""
     allowed_methods: list[str] = field(
         default_factory=lambda: ["GET", "POST", "PUT", "DELETE"],
     )
     """Allowed HTTP methods to use for retries in requests to the Nextmv Cloud
     API."""
-    api_key: str | None = None
-    """API key to use for authenticating with the Nextmv Cloud API. If not
-    provided, the client will look for the NEXTMV_API_KEY environment
-    variable."""
     backoff_factor: float = 1
     """Exponential backoff factor to use for requests to the Nextmv Cloud
     API."""
@@ -38,6 +40,8 @@ class Client:
     backoff_max: float = 60
     """Maximum backoff time to use for requests to the Nextmv Cloud API, in
     seconds."""
+    configuration_file: str = "~/.nextmv/config.yaml"
+    """Path to the configuration file used by the Nextmv CLI."""
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
     max_retries: int = 10
@@ -55,14 +59,41 @@ class Client:
     def __post_init__(self):
         """Logic to run after the class is initialized."""
 
-        if self.api_key is None:
-            api_key = os.getenv("NEXTMV_API_KEY")
-            if api_key is None:
-                raise ValueError(
-                    "no API key provided. Either set it in the constructor or "
-                    "set the NEXTMV_API_KEY environment variable."
-                )
-            self.api_key = api_key
+        if self.api_key is not None and self.api_key != "":
+            return
+
+        if self.api_key == "":
+            raise ValueError("api_key cannot be empty")
+
+        api_key_env = os.getenv("NEXTMV_API_KEY")
+        if api_key_env is not None:
+            self.api_key = api_key_env
+            return
+
+        config_path = os.path.expanduser(self.configuration_file)
+        if not os.path.exists(config_path):
+            raise ValueError(
+                "no API key set in constructor or NEXTMV_API_KEY env var, and ~/.nextmv/config.yaml does not exist"
+            )
+
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+
+        profile = os.getenv("NEXTMV_PROFILE")
+        parent = config
+        if profile is not None:
+            parent = config.get(profile)
+            if parent is None:
+                raise ValueError(f"profile {profile} set via NEXTMV_PROFILE but not found in ~/.nextmv/config.yaml")
+
+        api_key = parent.get("apikey")
+        if api_key is None:
+            raise ValueError("no apiKey found in ~/.nextmv/config.yaml")
+        self.api_key = api_key
+
+        endpoint = parent.get("endpoint")
+        if endpoint is not None:
+            self.url = f"https://{endpoint}"
 
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
