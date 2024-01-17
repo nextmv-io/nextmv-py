@@ -443,7 +443,7 @@ class Application:
 
     def new_run(
         self,
-        input: dict[str, Any] = None,
+        input: dict[str, Any] | BaseModel = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -469,6 +469,9 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
+
+        if isinstance(input, BaseModel):
+            input = input.to_dict()
 
         input_size = 0
         if input is not None:
@@ -508,7 +511,7 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: dict[str, Any] = None,
+        input: dict[str, Any] | BaseModel = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
