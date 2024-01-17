@@ -9,16 +9,10 @@ Visit the [docs][docs] for more information.
 
 ## Installation
 
-Requires Python `>=3.10`. Install using `pip3`:
+Requires Python `>=3.10`. Install using `pip`:
 
 ```bash
-pip3 install nextmv
-```
-
-Get the latest pre-release version:
-
-```bash
-pip3 install --pre nextmv
+pip install nextmv
 ```
 
 ## Usage
