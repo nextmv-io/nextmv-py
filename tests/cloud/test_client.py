@@ -23,3 +23,13 @@ class TestClient(unittest.TestCase):
         os.environ["NEXTMV_PROFILE"] = "i-like-turtles"
         with self.assertRaises(ValueError):
             Client()
+
+    def test_headers(self):
+        client1 = Client(api_key="foo")
+        self.assertIsNotNone(client1.headers)
+
+        os.environ["NEXTMV_API_KEY"] = "bar"
+        client2 = Client()
+        self.assertEqual(client2.api_key, "bar")
+        self.assertIsNotNone(client2.headers)
+        os.environ.pop("NEXTMV_API_KEY")

@@ -60,6 +60,7 @@ class Client:
         """Logic to run after the class is initialized."""
 
         if self.api_key is not None and self.api_key != "":
+            self._set_headers_api_key(self.api_key)
             return
 
         if self.api_key == "":
@@ -68,6 +69,7 @@ class Client:
         api_key_env = os.getenv("NEXTMV_API_KEY")
         if api_key_env is not None:
             self.api_key = api_key_env
+            self._set_headers_api_key(api_key_env)
             return
 
         config_path = os.path.expanduser(self.configuration_file)
@@ -95,10 +97,7 @@ class Client:
         if endpoint is not None:
             self.url = f"https://{endpoint}"
 
-        self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        self._set_headers_api_key(api_key)
 
     def request(
         self,
@@ -180,6 +179,14 @@ class Client:
             ) from e
 
         return response
+
+    def _set_headers_api_key(self, api_key: str) -> None:
+        """Sets the API key to use for requests to the Nextmv Cloud API."""
+
+        self.headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
 
 
 def get_size(obj: dict[str, Any]) -> int:
