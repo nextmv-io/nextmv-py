@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-import requests
-
 from nextmv.base_model import BaseModel
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
