@@ -717,13 +717,16 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}",
             query_params=query_params,
         )
+        result = RunResult.from_dict(response.json())
         if not large_output:
-            return RunResult.from_dict(response.json())
+            return result
 
-        download_url = DownloadURL.from_dict(response.json())
-        response2 = self.client.request(
+        download_url = DownloadURL.from_dict(response.json()["output"])
+        download_response = self.client.request(
             method="GET",
             endpoint=download_url.url,
+            headers={"Content-Type": "application/json"},
         )
+        result.output = download_response.json()
 
-        return RunResult.from_dict(response2.json())
+        return result
