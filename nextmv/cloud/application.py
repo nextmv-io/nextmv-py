@@ -724,8 +724,11 @@ class Application:
             return result
 
         download_url = DownloadURL.from_dict(response.json()["output"])
-        download_response = requests.get(download_url.url)
-        download_response.raise_for_status()
+        download_response = self.client.request(
+            method="GET",
+            endpoint=download_url.url,
+            headers={"Content-Type": "application/json"},
+        )
         result.output = download_response.json()
 
         return result
