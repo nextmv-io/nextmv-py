@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+import requests
+
 from nextmv.base_model import BaseModel
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
@@ -717,13 +719,13 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}",
             query_params=query_params,
         )
+        result = RunResult.from_dict(response.json())
         if not large_output:
-            return RunResult.from_dict(response.json())
+            return result
 
-        download_url = DownloadURL.from_dict(response.json())
-        response2 = self.client.request(
-            method="GET",
-            endpoint=download_url.url,
-        )
+        download_url = DownloadURL.from_dict(response.json()["output"])
+        download_response = requests.get(download_url.url)
+        download_response.raise_for_status()
+        result.output = download_response.json()
 
-        return RunResult.from_dict(response2.json())
+        return result
