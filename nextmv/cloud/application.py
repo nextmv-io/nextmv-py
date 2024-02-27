@@ -581,6 +581,47 @@ class Application:
 
         return RunInformation.from_dict(response.json())
 
+    def run_input(
+        self,
+        run_id: str,
+    ) -> dict[str, Any]:
+        """
+        Get the input of a run.
+
+        Args:
+            run_id: ID of the run.
+
+        Returns:
+            Input of the run.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+        run_information = self.run_metadata(run_id=run_id)
+
+        query_params = None
+        large = False
+        if run_information.metadata.input_size > _MAX_RUN_SIZE:
+            query_params = {"format": "url"}
+            large = True
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/input",
+            query_params=query_params,
+        )
+        if not large:
+            return response.json()
+
+        download_url = DownloadURL.from_dict(response.json())
+        download_response = self.client.request(
+            method="GET",
+            endpoint=download_url.url,
+            headers={"Content-Type": "application/json"},
+        )
+
+        return download_response.json()
+
     def run_result(self, run_id: str) -> RunResult:
         """
         Get the result of a run. The result includes the run output.
