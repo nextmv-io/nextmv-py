@@ -560,27 +560,6 @@ class Application:
             polling_options=polling_options,
         )
 
-    def run_metadata(self, run_id: str) -> RunInformation:
-        """
-        Get the metadata of a run. The result does not include the run output.
-
-        Args:
-            run_id: ID of the run.
-
-        Returns:
-            Metadata of the run (Run result with no output).
-
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-        """
-
-        response = self.client.request(
-            method="GET",
-            endpoint=f"{self.endpoint}/runs/{run_id}/metadata",
-        )
-
-        return RunInformation.from_dict(response.json())
-
     def run_input(
         self,
         run_id: str,
@@ -621,6 +600,27 @@ class Application:
         )
 
         return download_response.json()
+
+    def run_metadata(self, run_id: str) -> RunInformation:
+        """
+        Get the metadata of a run. The result does not include the run output.
+
+        Args:
+            run_id: ID of the run.
+
+        Returns:
+            Metadata of the run (Run result with no output).
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/metadata",
+        )
+
+        return RunInformation.from_dict(response.json())
 
     def run_result(self, run_id: str) -> RunResult:
         """
