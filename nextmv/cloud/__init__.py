@@ -7,6 +7,7 @@ from .acceptance_test import Metric as Metric
 from .acceptance_test import MetricParams as MetricParams
 from .acceptance_test import MetricType as MetricType
 from .application import Application as Application
+from .application import Configuration as Configuration
 from .application import DownloadURL as DownloadURL
 from .application import ErrorLog as ErrorLog
 from .application import Metadata as Metadata

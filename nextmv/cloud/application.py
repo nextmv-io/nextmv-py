@@ -115,6 +115,13 @@ class UploadURL(BaseModel):
     """URL to use for uploading the file."""
 
 
+class Configuration(BaseModel):
+    """Configuration of an instance."""
+
+    execution_class: str | None = None
+    """Execution class for the instance."""
+
+
 @dataclass
 class Application:
     """An application is a published decision model that can be executed."""
@@ -449,6 +456,7 @@ class Application:
         description: str | None = None,
         upload_id: str | None = None,
         options: dict[str, Any] | None = None,
+        configuration: Configuration | None = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -462,6 +470,7 @@ class Application:
             description: Description of the run.
             upload_id: ID to use when running a large input.
             options: Options to use for the run.
+            configuration: Configuration to use for the run.
 
         Returns:
             ID of the submitted run.
@@ -496,6 +505,8 @@ class Application:
             payload["description"] = description
         if options is not None:
             payload["options"] = options
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
 
         query_params = {
             "instance_id": instance_id if instance_id is not None else self.default_instance_id,
@@ -518,6 +529,7 @@ class Application:
         upload_id: str | None = None,
         run_options: dict[str, Any] | None = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        configuration: Configuration | None = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -534,6 +546,7 @@ class Application:
             upload_id: ID to use when running a large input.
             run_options: Options to use for the run.
             polling_options: Options to use when polling for the run result.
+            configuration: Configuration to use for the run.
 
          Returns:
             Result of the run.
@@ -553,6 +566,7 @@ class Application:
             description=description,
             upload_id=upload_id,
             options=run_options,
+            configuration=configuration,
         )
 
         return self.run_result_with_polling(
