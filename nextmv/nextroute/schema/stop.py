@@ -1,7 +1,7 @@
 """Defines the stop class."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.nextroute.schema.location import Location
