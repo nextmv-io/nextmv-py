@@ -1,8 +1,7 @@
 """Defines the vehicle class."""
 
-
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.nextroute.schema.location import Location
@@ -23,11 +22,11 @@ class VehicleDefaults(BaseModel):
 
     activation_penalty: Optional[int] = None
     """Penalty of using the vehicle."""
-    alternate_stops: Optional[list[str]] = None
+    alternate_stops: Optional[List[str]] = None
     """A set of alternate stops for which only one should be serviced."""
     capacity: Optional[Any] = None
     """Capacity of the vehicle."""
-    compatibility_attributes: Optional[list[str]] = None
+    compatibility_attributes: Optional[List[str]] = None
     """Attributes that the vehicle is compatible with."""
     end_location: Optional[Location] = None
     """Location where the vehicle ends."""
@@ -63,7 +62,7 @@ class Vehicle(VehicleDefaults):
 
     custom_data: Optional[Any] = None
     """Arbitrary custom data."""
-    initial_stops: Optional[list[InitialStop]] = None
+    initial_stops: Optional[List[InitialStop]] = None
     """Initial stops planned on the vehicle."""
     stop_duration_multiplier: Optional[float] = None
     """Multiplier for the duration of stops."""

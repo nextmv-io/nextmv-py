@@ -1,8 +1,7 @@
 """Defines the output class."""
 
-
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
@@ -72,11 +71,11 @@ class VehicleOutput(BaseModel):
     id: str
     """ID of the vehicle."""
 
-    alternate_stops: Optional[list[str]] = None
+    alternate_stops: Optional[List[str]] = None
     """List of alternate stops that were planned on the vehicle."""
     custom_data: Optional[Any] = None
     """Custom data of the vehicle."""
-    route: Optional[list[PlannedStopOutput]] = None
+    route: Optional[List[PlannedStopOutput]] = None
     """Route of the vehicle, which is a list of stops that were planned on
     it."""
     route_duration: Optional[float] = None
@@ -103,7 +102,7 @@ class ObjectiveOutput(BaseModel):
     """Custom data of the objective."""
     factor: Optional[float] = None
     """Factor of the objective."""
-    objectives: Optional[list[dict[str, Any]]] = None
+    objectives: Optional[List[Dict[str, Any]]] = None
     """List of objectives. Each list is actually of the same class
     `ObjectiveOutput`, but we avoid a recursive definition here."""
     value: Optional[float] = None
@@ -114,9 +113,9 @@ class ObjectiveOutput(BaseModel):
 class Solution(BaseModel):
     """Solution to a Vehicle Routing Problem (VRP)."""
 
-    unplanned: Optional[list[StopOutput]] = None
+    unplanned: Optional[List[StopOutput]] = None
     """List of stops that were not planned in the solution."""
-    vehicles: Optional[list[VehicleOutput]] = None
+    vehicles: Optional[List[VehicleOutput]] = None
     """List of vehicles in the solution."""
     objective: Optional[ObjectiveOutput] = None
     """Information of the objective (value function)."""
@@ -132,7 +131,7 @@ class RunStatistics(BaseModel):
     iterations: Optional[int] = None
     """Number of iterations."""
     custom: Optional[Any] = None
-    """Custom statistics created by the user. Can normally expect a `dict[str,
+    """Custom statistics created by the user. Can normally expect a `Dict[str,
     Any]`."""
 
 
@@ -144,7 +143,7 @@ class ResultStatistics(BaseModel):
     value: Optional[float] = None
     """Value of the result."""
     custom: Optional[Any] = None
-    """Custom statistics created by the user. Can normally expect a `dict[str,
+    """Custom statistics created by the user. Can normally expect a `Dict[str,
     Any]`."""
 
 
@@ -162,7 +161,7 @@ class Series(BaseModel):
 
     name: Optional[str] = None
     """Name of the series."""
-    data_points: Optional[list[DataPoint]] = None
+    data_points: Optional[List[DataPoint]] = None
     """Data of the series."""
 
 
@@ -171,7 +170,7 @@ class SeriesData(BaseModel):
 
     value: Optional[Series] = None
     """A series for the value of the solution."""
-    custom: Optional[list[Series]] = None
+    custom: Optional[List[Series]] = None
     """A list of series for custom statistics."""
 
 
@@ -191,12 +190,12 @@ class Statistics(BaseModel):
 class Output(BaseModel):
     """Output schema for Nextroute."""
 
-    options: dict[str, Any]
+    options: Dict[str, Any]
     """Options used to obtain this output."""
     version: Version
     """Versions used for the solution."""
 
-    solutions: Optional[list[Solution]] = None
+    solutions: Optional[List[Solution]] = None
     """Solutions to the problem."""
     statistics: Optional[Statistics] = None
     """Statistics of the solution."""

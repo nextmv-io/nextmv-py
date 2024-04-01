@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -27,7 +27,7 @@ class Client:
     """API key to use for authenticating with the Nextmv Cloud API. If not
     provided, the client will look for the NEXTMV_API_KEY environment
     variable."""
-    allowed_methods: list[str] = field(
+    allowed_methods: List[str] = field(
         default_factory=lambda: ["GET", "POST", "PUT", "DELETE"],
     )
     """Allowed HTTP methods to use for retries in requests to the Nextmv Cloud
@@ -42,12 +42,12 @@ class Client:
     seconds."""
     configuration_file: str = "~/.nextmv/config.yaml"
     """Path to the configuration file used by the Nextmv CLI."""
-    headers: Optional[dict[str, str]] = None
+    headers: Optional[Dict[str, str]] = None
     """Headers to use for requests to the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
     API."""
-    status_forcelist: list[int] = field(
+    status_forcelist: List[int] = field(
         default_factory=lambda: [429, 500, 502, 503, 504, 507, 509],
     )
     """Status codes to retry for requests to the Nextmv Cloud API."""
@@ -104,9 +104,9 @@ class Client:
         method: str,
         endpoint: str,
         data: Optional[Any] = None,
-        headers: Optional[dict[str, str]] = None,
-        payload: Optional[dict[str, Any]] = None,
-        query_params: Optional[dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        query_params: Optional[Dict[str, Any]] = None,
     ) -> requests.Response:
         """
         Method to make a request to the Nextmv Cloud API.
@@ -189,7 +189,7 @@ class Client:
         }
 
 
-def get_size(obj: dict[str, Any]) -> int:
+def get_size(obj: Dict[str, Any]) -> int:
     """Finds the size of an object in bytes."""
 
     obj_str = json.dumps(obj, separators=(",", ":"))

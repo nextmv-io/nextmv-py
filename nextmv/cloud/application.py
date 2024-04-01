@@ -3,7 +3,7 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
@@ -102,7 +102,7 @@ class RunResult(RunInformation):
 
     error_log: Optional[ErrorLog] = None
     """Error log of the run. Only available if the run failed."""
-    output: Optional[dict[str, Any]] = None
+    output: Optional[Dict[str, Any]] = None
     """Output of the run. Only available if the run succeeded."""
 
 
@@ -207,7 +207,7 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
-    def list_acceptance_tests(self) -> list[AcceptanceTest]:
+    def list_acceptance_tests(self) -> List[AcceptanceTest]:
         """
         List all acceptance tests.
 
@@ -225,7 +225,7 @@ class Application:
 
         return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response.json()]
 
-    def list_batch_experiments(self) -> list[BatchExperimentMetadata]:
+    def list_batch_experiments(self) -> List[BatchExperimentMetadata]:
         """
         List all batch experiments.
 
@@ -243,7 +243,7 @@ class Application:
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
 
-    def list_input_sets(self) -> list[InputSet]:
+    def list_input_sets(self) -> List[InputSet]:
         """
         List all input sets.
 
@@ -266,7 +266,7 @@ class Application:
         candidate_instance_id: str,
         control_instance_id: str,
         id: str,
-        metrics: list[Union[Metric, dict[str, Any]]],
+        metrics: List[Union[Metric, Dict[str, Any]]],
         name: str,
         input_set_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -341,11 +341,11 @@ class Application:
         self,
         name: str,
         input_set_id: str,
-        instance_ids: list[str],
+        instance_ids: List[str],
         description: Optional[str] = None,
         id: Optional[str] = None,
-        option_sets: Optional[dict[str, Any]] = None,
-        runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
+        option_sets: Optional[Dict[str, Any]] = None,
+        runs: Optional[List[Union[BatchExperimentRun, Dict[str, Any]]]] = None,
     ) -> str:
         """
         Create a new batch experiment.
@@ -399,7 +399,7 @@ class Application:
         end_time: Optional[datetime] = None,
         instance_id: Optional[str] = None,
         maximum_runs: Optional[int] = None,
-        run_ids: Optional[list[str]] = None,
+        run_ids: Optional[List[str]] = None,
         start_time: Optional[datetime] = None,
     ) -> InputSet:
         """
@@ -450,12 +450,12 @@ class Application:
 
     def new_run(
         self,
-        input: Union[dict[str, Any], BaseModel] = None,
+        input: Union[Dict[str, Any], BaseModel] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        options: Optional[dict[str, Any]] = None,
+        options: Optional[Dict[str, Any]] = None,
         configuration: Optional[Configuration] = None,
     ) -> str:
         """
@@ -522,12 +522,12 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: Union[dict[str, Any], BaseModel] = None,
+        input: Union[Dict[str, Any], BaseModel] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        run_options: Optional[dict[str, Any]] = None,
+        run_options: Optional[Dict[str, Any]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Configuration] = None,
     ) -> RunResult:
@@ -577,7 +577,7 @@ class Application:
     def run_input(
         self,
         run_id: str,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Get the input of a run.
 
@@ -702,7 +702,7 @@ class Application:
 
     def upload_large_input(
         self,
-        input: dict[str, Any],
+        input: Dict[str, Any],
         upload_url: UploadURL,
     ) -> None:
         """

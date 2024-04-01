@@ -1,6 +1,5 @@
 """Defines the stop class."""
 
-
 from datetime import datetime
 from typing import Any, Optional
 
@@ -11,7 +10,7 @@ from nextmv.nextroute.schema.location import Location
 class StopDefaults(BaseModel):
     """Default values for a stop."""
 
-    compatibility_attributes: Optional[list[str]] = None
+    compatibility_attributes: Optional[List[str]] = None
     """Attributes that the stop is compatible with."""
     duration: Optional[int] = None
     """Duration of the stop in seconds."""

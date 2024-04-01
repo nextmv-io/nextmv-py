@@ -1,7 +1,7 @@
 """This module contains definitions for batch experiments."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -14,7 +14,7 @@ class BatchExperimentInformation(BaseModel):
     """Name of the batch experiment."""
     input_set_id: str
     """ID of the input set used for the experiment."""
-    instance_ids: list[str]
+    instance_ids: List[str]
     """List of instance IDs used for the experiment."""
 
     description: Optional[str] = None
@@ -32,9 +32,9 @@ class BatchExperiment(BatchExperimentInformation):
     status: str
     """Status of the batch experiment."""
 
-    grouped_distributional_summaries: Optional[list[dict[str, Any]]] = None
+    grouped_distributional_summaries: Optional[List[Dict[str, Any]]] = None
     """Grouped distributional summaries of the batch experiment."""
-    option_sets: Optional[dict[str, Any]] = None
+    option_sets: Optional[Dict[str, Any]] = None
     """Option sets used for the experiment."""
 
 

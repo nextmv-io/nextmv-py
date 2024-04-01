@@ -1,7 +1,6 @@
 """This module contains definitions for the schema in the Nextroute check."""
 
-
-from typing import Optional
+from typing import Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -23,7 +22,7 @@ class ObjectiveTerm(BaseModel):
 class Objective(BaseModel):
     """Estimate of an objective of a move."""
 
-    terms: Optional[list[ObjectiveTerm]] = None
+    terms: Optional[List[ObjectiveTerm]] = None
     """Check of the individual terms of the objective."""
     value: Optional[float] = None
     """Value of the objective."""
@@ -92,17 +91,17 @@ class PlanUnit(BaseModel):
     best_move_objective: Optional[Objective] = None
     """Estimate of the objective of the best move if the plan unit has a best
     move."""
-    constraints: Optional[dict[str, int]] = None
+    constraints: Optional[Dict[str, int]] = None
     """Constraints that are violated for the plan unit."""
     has_best_move: Optional[bool] = None
     """True if a move is found for the plan unit. A plan unit has no move found
     if the plan unit is over-constrained or the move found is too expensive."""
-    stops: Optional[list[str]] = None
+    stops: Optional[List[str]] = None
     """IDs of the sops in the plan unit."""
     vehicles_have_moves: Optional[int] = None
     """Number of vehicles that have moves for the plan unit. Only calculated if
     the verbosity is very high."""
-    vehicles_with_moves: Optional[list[str]] = None
+    vehicles_with_moves: Optional[List[str]] = None
     """IDs of the vehicles that have moves for the plan unit. Only calculated
     if the verbosity is very high."""
 
@@ -127,7 +126,7 @@ class Output(BaseModel):
     """Duration used by the check, in seconds."""
     error: Optional[str] = None
     """Error raised during the check."""
-    plan_units: Optional[list[PlanUnit]] = None
+    plan_units: Optional[List[PlanUnit]] = None
     """Check of the individual plan units."""
     remark: Optional[str] = None
     """Remark of the check. It can be "ok", "timeout" or anything else that
@@ -136,7 +135,7 @@ class Output(BaseModel):
     """Start soltuion of the check."""
     summary: Optional[Summary] = None
     """Summary of the check."""
-    vehicles: Optional[list[Vehicle]] = None
+    vehicles: Optional[List[Vehicle]] = None
     """Check of the vehicles."""
     verbosity: Optional[str] = None
     """Verbosity level of the check."""
