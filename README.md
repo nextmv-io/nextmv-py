@@ -9,7 +9,7 @@ Visit the [docs][docs] for more information.
 
 ## Installation
 
-Requires Python `>=3.10`. Install using `pip`:
+Requires Python `>=3.8`. Install using `pip`:
 
 ```bash
 pip install nextmv

@@ -38,7 +38,7 @@ maintainers = [
 ]
 name = "nextmv"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
@@ -46,7 +46,7 @@ Documentation = "https://www.nextmv.io/docs"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py38"
 lint.select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
