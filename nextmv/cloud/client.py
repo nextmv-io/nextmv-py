@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -23,7 +23,7 @@ class Client:
     ~/.nextmv/config.yaml file used by the Nextmv CLI.
     """
 
-    api_key: str | None = None
+    api_key: Optional[str] = None
     """API key to use for authenticating with the Nextmv Cloud API. If not
     provided, the client will look for the NEXTMV_API_KEY environment
     variable."""
@@ -42,7 +42,7 @@ class Client:
     seconds."""
     configuration_file: str = "~/.nextmv/config.yaml"
     """Path to the configuration file used by the Nextmv CLI."""
-    headers: dict[str, str] | None = None
+    headers: Optional[dict[str, str]] = None
     """Headers to use for requests to the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
@@ -103,10 +103,10 @@ class Client:
         self,
         method: str,
         endpoint: str,
-        data: Any | None = None,
-        headers: dict[str, str] | None = None,
-        payload: dict[str, Any] | None = None,
-        query_params: dict[str, Any] | None = None,
+        data: Optional[Any] = None,
+        headers: Optional[dict[str, str]] = None,
+        payload: Optional[dict[str, Any]] = None,
+        query_params: Optional[dict[str, Any]] = None,
     ) -> requests.Response:
         """
         Method to make a request to the Nextmv Cloud API.

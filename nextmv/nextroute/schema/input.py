@@ -1,6 +1,6 @@
 """Defines the input class."""
 
-from typing import Any
+from typing import Any, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.nextroute.schema.stop import AlternateStop, Stop, StopDefaults
@@ -10,9 +10,9 @@ from nextmv.nextroute.schema.vehicle import Vehicle, VehicleDefaults
 class Defaults(BaseModel):
     """Default values for vehicles and stops."""
 
-    stops: StopDefaults | None = None
+    stops: Optional[StopDefaults] = None
     """Default values for stops."""
-    vehicles: VehicleDefaults | None = None
+    vehicles: Optional[VehicleDefaults] = None
     """Default values for vehicles."""
 
 
@@ -34,19 +34,19 @@ class Input(BaseModel):
     vehicles: list[Vehicle]
     """Vehicles that service the stops."""
 
-    alternate_stops: list[AlternateStop] | None = None
+    alternate_stops: Optional[list[AlternateStop]] = None
     """A set of alternate stops for the vehicles."""
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Arbitrary data associated with the input."""
-    defaults: Defaults | None = None
+    defaults: Optional[Defaults] = None
     """Default values for vehicles and stops."""
-    distance_matrix: list[list[float]] | None = None
+    distance_matrix: Optional[list[list[float]]] = None
     """Matrix of travel distances in meters between stops."""
-    duratrion_groups: list[DurationGroup] | None = None
+    duratrion_groups: Optional[list[DurationGroup]] = None
     """Duration in seconds added when approaching the group."""
-    duration_matrix: list[list[float]] | None = None
+    duration_matrix: Optional[list[list[float]]] = None
     """Matrix of travel durations in seconds between stops."""
-    options: Any | None = None
+    options: Optional[Any] = None
     """Arbitrary options."""
-    stop_groups: list[list[str]] | None = None
+    stop_groups: Optional[list[list[str]]] = None
     """Groups of stops that must be part of the same route."""
