@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import List
 
 from nextmv.base_model import BaseModel
 
@@ -82,7 +83,7 @@ class AcceptanceTest(BaseModel):
     """Control instance of the acceptance test."""
     candidate: ComparisonInstance
     """Candidate instance of the acceptance test."""
-    metrics: list[Metric]
+    metrics: List[Metric]
     """Metrics of the acceptance test."""
     created_at: datetime
     """Creation date of the acceptance test."""

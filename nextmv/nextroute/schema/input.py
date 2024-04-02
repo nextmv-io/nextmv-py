@@ -1,6 +1,6 @@
 """Defines the input class."""
 
-from typing import Any
+from typing import Any, List, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.nextroute.schema.stop import AlternateStop, Stop, StopDefaults
@@ -10,9 +10,9 @@ from nextmv.nextroute.schema.vehicle import Vehicle, VehicleDefaults
 class Defaults(BaseModel):
     """Default values for vehicles and stops."""
 
-    stops: StopDefaults | None = None
+    stops: Optional[StopDefaults] = None
     """Default values for stops."""
-    vehicles: VehicleDefaults | None = None
+    vehicles: Optional[VehicleDefaults] = None
     """Default values for vehicles."""
 
 
@@ -22,31 +22,31 @@ class DurationGroup(BaseModel):
 
     duration: int
     """Duration to add when visiting the group."""
-    group: list[str]
+    group: List[str]
     """Stop IDs contained in the group."""
 
 
 class Input(BaseModel):
     """Input schema for Nextroute."""
 
-    stops: list[Stop]
+    stops: List[Stop]
     """Stops that must be visited by the vehicles."""
-    vehicles: list[Vehicle]
+    vehicles: List[Vehicle]
     """Vehicles that service the stops."""
 
-    alternate_stops: list[AlternateStop] | None = None
+    alternate_stops: Optional[List[AlternateStop]] = None
     """A set of alternate stops for the vehicles."""
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Arbitrary data associated with the input."""
-    defaults: Defaults | None = None
+    defaults: Optional[Defaults] = None
     """Default values for vehicles and stops."""
-    distance_matrix: list[list[float]] | None = None
+    distance_matrix: Optional[List[List[float]]] = None
     """Matrix of travel distances in meters between stops."""
-    duratrion_groups: list[DurationGroup] | None = None
+    duratrion_groups: Optional[List[DurationGroup]] = None
     """Duration in seconds added when approaching the group."""
-    duration_matrix: list[list[float]] | None = None
+    duration_matrix: Optional[List[List[float]]] = None
     """Matrix of travel durations in seconds between stops."""
-    options: Any | None = None
+    options: Optional[Any] = None
     """Arbitrary options."""
-    stop_groups: list[list[str]] | None = None
+    stop_groups: Optional[List[List[str]]] = None
     """Groups of stops that must be part of the same route."""

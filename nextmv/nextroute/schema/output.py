@@ -1,8 +1,7 @@
 """Defines the output class."""
 
-
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
@@ -26,7 +25,7 @@ class StopOutput(BaseModel):
     location: Location
     """Location of the stop."""
 
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Custom data of the stop."""
 
 
@@ -36,33 +35,33 @@ class PlannedStopOutput(BaseModel):
     stop: StopOutput
     """Basic information on the stop."""
 
-    arrival_time: datetime | None = None
+    arrival_time: Optional[datetime] = None
     """Actual arrival time at this stop."""
-    cumulative_travel_distance: float | None = None
+    cumulative_travel_distance: Optional[float] = None
     """Cumulative distance to travel from the first stop to this one, in meters."""
-    cumulative_travel_duration: float | None = None
+    cumulative_travel_duration: Optional[float] = None
     """Cumulative duration to travel from the first stop to this one, in seconds."""
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Custom data of the stop."""
-    duration: float | None = None
+    duration: Optional[float] = None
     """Duration of the service at the stop, in seconds."""
-    early_arrival_duration: float | None = None
+    early_arrival_duration: Optional[float] = None
     """Duration of early arrival at the stop, in seconds."""
-    end_time: datetime | None = None
+    end_time: Optional[datetime] = None
     """End time of the service at the stop."""
-    late_arrival_duration: float | None = None
+    late_arrival_duration: Optional[float] = None
     """Duration of late arrival at the stop, in seconds."""
-    mix_items: Any | None = None
+    mix_items: Optional[Any] = None
     """Mix items at the stop."""
-    start_time: datetime | None = None
+    start_time: Optional[datetime] = None
     """Start time of the service at the stop."""
-    target_arrival_time: datetime | None = None
+    target_arrival_time: Optional[datetime] = None
     """Target arrival time at this stop."""
-    travel_distance: float | None = None
+    travel_distance: Optional[float] = None
     """Distance to travel from the previous stop to this one, in meters."""
-    travel_duration: float | None = None
+    travel_duration: Optional[float] = None
     """Duration to travel from the previous stop to this one, in seconds."""
-    waiting_duration: float | None = None
+    waiting_duration: Optional[float] = None
     """Waiting duratino at the stop, in seconds."""
 
 
@@ -72,22 +71,22 @@ class VehicleOutput(BaseModel):
     id: str
     """ID of the vehicle."""
 
-    alternate_stops: list[str] | None = None
+    alternate_stops: Optional[List[str]] = None
     """List of alternate stops that were planned on the vehicle."""
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Custom data of the vehicle."""
-    route: list[PlannedStopOutput] | None = None
+    route: Optional[List[PlannedStopOutput]] = None
     """Route of the vehicle, which is a list of stops that were planned on
     it."""
-    route_duration: float | None = None
+    route_duration: Optional[float] = None
     """Total duration of the vehicle's route, in seconds."""
-    route_stops_duration: float | None = None
+    route_stops_duration: Optional[float] = None
     """Total duration of the stops of the vehicle, in seconds."""
-    route_travel_distance: float | None = None
+    route_travel_distance: Optional[float] = None
     """Total travel distance of the vehicle, in meters."""
-    route_travel_duration: float | None = None
+    route_travel_duration: Optional[float] = None
     """Total travel duration of the vehicle, in seconds."""
-    route_waiting_duration: float | None = None
+    route_waiting_duration: Optional[float] = None
     """Total waiting duration of the vehicle, in seconds."""
 
 
@@ -97,16 +96,16 @@ class ObjectiveOutput(BaseModel):
     name: str
     """Name of the objective."""
 
-    base: float | None = None
+    base: Optional[float] = None
     """Base of the objective."""
-    custom_data: Any | None = None
+    custom_data: Optional[Any] = None
     """Custom data of the objective."""
-    factor: float | None = None
+    factor: Optional[float] = None
     """Factor of the objective."""
-    objectives: list[dict[str, Any]] | None = None
+    objectives: Optional[List[Dict[str, Any]]] = None
     """List of objectives. Each list is actually of the same class
     `ObjectiveOutput`, but we avoid a recursive definition here."""
-    value: float | None = None
+    value: Optional[float] = None
     """Value of the objective, which is equivalent to `self.base *
     self.factor`."""
 
@@ -114,37 +113,37 @@ class ObjectiveOutput(BaseModel):
 class Solution(BaseModel):
     """Solution to a Vehicle Routing Problem (VRP)."""
 
-    unplanned: list[StopOutput] | None = None
+    unplanned: Optional[List[StopOutput]] = None
     """List of stops that were not planned in the solution."""
-    vehicles: list[VehicleOutput] | None = None
+    vehicles: Optional[List[VehicleOutput]] = None
     """List of vehicles in the solution."""
-    objective: ObjectiveOutput | None = None
+    objective: Optional[ObjectiveOutput] = None
     """Information of the objective (value function)."""
-    check: checkOutput | None = None
+    check: Optional[checkOutput] = None
     """Check of the solution, if enabled."""
 
 
 class RunStatistics(BaseModel):
     """Statistics about a general run."""
 
-    duration: float | None = None
+    duration: Optional[float] = None
     """Duration of the run in seconds."""
-    iterations: int | None = None
+    iterations: Optional[int] = None
     """Number of iterations."""
-    custom: Any | None = None
-    """Custom statistics created by the user. Can normally expect a `dict[str,
+    custom: Optional[Any] = None
+    """Custom statistics created by the user. Can normally expect a `Dict[str,
     Any]`."""
 
 
 class ResultStatistics(BaseModel):
     """Statistics about a specific result."""
 
-    duration: float | None = None
+    duration: Optional[float] = None
     """Duration of the run in seconds."""
-    value: float | None = None
+    value: Optional[float] = None
     """Value of the result."""
-    custom: Any | None = None
-    """Custom statistics created by the user. Can normally expect a `dict[str,
+    custom: Optional[Any] = None
+    """Custom statistics created by the user. Can normally expect a `Dict[str,
     Any]`."""
 
 
@@ -160,43 +159,43 @@ class DataPoint(BaseModel):
 class Series(BaseModel):
     """A series of data points."""
 
-    name: str | None = None
+    name: Optional[str] = None
     """Name of the series."""
-    data_points: list[DataPoint] | None = None
+    data_points: Optional[List[DataPoint]] = None
     """Data of the series."""
 
 
 class SeriesData(BaseModel):
     """Data of a series."""
 
-    value: Series | None = None
+    value: Optional[Series] = None
     """A series for the value of the solution."""
-    custom: list[Series] | None = None
+    custom: Optional[List[Series]] = None
     """A list of series for custom statistics."""
 
 
 class Statistics(BaseModel):
     """Statistics of a solution."""
 
-    run: RunStatistics | None = None
+    run: Optional[RunStatistics] = None
     """Statistics about the run."""
-    result: ResultStatistics | None = None
+    result: Optional[ResultStatistics] = None
     """Statistics about the last result."""
-    series_data: SeriesData | None = None
+    series_data: Optional[SeriesData] = None
     """Data of the series."""
-    statistics_schema: str | None = Field(alias="schema")
+    statistics_schema: Optional[str] = Field(alias="schema")
     """Schema (version)."""
 
 
 class Output(BaseModel):
     """Output schema for Nextroute."""
 
-    options: dict[str, Any]
+    options: Dict[str, Any]
     """Options used to obtain this output."""
     version: Version
     """Versions used for the solution."""
 
-    solutions: list[Solution] | None = None
+    solutions: Optional[List[Solution]] = None
     """Solutions to the problem."""
-    statistics: Statistics | None = None
+    statistics: Optional[Statistics] = None
     """Statistics of the solution."""

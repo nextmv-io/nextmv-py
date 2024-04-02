@@ -3,7 +3,7 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, List, Optional, Union
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
@@ -26,11 +26,11 @@ class DownloadURL(BaseModel):
 class ErrorLog(BaseModel):
     """Error log of a run, when it was not successful."""
 
-    error: str | None = None
+    error: Optional[str] = None
     """Error message."""
-    stdout: str | None = None
+    stdout: Optional[str] = None
     """Standard output."""
-    stderr: str | None = None
+    stderr: Optional[str] = None
     """Standard error."""
 
 
@@ -100,9 +100,9 @@ class RunInformation(BaseModel):
 class RunResult(RunInformation):
     """Result of a run, wheter it was successful or not."""
 
-    error_log: ErrorLog | None = None
+    error_log: Optional[ErrorLog] = None
     """Error log of the run. Only available if the run failed."""
-    output: dict[str, Any] | None = None
+    output: Optional[Dict[str, Any]] = None
     """Output of the run. Only available if the run succeeded."""
 
 
@@ -118,7 +118,7 @@ class UploadURL(BaseModel):
 class Configuration(BaseModel):
     """Configuration of an instance."""
 
-    execution_class: str | None = None
+    execution_class: Optional[str] = None
     """Execution class for the instance."""
 
 
@@ -207,7 +207,7 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
-    def list_acceptance_tests(self) -> list[AcceptanceTest]:
+    def list_acceptance_tests(self) -> List[AcceptanceTest]:
         """
         List all acceptance tests.
 
@@ -225,7 +225,7 @@ class Application:
 
         return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response.json()]
 
-    def list_batch_experiments(self) -> list[BatchExperimentMetadata]:
+    def list_batch_experiments(self) -> List[BatchExperimentMetadata]:
         """
         List all batch experiments.
 
@@ -243,7 +243,7 @@ class Application:
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
 
-    def list_input_sets(self) -> list[InputSet]:
+    def list_input_sets(self) -> List[InputSet]:
         """
         List all input sets.
 
@@ -266,10 +266,10 @@ class Application:
         candidate_instance_id: str,
         control_instance_id: str,
         id: str,
-        metrics: list[Metric | dict[str, Any]],
+        metrics: List[Union[Metric, Dict[str, Any]]],
         name: str,
-        input_set_id: str | None = None,
-        description: str | None = None,
+        input_set_id: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> AcceptanceTest:
         """
         Create a new acceptance test. The acceptance test is based on a batch
@@ -341,11 +341,11 @@ class Application:
         self,
         name: str,
         input_set_id: str,
-        instance_ids: list[str],
-        description: str | None = None,
-        id: str | None = None,
-        option_sets: dict[str, Any] | None = None,
-        runs: list[BatchExperimentRun | dict[str, Any]] | None = None,
+        instance_ids: List[str],
+        description: Optional[str] = None,
+        id: Optional[str] = None,
+        option_sets: Optional[Dict[str, Any]] = None,
+        runs: Optional[List[Union[BatchExperimentRun, Dict[str, Any]]]] = None,
     ) -> str:
         """
         Create a new batch experiment.
@@ -395,12 +395,12 @@ class Application:
         self,
         id: str,
         name: str,
-        description: str | None = None,
-        end_time: datetime | None = None,
-        instance_id: str | None = None,
-        maximum_runs: int | None = None,
-        run_ids: list[str] | None = None,
-        start_time: datetime | None = None,
+        description: Optional[str] = None,
+        end_time: Optional[datetime] = None,
+        instance_id: Optional[str] = None,
+        maximum_runs: Optional[int] = None,
+        run_ids: Optional[List[str]] = None,
+        start_time: Optional[datetime] = None,
     ) -> InputSet:
         """
         Create a new input set.
@@ -450,13 +450,13 @@ class Application:
 
     def new_run(
         self,
-        input: dict[str, Any] | BaseModel = None,
-        instance_id: str | None = None,
-        name: str | None = None,
-        description: str | None = None,
-        upload_id: str | None = None,
-        options: dict[str, Any] | None = None,
-        configuration: Configuration | None = None,
+        input: Union[Dict[str, Any], BaseModel] = None,
+        instance_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        upload_id: Optional[str] = None,
+        options: Optional[Dict[str, Any]] = None,
+        configuration: Optional[Configuration] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -522,14 +522,14 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: dict[str, Any] | BaseModel = None,
-        instance_id: str | None = None,
-        name: str | None = None,
-        description: str | None = None,
-        upload_id: str | None = None,
-        run_options: dict[str, Any] | None = None,
+        input: Union[Dict[str, Any], BaseModel] = None,
+        instance_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        upload_id: Optional[str] = None,
+        run_options: Optional[Dict[str, Any]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        configuration: Configuration | None = None,
+        configuration: Optional[Configuration] = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -577,7 +577,7 @@ class Application:
     def run_input(
         self,
         run_id: str,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Get the input of a run.
 
@@ -702,7 +702,7 @@ class Application:
 
     def upload_large_input(
         self,
-        input: dict[str, Any],
+        input: Dict[str, Any],
         upload_url: UploadURL,
     ) -> None:
         """

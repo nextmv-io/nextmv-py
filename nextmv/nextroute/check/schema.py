@@ -1,5 +1,6 @@
 """This module contains definitions for the schema in the Nextroute check."""
 
+from typing import Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -7,13 +8,13 @@ from nextmv.base_model import BaseModel
 class ObjectiveTerm(BaseModel):
     """Check of the individual terms of the objective for a move."""
 
-    base: float | None = None
+    base: Optional[float] = None
     """Base of the objective term."""
-    factor: float | None = None
+    factor: Optional[float] = None
     """Factor of the objective term."""
-    name: str | None = None
+    name: Optional[str] = None
     """Name of the objective term."""
-    value: float | None = None
+    value: Optional[float] = None
     """Value of the objective term, which is equivalent to `self.base *
     self.factor`."""
 
@@ -21,35 +22,35 @@ class ObjectiveTerm(BaseModel):
 class Objective(BaseModel):
     """Estimate of an objective of a move."""
 
-    terms: list[ObjectiveTerm] | None = None
+    terms: Optional[List[ObjectiveTerm]] = None
     """Check of the individual terms of the objective."""
-    value: float | None = None
+    value: Optional[float] = None
     """Value of the objective."""
-    vehicle: str | None = None
+    vehicle: Optional[str] = None
     """ID of the vehicle for which it reports the objective."""
 
 
 class Solution(BaseModel):
     """Solution that the check has been executed on."""
 
-    objective: Objective | None = None
+    objective: Optional[Objective] = None
     """Objective of the start solution."""
-    plan_units_planned: int | None = None
+    plan_units_planned: Optional[int] = None
     """Number of plan units planned in the start solution."""
-    plan_units_unplanned: int | None = None
+    plan_units_unplanned: Optional[int] = None
     """Number of plan units unplanned in the start solution."""
-    stops_planned: int | None = None
+    stops_planned: Optional[int] = None
     """Number of stops planned in the start solution."""
-    vehicles_not_used: int | None = None
+    vehicles_not_used: Optional[int] = None
     """Number of vehicles not used in the start solution."""
-    vehicles_used: int | None = None
+    vehicles_used: Optional[int] = None
     """Number of vehicles used in the start solution."""
 
 
 class Summary(BaseModel):
     """Summary of the check."""
 
-    moves_failed: int | None = None
+    moves_failed: Optional[int] = None
     """number of moves that failed. A move can fail if the estimate of a
     constraint is incorrect. A constraint is incorrect if `ModelConstraint.
     EstimateIsViolated` returns true and one of the violation checks returns
@@ -60,47 +61,47 @@ class Summary(BaseModel):
     number of moves failed can be more than one per plan unit as we continue to
     try moves on different vehicles until we find a move that is executable or
     all vehicles have been visited."""
-    plan_units_best_move_failed: int | None = None
+    plan_units_best_move_failed: Optional[int] = None
     """Number of plan units for which the best move can not be planned. This
     should not happen if all the constraints are implemented correct."""
-    plan_units_best_move_found: int | None = None
+    plan_units_best_move_found: Optional[int] = None
     """Number of plan units for which at least one move has been found and the
     move is executable."""
-    plan_units_best_move_increases_objective: int | None = None
+    plan_units_best_move_increases_objective: Optional[int] = None
     """Number of plan units for which the best move is executable but would
     increase the objective value instead of decreasing it."""
-    plan_units_checked: int | None = None
+    plan_units_checked: Optional[int] = None
     """Number of plan units that have been checked. If this is less than
     `self.plan_units_to_be_checked` the check timed out."""
-    plan_units_have_no_move: int | None = None
+    plan_units_have_no_move: Optional[int] = None
     """Number of plan units for which no feasible move has been found. This
     implies there is no move that can be executed without violating a
     constraint."""
-    plan_units_to_be_checked: int | None = None
+    plan_units_to_be_checked: Optional[int] = None
     """Number of plan units to be checked."""
 
 
 class PlanUnit(BaseModel):
     """Check of a plan unit."""
 
-    best_move_failed: bool | None = None
+    best_move_failed: Optional[bool] = None
     """True if the plan unit's best move failed to execute."""
-    best_move_increases_objective: bool | None = None
+    best_move_increases_objective: Optional[bool] = None
     """True if the best move for the plan unit increases the objective."""
-    best_move_objective: Objective | None = None
+    best_move_objective: Optional[Objective] = None
     """Estimate of the objective of the best move if the plan unit has a best
     move."""
-    constraints: dict[str, int] | None = None
+    constraints: Optional[Dict[str, int]] = None
     """Constraints that are violated for the plan unit."""
-    has_best_move: bool | None = None
+    has_best_move: Optional[bool] = None
     """True if a move is found for the plan unit. A plan unit has no move found
     if the plan unit is over-constrained or the move found is too expensive."""
-    stops: list[str] | None = None
+    stops: Optional[List[str]] = None
     """IDs of the sops in the plan unit."""
-    vehicles_have_moves: int | None = None
+    vehicles_have_moves: Optional[int] = None
     """Number of vehicles that have moves for the plan unit. Only calculated if
     the verbosity is very high."""
-    vehicles_with_moves: list[str] | None = None
+    vehicles_with_moves: Optional[List[str]] = None
     """IDs of the vehicles that have moves for the plan unit. Only calculated
     if the verbosity is very high."""
 
@@ -111,7 +112,7 @@ class Vehicle(BaseModel):
     id: str
     """ID of the vehicle."""
 
-    plan_units_have_moves: int | None = None
+    plan_units_have_moves: Optional[int] = None
     """Number of plan units that have moves for the vehicle. Only calculated if
     the depth is medium."""
 
@@ -119,22 +120,22 @@ class Vehicle(BaseModel):
 class Output(BaseModel):
     """Output of a feasibility check."""
 
-    duration_maximum: float | None = None
+    duration_maximum: Optional[float] = None
     """Maximum duration of the check, in seconds."""
-    duration_used: float | None = None
+    duration_used: Optional[float] = None
     """Duration used by the check, in seconds."""
-    error: str | None = None
+    error: Optional[str] = None
     """Error raised during the check."""
-    plan_units: list[PlanUnit] | None = None
+    plan_units: Optional[List[PlanUnit]] = None
     """Check of the individual plan units."""
-    remark: str | None = None
+    remark: Optional[str] = None
     """Remark of the check. It can be "ok", "timeout" or anything else that
     should explain itself."""
-    solution: Solution | None = None
+    solution: Optional[Solution] = None
     """Start soltuion of the check."""
-    summary: Summary | None = None
+    summary: Optional[Summary] = None
     """Summary of the check."""
-    vehicles: list[Vehicle] | None = None
+    vehicles: Optional[List[Vehicle]] = None
     """Check of the vehicles."""
-    verbosity: str | None = None
+    verbosity: Optional[str] = None
     """Verbosity level of the check."""

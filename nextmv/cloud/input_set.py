@@ -1,6 +1,7 @@
 """This module contains definitions for input sets."""
 
 from datetime import datetime
+from typing import List
 
 from nextmv.base_model import BaseModel
 
@@ -16,7 +17,7 @@ class InputSet(BaseModel):
     """Description of the input set."""
     id: str
     """ID of the input set."""
-    input_ids: list[str]
+    input_ids: List[str]
     """IDs of the inputs in the input set."""
     name: str
     """Name of the input set."""
