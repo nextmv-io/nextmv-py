@@ -34,7 +34,7 @@ class BatchExperiment(BatchExperimentInformation):
 
     grouped_distributional_summaries: Optional[List[Dict[str, Any]]] = None
     """Grouped distributional summaries of the batch experiment."""
-    option_sets: Optional[Dict[str, Any]] = None
+    option_sets: Optional[Dict[str, Dict[str, str]]] = None
     """Option sets used for the experiment."""
 
 
@@ -50,6 +50,12 @@ class BatchExperimentRun(BaseModel):
     """ID of the instance used for the experiment."""
     version_id: Optional[str] = None
     """ID of the version used for the experiment."""
+
+    def __post_init__(self):
+        """Logic to run after the class is initialized."""
+
+        if self.instance_id is None and self.version_id is None:
+            raise ValueError("either instance_id or version_id must be set")
 
 
 class BatchExperimentMetadata(BatchExperimentInformation):
