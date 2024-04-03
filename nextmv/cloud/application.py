@@ -704,7 +704,7 @@ class Application:
 
     def upload_large_input(
         self,
-        input: Dict[str, Any],
+        input: Union[Dict[str, Any], str],
         upload_url: UploadURL,
     ) -> None:
         """
@@ -718,11 +718,9 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
-        _ = self.client.request(
-            method="PUT",
-            endpoint=upload_url.upload_url,
-            payload=input,
-            headers={"Content-Type": "application/json"},
+        _ = self.client.upload_to_presigned_url(
+            data=input,
+            url=upload_url.upload_url,
         )
 
     def upload_url(self) -> UploadURL:
