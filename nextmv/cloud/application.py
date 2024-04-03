@@ -341,10 +341,10 @@ class Application:
         self,
         name: str,
         input_set_id: str,
-        instance_ids: List[str],
+        instance_ids: List[str] = None,
         description: Optional[str] = None,
         id: Optional[str] = None,
-        option_sets: Optional[Dict[str, Any]] = None,
+        option_sets: Optional[Dict[str, Dict[str, str]]] = None,
         runs: Optional[List[Union[BatchExperimentRun, Dict[str, Any]]]] = None,
     ) -> str:
         """
