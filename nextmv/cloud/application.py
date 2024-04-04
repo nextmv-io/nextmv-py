@@ -450,7 +450,7 @@ class Application:
 
     def new_run(
         self,
-        input: Union[Dict[str, Any], BaseModel] = None,
+        input: Union[Dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -463,7 +463,8 @@ class Application:
         run_id of the submitted run.
 
         Args:
-            input: Input to use for the run.
+            input: Input to use for the run. This can be JSON (given as dict
+            or BaseModel) or text (given as str).
             instance_id: ID of the instance to use for the run. If not
                 provided, the default_instance_id will be used.
             name: Name of the run.
@@ -479,15 +480,16 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
+        input_size = 0
         if isinstance(input, BaseModel):
             input = input.to_dict()
+            if input is not None:
+                input_size = get_size(input)
 
-        input_size = 0
-        if input is not None:
-            input_size = get_size(input)
+        upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
 
         upload_id_used = upload_id is not None
-        if not upload_id_used and input_size > _MAX_RUN_SIZE:
+        if not upload_id_used and upload_url_required:
             upload_url = self.upload_url()
             self.upload_large_input(input=input, upload_url=upload_url)
             upload_id = upload_url.upload_id
@@ -702,7 +704,7 @@ class Application:
 
     def upload_large_input(
         self,
-        input: Dict[str, Any],
+        input: Union[Dict[str, Any], str],
         upload_url: UploadURL,
     ) -> None:
         """
@@ -719,7 +721,7 @@ class Application:
         _ = self.client.request(
             method="PUT",
             endpoint=upload_url.upload_url,
-            payload=input,
+            data=input,
             headers={"Content-Type": "application/json"},
         )
 
