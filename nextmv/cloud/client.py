@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -179,39 +179,6 @@ class Client:
             ) from e
 
         return response
-
-    def upload_to_presigned_url(
-        self,
-        data: Union[Dict[str, Any], str],
-        url: str,
-    ) -> None:
-        """
-        Method to upload data to a presigned URL of the Nextmv Cloud API.
-
-        Args:
-            data: data to upload.
-            url: URL to upload the data to.
-        """
-
-        input_size = get_size(data) if isinstance(data, dict) else len(data.encode("utf-8"))
-        if isinstance(data, dict) and input_size > _MAX_LAMBDA_PAYLOAD_SIZE:
-            raise ValueError(
-                f"input data size of {input_size} bytes exceeds the maximum "
-                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
-            )
-
-        response = requests.put(
-            url=url,
-            data=data if isinstance(data, str) else json.dumps(data, separators=(",", ":")),
-        )
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise requests.HTTPError(
-                f"upload to presigned URL {url} failed with "
-                + f"status code {response.status_code} and message: {response.text}"
-            ) from e
 
     def _set_headers_api_key(self, api_key: str) -> None:
         """Sets the API key to use for requests to the Nextmv Cloud API."""
