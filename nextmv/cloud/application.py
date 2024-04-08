@@ -3,6 +3,7 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -36,6 +37,34 @@ class ErrorLog(BaseModel):
     """Standard error."""
 
 
+class Status(str, Enum):
+    """Status of a run. Deprecated: use StatusV2."""
+
+    failed = "failed"
+    """Run failed."""
+    running = "running"
+    """Run is running."""
+    succeeded = "succeeded"
+    """Run succeeded."""
+
+
+class StatusV2(str, Enum):
+    """Status of a run."""
+
+    canceled = "canceled"
+    """Run was canceled."""
+    failed = "failed"
+    """Run failed."""
+    none = "none"
+    """Run has no status."""
+    queued = "queued"
+    """Run is queued."""
+    running = "running"
+    """Run is running."""
+    succeeded = "succeeded"
+    """Run succeeded."""
+
+
 class Metadata(BaseModel):
     """Metadata of a run, whether it was successful or not."""
 
@@ -55,7 +84,9 @@ class Metadata(BaseModel):
     """Size of the input in bytes."""
     output_size: float
     """Size of the output in bytes."""
-    status: str
+    status: Status
+    """Deprecated: use status_v2."""
+    status_v2: StatusV2
     """Status of the run."""
 
 
@@ -692,7 +723,11 @@ class Application:
         polling_ok = False
         for _ in range(polling_options.max_tries):
             run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status in ["succeeded", "failed"]:
+            if run_information.metadata.status_v2 in [
+                StatusV2.succeeded,
+                StatusV2.failed,
+                StatusV2.canceled,
+            ]:
                 polling_ok = True
                 break
 
