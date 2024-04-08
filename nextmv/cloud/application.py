@@ -3,7 +3,6 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -13,6 +12,7 @@ from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.status import Status, StatusV2
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -35,34 +35,6 @@ class ErrorLog(BaseModel):
     """Standard output."""
     stderr: Optional[str] = None
     """Standard error."""
-
-
-class Status(str, Enum):
-    """Status of a run. Deprecated: use StatusV2."""
-
-    failed = "failed"
-    """Run failed."""
-    running = "running"
-    """Run is running."""
-    succeeded = "succeeded"
-    """Run succeeded."""
-
-
-class StatusV2(str, Enum):
-    """Status of a run."""
-
-    canceled = "canceled"
-    """Run was canceled."""
-    failed = "failed"
-    """Run failed."""
-    none = "none"
-    """Run has no status."""
-    queued = "queued"
-    """Run is queued."""
-    running = "running"
-    """Run is running."""
-    succeeded = "succeeded"
-    """Run succeeded."""
 
 
 class Metadata(BaseModel):
@@ -218,6 +190,22 @@ class Application:
         )
 
         return BatchExperiment.from_dict(response.json())
+
+    def cancel_run(self, run_id: str) -> None:
+        """
+        Cancel a run.
+
+        Args:
+            run_id: ID of the run.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
+        )
 
     def input_set(self, input_set_id: str) -> InputSet:
         """
