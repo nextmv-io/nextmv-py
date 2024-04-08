@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
+import requests
+
 from nextmv.base_model import BaseModel
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
@@ -264,7 +266,7 @@ class Application:
     def new_acceptance_test(
         self,
         candidate_instance_id: str,
-        control_instance_id: str,
+        baseline_instance_id: str,
         id: str,
         metrics: List[Union[Metric, Dict[str, Any]]],
         name: str,
@@ -281,7 +283,7 @@ class Application:
 
         Args:
             candidate_instance_id: ID of the candidate instance.
-            control_instance_id: ID of the control instance.
+            baseline_instance_id: ID of the baseline instance.
             id: ID of the acceptance test.
             metrics: List of metrics to use for the acceptance test.
             name: Name of the acceptance test.
@@ -299,13 +301,21 @@ class Application:
         """
 
         if input_set_id is None:
-            batch_experiment = self.batch_experiment(batch_id=id)
-            batch_experiment_id = batch_experiment.id
+            try:
+                batch_experiment = self.batch_experiment(batch_id=id)
+                batch_experiment_id = batch_experiment.id
+            except requests.HTTPError as e:
+                if e.response.status_code != 404:
+                    raise e
+
+                raise ValueError(
+                    f"batch experiment {id} does not exist, input_set_id must be defined to create a new one"
+                ) from e
         else:
             batch_experiment_id = self.new_batch_experiment(
                 name=name,
                 input_set_id=input_set_id,
-                instance_ids=[candidate_instance_id, control_instance_id],
+                instance_ids=[candidate_instance_id, baseline_instance_id],
                 description=description,
                 id=id,
             )
@@ -319,7 +329,7 @@ class Application:
 
         payload = {
             "candidate": {"instance_id": candidate_instance_id},
-            "control": {"instance_id": control_instance_id},
+            "control": {"instance_id": baseline_instance_id},
             "metrics": payload_metrics,
             "experiment_id": batch_experiment_id,
             "name": name,
