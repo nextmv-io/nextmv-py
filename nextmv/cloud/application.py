@@ -12,6 +12,7 @@ from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.status import Status, StatusV2
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -55,7 +56,9 @@ class Metadata(BaseModel):
     """Size of the input in bytes."""
     output_size: float
     """Size of the output in bytes."""
-    status: str
+    status: Status
+    """Deprecated: use status_v2."""
+    status_v2: StatusV2
     """Status of the run."""
 
 
@@ -187,6 +190,22 @@ class Application:
         )
 
         return BatchExperiment.from_dict(response.json())
+
+    def cancel_run(self, run_id: str) -> None:
+        """
+        Cancel a run.
+
+        Args:
+            run_id: ID of the run.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
+        )
 
     def input_set(self, input_set_id: str) -> InputSet:
         """
@@ -692,7 +711,11 @@ class Application:
         polling_ok = False
         for _ in range(polling_options.max_tries):
             run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status in ["succeeded", "failed"]:
+            if run_information.metadata.status_v2 in [
+                StatusV2.succeeded,
+                StatusV2.failed,
+                StatusV2.canceled,
+            ]:
                 polling_ok = True
                 break
 
