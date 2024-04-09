@@ -35,8 +35,8 @@ class QueuedRun(BaseModel):
 
 
 class Queue(BaseModel):
-    """A queue is a list of runs that are pending to be executed in the
-    account."""
+    """A queue is a list of runs that are pending to be executed, or currently
+    being executed, in the account."""
 
     runs: List[QueuedRun]
     """List of runs in the queue."""
