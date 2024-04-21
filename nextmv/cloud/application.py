@@ -103,12 +103,19 @@ class RunInformation(BaseModel):
 
 
 class RunResult(RunInformation):
-    """Result of a run, wheter it was successful or not."""
+    """Result of a run, whether it was successful or not."""
 
     error_log: Optional[ErrorLog] = None
     """Error log of the run. Only available if the run failed."""
     output: Optional[Dict[str, Any]] = None
     """Output of the run. Only available if the run succeeded."""
+
+
+class RunLog(BaseModel):
+    """Log of a run."""
+
+    log: str
+    """Log of the run."""
 
 
 class UploadURL(BaseModel):
@@ -645,6 +652,28 @@ class Application:
         )
 
         return download_response.json()
+
+    def run_logs(
+        self,
+        run_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Get the logs of a run.
+
+        Args:
+            run_id: ID of the run.
+
+        Returns:
+            Logs of the run.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/logs",
+        )
+        return RunLog.from_dict(response.json())
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """
