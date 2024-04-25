@@ -673,7 +673,7 @@ class Application:
             method="GET",
             endpoint=f"{self.endpoint}/runs/{run_id}/logs",
         )
-        return RunLog.from_dict(response.json())
+        return response.json()
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """
