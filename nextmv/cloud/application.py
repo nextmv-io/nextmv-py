@@ -656,7 +656,7 @@ class Application:
     def run_logs(
         self,
         run_id: str,
-    ) -> Dict[str, Any]:
+    ) -> RunLog:
         """
         Get the logs of a run.
 
@@ -673,7 +673,7 @@ class Application:
             method="GET",
             endpoint=f"{self.endpoint}/runs/{run_id}/logs",
         )
-        return response.json()
+        return RunLog.from_dict(response.json())
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """
