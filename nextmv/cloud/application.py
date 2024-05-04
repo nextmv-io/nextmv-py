@@ -217,26 +217,21 @@ class Application:
     def delete_batch_experiment(
         self,
         id: str,
-    ) -> str:
+    ) -> None:
         """
         Deletes a batch experiment, along with all of its runs.
 
         Args:
             id: ID of the batch experiment.
 
-        Returns:
-            ID of the deleted batch experiment.
-
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        _ = self.client.request(
             method="DELETE",
             endpoint=f"{self.experiments_endpoint}/batch/{id}",
         )
-
-        return response.json()["id"]
 
     def input_set(self, input_set_id: str) -> InputSet:
         """
