@@ -214,6 +214,25 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
         )
 
+    def delete_batch_experiment(
+        self,
+        id: str,
+    ) -> None:
+        """
+        Deletes a batch experiment, along with all of its runs.
+
+        Args:
+            id: ID of the batch experiment.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.experiments_endpoint}/batch/{id}",
+        )
+
     def input_set(self, input_set_id: str) -> InputSet:
         """
         Get an input set.
