@@ -214,15 +214,13 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
         )
 
-    def delete_batch_experiment(
-        self,
-        id: str,
-    ) -> None:
+    def delete_batch_experiment(self, batch_id: str) -> None:
         """
-        Deletes a batch experiment, along with all of its runs.
+        Deletes a batch experiment, along with all the associated information,
+        such as its runs.
 
         Args:
-            id: ID of the batch experiment.
+            batch_id: ID of the batch experiment.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -230,7 +228,24 @@ class Application:
 
         _ = self.client.request(
             method="DELETE",
-            endpoint=f"{self.experiments_endpoint}/batch/{id}",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
+        )
+
+    def delete_acceptance_test(self, acceptance_test_id: str) -> None:
+        """
+        Deletes an acceptance test, along with all the associated information
+        such as the underlying batch experiment.
+
+        Args:
+            acceptance_test_id: ID of the acceptance test.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.experiments_endpoint}/acceptance/{acceptance_test_id}",
         )
 
     def input_set(self, input_set_id: str) -> InputSet:
@@ -631,10 +646,7 @@ class Application:
             polling_options=polling_options,
         )
 
-    def run_input(
-        self,
-        run_id: str,
-    ) -> Dict[str, Any]:
+    def run_input(self, run_id: str) -> Dict[str, Any]:
         """
         Get the input of a run.
 
@@ -672,10 +684,7 @@ class Application:
 
         return download_response.json()
 
-    def run_logs(
-        self,
-        run_id: str,
-    ) -> RunLog:
+    def run_logs(self, run_id: str) -> RunLog:
         """
         Get the logs of a run.
 
