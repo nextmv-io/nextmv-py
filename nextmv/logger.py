@@ -12,16 +12,34 @@ class Logger:
     all the logs stored to stderr, and the behavior of stdout and stderr will
     be restored to their original state.
 
-    If you only want to log messages to stderr, and not redirect the stdout
-    stream to stderr, you can instead use the `log` function from this same
-    module.
+    If you only want to log messages to stderr, without buffering them, and not
+    redirect the stdout stream to stderr, you can instead use the `log`
+    function from this same module.
+
+    Examples:
+
+        - Print message "0" to stdout, messages "1" and "2" to stderr, and then "3" to stdout:
+
+        ```python
+        import nextmv
+
+        print("0. I do nothing")
+        logger = nextmv.Logger()
+        logger.log("1. I log a message to stderr")
+        print("2. I print a message to stdout, but gets redirected to stderr")
+        logger.flush()
+        print("3. I print another message to stdout")
+        ```
     """
 
     def __init__(self):
         self._logs = []
-        self._stdout_set = False
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        sys.stdout = self._FileCapture(self)
+        sys.stderr = self._FileCapture(self)
 
-    class _StdoutCapture:
+    class _FileCapture:
         """This custom writer is written to capture anything written to
         stdout. It needs to implement the `write` and `flush` methods."""
 
@@ -43,38 +61,31 @@ class Logger:
             message: The message to log.
         """
 
-        if not self._stdout_set:
-            sys.stdout = self._StdoutCapture(self)
-            self._stdout_set = True
-
         self._logs.append(message)
 
     def flush(self) -> None:
         """
-        Flush the logs to stderr and reset the behavior of the stdout and
-        stderr streams.
+        Flush the buffer to stderr and clear the buffer.
         """
 
         for log in self._logs:
-            print(log, file=sys.stderr)
+            self._original_stderr.write(log + "\n")
 
         self._logs = []
-        sys.stdout = sys.__stdout__
-        self._stdout_set = False
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
 
 
 def log(message: str) -> None:
     """
     Log a message to stderr.
 
-    If you want a special logger that captures all messages and redirects both
-    stdout and stderr to stderr, you can instead use the `Logger` class from
-    the same module.
+    If you want a special logger that buffers stdout and stderr messages and
+    flushes them to stderr, you can instead use the `Logger` class from the
+    same module.
 
     Args:
         message: The message to log.
     """
 
-    logger = Logger()
-    logger.log(message)
-    logger.flush()
+    print(message, file=sys.stderr)
