@@ -28,32 +28,28 @@ class TestLogger(unittest.TestCase):
         )
 
     @patch("sys.stderr", new_callable=StringIO)
-    def test_logger(self, mock_stderr):
-        logger = nextmv.Logger()
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_redirect_stdout(self, mock_stdout, mock_stderr):
+        nextmv.redirect_stdout()
 
         # I can log to stderr.
-        logger.log("0. log directly to stderr")
+        nextmv.log("0. log directly to stderr")
 
         # And if I print to stdout, it will actually be redirected to stderr.
         print("1. stdout redirected to stderr")
 
-        # I have to remember to flush the logger to see the messages.
-        logger.flush()
+        # I reset stdout to its original value.
+        nextmv.reset_stdout()
+
+        # Now I can print to stdout again.
+        print("2. back to stdout")
 
         self.assertEqual(
             mock_stderr.getvalue(),
             "0. log directly to stderr\n1. stdout redirected to stderr\n",
         )
 
-    @patch("sys.stderr", new_callable=StringIO)
-    def test_logger_no_flush(self, mock_stderr):
-        logger = nextmv.Logger()
-
-        # I can log to stderr.
-        logger.log("0. log directly to stderr")
-
-        # And if I print to stdout, it will actually be redirected to stderr.
-        print("1. stdout redirected to stderr")
-
-        # Note that I didn't flush the logger, so the messages are not shown.
-        self.assertEqual(mock_stderr.getvalue(), "")
+        self.assertEqual(
+            mock_stdout.getvalue(),
+            "2. back to stdout\n",
+        )
