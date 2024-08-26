@@ -35,17 +35,17 @@ class Parameter:
     argument, an environment variable or a default value."""
 
 
-class Configuration:
+class Options:
     """
-    Configuration for a run. To initialize a configuration, pass in one or more
-    `Parameter` objects. The configuration will look for the values of the
-    given parameters in the following order: command-line arguments,
-    environment variables, default values.
+    Options for a run. To initialize options, pass in one or more `Parameter`
+    objects. The options will look for the values of the given parameters in
+    the following order: command-line arguments, environment variables, default
+    values.
 
-    Once the configuration is initialized, you can access the parameters as
-    attributes of the configuration object. For example, if you have a
+    Once the options are initialized, you can access the parameters as
+    attributes of the `Options` object. For example, if you have a
     `Parameter` object with the name "duration", you can access it as
-    `config.duration`.
+    `options.duration`.
 
     If a parameter is required and not provided through a command-line
     argument, an environment variable or a default value, an error will be
@@ -54,19 +54,19 @@ class Configuration:
     Parameters
     ----------
     *parameters : Parameter
-        The parameters that are used in the configuration. At least one
+        The parameters that are used in the options. At least one
         parameter is required.
 
     Examples
     --------
     >>> import nextmv
     >>>
-    >>> config = nextmv.Configuration(
+    >>> options = nextmv.Options(
     ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=True),
     ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=True),
     ... )
     >>>
-    >>> print(config.duration, config.threads, config.to_dict())
+    >>> print(options.duration, options.threads, options.to_dict())
 
     30s 4 {"duration": "30s", "threads": 4}
 
@@ -75,17 +75,17 @@ class Configuration:
     ValueError
         If no parameters are provided.
     ValueError
-        If a required parameter is not provided through a command-line argument,
-        an environment variable or a default value.
+        If a required parameter is not provided through a command-line
+        argument, an environment variable or a default value.
     TypeError
         If a parameter is not a `Parameter` object.
     ValueError
-        If an environment variable is not of the type of the
-        corresponding parameter.
+        If an environment variable is not of the type of the corresponding
+        parameter.
     """
 
     def __init__(self, *parameters: Parameter):
-        """Initializes the configuration."""
+        """Initializes the options."""
 
         if not parameters:
             return
@@ -93,7 +93,7 @@ class Configuration:
         parser = argparse.ArgumentParser(
             add_help=True,
             usage="%(prog)s [options]",
-            description="Configuration for %(prog)s. Use command-line arguments (highest precedence) "
+            description="Options for %(prog)s. Use command-line arguments (highest precedence) "
             + "or environment variables.",
         )
         params_by_name: Dict[str, Parameter] = {}
@@ -151,12 +151,12 @@ class Configuration:
 
     def to_dict(self) -> Dict[str, Any]:
         """
-        Converts the configurations to a dict.
+        Converts the options to a dict.
 
         Returns
         -------
         Dict[str, Any]
-            The configurations as a dict.
+            The options as a dict.
         """
 
         class model(BaseModel):

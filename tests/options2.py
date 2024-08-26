@@ -1,8 +1,8 @@
 import nextmv
 
-config = nextmv.Configuration(
+options = nextmv.Options(
     nextmv.Parameter("duration", str, description="solver duration", required=True),
     nextmv.Parameter("threads", int, description="computer threads", required=True),
 )
 
-print(config.to_dict())
+print(options.to_dict())
