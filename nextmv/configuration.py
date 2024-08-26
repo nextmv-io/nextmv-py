@@ -88,7 +88,7 @@ class Configuration:
         """Initializes the configuration."""
 
         if not parameters:
-            raise ValueError("at least one parameter is required")
+            return
 
         parser = argparse.ArgumentParser(
             add_help=True,

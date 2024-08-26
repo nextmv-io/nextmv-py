@@ -115,8 +115,8 @@ class TestConfiguration(unittest.TestCase):
         self.assertIn('parameter "duration" is required', result.stderr)
 
     def test_no_parameters(self):
-        with self.assertRaises(ValueError):
-            nextmv.Configuration()
+        # The test passes if no exception is raised.
+        nextmv.Configuration()
 
     def test_bad_parameter_type(self):
         with self.assertRaises(TypeError):
