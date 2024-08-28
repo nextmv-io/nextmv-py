@@ -4,16 +4,10 @@ from .input import Defaults as Defaults
 from .input import DurationGroup as DurationGroup
 from .input import Input as Input
 from .location import Location as Location
-from .output import DataPoint as DataPoint
 from .output import ObjectiveOutput as ObjectiveOutput
 from .output import Output as Output
 from .output import PlannedStopOutput as PlannedStopOutput
-from .output import ResultStatistics as ResultStatistics
-from .output import RunStatistics as RunStatistics
-from .output import Series as Series
-from .output import SeriesData as SeriesData
 from .output import Solution as Solution
-from .output import Statistics as Statistics
 from .output import StopOutput as StopOutput
 from .output import VehicleOutput as VehicleOutput
 from .output import Version as Version

@@ -39,15 +39,47 @@ class Input:
         Options that the input was created with.
     """
 
-    data: Union[Dict[str, Any], str, List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]
+    data: Union[
+        Dict[str, Any],  # JSON
+        str,  # TEXT
+        List[Dict[str, Any]],  # CSV
+        Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
+    ]
     """The actual data. The data can be of various types, depending on the
     input format."""
 
     input_format: Optional[InputFormat] = InputFormat.JSON
     """Format of the input data. Default is `InputFormat.JSON`."""
-
     options: Optional[Options] = None
     """Options that the `Input` were created with."""
+
+    def __post_init__(self):
+        """Check that the data matches the format given to initialize the
+        class."""
+
+        if self.input_format == InputFormat.JSON and not isinstance(self.data, dict):
+            raise ValueError(
+                f"unsupported Input.data type: {type(self.data)} with "
+                "input_format InputFormat.JSON, supported type is `dict`"
+            )
+
+        elif self.input_format == InputFormat.TEXT and not isinstance(self.data, str):
+            raise ValueError(
+                f"unsupported Input.data type: {type(self.data)} with "
+                "input_format InputFormat.TEXT, supported type is `str`"
+            )
+
+        elif self.input_format == InputFormat.CSV and not isinstance(self.data, list):
+            raise ValueError(
+                f"unsupported Input.data type: {type(self.data)} with "
+                "input_format InputFormat.CSV, supported type is `list`"
+            )
+
+        elif self.input_format == InputFormat.CSV_ARCHIVE and not isinstance(self.data, dict):
+            raise ValueError(
+                f"unsupported Input.data type: {type(self.data)} with "
+                "input_format InputFormat.CSV_ARCHIVE, supported type is `dict`"
+            )
 
 
 class InputLoader:
@@ -108,11 +140,15 @@ class LocalInputLoader(InputLoader):
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 
+    # All of these readers are callback functions.
     STDIN_READERS = {
         InputFormat.JSON: lambda: json.load(sys.stdin),
         InputFormat.TEXT: lambda: sys.stdin.read(),
         InputFormat.CSV: lambda: list(csv.DictReader(sys.stdin, quoting=csv.QUOTE_NONNUMERIC)),
     }
+    # These callbacks were not implemented with lambda because we needed
+    # multiple lines. By using `open`, we needed the `with` to be able to close
+    # the file.
     FILE_READERS = {
         InputFormat.JSON: _read_json,
         InputFormat.TEXT: _read_text,
@@ -180,17 +216,8 @@ class LocalInputLoader(InputLoader):
         use_file_reader: bool = False,
     ) -> Union[Dict[str, Any], str, List[Dict[str, Any]]]:
         """
-        Load a JSON file.
-
-        Parameters
-        ----------
-        path : str
-            Path to the JSON file.
-
-        Returns
-        -------
-        Dict[str, Any]
-            The JSON data.
+        Load a utf-8 encoded file. Can come from stdin or a file in the
+        filesystem.
         """
 
         # If we forcibly want to use the file reader, we can do so.
@@ -206,28 +233,18 @@ class LocalInputLoader(InputLoader):
 
     def _load_archive(self, path: Optional[str] = None) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Load a CSV archive.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV archive.
-
-        Returns
-        -------
-        Dict[str, List[Dict[str, Any]]]
-            The CSV data.
+        Load files from a directory. Will only load CSV files.
         """
 
         dir_path = "input"
         if path is not None and path != "":
             if not os.path.isdir(path):
-                raise ValueError(f"Path {path} is not a directory")
+                raise ValueError(f"path {path} is not a directory")
 
             dir_path = path
 
         if not os.path.isdir(dir_path):
-            raise ValueError(f'Expected input directoy "{dir_path}" to exist as a default location')
+            raise ValueError(f'expected input directoy "{dir_path}" to exist as a default location')
 
         data = {}
         csv_ext = ".csv"

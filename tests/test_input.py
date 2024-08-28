@@ -7,8 +7,6 @@ from unittest.mock import patch
 
 import nextmv
 
-# tracemalloc.start()
-
 
 class TestInput(unittest.TestCase):
     """

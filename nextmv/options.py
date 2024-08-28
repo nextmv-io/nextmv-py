@@ -68,6 +68,9 @@ class Options:
     argument, an environment variable or a default value, an error will be
     raised.
 
+    Options works as a Namespace, so you can assign new attributes to it. For
+    example, you can do `options.foo = "bar"`.
+
     Parameters
     ----------
     *parameters : Parameter

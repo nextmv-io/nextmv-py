@@ -17,4 +17,4 @@ class BaseModel(BaseModel):
     def to_dict(self) -> Dict[str, Any]:
         """Converts the class to a dict."""
 
-        return self.model_dump(mode="json", exclude_none=True)
+        return self.model_dump(mode="json", exclude_none=True, by_alias=True)
