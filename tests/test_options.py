@@ -33,7 +33,7 @@ class TestOptions(unittest.TestCase):
 
         for file in self.test_scripts:
             name = f"options{file}.py"
-            src = self._file_name(name)
+            src = self._file_name(name, "./scripts")
             dst = self._file_name(name, "..")
             shutil.copy(src, dst)
 
@@ -54,7 +54,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
 
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "{'duration': '30s', 'threads': 4}\n")
 
     def test_env_vars(self):
@@ -66,7 +66,7 @@ class TestOptions(unittest.TestCase):
             env={**os.environ, "DURATION": "60s", "THREADS": "8"},
         )
 
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, str(result.stderr))
         self.assertEqual(result.stdout, "{'duration': '60s', 'threads': 8}\n")
 
     def test_command_line_args_two_dashes(self):
@@ -77,7 +77,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
 
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "{'duration': '90s', 'threads': 12}\n")
 
     def test_command_line_args_one_dash(self):
@@ -88,7 +88,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
 
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "{'duration': '120s', 'threads': 16}\n")
 
     def test_command_line_args_precede_env_vars(self):
@@ -100,7 +100,7 @@ class TestOptions(unittest.TestCase):
             env={**os.environ, "DURATION": "60s", "THREADS": "8"},
         )
 
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "{'duration': '90s', 'threads': 12}\n")
 
     def test_no_values(self):
@@ -155,7 +155,7 @@ class TestOptions(unittest.TestCase):
         )
 
         self.maxDiff = None
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("[env var: DURATION] (required) (default: 30s)", result.stdout)
 
     def test_minimal_help_message(self):
@@ -167,7 +167,7 @@ class TestOptions(unittest.TestCase):
         )
 
         self.maxDiff = None
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("[env var: DURATION] (required) (default: 30s)", result.stdout)
 
     @staticmethod
