@@ -96,17 +96,14 @@ class LocalInputLoader(InputLoader):
     Call the `load` method to read the input data.
     """
 
-    @staticmethod
     def _read_text(path: str) -> str:
         with open(path, encoding="utf-8") as f:
             return f.read()
 
-    @staticmethod
     def _read_csv(path: str) -> List[Dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
             return list(csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC))
 
-    @staticmethod
     def _read_json(path: str) -> Dict[str, Any]:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
