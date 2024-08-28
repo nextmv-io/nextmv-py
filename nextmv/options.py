@@ -16,6 +16,23 @@ class Parameter:
     the configuration will raise an error if a required parameter is not
     provided through a command-line argument, an environment variable or a
     default value.
+
+    Parameters
+    ----------
+    name : str
+        The name of the parameter.
+    param_type : type
+        The type of the parameter.
+    default : Any, optional
+        The default value of the parameter. Even though this is optional, it is
+        recommended to provide a default value for all parameters.
+    description : str, optional
+        An optional description of the parameter. This is useful for generating
+        help messages for the configuration.
+    required : bool, optional
+        Whether the parameter is required. If a parameter is required, it will
+        be an error to not provide a value for it, either trough a command-line
+        argument, an environment variable or a default value.
     """
 
     name: str
