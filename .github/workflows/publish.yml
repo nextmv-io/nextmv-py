@@ -1,4 +1,5 @@
 name: publish
+run-name: Publish ${{ inputs.VERSION }} (pre-release - ${{ inputs.IS_PRE_RELEASE }}) by @${{ github.actor }} from ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -48,6 +49,7 @@ jobs:
           git config --global user.signingkey ~/.ssh/signing.key
 
           git clone git@github.com:nextmv-io/nextmv-py.git
+          git switch {{ github.ref_name }}
 
       - name: upgrade version with hatch
         run: hatch version ${{ env.VERSION }}
