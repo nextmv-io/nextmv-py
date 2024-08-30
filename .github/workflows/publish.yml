@@ -99,10 +99,10 @@ jobs:
       contents: read
       id-token: write # This is required for trusted publishing to PyPI
     steps:
-      - name: git clone develop
+      - name: git clone ${{ github.ref_name }}
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ github.ref_name }}
 
       - name: set up Python
         uses: actions/setup-python@v4
