@@ -210,7 +210,7 @@ class TestOutput(unittest.TestCase):
         with open(f"{write_path}/empanadas.csv") as file:
             csv_got = file.read()
 
-        csv_expected = "are,life\n2.0,3.0\n5.0,6.0\n"
+        csv_expected = '"are","life"\n2.0,3.0\n5.0,6.0\n'
 
         self.assertEqual(csv_got, csv_expected)
 
