@@ -50,7 +50,7 @@ jobs:
 
           git clone git@github.com:nextmv-io/nextmv-py.git
           cd nextmv-py
-          git switch {{ github.ref_name }}
+          git switch ${{ github.ref_name }}
 
       - name: upgrade version with hatch
         run: hatch version ${{ env.VERSION }}
