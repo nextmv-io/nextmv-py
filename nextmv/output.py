@@ -315,7 +315,11 @@ class LocalOutputWriter(OutputWriter):
         for file_name, data in output.solution.items():
             file_path = os.path.join(dir_path, f"{file_name}.csv")
             with open(file_path, "w", encoding="utf-8", newline="") as file:
-                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=data[0].keys(),
+                    quoting=csv.QUOTE_NONNUMERIC,
+                )
                 writer.writeheader()
                 writer.writerows(data)
 
