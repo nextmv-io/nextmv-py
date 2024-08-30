@@ -3,17 +3,14 @@ import math
 import os
 import unittest
 
+from nextmv import ResultStatistics, RunStatistics, SeriesData, Statistics
 from nextmv.nextroute import check as nextrouteCheck
 from nextmv.nextroute.schema import (
     Location,
     ObjectiveOutput,
     Output,
     PlannedStopOutput,
-    ResultStatistics,
-    RunStatistics,
-    SeriesData,
     Solution,
-    Statistics,
     StopOutput,
     VehicleOutput,
     Version,

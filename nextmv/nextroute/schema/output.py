@@ -3,11 +3,10 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field
-
 from nextmv.base_model import BaseModel
 from nextmv.nextroute.check import Output as checkOutput
 from nextmv.nextroute.schema.location import Location
+from nextmv.output import Statistics
 
 
 class Version(BaseModel):
@@ -121,70 +120,6 @@ class Solution(BaseModel):
     """Information of the objective (value function)."""
     check: Optional[checkOutput] = None
     """Check of the solution, if enabled."""
-
-
-class RunStatistics(BaseModel):
-    """Statistics about a general run."""
-
-    duration: Optional[float] = None
-    """Duration of the run in seconds."""
-    iterations: Optional[int] = None
-    """Number of iterations."""
-    custom: Optional[Any] = None
-    """Custom statistics created by the user. Can normally expect a `Dict[str,
-    Any]`."""
-
-
-class ResultStatistics(BaseModel):
-    """Statistics about a specific result."""
-
-    duration: Optional[float] = None
-    """Duration of the run in seconds."""
-    value: Optional[float] = None
-    """Value of the result."""
-    custom: Optional[Any] = None
-    """Custom statistics created by the user. Can normally expect a `Dict[str,
-    Any]`."""
-
-
-class DataPoint(BaseModel):
-    """A data point."""
-
-    x: float
-    """X coordinate of the data point."""
-    y: float
-    """Y coordinate of the data point."""
-
-
-class Series(BaseModel):
-    """A series of data points."""
-
-    name: Optional[str] = None
-    """Name of the series."""
-    data_points: Optional[List[DataPoint]] = None
-    """Data of the series."""
-
-
-class SeriesData(BaseModel):
-    """Data of a series."""
-
-    value: Optional[Series] = None
-    """A series for the value of the solution."""
-    custom: Optional[List[Series]] = None
-    """A list of series for custom statistics."""
-
-
-class Statistics(BaseModel):
-    """Statistics of a solution."""
-
-    run: Optional[RunStatistics] = None
-    """Statistics about the run."""
-    result: Optional[ResultStatistics] = None
-    """Statistics about the last result."""
-    series_data: Optional[SeriesData] = None
-    """Data of the series."""
-    statistics_schema: Optional[str] = Field(alias="schema")
-    """Schema (version)."""
 
 
 class Output(BaseModel):

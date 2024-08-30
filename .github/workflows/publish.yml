@@ -49,7 +49,8 @@ jobs:
           git config --global user.signingkey ~/.ssh/signing.key
 
           git clone git@github.com:nextmv-io/nextmv-py.git
-          git switch {{ github.ref_name }}
+          cd nextmv-py
+          git switch ${{ github.ref_name }}
 
       - name: upgrade version with hatch
         run: hatch version ${{ env.VERSION }}
@@ -98,10 +99,10 @@ jobs:
       contents: read
       id-token: write # This is required for trusted publishing to PyPI
     steps:
-      - name: git clone develop
+      - name: git clone ${{ github.ref_name }}
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ github.ref_name }}
 
       - name: set up Python
         uses: actions/setup-python@v4
