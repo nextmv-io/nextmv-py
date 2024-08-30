@@ -48,6 +48,7 @@ jobs:
           git config --global user.signingkey ~/.ssh/signing.key
 
           git clone git@github.com:nextmv-io/nextmv-py.git
+          git switch {{ github.ref }}
 
       - name: upgrade version with hatch
         run: hatch version ${{ env.VERSION }}
