@@ -222,10 +222,14 @@ class Output:
         if self.solution is None:
             return
 
-        if self.output_format == OutputFormat.JSON and not isinstance(self.solution, dict):
+        if (
+            self.output_format == OutputFormat.JSON
+            and not isinstance(self.solution, dict)
+            and not isinstance(self.solution, list)
+        ):
             raise ValueError(
                 f"unsupported Output.solution type: {type(self.solution)} with "
-                "output_format OutputFormat.JSON, supported type is `dict`"
+                "output_format OutputFormat.JSON, supported type is `dict`, `list`"
             )
 
         elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
