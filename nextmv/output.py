@@ -264,12 +264,6 @@ class LocalOutputWriter(OutputWriter):
     ) -> None:
         solution = {}
         if output.solution is not None:
-            if not isinstance(output.solution, dict):
-                raise ValueError(
-                    f"unsupported Output.solution type: {type(output.solution)} with "
-                    "output_format OutputFormat.JSON, supported type is `dict`"
-                )
-
             solution = output.solution
 
         serialized = json.dumps(
