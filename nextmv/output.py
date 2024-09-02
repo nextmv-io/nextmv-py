@@ -1,5 +1,6 @@
 """Module for handling output destinations and data."""
 
+import copy
 import csv
 import json
 import os
@@ -218,6 +219,12 @@ class Output:
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
         class."""
+
+        # Capture a snapshot of the options that were used to create the class
+        # so even if they are changed later, we have a record of the original.
+        init_options = self.options
+        new_options = copy.deepcopy(init_options)
+        self.options = new_options
 
         if self.solution is None:
             return

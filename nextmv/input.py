@@ -1,5 +1,6 @@
 """Module for handling input sources and data."""
 
+import copy
 import csv
 import json
 import os
@@ -80,6 +81,12 @@ class Input:
                 f"unsupported Input.data type: {type(self.data)} with "
                 "input_format InputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
+
+        # Capture a snapshot of the options that were used to create the class
+        # so even if they are changed later, we have a record of the original.
+        init_options = self.options
+        new_options = copy.deepcopy(init_options)
+        self.options = new_options
 
 
 class InputLoader:
