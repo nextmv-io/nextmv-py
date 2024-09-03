@@ -20,7 +20,7 @@ class TestOutput(unittest.TestCase):
         output_writer = nextmv.LocalOutputWriter()
 
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output)
+            output_writer.write(output, skip_stdout_reset=True)
 
             got = json.loads(mock_stdout.getvalue())
             expected = {
@@ -40,7 +40,7 @@ class TestOutput(unittest.TestCase):
         output_writer = nextmv.LocalOutputWriter()
 
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output)
+            output_writer.write(output, skip_stdout_reset=True)
 
             got = json.loads(mock_stdout.getvalue())
             expected = {
@@ -65,7 +65,7 @@ class TestOutput(unittest.TestCase):
         output_writer = nextmv.LocalOutputWriter()
 
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output)
+            output_writer.write(output, skip_stdout_reset=True)
 
             got = json.loads(mock_stdout.getvalue())
             expected = {
@@ -133,7 +133,7 @@ class TestOutput(unittest.TestCase):
         with self.assertRaises(ValueError):
             # We patch stdout to avoid printing when executing the test.
             with patch("sys.stdout", new=StringIO()) as mock_stdout:
-                output_writer.write(output, file_name)
+                output_writer.write(output, file_name, skip_stdout_reset=True)
                 _ = mock_stdout.getvalue()
 
         os.remove(file_name)
@@ -141,7 +141,7 @@ class TestOutput(unittest.TestCase):
         # However, using a file name as a directory should not result in an
         # error. It is kind of weird doing that, but to each their own.
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output, file_name)
+            output_writer.write(output, file_name, skip_stdout_reset=True)
             _ = mock_stdout.getvalue()
 
         # Removes the output directory after the test is executed.
@@ -158,7 +158,7 @@ class TestOutput(unittest.TestCase):
 
         # We patch stdout to avoid printing when executing the test.
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output, output_dir)
+            output_writer.write(output, output_dir, skip_stdout_reset=True)
             _ = mock_stdout.getvalue()
 
         self.assertTrue(os.path.exists(output_dir))
@@ -194,7 +194,7 @@ class TestOutput(unittest.TestCase):
         output_writer = nextmv.LocalOutputWriter()
 
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output, path=function_path)
+            output_writer.write(output, path=function_path, skip_stdout_reset=True)
 
             stdout_got = json.loads(mock_stdout.getvalue())
             stdout_expected = {

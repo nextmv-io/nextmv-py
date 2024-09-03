@@ -336,7 +336,12 @@ class LocalOutputWriter(OutputWriter):
         OutputFormat.CSV_ARCHIVE: _write_archive,
     }
 
-    def write(self, output: Output, path: Optional[str] = None) -> None:
+    def write(
+        self,
+        output: Output,
+        path: Optional[str] = None,
+        skip_stdout_reset: bool = False,
+    ) -> None:
         """
         Write the `output` to the local filesystem. Consider the following for
         the `path` parameter, depending on the `Output.output_format`:
@@ -349,12 +354,19 @@ class LocalOutputWriter(OutputWriter):
             The `Output.options` and `Output.statistics` will be written to
             stdout.
 
+        This function detects if stdout was redirected and resets it to avoid
+        unexpected behavior. If you want to skip this behavior, set the
+        `skip_stdout_reset` parameter to `True`.
+
         Parameters
         ----------
         output : Output
             Output data to write.
         path : str
             Path to write the output data to.
+        skip_stdout_reset : bool, optional
+            Skip resetting stdout before writing the output data. Default is
+            `False`.
 
         Raises
         ------
@@ -364,7 +376,7 @@ class LocalOutputWriter(OutputWriter):
 
         # If the user forgot to reset stdout after redirecting it, we need to
         # do it here to avoid unexpected behavior.
-        if sys.stdout is not sys.__stdout__:
+        if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
         if not isinstance(output.output_format, OutputFormat):
@@ -408,7 +420,11 @@ class LocalOutputWriter(OutputWriter):
         return statistics
 
 
-def write_local(output: Output, path: Optional[str] = None) -> None:
+def write_local(
+    output: Output,
+    path: Optional[str] = None,
+    skip_stdout_reset: bool = False,
+) -> None:
     """
     This is a convenience function for instantiating a `LocalOutputWriter` and
     calling its `write` method.
@@ -424,12 +440,19 @@ def write_local(output: Output, path: Optional[str] = None) -> None:
         The `Output.options` and `Output.statistics` will be written to
         stdout.
 
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    `skip_stdout_reset` parameter to `True`.
+
     Parameters
     ----------
     output : Output
         Output data to write.
     path : str
         Path to write the output data to.
+    skip_stdout_reset : bool, optional
+        Skip resetting stdout before writing the output data. Default is
+        `False`.
 
     Raises
     ------
@@ -438,7 +461,7 @@ def write_local(output: Output, path: Optional[str] = None) -> None:
     """
 
     writer = LocalOutputWriter()
-    writer.write(output, path)
+    writer.write(output, path, skip_stdout_reset)
 
 
 def _custom_serial(obj: Any):
