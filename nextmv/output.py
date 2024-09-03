@@ -336,7 +336,7 @@ class LocalOutputWriter(OutputWriter):
         OutputFormat.CSV_ARCHIVE: _write_archive,
     }
 
-    def write(self, output: Output, path: Optional[str] = None, *args, **kwargs) -> None:
+    def write(self, output: Output, path: Optional[str] = None) -> None:
         """
         Write the `output` to the local filesystem. Consider the following for
         the `path` parameter, depending on the `Output.output_format`:
@@ -355,6 +355,11 @@ class LocalOutputWriter(OutputWriter):
             Output data to write.
         path : str
             Path to write the output data to.
+
+        Raises
+        ------
+        ValueError
+            If the `Output.output_format` is not supported.
         """
 
         # If the user forgot to reset stdout after redirecting it, we need to
@@ -401,6 +406,36 @@ class LocalOutputWriter(OutputWriter):
             )
 
         return statistics
+
+
+def write_local(output: Output, path: Optional[str] = None) -> None:
+    """
+    This is a convenience function for instantiating a `LocalOutputWriter` and
+    calling its `write` method.
+
+    Write the `output` to the local filesystem. Consider the following for the
+    `path` parameter, depending on the `Output.output_format`:
+
+    - `OutputFormat.JSON`: the `path` is the file where the JSON data will
+        be written. If empty or `None`, the data will be written to stdout.
+    - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
+        files will be written. If empty or `None`, the data will be written
+        to a directory named `output` under the current working directory.
+        The `Output.options` and `Output.statistics` will be written to
+        stdout.
+
+    Parameters
+    ----------
+    output : Output
+        Output data to write.
+    path : str
+        Path to write the output data to.
+
+    Raises
+    ------
+    ValueError
+        If the `Output.output_format` is not supported.
+    """
 
 
 def _custom_serial(obj: Any):
