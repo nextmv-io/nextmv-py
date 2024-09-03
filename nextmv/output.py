@@ -2,6 +2,7 @@
 
 import copy
 import csv
+import datetime
 import json
 import os
 import sys
@@ -280,6 +281,7 @@ class LocalOutputWriter(OutputWriter):
                 "statistics": statistics,
             },
             indent=2,
+            default=_custom_serial,
         )
 
         if path is None or path == "":
@@ -399,3 +401,12 @@ class LocalOutputWriter(OutputWriter):
             )
 
         return statistics
+
+
+def _custom_serial(obj: Any):
+    """JSON serializer for objects not serializable by default one."""
+
+    if isinstance(obj, (datetime.datetime | datetime.date)):
+        return obj.isoformat()
+
+    raise TypeError(f"Type {type(obj)} not serializable")
