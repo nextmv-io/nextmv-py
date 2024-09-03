@@ -1,5 +1,6 @@
 """Module for handling input sources and data."""
 
+import copy
 import csv
 import json
 import os
@@ -80,6 +81,12 @@ class Input:
                 f"unsupported Input.data type: {type(self.data)} with "
                 "input_format InputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
+
+        # Capture a snapshot of the options that were used to create the class
+        # so even if they are changed later, we have a record of the original.
+        init_options = self.options
+        new_options = copy.deepcopy(init_options)
+        self.options = new_options
 
 
 class InputLoader:
@@ -200,6 +207,7 @@ class LocalInputLoader(InputLoader):
         ValueError
             If the path is not a directory when working with CSV_ARCHIVE.
         """
+
         data: Any = None
 
         if input_format in [InputFormat.JSON, InputFormat.TEXT, InputFormat.CSV]:
@@ -258,3 +266,55 @@ class LocalInputLoader(InputLoader):
                 )
 
         return data
+
+
+def load_local(
+    input_format: Optional[InputFormat] = InputFormat.JSON,
+    options: Optional[Options] = None,
+    path: Optional[str] = None,
+) -> Input:
+    """
+    This is a convenience function for instantiating a `LocalInputLoader`
+    and calling its `load` method.
+
+    Load the input data. The input data can be in various formats. For
+    `InputFormat.JSON`, `InputFormat.TEXT`, and `InputFormat.CSV`, the data can
+    be streamed from stdin or read from a file. When the `path` argument is
+    provided (and valid), the input data is read from the file specified by
+    `path`, otherwise, it is streamed from stdin. For
+    `InputFormat.CSV_ARCHIVE`, the input data is read from the directory
+    specified by `path`. If the `path` is not provided, the default location
+    `input` is used. The directory should contain one or more files, where each
+    file in the directory is a CSV file.
+
+    The `Input` that is returned contains the `data` attribute. This data can
+    be of different types, depending on the provided `input_format`:
+
+    - `InputFormat.JSON`: the data is a `Dict[str, Any]`.
+    - `InputFormat.TEXT`: the data is a `str`.
+    - `InputFormat.CSV`: the data is a `List[Dict[str, Any]]`.
+    - `InputFormat.CSV_ARCHIVE`: the data is a `Dict[str, List[Dict[str, Any]]]`.
+        Each key is the name of the CSV file, minus the `.csv` extension.
+
+    Parameters
+    ----------
+    input_format : InputFormat, optional
+        Format of the input data. Default is `InputFormat.JSON`.
+    options : Options, optional
+        Options for loading the input data.
+    path : str, optional
+        Path to the input data.
+
+    Returns
+    -------
+    Input
+        The input data.
+
+    Raises
+    ------
+    ValueError
+        If the path is not a directory when working with CSV_ARCHIVE.
+    """
+
+    loader = LocalInputLoader()
+    return loader.load(input_format, options, path)

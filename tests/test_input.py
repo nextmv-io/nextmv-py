@@ -67,7 +67,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual(input_data.input_format, nextmv.InputFormat.JSON)
         self.assertEqual(input_data.data, {"empanadas": "are_life"})
         self.assertIsNotNone(input_data.options)
-        self.assertEqual(input_data.options, options)
+        self.assertDictEqual(input_data.options.to_dict(), options.to_dict())
 
     def test_local_loader_json_file(self):
         sample_input = '{"empanadas": "are_life"}'

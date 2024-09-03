@@ -1,6 +1,8 @@
 """Module for handling output destinations and data."""
 
+import copy
 import csv
+import datetime
 import json
 import os
 import sys
@@ -11,7 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
-from nextmv.logger import reset_stdout, stdout_redirected
+from nextmv.logger import reset_stdout
 from nextmv.options import Options
 
 
@@ -219,13 +221,23 @@ class Output:
         """Check that the solution matches the format given to initialize the
         class."""
 
+        # Capture a snapshot of the options that were used to create the class
+        # so even if they are changed later, we have a record of the original.
+        init_options = self.options
+        new_options = copy.deepcopy(init_options)
+        self.options = new_options
+
         if self.solution is None:
             return
 
-        if self.output_format == OutputFormat.JSON and not isinstance(self.solution, dict):
+        if (
+            self.output_format == OutputFormat.JSON
+            and not isinstance(self.solution, dict)
+            and not isinstance(self.solution, list)
+        ):
             raise ValueError(
                 f"unsupported Output.solution type: {type(self.solution)} with "
-                "output_format OutputFormat.JSON, supported type is `dict`"
+                "output_format OutputFormat.JSON, supported type is `dict`, `list`"
             )
 
         elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
@@ -260,12 +272,6 @@ class LocalOutputWriter(OutputWriter):
     ) -> None:
         solution = {}
         if output.solution is not None:
-            if not isinstance(output.solution, dict):
-                raise ValueError(
-                    f"unsupported Output.solution type: {type(output.solution)} with "
-                    "output_format OutputFormat.JSON, supported type is `dict`"
-                )
-
             solution = output.solution
 
         serialized = json.dumps(
@@ -275,6 +281,7 @@ class LocalOutputWriter(OutputWriter):
                 "statistics": statistics,
             },
             indent=2,
+            default=_custom_serial,
         )
 
         if path is None or path == "":
@@ -315,7 +322,11 @@ class LocalOutputWriter(OutputWriter):
         for file_name, data in output.solution.items():
             file_path = os.path.join(dir_path, f"{file_name}.csv")
             with open(file_path, "w", encoding="utf-8", newline="") as file:
-                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=data[0].keys(),
+                    quoting=csv.QUOTE_NONNUMERIC,
+                )
                 writer.writeheader()
                 writer.writerows(data)
 
@@ -325,7 +336,12 @@ class LocalOutputWriter(OutputWriter):
         OutputFormat.CSV_ARCHIVE: _write_archive,
     }
 
-    def write(self, output: Output, path: Optional[str] = None, *args, **kwargs) -> None:
+    def write(
+        self,
+        output: Output,
+        path: Optional[str] = None,
+        skip_stdout_reset: bool = False,
+    ) -> None:
         """
         Write the `output` to the local filesystem. Consider the following for
         the `path` parameter, depending on the `Output.output_format`:
@@ -338,17 +354,29 @@ class LocalOutputWriter(OutputWriter):
             The `Output.options` and `Output.statistics` will be written to
             stdout.
 
+        This function detects if stdout was redirected and resets it to avoid
+        unexpected behavior. If you want to skip this behavior, set the
+        `skip_stdout_reset` parameter to `True`.
+
         Parameters
         ----------
         output : Output
             Output data to write.
         path : str
             Path to write the output data to.
+        skip_stdout_reset : bool, optional
+            Skip resetting stdout before writing the output data. Default is
+            `False`.
+
+        Raises
+        ------
+        ValueError
+            If the `Output.output_format` is not supported.
         """
 
         # If the user forgot to reset stdout after redirecting it, we need to
         # do it here to avoid unexpected behavior.
-        if stdout_redirected:
+        if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
         if not isinstance(output.output_format, OutputFormat):
@@ -390,3 +418,56 @@ class LocalOutputWriter(OutputWriter):
             )
 
         return statistics
+
+
+def write_local(
+    output: Output,
+    path: Optional[str] = None,
+    skip_stdout_reset: bool = False,
+) -> None:
+    """
+    This is a convenience function for instantiating a `LocalOutputWriter` and
+    calling its `write` method.
+
+    Write the `output` to the local filesystem. Consider the following for the
+    `path` parameter, depending on the `Output.output_format`:
+
+    - `OutputFormat.JSON`: the `path` is the file where the JSON data will
+        be written. If empty or `None`, the data will be written to stdout.
+    - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
+        files will be written. If empty or `None`, the data will be written
+        to a directory named `output` under the current working directory.
+        The `Output.options` and `Output.statistics` will be written to
+        stdout.
+
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    `skip_stdout_reset` parameter to `True`.
+
+    Parameters
+    ----------
+    output : Output
+        Output data to write.
+    path : str
+        Path to write the output data to.
+    skip_stdout_reset : bool, optional
+        Skip resetting stdout before writing the output data. Default is
+        `False`.
+
+    Raises
+    ------
+    ValueError
+        If the `Output.output_format` is not supported.
+    """
+
+    writer = LocalOutputWriter()
+    writer.write(output, path, skip_stdout_reset)
+
+
+def _custom_serial(obj: Any):
+    """JSON serializer for objects not serializable by default one."""
+
+    if isinstance(obj, (datetime.datetime | datetime.date)):
+        return obj.isoformat()
+
+    raise TypeError(f"Type {type(obj)} not serializable")
