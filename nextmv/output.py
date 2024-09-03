@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
-from nextmv.logger import reset_stdout, stdout_redirected
+from nextmv.logger import reset_stdout
 from nextmv.options import Options
 
 
@@ -364,7 +364,7 @@ class LocalOutputWriter(OutputWriter):
 
         # If the user forgot to reset stdout after redirecting it, we need to
         # do it here to avoid unexpected behavior.
-        if stdout_redirected:
+        if sys.stdout is not sys.__stdout__:
             reset_stdout()
 
         if not isinstance(output.output_format, OutputFormat):
