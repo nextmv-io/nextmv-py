@@ -437,6 +437,9 @@ def write_local(output: Output, path: Optional[str] = None) -> None:
         If the `Output.output_format` is not supported.
     """
 
+    writer = LocalOutputWriter()
+    writer.write(output, path)
+
 
 def _custom_serial(obj: Any):
     """JSON serializer for objects not serializable by default one."""
