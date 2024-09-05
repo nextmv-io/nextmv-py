@@ -4,6 +4,7 @@ import collections
 import inspect
 import io
 import time
+from typing import List, Union
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
@@ -17,13 +18,13 @@ class DAGNode:
         self.step_function = step_function
         self.step = step_definition
         self.docstring = docstring
-        self.successors: list[DAGNode] = []
+        self.successors: List[DAGNode] = []
 
     def __repr__(self):
         return f"DAGNode({self.step_function.name})"
 
 
-def check_cycle(nodes: list[DAGNode]):
+def check_cycle(nodes: List[DAGNode]):
     """
     Checks the given DAG for cycles and returns nodes that are part of a cycle.
     """
@@ -109,7 +110,7 @@ class FlowSpec:
                 while not task_done:
                     time.sleep(0.1)
                     # Check if any tasks are done, if not, keep waiting
-                    for node, task in [t for t in tasks.items()]:
+                    for node, task in list(tasks.items()):
                         if task.ready():
                             # Remove task and mark successors as ready by adding them to the open list.
                             result = task.get()
@@ -122,10 +123,10 @@ class FlowSpec:
     def set_result(self, step: callable, result: object):
         self.results[step.step] = result
 
-    def get_result(self, step: callable) -> object | None:
+    def get_result(self, step: callable) -> Union[object, None]:
         return self.results.get(step.step)
 
-    def _get_inputs(self, node: DAGNode) -> list[object]:
+    def _get_inputs(self, node: DAGNode) -> List[object]:
         return (
             [self.get_result(predecessor) for predecessor in node.step.needs.predecessors]
             if node.step.is_needs()
@@ -133,7 +134,7 @@ class FlowSpec:
         )
 
     @staticmethod
-    def __run_node(node: DAGNode, inputs: list[object], client: Client) -> list[object] | object | None:
+    def __run_node(node: DAGNode, inputs: List[object], client: Client) -> List[object] | object | None:
         utils.log(f"Running node {node.step.get_name()}")
 
         # Skip the node if it is optional and the condition is not met
@@ -171,7 +172,8 @@ class FlowSpec:
             for output in outputs:
                 if output.metadata.status_v2 != StatusV2.succeeded:
                     raise Exception(
-                        f"Step {node.step.get_name()} failed with status {output.metadata.status_v2}: {output.error_log}"
+                        f"Step {node.step.get_name()} failed with status {output.metadata.status_v2}: "
+                        + f"{output.error_log}"
                     )
             # Unwrap the result and store it
             # TODO: We may want to store the full RunResult object in certain cases.
@@ -230,7 +232,8 @@ class FlowGraph:
         for node in self.nodes:
             if node.step.is_app() and len(node.predecessors) > 1:
                 raise Exception(
-                    f"App steps cannot have more than one predecessor, but {node.step.get_name()} has {len(node.predecessors)}"
+                    "App steps cannot have more than one predecessor, "
+                    + f"but {node.step.get_name()} has {len(node.predecessors)}"
                 )
 
         # Check for cycles
@@ -268,10 +271,10 @@ class FlowGraph:
 
 
 class StepVisitor(ast.NodeVisitor):
-    def __init__(self, nodes: list[DAGNode], flow: FlowSpec):
+    def __init__(self, nodes: List[DAGNode], flow: FlowSpec):
         self.nodes = nodes
         self.flow = flow
-        super(StepVisitor, self).__init__()
+        super().__init__()
 
     def visit_FunctionDef(self, step_function):
         func = getattr(self.flow, step_function.name)

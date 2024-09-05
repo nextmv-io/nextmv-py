@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import wraps
-from typing import Callable
+from typing import Callable, Dict, List
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
@@ -51,7 +51,7 @@ class Step:
 
 
 class Needs:
-    def __init__(self, predecessors: list[callable]):
+    def __init__(self, predecessors: List[callable]):
         self.predecessors = predecessors
 
     def __repr__(self):
@@ -80,18 +80,18 @@ class App:
         app_id: str,
         app_instance: str = "default",
         input_type: InputType = InputType.JSON,
-        parameters: dict[str, any] = {},
+        parameters: Dict[str, any] = None,
     ):
         self.app_id = app_id
         self.app_instance = app_instance
-        self.parameters = parameters
+        self.parameters = parameters if parameters else {}
         self.input_type = input_type
 
     def __repr__(self):
         return f"StepRun({self.app_id}, {self.app_instance}, {self.parameters}, {self.input_type})"
 
 
-def needs(predecessors: list[callable]):
+def needs(predecessors: List[callable]):
     def decorator(function):
         function.step.needs = Needs(predecessors)
         return function
@@ -127,7 +127,7 @@ def repeat(repetitions: int):
 def app(
     app_id: str,
     app_version: str = "default",
-    parameters: dict[str, any] = {},
+    parameters: Dict[str, any] = None,
     input_type: InputType = InputType.JSON,
 ):
     def decorator(function):
@@ -138,7 +138,7 @@ def app(
 
         # We need to make sure that all values of the parameters are converted to strings,
         # as no other types are allowed in the JSON.
-        converted_parameters = utils.convert_to_string_values(parameters)
+        converted_parameters = utils.convert_to_string_values(parameters if parameters else {})
 
         wrapper.step.app = App(
             app_id=app_id,
