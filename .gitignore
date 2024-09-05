@@ -161,3 +161,10 @@ cython_debug/
 
 # VSCode
 .vscode/
+
+# Don't include test mains
+main*.py
+
+# Don't include key files
+key*.txt
+key*.json

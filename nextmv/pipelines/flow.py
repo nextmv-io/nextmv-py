@@ -4,7 +4,7 @@ import collections
 import inspect
 import io
 import time
-from typing import List, Union
+from typing import List, Optional, Union
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
@@ -64,10 +64,10 @@ def check_cycle(nodes: List[DAGNode]):
 
 
 class FlowSpec:
-    def __init__(self, name: str, client: Client, input: dict):
+    def __init__(self, name: str, input: dict, client: Optional[Client] = None):
         self.name = name
         self.graph = FlowGraph(self.__class__)
-        self.client = client
+        self.client = client if client is not None else Client()
         self.input = input
         self.results = {}
 
