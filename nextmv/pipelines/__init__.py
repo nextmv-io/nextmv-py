@@ -1,3 +1,5 @@
+"""Framework for Decision Pipeline modeling and execution."""
+
 from .decorators import app as app
 from .decorators import needs as needs
 from .decorators import optional as optional
