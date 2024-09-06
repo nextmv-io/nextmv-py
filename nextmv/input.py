@@ -41,7 +41,7 @@ class Input:
     """
 
     data: Union[
-        Dict[str, Any],  # JSON
+        Union[Dict[str, Any], Any],  # JSON
         str,  # TEXT
         List[Dict[str, Any]],  # CSV
         Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
@@ -58,11 +58,14 @@ class Input:
         """Check that the data matches the format given to initialize the
         class."""
 
-        if self.input_format == InputFormat.JSON and not isinstance(self.data, dict):
-            raise ValueError(
-                f"unsupported Input.data type: {type(self.data)} with "
-                "input_format InputFormat.JSON, supported type is `dict`"
-            )
+        if self.input_format == InputFormat.JSON:
+            try:
+                _ = json.dumps(self.data)
+            except (TypeError, OverflowError) as e:
+                raise ValueError(
+                    f"Input has input_format InputFormat.JSON and "
+                    f"data is of type {type(self.data)}, which is not JSON serializable"
+                ) from e
 
         elif self.input_format == InputFormat.TEXT and not isinstance(self.data, str):
             raise ValueError(
@@ -137,20 +140,20 @@ class LocalInputLoader(InputLoader):
 
     def _read_text(path: str) -> str:
         with open(path, encoding="utf-8") as f:
-            return f.read()
+            return f.read().rstrip("\n")
 
     def _read_csv(path: str) -> List[Dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
             return list(csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC))
 
-    def _read_json(path: str) -> Dict[str, Any]:
+    def _read_json(path: str) -> Union[Dict[str, Any], Any]:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     # All of these readers are callback functions.
     STDIN_READERS = {
         InputFormat.JSON: lambda: json.load(sys.stdin),
-        InputFormat.TEXT: lambda: sys.stdin.read(),
+        InputFormat.TEXT: lambda: sys.stdin.read().rstrip("\n"),
         InputFormat.CSV: lambda: list(csv.DictReader(sys.stdin, quoting=csv.QUOTE_NONNUMERIC)),
     }
     # These callbacks were not implemented with lambda because we needed
