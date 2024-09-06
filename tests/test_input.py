@@ -34,7 +34,7 @@ class TestInput(unittest.TestCase):
 
         self.assertIsInstance(input_data, nextmv.Input)
         self.assertEqual(input_data.input_format, nextmv.InputFormat.TEXT)
-        self.assertEqual(input_data.data, "empanadas are life\n")
+        self.assertEqual(input_data.data, "empanadas are life")
         self.assertIsNone(input_data.options)
 
     def test_local_loader_csv_stdin(self):

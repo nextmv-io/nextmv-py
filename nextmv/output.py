@@ -209,8 +209,8 @@ class Output:
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
         Union[
-            Dict[str, Any],
-            Dict[str, List[Dict[str, Any]]],
+            Union[Dict[str, Any], Any],  # JSON
+            Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
         ]
     ] = None
     """The solution to the decision problem."""
