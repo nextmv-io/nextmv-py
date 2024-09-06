@@ -364,7 +364,7 @@ class LocalOutputWriter(OutputWriter):
 
         Parameters
         ----------
-        output : Output
+        output: Output, Dict[str, Any]
             Output data to write.
         path : str
             Path to write the output data to.
@@ -383,12 +383,15 @@ class LocalOutputWriter(OutputWriter):
         if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
-        statistics = self._extract_statistics(output)
-        options = self._extract_options(output)
-
-        output_format = OutputFormat.JSON
         if isinstance(output, Output):
             output_format = output.output_format
+        elif isinstance(output, Dict):
+            output_format = OutputFormat.JSON
+        else:
+            raise TypeError(f"unsupported output type: {type(output)}, supported types are `Output` or `Dict`")
+
+        statistics = self._extract_statistics(output)
+        options = self._extract_options(output)
 
         self.FILE_WRITERS[output_format](
             output=output,
@@ -416,7 +419,7 @@ class LocalOutputWriter(OutputWriter):
         elif isinstance(stats, Dict):
             statistics = stats
         else:
-            raise ValueError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `Dict`")
+            raise TypeError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `Dict`")
 
         return statistics
 
@@ -439,7 +442,7 @@ class LocalOutputWriter(OutputWriter):
         elif isinstance(opt, Dict):
             options = opt
         else:
-            raise ValueError(f"unsupported options type: {type(opt)}, supported types are `Options` or `Dict`")
+            raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `Dict`")
 
         return options
 
@@ -470,7 +473,7 @@ def write_local(
 
     Parameters
     ----------
-    output : Output
+    output : Output, Dict[str, Any]
         Output data to write.
     path : str
         Path to write the output data to.

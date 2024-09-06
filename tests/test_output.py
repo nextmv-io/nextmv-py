@@ -261,3 +261,8 @@ class TestOutput(unittest.TestCase):
 
         # Removes the output directory after the test is executed.
         shutil.rmtree(write_path)
+
+    def test_local_write_bad_output_type(self):
+        output = "I am clearly not an output object."
+        with self.assertRaises(TypeError):
+            nextmv.write_local(output)
