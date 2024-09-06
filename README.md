@@ -21,6 +21,9 @@ Platform:
 
 ### Local
 
+To run a model locally, you can use the various helper functionality provided
+by the SDK.
+
 #### Options
 
 Use options to capture parameters (i.e.: configurations) for the run:
