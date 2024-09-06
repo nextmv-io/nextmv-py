@@ -230,15 +230,14 @@ class Output:
         if self.solution is None:
             return
 
-        if (
-            self.output_format == OutputFormat.JSON
-            and not isinstance(self.solution, dict)
-            and not isinstance(self.solution, list)
-        ):
-            raise ValueError(
-                f"unsupported Output.solution type: {type(self.solution)} with "
-                "output_format OutputFormat.JSON, supported type is `dict`, `list`"
-            )
+        if self.output_format == OutputFormat.JSON:
+            try:
+                _ = json.dumps(self.solution)
+            except (TypeError, OverflowError) as e:
+                raise ValueError(
+                    f"Output has output_format OutputFormat.JSON and "
+                    f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
+                ) from e
 
         elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
             raise ValueError(
