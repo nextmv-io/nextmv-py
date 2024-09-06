@@ -1,6 +1,10 @@
 """Nextmv Python SDK."""
 
 from .__about__ import __version__
+from .base_model import from_dict as from_dict
+from .base_model import from_json as from_json
+from .base_model import to_dict as to_dict
+from .base_model import to_json as to_json
 from .input import Input as Input
 from .input import InputFormat as InputFormat
 from .input import InputLoader as InputLoader
