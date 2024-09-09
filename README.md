@@ -15,14 +15,16 @@ pip install nextmv
 The Nextmv Python SDK is used to interact with various parts of the Nextmv
 Platform:
 
-- [Local][local]: Run decision models locally in the same way they would be run
-      in Cloud.
+- [Working with a Decision Model][working-with-a-decision-model]: Get to know
+      the functionality for running decision models. These API functions work
+      the same way in any machine (local or hosted).
 - [Cloud][cloud]: Interact with the Nextmv Cloud API.
 
-### Local
+### Working with a Decision Model
 
-To run a model locally, you can use the various helper functionality provided
-by the SDK.
+To run a model, you can use the various helper functionality provided by the
+SDK. Note that when you create an app that runs locally in your machine, it
+will run in the same way in a Nextmv Cloud-hosted machine.
 
 #### Options
 
@@ -294,4 +296,4 @@ Additionally, you must have a valid app in Nextmv Cloud.
 [docs]: https://nextmv.io/docs
 [api-key]: https://cloud.nextmv.io/team/api-keys
 [cloud]: #cloud
-[local]: #local
+[working-with-a-decision-model]: #working-with-a-decision-model
