@@ -232,7 +232,7 @@ class Output:
 
         if self.output_format == OutputFormat.JSON:
             try:
-                _ = json.dumps(self.solution)
+                _ = json.dumps(self.solution, default=_custom_serial)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Output has output_format OutputFormat.JSON and "
