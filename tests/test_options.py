@@ -318,6 +318,25 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result15.returncode, 0, result15.stderr)
         self.assertEqual(result15.stdout, "{'bool_opt': False}\n")
 
+        # Bad arg.
+        result16 = subprocess.run(
+            ["python3", file, "-bool_opt", "Frue"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result16.returncode, 1, result16.stderr)
+        self.assertEqual(result16.stdout, "")
+
+        # Bad env var.
+        result16 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "Frue"},
+        )
+        self.assertEqual(result16.returncode, 1, result16.stderr)
+        self.assertEqual(result16.stdout, "")
+
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
         """
