@@ -125,7 +125,7 @@ class Options:
             parser.add_argument(
                 f"-{param.name}",
                 f"--{param.name}",
-                type=param.param_type,
+                type=param.param_type if param.param_type is not bool else str,
                 help=self._description(param),
             )
             params_by_name[param.name] = param
@@ -133,25 +133,28 @@ class Options:
         args = parser.parse_args()
 
         for arg in vars(args):
+            param = params_by_name[arg]
+
             # First, attempt to set the value of a parameter from the
             # command-line args.
-            value = getattr(args, arg)
-            if value is not None:
+            arg_value = getattr(args, arg)
+            if arg_value is not None:
+                value = self._parameter_value(param, arg_value)
                 setattr(self, arg, value)
                 continue
 
             # Second, attempt to set the value of a parameter from the
             # environment variables.
-            param = params_by_name[arg]
             upper_name = arg.upper()
             env_value = os.getenv(upper_name)
             if env_value is not None:
                 try:
-                    typed_env_value = param.param_type(env_value)
+                    typed_env_value = param.param_type(env_value) if param.param_type is not bool else env_value
                 except ValueError:
                     raise ValueError(f'environment variable "{upper_name}" is not of type {param.param_type}') from None
 
-                setattr(self, arg, typed_env_value)
+                value = self._parameter_value(param, typed_env_value)
+                setattr(self, arg, value)
                 continue
 
             # Finally, attempt to set the value of a parameter from the default
@@ -204,3 +207,20 @@ class Options:
             description += f": {param.description}"
 
         return description
+
+    @staticmethod
+    def _parameter_value(parameter: Parameter, value: Any) -> Any:
+        """Handles how the value of a parameter is extracted."""
+
+        param_type = parameter.param_type
+        if param_type is not bool:
+            return value
+
+        value = str(value).lower()
+
+        if value in ("true", "1", "t", "y", "yes"):
+            return True
+        if value in ("false", "0", "f", "n", "no"):
+            return False
+
+        raise argparse.ArgumentTypeError(f"invalid value for bool parameter '{parameter.name}': {value}")
