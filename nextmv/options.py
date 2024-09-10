@@ -125,7 +125,7 @@ class Options:
             parser.add_argument(
                 f"-{param.name}",
                 f"--{param.name}",
-                type=param.param_type if param.param_type != bool else str,  # noqa E721
+                type=param.param_type if param.param_type is not bool else str,
                 help=self._description(param),
             )
             params_by_name[param.name] = param
@@ -149,7 +149,7 @@ class Options:
             env_value = os.getenv(upper_name)
             if env_value is not None:
                 try:
-                    typed_env_value = param.param_type(env_value) if param.param_type != bool else env_value  # noqa E721
+                    typed_env_value = param.param_type(env_value) if param.param_type is not bool else env_value
                 except ValueError:
                     raise ValueError(f'environment variable "{upper_name}" is not of type {param.param_type}') from None
 
@@ -213,7 +213,7 @@ class Options:
         """Handles how the value of a parameter is extracted."""
 
         param_type = parameter.param_type
-        if param_type != bool:  # noqa E721
+        if param_type is not bool:
             return value
 
         value = str(value).lower()
