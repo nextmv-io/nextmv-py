@@ -6,19 +6,16 @@ from typing import Any, Dict
 
 from pydantic import BaseModel
 
-from nextmv import ndarray
-
 
 class BaseModel(BaseModel):
     """Base class for data wrangling tasks with JSON."""
 
+    def __dict__(self):
+        return self.to_dict()
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
         """Instantiates the class from a dict."""
-
-        for key, value in cls.__annotations__.items():
-            if key in data and value is ndarray.ndarray:
-                data[key] = ndarray.from_list(data[key])
 
         return cls(**data)
 
