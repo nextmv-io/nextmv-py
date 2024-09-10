@@ -23,7 +23,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3]
+    test_scripts = [1, 2, 3, 4]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -169,6 +169,154 @@ class TestOptions(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("[env var: DURATION] (required) (default: 30s)", result.stdout)
+
+    def test_bool_option(self):
+        file = self._file_name("options4.py", "..")
+
+        result1 = subprocess.run(
+            ["python3", file, "-bool_opt", "false"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result1.returncode, 0, result1.stderr)
+        self.assertEqual(result1.stdout, "{'bool_opt': False}\n")
+
+        result2 = subprocess.run(
+            ["python3", file, "-bool_opt", "f"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result2.returncode, 0, result2.stderr)
+        self.assertEqual(result2.stdout, "{'bool_opt': False}\n")
+
+        result3 = subprocess.run(
+            ["python3", file, "-bool_opt", "False"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result3.returncode, 0, result3.stderr)
+        self.assertEqual(result3.stdout, "{'bool_opt': False}\n")
+
+        result4 = subprocess.run(
+            ["python3", file, "-bool_opt", "0"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result4.returncode, 0, result4.stderr)
+        self.assertEqual(result4.stdout, "{'bool_opt': False}\n")
+
+        result5 = subprocess.run(
+            ["python3", file, "-bool_opt", "true"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result5.returncode, 0, result5.stderr)
+        self.assertEqual(result5.stdout, "{'bool_opt': True}\n")
+
+        result6 = subprocess.run(
+            ["python3", file, "-bool_opt", "t"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result6.returncode, 0, result6.stderr)
+        self.assertEqual(result6.stdout, "{'bool_opt': True}\n")
+
+        result7 = subprocess.run(
+            ["python3", file, "-bool_opt", "True"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result7.returncode, 0, result7.stderr)
+        self.assertEqual(result7.stdout, "{'bool_opt': True}\n")
+
+        result8 = subprocess.run(
+            ["python3", file, "-bool_opt", "1"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result8.returncode, 0, result8.stderr)
+        self.assertEqual(result8.stdout, "{'bool_opt': True}\n")
+
+        result9 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "f"},
+        )
+        self.assertEqual(result9.returncode, 0, result9.stderr)
+        self.assertEqual(result9.stdout, "{'bool_opt': False}\n")
+
+        result10 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "false"},
+        )
+        self.assertEqual(result10.returncode, 0, result10.stderr)
+        self.assertEqual(result10.stdout, "{'bool_opt': False}\n")
+
+        result11 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "False"},
+        )
+        self.assertEqual(result11.returncode, 0, result11.stderr)
+        self.assertEqual(result11.stdout, "{'bool_opt': False}\n")
+
+        result12 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "0"},
+        )
+        self.assertEqual(result12.returncode, 0, result12.stderr)
+        self.assertEqual(result12.stdout, "{'bool_opt': False}\n")
+
+        result13 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "t"},
+        )
+        self.assertEqual(result13.returncode, 0, result13.stderr)
+        self.assertEqual(result13.stdout, "{'bool_opt': True}\n")
+
+        result14 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "true"},
+        )
+        self.assertEqual(result14.returncode, 0, result14.stderr)
+        self.assertEqual(result14.stdout, "{'bool_opt': True}\n")
+
+        result14 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "True"},
+        )
+        self.assertEqual(result14.returncode, 0, result14.stderr)
+        self.assertEqual(result14.stdout, "{'bool_opt': True}\n")
+
+        result14 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "BOOL_OPT": "1"},
+        )
+        self.assertEqual(result14.returncode, 0, result14.stderr)
+        self.assertEqual(result14.stdout, "{'bool_opt': True}\n")
+
+        # Default case: nothing is specified.
+        result15 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result15.returncode, 0, result15.stderr)
+        self.assertEqual(result15.stdout, "{'bool_opt': False}\n")
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
