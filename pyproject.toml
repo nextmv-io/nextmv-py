@@ -40,6 +40,12 @@ name = "nextmv"
 readme = "README.md"
 requires-python = ">=3.8"
 
+[project.optional-dependencies]
+scikit-learn = [
+    "numpy>=2.1.1",
+    "scikit-learn>=1.5.1",
+]
+
 [project.urls]
 Homepage = "https://www.nextmv.io"
 Documentation = "https://www.nextmv.io/docs"

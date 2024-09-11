@@ -25,12 +25,16 @@ class BaseModel(BaseModel):
 
 
 def from_dict(data: Dict[str, Any]):
+    """Load a data model instance from a dict with associated class info."""
+
     module = import_module(data["class"]["module"])
     cls = getattr(module, data["class"]["name"])
     return cls.from_dict(data["attributes"])
 
 
 def to_dict(obj: BaseModel):
+    """Convert a data model instance to a dict with associated class info."""
+
     t = type(obj)
     return {
         "class": {
