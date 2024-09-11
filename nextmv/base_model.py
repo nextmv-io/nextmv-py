@@ -9,9 +9,6 @@ from pydantic import BaseModel
 class BaseModel(BaseModel):
     """Base class for data wrangling tasks with JSON."""
 
-    def __dict__(self):
-        return self.to_dict()
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
         """Instantiates the class from a dict."""
