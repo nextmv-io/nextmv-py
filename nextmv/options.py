@@ -3,7 +3,7 @@
 import argparse
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -23,6 +23,8 @@ class Parameter:
         The name of the parameter.
     param_type : type
         The type of the parameter.
+    choices : List[Any], optional
+        Limits values to a specific set of choices.
     default : Any, optional
         The default value of the parameter. Even though this is optional, it is
         recommended to provide a default value for all parameters.
@@ -40,6 +42,8 @@ class Parameter:
     param_type: type
     """The type of the parameter."""
 
+    choices: List[Optional[Any]] = None
+    """Limits values to a specific set of choices."""
     default: Optional[Any] = None
     """The default value of the parameter. Even though this is optional, it is
     recommended to provide a default value for all parameters."""
@@ -122,11 +126,16 @@ class Options:
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
 
+            kwds = {
+                "type": param.param_type if param.param_type is not bool else str,
+                "help": self._description(param),
+            }
+            if param.choices:
+                kwds["choices"] = param.choices
             parser.add_argument(
                 f"-{param.name}",
                 f"--{param.name}",
-                type=param.param_type if param.param_type is not bool else str,
-                help=self._description(param),
+                **kwds,
             )
             params_by_name[param.name] = param
 

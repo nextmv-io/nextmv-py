@@ -1,4 +1,4 @@
-"""Defines the linear regression proxy class."""
+"""Defines linear regression interoperability classes."""
 
 from typing import Any, Dict, Iterable
 
@@ -6,33 +6,33 @@ from pydantic import ConfigDict
 from sklearn.linear_model import LinearRegression
 
 from nextmv import base_model, options, output
-from nextmv.sklearn import ndarray
+from nextmv.numpy import ndarray, ndarray_from_list
 
 LINEAR_REGRESSION_PARAMETERS = (
     options.Parameter(
         "fit_intercept",
         bool,
-        True,
+        default=True,
         description="Whether to calculate the intercept for this model.",
         required=True,
     ),
     options.Parameter(
         "copy_X",
         bool,
-        True,
+        default=True,
         description="If True, X will be copied; else, it may be overwritten.",
         required=True,
     ),
     options.Parameter(
         "n_jobs",
         int,
-        None,
+        default=None,
         description="The number of jobs to use for the computation.",
     ),
     options.Parameter(
         "positive",
         bool,
-        False,
+        default=False,
         description="When set to True, forces the coefficients to be positive.",
         required=True,
     ),
@@ -55,18 +55,18 @@ class LinearRegressionSolution(base_model.BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    coef_: ndarray.ndarray = None
+    coef_: ndarray = None
     """Estimated coefficients for the linear regression problem."""
     rank_: int = 0
     """Rank of matrix X. Only available when X is dense."""
-    singular_: ndarray.ndarray = None
+    singular_: ndarray = None
     """Singular values of X. Only available when X is dense."""
     intercept_: float = 0
     """Independent term in the linear model. Set to 0.0 if fit_intercept =
     False."""
     n_features_in_: int = 0
     """Number of features seen during fit."""
-    feature_names_in_: ndarray.ndarray = None
+    feature_names_in_: ndarray = None
     """Names of features seen during fit. Defined only when X has feature names
     that are all strings."""
 
@@ -75,8 +75,8 @@ class LinearRegressionSolution(base_model.BaseModel):
         """Instantiates a Linear Regression object from a dict."""
 
         for key, value in cls.__annotations__.items():
-            if key in data and value is ndarray.ndarray:
-                data[key] = ndarray.from_list(data[key])
+            if key in data and value is ndarray:
+                data[key] = ndarray_from_list(data[key])
 
         return cls(**data)
 

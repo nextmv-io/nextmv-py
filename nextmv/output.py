@@ -197,7 +197,11 @@ class Output:
         Options that the `Input` were created with.
     output_format : OutputFormat, optional
         Format of the output data. Default is `OutputFormat.JSON`.
-    solution : Union[Dict[str, Any], Dict[str, List[Dict[str, Any]]], optional
+    solution : Union[
+            BaseModel,
+            Dict[str, Any],
+            Dict[str, List[Dict[str, Any]],
+        ],optional
         The solution to the decision problem.
     statistics : Union[Statistics, Dict[str, Any], optional
         Statistics of the solution.
@@ -209,6 +213,7 @@ class Output:
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
         Union[
+            BaseModel,  # JSON
             Union[Dict[str, Any], Any],  # JSON
             Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
         ]
@@ -230,18 +235,22 @@ class Output:
         if self.solution is None:
             return
 
+        solution = self.solution
+        if isinstance(solution, BaseModel):
+            solution = solution.to_dict()
+
         if self.output_format == OutputFormat.JSON:
             try:
-                _ = json.dumps(self.solution, default=_custom_serial)
+                _ = json.dumps(solution)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Output has output_format OutputFormat.JSON and "
-                    f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
+                    f"Output.solution is of type {type(solution)}, which is not JSON serializable"
                 ) from e
 
-        elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
+        elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(solution, dict):
             raise ValueError(
-                f"unsupported Output.solution type: {type(self.solution)} with "
+                f"unsupported Output.solution type: {type(solution)} with "
                 "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
 
@@ -277,6 +286,8 @@ class LocalOutputWriter(OutputWriter):
 
         if sol is not None:
             solution = sol
+        if isinstance(sol, BaseModel):
+            solution = sol.to_dict()
 
         serialized = json.dumps(
             {

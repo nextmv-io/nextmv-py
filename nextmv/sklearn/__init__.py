@@ -1,1 +1,1 @@
-"""scikit-learn model proxies."""
+"""scikit-learn model interoperability."""
