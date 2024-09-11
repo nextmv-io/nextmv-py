@@ -2,9 +2,9 @@
 
 import base64
 import pickle
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable
 
-from pydantic import BeforeValidator, ConfigDict, NonNegativeFloat, PlainSerializer
+from pydantic import BeforeValidator, ConfigDict, PlainSerializer
 from sklearn import tree
 from sklearn.tree import DecisionTreeRegressor
 from typing_extensions import Annotated
