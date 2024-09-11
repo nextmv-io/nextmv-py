@@ -42,8 +42,6 @@ class Parameter:
     param_type: type
     """The type of the parameter."""
 
-    choices: List[Optional[Any]] = None
-    """Limits values to a specific set of choices."""
     default: Optional[Any] = None
     """The default value of the parameter. Even though this is optional, it is
     recommended to provide a default value for all parameters."""
@@ -54,6 +52,8 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
+    choices: List[Optional[Any]] = None
+    """Limits values to a specific set of choices."""
 
 
 class Options:
@@ -130,7 +130,7 @@ class Options:
                 "type": param.param_type if param.param_type is not bool else str,
                 "help": self._description(param),
             }
-            if param.choices:
+            if param.choices is not None:
                 kwds["choices"] = param.choices
             parser.add_argument(
                 f"-{param.name}",
