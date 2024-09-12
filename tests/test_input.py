@@ -1,3 +1,4 @@
+import csv
 import os
 import shutil
 import unittest
@@ -42,7 +43,12 @@ class TestInput(unittest.TestCase):
         input_loader = nextmv.LocalInputLoader()
 
         with patch("sys.stdin", new=StringIO(sample_input)):
-            input_data = input_loader.load(input_format=nextmv.InputFormat.CSV)
+            input_data = input_loader.load(
+                input_format=nextmv.InputFormat.CSV,
+                csv_configurations={
+                    "quoting": csv.QUOTE_NONNUMERIC,
+                },
+            )
 
         self.assertIsInstance(input_data, nextmv.Input)
         self.assertEqual(input_data.input_format, nextmv.InputFormat.CSV)
@@ -98,7 +104,13 @@ class TestInput(unittest.TestCase):
         input_loader = nextmv.LocalInputLoader()
 
         with patch("builtins.open", return_value=StringIO(sample_input)):
-            input_data = input_loader.load(input_format=nextmv.InputFormat.CSV, path="input.csv")
+            input_data = input_loader.load(
+                input_format=nextmv.InputFormat.CSV,
+                path="input.csv",
+                csv_configurations={
+                    "quoting": csv.QUOTE_NONNUMERIC,
+                },
+            )
 
         self.assertIsInstance(input_data, nextmv.Input)
         self.assertEqual(input_data.input_format, nextmv.InputFormat.CSV)
@@ -146,7 +158,13 @@ class TestInput(unittest.TestCase):
             file_2.write(sample_input_2)
 
         # Load the CSV archive input
-        input_data = input_loader.load(nextmv.InputFormat.CSV_ARCHIVE, path=load_path)
+        input_data = input_loader.load(
+            nextmv.InputFormat.CSV_ARCHIVE,
+            path=load_path,
+            csv_configurations={
+                "quoting": csv.QUOTE_NONNUMERIC,
+            },
+        )
 
         # Do the checks
         self.assertIsInstance(input_data, nextmv.Input)

@@ -216,6 +216,10 @@ class Output:
     """The solution to the decision problem."""
     statistics: Optional[Union[Statistics, Dict[str, Any]]] = None
     """Statistics of the solution."""
+    csv_configurations: Optional[Dict[str, Any]] = None
+    """Optional configuration for writing CSV files, to be used when the
+    `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
+    passed as kwargs to the `DictWriter` class from the `csv` module."""
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
@@ -323,13 +327,17 @@ class LocalOutputWriter(OutputWriter):
         if output.solution is None:
             return
 
+        csv_configurations = output.csv_configurations
+        if csv_configurations is None:
+            csv_configurations = {}
+
         for file_name, data in output.solution.items():
             file_path = os.path.join(dir_path, f"{file_name}.csv")
             with open(file_path, "w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(
                     file,
                     fieldnames=data[0].keys(),
-                    quoting=csv.QUOTE_NONNUMERIC,
+                    **csv_configurations,
                 )
                 writer.writeheader()
                 writer.writerows(data)
