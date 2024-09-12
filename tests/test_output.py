@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import shutil
@@ -233,6 +234,7 @@ class TestOutput(unittest.TestCase):
             output_format=nextmv.OutputFormat.CSV_ARCHIVE,
             solution=solution,
             statistics={"foo": "bar"},
+            csv_configurations={"quoting": csv.QUOTE_NONNUMERIC},
         )
         output_writer = nextmv.LocalOutputWriter()
 
