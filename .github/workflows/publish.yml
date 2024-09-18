@@ -137,8 +137,5 @@ jobs:
     steps:
       - name: notify slack
         run: |
-          if [ ${{ inputs.IS_PRE_RELEASE }} = true ]; then
-            exit 0 # don't notify slack for pre-releases
-          fi
           export DATA="{\"text\":\"Release notification - nextmv-py ${{ inputs.VERSION }} (see <https://github.com/nextmv-io/nextmv-py/releases/${{ inputs.VERSION }}|release notes> / <https://pypi.org/project/nextmv|PyPI>)\"}"
-          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
