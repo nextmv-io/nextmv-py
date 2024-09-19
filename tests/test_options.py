@@ -23,7 +23,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5]
+    test_scripts = [1, 2, 3, 4, 5, 6]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -363,6 +363,26 @@ class TestOptions(unittest.TestCase):
         )
         self.assertEqual(result3.returncode, 0, result3.stderr)
         self.assertEqual(result3.stdout, "{'str_opt': None}\n")
+
+    def test_name_handling(self):
+        file = self._file_name("options6.py", "..")
+
+        result1 = subprocess.run(
+            [
+                "python3",
+                file,
+                "-dash-opt",
+                "empanadas",
+                "-underscore_opt",
+                "is",
+                "-camelCaseOpt",
+                "life",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result1.returncode, 0, result1.stderr)
+        self.assertEqual(result1.stdout, "{'dash_opt': 'empanadas', 'underscore_opt': 'is', 'camelCaseOpt': 'life'}\n")
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
