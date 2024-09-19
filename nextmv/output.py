@@ -209,13 +209,17 @@ class Output:
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
         Union[
-            Dict[str, Any],
-            Dict[str, List[Dict[str, Any]]],
+            Union[Dict[str, Any], Any],  # JSON
+            Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
         ]
     ] = None
     """The solution to the decision problem."""
     statistics: Optional[Union[Statistics, Dict[str, Any]]] = None
     """Statistics of the solution."""
+    csv_configurations: Optional[Dict[str, Any]] = None
+    """Optional configuration for writing CSV files, to be used when the
+    `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
+    passed as kwargs to the `DictWriter` class from the `csv` module."""
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
@@ -230,15 +234,14 @@ class Output:
         if self.solution is None:
             return
 
-        if (
-            self.output_format == OutputFormat.JSON
-            and not isinstance(self.solution, dict)
-            and not isinstance(self.solution, list)
-        ):
-            raise ValueError(
-                f"unsupported Output.solution type: {type(self.solution)} with "
-                "output_format OutputFormat.JSON, supported type is `dict`, `list`"
-            )
+        if self.output_format == OutputFormat.JSON:
+            try:
+                _ = json.dumps(self.solution, default=_custom_serial)
+            except (TypeError, OverflowError) as e:
+                raise ValueError(
+                    f"Output has output_format OutputFormat.JSON and "
+                    f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
+                ) from e
 
         elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
             raise ValueError(
@@ -265,14 +268,19 @@ class LocalOutputWriter(OutputWriter):
     """
 
     def _write_json(
-        output: Output,
+        output: Union[Output, Dict[str, Any]],
         options: Dict[str, Any],
         statistics: Dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
         solution = {}
-        if output.solution is not None:
-            solution = output.solution
+        if isinstance(output, Output):
+            sol = output.solution
+        elif isinstance(output, Dict):
+            sol = output.get("solution")
+
+        if sol is not None:
+            solution = sol
 
         serialized = json.dumps(
             {
@@ -319,13 +327,17 @@ class LocalOutputWriter(OutputWriter):
         if output.solution is None:
             return
 
+        csv_configurations = output.csv_configurations
+        if csv_configurations is None:
+            csv_configurations = {}
+
         for file_name, data in output.solution.items():
             file_path = os.path.join(dir_path, f"{file_name}.csv")
             with open(file_path, "w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(
                     file,
                     fieldnames=data[0].keys(),
-                    quoting=csv.QUOTE_NONNUMERIC,
+                    **csv_configurations,
                 )
                 writer.writeheader()
                 writer.writerows(data)
@@ -338,7 +350,7 @@ class LocalOutputWriter(OutputWriter):
 
     def write(
         self,
-        output: Output,
+        output: Union[Output, Dict[str, Any]],
         path: Optional[str] = None,
         skip_stdout_reset: bool = False,
     ) -> None:
@@ -360,7 +372,7 @@ class LocalOutputWriter(OutputWriter):
 
         Parameters
         ----------
-        output : Output
+        output: Output, Dict[str, Any]
             Output data to write.
         path : str
             Path to write the output data to.
@@ -379,19 +391,17 @@ class LocalOutputWriter(OutputWriter):
         if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
-        if not isinstance(output.output_format, OutputFormat):
-            raise ValueError(
-                f"unsupported Output.output_format type: {type(output.output_format)}, "
-                f"supported types are {OutputFormat}"
-            )
+        if isinstance(output, Output):
+            output_format = output.output_format
+        elif isinstance(output, Dict):
+            output_format = OutputFormat.JSON
+        else:
+            raise TypeError(f"unsupported output type: {type(output)}, supported types are `Output` or `Dict`")
 
         statistics = self._extract_statistics(output)
+        options = self._extract_options(output)
 
-        options = {}
-        if output.options is not None:
-            options = output.options.to_dict()
-
-        self.FILE_WRITERS[output.output_format](
+        self.FILE_WRITERS[output_format](
             output=output,
             options=options,
             statistics=statistics,
@@ -399,29 +409,54 @@ class LocalOutputWriter(OutputWriter):
         )
 
     @staticmethod
-    def _extract_statistics(output: Output) -> Dict[str, Any]:
+    def _extract_statistics(output: Union[Output, Dict[str, Any]]) -> Dict[str, Any]:
         """Extract JSON-serializable statistics."""
 
         statistics = {}
 
-        if output.statistics is None:
+        if isinstance(output, Output):
+            stats = output.statistics
+        elif isinstance(output, Dict):
+            stats = output.get("statistics")
+
+        if stats is None:
             return statistics
 
-        if isinstance(output.statistics, Statistics):
-            statistics = output.statistics.to_dict()
-        elif isinstance(output.statistics, Dict):
-            statistics = output.statistics
+        if isinstance(stats, Statistics):
+            statistics = stats.to_dict()
+        elif isinstance(stats, Dict):
+            statistics = stats
         else:
-            raise ValueError(
-                f"unsupported statistics type: {type(output.statistics)}, "
-                "supported types are `output.Statistics` and `Dict`"
-            )
+            raise TypeError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `Dict`")
 
         return statistics
 
+    @staticmethod
+    def _extract_options(output: Union[Output, Dict[str, Any]]) -> Dict[str, Any]:
+        """Extract JSON-serializable options."""
+
+        options = {}
+
+        if isinstance(output, Output):
+            opt = output.options
+        elif isinstance(output, Dict):
+            opt = output.get("options")
+
+        if opt is None:
+            return options
+
+        if isinstance(opt, Options):
+            options = opt.to_dict()
+        elif isinstance(opt, Dict):
+            options = opt
+        else:
+            raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `Dict`")
+
+        return options
+
 
 def write_local(
-    output: Output,
+    output: Union[Output, Dict[str, Any]],
     path: Optional[str] = None,
     skip_stdout_reset: bool = False,
 ) -> None:
@@ -446,7 +481,7 @@ def write_local(
 
     Parameters
     ----------
-    output : Output
+    output : Output, Dict[str, Any]
         Output data to write.
     path : str
         Path to write the output data to.

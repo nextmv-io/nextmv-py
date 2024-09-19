@@ -41,7 +41,7 @@ class Input:
     """
 
     data: Union[
-        Dict[str, Any],  # JSON
+        Union[Dict[str, Any], Any],  # JSON
         str,  # TEXT
         List[Dict[str, Any]],  # CSV
         Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
@@ -58,11 +58,14 @@ class Input:
         """Check that the data matches the format given to initialize the
         class."""
 
-        if self.input_format == InputFormat.JSON and not isinstance(self.data, dict):
-            raise ValueError(
-                f"unsupported Input.data type: {type(self.data)} with "
-                "input_format InputFormat.JSON, supported type is `dict`"
-            )
+        if self.input_format == InputFormat.JSON:
+            try:
+                _ = json.dumps(self.data)
+            except (TypeError, OverflowError) as e:
+                raise ValueError(
+                    f"Input has input_format InputFormat.JSON and "
+                    f"data is of type {type(self.data)}, which is not JSON serializable"
+                ) from e
 
         elif self.input_format == InputFormat.TEXT and not isinstance(self.data, str):
             raise ValueError(
@@ -135,23 +138,23 @@ class LocalInputLoader(InputLoader):
     Call the `load` method to read the input data.
     """
 
-    def _read_text(path: str) -> str:
+    def _read_text(path: str, _) -> str:
         with open(path, encoding="utf-8") as f:
-            return f.read()
+            return f.read().rstrip("\n")
 
-    def _read_csv(path: str) -> List[Dict[str, Any]]:
+    def _read_csv(path: str, csv_configurations: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
-            return list(csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC))
+            return list(csv.DictReader(f, **csv_configurations))
 
-    def _read_json(path: str) -> Dict[str, Any]:
+    def _read_json(path: str, _) -> Union[Dict[str, Any], Any]:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     # All of these readers are callback functions.
     STDIN_READERS = {
-        InputFormat.JSON: lambda: json.load(sys.stdin),
-        InputFormat.TEXT: lambda: sys.stdin.read(),
-        InputFormat.CSV: lambda: list(csv.DictReader(sys.stdin, quoting=csv.QUOTE_NONNUMERIC)),
+        InputFormat.JSON: lambda _: json.load(sys.stdin),
+        InputFormat.TEXT: lambda _: sys.stdin.read().rstrip("\n"),
+        InputFormat.CSV: lambda csv_configurations: list(csv.DictReader(sys.stdin, **csv_configurations)),
     }
     # These callbacks were not implemented with lambda because we needed
     # multiple lines. By using `open`, we needed the `with` to be able to close
@@ -167,6 +170,7 @@ class LocalInputLoader(InputLoader):
         input_format: Optional[InputFormat] = InputFormat.JSON,
         options: Optional[Options] = None,
         path: Optional[str] = None,
+        csv_configurations: Optional[Dict[str, Any]] = None,
     ) -> Input:
         """
         Load the input data. The input data can be in various formats. For
@@ -196,6 +200,10 @@ class LocalInputLoader(InputLoader):
             Options for loading the input data.
         path : str, optional
             Path to the input data.
+        csv_configurations : Dict[str, Any], optional
+            Configurations for loading CSV files. The default `DictReader` is
+            used when loading a CSV file, so you have the option to pass in a
+            dictionary with custom kwargs for the `DictReader`.
 
         Returns
         -------
@@ -209,16 +217,19 @@ class LocalInputLoader(InputLoader):
         """
 
         data: Any = None
+        if csv_configurations is None:
+            csv_configurations = {}
 
         if input_format in [InputFormat.JSON, InputFormat.TEXT, InputFormat.CSV]:
-            data = self._load_utf8_encoded(path=path, input_format=input_format)
+            data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
         elif input_format == InputFormat.CSV_ARCHIVE:
-            data = self._load_archive(path=path)
+            data = self._load_archive(path=path, csv_configurations=csv_configurations)
 
         return Input(data=data, input_format=input_format, options=options)
 
     def _load_utf8_encoded(
         self,
+        csv_configurations: Optional[Dict[str, Any]],
         path: Optional[str] = None,
         input_format: Optional[InputFormat] = InputFormat.JSON,
         use_file_reader: bool = False,
@@ -230,16 +241,20 @@ class LocalInputLoader(InputLoader):
 
         # If we forcibly want to use the file reader, we can do so.
         if use_file_reader:
-            return self.FILE_READERS[input_format](path)
+            return self.FILE_READERS[input_format](path, csv_configurations)
 
         # Otherwise, we can use the stdin reader if no path is provided.
         if path is None or path == "":
-            return self.STDIN_READERS[input_format]()
+            return self.STDIN_READERS[input_format](csv_configurations)
 
         # Lastly, we can use the file reader if a path is provided.
-        return self.FILE_READERS[input_format](path)
+        return self.FILE_READERS[input_format](path, csv_configurations)
 
-    def _load_archive(self, path: Optional[str] = None) -> Dict[str, List[Dict[str, Any]]]:
+    def _load_archive(
+        self,
+        csv_configurations: Optional[Dict[str, Any]],
+        path: Optional[str] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Load files from a directory. Will only load CSV files.
         """
@@ -263,6 +278,7 @@ class LocalInputLoader(InputLoader):
                     path=os.path.join(dir_path, file),
                     input_format=InputFormat.CSV,
                     use_file_reader=True,
+                    csv_configurations=csv_configurations,
                 )
 
         return data
@@ -272,6 +288,7 @@ def load_local(
     input_format: Optional[InputFormat] = InputFormat.JSON,
     options: Optional[Options] = None,
     path: Optional[str] = None,
+    csv_configurations: Optional[Dict[str, Any]] = None,
 ) -> Input:
     """
     This is a convenience function for instantiating a `LocalInputLoader`
@@ -304,6 +321,10 @@ def load_local(
         Options for loading the input data.
     path : str, optional
         Path to the input data.
+    csv_configurations : Dict[str, Any], optional
+        Configurations for loading CSV files. The default `DictReader` is used
+        when loading a CSV file, so you have the option to pass in a dictionary
+        with custom kwargs for the `DictReader`.
 
     Returns
     -------
@@ -317,4 +338,4 @@ def load_local(
     """
 
     loader = LocalInputLoader()
-    return loader.load(input_format, options, path)
+    return loader.load(input_format, options, path, csv_configurations)

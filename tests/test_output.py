@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import shutil
@@ -17,6 +18,25 @@ class TestOutput(unittest.TestCase):
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
         )
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = {
+                "solution": {"empanadas": "are_life"},
+                "statistics": {"foo": "bar"},
+                "options": {},
+            }
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_writer_json_stdout_default_dict_output(self):
+        output = {
+            "solution": {"empanadas": "are_life"},
+            "statistics": {"foo": "bar"},
+        }
         output_writer = nextmv.LocalOutputWriter()
 
         with patch("sys.stdout", new=StringIO()) as mock_stdout:
@@ -58,6 +78,30 @@ class TestOutput(unittest.TestCase):
 
         output = nextmv.Output(
             options=options,
+            output_format=nextmv.OutputFormat.JSON,
+            solution={"empanadas": "are_life"},
+            statistics={"foo": "bar"},
+        )
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = {
+                "options": {
+                    "duration": 5,
+                    "solver": "highs",
+                },
+                "solution": {"empanadas": "are_life"},
+                "statistics": {"foo": "bar"},
+            }
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_writer_json_stdout_with_options_json(self):
+        output = nextmv.Output(
+            options={"duration": 5, "solver": "highs"},
             output_format=nextmv.OutputFormat.JSON,
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
@@ -190,6 +234,7 @@ class TestOutput(unittest.TestCase):
             output_format=nextmv.OutputFormat.CSV_ARCHIVE,
             solution=solution,
             statistics={"foo": "bar"},
+            csv_configurations={"quoting": csv.QUOTE_NONNUMERIC},
         )
         output_writer = nextmv.LocalOutputWriter()
 
@@ -218,3 +263,8 @@ class TestOutput(unittest.TestCase):
 
         # Removes the output directory after the test is executed.
         shutil.rmtree(write_path)
+
+    def test_local_write_bad_output_type(self):
+        output = "I am clearly not an output object."
+        with self.assertRaises(TypeError):
+            nextmv.write_local(output)
