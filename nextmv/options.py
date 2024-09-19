@@ -157,13 +157,10 @@ class Options:
                 setattr(self, arg, value)
                 continue
 
-            # Finally, attempt to set the value of a parameter from the default
-            # value.
-            if param.default is not None:
-                setattr(self, arg, param.default)
-                continue
-
+            # Finally, attempt to set a default value. This is only allowed
+            # for non-required parameters.
             if not param.required:
+                setattr(self, arg, param.default)
                 continue
 
             # At this point, the parameter is required and no value was
