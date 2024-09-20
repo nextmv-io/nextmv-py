@@ -24,6 +24,9 @@ GUROBIPY_STATUS_CODES = {
 }
 
 
+# TODO: version? provider?
+
+
 class GurobipyResultStatistics(output.ResultStatistics):
     """Statistics about a specific gurobipy result."""
 

@@ -12,29 +12,22 @@ LINEAR_REGRESSION_PARAMETERS = (
     options.Parameter(
         "fit_intercept",
         bool,
-        default=True,
         description="Whether to calculate the intercept for this model.",
-        required=True,
     ),
     options.Parameter(
         "copy_X",
         bool,
-        default=True,
         description="If True, X will be copied; else, it may be overwritten.",
-        required=True,
     ),
     options.Parameter(
         "n_jobs",
         int,
-        default=None,
         description="The number of jobs to use for the computation.",
     ),
     options.Parameter(
         "positive",
         bool,
-        default=False,
         description="When set to True, forces the coefficients to be positive.",
-        required=True,
     ),
 )
 
@@ -48,6 +41,10 @@ class LinearRegressionOptions(options.Options):
             *LINEAR_REGRESSION_PARAMETERS,
             *parameters,
         )
+
+    def to_model(self):
+        """Instantiates a Linear Regression model from options."""
+        return LinearRegression(**self.to_dict())
 
 
 class LinearRegressionSolution(base_model.BaseModel):
@@ -96,6 +93,9 @@ class LinearRegressionSolution(base_model.BaseModel):
         for key in self.model_fields:
             setattr(m, key, self.__dict__[key])
         return m
+
+
+# TODO: version? provider?
 
 
 class LinearRegressionResultStatistics(output.ResultStatistics):

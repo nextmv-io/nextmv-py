@@ -23,18 +23,14 @@ DECISION_TREE_REGRESSOR_PARAMETERS = (
     options.Parameter(
         "criterion",
         str,
-        default="squared_error",
         choices=["squared_error", "friedman_mse", "absolute_error", "poisson"],
         description="The function to measure the quality of a split.",
-        required=True,
     ),
     options.Parameter(
         "splitter",
         str,
-        default="best",
         choices=["best", "random"],
         description="The strategy used to choose the split at each node.",
-        required=True,
     ),
     options.Parameter(
         "max_depth",
@@ -44,26 +40,20 @@ DECISION_TREE_REGRESSOR_PARAMETERS = (
     options.Parameter(
         "min_samples_split",
         int,
-        default=2,
         description="""The minimum number of samples required to split an
         internal node.""",
-        required=True,
     ),
     options.Parameter(
         "min_samples_leaf",
         int,
-        default=1,
         description="""The minimum number of samples required to be at a leaf
         node.""",
-        required=True,
     ),
     options.Parameter(
         "min_weight_fraction_leaf",
         float,
-        default=0.0,
         description="""The minimum weighted fraction of the sum total of weights
         (of all the input samples) required to be at a leaf node.""",
-        required=True,
     ),
     options.Parameter(
         "max_features",
@@ -84,18 +74,14 @@ DECISION_TREE_REGRESSOR_PARAMETERS = (
     options.Parameter(
         "min_impurity_decrease",
         float,
-        default=0.0,
         description="""A node will be split if this split induces a decrease of
         the impurity # greater than or equal to this value.""",
-        required=True,
     ),
     options.Parameter(
         "ccp_alpha",
         float,
-        default=0.0,
         description="""Complexity parameter used for Minimal Cost-Complexity
         Pruning.""",
-        required=True,
     ),
 )
 
@@ -110,6 +96,13 @@ class DecisionTreeRegressorOptions(options.Options):
             *DECISION_TREE_REGRESSOR_PARAMETERS,
             *parameters,
         )
+
+    def to_model(self):
+        """Instantiates a Decision Tree Regressor model from options."""
+        return DecisionTreeRegressor(**self.to_dict())
+
+
+# TODO: version? provider?
 
 
 class DecisionTreeRegressorSolution(base_model.BaseModel):
