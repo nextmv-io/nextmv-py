@@ -3,7 +3,7 @@
 import argparse
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -23,6 +23,8 @@ class Parameter:
         The name of the parameter.
     param_type : type
         The type of the parameter.
+    choices : List[Any], optional
+        Limits values to a specific set of choices.
     default : Any, optional
         The default value of the parameter. Even though this is optional, it is
         recommended to provide a default value for all parameters.
@@ -50,6 +52,8 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
+    choices: List[Optional[Any]] = None
+    """Limits values to a specific set of choices."""
 
 
 class Options:
@@ -125,11 +129,15 @@ class Options:
             # Remove any leading '-'. This is in line with argparse's behavior.
             param.name = param.name.lstrip("-")
 
+            kwds = {}
+            if param.choices is not None:
+                kwds["choices"] = param.choices
             parser.add_argument(
                 f"-{param.name}",
                 f"--{param.name}",
                 type=param.param_type if param.param_type is not bool else str,
                 help=self._description(param),
+                **kwds,
             )
 
             # Store the parameter by its field name for easy access later. argparse
@@ -137,7 +145,9 @@ class Options:
             params_by_field_name[param.name.replace("-", "_")] = param
 
         args = parser.parse_args()
+        self._set_arg_attrs(args, params_by_field_name)
 
+    def _set_arg_attrs(self, args: argparse.Namespace, params_by_field_name: Dict[str, Parameter]):
         for arg in vars(args):
             param = params_by_field_name[arg]
 
@@ -163,10 +173,13 @@ class Options:
                 setattr(self, arg, value)
                 continue
 
-            # Finally, attempt to set a default value. This is only allowed
-            # for non-required parameters.
-            if not param.required:
+            # Finally, attempt to set the value of a parameter from the default
+            # value.
+            if param.default is not None:
                 setattr(self, arg, param.default)
+                continue
+
+            if not param.required:
                 continue
 
             # At this point, the parameter is required and no value was

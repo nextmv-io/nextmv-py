@@ -23,7 +23,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5, 6]
+    test_scripts = [1, 2, 3, 4, 5, 6, 7]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -362,7 +362,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result3.returncode, 0, result3.stderr)
-        self.assertEqual(result3.stdout, "{'str_opt': None}\n")
+        self.assertEqual(result3.stdout, "{}\n")
 
     def test_name_handling(self):
         file = self._file_name("options6.py", "..")
@@ -383,6 +383,41 @@ class TestOptions(unittest.TestCase):
         )
         self.assertEqual(result1.returncode, 0, result1.stderr)
         self.assertEqual(result1.stdout, "{'dash_opt': 'empanadas', 'underscore_opt': 'is', 'camelCaseOpt': 'life'}\n")
+
+    def test_choices_option(self):
+        file = self._file_name("options7.py", "..")
+
+        result1 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result1.returncode, 1, result1.stderr)
+        self.assertEqual(result1.stdout, "")
+
+        result2 = subprocess.run(
+            ["python3", file, "-prime", "3"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result2.returncode, 2, result2.stderr)
+        self.assertEqual(result2.stdout, "")
+
+        result3 = subprocess.run(
+            ["python3", file, "-prime", "11"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result3.returncode, 0, result3.stderr)
+        self.assertEqual(result3.stdout, "{'prime': 11, 'xyzzy': 'xyzzy'}\n")
+
+        result4 = subprocess.run(
+            ["python3", file, "-prime", "17", "-foo", "baz"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result4.returncode, 0, result4.stderr)
+        self.assertEqual(result4.stdout, "{'foo': 'baz', 'prime': 17, 'xyzzy': 'xyzzy'}\n")
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
