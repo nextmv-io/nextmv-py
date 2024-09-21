@@ -9,8 +9,10 @@ from sklearn import tree
 from sklearn.tree import DecisionTreeRegressor
 from typing_extensions import Annotated
 
-from nextmv import base_model, options, output
+from nextmv import base_model, output
 from nextmv.numpy import ndarray, ndarray_from_list, ndarray_to_list
+from nextmv.options import Options
+from nextmv.options import Parameter as P
 
 Tree = Annotated[
     tree._tree.Tree,
@@ -20,76 +22,37 @@ Tree = Annotated[
 
 
 DECISION_TREE_REGRESSOR_PARAMETERS = (
-    options.Parameter(
+    P(
         "criterion",
         str,
         choices=["squared_error", "friedman_mse", "absolute_error", "poisson"],
         description="The function to measure the quality of a split.",
     ),
-    options.Parameter(
-        "splitter",
-        str,
-        choices=["best", "random"],
-        description="The strategy used to choose the split at each node.",
-    ),
-    options.Parameter(
-        "max_depth",
-        int,
-        description="The maximum depth of the tree.",
-    ),
-    options.Parameter(
-        "min_samples_split",
-        int,
-        description="""The minimum number of samples required to split an
-        internal node.""",
-    ),
-    options.Parameter(
-        "min_samples_leaf",
-        int,
-        description="""The minimum number of samples required to be at a leaf
-        node.""",
-    ),
-    options.Parameter(
+    P("splitter", str, choices=["best", "random"], description="The strategy used to choose the split at each node."),
+    P("max_depth", int, description="The maximum depth of the tree."),
+    P("min_samples_split", int, description="The minimum number of samples required to split an internal node."),
+    P("min_samples_leaf", int, description="The minimum number of samples required to be at a leaf node."),
+    P(
         "min_weight_fraction_leaf",
         float,
-        description="""The minimum weighted fraction of the sum total of weights
-        (of all the input samples) required to be at a leaf node.""",
+        description="The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
     ),
-    options.Parameter(
-        "max_features",
-        int,
-        description="""The number of features to consider when looking for the
-        best split.""",
-    ),
-    options.Parameter(
-        "random_state",
-        int,
-        description="Controls the randomness of the estimator.",
-    ),
-    options.Parameter(
-        "max_leaf_nodes",
-        int,
-        description="Grow a tree with max_leaf_nodes in best-first fashion.",
-    ),
-    options.Parameter(
+    P("max_features", int, description="The number of features to consider when looking for the best split."),
+    P("random_state", int, description="Controls the randomness of the estimator."),
+    P("max_leaf_nodes", int, description="Grow a tree with max_leaf_nodes in best-first fashion."),
+    P(
         "min_impurity_decrease",
         float,
-        description="""A node will be split if this split induces a decrease of
-        the impurity # greater than or equal to this value.""",
+        description="A node will be split if this split induces a decrease of the impurity #.",
     ),
-    options.Parameter(
-        "ccp_alpha",
-        float,
-        description="""Complexity parameter used for Minimal Cost-Complexity
-        Pruning.""",
-    ),
+    P("ccp_alpha", float, description="Complexity parameter used for Minimal Cost-Complexity Pruning."),
 )
 
 
-class DecisionTreeRegressorOptions(options.Options):
+class DecisionTreeRegressorOptions(Options):
     """Default options for scikit-learn Decision Tree Regressor models"""
 
-    def __init__(self, *parameters: options.Parameter):
+    def __init__(self, *parameters: P):
         """Initializes options for a scikit-learn Decision Tree Regressor
         model."""
         return super().__init__(
@@ -99,7 +62,9 @@ class DecisionTreeRegressorOptions(options.Options):
 
     def to_model(self):
         """Instantiates a Decision Tree Regressor model from options."""
-        return DecisionTreeRegressor(**self.to_dict())
+        names = {p.name for p in DECISION_TREE_REGRESSOR_PARAMETERS}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        return DecisionTreeRegressor(**kwds)
 
 
 # TODO: version? provider?

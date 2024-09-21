@@ -5,37 +5,23 @@ from typing import Any, Dict, Iterable
 from pydantic import ConfigDict
 from sklearn.linear_model import LinearRegression
 
-from nextmv import base_model, options, output
+from nextmv import base_model, output
 from nextmv.numpy import ndarray, ndarray_from_list
+from nextmv.options import Options
+from nextmv.options import Parameter as P
 
 LINEAR_REGRESSION_PARAMETERS = (
-    options.Parameter(
-        "fit_intercept",
-        bool,
-        description="Whether to calculate the intercept for this model.",
-    ),
-    options.Parameter(
-        "copy_X",
-        bool,
-        description="If True, X will be copied; else, it may be overwritten.",
-    ),
-    options.Parameter(
-        "n_jobs",
-        int,
-        description="The number of jobs to use for the computation.",
-    ),
-    options.Parameter(
-        "positive",
-        bool,
-        description="When set to True, forces the coefficients to be positive.",
-    ),
+    P("fit_intercept", bool, description="Whether to calculate the intercept for this model."),
+    P("copy_X", bool, description="If True, X will be copied; else, it may be overwritten."),
+    P("n_jobs", int, description="The number of jobs to use for the computation."),
+    P("positive", bool, description="When set to True, forces the coefficients to be positive."),
 )
 
 
-class LinearRegressionOptions(options.Options):
+class LinearRegressionOptions(Options):
     """Default options for scikit-learn Linear Regression models"""
 
-    def __init__(self, *parameters: options.Parameter):
+    def __init__(self, *parameters: P):
         """Initializes options for a scikit-learn Linear Regression model."""
         return super().__init__(
             *LINEAR_REGRESSION_PARAMETERS,
@@ -44,7 +30,9 @@ class LinearRegressionOptions(options.Options):
 
     def to_model(self):
         """Instantiates a Linear Regression model from options."""
-        return LinearRegression(**self.to_dict())
+        names = {p.name for p in LINEAR_REGRESSION_PARAMETERS}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        return LinearRegression(**kwds)
 
 
 class LinearRegressionSolution(base_model.BaseModel):
