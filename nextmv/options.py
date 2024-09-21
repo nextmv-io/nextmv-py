@@ -52,7 +52,7 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
-    choices: List[Optional[Any]] = None
+    choices: Optional[List[Any]] = None
     """Limits values to a specific set of choices."""
 
 
