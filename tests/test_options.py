@@ -346,7 +346,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result1.returncode, 0, result1.stderr)
-        self.assertEqual(result1.stdout, "{'str_opt': ''}\n")
+        self.assertEqual(result1.stdout, "str_opt: \n")
 
         result2 = subprocess.run(
             ["python3", file, "-str_opt", "empanadas"],
@@ -354,7 +354,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result2.returncode, 0, result2.stderr)
-        self.assertEqual(result2.stdout, "{'str_opt': 'empanadas'}\n")
+        self.assertEqual(result2.stdout, "str_opt: empanadas\n")
 
         result3 = subprocess.run(
             ["python3", file],
@@ -362,7 +362,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result3.returncode, 0, result3.stderr)
-        self.assertEqual(result3.stdout, "{'str_opt': None}\n")
+        self.assertEqual(result3.stdout, "str_opt: None\n")
 
     def test_name_handling(self):
         file = self._file_name("options6.py", "..")
