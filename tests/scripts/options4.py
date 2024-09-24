@@ -1,7 +1,7 @@
 import nextmv
 
 options = nextmv.Options(
-    nextmv.Parameter("bool_opt", bool, required=True, default=False),
+    nextmv.Parameter("bool_opt", bool, default=True),
 )
 
 print(options.to_dict())

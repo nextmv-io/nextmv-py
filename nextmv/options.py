@@ -116,11 +116,14 @@ class Options:
             description="Options for %(prog)s. Use command-line arguments (highest precedence) "
             + "or environment variables.",
         )
-        params_by_name: Dict[str, Parameter] = {}
+        params_by_field_name: Dict[str, Parameter] = {}
 
         for p, param in enumerate(parameters):
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
+
+            # Remove any leading '-'. This is in line with argparse's behavior.
+            param.name = param.name.lstrip("-")
 
             parser.add_argument(
                 f"-{param.name}",
@@ -128,12 +131,15 @@ class Options:
                 type=param.param_type if param.param_type is not bool else str,
                 help=self._description(param),
             )
-            params_by_name[param.name] = param
+
+            # Store the parameter by its field name for easy access later. argparse
+            # replaces '-' with '_', so we do the same here.
+            params_by_field_name[param.name.replace("-", "_")] = param
 
         args = parser.parse_args()
 
         for arg in vars(args):
-            param = params_by_name[arg]
+            param = params_by_field_name[arg]
 
             # First, attempt to set the value of a parameter from the
             # command-line args.
@@ -157,13 +163,10 @@ class Options:
                 setattr(self, arg, value)
                 continue
 
-            # Finally, attempt to set the value of a parameter from the default
-            # value.
-            if param.default is not None:
-                setattr(self, arg, param.default)
-                continue
-
+            # Finally, attempt to set a default value. This is only allowed
+            # for non-required parameters.
             if not param.required:
+                setattr(self, arg, param.default)
                 continue
 
             # At this point, the parameter is required and no value was

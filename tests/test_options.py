@@ -23,7 +23,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4]
+    test_scripts = [1, 2, 3, 4, 5, 6]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -156,7 +156,7 @@ class TestOptions(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[env var: DURATION] (required) (default: 30s)", result.stdout)
+        self.assertIn("[env var: DURATION] (default: 30s)", result.stdout)
 
     def test_minimal_help_message(self):
         file = self._file_name("options3.py", "..")
@@ -168,7 +168,7 @@ class TestOptions(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn("[env var: DURATION] (required) (default: 30s)", result.stdout)
+        self.assertNotIn("[env var: DURATION] (default: 30s)", result.stdout)
 
     def test_bool_option(self):
         file = self._file_name("options4.py", "..")
@@ -316,7 +316,7 @@ class TestOptions(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result15.returncode, 0, result15.stderr)
-        self.assertEqual(result15.stdout, "{'bool_opt': False}\n")
+        self.assertEqual(result15.stdout, "{'bool_opt': True}\n")
 
         # Bad arg.
         result16 = subprocess.run(
@@ -336,6 +336,53 @@ class TestOptions(unittest.TestCase):
         )
         self.assertEqual(result16.returncode, 1, result16.stderr)
         self.assertEqual(result16.stdout, "")
+
+    def test_none_default(self):
+        file = self._file_name("options5.py", "..")
+
+        result1 = subprocess.run(
+            ["python3", file, "-str_opt", ""],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result1.returncode, 0, result1.stderr)
+        self.assertEqual(result1.stdout, "str_opt: \n")
+
+        result2 = subprocess.run(
+            ["python3", file, "-str_opt", "empanadas"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result2.returncode, 0, result2.stderr)
+        self.assertEqual(result2.stdout, "str_opt: empanadas\n")
+
+        result3 = subprocess.run(
+            ["python3", file],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result3.returncode, 0, result3.stderr)
+        self.assertEqual(result3.stdout, "str_opt: None\n")
+
+    def test_name_handling(self):
+        file = self._file_name("options6.py", "..")
+
+        result1 = subprocess.run(
+            [
+                "python3",
+                file,
+                "-dash-opt",
+                "empanadas",
+                "-underscore_opt",
+                "is",
+                "-camelCaseOpt",
+                "life",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result1.returncode, 0, result1.stderr)
+        self.assertEqual(result1.stdout, "{'dash_opt': 'empanadas', 'underscore_opt': 'is', 'camelCaseOpt': 'life'}\n")
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
