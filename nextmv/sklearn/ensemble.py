@@ -5,7 +5,7 @@ import pickle
 from typing import Any, Dict, Iterable, List
 
 from pydantic import BeforeValidator, ConfigDict, PlainSerializer
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from typing_extensions import Annotated
 
 from nextmv import base_model, output
@@ -144,7 +144,7 @@ class GradientBoostingRegressorSolution(base_model.BaseModel):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
-        """Instantiates a GradientBoostingRegressor object from a dict."""
+        """Instantiates a GradientBoostingRegressorSolution from a dict."""
 
         if "init_" in data:
             data["init_"] = DummyRegressorSolution.from_dict(data["init_"])
@@ -216,6 +216,180 @@ class GradientBoostingRegressorResultStatistics(output.ResultStatistics):
             # "depth": model.get_depth(),
             "feature_importances_": ndarray_to_list(model.feature_importances_),
             # "n_leaves": int(model.get_n_leaves()),
+            "score": model.score(X, y, sample_weight),
+        }
+        if sample_weight is not None:
+            custom["sample_weight"] = sample_weight
+        custom.update(kwds.get("custom", {}))
+        kwds["custom"] = custom
+
+        return cls(*args, **kwds)
+
+
+RANDOM_FOREST_REGRESSOR_PARAMETERS = (
+    P("n_estimators", int, description="The number of trees in the forest."),
+    P(
+        "criterion",
+        str,
+        choices=["squared_error", "absolute_error", "friedman_mse", "poisson"],
+        description="The function to measure the quality of a split.",
+    ),
+    P("max_depth", int, description="The maximum depth of the tree."),
+    P("min_samples_split", int, description="The minimum number of samples required to split an internal node."),
+    P("min_samples_leaf", int, description="The minimum number of samples required to be at a leaf node."),
+    P(
+        "min_weight_fraction_leaf",
+        float,
+        description="The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
+    ),
+    P(
+        "max_features",
+        int,
+        description="The number of features to consider when looking for the best split.",
+    ),
+    P("max_leaf_nodes", int, description="Grow trees with max_leaf_nodes in best-first fashion."),
+    P(
+        "min_impurity_decrease",
+        float,
+        description="""A node will be split if this split induces a decrease of the impurity """
+        """greater than or equal to this value.""",
+    ),
+    P("bootstrap", bool, description="Whether bootstrap samples are used when building trees."),
+    P("oob_score", bool, description="Whether to use out-of-bag samples to estimate the generalization score."),
+    P("n_jobs", int, description="The number of jobs to run in parallel."),
+    P(
+        "random_state",
+        int,
+        description="""Controls both the randomness of the bootstrapping of """
+        """the samples used when building trees and the sampling of the features.""",
+    ),
+    P("verbose", int, description="Controls the verbosity when fitting and predicting."),
+    P(
+        "warm_start",
+        bool,
+        description="""When set to True, reuse the solution of the previous """
+        """call to fit and add more estimators to the ensemble, otherwise, """
+        """just erase the previous solution.""",
+    ),
+    P("ccp_alpha", float, description="Complexity parameter used for Minimal Cost-Complexity Pruning."),
+    P(
+        "max_samples",
+        int,
+        description="""If bootstrap is True, the number of samples to draw """
+        """from X to train each base estimator.""",
+    ),
+    P("monotonic_cst", int, description="Indicates the monotonicity constraint to enforce on each feature."),
+)
+
+
+class RandomForestRegressorOptions(Options):
+    """Default options for scikit-learn Random Forest Regressor models"""
+
+    def __init__(self, *parameters: P):
+        """Initializes options for a scikit-learn Random Forest Regressor
+        model."""
+        return super().__init__(
+            *RANDOM_FOREST_REGRESSOR_PARAMETERS,
+            *parameters,
+        )
+
+    def to_model(self):
+        """Instantiates a Random Forest Regressor model from options."""
+        names = {p.name for p in RANDOM_FOREST_REGRESSOR_PARAMETERS}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        return RandomForestRegressor(**kwds)
+
+
+class RandomForestRegressorSolution(base_model.BaseModel):
+    """Random Forest Regressor scikit-learn model representation."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    estimator_: DecisionTreeRegressorSolution = None
+    """The child estimator template used to create the collection of fitted
+    sub-estimators."""
+    estimators_: List[DecisionTreeRegressorSolution] = None
+    """The collection of fitted sub-estimators."""
+    n_features_in_: int = 0
+    """Number of features seen during fit."""
+    feature_names_in_: ndarray = None
+    """Names of features seen during fit."""
+    n_outputs_: int = 0
+    """The number of outputs when fit is performed."""
+    oob_score_: float = 0.0
+    """Score of the training dataset obtained using an out-of-bag estimate."""
+    oob_prediction_: ndarray = None
+    """Prediction computed with out-of-bag estimate on the training set."""
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]):
+        """Instantiates a RandomForestRegressorSolution from a dict."""
+
+        if "estimator_" in data:
+            data["estimator_"] = DecisionTreeRegressorSolution.from_dict(data["estimator_"])
+
+        if "estimators_" in data:
+            data["estimators_"] = [DecisionTreeRegressorSolution.from_dict(e) for e in data["estimators_"]]
+
+        for key, value in cls.__annotations__.items():
+            if key in data and value is ndarray:
+                data[key] = ndarray_from_list(data[key])
+
+        return cls(**data)
+
+    @classmethod
+    def from_model(cls, model: RandomForestRegressor):
+        data = {}
+        for key in cls.__annotations__:
+            try:
+                data[key] = getattr(model, key)
+            except AttributeError:
+                pass
+
+        if "estimator_" in data:
+            data["estimator_"] = DecisionTreeRegressorSolution.from_model(data["estimator_"])
+
+        if "estimators_" in data:
+            data["estimators_"] = [DecisionTreeRegressorSolution.from_model(x) for x in data["estimators_"]]
+
+        return cls(**data)
+
+    def to_dict(self):
+        d = super().to_dict()
+        if self.estimator_ is not None:
+            d["estimator_"] = self.estimator_.to_dict()
+        if self.estimators_ is not None:
+            d["estimators_"] = [x.to_dict() for x in self.estimators_]
+        return d
+
+    def to_model(self):
+        m = RandomForestRegressor()
+        for key in self.model_fields:
+            if key == "estimator_":
+                setattr(m, key, self.__dict__[key].to_model())
+            elif key == "estimators_":
+                estimators = [x.to_model() for x in self.__dict__[key]]
+                setattr(m, key, ndarray_from_list(estimators))
+            else:
+                setattr(m, key, self.__dict__[key])
+        return m
+
+
+class RandomForestRegressorResultStatistics(output.ResultStatistics):
+    """Statistics about a specific Random Forest Regressor result."""
+
+    @classmethod
+    def from_model(
+        cls,
+        model: RandomForestRegressor,
+        X: Iterable,
+        y: Iterable,
+        sample_weight: float = None,
+        *args,
+        **kwds,
+    ):
+        custom = {
+            "feature_importances_": ndarray_to_list(model.feature_importances_),
             "score": model.score(X, y, sample_weight),
         }
         if sample_weight is not None:
