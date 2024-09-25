@@ -92,8 +92,7 @@ class GradientBoostingRegressorOptions(Options):
     """Default options for scikit-learn Gradient Boosting Regressor models"""
 
     def __init__(self, *parameters: P):
-        """Initializes options for a scikit-learn Gradient Boosting Regressor
-        model."""
+        """Initializes options for a scikit-learn Gradient Boosting Regressor model."""
         return super().__init__(
             *GRADIENT_BOOSTING_REGRESSOR_PARAMETERS,
             *parameters,

@@ -83,9 +83,6 @@ class DummyRegressorSolution(base_model.BaseModel):
         return m
 
 
-# TODO: version? provider?
-
-
 class DummyRegressorResultStatistics(output.ResultStatistics):
     """Statistics about a specific Dummy Regressor result."""
 

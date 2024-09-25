@@ -53,8 +53,7 @@ class DecisionTreeRegressorOptions(Options):
     """Default options for scikit-learn Decision Tree Regressor models"""
 
     def __init__(self, *parameters: P):
-        """Initializes options for a scikit-learn Decision Tree Regressor
-        model."""
+        """Initializes options for a scikit-learn Decision Tree Regressor model."""
         return super().__init__(
             *DECISION_TREE_REGRESSOR_PARAMETERS,
             *parameters,
@@ -65,9 +64,6 @@ class DecisionTreeRegressorOptions(Options):
         names = {p.name for p in DECISION_TREE_REGRESSOR_PARAMETERS}
         kwds = {k: v for k, v in self.to_dict().items() if k in names}
         return DecisionTreeRegressor(**kwds)
-
-
-# TODO: version? provider?
 
 
 class DecisionTreeRegressorSolution(base_model.BaseModel):

@@ -83,9 +83,6 @@ class LinearRegressionSolution(base_model.BaseModel):
         return m
 
 
-# TODO: version? provider?
-
-
 class LinearRegressionResultStatistics(output.ResultStatistics):
     """Statistics about a specific Linear Regression result."""
 

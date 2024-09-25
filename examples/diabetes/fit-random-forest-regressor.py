@@ -17,7 +17,7 @@ def main():
     y = data.target
 
     m = opt.to_model()
-    m.fit(data.data, data.target)
+    m.fit(X, y)
 
     solution = nensemble.RandomForestRegressorSolution.from_model(m)
     output = nextmv.Output(
