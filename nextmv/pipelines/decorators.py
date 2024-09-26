@@ -78,17 +78,17 @@ class App:
     def __init__(
         self,
         app_id: str,
-        app_instance: str = "default",
+        instance_id: str = "devint",
         input_type: InputType = InputType.JSON,
         parameters: Dict[str, any] = None,
     ):
         self.app_id = app_id
-        self.app_instance = app_instance
+        self.instance_id = instance_id
         self.parameters = parameters if parameters else {}
         self.input_type = input_type
 
     def __repr__(self):
-        return f"StepRun({self.app_id}, {self.app_instance}, {self.parameters}, {self.input_type})"
+        return f"StepRun({self.app_id}, {self.instance_id}, {self.parameters}, {self.input_type})"
 
 
 def needs(predecessors: List[callable]):
@@ -126,14 +126,14 @@ def repeat(repetitions: int):
 
 def app(
     app_id: str,
-    app_version: str = "default",
+    instance_id: str = "default",
     parameters: Dict[str, any] = None,
     input_type: InputType = InputType.JSON,
 ):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            utils.log(f"Running {app_id} version {app_version}")
+            utils.log(f"Running {app_id} version {instance_id}")
             return function(*args, **kwargs)
 
         # We need to make sure that all values of the parameters are converted to strings,
@@ -142,7 +142,7 @@ def app(
 
         wrapper.step.app = App(
             app_id=app_id,
-            app_instance=app_version,
+            instance_id=instance_id,
             parameters=converted_parameters,
             input_type=input_type,
         )

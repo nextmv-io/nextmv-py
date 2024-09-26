@@ -164,7 +164,7 @@ class FlowSpec:
                     },
                 )
             ] * repetitions
-            app = Application(client=client, id=app_step.app_id)
+            app = Application(client=client, id=app_step.app_id, default_instance_id=app_step.instance_id)
             # Run the app (or multiple runs if it is a repeat step)
             run_ids = [app.new_run(*i[0], **i[1]) for i in inputs]
             outputs = utils.wait_for_runs(app=app, run_ids=run_ids)
