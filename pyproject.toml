@@ -20,6 +20,7 @@ dependencies = [
     "pydantic>=2.5.2",
     "urllib3>=2.1.0",
     "requests>=2.31.0",
+    "pathos>=0.3.2",
     "pyyaml>=6.0.1",
 ]
 description = "The Python SDK for Nextmv"
@@ -36,6 +37,8 @@ keywords = [
     "shift scheduling",
     "solver",
     "vehicle routing problem",
+    "decision pipelines",
+    "decision automation",
 ]
 license = { file = "LICENSE" }
 maintainers = [
