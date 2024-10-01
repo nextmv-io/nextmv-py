@@ -1,6 +1,6 @@
 """JSON class for data wrangling JSON objects."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -9,8 +9,11 @@ class BaseModel(BaseModel):
     """Base class for data wrangling tasks with JSON."""
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: Optional[Dict[str, Any]] = None):
         """Instantiates the class from a dict."""
+
+        if data is None:
+            return None
 
         return cls(**data)
 

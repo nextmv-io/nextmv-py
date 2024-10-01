@@ -1,6 +1,7 @@
 """This module contains the application class."""
 
 import json
+import shutil
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,11 +10,14 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 
 from nextmv.base_model import BaseModel
+from nextmv.cloud import package
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
+from nextmv.logger import log
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -649,6 +653,51 @@ class Application:
             polling_options=polling_options,
         )
 
+    def push(
+        self,
+        manifest: Optional[Manifest] = None,
+        app_dir: Optional[str] = None,
+        verbose: bool = False,
+    ) -> None:
+        """
+        Push an app to Nextmv Cloud.
+
+        If the manifest is not provided, an `app.yaml` file will be searched for in
+        the provided path. If there is no manifest file found, an exception will be
+        raised.
+
+        The path is the root directory of the app to push. If the path is not
+        provided, the current working directory will be used.
+
+        Parameters
+        ----------
+        manifest : Optional[Manifest], optional
+            The manifest for the app, by default None.
+        app_dir : Optional[str], optional
+            The path to the app’s directory, by default None.
+        verbose : bool, optional
+            Whether to print verbose output, by default False.
+        """
+
+        if verbose:
+            log("💽 Starting build for Nextmv application.")
+
+        if app_dir is None or app_dir == "":
+            app_dir = "."
+
+        if manifest is None:
+            manifest = Manifest.from_yaml(app_dir)
+
+        package._run_build_command(app_dir, manifest.build, verbose)
+        package._run_pre_push_command(app_dir, manifest.pre_push, verbose)
+        tar_file, output_dir = package._package(app_dir, manifest, verbose)
+        self.__update_app_binary(tar_file, manifest, verbose)
+
+        try:
+            shutil.rmtree(output_dir)
+        except OSError as e:
+            raise Exception(f"error deleting output directory: {e}") from e
+
     def run_input(self, run_id: str) -> Dict[str, Any]:
         """
         Get the input of a run.
@@ -743,7 +792,7 @@ class Application:
 
         run_information = self.run_metadata(run_id=run_id)
 
-        return self._run_result(run_id=run_id, run_information=run_information)
+        return self.__run_result(run_id=run_id, run_information=run_information)
 
     def run_result_with_polling(
         self,
@@ -793,7 +842,7 @@ class Application:
                 f"run {run_id} did not succeed after {polling_options.max_tries} tries",
             )
 
-        return self._run_result(run_id=run_id, run_information=run_information)
+        return self.__run_result(run_id=run_id, run_information=run_information)
 
     def upload_large_input(
         self,
@@ -839,7 +888,7 @@ class Application:
 
         return UploadURL.from_dict(response.json())
 
-    def _run_result(
+    def __run_result(
         self,
         run_id: str,
         run_information: RunInformation,
@@ -883,3 +932,54 @@ class Application:
         result.output = download_response.json()
 
         return result
+
+    def __update_app_binary(
+        self,
+        tar_file: str,
+        manifest: Manifest,
+        verbose: bool = False,
+    ) -> None:
+        """Updates the application binary in Cloud."""
+
+        if verbose:
+            log(f'🌟 Pushing to application: "{self.id}".')
+
+        endpoint = f"{self.endpoint}/binary"
+        response = self.client.request(
+            method="GET",
+            endpoint=endpoint,
+        )
+        upload_url = response.json()["upload_url"]
+
+        with open(tar_file, "rb") as f:
+            response = self.client.request(
+                method="PUT",
+                endpoint=upload_url,
+                data=f,
+                headers={"Content-Type": "application/gzip"},
+            )
+
+        activation_request = {
+            "requirements": {
+                "executable_type": manifest.type,
+                "runtime": manifest.runtime,
+            },
+        }
+        response = self.client.request(
+            method="PUT",
+            endpoint=endpoint,
+            payload=activation_request,
+        )
+
+        if verbose:
+            log(f'💥️ Successfully pushed to application: "{self.id}".')
+            log(
+                json.dumps(
+                    {
+                        "app_id": self.id,
+                        "endpoint": self.client.url,
+                        "instance_url": f"{self.endpoint}/runs?instance_id=devint",
+                    },
+                    indent=2,
+                )
+            )
