@@ -1,5 +1,6 @@
 """This module contains the application class."""
 
+import json
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -555,6 +556,8 @@ class Application:
             input = input.to_dict()
             if input is not None:
                 input_size = get_size(input)
+        elif isinstance(input, Dict):
+            input_size = get_size(input)
 
         upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
 
@@ -807,6 +810,9 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
+
+        if isinstance(input, Dict):
+            input = json.dumps(input)
 
         _ = self.client.request(
             method="PUT",
