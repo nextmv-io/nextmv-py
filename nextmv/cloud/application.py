@@ -1,5 +1,6 @@
 """This module contains the application class."""
 
+import json
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -809,6 +810,9 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
+
+        if isinstance(input, Dict):
+            input = json.dumps(input)
 
         _ = self.client.request(
             method="PUT",
