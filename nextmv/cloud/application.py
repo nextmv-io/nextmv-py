@@ -555,6 +555,8 @@ class Application:
             input = input.to_dict()
             if input is not None:
                 input_size = get_size(input)
+        elif isinstance(input, Dict):
+            input_size = get_size(input)
 
         upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
 
