@@ -302,7 +302,11 @@ def __confirm_pip_version(output: str) -> None:
     version = elements[1].strip()
     re_version = re.compile(r"\d+\.\d+")
     if re_version.match(version):
-        major, _, _ = map(int, version.split("."))
+        try:
+            major, _, _ = map(int, version.split("."))
+        except ValueError:
+            major, _ = map(int, version.split("."))
+
         if major >= 22:
             return
 
@@ -317,7 +321,11 @@ def __confirm_python_version(output: str) -> None:
     version = elements[1].strip()
     re_version = re.compile(r"\d+\.\d+\.\d+")
     if re_version.match(version):
-        major, minor, _ = map(int, version.split("."))
+        try:
+            major, minor, _ = map(int, version.split("."))
+        except ValueError:
+            major, minor = map(int, version.split("."))
+
         if major == 3 and minor >= 8:
             return
 
