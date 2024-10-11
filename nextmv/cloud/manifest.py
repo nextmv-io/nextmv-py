@@ -154,14 +154,7 @@ class Manifest(BaseModel):
         with open(os.path.join(dirpath, FILE_NAME)) as file:
             raw_manifest = yaml.safe_load(file)
 
-        return cls(
-            files=raw_manifest["files"],
-            runtime=ManifestRuntime(raw_manifest["runtime"]),
-            type=ManifestType(raw_manifest["type"]),
-            build=ManifestBuild.from_dict(raw_manifest.get("build")),
-            pre_push=raw_manifest.get("pre-push"),
-            python=ManifestPython.from_dict(raw_manifest.get("python")),
-        )
+        return cls.from_dict(raw_manifest)
 
     def to_yaml(self, dirpath: str) -> None:
         """
