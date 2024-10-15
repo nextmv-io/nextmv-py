@@ -669,6 +669,18 @@ class Application:
         The path is the root directory of the app to push. If the path is not
         provided, the current working directory will be used.
 
+        Example
+        -------
+        ```python
+        import os
+
+        from nextmv import cloud
+
+        client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+        app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+        app.push()  # Use verbose=True for step-by-step output.
+        ```
+
         Parameters
         ----------
         manifest : Optional[Manifest], optional
