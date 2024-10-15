@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import IO, Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
@@ -189,8 +189,18 @@ class Client:
         }
 
 
-def get_size(obj: Dict[str, Any]) -> int:
+def get_size(obj: Union[Dict[str, Any], IO[bytes]]) -> int:
     """Finds the size of an object in bytes."""
 
-    obj_str = json.dumps(obj, separators=(",", ":"))
-    return len(obj_str.encode("utf-8"))
+    if isinstance(obj, dict):
+        obj_str = json.dumps(obj, separators=(",", ":"))
+        return len(obj_str.encode("utf-8"))
+
+    elif hasattr(obj, "read"):
+        obj.seek(0, 2)  # Move the cursor to the end of the file
+        size = obj.tell()
+        obj.seek(0)  # Reset the cursor to the beginning of the file
+        return size
+
+    else:
+        raise TypeError("Unsupported type. Only dictionaries and file objects are supported.")
