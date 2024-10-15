@@ -258,11 +258,13 @@ your app to the Nextmv Cloud. This is equivalent to using the Nextmv CLI and
 running `nextmv app push`.
 
 ```python
+import os
+
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
 app = cloud.Application(client=client, id="<YOUR-APP-ID>")
-app.push() # Use verbose=True for step-by-step output.
+app.push()  # Use verbose=True for step-by-step output.
 ```
 
 #### Run an application
