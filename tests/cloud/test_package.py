@@ -55,7 +55,7 @@ class TestPackageDir(unittest.TestCase):
         self.assertTrue(os.path.isdir(output_dir))
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            shutil.unpack_archive(tar_file, tmpdir, filter="fully_trusted")
+            shutil.unpack_archive(tar_file, tmpdir)
             self.assertTrue(os.path.isfile(os.path.join(tmpdir, "main.py")))
             self.assertTrue(os.path.isdir(os.path.join(tmpdir, "app")))
             self.assertTrue(os.path.isfile(os.path.join(tmpdir, "app", "main.py")))
