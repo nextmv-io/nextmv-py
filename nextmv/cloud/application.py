@@ -875,11 +875,9 @@ class Application:
         if isinstance(input, Dict):
             input = json.dumps(input)
 
-        _ = self.client.request(
-            method="PUT",
-            endpoint=upload_url.upload_url,
+        _ = self.client.upload_to_presigned_url(
+            url=upload_url.upload_url,
             data=input,
-            headers={"Content-Type": "application/json"},
         )
 
     def upload_url(self) -> UploadURL:
