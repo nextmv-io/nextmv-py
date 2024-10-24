@@ -369,6 +369,7 @@ class RandomForestRegressorSolution(base_model.BaseModel):
             elif key == "estimators_":
                 estimators = [x.to_model() for x in self.__dict__[key]]
                 setattr(m, key, ndarray_from_list(estimators))
+                m.n_estimators = len(estimators)
             else:
                 setattr(m, key, self.__dict__[key])
         return m
