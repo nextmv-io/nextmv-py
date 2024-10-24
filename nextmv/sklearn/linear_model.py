@@ -28,10 +28,13 @@ class LinearRegressionOptions(Options):
             *parameters,
         )
 
+    def to_dict(self):
+        return {k: v for k, v in super().to_dict().items() if v is not None}
+
     def to_model(self):
         """Instantiates a Linear Regression model from options."""
         names = {p.name for p in LINEAR_REGRESSION_PARAMETERS}
-        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names if v is not None}
         return LinearRegression(**kwds)
 
 

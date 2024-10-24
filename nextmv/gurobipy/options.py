@@ -101,6 +101,10 @@ class GurobipyOptions(Options):
             *parameters,
         )
 
+    def to_dict(self):
+        """Converts the gurobipy options to a dict."""
+        return {k: v for k, v in super().to_dict().items() if v is not None}
+
     def to_env(self, logfilename="", params: str = "", redirect_stdout: bool = True):
         """Creates a gurobipy environment."""
         if redirect_stdout:
@@ -110,7 +114,7 @@ class GurobipyOptions(Options):
 
         names = {p.name for p in GUROBIPY_PARAMETERS}
         for key, value in self.to_dict().items():
-            if key in names:
+            if key in names and value is not None:
                 e.setParam(key, value)
 
         if params:

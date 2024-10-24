@@ -147,9 +147,9 @@ class Options:
             params_by_field_name[param.name.replace("-", "_")] = param
 
         args = parser.parse_args()
-        self._set_arg_attrs(args, params_by_name)
+        self._set_arg_attrs(args, params_by_field_name)
 
-    def _set_arg_attrs(self, args: argparse.Namespace, params_by_name: Dict[str, Parameter]):
+    def _set_arg_attrs(self, args: argparse.Namespace, params_by_field_name: Dict[str, Parameter]):
         for arg in vars(args):
             param = params_by_field_name[arg]
 

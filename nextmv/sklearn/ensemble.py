@@ -98,10 +98,13 @@ class GradientBoostingRegressorOptions(Options):
             *parameters,
         )
 
+    def to_dict(self):
+        return {k: v for k, v in super().to_dict().items() if v is not None}
+
     def to_model(self):
         """Instantiates a Gradient Boosting Regressor model from options."""
         names = {p.name for p in GRADIENT_BOOSTING_REGRESSOR_PARAMETERS}
-        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names if v is not None}
         return GradientBoostingRegressor(**kwds)
 
 
@@ -179,7 +182,7 @@ class GradientBoostingRegressorSolution(base_model.BaseModel):
         return cls(**data)
 
     def to_dict(self):
-        d = super().to_dict()
+        d = {k: v for k, v in super().to_dict().items() if v is not None}
         if self.estimators_ is not None:
             d["estimators_"] = [x.to_dict() for x in self.estimators_]
         return d
@@ -292,10 +295,13 @@ class RandomForestRegressorOptions(Options):
             *parameters,
         )
 
+    def to_dict(self):
+        return {k: v for k, v in super().to_dict().items() if v is not None}
+
     def to_model(self):
         """Instantiates a Random Forest Regressor model from options."""
         names = {p.name for p in RANDOM_FOREST_REGRESSOR_PARAMETERS}
-        kwds = {k: v for k, v in self.to_dict().items() if k in names}
+        kwds = {k: v for k, v in self.to_dict().items() if k in names if v is not None}
         return RandomForestRegressor(**kwds)
 
 
