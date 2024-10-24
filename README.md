@@ -251,46 +251,64 @@ export NEXTMV_API_KEY="<YOUR-API-KEY>"
 
 Additionally, you must have a valid app in Nextmv Cloud.
 
-- Make a run and get the results.
+#### Push an application
 
-    ```python
-    import os
+Place the following script in the root of your app directory and run it to push
+your app to the Nextmv Cloud. This is equivalent to using the Nextmv CLI and
+running `nextmv app push`.
 
-    from nextmv.cloud import Application, Client, PollingOptions
+```python
+import os
 
-    input = {
-        "defaults": {"vehicles": {"speed": 20}},
-        "stops": [
-            {
-                "id": "Nijō Castle",
-                "location": {"lon": 135.748134, "lat": 35.014239},
-                "quantity": -1,
-            },
-            {
-                "id": "Kyoto Imperial Palace",
-                "location": {"lon": 135.762057, "lat": 35.025431},
-                "quantity": -1,
-            },
-        ],
-        "vehicles": [
-            {
-                "id": "v2",
-                "capacity": 2,
-                "start_location": {"lon": 135.728898, "lat": 35.039705},
-            },
-        ],
-    }
+from nextmv import cloud
 
-    client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
-    app = Application(client=client, id="<YOUR-APP-ID>")
-    result = app.new_run_with_result(
-        input=input,
-        instance_id="latest",
-        run_options={"solve.duration": "1s"},
-        polling_options=PollingOptions(),  # Customize the polling options.
-    )
-    print(result.to_dict())
-    ```
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+app.push()  # Use verbose=True for step-by-step output.
+```
+
+#### Run an application
+
+Make a run and get the results.
+
+```python
+import os
+
+from nextmv import cloud
+
+input = {
+    "defaults": {"vehicles": {"speed": 20}},
+    "stops": [
+        {
+            "id": "Nijō Castle",
+            "location": {"lon": 135.748134, "lat": 35.014239},
+            "quantity": -1,
+        },
+        {
+            "id": "Kyoto Imperial Palace",
+            "location": {"lon": 135.762057, "lat": 35.025431},
+            "quantity": -1,
+        },
+    ],
+    "vehicles": [
+        {
+            "id": "v2",
+            "capacity": 2,
+            "start_location": {"lon": 135.728898, "lat": 35.039705},
+        },
+    ],
+}
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+result = app.new_run_with_result(
+    input=input,
+    instance_id="latest",
+    run_options={"solve.duration": "1s"},
+    polling_options=cloud.PollingOptions(),  # Customize the polling options.
+)
+print(result.to_dict())
+```
 
 [signup]: https://cloud.nextmv.io
 [docs]: https://nextmv.io/docs

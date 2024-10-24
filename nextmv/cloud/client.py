@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import IO, Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 import requests
@@ -180,6 +180,53 @@ class Client:
 
         return response
 
+    def upload_to_presigned_url(
+        self,
+        data: Union[Dict[str, Any], str],
+        url: str,
+    ) -> None:
+        """
+        Method to upload data to a presigned URL of the Nextmv Cloud API.
+        Args:
+            data: data to upload.
+            url: URL to upload the data to.
+        """
+
+        upload_data = None
+        if isinstance(data, Dict):
+            upload_data = json.dumps(data, separators=(",", ":"))
+        elif isinstance(data, str):
+            upload_data = data
+        else:
+            raise ValueError("data must be a dictionary or a string")
+
+        session = requests.Session()
+        retries = Retry(
+            total=self.max_retries,
+            backoff_factor=self.backoff_factor,
+            backoff_jitter=self.backoff_jitter,
+            backoff_max=self.backoff_max,
+            status_forcelist=self.status_forcelist,
+            allowed_methods=self.allowed_methods,
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", adapter)
+        kwargs = {
+            "url": url,
+            "timeout": self.timeout,
+            "data": upload_data,
+        }
+
+        response = session.put(**kwargs)
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            raise requests.HTTPError(
+                f"upload to presigned URL {url} failed with "
+                + f"status code {response.status_code} and message: {response.text}"
+            ) from e
+
     def _set_headers_api_key(self, api_key: str) -> None:
         """Sets the API key to use for requests to the Nextmv Cloud API."""
 
@@ -189,8 +236,21 @@ class Client:
         }
 
 
-def get_size(obj: Dict[str, Any]) -> int:
+def get_size(obj: Union[Dict[str, Any], IO[bytes]]) -> int:
     """Finds the size of an object in bytes."""
 
-    obj_str = json.dumps(obj, separators=(",", ":"))
-    return len(obj_str.encode("utf-8"))
+    if isinstance(obj, dict):
+        obj_str = json.dumps(obj, separators=(",", ":"))
+        return len(obj_str.encode("utf-8"))
+
+    elif hasattr(obj, "read"):
+        obj.seek(0, 2)  # Move the cursor to the end of the file
+        size = obj.tell()
+        obj.seek(0)  # Reset the cursor to the beginning of the file
+        return size
+
+    elif isinstance(obj, str):
+        return len(obj.encode("utf-8"))
+
+    else:
+        raise TypeError("Unsupported type. Only dictionaries and file objects are supported.")

@@ -24,5 +24,10 @@ from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .client import Client as Client
 from .input_set import InputSet as InputSet
+from .manifest import Manifest as Manifest
+from .manifest import ManifestBuild as ManifestBuild
+from .manifest import ManifestPython as ManifestPython
+from .manifest import ManifestRuntime as ManifestRuntime
+from .manifest import ManifestType as ManifestType
 from .status import Status as Status
 from .status import StatusV2 as StatusV2
