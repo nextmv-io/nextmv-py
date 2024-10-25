@@ -7,7 +7,7 @@ from pydantic import ConfigDict
 from sklearn.neural_network import MLPRegressor
 
 from nextmv import base_model, output
-from nextmv.numpy import ndarray, ndarray_from_list, ndarray_to_list
+from nextmv.numpy import ndarray, ndarray_from_list
 from nextmv.options import Options
 from nextmv.options import Parameter as P
 
