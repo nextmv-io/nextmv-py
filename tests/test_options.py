@@ -23,7 +23,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5, 6]
+    test_scripts = [1, 2, 3, 4, 5, 6, 7]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
