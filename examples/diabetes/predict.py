@@ -14,7 +14,7 @@ def main():
     X = datasets.load_diabetes().data
 
     output = nextmv.Output(
-        solution=m.predict(X).tolist(),
+        solution=m.predict(X, quantile=0.9).tolist(),
         statistics=nextmv.Statistics(
             run=nextmv.RunStatistics(duration=time.time() - start_time),
         ),
