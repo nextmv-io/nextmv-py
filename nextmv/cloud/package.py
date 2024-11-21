@@ -314,7 +314,7 @@ def __save_python_model(
     # Update the manifest with missing properties.
     manifest.python.model = ManifestPythonModel(
         name=model_configuration.name,
-        options=model_configuration.options.to_dict_parameters(),
+        options=model_configuration.options.parameters_dict(),
     )
     manifest.files.append(f"{model_configuration.name}/**")
 

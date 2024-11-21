@@ -1,6 +1,7 @@
 """Configuration for a run."""
 
 import argparse
+import builtins
 import copy
 import os
 from dataclasses import dataclass
@@ -53,7 +54,7 @@ class Parameter:
     argument, an environment variable or a default value."""
 
     @classmethod
-    def from_dict(data: Dict[str, Any]) -> "Parameter":
+    def from_dict(cls, data: Dict[str, Any]) -> "Parameter":
         """
         Creates an instance of `Parameter` from a dictionary.
 
@@ -68,9 +69,12 @@ class Parameter:
             An instance of `Parameter`.
         """
 
+        param_type_string = data["param_type"]
+        param_type = getattr(builtins, param_type_string.split("'")[1])
+
         return Parameter(
             name=data["name"],
-            param_type=data["param_type"],
+            param_type=param_type,
             default=data.get("default"),
             description=data.get("description"),
             required=data.get("required", False),
@@ -239,7 +243,7 @@ class Options:
 
         return m.to_dict()["config"]
 
-    def to_dict_parameters(self) -> List[Dict[str, Any]]:
+    def parameters_dict(self) -> List[Dict[str, Any]]:
         """
         Converts the options to a list of dicts. Each dict is the dict
         representation of a `Parameter`.
@@ -253,7 +257,36 @@ class Options:
         return [param.to_dict() for param in self.parameters]
 
     @classmethod
-    def from_dict_parameters(cls, dict_parameters: List[Dict[str, Any]]) -> "Options":
+    def from_dict(cls, data: Dict[str, Any]) -> "Options":
+        """
+        Creates an instance of `Options` from a dictionary. The dictionary
+        should have the following structure:
+
+        {
+            "duration": "30",
+            "threads": 4,
+        }
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary representation of the options.
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for key, value in data.items():
+            parameter = Parameter(name=key, param_type=type(value), default=value)
+            parameters.append(parameter)
+
+        return cls(*parameters)
+
+    @classmethod
+    def from_parameters_dict(cls, parameters_dict: List[Dict[str, Any]]) -> "Options":
         """
         Creates an instance of `Options` from parameters in dict form. Each
         entry is the dict representation of a `Parameter`.
@@ -270,8 +303,8 @@ class Options:
         """
 
         parameters = []
-        for dict_parameter in dict_parameters:
-            parameter = Parameter.from_dict(dict_parameter)
+        for parameter_dict in parameters_dict:
+            parameter = Parameter.from_dict(parameter_dict)
             parameters.append(parameter)
 
         return cls(*parameters)

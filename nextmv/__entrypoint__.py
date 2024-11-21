@@ -18,11 +18,13 @@ def main() -> None:
 
     manifest = Manifest.from_yaml(".")
 
+    # Load the options from the manifest.
     options = None
-    dict_parameters = manifest.python.model.options
-    if dict_parameters is not None:
-        options = Options.from_dict_parameters(dict_parameters)
+    parameters_dict = manifest.python.model.options
+    if parameters_dict is not None:
+        options = Options.from_parameters_dict(parameters_dict)
 
+    # Load the model.
     model_configuration = ModelConfiguration(
         name=manifest.python.model.name,
         options=options,
@@ -32,9 +34,11 @@ def main() -> None:
         suppress_warnings=True,
     )
 
+    # Load the input and solve the model by using mlflow’s inference API.
     input = load_local(options=options)
     output = loaded_model.predict(input, params=options.to_dict())
 
+    # Write the output.
     write_local(output)
 
 

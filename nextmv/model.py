@@ -24,7 +24,7 @@ class Model(PythonModel):
         [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
         """
 
-        options = Options.from_dict_parameters(params)
+        options = Options.from_dict(params)
 
         return self.solve(model_input, options)
 
