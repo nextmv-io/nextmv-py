@@ -18,6 +18,7 @@ from nextmv.cloud.input_set import InputSet
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
 from nextmv.logger import log
+from nextmv.model import Model, ModelConfiguration
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -658,16 +659,22 @@ class Application:
         manifest: Optional[Manifest] = None,
         app_dir: Optional[str] = None,
         verbose: bool = False,
+        model: Optional[Model] = None,
+        model_configuration: Optional[ModelConfiguration] = None,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
 
-        If the manifest is not provided, an `app.yaml` file will be searched for in
-        the provided path. If there is no manifest file found, an exception will be
-        raised.
+        If the manifest is not provided, an `app.yaml` file will be searched
+        for in the provided path. If there is no manifest file found, an
+        exception will be raised.
 
-        The path is the root directory of the app to push. If the path is not
-        provided, the current working directory will be used.
+        There are two ways to push an app to Nextmv Cloud:
+        1. Specifying the path to the app’s root directory.
+        2. Specifying a model.
+
+        If neither path, nor model are provided, then it is assumed that the
+        app is being pushed from the current working directory.
 
         Example
         -------
@@ -700,9 +707,18 @@ class Application:
         if manifest is None:
             manifest = Manifest.from_yaml(app_dir)
 
+        if model is not None and not isinstance(model, Model):
+            raise TypeError("model must be an instance of nextmv.Model")
+
+        if model_configuration is not None and not isinstance(model_configuration, ModelConfiguration):
+            raise TypeError("model_configuration must be an instance of nextmv.ModelConfiguration")
+
+        if (model is None and model_configuration is not None) or (model is not None and model_configuration is None):
+            raise ValueError("model and model_configuration must be provided together")
+
         package._run_build_command(app_dir, manifest.build, verbose)
         package._run_pre_push_command(app_dir, manifest.pre_push, verbose)
-        tar_file, output_dir = package._package(app_dir, manifest, verbose)
+        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose)
         self.__update_app_binary(tar_file, manifest, verbose)
 
         try:

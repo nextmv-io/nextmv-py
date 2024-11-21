@@ -1,6 +1,7 @@
 """Module with the logic for pushing an app to Nextmv Cloud."""
 
 import glob
+import logging
 import os
 import platform
 import re
@@ -10,8 +11,12 @@ import tarfile
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
-from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestType
+from mlflow.models import infer_signature
+from mlflow.pyfunc import save_model
+
+from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestPythonModel, ManifestType
 from nextmv.logger import log
+from nextmv.model import _ENTRYPOINT_FILE, _REQUIREMENTS_FILE, Model, ModelConfiguration
 
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],
@@ -20,21 +25,26 @@ _MANDATORY_FILES_PER_TYPE = {
 }
 
 
-def _package(app_dir: str, manifest: Manifest, verbose: bool = False) -> Tuple[str, str]:
+def _package(
+    app_dir: str,
+    manifest: Manifest,
+    model: Optional[Model] = None,
+    model_configuration: Optional[ModelConfiguration] = None,
+    verbose: bool = False,
+) -> Tuple[str, str]:
     """Package the app into a tarball.."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
-        manifest.to_yaml(temp_dir)
+        if manifest.type == ManifestType.PYTHON:
+            __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose)
+
         found, missing, files = __find_files(app_dir, manifest.files)
         __confirm_mandatory_files(manifest, found)
 
         if len(missing) > 0:
             raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
 
-        if manifest.type == ManifestType.PYTHON:
-            if verbose:
-                log("🐍 Bundling Python dependencies.")
-            __install_dependencies(manifest, app_dir, temp_dir)
+        manifest.to_yaml(temp_dir)
 
         for file in files:
             target_dir = os.path.dirname(os.path.join(temp_dir, file["interior_path"]))
@@ -154,14 +164,18 @@ def __find_files(
         if pattern.startswith("!"):
             pattern = pattern[1:]
             negated = True
-        matches = glob.glob(pattern)
+        matches = glob.glob(pattern, recursive=True)
         if not matches and not negated:
             missing.append(filter)
         else:
             if negated:
                 found = [f for f in found if f not in matches]
             else:
-                found.extend(matches)
+                for match in matches:
+                    if os.path.isdir(match):
+                        continue
+
+                    found.append(match)
 
     # Switch back to the original directory
     os.chdir(cwd)
@@ -187,6 +201,25 @@ def __confirm_mandatory_files(manifest: Manifest, present_files: List[str]) -> N
 
     if missing_files:
         raise Exception(f"missing mandatory files: {', '.join(missing_files)}")
+
+
+def __handle_python(
+    app_dir: str,
+    temp_dir: str,
+    manifest: Manifest,
+    model: Optional[Model] = None,
+    model_configuration: Optional[ModelConfiguration] = None,
+    verbose: bool = False,
+):
+    """Handles the Python-specific packaging logic."""
+    if model is not None and model_configuration is not None:
+        if verbose:
+            log("🔮 Encoding Python model.")
+        __save_python_model(app_dir, manifest, model, model_configuration)
+
+    if verbose:
+        log("🐍 Bundling Python dependencies.")
+    __install_dependencies(manifest, app_dir, temp_dir)
 
 
 def __install_dependencies(
@@ -238,6 +271,66 @@ def __install_dependencies(
     )
     if result.returncode != 0:
         raise Exception(f"error installing dependencies: {result.stderr}")
+
+
+def __save_python_model(
+    app_dir: str,
+    manifest: Manifest,
+    model: Model,
+    model_configuration: ModelConfiguration,
+) -> None:
+    """Save a model in a directory. This method leverages mlflow to create a
+    model that can be loaded later on."""
+
+    # Some annoying logging from mlflow must be disabled.
+    logging.disable(logging.CRITICAL)
+
+    model_path = os.path.join(app_dir, model_configuration.name)
+    if os.path.exists(model_path):
+        shutil.rmtree(model_path)
+
+    mlruns_path = os.path.join(app_dir, "mlruns")
+    if os.path.exists(mlruns_path):
+        shutil.rmtree(mlruns_path)
+
+    signature = None
+    if model_configuration.options is not None:
+        options_dict = model_configuration.options.to_dict()
+        signature = infer_signature(
+            params=options_dict,
+        )
+
+    # We use mlflow to save the model to the local filesystem, to be able to
+    # load it later on.
+    save_model(
+        path=model_path,  # Customize the name of the model location.
+        infer_code_paths=True,  # Makes the imports portable.
+        python_model=model,
+        signature=signature,  # Allows us to work with our own `Options` class.
+    )
+
+    logging.disable(logging.NOTSET)
+
+    # Update the manifest with missing properties.
+    manifest.python.model = ManifestPythonModel(
+        name=model_configuration.name,
+        options=model_configuration.options.to_dict_parameters(),
+    )
+    manifest.files.append(f"{model_configuration.name}/**")
+
+    # Create an auxiliary requirements file with the model dependencies.
+    requirements_file = os.path.join(app_dir, _REQUIREMENTS_FILE)
+    with open(requirements_file, "w") as file:
+        file.write("mlflow==2.18.0\n")
+        reqs = model_configuration.requirements
+        if reqs is not None:
+            for req in reqs:
+                file.write(f"{req}\n")
+
+    # Adds the main.py file to the app_dir by coping the `entrypoint.py` file
+    # which is one level up from this file.
+    entrypoint_file = os.path.join(os.path.dirname(__file__), "..", _ENTRYPOINT_FILE)
+    shutil.copy2(entrypoint_file, os.path.join(app_dir, "main.py"))
 
 
 def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str) -> str:

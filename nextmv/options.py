@@ -1,9 +1,10 @@
 """Configuration for a run."""
 
 import argparse
+import copy
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -50,6 +51,48 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
+
+    @classmethod
+    def from_dict(data: Dict[str, Any]) -> "Parameter":
+        """
+        Creates an instance of `Parameter` from a dictionary.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary representation of a parameter.
+
+        Returns
+        -------
+        Parameter
+            An instance of `Parameter`.
+        """
+
+        return Parameter(
+            name=data["name"],
+            param_type=data["param_type"],
+            default=data.get("default"),
+            description=data.get("description"),
+            required=data.get("required", False),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts the parameter to a dict.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The parameter as a dict.
+        """
+
+        return {
+            "name": self.name,
+            "param_type": str(self.param_type),
+            "default": self.default,
+            "description": self.description,
+            "required": self.required,
+        }
 
 
 class Options:
@@ -109,6 +152,8 @@ class Options:
 
         if not parameters:
             return
+
+        self.parameters = copy.deepcopy(parameters)
 
         parser = argparse.ArgumentParser(
             add_help=True,
@@ -188,9 +233,48 @@ class Options:
         class model(BaseModel):
             config: Dict[str, Any]
 
-        m = model.from_dict(data={"config": self.__dict__})
+        self_dict = copy.deepcopy(self.__dict__)
+        self_dict.pop("parameters")
+        m = model.from_dict(data={"config": self_dict})
 
         return m.to_dict()["config"]
+
+    def to_dict_parameters(self) -> List[Dict[str, Any]]:
+        """
+        Converts the options to a list of dicts. Each dict is the dict
+        representation of a `Parameter`.
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            The list of dictionaries (parameter entries).
+        """
+
+        return [param.to_dict() for param in self.parameters]
+
+    @classmethod
+    def from_dict_parameters(cls, dict_parameters: List[Dict[str, Any]]) -> "Options":
+        """
+        Creates an instance of `Options` from parameters in dict form. Each
+        entry is the dict representation of a `Parameter`.
+
+        Parameters
+        ----------
+        data : List[Dict[str, Any]]
+            The list of dictionaries (parameter entries).
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for dict_parameter in dict_parameters:
+            parameter = Parameter.from_dict(dict_parameter)
+            parameters.append(parameter)
+
+        return cls(*parameters)
 
     @staticmethod
     def _description(param: Parameter) -> str:
