@@ -338,9 +338,7 @@ class Options:
 
         value = str(value).lower()
 
-        if value in ("true", "1", "t", "y", "yes"):
+        if value in ("true", "True", "TRUE", "1", "t", "T", "y", "Y", "yes", "Yes", "YES"):
             return True
-        if value in ("false", "0", "f", "n", "no"):
-            return False
 
-        raise argparse.ArgumentTypeError(f"invalid value for bool parameter '{parameter.name}': {value}")
+        return False

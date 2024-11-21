@@ -670,14 +670,19 @@ class Application:
         exception will be raised.
 
         There are two ways to push an app to Nextmv Cloud:
-        1. Specifying the path to the app’s root directory.
-        2. Specifying a model.
+        1. Specifying `app_dir`, which is the path to an app’s root directory.
+        This acts as an external strategy, where the app is composed of files
+        in a directory and those apps are packaged and pushed to Nextmv Cloud.
+        2. Specifying a `model` and `model_configuration`. This acts as an
+        internal (or Python-native) strategy, where the app is actually a
+        `nextmv.Model`. The model is encoded, some dependencies and
+        accompanying files are packaged, and the app is pushed to Nextmv Cloud.
 
-        If neither path, nor model are provided, then it is assumed that the
-        app is being pushed from the current working directory.
-
-        Example
+        Examples
         -------
+
+        1. Push an app using an external strategy, i.e., specifying the app’s
+        directory:
         ```python
         import os
 
@@ -686,6 +691,63 @@ class Application:
         client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
         app = cloud.Application(client=client, id="<YOUR-APP-ID>")
         app.push()  # Use verbose=True for step-by-step output.
+        ```
+
+        2. Push an app using an internal strategy, i.e., specifying the model
+        and model configuration:
+        ```python
+        import os
+
+        import nextroute
+
+        import nextmv
+        import nextmv.cloud
+
+
+        # Define the model that makes decisions. This model uses the Nextroute
+        # library to solve a vehicle routing problem.
+        class DecisionModel(nextmv.Model):
+            def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+                nextroute_input = nextroute.schema.Input.from_dict(input.data)
+                nextroute_options = nextroute.Options.extract_from_dict(options.to_dict())
+                nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
+
+                return nextmv.Output(
+                    options=options,
+                    solution=nextroute_output.solutions[0].to_dict(),
+                    statistics=nextroute_output.statistics.to_dict(),
+                )
+
+
+        # Define the options that the model needs.
+        parameters = []
+        default_options = nextroute.Options()
+        for name, default_value in default_options.to_dict().items():
+            parameters.append(nextmv.Parameter(name.lower(), type(default_value), default_value, name, False))
+
+        options = nextmv.Options(*parameters)
+
+        # Instantiate the model and model configuration.
+        model = DecisionModel()
+        model_configuration = nextmv.ModelConfiguration(
+            name="python_nextroute_model",
+            requirements=[
+                "nextroute==1.8.1",
+                "nextmv==0.14.0.dev1",
+            ],
+            options=options,
+        )
+
+        # Define the Nextmv application and push the model to the cloud.
+        client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+        app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+        manifest = nextmv.cloud.default_python_manifest()
+        app.push(
+            manifest=manifest,
+            verbose=True,
+            model=model,
+            model_configuration=model_configuration,
+        )
         ```
 
         Parameters
