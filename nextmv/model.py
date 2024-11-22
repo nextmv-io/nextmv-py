@@ -122,7 +122,7 @@ class Model:
         """
 
         try:
-            import mlflow
+            import mlflow as mlflow
         except ImportError:
             # If mlflow is not installed, we install it.
             import subprocess
