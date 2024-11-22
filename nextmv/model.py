@@ -1,14 +1,35 @@
+import logging
+import os
+import shutil
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from mlflow.pyfunc import PythonModel
+from mlflow.models import infer_signature
+from mlflow.pyfunc import PythonModel, save_model
 
 from nextmv.input import Input
+from nextmv.logger import log
 from nextmv.options import Options
 from nextmv.output import Output
 
 _REQUIREMENTS_FILE = "model_requirements.txt"
 _ENTRYPOINT_FILE = "__entrypoint__.py"
+
+
+@dataclass
+class ModelConfiguration:
+    """
+    ModelConfiguration is a class that holds the configuration for a
+    model. It is used to define how a Python model is encoded and loaded.
+    """
+
+    name: str
+    """The name of the decision model."""
+
+    requirements: Optional[List[str]] = None
+    """A list of Python dependencies that the decision model requires."""
+    options: Optional[Options] = None
+    """Options that the decision model requires."""
 
 
 class Model(PythonModel):
@@ -55,28 +76,104 @@ class Model(PythonModel):
 
         return self.solve(model_input, options)
 
-    def solve(input: Input, options: Options) -> Output:
+    def solve(self, input: Input, options: Options) -> Output:
         """
-        The `solve` method is the main entry point of your model. It takes an
-        an `input` and `options` and should return an output with a solution
-        (decision). You should implement this method with the main logic of
-        your decision model.
+        The `solve` method is the main entry point of your model. You must
+        implement this method yourself. It receives a `nextmv.Input` and
+        `nextmv.Options` and should process them to produce a `nextmv.Output`,
+        which is the solution to the decision model/problem.
+
+        Parameters
+        ----------
+        input : Input
+            The input data that the model will use to make a decision.
+        options : Options
+            The options that the model will use to make a decision.
+
+        Returns
+        -------
+        Output
+            The output of the model, which is the solution to the decision
+            model/problem.
         """
 
         raise NotImplementedError
 
+    def save(self, model_dir: str, configuration: ModelConfiguration) -> None:
+        """
+        Save the model to the local filesystem, in the location given by `dir`.
+        The model is saved according to the configuration provided, which is of
+        type `ModelConfiguration`.
 
-@dataclass
-class ModelConfiguration:
-    """
-    ModelConfiguration is a class that holds the configuration for a
-    model. It is used to define how a Python model is encoded and loaded.
-    """
+        Parameters
+        ----------
+        dir : str
+            The directory where the model will be saved.
+        configuration : ModelConfiguration
+            The configuration of the model, which defines how the model is
+            saved and loaded.
+        """
 
-    name: str
-    """The name of the decision model."""
+        # Some annoying logging from mlflow must be disabled.
+        logging.disable(logging.CRITICAL)
 
-    requirements: Optional[List[str]] = None
-    """A list of Python dependencies that the decision model requires."""
-    options: Optional[Options] = None
-    """Options that the decision model requires."""
+        _cleanup_python_model(model_dir, configuration, verbose=False)
+
+        signature = None
+        if configuration.options is not None:
+            options_dict = configuration.options.to_dict()
+            signature = infer_signature(
+                params=options_dict,
+            )
+
+        # We use mlflow to save the model to the local filesystem, to be able to
+        # load it later on.
+        model_path = os.path.join(model_dir, configuration.name)
+        save_model(
+            path=model_path,  # Customize the name of the model location.
+            infer_code_paths=True,  # Makes the imports portable.
+            python_model=self,
+            signature=signature,  # Allows us to work with our own `Options` class.
+        )
+
+        logging.disable(logging.NOTSET)
+
+        # Create an auxiliary requirements file with the model dependencies.
+        requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
+        with open(requirements_file, "w") as file:
+            file.write("mlflow==2.18.0\n")
+            reqs = configuration.requirements
+            if reqs is not None:
+                for req in reqs:
+                    file.write(f"{req}\n")
+
+        # Adds the main.py file to the app_dir by coping the `entrypoint.py` file
+        # which is one level up from this file.
+        entrypoint_file = os.path.join(os.path.dirname(__file__), _ENTRYPOINT_FILE)
+        shutil.copy2(entrypoint_file, os.path.join(model_dir, "main.py"))
+
+
+def _cleanup_python_model(
+    model_dir: str,
+    model_configuration: Optional[ModelConfiguration] = None,
+    verbose: bool = False,
+) -> None:
+    """Cleans up the Python-specific model packaging logic."""
+
+    if model_configuration is None:
+        return
+
+    if verbose:
+        log("🧹 Cleaning up Python artifacts.")
+
+    model_path = os.path.join(model_dir, model_configuration.name)
+    if os.path.exists(model_path):
+        shutil.rmtree(model_path)
+
+    mlruns_path = os.path.join(model_dir, "mlruns")
+    if os.path.exists(mlruns_path):
+        shutil.rmtree(mlruns_path)
+
+    requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
+    if os.path.exists(requirements_file):
+        os.remove(requirements_file)

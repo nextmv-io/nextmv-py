@@ -1,7 +1,6 @@
 """Module with the logic for pushing an app to Nextmv Cloud."""
 
 import glob
-import logging
 import os
 import platform
 import re
@@ -11,12 +10,9 @@ import tarfile
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
-from mlflow.models import infer_signature
-from mlflow.pyfunc import save_model
-
-from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestPythonModel, ManifestType
+from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.logger import log
-from nextmv.model import _ENTRYPOINT_FILE, _REQUIREMENTS_FILE, Model, ModelConfiguration
+from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],
@@ -60,6 +56,9 @@ def _package(
 
         if verbose:
             log(f'📋 Copied files listed in "{FILE_NAME}" manifest.')
+
+        if manifest.type == ManifestType.PYTHON:
+            _cleanup_python_model(app_dir, model_configuration, verbose)
 
         output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
         tar_file, file_count = __compress_tar(temp_dir, output_dir)
@@ -210,12 +209,13 @@ def __handle_python(
     model: Optional[Model] = None,
     model_configuration: Optional[ModelConfiguration] = None,
     verbose: bool = False,
-):
+) -> None:
     """Handles the Python-specific packaging logic."""
+
     if model is not None and model_configuration is not None:
         if verbose:
             log("🔮 Encoding Python model.")
-        __save_python_model(app_dir, manifest, model, model_configuration)
+        model.save(app_dir, model_configuration)
 
     if verbose:
         log("🐍 Bundling Python dependencies.")
@@ -271,66 +271,6 @@ def __install_dependencies(
     )
     if result.returncode != 0:
         raise Exception(f"error installing dependencies: {result.stderr}")
-
-
-def __save_python_model(
-    app_dir: str,
-    manifest: Manifest,
-    model: Model,
-    model_configuration: ModelConfiguration,
-) -> None:
-    """Save a model in a directory. This method leverages mlflow to create a
-    model that can be loaded later on."""
-
-    # Some annoying logging from mlflow must be disabled.
-    logging.disable(logging.CRITICAL)
-
-    model_path = os.path.join(app_dir, model_configuration.name)
-    if os.path.exists(model_path):
-        shutil.rmtree(model_path)
-
-    mlruns_path = os.path.join(app_dir, "mlruns")
-    if os.path.exists(mlruns_path):
-        shutil.rmtree(mlruns_path)
-
-    signature = None
-    if model_configuration.options is not None:
-        options_dict = model_configuration.options.to_dict()
-        signature = infer_signature(
-            params=options_dict,
-        )
-
-    # We use mlflow to save the model to the local filesystem, to be able to
-    # load it later on.
-    save_model(
-        path=model_path,  # Customize the name of the model location.
-        infer_code_paths=True,  # Makes the imports portable.
-        python_model=model,
-        signature=signature,  # Allows us to work with our own `Options` class.
-    )
-
-    logging.disable(logging.NOTSET)
-
-    # Update the manifest with missing properties.
-    manifest.python.model = ManifestPythonModel(
-        name=model_configuration.name,
-        options=model_configuration.options.parameters_dict(),
-    )
-    manifest.files.append(f"{model_configuration.name}/**")
-
-    # Create an auxiliary requirements file with the model dependencies.
-    requirements_file = os.path.join(app_dir, _REQUIREMENTS_FILE)
-    with open(requirements_file, "w") as file:
-        file.write("mlflow==2.18.0\n")
-        reqs = model_configuration.requirements
-        if reqs is not None:
-            for req in reqs:
-                file.write(f"{req}\n")
-
-    # Adds the main.py file to the app_dir by coping the `entrypoint.py` file
-    # which is one level up from this file.
-    entrypoint_file = os.path.join(os.path.dirname(__file__), "..", _ENTRYPOINT_FILE)
-    shutil.copy2(entrypoint_file, os.path.join(app_dir, "main.py"))
 
 
 def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str) -> str:

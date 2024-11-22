@@ -17,7 +17,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
-    "mlflow>=2.18.0",
     "pydantic>=2.5.2",
     "urllib3>=2.1.0",
     "requests>=2.31.0",

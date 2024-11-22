@@ -8,7 +8,7 @@ import yaml
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
-from nextmv.model import _REQUIREMENTS_FILE
+from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 
 FILE_NAME = "app.yaml"
 """Name of the app manifest file."""
@@ -189,6 +189,39 @@ class Manifest(BaseModel):
 
         with open(os.path.join(dirpath, FILE_NAME), "w") as file:
             yaml.dump(self.to_dict(), file)
+
+    @classmethod
+    def from_model_configuration(cls, model_configuration: ModelConfiguration) -> "Manifest":
+        """
+        Create a Python manifest from a Python model configuration.
+
+        Parameters
+        ----------
+        model_configuration : ModelConfiguration
+            The model configuration.
+
+        Returns
+        -------
+        Manifest
+            The Python manifest.
+        """
+
+        manifest_python = ManifestPython.from_dict(
+            {
+                "pip-requirements": _REQUIREMENTS_FILE,
+                "model": {
+                    "name": model_configuration.name,
+                    "options": model_configuration.options.parameters_dict(),
+                },
+            }
+        )
+
+        return cls(
+            files=["main.py", f"{model_configuration.name}/**"],
+            runtime=ManifestRuntime.PYTHON,
+            type=ManifestType.PYTHON,
+            python=manifest_python,
+        )
 
 
 def default_python_manifest() -> Manifest:
