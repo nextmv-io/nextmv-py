@@ -1,5 +1,8 @@
 """
-This entrypoint file is meant to be used in the Nextmv Cloud. It is not
+# When working in a notebook environment, we don’t really create a `main.py`
+# file with the main entrypoint of the program. Because the logic is mostly
+# encoded inside the `Model` class, we need to create a `main.py` file that we
+# can run in Nextmv Cloud. This file is used as that entrypoint. It is not
 intended for a human to use it during local development. It is the standard way
 in which a `nextmv.Model` is loaded by using mlflow.
 """

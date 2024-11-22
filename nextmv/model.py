@@ -4,16 +4,27 @@ import shutil
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from mlflow.models import infer_signature
-from mlflow.pyfunc import PythonModel, save_model
-
 from nextmv.input import Input
 from nextmv.logger import log
 from nextmv.options import Options
 from nextmv.output import Output
 
+# When working with the `Model`, we expect to be working in a notebook
+# environment, and not interact with the local filesystem a lot. We use the
+# `ModelConfiguration` to specify the dependencies that the `Model` requires.
+# To work with the "push" logic of uploading an app to Nextmv Cloud, we need a
+# requirement file that we use to gather dependencies, install them, and bundle
+# them in the app. This file is used as a placeholder for the dependencies that
+# the model requires and that we install and bundle with the app.
 _REQUIREMENTS_FILE = "model_requirements.txt"
+
+# When working in a notebook environment, we don’t really create a `main.py`
+# file with the main entrypoint of the program. Because the logic is mostly
+# encoded inside the `Model` class, we need to create a `main.py` file that we
+# can run in Nextmv Cloud. This file is used as that entrypoint.
 _ENTRYPOINT_FILE = "__entrypoint__.py"
+
+_MLFLOW_DEPENDENCY = "mlflow==2.18.0"
 
 
 @dataclass
@@ -21,6 +32,15 @@ class ModelConfiguration:
     """
     ModelConfiguration is a class that holds the configuration for a
     model. It is used to define how a Python model is encoded and loaded.
+
+    The `name` is required, and should be a personalized name for the model.
+
+    You may specify the `requirements` that your decision model requires. This
+    is done by passing a list of requirements, as if they were lines in a
+    `requirements.txt` file. An example of this is `["nextmv==0.1.0"]`.
+
+    Lastly, if your decision model requires options, you may specify them by
+    passing an instance of `Options`.
     """
 
     name: str
@@ -32,7 +52,7 @@ class ModelConfiguration:
     """Options that the decision model requires."""
 
 
-class Model(PythonModel):
+class Model:
     """
     Model is the base class for defining a decision model that runs in Nextmv
     Cloud. You must create a subclass of this class and implement the `solve`
@@ -62,19 +82,6 @@ class Model(PythonModel):
             )
         ```
     """
-
-    def predict(self, context, model_input, params=None) -> Any:
-        """
-        The predict method allows us to work with mlflow’s [python_function]
-        model flavor. Warning: This method should not be used or overridden
-        directly. Instead, you should implement the `solve` method.
-
-        [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
-        """
-
-        options = Options.from_dict(params)
-
-        return self.solve(model_input, options)
 
     def solve(self, input: Input, options: Options) -> Output:
         """
@@ -114,6 +121,41 @@ class Model(PythonModel):
             saved and loaded.
         """
 
+        try:
+            import mlflow
+        except ImportError:
+            # If mlflow is not installed, we install it.
+            import subprocess
+            import sys
+
+            # We install mlflow using pip.
+            subprocess.check_call([sys.executable, "-m", "pip", "install", _MLFLOW_DEPENDENCY])
+        finally:
+            from mlflow.models import infer_signature
+            from mlflow.pyfunc import PythonModel, save_model
+
+        class MLFlowModel(PythonModel):
+            """
+            The `MLFlowModel` class exists as a transient class to translate a
+            Nextmv `DecisionModel` into an `mlflow.pyfunc.PythonModel`. This
+            class must comply with the inference API of mlflow, which is why it
+            has a `predict` method. The translation happens by having this
+            `predict` methos call the user-defined `solve` method of the
+            `DecisionModel`.
+            """
+
+            def predict(self, context, model_input, params=None) -> Any:
+                """
+                The predict method allows us to work with mlflow’s [python_function]
+                model flavor. Warning: This method should not be used or overridden
+                directly. Instead, you should implement the `solve` method.
+
+                [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
+                """
+
+                options = Options.from_dict(params)
+                return self.solve(model_input, options)
+
         # Some annoying logging from mlflow must be disabled.
         logging.disable(logging.CRITICAL)
 
@@ -132,7 +174,7 @@ class Model(PythonModel):
         save_model(
             path=model_path,  # Customize the name of the model location.
             infer_code_paths=True,  # Makes the imports portable.
-            python_model=self,
+            python_model=MLFlowModel(),
             signature=signature,  # Allows us to work with our own `Options` class.
         )
 
@@ -141,7 +183,7 @@ class Model(PythonModel):
         # Create an auxiliary requirements file with the model dependencies.
         requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
         with open(requirements_file, "w") as file:
-            file.write("mlflow==2.18.0\n")
+            file.write(f"{_MLFLOW_DEPENDENCY}\n")
             reqs = configuration.requirements
             if reqs is not None:
                 for req in reqs:
