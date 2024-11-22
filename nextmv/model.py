@@ -128,8 +128,16 @@ class Model:
             import subprocess
             import sys
 
-            # We install mlflow using pip.
-            subprocess.check_call([sys.executable, "-m", "pip", "install", _MLFLOW_DEPENDENCY])
+            command = [sys.executable, "-m", "pip", "install", _MLFLOW_DEPENDENCY]
+            result = subprocess.run(
+                command,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            if result.returncode != 0:
+                raise Exception(f"error installing {_MLFLOW_DEPENDENCY}: {result.stderr}") from result
+
         finally:
             from mlflow.models import infer_signature
             from mlflow.pyfunc import PythonModel, save_model
@@ -144,7 +152,7 @@ class Model:
             `DecisionModel`.
             """
 
-            def predict(self, context, model_input, params=None) -> Any:
+            def predict(ml_flow_self, context, model_input, params=None) -> Any:
                 """
                 The predict method allows us to work with mlflow’s [python_function]
                 model flavor. Warning: This method should not be used or overridden
@@ -205,9 +213,6 @@ def _cleanup_python_model(
     if model_configuration is None:
         return
 
-    if verbose:
-        log("🧹 Cleaning up Python artifacts.")
-
     model_path = os.path.join(model_dir, model_configuration.name)
     if os.path.exists(model_path):
         shutil.rmtree(model_path)
@@ -219,3 +224,6 @@ def _cleanup_python_model(
     requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
     if os.path.exists(requirements_file):
         os.remove(requirements_file)
+
+    if verbose:
+        log("🧹 Cleaned up Python model artifacts.")
