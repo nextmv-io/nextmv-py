@@ -318,24 +318,24 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result15.returncode, 0, result15.stderr)
         self.assertEqual(result15.stdout, "{'bool_opt': True}\n")
 
-        # Bad arg.
+        # Bad arg produces False.
         result16 = subprocess.run(
             ["python3", file, "-bool_opt", "Frue"],
             capture_output=True,
             text=True,
         )
-        self.assertEqual(result16.returncode, 1, result16.stderr)
-        self.assertEqual(result16.stdout, "")
+        self.assertEqual(result16.returncode, 0, result16.stderr)
+        self.assertEqual(result16.stdout, "{'bool_opt': False}\n")
 
-        # Bad env var.
-        result16 = subprocess.run(
+        # Bad env var produces False.
+        result17 = subprocess.run(
             ["python3", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "Frue"},
         )
-        self.assertEqual(result16.returncode, 1, result16.stderr)
-        self.assertEqual(result16.stdout, "")
+        self.assertEqual(result17.returncode, 0, result17.stderr)
+        self.assertEqual(result17.stdout, "{'bool_opt': False}\n")
 
     def test_none_default(self):
         file = self._file_name("options5.py", "..")

@@ -171,6 +171,9 @@ class Options:
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
 
+            # See comment below about ipykernel adding a `-f` argument. We
+            # restrict parameters from having the name 'f' or 'fff' for that
+            # reason.
             if param.name == "f" or param.name == "fff":
                 raise ValueError("parameter names 'f', 'fff' are reserved for internal use")
 
@@ -188,6 +191,9 @@ class Options:
             # replaces '-' with '_', so we do the same here.
             params_by_field_name[param.name.replace("-", "_")] = param
 
+        # The ipyernel uses a `-f` argument by default that it passes to the
+        # execution. We don’t want to ignore this argument because we get an
+        # error. Fix source: https://stackoverflow.com/a/56349168
         parser.add_argument("-f", "--fff", help="a dummy argument to fool ipython", default="1")
         args = parser.parse_args()
 
@@ -245,7 +251,9 @@ class Options:
             config: Dict[str, Any]
 
         self_dict = copy.deepcopy(self.__dict__)
-        self_dict.pop("parameters")
+        if "parameters" in self_dict:
+            self_dict.pop("parameters")
+
         m = model.from_dict(data={"config": self_dict})
 
         return m.to_dict()["config"]

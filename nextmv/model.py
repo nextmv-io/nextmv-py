@@ -121,6 +121,10 @@ class Model:
             saved and loaded.
         """
 
+        # mlflow is a big package. We don’t want to make it a dependency of
+        # `nextmv` because it is not always needed. We only need it if we are
+        # working with the "app from model" logic, which involves working with
+        # this `Model` class.
         try:
             import mlflow as mlflow
         except ImportError:
@@ -152,7 +156,7 @@ class Model:
             `DecisionModel`.
             """
 
-            def predict(ml_flow_self, context, model_input, params=None) -> Any:
+            def predict(mlflow_self, context, model_input, params=None) -> Any:
                 """
                 The predict method allows us to work with mlflow’s [python_function]
                 model flavor. Warning: This method should not be used or overridden
