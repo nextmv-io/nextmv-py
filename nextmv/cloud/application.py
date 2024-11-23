@@ -531,7 +531,7 @@ class Application:
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        options: Optional[Dict[str, str]] = None,
         configuration: Optional[Configuration] = None,
     ) -> str:
         """
@@ -573,6 +573,11 @@ class Application:
             upload_id = upload_url.upload_id
             upload_id_used = True
 
+        if options is not None:
+            for key, value in options.items():
+                if not isinstance(value, str):
+                    options[key] = json.dumps(value)
+
         payload = {}
         if upload_id_used:
             payload["upload_id"] = upload_id
@@ -607,7 +612,7 @@ class Application:
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        run_options: Optional[Dict[str, Any]] = None,
+        run_options: Optional[Dict[str, str]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Configuration] = None,
     ) -> RunResult:

@@ -185,7 +185,7 @@ class Options:
             # replaces '-' with '_', so we do the same here.
             params_by_field_name[param.name.replace("-", "_")] = param
 
-        args = parser.parse_args()
+        args = parser.parse_known_args()
 
         for arg in vars(args):
             param = params_by_field_name[arg]

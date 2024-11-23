@@ -225,5 +225,9 @@ def _cleanup_python_model(
     if os.path.exists(requirements_file):
         os.remove(requirements_file)
 
+    main_file = os.path.join(model_dir, "main.py")
+    if os.path.exists(main_file):
+        os.remove(main_file)
+
     if verbose:
         log("🧹 Cleaned up Python model artifacts.")
