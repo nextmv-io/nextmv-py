@@ -524,7 +524,7 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
-    def new_run(
+    def new_run(  # noqa: C901 # Lot of if statements, but clear logic.
         self,
         input: Union[Dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,

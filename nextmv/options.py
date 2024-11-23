@@ -171,6 +171,9 @@ class Options:
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
 
+            if param.name == "f" or param.name == "fff":
+                raise ValueError("parameter names 'f', 'fff' are reserved for internal use")
+
             # Remove any leading '-'. This is in line with argparse's behavior.
             param.name = param.name.lstrip("-")
 
@@ -185,7 +188,8 @@ class Options:
             # replaces '-' with '_', so we do the same here.
             params_by_field_name[param.name.replace("-", "_")] = param
 
-        args = parser.parse_known_args()
+        parser.add_argument("-f", "--fff", help="a dummy argument to fool ipython", default="1")
+        args = parser.parse_args()
 
         for arg in vars(args):
             param = params_by_field_name[arg]
