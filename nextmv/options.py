@@ -151,7 +151,7 @@ class Options:
         parameter.
     """
 
-    def __init__(self, *parameters: Parameter):
+    def __init__(self, *parameters: Parameter):  # noqa: C901
         """Initializes the options."""
 
         if not parameters:
@@ -192,6 +192,9 @@ class Options:
         args = parser.parse_args()
 
         for arg in vars(args):
+            if arg == "fff" or arg == "f":
+                continue
+
             param = params_by_field_name[arg]
 
             # First, attempt to set the value of a parameter from the
