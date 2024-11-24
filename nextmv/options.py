@@ -197,6 +197,7 @@ class Options:
         # error. Fix source: https://stackoverflow.com/a/56349168
         parser.add_argument(
             "-f",
+            "--f",
             "--fff",
             help="a dummy argument to fool ipython",
             default="1",
