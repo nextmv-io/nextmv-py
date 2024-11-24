@@ -194,7 +194,7 @@ class Options:
         # The ipyernel uses a `-f` argument by default that it passes to the
         # execution. We don’t want to ignore this argument because we get an
         # error. Fix source: https://stackoverflow.com/a/56349168
-        parser.add_argument("-f", "--fff", help="a dummy argument to fool ipython", default="1")
+        parser.add_argument("-f", "--f" "--fff", help="a dummy argument to fool ipython", default="1")
         args = parser.parse_args()
 
         for arg in vars(args):
