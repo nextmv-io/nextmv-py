@@ -222,24 +222,3 @@ class Manifest(BaseModel):
             type=ManifestType.PYTHON,
             python=manifest_python,
         )
-
-
-def default_python_manifest() -> Manifest:
-    """
-    Create a default Python manifest.
-
-    Returns
-    -------
-    Manifest
-        The default Python manifest.
-
-    """
-
-    manifest_python = ManifestPython.from_dict({"pip-requirements": _REQUIREMENTS_FILE})
-
-    return Manifest(
-        files=["main.py"],
-        runtime=ManifestRuntime.PYTHON,
-        type=ManifestType.PYTHON,
-        python=manifest_python,
-    )
