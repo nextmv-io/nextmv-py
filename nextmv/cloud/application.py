@@ -82,7 +82,7 @@ class PollingOptions(BaseModel):
     """Maximum delay to use between polls, in seconds. This parameter is
     activated when the backoff parameter is greater than 1, such that the delay
     is increasing after each poll."""
-    max_duration: float = 60
+    max_duration: float = 300
     """Maximum duration of the polling strategy, in seconds."""
     max_tries: int = 20
     """Maximum number of tries to use."""
