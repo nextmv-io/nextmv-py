@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 import unittest
 
@@ -61,7 +62,7 @@ class TestEntrypoint(unittest.TestCase):
         input_stream = json.dumps(input_data)
 
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)
-        args = ["python", main_file]
+        args = [sys.executable, main_file]
         result = subprocess.run(
             args,
             env=os.environ,
