@@ -206,15 +206,17 @@ class Manifest(BaseModel):
             The Python manifest.
         """
 
-        manifest_python = ManifestPython.from_dict(
-            {
-                "pip-requirements": _REQUIREMENTS_FILE,
-                "model": {
-                    "name": model_configuration.name,
-                    "options": model_configuration.options.parameters_dict(),
-                },
-            }
-        )
+        manifest_python_dict = {
+            "pip-requirements": _REQUIREMENTS_FILE,
+            "model": {
+                "name": model_configuration.name,
+            },
+        }
+
+        if model_configuration.options is not None:
+            manifest_python_dict["model"]["options"] = model_configuration.options.parameters_dict()
+
+        manifest_python = ManifestPython.from_dict(manifest_python_dict)
 
         return cls(
             files=["main.py", f"{model_configuration.name}/**"],

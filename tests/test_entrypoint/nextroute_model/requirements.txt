@@ -1,4 +1,0 @@
-mlflow==2.18.0
-cloudpickle==3.1.0
-nextmv==0.14.0.dev11
-nextroute==1.10.1

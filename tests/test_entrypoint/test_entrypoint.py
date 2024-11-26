@@ -3,12 +3,23 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 import unittest
+
+import nextmv
+import nextmv.cloud
+
+
+class SimpleDecisionModel(nextmv.Model):
+    def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+        return nextmv.Output(
+            solution={"foo": "bar"},
+            statistics={"baz": "qux"},
+        )
 
 
 class TestEntrypoint(unittest.TestCase):
     TWO_DIRS_UP = os.path.join("..", "..")
+    MODEL_NAME = "simple_decision_model"
 
     def setUp(self):
         """Copies the entrypoint script as the main script in the root of an
@@ -19,32 +30,18 @@ class TestEntrypoint(unittest.TestCase):
         dst = self._file_name("main.py", self.TWO_DIRS_UP)
         shutil.copy(src, dst)
 
-        # Copy app files.
-        for file in ["input.json", "app.yaml"]:
-            src = self._file_name(file, ".")
-            dst = self._file_name(file, self.TWO_DIRS_UP)
-            shutil.copy(src, dst)
-
-        # Copy mlflow dir.
-        src = self._file_name("nextroute_model", ".")
-        dst = self._file_name("nextroute_model", self.TWO_DIRS_UP)
-        shutil.copytree(src, dst, dirs_exist_ok=True)
-
-        time.sleep(10)
-
     def tearDown(self):
         """Removes the newly created main script elements."""
 
         filenames = [
             self._file_name("main.py", self.TWO_DIRS_UP),
-            self._file_name("input.json", self.TWO_DIRS_UP),
             self._file_name("app.yaml", self.TWO_DIRS_UP),
         ]
 
         for filename in filenames:
             os.remove(filename)
 
-        shutil.rmtree(self._file_name("nextroute_model", self.TWO_DIRS_UP))
+        shutil.rmtree(self._file_name(self.MODEL_NAME, self.TWO_DIRS_UP))
         shutil.rmtree(self._file_name("mlruns", self.TWO_DIRS_UP))
 
     def test_entrypoint(self):
@@ -55,11 +52,19 @@ class TestEntrypoint(unittest.TestCase):
         "nextroute_model" directory.
         """
 
-        input_file = self._file_name("input.json", self.TWO_DIRS_UP)
-        with open(input_file) as f:
-            input_data = json.load(f)
+        model = SimpleDecisionModel()
+        options = nextmv.Options(nextmv.Parameter("param1", str, ""))
 
-        input_stream = json.dumps(input_data)
+        model_configuration = nextmv.ModelConfiguration(
+            name=self.MODEL_NAME,
+            options=options,
+        )
+        destination = os.path.join(os.path.dirname(__file__), self.TWO_DIRS_UP)
+        model.save(destination, model_configuration)
+
+        manifest = nextmv.cloud.Manifest.from_model_configuration(model_configuration)
+        manifest.to_yaml(dirpath=destination)
+
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)
 
         args = [sys.executable, main_file]
@@ -70,7 +75,7 @@ class TestEntrypoint(unittest.TestCase):
                 check=True,
                 text=True,
                 capture_output=True,
-                input=input_stream,
+                input=json.dumps({}),
             )
         except subprocess.CalledProcessError as e:
             print("stderr:\n", e.stderr)
