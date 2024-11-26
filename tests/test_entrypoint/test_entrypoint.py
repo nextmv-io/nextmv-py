@@ -60,8 +60,14 @@ class TestEntrypoint(unittest.TestCase):
             input_data = json.load(f)
 
         input_stream = json.dumps(input_data)
+        print(input_stream)
 
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)
+        if os.path.exists(main_file):
+            print(f"main.py exists at {main_file}")
+        if os.path.getsize(main_file) == 0:
+            self.fail(f"{main_file} is empty.")
+
         args = [sys.executable, main_file]
         result = subprocess.run(
             args,
