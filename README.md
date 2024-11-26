@@ -241,7 +241,7 @@ A decision model is a program that makes decisions, i.e.: solves decision
 problems. The model takes in an input (representing the problem data), options
 to configure the program, and returns an output, which is the solution to the
 decision problem. The `nextmv.Model` class is the base class for all models. It
-holds the necessary logic to handle a decisions.
+holds the necessary logic to handle all decisions.
 
 When creating your own decision model, you must create a class that inherits
 from `nextmv.Model` and implement the `solve` method.
