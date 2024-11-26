@@ -60,23 +60,23 @@ class TestEntrypoint(unittest.TestCase):
             input_data = json.load(f)
 
         input_stream = json.dumps(input_data)
-        print(input_stream)
-
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)
-        if os.path.exists(main_file):
-            print(f"main.py exists at {main_file}")
-        if os.path.getsize(main_file) == 0:
-            self.fail(f"{main_file} is empty.")
 
         args = [sys.executable, main_file]
-        result = subprocess.run(
-            args,
-            env=os.environ,
-            check=True,
-            text=True,
-            capture_output=True,
-            input=input_stream,
-        )
+        try:
+            result = subprocess.run(
+                args,
+                env=os.environ,
+                check=True,
+                text=True,
+                capture_output=True,
+                input=input_stream,
+            )
+        except subprocess.CalledProcessError as e:
+            print("stderr:\n", e.stderr)
+            print("stdout:\n", e.stdout)
+            print("output:\n", e.output)
+            raise e
 
         output = result.stdout
 
