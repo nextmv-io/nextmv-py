@@ -1,0 +1,210 @@
+files:
+- main.py
+- nextroute_model/**
+python:
+  model:
+    name: nextroute_model
+    options:
+    - default: 30.0
+      description: CHECK_DURATION
+      name: check_duration
+      param_type: <class 'float'>
+      required: false
+    - default: 'off'
+      description: CHECK_VERBOSITY
+      name: check_verbosity
+      param_type: <class 'str'>
+      required: false
+    - default: false
+      description: FORMAT_DISABLE_PROGRESSION
+      name: format_disable_progression
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_ATTRIBUTES
+      name: model_constraints_disable_attributes
+      param_type: <class 'bool'>
+      required: false
+    - default: []
+      description: MODEL_CONSTRAINTS_DISABLE_CAPACITIES
+      name: model_constraints_disable_capacities
+      param_type: <class 'list'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_CAPACITY
+      name: model_constraints_disable_capacity
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_DISTANCELIMIT
+      name: model_constraints_disable_distancelimit
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_GROUPS
+      name: model_constraints_disable_groups
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_MAXIMUMDURATION
+      name: model_constraints_disable_maximumduration
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_MAXIMUMSTOPS
+      name: model_constraints_disable_maximumstops
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_MAXIMUMWAITSTOP
+      name: model_constraints_disable_maximumwaitstop
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_MAXIMUMWAITVEHICLE
+      name: model_constraints_disable_maximumwaitvehicle
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_MIXINGITEMS
+      name: model_constraints_disable_mixingitems
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_PRECEDENCE
+      name: model_constraints_disable_precedence
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_STARTTIMEWINDOWS
+      name: model_constraints_disable_starttimewindows
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_VEHICLEENDTIME
+      name: model_constraints_disable_vehicleendtime
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_DISABLE_VEHICLESTARTTIME
+      name: model_constraints_disable_vehiclestarttime
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_CONSTRAINTS_ENABLE_CLUSTER
+      name: model_constraints_enable_cluster
+      param_type: <class 'bool'>
+      required: false
+    - default: ''
+      description: MODEL_OBJECTIVES_CAPACITIES
+      name: model_objectives_capacities
+      param_type: <class 'str'>
+      required: false
+    - default: 0.0
+      description: MODEL_OBJECTIVES_CLUSTER
+      name: model_objectives_cluster
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_EARLYARRIVALPENALTY
+      name: model_objectives_earlyarrivalpenalty
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_LATEARRIVALPENALTY
+      name: model_objectives_latearrivalpenalty
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_MINSTOPS
+      name: model_objectives_minstops
+      param_type: <class 'float'>
+      required: false
+    - default: 0.0
+      description: MODEL_OBJECTIVES_TRAVELDURATION
+      name: model_objectives_travelduration
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_UNPLANNEDPENALTY
+      name: model_objectives_unplannedpenalty
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_VEHICLEACTIVATIONPENALTY
+      name: model_objectives_vehicleactivationpenalty
+      param_type: <class 'float'>
+      required: false
+    - default: 1.0
+      description: MODEL_OBJECTIVES_VEHICLESDURATION
+      name: model_objectives_vehiclesduration
+      param_type: <class 'float'>
+      required: false
+    - default: false
+      description: MODEL_PROPERTIES_DISABLE_DURATIONGROUPS
+      name: model_properties_disable_durationgroups
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_PROPERTIES_DISABLE_DURATIONS
+      name: model_properties_disable_durations
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_PROPERTIES_DISABLE_INITIALSOLUTION
+      name: model_properties_disable_initialsolution
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_PROPERTIES_DISABLE_STOPDURATIONMULTIPLIERS
+      name: model_properties_disable_stopdurationmultipliers
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_VALIDATE_DISABLE_RESOURCES
+      name: model_validate_disable_resources
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_VALIDATE_DISABLE_STARTTIME
+      name: model_validate_disable_starttime
+      param_type: <class 'bool'>
+      required: false
+    - default: false
+      description: MODEL_VALIDATE_ENABLE_MATRIX
+      name: model_validate_enable_matrix
+      param_type: <class 'bool'>
+      required: false
+    - default: 20
+      description: MODEL_VALIDATE_ENABLE_MATRIXASYMMETRYTOLERANCE
+      name: model_validate_enable_matrixasymmetrytolerance
+      param_type: <class 'int'>
+      required: false
+    - default: 5.0
+      description: SOLVE_DURATION
+      name: solve_duration
+      param_type: <class 'float'>
+      required: false
+    - default: -1
+      description: SOLVE_ITERATIONS
+      name: solve_iterations
+      param_type: <class 'int'>
+      required: false
+    - default: -1
+      description: SOLVE_PARALLELRUNS
+      name: solve_parallelruns
+      param_type: <class 'int'>
+      required: false
+    - default: false
+      description: SOLVE_RUNDETERMINISTICALLY
+      name: solve_rundeterministically
+      param_type: <class 'bool'>
+      required: false
+    - default: -1
+      description: SOLVE_STARTSOLUTIONS
+      name: solve_startsolutions
+      param_type: <class 'int'>
+      required: false
+  pip-requirements: model_requirements.txt
+runtime: ghcr.io/nextmv-io/runtime/python:3.11
+type: python

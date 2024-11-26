@@ -192,7 +192,7 @@ class Options:
             # replaces '-' with '_', so we do the same here.
             params_by_field_name[param.name.replace("-", "_")] = param
 
-        # The ipyernel uses a `-f` argument by default that it passes to the
+        # The ipkyernel uses a `-f` argument by default that it passes to the
         # execution. We don’t want to ignore this argument because we get an
         # error. Fix source: https://stackoverflow.com/a/56349168
         parser.add_argument(

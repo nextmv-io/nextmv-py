@@ -422,3 +422,133 @@ class TestOptions(unittest.TestCase):
         """
 
         return os.path.join(os.path.dirname(__file__), relative_location, name)
+
+
+class TestParameter(unittest.TestCase):
+    def test_from_dict_str(self):
+        data = {
+            "name": "i_am_a_fish",
+            "param_type": "<class 'str'>",
+            "default": "salmon",
+            "description": "I am a fish",
+            "required": False,
+        }
+        param = nextmv.Parameter.from_dict(data)
+
+        self.assertEqual(param.name, data["name"])
+        self.assertEqual(param.param_type, str)
+        self.assertEqual(param.default, data["default"])
+        self.assertEqual(param.description, data["description"])
+        self.assertEqual(param.required, data["required"])
+
+    def test_from_dict_float(self):
+        data = {
+            "name": "i_am_a_fish",
+            "param_type": "<class 'float'>",
+            "default": 3.14,
+            "description": "I am a fish",
+            "required": False,
+        }
+        param = nextmv.Parameter.from_dict(data)
+
+        self.assertEqual(param.name, data["name"])
+        self.assertEqual(param.param_type, float)
+        self.assertEqual(param.default, data["default"])
+        self.assertEqual(param.description, data["description"])
+        self.assertEqual(param.required, data["required"])
+
+    def test_from_dict_int(self):
+        data = {
+            "name": "i_am_a_fish",
+            "param_type": "<class 'int'>",
+            "default": 42,
+            "description": "I am a fish",
+            "required": False,
+        }
+        param = nextmv.Parameter.from_dict(data)
+
+        self.assertEqual(param.name, data["name"])
+        self.assertEqual(param.param_type, int)
+        self.assertEqual(param.default, data["default"])
+        self.assertEqual(param.description, data["description"])
+        self.assertEqual(param.required, data["required"])
+
+    def test_from_dict_bool(self):
+        data = {
+            "name": "i_am_a_fish",
+            "param_type": "<class 'bool'>",
+            "default": False,
+            "description": "I am a fish",
+            "required": False,
+        }
+        param = nextmv.Parameter.from_dict(data)
+
+        self.assertEqual(param.name, data["name"])
+        self.assertEqual(param.param_type, bool)
+        self.assertEqual(param.default, data["default"])
+        self.assertEqual(param.description, data["description"])
+        self.assertEqual(param.required, data["required"])
+
+    def test_to_dict_str(self):
+        param = nextmv.Parameter(
+            name="i_am_a_fish",
+            param_type=str,
+            default="salmon",
+            description="I am a fish",
+            required=False,
+        )
+        data = param.to_dict()
+
+        self.assertEqual(data["name"], param.name)
+        self.assertEqual(data["param_type"], "<class 'str'>")
+        self.assertEqual(data["default"], param.default)
+        self.assertEqual(data["description"], param.description)
+        self.assertEqual(data["required"], param.required)
+
+    def test_to_dict_float(self):
+        param = nextmv.Parameter(
+            name="i_am_a_fish",
+            param_type=float,
+            default=3.14,
+            description="I am a fish",
+            required=False,
+        )
+        data = param.to_dict()
+
+        self.assertEqual(data["name"], param.name)
+        self.assertEqual(data["param_type"], "<class 'float'>")
+        self.assertEqual(data["default"], param.default)
+        self.assertEqual(data["description"], param.description)
+        self.assertEqual(data["required"], param.required)
+
+    def test_to_dict_int(self):
+        param = nextmv.Parameter(
+            name="i_am_a_fish",
+            param_type=int,
+            default=42,
+            description="I am a fish",
+            required=False,
+        )
+        data = param.to_dict()
+
+        self.assertEqual(data["name"], param.name)
+        self.assertEqual(data["param_type"], "<class 'int'>")
+        self.assertEqual(data["default"], param.default)
+        self.assertEqual(data["description"], param.description)
+        self.assertEqual(data["required"], param.required)
+
+    def test_to_dict_bool(self):
+        param = nextmv.Parameter(
+            name="i_am_a_fish",
+            param_type=bool,
+            default=False,
+            description="I am a fish",
+            required=False,
+        )
+        data = param.to_dict()
+
+        self.assertEqual(data["name"], param.name)
+        self.assertEqual(data["param_type"], "<class 'bool'>")
+        self.assertEqual(data["default"], param.default)
+        self.assertEqual(data["description"], param.description)
+        self.assertEqual(data["required"], param.required)
