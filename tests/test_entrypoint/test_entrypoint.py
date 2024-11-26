@@ -7,24 +7,26 @@ import unittest
 
 
 class TestEntrypoint(unittest.TestCase):
+    TWO_DIRS_UP = os.path.join("..", "..")
+
     def setUp(self):
         """Copies the entrypoint script as the main script in the root of an
         app."""
 
         # Copy the entrypoint.
-        src = self._file_name("__entrypoint__.py", "../../nextmv")
-        dst = self._file_name("main.py", "../..")
+        src = self._file_name("__entrypoint__.py", os.path.join(self.TWO_DIRS_UP, "nextmv"))
+        dst = self._file_name("main.py", self.TWO_DIRS_UP)
         shutil.copy(src, dst)
 
         # Copy app files.
         for file in ["input.json", "app.yaml"]:
             src = self._file_name(file, ".")
-            dst = self._file_name(file, "../..")
+            dst = self._file_name(file, self.TWO_DIRS_UP)
             shutil.copy(src, dst)
 
         # Copy mlflow dir.
         src = self._file_name("nextroute_model", ".")
-        dst = self._file_name("nextroute_model", "../..")
+        dst = self._file_name("nextroute_model", self.TWO_DIRS_UP)
         shutil.copytree(src, dst, dirs_exist_ok=True)
 
         time.sleep(10)
@@ -33,16 +35,16 @@ class TestEntrypoint(unittest.TestCase):
         """Removes the newly created main script elements."""
 
         filenames = [
-            self._file_name("main.py", "../.."),
-            self._file_name("input.json", "../.."),
-            self._file_name("app.yaml", "../.."),
+            self._file_name("main.py", self.TWO_DIRS_UP),
+            self._file_name("input.json", self.TWO_DIRS_UP),
+            self._file_name("app.yaml", self.TWO_DIRS_UP),
         ]
 
         for filename in filenames:
             os.remove(filename)
 
-        shutil.rmtree(self._file_name("nextroute_model", "../.."))
-        shutil.rmtree(self._file_name("mlruns", "../.."))
+        shutil.rmtree(self._file_name("nextroute_model", self.TWO_DIRS_UP))
+        shutil.rmtree(self._file_name("mlruns", self.TWO_DIRS_UP))
 
     def test_entrypoint(self):
         """
@@ -52,13 +54,13 @@ class TestEntrypoint(unittest.TestCase):
         "nextroute_model" directory.
         """
 
-        input_file = self._file_name("input.json", "../..")
+        input_file = self._file_name("input.json", self.TWO_DIRS_UP)
         with open(input_file) as f:
             input_data = json.load(f)
 
         input_stream = json.dumps(input_data)
 
-        main_file = self._file_name("main.py", "../..")
+        main_file = self._file_name("main.py", self.TWO_DIRS_UP)
         args = ["python", main_file]
         result = subprocess.run(
             args,
