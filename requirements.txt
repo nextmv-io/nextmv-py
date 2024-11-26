@@ -13,3 +13,7 @@ twine>=4.0.2
 # 3.8. At the time of writing this, we are still supporting Python 3.8, so for
 # local development we need an older version of mlflow.
 mlflow>=2.17.2
+
+# We need nextroute for the `test_entrypoint`, where we are testing that an
+# mlflow model can be run using the __entrypoint__.py file as a main.py script.
+nextroute>=1.10.1
