@@ -360,7 +360,7 @@ class Options:
 
         value = str(value).lower()
 
-        if value in ("true", "True", "TRUE", "1", "t", "T", "y", "Y", "yes", "Yes", "YES"):
+        if value in ("true", "1", "t", "y", "yes"):
             return True
 
         return False

@@ -24,7 +24,7 @@ _REQUIREMENTS_FILE = "model_requirements.txt"
 # can run in Nextmv Cloud. This file is used as that entrypoint.
 _ENTRYPOINT_FILE = "__entrypoint__.py"
 
-_MLFLOW_DEPENDENCY = "mlflow==2.18.0"
+_MLFLOW_DEPENDENCY = "mlflow>=2.18.0"
 
 
 @dataclass
@@ -127,20 +127,10 @@ class Model:
         # this `Model` class.
         try:
             import mlflow as mlflow
-        except ImportError:
-            # If mlflow is not installed, we install it.
-            import subprocess
-            import sys
-
-            command = [sys.executable, "-m", "pip", "install", _MLFLOW_DEPENDENCY]
-            result = subprocess.run(
-                command,
-                text=True,
-                capture_output=True,
-                check=True,
-            )
-            if result.returncode != 0:
-                raise Exception(f"error installing {_MLFLOW_DEPENDENCY}: {result.stderr}") from result
+        except ImportError as e:
+            raise ImportError(
+                "mlflow is not installed. Please install optional dependencies with `pip install nextmv[all]`"
+            ) from e
 
         finally:
             from mlflow.models import infer_signature

@@ -253,7 +253,6 @@ class YourCustomModel(nextmv.Model):
     def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
         """Implement the logic to solve the decision problem here."""
         pass
-
 ```
 
 Here is an example of a simple knapsack problem, using `highspy` (HiGHS
