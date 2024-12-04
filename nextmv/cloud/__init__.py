@@ -27,6 +27,7 @@ from .input_set import InputSet as InputSet
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestPython as ManifestPython
+from .manifest import ManifestPythonModel as ManifestPythonModel
 from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
 from .status import Status as Status

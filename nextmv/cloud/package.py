@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Tuple
 
 from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.logger import log
+from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],
@@ -20,21 +21,26 @@ _MANDATORY_FILES_PER_TYPE = {
 }
 
 
-def _package(app_dir: str, manifest: Manifest, verbose: bool = False) -> Tuple[str, str]:
+def _package(
+    app_dir: str,
+    manifest: Manifest,
+    model: Optional[Model] = None,
+    model_configuration: Optional[ModelConfiguration] = None,
+    verbose: bool = False,
+) -> Tuple[str, str]:
     """Package the app into a tarball.."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
-        manifest.to_yaml(temp_dir)
+        if manifest.type == ManifestType.PYTHON:
+            __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose)
+
         found, missing, files = __find_files(app_dir, manifest.files)
         __confirm_mandatory_files(manifest, found)
 
         if len(missing) > 0:
             raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
 
-        if manifest.type == ManifestType.PYTHON:
-            if verbose:
-                log("🐍 Bundling Python dependencies.")
-            __install_dependencies(manifest, app_dir, temp_dir)
+        manifest.to_yaml(temp_dir)
 
         for file in files:
             target_dir = os.path.dirname(os.path.join(temp_dir, file["interior_path"]))
@@ -50,6 +56,9 @@ def _package(app_dir: str, manifest: Manifest, verbose: bool = False) -> Tuple[s
 
         if verbose:
             log(f'📋 Copied files listed in "{FILE_NAME}" manifest.')
+
+        if manifest.type == ManifestType.PYTHON:
+            _cleanup_python_model(app_dir, model_configuration, verbose)
 
         output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
         tar_file, file_count = __compress_tar(temp_dir, output_dir)
@@ -154,14 +163,18 @@ def __find_files(
         if pattern.startswith("!"):
             pattern = pattern[1:]
             negated = True
-        matches = glob.glob(pattern)
+        matches = glob.glob(pattern, recursive=True)
         if not matches and not negated:
             missing.append(filter)
         else:
             if negated:
                 found = [f for f in found if f not in matches]
             else:
-                found.extend(matches)
+                for match in matches:
+                    if os.path.isdir(match):
+                        continue
+
+                    found.append(match)
 
     # Switch back to the original directory
     os.chdir(cwd)
@@ -187,6 +200,26 @@ def __confirm_mandatory_files(manifest: Manifest, present_files: List[str]) -> N
 
     if missing_files:
         raise Exception(f"missing mandatory files: {', '.join(missing_files)}")
+
+
+def __handle_python(
+    app_dir: str,
+    temp_dir: str,
+    manifest: Manifest,
+    model: Optional[Model] = None,
+    model_configuration: Optional[ModelConfiguration] = None,
+    verbose: bool = False,
+) -> None:
+    """Handles the Python-specific packaging logic."""
+
+    if model is not None and model_configuration is not None:
+        if verbose:
+            log("🔮 Encoding Python model.")
+        model.save(app_dir, model_configuration)
+
+    if verbose:
+        log("🐍 Bundling Python dependencies.")
+    __install_dependencies(manifest, app_dir, temp_dir)
 
 
 def __install_dependencies(

@@ -1,9 +1,11 @@
 """Configuration for a run."""
 
 import argparse
+import builtins
+import copy
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -50,6 +52,51 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Parameter":
+        """
+        Creates an instance of `Parameter` from a dictionary.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary representation of a parameter.
+
+        Returns
+        -------
+        Parameter
+            An instance of `Parameter`.
+        """
+
+        param_type_string = data["param_type"]
+        param_type = getattr(builtins, param_type_string.split("'")[1])
+
+        return Parameter(
+            name=data["name"],
+            param_type=param_type,
+            default=data.get("default"),
+            description=data.get("description"),
+            required=data.get("required", False),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts the parameter to a dict.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The parameter as a dict.
+        """
+
+        return {
+            "name": self.name,
+            "param_type": str(self.param_type),
+            "default": self.default,
+            "description": self.description,
+            "required": self.required,
+        }
 
 
 class Options:
@@ -104,23 +151,32 @@ class Options:
         parameter.
     """
 
-    def __init__(self, *parameters: Parameter):
+    def __init__(self, *parameters: Parameter):  # noqa: C901
         """Initializes the options."""
 
         if not parameters:
             return
+
+        self.parameters = copy.deepcopy(parameters)
 
         parser = argparse.ArgumentParser(
             add_help=True,
             usage="%(prog)s [options]",
             description="Options for %(prog)s. Use command-line arguments (highest precedence) "
             + "or environment variables.",
+            allow_abbrev=False,
         )
         params_by_field_name: Dict[str, Parameter] = {}
 
         for p, param in enumerate(parameters):
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
+
+            # See comment below about ipykernel adding a `-f` argument. We
+            # restrict parameters from having the name 'f' or 'fff' for that
+            # reason.
+            if param.name == "f" or param.name == "fff":
+                raise ValueError("parameter names 'f', 'fff' are reserved for internal use")
 
             # Remove any leading '-'. This is in line with argparse's behavior.
             param.name = param.name.lstrip("-")
@@ -136,9 +192,22 @@ class Options:
             # replaces '-' with '_', so we do the same here.
             params_by_field_name[param.name.replace("-", "_")] = param
 
+        # The ipkyernel uses a `-f` argument by default that it passes to the
+        # execution. We don’t want to ignore this argument because we get an
+        # error. Fix source: https://stackoverflow.com/a/56349168
+        parser.add_argument(
+            "-f",
+            "--f",
+            "--fff",
+            help="a dummy argument to fool ipython",
+            default="1",
+        )
         args = parser.parse_args()
 
         for arg in vars(args):
+            if arg == "fff" or arg == "f":
+                continue
+
             param = params_by_field_name[arg]
 
             # First, attempt to set the value of a parameter from the
@@ -188,9 +257,79 @@ class Options:
         class model(BaseModel):
             config: Dict[str, Any]
 
-        m = model.from_dict(data={"config": self.__dict__})
+        self_dict = copy.deepcopy(self.__dict__)
+        if "parameters" in self_dict:
+            self_dict.pop("parameters")
+
+        m = model.from_dict(data={"config": self_dict})
 
         return m.to_dict()["config"]
+
+    def parameters_dict(self) -> List[Dict[str, Any]]:
+        """
+        Converts the options to a list of dicts. Each dict is the dict
+        representation of a `Parameter`.
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            The list of dictionaries (parameter entries).
+        """
+
+        return [param.to_dict() for param in self.parameters]
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Options":
+        """
+        Creates an instance of `Options` from a dictionary. The dictionary
+        should have the following structure:
+
+        {
+            "duration": "30",
+            "threads": 4,
+        }
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The dictionary representation of the options.
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for key, value in data.items():
+            parameter = Parameter(name=key, param_type=type(value), default=value)
+            parameters.append(parameter)
+
+        return cls(*parameters)
+
+    @classmethod
+    def from_parameters_dict(cls, parameters_dict: List[Dict[str, Any]]) -> "Options":
+        """
+        Creates an instance of `Options` from parameters in dict form. Each
+        entry is the dict representation of a `Parameter`.
+
+        Parameters
+        ----------
+        data : List[Dict[str, Any]]
+            The list of dictionaries (parameter entries).
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for parameter_dict in parameters_dict:
+            parameter = Parameter.from_dict(parameter_dict)
+            parameters.append(parameter)
+
+        return cls(*parameters)
 
     @staticmethod
     def _description(param: Parameter) -> str:
@@ -223,7 +362,5 @@ class Options:
 
         if value in ("true", "1", "t", "y", "yes"):
             return True
-        if value in ("false", "0", "f", "n", "no"):
-            return False
 
-        raise argparse.ArgumentTypeError(f"invalid value for bool parameter '{parameter.name}': {value}")
+        return False

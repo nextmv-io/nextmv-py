@@ -18,6 +18,7 @@ from nextmv.cloud.input_set import InputSet
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
 from nextmv.logger import log
+from nextmv.model import Model, ModelConfiguration
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -523,14 +524,14 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
-    def new_run(
+    def new_run(  # noqa: C901 # Lot of if statements, but clear logic.
         self,
         input: Union[Dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        options: Optional[Dict[str, str]] = None,
         configuration: Optional[Configuration] = None,
     ) -> str:
         """
@@ -572,6 +573,11 @@ class Application:
             upload_id = upload_url.upload_id
             upload_id_used = True
 
+        if options is not None:
+            for key, value in options.items():
+                if not isinstance(value, str):
+                    options[key] = json.dumps(value)
+
         payload = {}
         if upload_id_used:
             payload["upload_id"] = upload_id
@@ -606,7 +612,7 @@ class Application:
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        run_options: Optional[Dict[str, Any]] = None,
+        run_options: Optional[Dict[str, str]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Configuration] = None,
     ) -> RunResult:
@@ -658,19 +664,30 @@ class Application:
         manifest: Optional[Manifest] = None,
         app_dir: Optional[str] = None,
         verbose: bool = False,
+        model: Optional[Model] = None,
+        model_configuration: Optional[ModelConfiguration] = None,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
 
-        If the manifest is not provided, an `app.yaml` file will be searched for in
-        the provided path. If there is no manifest file found, an exception will be
-        raised.
+        If the manifest is not provided, an `app.yaml` file will be searched
+        for in the provided path. If there is no manifest file found, an
+        exception will be raised.
 
-        The path is the root directory of the app to push. If the path is not
-        provided, the current working directory will be used.
+        There are two ways to push an app to Nextmv Cloud:
+        1. Specifying `app_dir`, which is the path to an app’s root directory.
+        This acts as an external strategy, where the app is composed of files
+        in a directory and those apps are packaged and pushed to Nextmv Cloud.
+        2. Specifying a `model` and `model_configuration`. This acts as an
+        internal (or Python-native) strategy, where the app is actually a
+        `nextmv.Model`. The model is encoded, some dependencies and
+        accompanying files are packaged, and the app is pushed to Nextmv Cloud.
 
-        Example
+        Examples
         -------
+
+        1. Push an app using an external strategy, i.e., specifying the app’s
+        directory:
         ```python
         import os
 
@@ -679,6 +696,63 @@ class Application:
         client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
         app = cloud.Application(client=client, id="<YOUR-APP-ID>")
         app.push()  # Use verbose=True for step-by-step output.
+        ```
+
+        2. Push an app using an internal strategy, i.e., specifying the model
+        and model configuration:
+        ```python
+        import os
+
+        import nextroute
+
+        import nextmv
+        import nextmv.cloud
+
+
+        # Define the model that makes decisions. This model uses the Nextroute
+        # library to solve a vehicle routing problem.
+        class DecisionModel(nextmv.Model):
+            def solve(self, input: nextmv.Input) -> nextmv.Output:
+                nextroute_input = nextroute.schema.Input.from_dict(input.data)
+                nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
+                nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
+
+                return nextmv.Output(
+                    options=input.options,
+                    solution=nextroute_output.solutions[0].to_dict(),
+                    statistics=nextroute_output.statistics.to_dict(),
+                )
+
+
+        # Define the options that the model needs.
+        parameters = []
+        default_options = nextroute.Options()
+        for name, default_value in default_options.to_dict().items():
+            parameters.append(nextmv.Parameter(name.lower(), type(default_value), default_value, name, False))
+
+        options = nextmv.Options(*parameters)
+
+        # Instantiate the model and model configuration.
+        model = DecisionModel()
+        model_configuration = nextmv.ModelConfiguration(
+            name="python_nextroute_model",
+            requirements=[
+                "nextroute==1.8.1",
+                "nextmv==0.14.0.dev1",
+            ],
+            options=options,
+        )
+
+        # Define the Nextmv application and push the model to the cloud.
+        client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+        app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+        manifest = nextmv.cloud.default_python_manifest()
+        app.push(
+            manifest=manifest,
+            verbose=True,
+            model=model,
+            model_configuration=model_configuration,
+        )
         ```
 
         Parameters
@@ -700,9 +774,18 @@ class Application:
         if manifest is None:
             manifest = Manifest.from_yaml(app_dir)
 
+        if model is not None and not isinstance(model, Model):
+            raise TypeError("model must be an instance of nextmv.Model")
+
+        if model_configuration is not None and not isinstance(model_configuration, ModelConfiguration):
+            raise TypeError("model_configuration must be an instance of nextmv.ModelConfiguration")
+
+        if (model is None and model_configuration is not None) or (model is not None and model_configuration is None):
+            raise ValueError("model and model_configuration must be provided together")
+
         package._run_build_command(app_dir, manifest.build, verbose)
         package._run_pre_push_command(app_dir, manifest.pre_push, verbose)
-        tar_file, output_dir = package._package(app_dir, manifest, verbose)
+        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose)
         self.__update_app_binary(tar_file, manifest, verbose)
 
         try:

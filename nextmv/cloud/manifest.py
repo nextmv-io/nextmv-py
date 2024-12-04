@@ -8,6 +8,7 @@ import yaml
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
+from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 
 FILE_NAME = "app.yaml"
 """Name of the app manifest file."""
@@ -79,6 +80,20 @@ class ManifestBuild(BaseModel):
         return {key: str(value) for key, value in self.environment.items()}
 
 
+class ManifestPythonModel(BaseModel):
+    """Model-specific instructions for a Python app."""
+
+    name: str
+    """The name of the decision model."""
+    options: Optional[List[Dict[str, Any]]] = None
+    """
+    Options for the decision model. This is a data representation of the
+    `nextmv.Options` class. It consists of a list of dicts. Each dict
+    represents the `nextmv.Parameter` class. It is used to be able to
+    reconstruct an Options object from data when loading a decision model.
+    """
+
+
 class ManifestPython(BaseModel):
     """Python-specific instructions."""
 
@@ -86,6 +101,11 @@ class ManifestPython(BaseModel):
     """
     Path to a requirements.txt file containing (additional) Python
     dependencies that will be bundled with the app.
+    """
+    model: Optional[ManifestPythonModel] = None
+    """
+    Information about an encoded decision model as handlded via mlflow. This
+    information is used to load the decision model from the app bundle.
     """
 
 
@@ -169,3 +189,38 @@ class Manifest(BaseModel):
 
         with open(os.path.join(dirpath, FILE_NAME), "w") as file:
             yaml.dump(self.to_dict(), file)
+
+    @classmethod
+    def from_model_configuration(cls, model_configuration: ModelConfiguration) -> "Manifest":
+        """
+        Create a Python manifest from a Python model configuration.
+
+        Parameters
+        ----------
+        model_configuration : ModelConfiguration
+            The model configuration.
+
+        Returns
+        -------
+        Manifest
+            The Python manifest.
+        """
+
+        manifest_python_dict = {
+            "pip-requirements": _REQUIREMENTS_FILE,
+            "model": {
+                "name": model_configuration.name,
+            },
+        }
+
+        if model_configuration.options is not None:
+            manifest_python_dict["model"]["options"] = model_configuration.options.parameters_dict()
+
+        manifest_python = ManifestPython.from_dict(manifest_python_dict)
+
+        return cls(
+            files=["main.py", f"{model_configuration.name}/**"],
+            runtime=ManifestRuntime.PYTHON,
+            type=ManifestType.PYTHON,
+            python=manifest_python,
+        )
