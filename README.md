@@ -10,6 +10,12 @@ Requires Python `>=3.8`. Install using `pip`:
 pip install nextmv
 ```
 
+Install all optional dependencies:
+
+```bash
+pip install nextmv[all]
+```
+
 ## Usage
 
 The Nextmv Python SDK is used to interact with various parts of the Nextmv
@@ -439,6 +445,16 @@ There are two strategies to push an application to the Nextmv Cloud:
    Python-native) strategy called "Apps from Models", where an app is created
    from a [`nextmv.Model`][model]. The model is encoded, some dependencies and
    accompanying files are packaged, and the app is pushed to Nextmv Cloud.
+
+   To push a `nextmv.Model` to Nextmv Cloud, you need optional dependencies.
+   You can install them by running:
+
+    ```bash
+    pip install nextmv[all]
+    ```
+
+    Once all the optional dependencies are installed, you can push the app to
+    Nextmv Cloud.
 
     ```python
     import os
