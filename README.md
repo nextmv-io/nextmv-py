@@ -13,7 +13,7 @@ pip install nextmv
 Install all optional dependencies:
 
 ```bash
-pip install nextmv[all]
+pip install "nextmv[all]"
 ```
 
 ## Usage
@@ -450,7 +450,7 @@ There are two strategies to push an application to the Nextmv Cloud:
    You can install them by running:
 
     ```bash
-    pip install nextmv[all]
+    pip install "nextmv[all]"
     ```
 
     Once all the optional dependencies are installed, you can push the app to

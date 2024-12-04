@@ -1,5 +1,5 @@
 name: release
-run-name: Release ${{ inputs.VERSION }} (pre-release - ${{ inputs.IS_PRE_RELEASE }}) by @${{ github.actor }} from ${{ github.ref_name }}
+run-name: Release ${{ inputs.VERSION }} (pre-release=${{ inputs.IS_PRE_RELEASE }}) by @${{ github.actor }} from ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
       IS_PRE_RELEASE:
         description: "It IS a pre-release"
         required: true
-        default: false
+        default: true
         type: boolean
 
 jobs:
