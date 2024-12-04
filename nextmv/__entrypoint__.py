@@ -11,7 +11,6 @@ from mlflow.pyfunc import load_model
 
 from nextmv.cloud.manifest import Manifest
 from nextmv.input import load_local
-from nextmv.model import ModelConfiguration
 from nextmv.options import Options
 from nextmv.output import write_local
 
@@ -28,18 +27,14 @@ def main() -> None:
         options = Options.from_parameters_dict(parameters_dict)
 
     # Load the model.
-    model_configuration = ModelConfiguration(
-        name=manifest.python.model.name,
-        options=options,
-    )
     loaded_model = load_model(
-        model_uri=model_configuration.name,
+        model_uri=manifest.python.model.name,
         suppress_warnings=True,
     )
 
     # Load the input and solve the model by using mlflow’s inference API.
     input = load_local(options=options)
-    output = loaded_model.predict(input, params=options.to_dict())
+    output = loaded_model.predict(input)
 
     # Write the output.
     write_local(output)

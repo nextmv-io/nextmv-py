@@ -712,13 +712,13 @@ class Application:
         # Define the model that makes decisions. This model uses the Nextroute
         # library to solve a vehicle routing problem.
         class DecisionModel(nextmv.Model):
-            def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+            def solve(self, input: nextmv.Input) -> nextmv.Output:
                 nextroute_input = nextroute.schema.Input.from_dict(input.data)
-                nextroute_options = nextroute.Options.extract_from_dict(options.to_dict())
+                nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
                 nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
 
                 return nextmv.Output(
-                    options=options,
+                    options=input.options,
                     solution=nextroute_output.solutions[0].to_dict(),
                     statistics=nextroute_output.statistics.to_dict(),
                 )

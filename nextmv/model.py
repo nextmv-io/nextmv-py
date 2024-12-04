@@ -70,32 +70,30 @@ class Model:
     # Define the model that makes decisions. This model uses the Nextroute library
     # to solve a routing problem.
     class DecisionModel(nextmv.Model):
-        def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+        def solve(self, input: nextmv.Input) -> nextmv.Output:
             nextroute_input = nextroute.schema.Input.from_dict(input.data)
-            nextroute_options = nextroute.Options.extract_from_dict(options.to_dict())
+            nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
             nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
 
             return nextmv.Output(
-                options=options,
+                options=input.options,
                 solution=nextroute_output.solutions[0].to_dict(),
                 statistics=nextroute_output.statistics.to_dict(),
             )
         ```
     """
 
-    def solve(self, input: Input, options: Options) -> Output:
+    def solve(self, input: Input) -> Output:
         """
         The `solve` method is the main entry point of your model. You must
-        implement this method yourself. It receives a `nextmv.Input` and
-        `nextmv.Options` and should process them to produce a `nextmv.Output`,
-        which is the solution to the decision model/problem.
+        implement this method yourself. It receives a `nextmv.Input` and should
+        process it to produce a `nextmv.Output`, which is the solution to the
+        decision model/problem.
 
         Parameters
         ----------
         input : Input
             The input data that the model will use to make a decision.
-        options : Options
-            The options that the model will use to make a decision.
 
         Returns
         -------
@@ -142,7 +140,7 @@ class Model:
             Nextmv `DecisionModel` into an `mlflow.pyfunc.PythonModel`. This
             class must comply with the inference API of mlflow, which is why it
             has a `predict` method. The translation happens by having this
-            `predict` methos call the user-defined `solve` method of the
+            `predict` method call the user-defined `solve` method of the
             `DecisionModel`.
             """
 
@@ -155,8 +153,7 @@ class Model:
                 [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
                 """
 
-                options = Options.from_dict(params)
-                return self.solve(model_input, options)
+                return self.solve(model_input)
 
         # Some annoying logging from mlflow must be disabled.
         logging.disable(logging.CRITICAL)

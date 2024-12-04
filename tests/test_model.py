@@ -8,7 +8,7 @@ from nextmv.model import _cleanup_python_model
 class ModelForTesting(nextmv.Model):
     """Dummy decision model for testing purposes."""
 
-    def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+    def solve(self, input: nextmv.Input) -> nextmv.Output:
         return nextmv.Output()
 
 

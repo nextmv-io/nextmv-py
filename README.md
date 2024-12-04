@@ -238,10 +238,10 @@ Write the output data after a run is completed.
 #### Model
 
 A decision model is a program that makes decisions, i.e.: solves decision
-problems. The model takes in an input (representing the problem data), options
-to configure the program, and returns an output, which is the solution to the
-decision problem. The `nextmv.Model` class is the base class for all models. It
-holds the necessary logic to handle all decisions.
+problems. The model takes in an input (representing the problem data and
+options) and returns an output, which is the solution to the decision problem.
+The `nextmv.Model` class is the base class for all models. It holds the
+necessary logic to handle all decisions.
 
 When creating your own decision model, you must create a class that inherits
 from `nextmv.Model` and implement the `solve` method.
@@ -250,7 +250,7 @@ from `nextmv.Model` and implement the `solve` method.
 import nextmv
 
 class YourCustomModel(nextmv.Model):
-    def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+    def solve(self, input: nextmv.Input) -> nextmv.Output:
         """Implement the logic to solve the decision problem here."""
         pass
 ```
@@ -296,7 +296,7 @@ import highspy
 import nextmv
 
 class DecisionModel(nextmv.Model):
-    def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+    def solve(self, input: nextmv.Input) -> nextmv.Output:
         """Solves the given problem and returns the solution."""
 
         start_time = time.time()
@@ -304,7 +304,7 @@ class DecisionModel(nextmv.Model):
         # Creates the solver.
         solver = highspy.Highs()
         solver.silent()  # Solver output ignores stdout redirect, silence it.
-        solver.setOptionValue("time_limit", options.duration)
+        solver.setOptionValue("time_limit", input.options.duration)
 
         # Initializes the linear sums.
         weights = 0.0
@@ -330,7 +330,7 @@ class DecisionModel(nextmv.Model):
             item["item"] for item in items if solver.val(item["variable"]) > 0.9
         ]
 
-        options.version = version("highspy")
+        input.options.version = version("highspy")
 
         statistics = nextmv.Statistics(
             run=nextmv.RunStatistics(duration=time.time() - start_time),
@@ -345,7 +345,7 @@ class DecisionModel(nextmv.Model):
         )
 
         return nextmv.Output(
-            options=options,
+            options=input.options,
             solution={"items": chosen_items},
             statistics=statistics,
         )
@@ -361,7 +361,7 @@ import nextmv
 
 model = DecisionModel()
 input = nextmv.Input(data=sample_input, options=options)
-output = model.solve(input, options)
+output = model.solve(input)
 print(json.dumps(output.solution, indent=2))
 ```
 
@@ -446,7 +446,7 @@ There are two strategies to push an application to the Nextmv Cloud:
     from nextmv import cloud
 
     class CustomDecisionModel(nextmv.Model):
-        def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+        def solve(self, input: nextmv.Input) -> nextmv.Output:
             """Implement the logic to solve the decision problem here."""
             pass
 

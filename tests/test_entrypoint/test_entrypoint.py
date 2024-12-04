@@ -10,7 +10,7 @@ import nextmv.cloud
 
 
 class SimpleDecisionModel(nextmv.Model):
-    def solve(self, input: nextmv.Input, options: nextmv.Options) -> nextmv.Output:
+    def solve(self, input: nextmv.Input) -> nextmv.Output:
         return nextmv.Output(
             solution={"foo": "bar"},
             statistics={"baz": "qux"},
