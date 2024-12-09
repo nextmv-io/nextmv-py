@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List
 
 from nextmv.base_model import BaseModel
+from nextmv.cloud.status import StatusV2
 
 
 class MetricType(str, Enum):
@@ -33,6 +34,26 @@ class Comparison(str, Enum):
     """Less than or equal to metric type."""
     not_equal_to = "ne"
     """Not equal to metric type."""
+
+
+class ToleranceType(str, Enum):
+    """Type of tolerance used for a metric."""
+
+    undefined = ""
+    """Undefined tolerance type."""
+    absolute = "absolute"
+    """Absolute tolerance type."""
+    relative = "relative"
+    """Relative tolerance type."""
+
+
+class Tolerance(BaseModel):
+    """Tolerance used for a metric."""
+
+    type: ToleranceType
+    """Type of tolerance."""
+    value: float
+    """Value of the tolerance."""
 
 
 class MetricParams(BaseModel):
@@ -65,6 +86,91 @@ class ComparisonInstance(BaseModel):
     """ID of the version."""
 
 
+class DistributionSummaryStatistics(BaseModel):
+    """Statistics of a distribution summary."""
+
+    min: float
+    """Minimum value."""
+    max: float
+    """Maximum value."""
+    count: int
+    """Count of runs."""
+    mean: float
+    """Mean value."""
+    std: float
+    """Standard deviation."""
+    shifted_geometric_mean: float
+    """Shifted geometric mean."""
+    shift_parameter: float
+    """Shift parameter of the geometric mean."""
+
+
+class DistributionPercentiles(BaseModel):
+    """Percentiles of a distribution."""
+
+    p01: float
+    """1st percentile."""
+    p05: float
+    """5th percentile."""
+    p10: float
+    """10th percentile."""
+    p25: float
+    """25th percentile."""
+    p50: float
+    """50th percentile."""
+    p75: float
+    """75th percentile."""
+    p90: float
+    """90th percentile."""
+    p95: float
+    """95th percentile."""
+    p99: float
+    """99th percentile."""
+
+
+class ResultStatistics(BaseModel):
+    """Statistics of a metric result."""
+
+    instance_id: str
+    """ID of the instance."""
+    version_id: str
+    """ID of the version."""
+    number_of_runs: int
+    """Number of runs."""
+    distribution_summary_statistics: DistributionSummaryStatistics
+    """Distribution summary statistics."""
+    distribution_percentiles: DistributionPercentiles
+    """Distribution percentiles."""
+
+
+class MetricStatistics(BaseModel):
+    """Statistics of a metric."""
+
+    control: ResultStatistics
+    """Control statistics."""
+    candidate: ResultStatistics
+    """Candidate statistics."""
+
+
+class MetricResult(BaseModel):
+    """Result of a metric."""
+
+    metric: Metric
+    """Metric of the result."""
+    statistics: MetricStatistics
+    """Statistics of the metric."""
+    passed: bool
+    """Whether the candidate passed for the metric (or not)."""
+
+
+class AcceptanceTestResults(BaseModel):
+    """Results of an acceptance test."""
+
+    passed: bool
+    """Whether the acceptance test passed (or not)."""
+    metric_results: List[Metric]
+
+
 class AcceptanceTest(BaseModel):
     """An acceptance test gives a go/no-go decision criteria for a set of
     metrics. It relies on a batch experiment."""
@@ -89,3 +195,7 @@ class AcceptanceTest(BaseModel):
     """Creation date of the acceptance test."""
     updated_at: datetime
     """Last update date of the acceptance test."""
+    status: StatusV2
+    """Status of the acceptance test."""
+    results: AcceptanceTestResults
+    """Results of the acceptance test."""

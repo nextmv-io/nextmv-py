@@ -413,6 +413,82 @@ class Application:
 
         return AcceptanceTest.from_dict(response.json())
 
+    def new_acceptance_test_with_result(
+        self,
+        candidate_instance_id: str,
+        baseline_instance_id: str,
+        id: str,
+        metrics: List[Union[Metric, Dict[str, Any]]],
+        name: str,
+        input_set_id: Optional[str] = None,
+        description: Optional[str] = None,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> AcceptanceTest:
+        """
+        Create a new acceptance test and poll for the result. This is a
+        convenience method that combines the new_acceptance_test with polling
+        logic to check when the acceptance test is done.
+
+        Args:
+            candidate_instance_id: ID of the candidate instance.
+            baseline_instance_id: ID of the baseline instance.
+            id: ID of the acceptance test.
+            metrics: List of metrics to use for the acceptance test.
+            name: Name of the acceptance test.
+            input_set_id: ID of the input set to use for the underlying batch
+                experiment, in case it hasn't been started.
+            description: Description of the acceptance test.
+            polling_options: Options to use when polling for the run result.
+
+        Returns:
+            Result of the acceptance test.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+            TimeoutError: If the acceptance test does not succeed after the
+                polling strategy is exhausted based on time duration.
+            RuntimeError: If the acceptance test does not succeed after the
+                polling strategy is exhausted based on number of tries.
+        """
+        _ = self.new_acceptance_test(
+            candidate_instance_id=candidate_instance_id,
+            baseline_instance_id=baseline_instance_id,
+            id=id,
+            metrics=metrics,
+            name=name,
+            input_set_id=input_set_id,
+            description=description,
+        )
+
+        time.sleep(polling_options.initial_delay)
+        delay = polling_options.delay
+        polling_ok = False
+        for _ in range(polling_options.max_tries):
+            test_information = self.acceptance_test(acceptance_test_id=id)
+            if test_information.status in [
+                StatusV2.succeeded,
+                StatusV2.failed,
+                StatusV2.canceled,
+            ]:
+                polling_ok = True
+                break
+
+            if delay > polling_options.max_duration:
+                raise TimeoutError(
+                    f"acceptance_test {id} did not succeed after {delay} seconds",
+                )
+
+            sleep_duration = min(delay, polling_options.max_delay)
+            time.sleep(sleep_duration)
+            delay *= polling_options.backoff
+
+        if not polling_ok:
+            raise RuntimeError(
+                f"acceptance_test {id} did not succeed after {polling_options.max_tries} tries",
+            )
+
+        return test_information
+
     def new_batch_experiment(
         self,
         name: str,
