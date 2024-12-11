@@ -2,21 +2,52 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from nextmv.base_model import BaseModel
-from nextmv.cloud.status import StatusV2
 
 
 class MetricType(str, Enum):
     """Type of metric when doing a comparison."""
 
-    absolute_threshold = "absolute-threshold"
-    """Absolute threshold metric type."""
-    difference_threshold = "difference-threshold"
-    """Difference threshold metric type."""
     direct_comparison = "direct-comparison"
     """Direct comparison metric type."""
+
+
+class StatisticType(str, Enum):
+    """
+    Type of statistical process for collapsing multiple values of a metric
+    (from multiple runs) into a single value.
+    """
+
+    min = "min"
+    """Minimum value."""
+    max = "max"
+    """Maximum value."""
+    mean = "mean"
+    """Mean value."""
+    std = "std"
+    """Standard deviation."""
+    shifted_geometric_mean = "shifted_geometric_mean"
+    """Shifted geometric mean."""
+    p01 = "p01"
+    """1st percentile."""
+    p05 = "p05"
+    """5th percentile."""
+    p10 = "p10"
+    """10th percentile."""
+    p25 = "p25"
+    """25th percentile."""
+    p50 = "p50"
+    """50th percentile."""
+    p75 = "p75"
+    """75th percentile."""
+    p90 = "p90"
+    """90th percentile."""
+    p95 = "p95"
+    """95th percentile."""
+    p99 = "p99"
+    """99th percentile."""
 
 
 class Comparison(str, Enum):
@@ -47,7 +78,24 @@ class ToleranceType(str, Enum):
     """Relative tolerance type."""
 
 
-class Tolerance(BaseModel):
+class ExperimentStatus(str, Enum):
+    """Status of an acceptance test."""
+
+    started = "started"
+    """The experiment has started."""
+    completed = "completed"
+    """The experiment was completed."""
+    failed = "failed"
+    """The experiment failed."""
+    draft = "draft"
+    """The experiment is a draft."""
+    canceled = "canceled"
+    """The experiment was canceled."""
+    unknown = "unknown"
+    """The experiment status is unknown."""
+
+
+class MetricTolerance(BaseModel):
     """Tolerance used for a metric."""
 
     type: ToleranceType
@@ -61,6 +109,8 @@ class MetricParams(BaseModel):
 
     operator: Comparison
     """Operator used to compare two metrics."""
+    tolerance: MetricTolerance
+    """Tolerance used for the comparison."""
 
 
 class Metric(BaseModel):
@@ -73,8 +123,11 @@ class Metric(BaseModel):
     """Type of the metric."""
     params: MetricParams
     """Parameters of the metric."""
-    statistic: str
-    """Statistic of the metric."""
+    statistic: StatisticType
+    """
+    Type of statistical process for collapsing multiple values of a metric
+    (from multiple runs) into a single value.
+    """
 
 
 class ComparisonInstance(BaseModel):
@@ -135,7 +188,7 @@ class ResultStatistics(BaseModel):
     """ID of the instance."""
     version_id: str
     """ID of the version."""
-    number_of_runs: int
+    number_of_runs_total: int
     """Number of runs."""
     distribution_summary_statistics: DistributionSummaryStatistics
     """Distribution summary statistics."""
@@ -168,7 +221,7 @@ class AcceptanceTestResults(BaseModel):
 
     passed: bool
     """Whether the acceptance test passed (or not)."""
-    metric_results: List[Metric]
+    metric_results: List[MetricResult]
 
 
 class AcceptanceTest(BaseModel):
@@ -195,7 +248,7 @@ class AcceptanceTest(BaseModel):
     """Creation date of the acceptance test."""
     updated_at: datetime
     """Last update date of the acceptance test."""
-    status: StatusV2
+    status: Optional[ExperimentStatus] = ExperimentStatus.unknown
     """Status of the acceptance test."""
-    results: AcceptanceTestResults
+    results: Optional[AcceptanceTestResults] = None
     """Results of the acceptance test."""

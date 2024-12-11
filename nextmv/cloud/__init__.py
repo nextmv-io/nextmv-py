@@ -1,11 +1,21 @@
 """Functionality for interacting with the Nextmv Cloud."""
 
 from .acceptance_test import AcceptanceTest as AcceptanceTest
+from .acceptance_test import AcceptanceTestResults as AcceptanceTestResults
 from .acceptance_test import Comparison as Comparison
 from .acceptance_test import ComparisonInstance as ComparisonInstance
+from .acceptance_test import DistributionPercentiles as DistributionPercentiles
+from .acceptance_test import DistributionSummaryStatistics as DistributionSummaryStatistics
+from .acceptance_test import ExperimentStatus as ExperimentStatus
 from .acceptance_test import Metric as Metric
 from .acceptance_test import MetricParams as MetricParams
+from .acceptance_test import MetricResult as MetricResult
+from .acceptance_test import MetricStatistics as MetricStatistics
+from .acceptance_test import MetricTolerance as MetricTolerance
 from .acceptance_test import MetricType as MetricType
+from .acceptance_test import ResultStatistics as ResultStatistics
+from .acceptance_test import StatisticType as StatisticType
+from .acceptance_test import ToleranceType as ToleranceType
 from .account import Account as Account
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun

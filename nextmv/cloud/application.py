@@ -11,7 +11,7 @@ import requests
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
-from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
+from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
@@ -466,9 +466,9 @@ class Application:
         for _ in range(polling_options.max_tries):
             test_information = self.acceptance_test(acceptance_test_id=id)
             if test_information.status in [
-                StatusV2.succeeded,
-                StatusV2.failed,
-                StatusV2.canceled,
+                ExperimentStatus.completed,
+                ExperimentStatus.failed,
+                ExperimentStatus.canceled,
             ]:
                 polling_ok = True
                 break
