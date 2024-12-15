@@ -20,7 +20,6 @@ from .account import Account as Account
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application
-from .application import Configuration as Configuration
 from .application import DownloadURL as DownloadURL
 from .application import ErrorLog as ErrorLog
 from .application import Metadata as Metadata
@@ -34,8 +33,8 @@ from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .client import Client as Client
 from .input_set import InputSet as InputSet
+from .instance import Configuration as Configuration
 from .instance import Instance as Instance
-from .instance import InstanceConfiguration as InstanceConfiguration
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestPython as ManifestPython

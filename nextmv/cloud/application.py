@@ -15,7 +15,7 @@ from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metri
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
-from nextmv.cloud.instance import Instance
+from nextmv.cloud.instance import Configuration, Instance
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
 from nextmv.cloud.version import Version
@@ -133,13 +133,6 @@ class UploadURL(BaseModel):
     """ID of the upload."""
     upload_url: str
     """URL to use for uploading the file."""
-
-
-class Configuration(BaseModel):
-    """Configuration of an instance."""
-
-    execution_class: Optional[str] = None
-    """Execution class for the instance."""
 
 
 @dataclass
@@ -838,6 +831,7 @@ class Application:
         id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        configuration: Optional[Configuration] = None,
     ) -> Instance:
         """
         Create a new instance and associate it with a version.
@@ -847,6 +841,7 @@ class Application:
             id: ID of the instance. Will be generated if not provided.
             name: Name of the instance. Will be generated if not provided.
             description: Description of the instance. Will be generated if not provided.
+            configuration: Configuration to use for the instance.
 
         Returns:
             Instance.
@@ -865,6 +860,8 @@ class Application:
             payload["name"] = name
         if description is not None:
             payload["description"] = description
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
 
         response = self.client.request(
             method="POST",
@@ -1153,6 +1150,50 @@ class Application:
             )
 
         return self.__run_result(run_id=run_id, run_information=run_information)
+
+    def update_instance(
+        self,
+        id: str,
+        version_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Configuration] = None,
+    ) -> Instance:
+        """
+        Update an instance.
+
+        Args:
+            id: ID of the instance to update.
+            version_id: ID of the version to associate the instance with.
+            name: Name of the instance.
+            description: Description of the instance.
+            configuration: Configuration to use for the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if version_id is not None:
+            payload["version_id"] = version_id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.experiments_endpoint}/instance/{id}",
+            payload=payload,
+        )
+
+        return Instance.from_dict(response.json())
 
     def upload_large_input(
         self,

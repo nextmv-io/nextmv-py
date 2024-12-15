@@ -5,7 +5,7 @@ from datetime import datetime
 from nextmv.base_model import BaseModel
 
 
-class InstanceConfiguration(BaseModel):
+class Configuration(BaseModel):
     """Configuration for an instance."""
 
     execution_class: str
@@ -27,7 +27,7 @@ class Instance(BaseModel):
     """Name of the instance."""
     description: str
     """Description of the instance."""
-    configuration: InstanceConfiguration
+    configuration: Configuration
     """Configuration for the instance."""
     locked: bool
     """Whether the instance is locked."""
