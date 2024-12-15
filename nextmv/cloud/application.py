@@ -286,7 +286,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/instance/{instance_id}",
+            endpoint=f"{self.endpoint}/instance/{instance_id}",
         )
 
         return Instance.from_dict(response.json())
@@ -358,7 +358,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/instance",
+            endpoint=f"{self.endpoint}/instance",
         )
 
         return [Instance.from_dict(instance) for instance in response.json()]
@@ -376,7 +376,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/version",
+            endpoint=f"{self.endpoint}/version",
         )
 
         return [Version.from_dict(version) for version in response.json()]
@@ -819,7 +819,7 @@ class Application:
 
         response = self.client.request(
             method="POST",
-            endpoint=f"{self.experiments_endpoint}/version",
+            endpoint=f"{self.endpoint}/version",
             payload=payload,
         )
 
@@ -865,7 +865,7 @@ class Application:
 
         response = self.client.request(
             method="POST",
-            endpoint=f"{self.experiments_endpoint}/instance",
+            endpoint=f"{self.endpoint}/instance",
             payload=payload,
         )
 
@@ -1189,7 +1189,7 @@ class Application:
 
         response = self.client.request(
             method="POST",
-            endpoint=f"{self.experiments_endpoint}/instance/{id}",
+            endpoint=f"{self.endpoint}/instance/{id}",
             payload=payload,
         )
 
@@ -1253,7 +1253,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/version/{version_id}",
+            endpoint=f"{self.endpoint}/version/{version_id}",
         )
 
         return Version.from_dict(response.json())
