@@ -15,8 +15,10 @@ from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metri
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.instance import Instance
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
+from nextmv.cloud.version import Version
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
 
@@ -275,6 +277,27 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
+    def instance(self, instance_id: str) -> Instance:
+        """
+        Get an instance.
+
+        Args:
+            instance_id: ID of the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/instance/{instance_id}",
+        )
+
+        return Instance.from_dict(response.json())
+
     def list_acceptance_tests(self) -> List[AcceptanceTest]:
         """
         List all acceptance tests.
@@ -328,6 +351,42 @@ class Application:
         )
 
         return [InputSet.from_dict(input_set) for input_set in response.json()]
+
+    def list_instances(self) -> List[Instance]:
+        """
+        List all instances.
+
+        Returns:
+            List of instances.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/instance",
+        )
+
+        return [Instance.from_dict(instance) for instance in response.json()]
+
+    def list_versions(self) -> List[Version]:
+        """
+        List all versions.
+
+        Returns:
+            List of versions.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/version",
+        )
+
+        return [Version.from_dict(version) for version in response.json()]
 
     def new_acceptance_test(
         self,
@@ -735,6 +794,86 @@ class Application:
             polling_options=polling_options,
         )
 
+    def new_version(
+        self,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Version:
+        """
+        Create a new version using the current dev binary.
+
+        Args:
+            id: ID of the version. Will be generated if not provided.
+            name: Name of the version. Will be generated if not provided.
+            description: Description of the version. Will be generated if not provided.
+
+        Returns:
+            Version.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.experiments_endpoint}/version",
+            payload=payload,
+        )
+
+        return Version.from_dict(response.json())
+
+    def new_instance(
+        self,
+        version_id: str,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Instance:
+        """
+        Create a new instance and associate it with a version.
+
+        Args:
+            version_id: ID of the version to associate the instance with.
+            id: ID of the instance. Will be generated if not provided.
+            name: Name of the instance. Will be generated if not provided.
+            description: Description of the instance. Will be generated if not provided.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {
+            "version_id": version_id,
+        }
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.experiments_endpoint}/instance",
+            payload=payload,
+        )
+
+        return Instance.from_dict(response.json())
+
     def push(
         self,
         manifest: Optional[Manifest] = None,
@@ -1056,6 +1195,27 @@ class Application:
         )
 
         return UploadURL.from_dict(response.json())
+
+    def version(self, version_id: str) -> Version:
+        """
+        Get a version.
+
+        Args:
+            version_id: ID of the version.
+
+        Returns:
+            Version.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/version/{version_id}",
+        )
+
+        return Version.from_dict(response.json())
 
     def __run_result(
         self,

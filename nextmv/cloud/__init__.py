@@ -34,6 +34,8 @@ from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .client import Client as Client
 from .input_set import InputSet as InputSet
+from .instance import Instance as Instance
+from .instance import InstanceConfiguration as InstanceConfiguration
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestPython as ManifestPython
@@ -42,3 +44,6 @@ from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
 from .status import Status as Status
 from .status import StatusV2 as StatusV2
+from .version import Version as Version
+from .version import VersionExecutable as VersionExecutable
+from .version import VersionExecutableRequirements as VersionExecutableRequirements
