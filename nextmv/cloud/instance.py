@@ -1,6 +1,7 @@
 """This module contains definitions for instances."""
 
 from datetime import datetime
+from typing import Optional
 
 from nextmv.base_model import BaseModel
 
@@ -8,9 +9,9 @@ from nextmv.base_model import BaseModel
 class Configuration(BaseModel):
     """Configuration for an instance."""
 
-    execution_class: str
+    execution_class: Optional[str] = None
     """Execution class for the instance."""
-    options: dict
+    options: Optional[dict] = None
     """Options of the app that the instance uses."""
 
 

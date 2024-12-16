@@ -221,7 +221,10 @@ class AcceptanceTestResults(BaseModel):
 
     passed: bool
     """Whether the acceptance test passed (or not)."""
-    metric_results: List[MetricResult]
+    metric_results: Optional[List[MetricResult]] = None
+    """Results of the metrics."""
+    error: Optional[str] = None
+    """Error message if the acceptance test failed."""
 
 
 class AcceptanceTest(BaseModel):
