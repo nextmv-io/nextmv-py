@@ -1,16 +1,25 @@
 """Functionality for interacting with the Nextmv Cloud."""
 
 from .acceptance_test import AcceptanceTest as AcceptanceTest
+from .acceptance_test import AcceptanceTestResults as AcceptanceTestResults
 from .acceptance_test import Comparison as Comparison
 from .acceptance_test import ComparisonInstance as ComparisonInstance
+from .acceptance_test import DistributionPercentiles as DistributionPercentiles
+from .acceptance_test import DistributionSummaryStatistics as DistributionSummaryStatistics
+from .acceptance_test import ExperimentStatus as ExperimentStatus
 from .acceptance_test import Metric as Metric
 from .acceptance_test import MetricParams as MetricParams
+from .acceptance_test import MetricResult as MetricResult
+from .acceptance_test import MetricStatistics as MetricStatistics
+from .acceptance_test import MetricTolerance as MetricTolerance
 from .acceptance_test import MetricType as MetricType
+from .acceptance_test import ResultStatistics as ResultStatistics
+from .acceptance_test import StatisticType as StatisticType
+from .acceptance_test import ToleranceType as ToleranceType
 from .account import Account as Account
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application
-from .application import Configuration as Configuration
 from .application import DownloadURL as DownloadURL
 from .application import ErrorLog as ErrorLog
 from .application import Metadata as Metadata
@@ -24,6 +33,8 @@ from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .client import Client as Client
 from .input_set import InputSet as InputSet
+from .instance import Configuration as Configuration
+from .instance import Instance as Instance
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestPython as ManifestPython
@@ -32,3 +43,6 @@ from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
 from .status import Status as Status
 from .status import StatusV2 as StatusV2
+from .version import Version as Version
+from .version import VersionExecutable as VersionExecutable
+from .version import VersionExecutableRequirements as VersionExecutableRequirements

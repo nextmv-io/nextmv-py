@@ -11,12 +11,14 @@ import requests
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
-from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
+from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.instance import Configuration, Instance
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.status import Status, StatusV2
+from nextmv.cloud.version import Version
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
 
@@ -131,13 +133,6 @@ class UploadURL(BaseModel):
     """ID of the upload."""
     upload_url: str
     """URL to use for uploading the file."""
-
-
-class Configuration(BaseModel):
-    """Configuration of an instance."""
-
-    execution_class: Optional[str] = None
-    """Execution class for the instance."""
 
 
 @dataclass
@@ -275,6 +270,27 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
+    def instance(self, instance_id: str) -> Instance:
+        """
+        Get an instance.
+
+        Args:
+            instance_id: ID of the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/instances/{instance_id}",
+        )
+
+        return Instance.from_dict(response.json())
+
     def list_acceptance_tests(self) -> List[AcceptanceTest]:
         """
         List all acceptance tests.
@@ -328,6 +344,42 @@ class Application:
         )
 
         return [InputSet.from_dict(input_set) for input_set in response.json()]
+
+    def list_instances(self) -> List[Instance]:
+        """
+        List all instances.
+
+        Returns:
+            List of instances.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/instances",
+        )
+
+        return [Instance.from_dict(instance) for instance in response.json()]
+
+    def list_versions(self) -> List[Version]:
+        """
+        List all versions.
+
+        Returns:
+            List of versions.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/versions",
+        )
+
+        return [Version.from_dict(version) for version in response.json()]
 
     def new_acceptance_test(
         self,
@@ -412,6 +464,82 @@ class Application:
         )
 
         return AcceptanceTest.from_dict(response.json())
+
+    def new_acceptance_test_with_result(
+        self,
+        candidate_instance_id: str,
+        baseline_instance_id: str,
+        id: str,
+        metrics: List[Union[Metric, Dict[str, Any]]],
+        name: str,
+        input_set_id: Optional[str] = None,
+        description: Optional[str] = None,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> AcceptanceTest:
+        """
+        Create a new acceptance test and poll for the result. This is a
+        convenience method that combines the new_acceptance_test with polling
+        logic to check when the acceptance test is done.
+
+        Args:
+            candidate_instance_id: ID of the candidate instance.
+            baseline_instance_id: ID of the baseline instance.
+            id: ID of the acceptance test.
+            metrics: List of metrics to use for the acceptance test.
+            name: Name of the acceptance test.
+            input_set_id: ID of the input set to use for the underlying batch
+                experiment, in case it hasn't been started.
+            description: Description of the acceptance test.
+            polling_options: Options to use when polling for the run result.
+
+        Returns:
+            Result of the acceptance test.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+            TimeoutError: If the acceptance test does not succeed after the
+                polling strategy is exhausted based on time duration.
+            RuntimeError: If the acceptance test does not succeed after the
+                polling strategy is exhausted based on number of tries.
+        """
+        _ = self.new_acceptance_test(
+            candidate_instance_id=candidate_instance_id,
+            baseline_instance_id=baseline_instance_id,
+            id=id,
+            metrics=metrics,
+            name=name,
+            input_set_id=input_set_id,
+            description=description,
+        )
+
+        time.sleep(polling_options.initial_delay)
+        delay = polling_options.delay
+        polling_ok = False
+        for _ in range(polling_options.max_tries):
+            test_information = self.acceptance_test(acceptance_test_id=id)
+            if test_information.status in [
+                ExperimentStatus.completed,
+                ExperimentStatus.failed,
+                ExperimentStatus.canceled,
+            ]:
+                polling_ok = True
+                break
+
+            if delay > polling_options.max_duration:
+                raise TimeoutError(
+                    f"acceptance_test {id} did not succeed after {delay} seconds",
+                )
+
+            sleep_duration = min(delay, polling_options.max_delay)
+            time.sleep(sleep_duration)
+            delay *= polling_options.backoff
+
+        if not polling_ok:
+            raise RuntimeError(
+                f"acceptance_test {id} did not succeed after {polling_options.max_tries} tries",
+            )
+
+        return test_information
 
     def new_batch_experiment(
         self,
@@ -658,6 +786,90 @@ class Application:
             run_id=run_id,
             polling_options=polling_options,
         )
+
+    def new_version(
+        self,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Version:
+        """
+        Create a new version using the current dev binary.
+
+        Args:
+            id: ID of the version. Will be generated if not provided.
+            name: Name of the version. Will be generated if not provided.
+            description: Description of the version. Will be generated if not provided.
+
+        Returns:
+            Version.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/versions",
+            payload=payload,
+        )
+
+        return Version.from_dict(response.json())
+
+    def new_instance(
+        self,
+        version_id: str,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Configuration] = None,
+    ) -> Instance:
+        """
+        Create a new instance and associate it with a version.
+
+        Args:
+            version_id: ID of the version to associate the instance with.
+            id: ID of the instance. Will be generated if not provided.
+            name: Name of the instance. Will be generated if not provided.
+            description: Description of the instance. Will be generated if not provided.
+            configuration: Configuration to use for the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {
+            "version_id": version_id,
+        }
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/instances",
+            payload=payload,
+        )
+
+        return Instance.from_dict(response.json())
 
     def push(
         self,
@@ -939,6 +1151,50 @@ class Application:
 
         return self.__run_result(run_id=run_id, run_information=run_information)
 
+    def update_instance(
+        self,
+        id: str,
+        name: str,
+        version_id: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Configuration] = None,
+    ) -> Instance:
+        """
+        Update an instance.
+
+        Args:
+            id: ID of the instance to update.
+            version_id: ID of the version to associate the instance with.
+            name: Name of the instance.
+            description: Description of the instance.
+            configuration: Configuration to use for the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if version_id is not None:
+            payload["version_id"] = version_id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
+
+        response = self.client.request(
+            method="PUT",
+            endpoint=f"{self.endpoint}/instances/{id}",
+            payload=payload,
+        )
+
+        return Instance.from_dict(response.json())
+
     def upload_large_input(
         self,
         input: Union[Dict[str, Any], str],
@@ -980,6 +1236,27 @@ class Application:
         )
 
         return UploadURL.from_dict(response.json())
+
+    def version(self, version_id: str) -> Version:
+        """
+        Get a version.
+
+        Args:
+            version_id: ID of the version.
+
+        Returns:
+            Version.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/versions/{version_id}",
+        )
+
+        return Version.from_dict(response.json())
 
     def __run_result(
         self,
