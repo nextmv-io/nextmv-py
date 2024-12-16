@@ -1154,8 +1154,8 @@ class Application:
     def update_instance(
         self,
         id: str,
+        name: str,
         version_id: Optional[str] = None,
-        name: Optional[str] = None,
         description: Optional[str] = None,
         configuration: Optional[Configuration] = None,
     ) -> Instance:
@@ -1188,7 +1188,7 @@ class Application:
             payload["configuration"] = configuration.to_dict()
 
         response = self.client.request(
-            method="POST",
+            method="PUT",
             endpoint=f"{self.endpoint}/instances/{id}",
             payload=payload,
         )
