@@ -199,7 +199,7 @@ class Options:
             "-f",
             "--f",
             "--fff",
-            help="a dummy argument to fool ipython",
+            help=argparse.SUPPRESS,
             default="1",
         )
         args = parser.parse_args()
