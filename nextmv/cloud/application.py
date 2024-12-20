@@ -1326,7 +1326,7 @@ class Application:
                 method="PUT",
                 endpoint=upload_url,
                 data=f,
-                headers={"Content-Type": "application/gzip"},
+                headers={"Content-Type": "application/octet-stream"},
             )
 
         activation_request = {
