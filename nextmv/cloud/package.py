@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.logger import log
@@ -27,7 +27,7 @@ def _package(
     model: Optional[Model] = None,
     model_configuration: Optional[ModelConfiguration] = None,
     verbose: bool = False,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Package the app into a tarball.."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
@@ -138,8 +138,8 @@ def _run_pre_push_command(
 
 def __find_files(
     app_dir: str,
-    filters: List[str],
-) -> Tuple[List[str], List[str], List[Dict[str, str]]]:
+    filters: list[str],
+) -> tuple[list[str], list[str], list[dict[str, str]]]:
     """Find all files matching the given filters in the given directory."""
 
     found = []
@@ -191,7 +191,7 @@ def __find_files(
     return found, missing, files
 
 
-def __confirm_mandatory_files(manifest: Manifest, present_files: List[str]) -> None:
+def __confirm_mandatory_files(manifest: Manifest, present_files: list[str]) -> None:
     """Confirm that all mandatory files are present in the given list of files."""
 
     mandatory_files = _MANDATORY_FILES_PER_TYPE[manifest.type]
@@ -365,7 +365,7 @@ def __confirm_python_version(output: str) -> None:
     raise Exception("python version 3.9 or higher is required")
 
 
-def __compress_tar(source: str, target: str) -> Tuple[str, int]:
+def __compress_tar(source: str, target: str) -> tuple[str, int]:
     """Compress the source directory into a tar.gz file in the target"""
 
     return_file_name = "app.tar.gz"

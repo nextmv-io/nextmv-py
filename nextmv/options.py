@@ -5,7 +5,7 @@ import builtins
 import copy
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from nextmv.base_model import BaseModel
 
@@ -54,13 +54,13 @@ class Parameter:
     argument, an environment variable or a default value."""
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Parameter":
+    def from_dict(cls, data: dict[str, Any]) -> "Parameter":
         """
         Creates an instance of `Parameter` from a dictionary.
 
         Parameters
         ----------
-        data : Dict[str, Any]
+        data : dict[str, Any]
             The dictionary representation of a parameter.
 
         Returns
@@ -80,13 +80,13 @@ class Parameter:
             required=data.get("required", False),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts the parameter to a dict.
 
         Returns
         -------
-        Dict[str, Any]
+        dict[str, Any]
             The parameter as a dict.
         """
 
@@ -166,7 +166,7 @@ class Options:
             + "or environment variables.",
             allow_abbrev=False,
         )
-        params_by_field_name: Dict[str, Parameter] = {}
+        params_by_field_name: dict[str, Parameter] = {}
 
         for p, param in enumerate(parameters):
             if not isinstance(param, Parameter):
@@ -244,18 +244,18 @@ class Options:
                 f'parameter "{arg}" is required but not provided through: command-line args, env vars, or default value'
             )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts the options to a dict.
 
         Returns
         -------
-        Dict[str, Any]
+        dict[str, Any]
             The options as a dict.
         """
 
         class model(BaseModel):
-            config: Dict[str, Any]
+            config: dict[str, Any]
 
         self_dict = copy.deepcopy(self.__dict__)
         if "parameters" in self_dict:
@@ -265,21 +265,21 @@ class Options:
 
         return m.to_dict()["config"]
 
-    def parameters_dict(self) -> List[Dict[str, Any]]:
+    def parameters_dict(self) -> list[dict[str, Any]]:
         """
         Converts the options to a list of dicts. Each dict is the dict
         representation of a `Parameter`.
 
         Returns
         -------
-        List[Dict[str, Any]]
+        list[dict[str, Any]]
             The list of dictionaries (parameter entries).
         """
 
         return [param.to_dict() for param in self.parameters]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Options":
+    def from_dict(cls, data: dict[str, Any]) -> "Options":
         """
         Creates an instance of `Options` from a dictionary. The dictionary
         should have the following structure:
@@ -291,7 +291,7 @@ class Options:
 
         Parameters
         ----------
-        data : Dict[str, Any]
+        data : dict[str, Any]
             The dictionary representation of the options.
 
         Returns
@@ -308,14 +308,14 @@ class Options:
         return cls(*parameters)
 
     @classmethod
-    def from_parameters_dict(cls, parameters_dict: List[Dict[str, Any]]) -> "Options":
+    def from_parameters_dict(cls, parameters_dict: list[dict[str, Any]]) -> "Options":
         """
         Creates an instance of `Options` from parameters in dict form. Each
         entry is the dict representation of a `Parameter`.
 
         Parameters
         ----------
-        data : List[Dict[str, Any]]
+        data : list[dict[str, Any]]
             The list of dictionaries (parameter entries).
 
         Returns

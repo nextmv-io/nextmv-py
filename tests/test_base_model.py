@@ -1,5 +1,5 @@
 import unittest
-from typing import List, Optional
+from typing import Optional
 
 from nextmv.base_model import BaseModel
 
@@ -11,7 +11,7 @@ class Foo(BaseModel):
 
 class Roh(BaseModel):
     foo: Foo
-    qux: Optional[List[str]] = None
+    qux: Optional[list[str]] = None
     lorem: Optional[str] = None
 
 

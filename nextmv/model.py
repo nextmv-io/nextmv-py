@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from nextmv.input import Input
 from nextmv.logger import log
@@ -46,7 +46,7 @@ class ModelConfiguration:
     name: str
     """The name of the decision model."""
 
-    requirements: Optional[List[str]] = None
+    requirements: Optional[list[str]] = None
     """A list of Python dependencies that the decision model requires."""
     options: Optional[Options] = None
     """Options that the decision model requires."""

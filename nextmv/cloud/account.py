@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
@@ -38,8 +37,8 @@ class Queue(BaseModel):
     """A queue is a list of runs that are pending to be executed, or currently
     being executed, in the account."""
 
-    runs: List[QueuedRun]
-    """List of runs in the queue."""
+    runs: list[QueuedRun]
+    """list of runs in the queue."""
 
 
 @dataclass

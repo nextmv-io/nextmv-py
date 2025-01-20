@@ -2,7 +2,7 @@
 
 import os
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 from pydantic import Field
@@ -57,19 +57,19 @@ class ManifestBuild(BaseModel):
     continue the push process of the app to Nextmv Cloud. This command is
     executed prior to the pre-push command.
     """
-    environment: Optional[Dict[str, Any]] = None
+    environment: Optional[dict[str, Any]] = None
     """
     Environment variables to set when running the build command given as
     key-value pairs.
     """
 
-    def environment_to_dict(self) -> Dict[str, str]:
+    def environment_to_dict(self) -> dict[str, str]:
         """
         Convert the environment variables to a dictionary.
 
         Returns
         -------
-        Dict[str, str]
+        dict[str, str]
             The environment variables as a dictionary.
 
         """
@@ -85,7 +85,7 @@ class ManifestPythonModel(BaseModel):
 
     name: str
     """The name of the decision model."""
-    options: Optional[List[Dict[str, Any]]] = None
+    options: Optional[list[dict[str, Any]]] = None
     """
     Options for the decision model. This is a data representation of the
     `nextmv.Options` class. It consists of a list of dicts. Each dict
@@ -119,7 +119,7 @@ class Manifest(BaseModel):
     file or create it programmatically.
     """
 
-    files: List[str]
+    files: list[str]
     """Mandatory. The files to include (or exclude) in the app."""
 
     runtime: ManifestRuntime = ManifestRuntime.PYTHON
