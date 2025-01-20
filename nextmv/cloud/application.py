@@ -403,7 +403,7 @@ class Application:
             candidate_instance_id: ID of the candidate instance.
             baseline_instance_id: ID of the baseline instance.
             id: ID of the acceptance test.
-            metrics: list of metrics to use for the acceptance test.
+            metrics: List of metrics to use for the acceptance test.
             name: Name of the acceptance test.
             input_set_id: ID of the input set to use for the underlying batch
                 experiment, in case it hasn't been started.
@@ -485,7 +485,7 @@ class Application:
             candidate_instance_id: ID of the candidate instance.
             baseline_instance_id: ID of the baseline instance.
             id: ID of the acceptance test.
-            metrics: list of metrics to use for the acceptance test.
+            metrics: List of metrics to use for the acceptance test.
             name: Name of the acceptance test.
             input_set_id: ID of the input set to use for the underlying batch
                 experiment, in case it hasn't been started.
@@ -557,7 +557,7 @@ class Application:
         Args:
             name: Name of the batch experiment.
             input_set_id: ID of the input set to use for the experiment.
-            instance_ids: list of instance IDs to use for the experiment.
+            instance_ids: List of instance IDs to use for the experiment.
             description: Description of the batch experiment.
             id: ID of the batch experiment.
             option_sets: Option sets to use for the experiment.
