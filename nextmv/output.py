@@ -219,7 +219,7 @@ class Output:
     csv_configurations: Optional[dict[str, Any]] = None
     """Optional configuration for writing CSV files, to be used when the
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
-    passed as kwargs to the `dictWriter` class from the `csv` module."""
+    passed as kwargs to the `DictWriter` class from the `csv` module."""
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
@@ -334,7 +334,7 @@ class LocalOutputWriter(OutputWriter):
         for file_name, data in output.solution.items():
             file_path = os.path.join(dir_path, f"{file_name}.csv")
             with open(file_path, "w", encoding="utf-8", newline="") as file:
-                writer = csv.dictWriter(
+                writer = csv.DictWriter(
                     file,
                     fieldnames=data[0].keys(),
                     **csv_configurations,

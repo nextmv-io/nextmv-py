@@ -144,7 +144,7 @@ class LocalInputLoader(InputLoader):
 
     def _read_csv(path: str, csv_configurations: Optional[dict[str, Any]]) -> list[dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
-            return list(csv.dictReader(f, **csv_configurations))
+            return list(csv.DictReader(f, **csv_configurations))
 
     def _read_json(path: str, _) -> Union[dict[str, Any], Any]:
         with open(path, encoding="utf-8") as f:
@@ -154,7 +154,7 @@ class LocalInputLoader(InputLoader):
     STDIN_READERS = {
         InputFormat.JSON: lambda _: json.load(sys.stdin),
         InputFormat.TEXT: lambda _: sys.stdin.read().rstrip("\n"),
-        InputFormat.CSV: lambda csv_configurations: list(csv.dictReader(sys.stdin, **csv_configurations)),
+        InputFormat.CSV: lambda csv_configurations: list(csv.DictReader(sys.stdin, **csv_configurations)),
     }
     # These callbacks were not implemented with lambda because we needed
     # multiple lines. By using `open`, we needed the `with` to be able to close
@@ -201,9 +201,9 @@ class LocalInputLoader(InputLoader):
         path : str, optional
             Path to the input data.
         csv_configurations : dict[str, Any], optional
-            Configurations for loading CSV files. The default `dictReader` is
+            Configurations for loading CSV files. The default `DictReader` is
             used when loading a CSV file, so you have the option to pass in a
-            dictionary with custom kwargs for the `dictReader`.
+            dictionary with custom kwargs for the `DictReader`.
 
         Returns
         -------
@@ -322,9 +322,9 @@ def load_local(
     path : str, optional
         Path to the input data.
     csv_configurations : dict[str, Any], optional
-        Configurations for loading CSV files. The default `dictReader` is used
+        Configurations for loading CSV files. The default `DictReader` is used
         when loading a CSV file, so you have the option to pass in a dictionary
-        with custom kwargs for the `dictReader`.
+        with custom kwargs for the `DictReader`.
 
     Returns
     -------

@@ -30,7 +30,7 @@ class TestOutput(unittest.TestCase):
                 "options": {},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_json_stdout_default_dict_output(self):
         output = {
@@ -49,7 +49,7 @@ class TestOutput(unittest.TestCase):
                 "options": {},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_json_stdout(self):
         output = nextmv.Output(
@@ -69,7 +69,7 @@ class TestOutput(unittest.TestCase):
                 "options": {},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_json_stdout_with_options(self):
         options = nextmv.Options()
@@ -97,7 +97,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_json_stdout_with_options_json(self):
         output = nextmv.Output(
@@ -121,7 +121,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_json_file(self):
         output = nextmv.Output(
@@ -143,7 +143,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
             }
 
-            self.assertdictEqual(got, expected)
+            self.assertDictEqual(got, expected)
 
     def test_local_writer_csvarchive_default_dir(self):
         """If the path for writing an output is not provided, the path `output`
@@ -250,7 +250,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
             }
 
-            self.assertdictEqual(stdout_got, stdout_expected)
+            self.assertDictEqual(stdout_got, stdout_expected)
 
         with open(f"{write_path}/empanadas.csv") as file:
             csv_got = file.read()

@@ -21,7 +21,7 @@ class TestManifest(unittest.TestCase):
         )
         manifest = Manifest.from_model_configuration(model_configuration)
 
-        self.assertlistEqual(
+        self.assertListEqual(
             manifest.files,
             ["main.py", f"{model_configuration.name}/**"],
         )
