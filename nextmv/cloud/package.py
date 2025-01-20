@@ -359,10 +359,10 @@ def __confirm_python_version(output: str) -> None:
         except ValueError:
             major, minor = map(int, version.split("."))
 
-        if major == 3 and minor >= 8:
+        if major == 3 and minor >= 9:
             return
 
-    raise Exception("python version 3.8 or higher is required")
+    raise Exception("python version 3.9 or higher is required")
 
 
 def __compress_tar(source: str, target: str) -> Tuple[str, int]:

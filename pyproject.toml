@@ -10,11 +10,11 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
     "pydantic>=2.5.2",
@@ -43,7 +43,7 @@ maintainers = [
 ]
 name = "nextmv"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
@@ -56,7 +56,7 @@ all = [
 ]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 lint.select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings

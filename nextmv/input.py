@@ -273,7 +273,7 @@ class LocalInputLoader(InputLoader):
         csv_ext = ".csv"
         for file in os.listdir(dir_path):
             if file.endswith(csv_ext):
-                stripped = file.strip(csv_ext[1:]).strip(".")  # Python 3.8 forces this, instead of using removesuffix()
+                stripped = file.removesuffix(csv_ext)
                 data[stripped] = self._load_utf8_encoded(
                     path=os.path.join(dir_path, file),
                     input_format=InputFormat.CSV,
