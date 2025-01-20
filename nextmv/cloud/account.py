@@ -38,7 +38,7 @@ class Queue(BaseModel):
     being executed, in the account."""
 
     runs: list[QueuedRun]
-    """list of runs in the queue."""
+    """List of runs in the queue."""
 
 
 @dataclass

@@ -293,10 +293,10 @@ class Application:
 
     def list_acceptance_tests(self) -> list[AcceptanceTest]:
         """
-        list all acceptance tests.
+        List all acceptance tests.
 
         Returns:
-            list of acceptance tests.
+            List of acceptance tests.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -311,10 +311,10 @@ class Application:
 
     def list_batch_experiments(self) -> list[BatchExperimentMetadata]:
         """
-        list all batch experiments.
+        List all batch experiments.
 
         Returns:
-            list of batch experiments.
+            List of batch experiments.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -329,10 +329,10 @@ class Application:
 
     def list_input_sets(self) -> list[InputSet]:
         """
-        list all input sets.
+        List all input sets.
 
         Returns:
-            list of input sets.
+            List of input sets.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -347,10 +347,10 @@ class Application:
 
     def list_instances(self) -> list[Instance]:
         """
-        list all instances.
+        List all instances.
 
         Returns:
-            list of instances.
+            List of instances.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -365,10 +365,10 @@ class Application:
 
     def list_versions(self) -> list[Version]:
         """
-        list all versions.
+        List all versions.
 
         Returns:
-            list of versions.
+            List of versions.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.

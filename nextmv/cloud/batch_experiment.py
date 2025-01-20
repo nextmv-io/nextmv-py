@@ -15,7 +15,7 @@ class BatchExperimentInformation(BaseModel):
     input_set_id: str
     """ID of the input set used for the experiment."""
     instance_ids: list[str]
-    """list of instance IDs used for the experiment."""
+    """List of instance IDs used for the experiment."""
 
     description: Optional[str] = None
     """Description of the batch experiment."""
