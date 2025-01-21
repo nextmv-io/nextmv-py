@@ -5,7 +5,7 @@ import shutil
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import requests
 
@@ -115,7 +115,7 @@ class RunResult(RunInformation):
 
     error_log: Optional[ErrorLog] = None
     """Error log of the run. Only available if the run failed."""
-    output: Optional[Dict[str, Any]] = None
+    output: Optional[dict[str, Any]] = None
     """Output of the run. Only available if the run succeeded."""
 
 
@@ -291,7 +291,7 @@ class Application:
 
         return Instance.from_dict(response.json())
 
-    def list_acceptance_tests(self) -> List[AcceptanceTest]:
+    def list_acceptance_tests(self) -> list[AcceptanceTest]:
         """
         List all acceptance tests.
 
@@ -309,7 +309,7 @@ class Application:
 
         return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response.json()]
 
-    def list_batch_experiments(self) -> List[BatchExperimentMetadata]:
+    def list_batch_experiments(self) -> list[BatchExperimentMetadata]:
         """
         List all batch experiments.
 
@@ -327,7 +327,7 @@ class Application:
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
 
-    def list_input_sets(self) -> List[InputSet]:
+    def list_input_sets(self) -> list[InputSet]:
         """
         List all input sets.
 
@@ -345,7 +345,7 @@ class Application:
 
         return [InputSet.from_dict(input_set) for input_set in response.json()]
 
-    def list_instances(self) -> List[Instance]:
+    def list_instances(self) -> list[Instance]:
         """
         List all instances.
 
@@ -363,7 +363,7 @@ class Application:
 
         return [Instance.from_dict(instance) for instance in response.json()]
 
-    def list_versions(self) -> List[Version]:
+    def list_versions(self) -> list[Version]:
         """
         List all versions.
 
@@ -386,7 +386,7 @@ class Application:
         candidate_instance_id: str,
         baseline_instance_id: str,
         id: str,
-        metrics: List[Union[Metric, Dict[str, Any]]],
+        metrics: list[Union[Metric, dict[str, Any]]],
         name: str,
         input_set_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -470,7 +470,7 @@ class Application:
         candidate_instance_id: str,
         baseline_instance_id: str,
         id: str,
-        metrics: List[Union[Metric, Dict[str, Any]]],
+        metrics: list[Union[Metric, dict[str, Any]]],
         name: str,
         input_set_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -545,11 +545,11 @@ class Application:
         self,
         name: str,
         input_set_id: str,
-        instance_ids: List[str] = None,
+        instance_ids: list[str] = None,
         description: Optional[str] = None,
         id: Optional[str] = None,
-        option_sets: Optional[Dict[str, Dict[str, str]]] = None,
-        runs: Optional[List[Union[BatchExperimentRun, Dict[str, Any]]]] = None,
+        option_sets: Optional[dict[str, dict[str, str]]] = None,
+        runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
     ) -> str:
         """
         Create a new batch experiment.
@@ -603,7 +603,7 @@ class Application:
         end_time: Optional[datetime] = None,
         instance_id: Optional[str] = None,
         maximum_runs: Optional[int] = None,
-        run_ids: Optional[List[str]] = None,
+        run_ids: Optional[list[str]] = None,
         start_time: Optional[datetime] = None,
     ) -> InputSet:
         """
@@ -654,12 +654,12 @@ class Application:
 
     def new_run(  # noqa: C901 # Lot of if statements, but clear logic.
         self,
-        input: Union[Dict[str, Any], BaseModel, str] = None,
+        input: Union[dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        options: Optional[Dict[str, str]] = None,
+        options: Optional[dict[str, str]] = None,
         configuration: Optional[Configuration] = None,
     ) -> str:
         """
@@ -689,7 +689,7 @@ class Application:
             input = input.to_dict()
             if input is not None:
                 input_size = get_size(input)
-        elif isinstance(input, Dict):
+        elif isinstance(input, dict):
             input_size = get_size(input)
 
         upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
@@ -735,12 +735,12 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: Union[Dict[str, Any], BaseModel] = None,
+        input: Union[dict[str, Any], BaseModel] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        run_options: Optional[Dict[str, str]] = None,
+        run_options: Optional[dict[str, str]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Configuration] = None,
     ) -> RunResult:
@@ -1005,7 +1005,7 @@ class Application:
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
 
-    def run_input(self, run_id: str) -> Dict[str, Any]:
+    def run_input(self, run_id: str) -> dict[str, Any]:
         """
         Get the input of a run.
 
@@ -1197,7 +1197,7 @@ class Application:
 
     def upload_large_input(
         self,
-        input: Union[Dict[str, Any], str],
+        input: Union[dict[str, Any], str],
         upload_url: UploadURL,
     ) -> None:
         """
@@ -1211,7 +1211,7 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
-        if isinstance(input, Dict):
+        if isinstance(input, dict):
             input = json.dumps(input)
 
         _ = self.client.upload_to_presigned_url(

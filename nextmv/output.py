@@ -8,7 +8,7 @@ import os
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import Field
 
@@ -27,8 +27,8 @@ class RunStatistics(BaseModel):
         Duration of the run in seconds.
     iterations : int, optional
         Number of iterations.
-    custom : Union[Any, Dict[str, Any]], optional
-        Custom statistics created by the user. Can normally expect a `Dict[str,
+    custom : Union[Any, dict[str, Any]], optional
+        Custom statistics created by the user. Can normally expect a `dict[str,
         Any]`.
     """
 
@@ -39,10 +39,10 @@ class RunStatistics(BaseModel):
     custom: Optional[
         Union[
             Any,
-            Dict[str, Any],
+            dict[str, Any],
         ]
     ] = None
-    """Custom statistics created by the user. Can normally expect a `Dict[str,
+    """Custom statistics created by the user. Can normally expect a `dict[str,
     Any]`."""
 
 
@@ -56,8 +56,8 @@ class ResultStatistics(BaseModel):
         Duration of the run in seconds.
     value : float, optional
         Value of the result.
-    custom : Union[Any, Dict[str, Any]], optional
-        Custom statistics created by the user. Can normally expect a `Dict[str,
+    custom : Union[Any, dict[str, Any]], optional
+        Custom statistics created by the user. Can normally expect a `dict[str,
         Any]`.
     """
 
@@ -68,10 +68,10 @@ class ResultStatistics(BaseModel):
     custom: Optional[
         Union[
             Any,
-            Dict[str, Any],
+            dict[str, Any],
         ]
     ] = None
-    """Custom statistics created by the user. Can normally expect a `Dict[str,
+    """Custom statistics created by the user. Can normally expect a `dict[str,
     Any]`."""
 
 
@@ -101,13 +101,13 @@ class Series(BaseModel):
     ----------
     name : str, optional
         Name of the series.
-    data_points : List[DataPoint], optional
+    data_points : list[DataPoint], optional
         Data of the series.
     """
 
     name: Optional[str] = None
     """Name of the series."""
-    data_points: Optional[List[DataPoint]] = None
+    data_points: Optional[list[DataPoint]] = None
     """Data of the series."""
 
 
@@ -119,13 +119,13 @@ class SeriesData(BaseModel):
     ----------
     value : Series, optional
         A series for the value of the solution.
-    custom : List[Series], optional
+    custom : list[Series], optional
         A list of series for custom statistics.
     """
 
     value: Optional[Series] = None
     """A series for the value of the solution."""
-    custom: Optional[List[Series]] = None
+    custom: Optional[list[Series]] = None
     """A list of series for custom statistics."""
 
 
@@ -180,8 +180,8 @@ class Output:
     result of the decision problem. The solution’s type must match the
     `output_format`:
 
-    - `OutputFormat.JSON`: the data must be `Dict[str, Any]`.
-    - `OutputFormat.CSV_ARCHIVE`: the data must be `Dict[str, List[Dict[str,
+    - `OutputFormat.JSON`: the data must be `dict[str, Any]`.
+    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
       Any]]]`. The keys represent the file names where the data should be
       written. The values are lists of dictionaries, where each dictionary
       represents a row in the CSV file.
@@ -197,9 +197,9 @@ class Output:
         Options that the `Input` were created with.
     output_format : OutputFormat, optional
         Format of the output data. Default is `OutputFormat.JSON`.
-    solution : Union[Dict[str, Any], Dict[str, List[Dict[str, Any]]], optional
+    solution : Union[dict[str, Any], dict[str, list[dict[str, Any]]], optional
         The solution to the decision problem.
-    statistics : Union[Statistics, Dict[str, Any], optional
+    statistics : Union[Statistics, dict[str, Any], optional
         Statistics of the solution.
     """
 
@@ -209,14 +209,14 @@ class Output:
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
         Union[
-            Union[Dict[str, Any], Any],  # JSON
-            Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
+            Union[dict[str, Any], Any],  # JSON
+            dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
         ]
     ] = None
     """The solution to the decision problem."""
-    statistics: Optional[Union[Statistics, Dict[str, Any]]] = None
+    statistics: Optional[Union[Statistics, dict[str, Any]]] = None
     """Statistics of the solution."""
-    csv_configurations: Optional[Dict[str, Any]] = None
+    csv_configurations: Optional[dict[str, Any]] = None
     """Optional configuration for writing CSV files, to be used when the
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module."""
@@ -268,15 +268,15 @@ class LocalOutputWriter(OutputWriter):
     """
 
     def _write_json(
-        output: Union[Output, Dict[str, Any]],
-        options: Dict[str, Any],
-        statistics: Dict[str, Any],
+        output: Union[Output, dict[str, Any]],
+        options: dict[str, Any],
+        statistics: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
         solution = {}
         if isinstance(output, Output):
             sol = output.solution
-        elif isinstance(output, Dict):
+        elif isinstance(output, dict):
             sol = output.get("solution")
 
         if sol is not None:
@@ -301,8 +301,8 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_archive(
         output: Output,
-        options: Dict[str, Any],
-        statistics: Dict[str, Any],
+        options: dict[str, Any],
+        statistics: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
         dir_path = "output"
@@ -350,7 +350,7 @@ class LocalOutputWriter(OutputWriter):
 
     def write(
         self,
-        output: Union[Output, Dict[str, Any]],
+        output: Union[Output, dict[str, Any]],
         path: Optional[str] = None,
         skip_stdout_reset: bool = False,
     ) -> None:
@@ -372,7 +372,7 @@ class LocalOutputWriter(OutputWriter):
 
         Parameters
         ----------
-        output: Output, Dict[str, Any]
+        output: Output, dict[str, Any]
             Output data to write.
         path : str
             Path to write the output data to.
@@ -393,10 +393,10 @@ class LocalOutputWriter(OutputWriter):
 
         if isinstance(output, Output):
             output_format = output.output_format
-        elif isinstance(output, Dict):
+        elif isinstance(output, dict):
             output_format = OutputFormat.JSON
         else:
-            raise TypeError(f"unsupported output type: {type(output)}, supported types are `Output` or `Dict`")
+            raise TypeError(f"unsupported output type: {type(output)}, supported types are `Output` or `dict`")
 
         statistics = self._extract_statistics(output)
         options = self._extract_options(output)
@@ -409,14 +409,14 @@ class LocalOutputWriter(OutputWriter):
         )
 
     @staticmethod
-    def _extract_statistics(output: Union[Output, Dict[str, Any]]) -> Dict[str, Any]:
+    def _extract_statistics(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
         """Extract JSON-serializable statistics."""
 
         statistics = {}
 
         if isinstance(output, Output):
             stats = output.statistics
-        elif isinstance(output, Dict):
+        elif isinstance(output, dict):
             stats = output.get("statistics")
 
         if stats is None:
@@ -424,22 +424,22 @@ class LocalOutputWriter(OutputWriter):
 
         if isinstance(stats, Statistics):
             statistics = stats.to_dict()
-        elif isinstance(stats, Dict):
+        elif isinstance(stats, dict):
             statistics = stats
         else:
-            raise TypeError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `Dict`")
+            raise TypeError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `dict`")
 
         return statistics
 
     @staticmethod
-    def _extract_options(output: Union[Output, Dict[str, Any]]) -> Dict[str, Any]:
+    def _extract_options(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
         """Extract JSON-serializable options."""
 
         options = {}
 
         if isinstance(output, Output):
             opt = output.options
-        elif isinstance(output, Dict):
+        elif isinstance(output, dict):
             opt = output.get("options")
 
         if opt is None:
@@ -447,16 +447,16 @@ class LocalOutputWriter(OutputWriter):
 
         if isinstance(opt, Options):
             options = opt.to_dict()
-        elif isinstance(opt, Dict):
+        elif isinstance(opt, dict):
             options = opt
         else:
-            raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `Dict`")
+            raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `dict`")
 
         return options
 
 
 def write_local(
-    output: Union[Output, Dict[str, Any]],
+    output: Union[Output, dict[str, Any]],
     path: Optional[str] = None,
     skip_stdout_reset: bool = False,
 ) -> None:
@@ -481,7 +481,7 @@ def write_local(
 
     Parameters
     ----------
-    output : Output, Dict[str, Any]
+    output : Output, dict[str, Any]
         Output data to write.
     path : str
         Path to write the output data to.

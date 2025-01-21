@@ -7,7 +7,7 @@ import os
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from nextmv.options import Options
 
@@ -41,10 +41,10 @@ class Input:
     """
 
     data: Union[
-        Union[Dict[str, Any], Any],  # JSON
+        Union[dict[str, Any], Any],  # JSON
         str,  # TEXT
-        List[Dict[str, Any]],  # CSV
-        Dict[str, List[Dict[str, Any]]],  # CSV_ARCHIVE
+        list[dict[str, Any]],  # CSV
+        dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
     ]
     """The actual data. The data can be of various types, depending on the
     input format."""
@@ -142,11 +142,11 @@ class LocalInputLoader(InputLoader):
         with open(path, encoding="utf-8") as f:
             return f.read().rstrip("\n")
 
-    def _read_csv(path: str, csv_configurations: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _read_csv(path: str, csv_configurations: Optional[dict[str, Any]]) -> list[dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
             return list(csv.DictReader(f, **csv_configurations))
 
-    def _read_json(path: str, _) -> Union[Dict[str, Any], Any]:
+    def _read_json(path: str, _) -> Union[dict[str, Any], Any]:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
 
@@ -170,7 +170,7 @@ class LocalInputLoader(InputLoader):
         input_format: Optional[InputFormat] = InputFormat.JSON,
         options: Optional[Options] = None,
         path: Optional[str] = None,
-        csv_configurations: Optional[Dict[str, Any]] = None,
+        csv_configurations: Optional[dict[str, Any]] = None,
     ) -> Input:
         """
         Load the input data. The input data can be in various formats. For
@@ -186,10 +186,10 @@ class LocalInputLoader(InputLoader):
         The `Input` that is returned contains the `data` attribute. This data
         can be of different types, depending on the provided `input_format`:
 
-        - `InputFormat.JSON`: the data is a `Dict[str, Any]`.
+        - `InputFormat.JSON`: the data is a `dict[str, Any]`.
         - `InputFormat.TEXT`: the data is a `str`.
-        - `InputFormat.CSV`: the data is a `List[Dict[str, Any]]`.
-        - `InputFormat.CSV_ARCHIVE`: the data is a `Dict[str, List[Dict[str, Any]]]`.
+        - `InputFormat.CSV`: the data is a `list[dict[str, Any]]`.
+        - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`.
           Each key is the name of the CSV file, minus the `.csv` extension.
 
         Parameters
@@ -200,7 +200,7 @@ class LocalInputLoader(InputLoader):
             Options for loading the input data.
         path : str, optional
             Path to the input data.
-        csv_configurations : Dict[str, Any], optional
+        csv_configurations : dict[str, Any], optional
             Configurations for loading CSV files. The default `DictReader` is
             used when loading a CSV file, so you have the option to pass in a
             dictionary with custom kwargs for the `DictReader`.
@@ -229,11 +229,11 @@ class LocalInputLoader(InputLoader):
 
     def _load_utf8_encoded(
         self,
-        csv_configurations: Optional[Dict[str, Any]],
+        csv_configurations: Optional[dict[str, Any]],
         path: Optional[str] = None,
         input_format: Optional[InputFormat] = InputFormat.JSON,
         use_file_reader: bool = False,
-    ) -> Union[Dict[str, Any], str, List[Dict[str, Any]]]:
+    ) -> Union[dict[str, Any], str, list[dict[str, Any]]]:
         """
         Load a utf-8 encoded file. Can come from stdin or a file in the
         filesystem.
@@ -252,9 +252,9 @@ class LocalInputLoader(InputLoader):
 
     def _load_archive(
         self,
-        csv_configurations: Optional[Dict[str, Any]],
+        csv_configurations: Optional[dict[str, Any]],
         path: Optional[str] = None,
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Load files from a directory. Will only load CSV files.
         """
@@ -273,7 +273,7 @@ class LocalInputLoader(InputLoader):
         csv_ext = ".csv"
         for file in os.listdir(dir_path):
             if file.endswith(csv_ext):
-                stripped = file.strip(csv_ext[1:]).strip(".")  # Python 3.8 forces this, instead of using removesuffix()
+                stripped = file.removesuffix(csv_ext)
                 data[stripped] = self._load_utf8_encoded(
                     path=os.path.join(dir_path, file),
                     input_format=InputFormat.CSV,
@@ -288,7 +288,7 @@ def load_local(
     input_format: Optional[InputFormat] = InputFormat.JSON,
     options: Optional[Options] = None,
     path: Optional[str] = None,
-    csv_configurations: Optional[Dict[str, Any]] = None,
+    csv_configurations: Optional[dict[str, Any]] = None,
 ) -> Input:
     """
     This is a convenience function for instantiating a `LocalInputLoader`
@@ -307,10 +307,10 @@ def load_local(
     The `Input` that is returned contains the `data` attribute. This data can
     be of different types, depending on the provided `input_format`:
 
-    - `InputFormat.JSON`: the data is a `Dict[str, Any]`.
+    - `InputFormat.JSON`: the data is a `dict[str, Any]`.
     - `InputFormat.TEXT`: the data is a `str`.
-    - `InputFormat.CSV`: the data is a `List[Dict[str, Any]]`.
-    - `InputFormat.CSV_ARCHIVE`: the data is a `Dict[str, List[Dict[str, Any]]]`.
+    - `InputFormat.CSV`: the data is a `list[dict[str, Any]]`.
+    - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`.
         Each key is the name of the CSV file, minus the `.csv` extension.
 
     Parameters
@@ -321,7 +321,7 @@ def load_local(
         Options for loading the input data.
     path : str, optional
         Path to the input data.
-    csv_configurations : Dict[str, Any], optional
+    csv_configurations : dict[str, Any], optional
         Configurations for loading CSV files. The default `DictReader` is used
         when loading a CSV file, so you have the option to pass in a dictionary
         with custom kwargs for the `DictReader`.

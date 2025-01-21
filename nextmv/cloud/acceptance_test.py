@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 from nextmv.base_model import BaseModel
 
@@ -221,7 +221,7 @@ class AcceptanceTestResults(BaseModel):
 
     passed: bool
     """Whether the acceptance test passed (or not)."""
-    metric_results: Optional[List[MetricResult]] = None
+    metric_results: Optional[list[MetricResult]] = None
     """Results of the metrics."""
     error: Optional[str] = None
     """Error message if the acceptance test failed."""
@@ -245,7 +245,7 @@ class AcceptanceTest(BaseModel):
     """Control instance of the acceptance test."""
     candidate: ComparisonInstance
     """Candidate instance of the acceptance test."""
-    metrics: List[Metric]
+    metrics: list[Metric]
     """Metrics of the acceptance test."""
     created_at: datetime
     """Creation date of the acceptance test."""
