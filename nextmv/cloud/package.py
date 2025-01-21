@@ -259,6 +259,7 @@ def __install_dependencies(
         "--no-warn-conflicts",
         "--target",
         os.path.join(temp_dir, dep_dir),
+        "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
         "--no-input",
         "--quiet",
     ]
