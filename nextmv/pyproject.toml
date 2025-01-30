@@ -55,18 +55,5 @@ all = [
     "mlflow>=2.17.2",
 ]
 
-[tool.ruff]
-target-version = "py39"
-lint.select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "C",  # flake8-comprehensions
-    "B",  # flake8-bugbear
-    "UP",  # pyupgrade
-]
-line-length = 120
-
 [tool.hatch.version]
 path = "nextmv/__about__.py"

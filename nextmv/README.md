@@ -1,6 +1,6 @@
 # Nextmv Python SDK
 
-This is the Python SDK for the Nextmv Platform.
+Welcome to `nextmv`, the general Python SDK for the Nextmv Platform.
 
 ## Installation
 
