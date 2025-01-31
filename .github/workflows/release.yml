@@ -19,6 +19,7 @@ on:
         options:
           - nextmv
           - nextmv_gurobipy
+          - nextmv_scikit-learn
 
 env:
   PYTHON_VERSION: "3.13"
