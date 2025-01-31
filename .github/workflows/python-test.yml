@@ -8,7 +8,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         platform: [ubuntu-latest, windows-latest, macos-latest, macos-13]
-        package: ["nextmv", "nextmv_gurobipy"]
+        package: ["nextmv", "nextmv-gurobipy", "nextmv-scikit-learn"]
     steps:
       - name: git clone
         uses: actions/checkout@v4

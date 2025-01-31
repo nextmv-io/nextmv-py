@@ -1,6 +1,6 @@
 # Nextmv & Gurobi Python SDK
 
-Welcome to `nextmv_gurobipy`, an SDK for integrating Gurobi with the Nextmv
+Welcome to `nextmv-gurobipy`, an SDK for integrating Gurobi with the Nextmv
 platform.
 
 ## Installation
@@ -8,5 +8,5 @@ platform.
 Requires Python `>=3.9`. Install using `pip`:
 
 ```bash
-pip install nextmv_gurobipy
+pip install nextmv-gurobipy
 ```

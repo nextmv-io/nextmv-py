@@ -18,8 +18,8 @@ on:
         type: choice
         options:
           - nextmv
-          - nextmv_gurobipy
-          - nextmv_scikit-learn
+          - nextmv-gurobipy
+          - nextmv-scikit-learn
 
 env:
   PYTHON_VERSION: "3.13"
@@ -71,8 +71,13 @@ jobs:
       - name: set the module name
         id: set_module
         run: |
-          if [ "${{ inputs.PACKAGE }}" == "nextmv_scikit-learn" ]; then
+          if [ "${{ inputs.PACKAGE }}" == "nextmv-scikit-learn" ]; then
             echo "MODULE=nextmv_sklearn" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "${{ inputs.PACKAGE }}" == "nextmv-gurobipy" ]; then
+            echo "MODULE=nextmv_gurobipy" >> $GITHUB_OUTPUT
             exit 0
           fi
 

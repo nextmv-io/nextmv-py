@@ -36,7 +36,7 @@ license = { file = "LICENSE" }
 maintainers = [
     { email = "tech@nextmv.io", name = "Nextmv" }
 ]
-name = "nextmv_scikit-learn"
+name = "nextmv-scikit-learn"
 readme = "README.md"
 requires-python = ">=3.9"
 
@@ -49,4 +49,4 @@ Repository = "https://github.com/nextmv-io/nextmv-py"
 path = "nextmv_sklearn/__about__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["nextmv_sklearn"]
+packages = ["nextmv-sklearn"]
