@@ -7,7 +7,7 @@ authors = [
     { email = "tech@nextmv.io", name = "Nextmv" }
 ]
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
+    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -17,12 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
-    "pydantic>=2.5.2",
-    "urllib3>=2.1.0",
-    "requests>=2.31.0",
-    "pyyaml>=6.0.1",
 ]
-description = "The all-purpose Python SDK for Nextmv"
+description = "An SDK for integrating scikit-learn witn the Nextmv platform"
 dynamic = [
     "version",
 ]
@@ -31,17 +27,16 @@ keywords = [
     "decision science",
     "decisions",
     "nextmv",
+    "gurobi",
     "optimization",
     "operations research",
-    "shift scheduling",
     "solver",
-    "vehicle routing problem",
 ]
 license = { file = "LICENSE" }
 maintainers = [
     { email = "tech@nextmv.io", name = "Nextmv" }
 ]
-name = "nextmv"
+name = "nextmv_scikit-learn"
 readme = "README.md"
 requires-python = ">=3.9"
 
@@ -50,10 +45,5 @@ Homepage = "https://www.nextmv.io"
 Documentation = "https://www.nextmv.io/docs"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
-[project.optional-dependencies]
-all = [
-    "mlflow>=2.17.2",
-]
-
 [tool.hatch.version]
-path = "nextmv/__about__.py"
+path = "nextmv_scikit-learn/__about__.py"

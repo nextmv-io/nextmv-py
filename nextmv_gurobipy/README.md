@@ -1,4 +1,4 @@
-# Nextmv-Guroby Python SDK
+# Nextmv & Gurobi Python SDK
 
 Welcome to `nextmv_gurobipy`, an SDK for integrating Gurobi with the Nextmv
 platform.
