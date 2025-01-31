@@ -3,9 +3,7 @@
 Welcome to `nextmv-gurobipy`, an SDK for integrating Gurobi with the Nextmv
 platform.
 
-## License
-
-> [!IMPORTANT]
+**IMPORTANT!**
 > Please note that `nextmv-gurobipy` is provided as _source-available_ software
 > (not _open-source_).
 

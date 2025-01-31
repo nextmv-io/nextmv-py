@@ -5,7 +5,7 @@ Nextmv platform.
 
 ## License
 
-> [!IMPORTANT]
+**IMPORTANT!**
 > Please note that `nextmv-scikit-learn` is provided as _source-available_
 > software (not _open-source_).
 
