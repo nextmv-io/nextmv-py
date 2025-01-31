@@ -1,0 +1,12 @@
+build>=1.0.3
+pydantic>=2.5.2
+pyyaml>=6.0.1
+urllib3>=2.1.0
+requests>=2.31.0
+ruff>=0.1.7
+twine>=4.0.2
+mlflow>=2.19.0
+
+# We need nextroute for the `test_entrypoint`, where we are testing that an
+# mlflow model can be run using the __entrypoint__.py file as a main.py script.
+nextroute>=1.11.1

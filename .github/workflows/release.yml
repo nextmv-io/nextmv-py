@@ -18,6 +18,7 @@ on:
         type: choice
         options:
           - nextmv
+          - nextmv_gurobipy
 
 env:
   PYTHON_VERSION: "3.13"
