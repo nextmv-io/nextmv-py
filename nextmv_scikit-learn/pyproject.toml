@@ -46,4 +46,7 @@ Documentation = "https://www.nextmv.io/docs"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [tool.hatch.version]
-path = "nextmv_scikit-learn/__about__.py"
+path = "nextmv_sklearn/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["nextmv_sklearn"]
