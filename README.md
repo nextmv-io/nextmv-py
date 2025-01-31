@@ -13,3 +13,7 @@ can find the source for the following packages:
   Nextmv platform.
 
 Please refer to the individual package READMEs for more information.
+
+> [!IMPORTANT]
+> Please review the LICENSE on each package, as they may not all have the same
+> license.
