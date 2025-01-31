@@ -68,9 +68,19 @@ jobs:
         run: hatch version ${{ env.VERSION }}
         working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
 
+      - name: set the module name
+        id: set_module
+        run: |
+          if [ "${{ inputs.PACKAGE }}" == "nextmv_scikit-learn" ]; then
+            echo "MODULE=nextmv_sklearn" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "MODULE=${{ inputs.PACKAGE }}" >> $GITHUB_OUTPUT
+
       - name: commit new version
         run: |
-          git add ${{ inputs.PACKAGE }}/__about__.py
+          git add ${{ steps.set_module.outputs.MODULE }}/__about__.py
           git commit -S -m "Bump ${{ inputs.PACKAGE }} version to ${{ env.VERSION }}"
           git push
           git tag ${{ env.PACKAGE_VERSION }}
