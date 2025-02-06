@@ -17,6 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
+    "gurobipy>=12.0.1",
+    "nextmv>=0.15.1"
 ]
 description = "An SDK for integrating Gurobi with the Nextmv platform"
 dynamic = [
