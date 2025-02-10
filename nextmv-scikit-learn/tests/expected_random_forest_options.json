@@ -1,0 +1,151 @@
+[
+  {
+    "name": "n_estimators",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of trees in the forest.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "criterion",
+    "param_type": "<class 'str'>",
+    "default": null,
+    "description": "The function to measure the quality of a split.",
+    "required": false,
+    "choices": [
+      "squared_error",
+      "absolute_error",
+      "friedman_mse",
+      "poisson"
+    ]
+  },
+  {
+    "name": "max_depth",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The maximum depth of the tree.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_samples_split",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The minimum number of samples required to split an internal node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_samples_leaf",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The minimum number of samples required to be at a leaf node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_weight_fraction_leaf",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_features",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of features to consider when looking for the best split.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_leaf_nodes",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Grow trees with max_leaf_nodes in best-first fashion.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_impurity_decrease",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "bootstrap",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "Whether bootstrap samples are used when building trees.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "oob_score",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "Whether to use out-of-bag samples to estimate the generalization score.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "n_jobs",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of jobs to run in parallel.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "random_state",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Controls both the randomness of the bootstrapping of the samples used when building trees and the sampling of the features.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "verbose",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Controls the verbosity when fitting and predicting.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "warm_start",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "When set to True, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just erase the previous solution.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "ccp_alpha",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "Complexity parameter used for Minimal Cost-Complexity Pruning.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_samples",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "If bootstrap is True, the number of samples to draw from X to train each base estimator.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "monotonic_cst",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Indicates the monotonicity constraint to enforce on each feature.",
+    "required": false,
+    "choices": null
+  }
+]

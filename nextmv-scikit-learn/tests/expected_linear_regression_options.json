@@ -1,0 +1,34 @@
+[
+  {
+    "name": "fit_intercept",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "Whether to calculate the intercept for this model.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "copy_X",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "If True, X will be copied; else, it may be overwritten.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "n_jobs",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of jobs to use for the computation.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "positive",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "When set to True, forces the coefficients to be positive.",
+    "required": false,
+    "choices": null
+  }
+]

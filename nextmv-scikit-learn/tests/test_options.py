@@ -10,29 +10,39 @@ from nextmv_sklearn.tree import DecisionTreeRegressorOptions
 
 
 class TestOptions(unittest.TestCase):
-    def test_imports(self):
-        dum_opt = DummyRegressorOptions()
-        self.assertIsNotNone(dum_opt)
-        n_dum_opt = dum_opt.to_nextmv()
-        got = n_dum_opt.parameters_dict()
-        self.compare(got, "dummy")
+    def test_dummy(self):
+        opt = DummyRegressorOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "dummy")
 
-        gbr_opt = GradientBoostingRegressorOptions()
-        self.assertIsNotNone(gbr_opt)
+    def test_ensemble(self):
+        opt = GradientBoostingRegressorOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "gradient_boosting")
 
-        rf_opt = RandomForestRegressorOptions()
-        self.assertIsNotNone(rf_opt)
+        opt = RandomForestRegressorOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "random_forest")
 
-        lr_opt = LinearRegressionOptions()
-        self.assertIsNotNone(lr_opt)
+    def test_linear_model(self):
+        opt = LinearRegressionOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "linear_regression")
 
-        nn_opt = MLPRegressorOptions()
-        self.assertIsNotNone(nn_opt)
+    def test_neural_network(self):
+        opt = MLPRegressorOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "mlp_regressor")
 
-        dt_opt = DecisionTreeRegressorOptions()
-        self.assertIsNotNone(dt_opt)
+    def test_tree(self):
+        opt = DecisionTreeRegressorOptions()
+        self.assertIsNotNone(opt)
+        self.compare(opt, "decision_tree")
 
-    def compare(self, got: dict[str, any], expected_path: str):
+    def compare(self, opt: any, expected_path: str):
+        n_opt = opt.to_nextmv()
+        got = n_opt.parameters_dict()
+
         path = os.path.join(os.path.dirname(__file__), f"expected_{expected_path}_options.json")
         with open(path) as f:
             expected = json.load(f)
