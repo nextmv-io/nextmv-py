@@ -1,5 +1,3 @@
-"""Defines gradient boosting regressor interoperability classes."""
-
 import nextmv
 
 

@@ -1,5 +1,3 @@
-"""Defines dummy regressor interoperability classes."""
-
 import nextmv
 
 

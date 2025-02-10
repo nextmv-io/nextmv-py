@@ -1,5 +1,3 @@
-"""Defines decision tree regressor interoperability classes."""
-
 import nextmv
 
 

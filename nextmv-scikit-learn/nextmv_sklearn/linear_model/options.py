@@ -1,5 +1,3 @@
-"""Defines linear regression interoperability classes."""
-
 import nextmv
 
 

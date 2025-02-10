@@ -1,5 +1,3 @@
-"""Defines Multi-layer Perceptron regressor interoperability classes."""
-
 import nextmv
 
 
