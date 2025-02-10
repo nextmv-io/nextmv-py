@@ -82,6 +82,7 @@ class Parameter:
             default=data.get("default"),
             description=data.get("description"),
             required=data.get("required", False),
+            choices=data.get("choices"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -100,6 +101,7 @@ class Parameter:
             "default": self.default,
             "description": self.description,
             "required": self.required,
+            "choices": self.choices,
         }
 
 
