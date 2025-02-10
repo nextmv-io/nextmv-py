@@ -35,6 +35,8 @@ class Parameter:
         Whether the parameter is required. If a parameter is required, it will
         be an error to not provide a value for it, either trough a command-line
         argument, an environment variable or a default value.
+    choices : list[Optional[Any]], optional
+        Limits values to a specific set of choices.
     """
 
     name: str
@@ -52,6 +54,8 @@ class Parameter:
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
+    choices: list[Optional[Any]] = None
+    """Limits values to a specific set of choices."""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Parameter":
@@ -410,11 +414,18 @@ class Options:
             # Remove any leading '-'. This is in line with argparse's behavior.
             param.name = param.name.lstrip("-")
 
+            kwargs = {
+                "type": param.param_type if param.param_type is not bool else str,
+                "help": self._description(param),
+            }
+
+            if param.choices is not None:
+                kwargs["choices"] = param.choices
+
             parser.add_argument(
                 f"-{param.name}",
                 f"--{param.name}",
-                type=param.param_type if param.param_type is not bool else str,
-                help=self._description(param),
+                **kwargs,
             )
 
             # Store the parameter by its field name for easy access later. argparse

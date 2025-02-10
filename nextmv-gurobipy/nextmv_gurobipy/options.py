@@ -37,9 +37,9 @@ class ModelOptions:
             )
             params.append(p)
 
-        self.__params = params
+        self.params = params
 
     def to_nextmv(self) -> nextmv.Options:
         """Converts the options to a Nextmv options object."""
 
-        return nextmv.Options(*self.__params)
+        return nextmv.Options(*self.params)
