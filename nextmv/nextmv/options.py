@@ -301,6 +301,8 @@ class Options:
 
         self.parameters += new.parameters
 
+        self._parse()
+
         return self
 
     @classmethod

@@ -4,6 +4,7 @@ import subprocess
 import unittest
 
 import nextmv
+import nextmv.options
 
 
 class TestOptions(unittest.TestCase):
@@ -553,3 +554,49 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(data["default"], param.default)
         self.assertEqual(data["description"], param.description)
         self.assertEqual(data["required"], param.required)
+
+    def test_merge(self):
+        opt1 = nextmv.Options(
+            nextmv.Parameter("foo1", int, default=1),
+            nextmv.Parameter("bar1", int, default=2),
+        )
+        self.assertFalse(opt1.PARSED)
+
+        opt2 = nextmv.Options(
+            nextmv.Parameter("foo2", int, default=3),
+            nextmv.Parameter("bar2", int, default=4),
+        )
+        self.assertFalse(opt2.PARSED)
+
+        opt = opt1.merge(opt2)
+        self.assertTrue(opt.PARSED)
+
+        self.assertEqual(opt.foo1, 1)
+        self.assertEqual(opt.bar1, 2)
+        self.assertEqual(opt.foo2, 3)
+        self.assertEqual(opt.bar2, 4)
+
+    def test_cant_merge(self):
+        opt1 = nextmv.Options(
+            nextmv.Parameter("foo1", int, default=1),
+            nextmv.Parameter("bar1", int, default=2),
+        )
+        opt1.parse()
+
+        opt2 = nextmv.Options(
+            nextmv.Parameter("foo2", int, default=3),
+            nextmv.Parameter("bar2", int, default=4),
+        )
+
+        with self.assertRaises(RuntimeError):
+            opt1.merge(opt2)
+
+    def test_parse(self):
+        opt = nextmv.Options(
+            nextmv.Parameter("foo", int, default=1),
+            nextmv.Parameter("bar", int, default=2),
+        )
+
+        self.assertFalse(opt.PARSED)
+        opt.parse()
+        self.assertTrue(opt.PARSED)
