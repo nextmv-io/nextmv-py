@@ -118,6 +118,13 @@ class Options:
     Options works as a Namespace, so you can assign new attributes to it. For
     example, you can do `options.foo = "bar"`.
 
+    Options are parsed from the given sources when an attribute is accessed.
+    Alternatively, you can call the `parse` method to parse the options
+    manually. Options that are _not_ parsed may be merged with other unparsed
+    options, by using the `merge` method. Once options are parsed, they cannot
+    be merged with other options. After options are parsed, you may get the
+    help message by running the script with the `-h/--help` flag.
+
     Parameters
     ----------
     *parameters : Parameter
@@ -129,8 +136,8 @@ class Options:
     >>> import nextmv
     >>>
     >>> options = nextmv.Options(
-    ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=True),
-    ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=True),
+    ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
+    ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
     ... )
     >>>
     >>> print(options.duration, options.threads, options.to_dict())
@@ -139,8 +146,6 @@ class Options:
 
     Raises
     ------
-    ValueError
-        If no parameters are provided.
     ValueError
         If a required parameter is not provided through a command-line
         argument, an environment variable or a default value.
@@ -151,13 +156,234 @@ class Options:
         parameter.
     """
 
-    def __init__(self, *parameters: Parameter):  # noqa: C901
+    PARSED = False
+
+    def __init__(self, *parameters: Parameter):
         """Initializes the options."""
 
-        if not parameters:
-            return
-
         self.parameters = copy.deepcopy(parameters)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Converts the options to a dict. As a side effect, this method parses
+        the options if they have not been parsed yet. See the `parse` method
+        for more information.
+
+        Returns
+        -------
+        dict[str, Any]
+            The options as a dict.
+        """
+
+        if not self.PARSED:
+            self._parse()
+
+        class model(BaseModel):
+            config: dict[str, Any]
+
+        self_dict = copy.deepcopy(self.__dict__)
+
+        rm_keys = ["parameters", "PARSED"]
+        for key in rm_keys:
+            if key in self_dict:
+                self_dict.pop(key)
+
+        m = model.from_dict(data={"config": self_dict})
+
+        return m.to_dict()["config"]
+
+    def parameters_dict(self) -> list[dict[str, Any]]:
+        """
+        Converts the options to a list of dicts. Each dict is the dict
+        representation of a `Parameter`.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            The list of dictionaries (parameter entries).
+        """
+
+        return [param.to_dict() for param in self.parameters]
+
+    def parse(self):
+        """
+        Parses the options using command-line arguments, environment variables
+        and default values, in that order. Under the hood, the `argparse`
+        library is used. When command-line arguments are parsed, the help menu
+        is created, thus parsing Options more than once may result in
+        unexpected behavior.
+
+        This method is called automatically when an attribute is accessed. If
+        you want to parse the options manually, you can call this method.
+
+        After Options have been parsed, they cannot be merged with other
+        Options. If you need to merge Options, do so before parsing them.
+
+        Example 1
+        -------
+        >>> import nextmv
+        >>>
+        >>> options = nextmv.Options(
+        ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
+        ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
+        ... )
+        >>> options.parse() # Does not raise an exception.
+
+        Example 2
+        -------
+        >>> import nextmv
+        >>>
+        >>> options = nextmv.Options(
+        ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
+        ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
+        ... )
+        >>> print(options.duration) # Parses the options.
+        >>> options.parse() # Raises an exception because the options have already been parsed.
+
+        Raises
+        ------
+        RuntimeError
+            If the options have already been parsed.
+        ValueError
+            If a required parameter is not provided through a command-line
+            argument, an environment variable or a default value.
+        TypeError
+            If a parameter is not a `Parameter` object.
+        ValueError
+            If an environment variable is not of the type of the corresponding
+            parameter.
+        """
+
+        if self.PARSED:
+            raise RuntimeError("options have already been parsed")
+
+        self._parse()
+
+    def merge(self, new: "Options") -> "Options":
+        """
+        Merges the current options with the new options. This method cannot be
+        used if any of the options have been parsed. When options are parsed,
+        values are read from the command-line arguments, environment variables
+        and default values. Merging options after parsing would result in
+        unpredictable behavior.
+
+        Parameters
+        ----------
+        new : Options
+            The new options to merge.
+
+        Raises
+        ------
+        RuntimeError
+            If the current options have already been parsed.
+        RuntimeError
+            If the new options have already been parsed.
+
+        Returns
+        -------
+        Options
+            The merged options.
+        """
+
+        if self.PARSED:
+            raise RuntimeError(
+                "base options have already been parsed, cannot merge. See `Options.parse()` for more information."
+            )
+
+        if new.PARSED:
+            raise RuntimeError(
+                "new options have already been parsed, cannot merge. See `Options.parse()` for more information."
+            )
+
+        self.parameters += new.parameters
+
+        return self
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Options":
+        """
+        Creates an instance of `Options` from a dictionary. The dictionary
+        should have the following structure:
+
+        {
+            "duration": "30",
+            "threads": 4,
+        }
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            The dictionary representation of the options.
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for key, value in data.items():
+            parameter = Parameter(name=key, param_type=type(value), default=value)
+            parameters.append(parameter)
+
+        return cls(*parameters)
+
+    @classmethod
+    def from_parameters_dict(cls, parameters_dict: list[dict[str, Any]]) -> "Options":
+        """
+        Creates an instance of `Options` from parameters in dict form. Each
+        entry is the dict representation of a `Parameter`.
+
+        Parameters
+        ----------
+        data : list[dict[str, Any]]
+            The list of dictionaries (parameter entries).
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        parameters = []
+        for parameter_dict in parameters_dict:
+            parameter = Parameter.from_dict(parameter_dict)
+            parameters.append(parameter)
+
+        return cls(*parameters)
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Gets an attribute of the options. This is called when an attribute
+        is accessed. It parses the options if they have not been parsed yet.
+        """
+
+        if not self.PARSED:
+            self._parse()
+
+        return super().__getattribute__(name)
+
+    def _parse(self):  # noqa: C901
+        """
+        Parses the options using command-line arguments, environment variables
+        and default values.
+
+        Raises
+        ------
+        ValueError
+            If a required parameter is not provided through a command-line
+            argument, an environment variable or a default value.
+        TypeError
+            If a parameter is not a `Parameter` object.
+        ValueError
+            If an environment variable is not of the type of the corresponding
+            parameter.
+        """
+
+        self.PARSED = True
+
+        if not self.parameters:
+            return
 
         parser = argparse.ArgumentParser(
             add_help=True,
@@ -168,7 +394,7 @@ class Options:
         )
         params_by_field_name: dict[str, Parameter] = {}
 
-        for p, param in enumerate(parameters):
+        for p, param in enumerate(self.parameters):
             if not isinstance(param, Parameter):
                 raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
 
@@ -177,6 +403,9 @@ class Options:
             # reason.
             if param.name == "f" or param.name == "fff":
                 raise ValueError("parameter names 'f', 'fff' are reserved for internal use")
+
+            if param.name == "PARSED":
+                raise ValueError("parameter name 'PARSED' is reserved for internal use")
 
             # Remove any leading '-'. This is in line with argparse's behavior.
             param.name = param.name.lstrip("-")
@@ -243,93 +472,6 @@ class Options:
             raise ValueError(
                 f'parameter "{arg}" is required but not provided through: command-line args, env vars, or default value'
             )
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Converts the options to a dict.
-
-        Returns
-        -------
-        dict[str, Any]
-            The options as a dict.
-        """
-
-        class model(BaseModel):
-            config: dict[str, Any]
-
-        self_dict = copy.deepcopy(self.__dict__)
-        if "parameters" in self_dict:
-            self_dict.pop("parameters")
-
-        m = model.from_dict(data={"config": self_dict})
-
-        return m.to_dict()["config"]
-
-    def parameters_dict(self) -> list[dict[str, Any]]:
-        """
-        Converts the options to a list of dicts. Each dict is the dict
-        representation of a `Parameter`.
-
-        Returns
-        -------
-        list[dict[str, Any]]
-            The list of dictionaries (parameter entries).
-        """
-
-        return [param.to_dict() for param in self.parameters]
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Options":
-        """
-        Creates an instance of `Options` from a dictionary. The dictionary
-        should have the following structure:
-
-        {
-            "duration": "30",
-            "threads": 4,
-        }
-
-        Parameters
-        ----------
-        data : dict[str, Any]
-            The dictionary representation of the options.
-
-        Returns
-        -------
-        Options
-            An instance of `Options`.
-        """
-
-        parameters = []
-        for key, value in data.items():
-            parameter = Parameter(name=key, param_type=type(value), default=value)
-            parameters.append(parameter)
-
-        return cls(*parameters)
-
-    @classmethod
-    def from_parameters_dict(cls, parameters_dict: list[dict[str, Any]]) -> "Options":
-        """
-        Creates an instance of `Options` from parameters in dict form. Each
-        entry is the dict representation of a `Parameter`.
-
-        Parameters
-        ----------
-        data : list[dict[str, Any]]
-            The list of dictionaries (parameter entries).
-
-        Returns
-        -------
-        Options
-            An instance of `Options`.
-        """
-
-        parameters = []
-        for parameter_dict in parameters_dict:
-            parameter = Parameter.from_dict(parameter_dict)
-            parameters.append(parameter)
-
-        return cls(*parameters)
 
     @staticmethod
     def _description(param: Parameter) -> str:

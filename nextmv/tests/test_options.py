@@ -7,7 +7,7 @@ import nextmv
 
 
 class TestOptions(unittest.TestCase):
-    """ "
+    """
     Tests for the `Options` class.
 
     This test suite will first copy the `optionsX.py` scripts one level
@@ -121,7 +121,8 @@ class TestOptions(unittest.TestCase):
 
     def test_bad_parameter_type(self):
         with self.assertRaises(TypeError):
-            nextmv.Options("I am not a valid parameter")
+            opt = nextmv.Options("I am not a valid parameter")
+            opt.parse()
 
     def test_bad_type_command_line_arg(self):
         file = self._file_name("options2.py", "..")
