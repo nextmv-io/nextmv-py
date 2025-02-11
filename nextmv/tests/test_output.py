@@ -219,6 +219,7 @@ class TestOutput(unittest.TestCase):
         output output writer but with different directories."""
 
         options = nextmv.Options()
+        options.parse()
         options.duration = 5
         options.solver = "highs"
 

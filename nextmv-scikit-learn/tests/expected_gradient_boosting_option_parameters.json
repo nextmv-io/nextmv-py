@@ -1,0 +1,162 @@
+[
+  {
+    "name": "loss",
+    "param_type": "<class 'str'>",
+    "default": null,
+    "description": "Loss function to be optimized.",
+    "required": false,
+    "choices": [
+      "squared_error",
+      "absolute_error",
+      "huber",
+      "quantile"
+    ]
+  },
+  {
+    "name": "learning_rate",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "Learning rate shrinks the contribution of each tree by learning_rate.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "n_estimators",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of boosting stages to perform.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "subsample",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "The fraction of samples to be used for fitting the individual base learners.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "criterion",
+    "param_type": "<class 'str'>",
+    "default": null,
+    "description": "The function to measure the quality of a split.",
+    "required": false,
+    "choices": [
+      "friedman_mse",
+      "squared_error"
+    ]
+  },
+  {
+    "name": "min_samples_split",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The minimum number of samples required to split an internal node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_samples_leaf",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The minimum number of samples required to be at a leaf node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_weight_fraction_leaf",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_depth",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Maximum depth of the individual regression estimators.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "min_impurity_decrease",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "random_state",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Controls the random seed given to each Tree estimator at each boosting iteration.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_features",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "The number of features to consider when looking for the best split.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "alpha",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "The alpha-quantile of the huber loss function and the quantile loss function.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "max_leaf_nodes",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "Grow trees with max_leaf_nodes in best-first fashion.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "warm_start",
+    "param_type": "<class 'bool'>",
+    "default": null,
+    "description": "When set to True, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just erase the previous solution.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "validation_fraction",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "The proportion of training data to set aside as validation set for early stopping.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "n_iter_no_change",
+    "param_type": "<class 'int'>",
+    "default": null,
+    "description": "n_iter_no_change is used to decide if early stopping will be used to terminate training when validation score is not improving.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "tol",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "Tolerance for the early stopping.",
+    "required": false,
+    "choices": null
+  },
+  {
+    "name": "ccp_alpha",
+    "param_type": "<class 'float'>",
+    "default": null,
+    "description": "Complexity parameter used for Minimal Cost-Complexity Pruning.",
+    "required": false,
+    "choices": null
+  }
+]
