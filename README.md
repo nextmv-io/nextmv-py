@@ -9,7 +9,7 @@ can find the source for the following packages:
   convenience functions for working with Gurobi (`gurobipy`) models in the
   Nextmv platform.
 * [`nextmv-scikit-learn`](./nextmv-scikit-learn/README.md): A Python SDK
-  providing convenience functions for working with Scikit-learn models in the
+  providing convenience functions for working with scikit-learn models in the
   Nextmv platform.
 
 Please refer to the individual package READMEs for more information.
