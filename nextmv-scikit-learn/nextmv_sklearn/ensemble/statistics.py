@@ -56,9 +56,8 @@ def GradientBoostingRegressorStatistics(
         run=run,
         result=nextmv.ResultStatistics(
             custom={
-                "depth": model.get_depth(),
+                "depth": model.max_depth,
                 "feature_importances_": model.feature_importances_.tolist(),
-                "n_leaves": int(model.get_n_leaves()),
                 "score": model.score(X, y, sample_weight),
             },
         ),

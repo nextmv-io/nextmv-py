@@ -3,13 +3,13 @@
 import time
 from collections.abc import Iterable
 
-from sklearn import ensemble
+from sklearn import linear_model
 
 import nextmv
 
 
 def LinearRegressionStatistics(
-    model: ensemble.LinearRegression,
+    model: linear_model.LinearRegression,
     X: Iterable,
     y: Iterable,
     sample_weight: float = None,
@@ -31,7 +31,7 @@ def LinearRegressionStatistics(
 
     Parameters:
     ----------
-    model : ensemble.LinearRegression
+    model : linear_model.LinearRegression
         The sklearn LinearRegression model.
     X : Iterable
         The input samples.

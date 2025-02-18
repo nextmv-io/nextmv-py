@@ -3,13 +3,13 @@
 import time
 from collections.abc import Iterable
 
-from sklearn import ensemble
+from sklearn import neural_network
 
 import nextmv
 
 
 def MLPRegressorStatistics(
-    model: ensemble.MLPRegressor,
+    model: neural_network.MLPRegressor,
     X: Iterable,
     y: Iterable,
     sample_weight: float = None,
@@ -31,7 +31,7 @@ def MLPRegressorStatistics(
 
     Parameters:
     ----------
-    model : ensemble.MLPRegressor
+    model : neural_network.MLPRegressor
         The sklearn MLPRegressor model.
     X : Iterable
         The input samples.
