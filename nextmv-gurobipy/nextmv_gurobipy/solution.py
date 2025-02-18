@@ -5,7 +5,7 @@ from typing import Optional
 import gurobipy as gp
 
 
-def Solution(model: gp.Model) -> Optional[dict[str, any]]:
+def ModelSolution(model: gp.Model) -> Optional[dict[str, any]]:
     """
     Creates a basic solution dictionary from a Gurobi model. The simple
     solution dictionary contains the variable name and the value of the
