@@ -2,26 +2,18 @@
   {
     "name": "criterion",
     "param_type": "<class 'str'>",
-    "default": null,
+    "default": "squared_error",
     "description": "The function to measure the quality of a split.",
     "required": false,
-    "choices": [
-      "squared_error",
-      "friedman_mse",
-      "absolute_error",
-      "poisson"
-    ]
+    "choices": ["squared_error", "friedman_mse", "absolute_error", "poisson"]
   },
   {
     "name": "splitter",
     "param_type": "<class 'str'>",
-    "default": null,
+    "default": "best",
     "description": "The strategy used to choose the split at each node.",
     "required": false,
-    "choices": [
-      "best",
-      "random"
-    ]
+    "choices": ["best", "random"]
   },
   {
     "name": "max_depth",

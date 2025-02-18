@@ -26,7 +26,7 @@
   {
     "name": "BarConvTol",
     "param_type": "<class 'float'>",
-    "default": 1e-08,
+    "default": 1e-8,
     "description": "The barrier solver terminates when the relative difference between the\nprimal and dual objective values is less than the specified tolerance\n(with a \"GRB_OPTIMAL\" status). Tightening this tolerance often\nproduces a more accurate solution, which can sometimes reduce the time\nspent in crossover.  Be aware that such tightening may result in an\nincrease of barrier iterations and hence computation time spent\ntherein. Loosening it causes the barrier algorithm to terminate with a\nless accurate solution, which can be useful when barrier is making\nvery slow progress in later iterations.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null
@@ -66,7 +66,7 @@
   {
     "name": "BarQCPConvTol",
     "param_type": "<class 'float'>",
-    "default": 1e-06,
+    "default": 1e-6,
     "description": "When solving a QCP model, the barrier solver terminates when the\nrelative difference between the primal and dual objective values is\nless than the specified tolerance (with a \"GRB_OPTIMAL\" status).\nTightening this tolerance may lead to a more accurate solution, but it\nmay also lead to a failure to converge.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null
@@ -74,7 +74,7 @@
   {
     "name": "BestBdStop",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Terminates as soon as the engine determines that the best bound on the\nobjective value is at least as good as the specified value.\nOptimization returns with an USER_OBJ_LIMIT status in this case.\n\nNote that you should always include a small tolerance in this value.\nWithout this, a bound that satisfies the intended termination\ncriterion may not actually lead to termination due to numerical round-\noff in the bound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -82,7 +82,7 @@
   {
     "name": "BestObjStop",
     "param_type": "<class 'float'>",
-    "default": -1e+100,
+    "default": -1e100,
     "description": "Terminate as soon as the engine finds a feasible solution whose\nobjective value is at least as good as the specified value.\nOptimization returns with an USER_OBJ_LIMIT status in this case.\n\nNote that you should always include a small tolerance in this value.\nWithout this, a solution that satisfies the intended termination\ncriterion may not actually lead to termination due to numerical round-\noff in the objective.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -272,14 +272,6 @@
     "choices": null
   },
   {
-    "name": "ConcurrentSettings",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "This command-line only parameter allows you to specify a comma-\nseparated list of .prm files that are used to set parameters for the\ndifferent instances in a concurrent MIP run.\n\nTo give an example, you could create two \".prm\" files with the\nfollowing contents\u2026\n\ns0.prm:\n\n   MIPFocus 0\n\ns1.prm:\n\n   MIPFocus 1\n\nIssuing the command \"gurobi_cl ConcurrentSettings=s0.prm,s1.prm\nmodel.mps\" would invoke the concurrent MIP solver, using parameter\nsetting MIPFocus=0 in one of the two concurrent solves and MIPFocus=1\nin the other.\n\nNote that if you want to run concurrent MIP on multiple machines, you\nmust also set the ConcurrentJobs parameter. The command for running\ndistributed concurrent optimization using the two example parameter\nfiles on two machines would be\n\n   > gurobi_cl ConcurrentJobs=2 ConcurrentSettings=s0.prm,s1.prm model.mps\n\nNote:\n\n  Command-line only (\"gurobi_cl\"). See Concurrent environments for the\n  equivalent feature in the Gurobi APIs.",
-    "required": false,
-    "choices": null
-  },
-  {
     "name": "CoverCuts",
     "param_type": "<class 'int'>",
     "default": -1,
@@ -316,14 +308,6 @@
     "param_type": "<class 'int'>",
     "default": -1,
     "description": "A non-negative value indicates the maximum number of cutting plane\npasses performed during root cut generation. The default value chooses\nthe number of cut passes automatically.\n\nIn addition to cutting plane separation, each cut pass also applies\nheuristics and node probing and also may launch parallel root helper\nthreads. So even when the Cuts parameter is set to 0, the cut loop\nwill apply probing, heuristics and parallel root helpers in a single\ncut loop iteration.\n\nYou should experiment with different values of this parameter if you\nnotice the MIP solver spending significant time on root cut passes\nthat have little impact on the objective bound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
-    "required": false,
-    "choices": null
-  },
-  {
-    "name": "Cutoff",
-    "param_type": "<class 'float'>",
-    "default": "Infinity for minimization, -Infinity for maximization",
-    "description": "Indicates that you aren\u2019t interested in solutions whose objective\nvalues are worse than the specified value. If the objective value for\nthe optimal solution is equal to or better than the specified cutoff,\nthe solver will return the optimal solution. Otherwise, it will\nterminate with a CUTOFF status.",
     "required": false,
     "choices": null
   },
@@ -394,7 +378,7 @@
   {
     "name": "FeasibilityTol",
     "param_type": "<class 'float'>",
-    "default": 1e-06,
+    "default": 1e-6,
     "description": "All constraints must be satisfied to a tolerance of FeasibilityTol.\nTightening this tolerance can produce smaller constraint violations,\nbut for numerically challenging models it can sometimes lead to much\nlarger iteration counts.",
     "required": false,
     "choices": null
@@ -522,7 +506,7 @@
   {
     "name": "ImproveStartNodes",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "The MIP solver can change parameter settings in the middle of the\nsearch in order to adopt a strategy that gives up on moving the best\nbound and instead devotes all of its effort towards finding better\nfeasible solutions. This parameter allows you to specify the node\ncount at which the MIP solver switches to a solution improvement\nstrategy. For example, setting this parameter to 10 will cause the MIP\nsolver to switch strategies once the node count is larger than 10.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -530,7 +514,7 @@
   {
     "name": "ImproveStartTime",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "The MIP solver can change parameter settings in the middle of the\nsearch in order to adopt a strategy that gives up on moving the best\nbound and instead devotes all of its effort towards finding better\nfeasible solutions. This parameter allows you to specify the time when\nthe MIP solver switches to a solution improvement strategy. For\nexample, setting this parameter to 10 will cause the MIP solver to\nswitch strategies 10 seconds after starting the optimization.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -552,17 +536,9 @@
     "choices": null
   },
   {
-    "name": "InputFile",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "Specifies the name of a file that will be read before beginning a\ncommand-line optimization run. This parameter can be used to input a\nMIP start (a \".mst\" or \".sol\" file), MIP hints (a \".hnt\" file), a\nsimplex basis (a \".bas\" file), Gurobi attributes (a \".attr\" file), or\na set of parameter settings (a \".prm\" file) from the Gurobi command\nline. The suffix may optionally be followed by \".zip\", \".gz\", \".bz2\",\n\".7z\" or \".xz\" if the input files are compressed.\n\nNote:\n\n  Command-line only (\"gurobi_cl\"), can be used multiple times\n\nFor examples of how to use this parameter, refer to the Reading Input\nFiles section.",
-    "required": false,
-    "choices": null
-  },
-  {
     "name": "IntFeasTol",
     "param_type": "<class 'float'>",
-    "default": 1e-05,
+    "default": 1e-5,
     "description": "An integrality restriction on a variable is considered satisfied when\nthe variable\u2019s value is less than IntFeasTol from the nearest integer\nvalue. Tightening this tolerance can produce smaller integrality\nviolations, but very tight tolerances may significantly increase\nruntime. Loosening this tolerance rarely reduces runtime.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -578,7 +554,7 @@
   {
     "name": "IterationLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the number of simplex iterations performed. The limit applies\nto MIP, barrier crossover, and simplex. Optimization returns with an\nITERATION_LIMIT status if the limit is exceeded.",
     "required": false,
     "choices": null
@@ -706,7 +682,7 @@
   {
     "name": "MemLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the total amount of memory (in GB, i.e., 10^9 bytes) available\nto Gurobi. If more is needed, Gurobi will fail with an OUT_OF_MEMORY\nerror.\n\nNote that it is not possible to retrieve solution information after an\nerror termination. Thus, the behavior of this parameter is different\nfrom that of other termination criteria like SoftMemLimit, TimeLimit,\nor NodeLimit, where the solver will terminate with a Status Code and\nsolution information will still be available.\n\nOne advantage of using this parameter rather than the similar\nSoftMemLimit is that MemLimit is checked after every memory\nallocation, so Gurobi will terminate at precisely the point where the\nlimit is exceeded.\n\nNote that allocated memory is tracked across all models within a\nGurobi environment. If you create multiple models in one environment,\nthese additional models will count towards overall memory consumption.\n\nMemory usage is also tracked across all threads. One consequence of\nthis is that termination may be non-deterministic for multi-threaded\nruns.",
     "required": false,
     "choices": null
@@ -760,14 +736,6 @@
     "choices": null
   },
   {
-    "name": "MultiObjSettings",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "This command-line only parameter allows you to specify a comma-\nseparated list of .prm files that are used to set parameters for the\ndifferent solves in a multi-objective model.\n\nIn the case of \"grbtune\", the same settings are applied to all the\nmodels.\n\nTo give an example, you could create two \".prm\" files with the\nfollowing contents\u2026\n\nvb0.prm:\n\n   VarBranch 0\n\nvb1.prm:\n\n   VarBranch 1\n\nIssuing the command \"gurobi_cl MultiObjSettings=vb0.prm,vb1.prm\nmodel.mps\" would use different branching strategies when solving for\nthe two objectives of the multi-objective model.\n\nNote:\n\n  Command-line only (\"gurobi_cl\" and \"grbtune\")\n\nNote:\n\n  Only affects multi-objective models",
-    "required": false,
-    "choices": null
-  },
-  {
     "name": "NLPHeur",
     "param_type": "<class 'int'>",
     "default": 1,
@@ -810,7 +778,7 @@
   {
     "name": "NodeLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the number of MIP nodes explored. Optimization returns with an\nNODE_LIMIT status if the limit is exceeded. Note that if multiple\nthreads are used for the optimization, the actual number of explored\nnodes may be slightly larger than the set limit.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -834,7 +802,7 @@
   {
     "name": "NodefileStart",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "If you find that the Gurobi Optimizer exhausts memory when solving a\nMIP, you should modify the \"NodefileStart\" parameter. When the amount\nof memory used to store nodes (measured in GB, i.e., 10^9 bytes)\nexceeds the specified parameter value, nodes are compressed and\nwritten to disk. We recommend a setting of \"0.5\", but you may wish to\nchoose a different value, depending on the memory available in your\nmachine. By default, nodes are written to the current working\ndirectory. The NodefileDir parameter can be used to choose a different\nlocation.\n\nIf you still exhaust memory after setting the \"NodefileStart\"\nparameter to a small value, you should try limiting the thread count.\nEach thread in parallel MIP requires a copy of the model, as well as\nseveral other large data structures. Reducing the Threads parameter\ncan sometimes significantly reduce memory usage.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -890,7 +858,7 @@
   {
     "name": "OptimalityTol",
     "param_type": "<class 'float'>",
-    "default": 1e-06,
+    "default": 1e-6,
     "description": "For the simplex algorithm and crossover, reduced costs must all be\nsmaller than OptimalityTol in the improving direction in order for a\nmodel to be declared optimal.",
     "required": false,
     "choices": null
@@ -914,7 +882,7 @@
   {
     "name": "PSDTol",
     "param_type": "<class 'float'>",
-    "default": 1e-06,
+    "default": 1e-6,
     "description": "Sets a limit on the amount of diagonal perturbation that the optimizer\nis allowed to perform on a Q matrix in order to correct minor PSD\nviolations. If a larger perturbation is required, the optimizer will\nterminate with a Q_NOT_PSD error.\n\nNote:\n\n  Only affects QP, QCP, MIQP, and MIQCP models",
     "required": false,
     "choices": null
@@ -938,7 +906,7 @@
   {
     "name": "PoolGap",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Determines how large a (relative) gap to tolerate in stored solutions.\nWhen this parameter is set to a non-default value, solutions whose\nobjective values exceed that of the best known solution by more than\nthe specified (relative) gap are discarded. For example, if the MIP\nsolver has found a solution at objective 100, then a setting of\n\"PoolGap=0.2\" would discard solutions with objective worse than 120\n(assuming a minimization objective).\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -946,7 +914,7 @@
   {
     "name": "PoolGapAbs",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Determines how large a (absolute) gap to tolerate in stored solutions.\nWhen this parameter is set to a non-default value, solutions whose\nobjective values exceed that of the best known solution by more than\nthe specified (absolute) gap are discarded. For example, if the MIP\nsolver has found a solution at objective 100, then a setting of\n\"PoolGapAbs=20\" would discard solutions with objective worse than 120\n(assuming a minimization objective).\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null
@@ -1202,7 +1170,7 @@
   {
     "name": "SoftMemLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the total amount of memory (in GB, i.e., 10^9 bytes) available\nto Gurobi. If more is needed, Gurobi will terminate with a MEM_LIMIT\nstatus code.\n\nIn contrast to the MemLimit parameter, the SoftMemLimit parameter\nleads to a graceful exit of the optimization, such that it is possible\nto retrieve solution information afterwards or (in the case of a MIP\nsolve) resume the optimization.\n\nA disadvantage compared to MemLimit is that the SoftMemLimit is only\nchecked at places where optimization can be terminated gracefully, so\nmemory use may exceed the limit between these checks.\n\nNote that allocated memory is tracked across all models within a\nGurobi environment. If you create multiple models in one environment,\nthese additional models will count towards overall memory consumption.\n\nMemory usage is also tracked across all threads. One consequence of\nthis is that termination may be non-deterministic for multi-threaded\nruns.",
     "required": false,
     "choices": null
@@ -1314,7 +1282,7 @@
   {
     "name": "TimeLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the total time expended (in seconds). Optimization returns with\na TIME_LIMIT status if the limit is exceeded.\n\nNote that optimization may not stop immediately upon hitting the time\nlimit. It will stop after performing the required additional\ncomputations of the attributes associated with the terminated\noptimization. As a result, the Runtime attribute may be larger than\nthe specified TimeLimit upon completion, and repeating the\noptimization with a TimeLimit set to the Runtime attribute of the\nstopped optimization may result in additional computations and a\nlarger attribute value.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.",
     "required": false,
     "choices": null
@@ -1324,14 +1292,6 @@
     "param_type": "<class 'str'>",
     "default": "",
     "description": "When using a token license, set this parameter to the name of the\ntoken server. You can refer to the server using its name or its IP\naddress.\n\nYou can provide a comma-separated list of token servers to increase\nrobustness. If the first server in the list doesn\u2019t respond, the\nsecond will be tried, etc.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"TOKENSERVER=server\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.",
-    "required": false,
-    "choices": null
-  },
-  {
-    "name": "TuneBaseSettings",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "A list of parameter files (e.g., \"base1.prm,base2.prm\") that define\nsettings that should be tried first during the tuning process, in the\norder they are given. Default parameter settings will also be tried,\nbut after the settings provided in these files. You can include an\nempty parameter file in the list if you would like default settings to\nbe tried earlier.\n\nNote:\n\n  Command-line only (\"grbtune\")",
     "required": false,
     "choices": null
   },
@@ -1384,14 +1344,6 @@
     "choices": null
   },
   {
-    "name": "TuneParams",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "A list of JSON files (e.g., \"params1.json,params2.json\") that define\nparameters and their properties the tuner should use. If none\n(default) are given, the tuner uses a predefined list of parameters.\n\nThe JSON format is illustrated with the following example which\nrequests the parameters Heuristics and NoRelHeurWork to be considered\nduring tuning.\n\n   {\n      \"Heuristics\": {\n         \"min\": 0.0,\n         \"max\": 1.0,\n         \"weight\": 50,\n      },\n      \"NoRelHeurWork\": {\n          \"weight\": 100,\n          \"values\": [\n             100,\n             1000,\n             2000\n          ],\n          \"valueweights\": [\n             10,\n             20,\n             40\n          ]\n      }\n   }\n\nAll parameter properties are optional:\n\n* \"min\" Minimum value to be taken for the parameter. If not specified\n  the minimum value of the parameter is taken.\n\n* \"max\" Maximum value to be taken for the parameter.  If not specified\n  the maximum value of the parameter is taken.\n\n* \"weight\" The likelihood that parameter is selected to be changed\n\n* \"values\" A list of values the parameter can take. If not given, any\n  value within the feasible range of parameter values can be\n  considered.\n\n* \"weightvalues\" The likelihood for each value from the \"values\" list\n  to be selected. If not given, all values in the \"values\" list have\n  the same probability.\n\nNote:\n\n  Command-line only (\"grbtune\")",
-    "required": false,
-    "choices": null
-  },
-  {
     "name": "TuneResults",
     "param_type": "<class 'int'>",
     "default": -1,
@@ -1418,7 +1370,7 @@
   {
     "name": "TuneTimeLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits total tuning runtime (in seconds). The default setting chooses\na time limit automatically.",
     "required": false,
     "choices": null
@@ -1428,14 +1380,6 @@
     "param_type": "<class 'int'>",
     "default": 0,
     "description": "Performance on a MIP model can sometimes experience significant\nvariations due to random effects. As a result, the tuning tool may\nreturn parameter sets that improve on the baseline only due to\nrandomness. This parameter allows you to perform multiple solves for\neach parameter set, using different Seed values for each, in order to\nreduce the influence of randomness on the results. The default value\nof 0 indicates an automatic choice that depends on model\ncharacteristics.",
-    "required": false,
-    "choices": null
-  },
-  {
-    "name": "TuneUseFilename",
-    "param_type": "<class 'int'>",
-    "default": 0,
-    "description": "During tuning, each model is referred to using a name (e.g., when\ndisplaying progress information for that model). By default, the model\nname comes from the contents of the model file. If this parameter is\nset to 1 before calling \"grbtune\", tuning will refer to a model using\nthe name of the model file instead. This can be helpful when several\nmodels being tuned have the same (or no) names.\n\nNote:\n\n  Command-line only (\"grbtune\")",
     "required": false,
     "choices": null
   },
@@ -1522,7 +1466,7 @@
   {
     "name": "WorkLimit",
     "param_type": "<class 'float'>",
-    "default": 1e+100,
+    "default": 1e100,
     "description": "Limits the total work expended (in work units). Optimization returns\nwith a WORK_LIMIT status if the limit is exceeded.\n\nIn contrast to the TimeLimit, work limits are deterministic. This\nmeans that on the same hardware and with the same parameter and\nattribute settings, a work limit will stop the optimization of a given\nmodel at the exact same point every time. One work unit corresponds\nvery roughly to one second on a single thread, but this greatly\ndepends on the hardware on which Gurobi is running and the model that\nis being solved.\n\nNote that optimization may not stop immediately upon hitting the work\nlimit. It will stop when the optimization is next in a deterministic\nstate, and it will then perform the required additional computations\nof the attributes associated with the terminated optimization. As a\nresult, the Work attribute may be larger than the specified WorkLimit\nupon completion, and repeating the optimization with a WorkLimit set\nto the Work attribute of the stopped optimization may result in\nadditional computations and a larger attribute value.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.",
     "required": false,
     "choices": null
