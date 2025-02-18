@@ -1,6 +1,7 @@
 """Defines gurobipy statistics interoperability."""
 
 import time
+from typing import Optional
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -30,7 +31,7 @@ STATUS = {
 
 def Statistics(
     model: gp.Model,
-    run_duration_start: float | None = None,
+    run_duration_start: Optional[float] = None,
 ) -> nextmv.Statistics:
     """
     Creates a Nextmv statistics object from a Gurobi model, once it has been
