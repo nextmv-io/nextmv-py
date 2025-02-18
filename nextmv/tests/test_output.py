@@ -28,6 +28,7 @@ class TestOutput(unittest.TestCase):
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
                 "options": {},
+                "assets": [],
             }
 
             self.assertDictEqual(got, expected)
@@ -66,6 +67,7 @@ class TestOutput(unittest.TestCase):
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
                 "options": {},
+                "assets": [],
             }
 
             self.assertDictEqual(got, expected)
@@ -94,6 +96,7 @@ class TestOutput(unittest.TestCase):
                 },
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
+                "assets": [],
             }
 
             self.assertDictEqual(got, expected)
@@ -118,6 +121,7 @@ class TestOutput(unittest.TestCase):
                 },
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
+                "assets": [],
             }
 
             self.assertDictEqual(got, expected)
@@ -140,6 +144,7 @@ class TestOutput(unittest.TestCase):
                 "options": {},
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
+                "assets": [],
             }
 
             self.assertDictEqual(got, expected)
@@ -248,6 +253,7 @@ class TestOutput(unittest.TestCase):
                     "solver": "highs",
                 },
                 "statistics": {"foo": "bar"},
+                "assets": [],
             }
 
             self.assertDictEqual(stdout_got, stdout_expected)
@@ -301,6 +307,100 @@ class TestOutput(unittest.TestCase):
                 "options": {},
                 "solution": {},
                 "statistics": {},
+                "assets": [],
+            }
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_write_valid_assets_from_class(self):
+        output = nextmv.Output(
+            assets=[
+                nextmv.Asset(
+                    name="foo",
+                    content={"foo": "bar"},
+                    content_type="json",
+                    description="A foo asset.",
+                    visual=nextmv.Visual(
+                        schema=nextmv.VisualSchema.CHARTJS,
+                        label="A chart",
+                        visual_type="custom-tab",
+                    ),
+                ),
+                nextmv.Asset(
+                    name="bar",
+                    content={"bar": "baz"},
+                    content_type="json",
+                    description="A bar asset.",
+                ),
+            ],
+        )
+
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = {
+                "options": {},
+                "solution": {},
+                "statistics": {},
+                "assets": [
+                    {
+                        "content": {"foo": "bar"},
+                        "content_type": "json",
+                        "description": "A foo asset.",
+                        "name": "foo",
+                        "visual": {
+                            "label": "A chart",
+                            "schema": "chartjs",
+                            "type": "custom-tab",
+                        },
+                    },
+                    {
+                        "content": {"bar": "baz"},
+                        "content_type": "json",
+                        "description": "A bar asset.",
+                        "name": "bar",
+                    },
+                ],
+            }
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_write_valid_assets_from_dict(self):
+        assets = [
+            {
+                "name": "foo",
+                "content": {"foo": "bar"},
+                "content_type": "json",
+                "description": "A foo asset.",
+                "visual": {
+                    "schema": "chartjs",
+                    "label": "A chart",
+                    "visual_type": "custom-tab",
+                },
+            },
+            {
+                "name": "bar",
+                "content": {"bar": "baz"},
+                "content_type": "json",
+                "description": "A bar asset.",
+            },
+        ]
+        output = nextmv.Output(assets=assets)
+
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = {
+                "options": {},
+                "solution": {},
+                "statistics": {},
+                "assets": assets,
             }
 
             self.assertDictEqual(got, expected)
