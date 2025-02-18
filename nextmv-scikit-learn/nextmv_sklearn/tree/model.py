@@ -19,7 +19,7 @@ def DecisionTreeRegressor(options: nextmv.Options) -> tree.DecisionTreeRegressor
     Returns
     -------
     DecisionTreeRegressor
-        A sklearn.tree.DecisionTreeRegressor.DecisionTreeRegressor instance.
+        A sklearn.tree.DecisionTreeRegressor instance.
     """
 
     names = {p.name for p in DECISION_TREE_REGRESSOR_PARAMETERS}
