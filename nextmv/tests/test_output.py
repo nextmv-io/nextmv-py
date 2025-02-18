@@ -46,7 +46,6 @@ class TestOutput(unittest.TestCase):
             expected = {
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
-                "options": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -269,3 +268,39 @@ class TestOutput(unittest.TestCase):
         output = "I am clearly not an output object."
         with self.assertRaises(TypeError):
             nextmv.write_local(output)
+
+    def test_local_write_passthrough_output(self):
+        output = {
+            "i_am": "a_crazy_object",
+            "with": [
+                {"nested": "values"},
+                {"and": "more_craziness"},
+            ],
+        }
+
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = output
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_write_empty_output(self):
+        output = nextmv.Output()
+
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+            expected = expected = {
+                "options": {},
+                "solution": {},
+                "statistics": {},
+            }
+
+            self.assertDictEqual(got, expected)

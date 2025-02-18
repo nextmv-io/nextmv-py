@@ -273,21 +273,18 @@ class LocalOutputWriter(OutputWriter):
         statistics: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
-        solution = {}
-        if isinstance(output, Output):
-            sol = output.solution
-        elif isinstance(output, dict):
-            sol = output.get("solution")
-
-        if sol is not None:
-            solution = sol
-
-        serialized = json.dumps(
-            {
+        if isinstance(output, dict):
+            final_output = output
+        else:
+            solution = output.solution if output.solution is not None else {}
+            final_output = {
                 "options": options,
                 "solution": solution,
                 "statistics": statistics,
-            },
+            }
+
+        serialized = json.dumps(
+            final_output,
             indent=2,
             default=_custom_serial,
         )
@@ -370,6 +367,11 @@ class LocalOutputWriter(OutputWriter):
         unexpected behavior. If you want to skip this behavior, set the
         `skip_stdout_reset` parameter to `True`.
 
+        If the `output` is a `dict`, it will be simply written to the specified
+        `path`, as a passthrough. On the other hand, if the `output` is of type
+        `Output`, a more structured object will be written, which adheres to
+        the schema specified by the corresponding `Output` class.
+
         Parameters
         ----------
         output: Output, dict[str, Any]
@@ -414,10 +416,10 @@ class LocalOutputWriter(OutputWriter):
 
         statistics = {}
 
-        if isinstance(output, Output):
-            stats = output.statistics
-        elif isinstance(output, dict):
-            stats = output.get("statistics")
+        if not isinstance(output, Output):
+            return statistics
+
+        stats = output.statistics
 
         if stats is None:
             return statistics
@@ -437,10 +439,10 @@ class LocalOutputWriter(OutputWriter):
 
         options = {}
 
-        if isinstance(output, Output):
-            opt = output.options
-        elif isinstance(output, dict):
-            opt = output.get("options")
+        if not isinstance(output, Output):
+            return options
+
+        opt = output.options
 
         if opt is None:
             return options
