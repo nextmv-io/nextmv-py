@@ -164,6 +164,66 @@ class OutputFormat(str, Enum):
     """CSV archive format: multiple CSV files."""
 
 
+class VisualSchema(str, Enum):
+    """Schema of a visual asset."""
+
+    CHARTJS = "chartjs"
+    """Tells Nextmv Console to render the custom asset data with the Chart.js
+    library."""
+    GEOJSON = "geojson"
+    """Tells Nextmv Console to render the custom asset data as GeoJSON on a
+    map."""
+    PLOTLY = "plotly"
+    """Tells Nextmv Console to render the custom asset data with the Plotly
+    library."""
+
+
+class Visual(BaseModel):
+    """
+    Visual schema of an asset that defines how it is plotted in the Nextmv
+    Console.
+    """
+
+    schema: VisualSchema
+    """Schema of the visual asset."""
+    label: str
+    """Label for the custom tab of the visual asset in the Nextmv Console."""
+
+    visual_type: Optional[str] = Field(alias="type", default="custom-tab")
+    """Defines the type of custom visual, currently there is only one type:
+    `custom-tab`. This renders the visual in its own tab view of the run
+    details."""
+
+    def __post_init__(self):
+        if self.schema not in VisualSchema:
+            raise ValueError(f"unsupported schema: {self.schema}, supported schemas are {VisualSchema}")
+
+        if self.visual_type != "custom-tab":
+            raise ValueError(f"unsupported visual_type: {self.visual_type}, supported types are `custom-tab`")
+
+
+class Asset(BaseModel):
+    """
+    An asset represents downloadable information that is part of the `Output`.
+    """
+
+    name: str
+    """Name of the asset."""
+    content: dict[str, Any]
+    """Content of the asset."""
+
+    content_type: Optional[str] = "json"
+    """Content type of the asset. Only `json` is allowed"""
+    description: Optional[str] = None
+    """Description of the asset."""
+    visual: Optional[Visual] = None
+    """Visual schema of the asset."""
+
+    def __post_init__(self):
+        if self.content_type != "json":
+            raise ValueError(f"unsupported content_type: {self.content_type}, supported types are `json`")
+
+
 @dataclass
 class Output:
     """
@@ -220,6 +280,8 @@ class Output:
     """Optional configuration for writing CSV files, to be used when the
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module."""
+    assets: Optional[list[Asset]] = None
+    """Optional list of assets to be included in the output."""
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
@@ -271,23 +333,22 @@ class LocalOutputWriter(OutputWriter):
         output: Union[Output, dict[str, Any]],
         options: dict[str, Any],
         statistics: dict[str, Any],
+        assets: list[dict[str, Any]],
         path: Optional[str] = None,
     ) -> None:
-        solution = {}
-        if isinstance(output, Output):
-            sol = output.solution
-        elif isinstance(output, dict):
-            sol = output.get("solution")
-
-        if sol is not None:
-            solution = sol
-
-        serialized = json.dumps(
-            {
+        if isinstance(output, dict):
+            final_output = output
+        else:
+            solution = output.solution if output.solution is not None else {}
+            final_output = {
                 "options": options,
                 "solution": solution,
                 "statistics": statistics,
-            },
+                "assets": assets,
+            }
+
+        serialized = json.dumps(
+            final_output,
             indent=2,
             default=_custom_serial,
         )
@@ -303,6 +364,7 @@ class LocalOutputWriter(OutputWriter):
         output: Output,
         options: dict[str, Any],
         statistics: dict[str, Any],
+        assets: list[dict[str, Any]],
         path: Optional[str] = None,
     ) -> None:
         dir_path = "output"
@@ -319,6 +381,7 @@ class LocalOutputWriter(OutputWriter):
             {
                 "options": options,
                 "statistics": statistics,
+                "assets": assets,
             },
             indent=2,
         )
@@ -370,6 +433,11 @@ class LocalOutputWriter(OutputWriter):
         unexpected behavior. If you want to skip this behavior, set the
         `skip_stdout_reset` parameter to `True`.
 
+        If the `output` is a `dict`, it will be simply written to the specified
+        `path`, as a passthrough. On the other hand, if the `output` is of type
+        `Output`, a more structured object will be written, which adheres to
+        the schema specified by the corresponding `Output` class.
+
         Parameters
         ----------
         output: Output, dict[str, Any]
@@ -400,11 +468,13 @@ class LocalOutputWriter(OutputWriter):
 
         statistics = self._extract_statistics(output)
         options = self._extract_options(output)
+        assets = self._extract_assets(output)
 
         self.FILE_WRITERS[output_format](
             output=output,
             options=options,
             statistics=statistics,
+            assets=assets,
             path=path,
         )
 
@@ -414,10 +484,10 @@ class LocalOutputWriter(OutputWriter):
 
         statistics = {}
 
-        if isinstance(output, Output):
-            stats = output.statistics
-        elif isinstance(output, dict):
-            stats = output.get("statistics")
+        if not isinstance(output, Output):
+            return statistics
+
+        stats = output.statistics
 
         if stats is None:
             return statistics
@@ -437,10 +507,10 @@ class LocalOutputWriter(OutputWriter):
 
         options = {}
 
-        if isinstance(output, Output):
-            opt = output.options
-        elif isinstance(output, dict):
-            opt = output.get("options")
+        if not isinstance(output, Output):
+            return options
+
+        opt = output.options
 
         if opt is None:
             return options
@@ -453,6 +523,30 @@ class LocalOutputWriter(OutputWriter):
             raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `dict`")
 
         return options
+
+    @staticmethod
+    def _extract_assets(output: Union[Output, dict[str, Any]]) -> list[dict[str, Any]]:
+        """Extract JSON-serializable assets."""
+
+        assets = []
+
+        if not isinstance(output, Output):
+            return assets
+
+        assts = output.assets
+
+        if assts is None:
+            return assets
+
+        for ix, asset in enumerate(assts):
+            if isinstance(asset, Asset):
+                assets.append(asset.to_dict())
+            elif isinstance(asset, dict):
+                assets.append(asset)
+            else:
+                raise TypeError(f"unsupported asset {ix}, type: {type(asset)}; supported types are `Asset` or `dict`")
+
+        return assets
 
 
 def write_local(
