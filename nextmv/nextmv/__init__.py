@@ -13,6 +13,7 @@ from .model import Model as Model
 from .model import ModelConfiguration as ModelConfiguration
 from .options import Options as Options
 from .options import Parameter as Parameter
+from .output import Asset as Asset
 from .output import DataPoint as DataPoint
 from .output import LocalOutputWriter as LocalOutputWriter
 from .output import Output as Output
@@ -23,6 +24,8 @@ from .output import RunStatistics as RunStatistics
 from .output import Series as Series
 from .output import SeriesData as SeriesData
 from .output import Statistics as Statistics
+from .output import Visual as Visual
+from .output import VisualSchema as VisualSchema
 from .output import write_local as write_local
 
 VERSION = __version__
