@@ -281,6 +281,7 @@ class Output:
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module."""
     assets: Optional[list[Asset]] = None
+    """Optional list of assets to be included in the output."""
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
