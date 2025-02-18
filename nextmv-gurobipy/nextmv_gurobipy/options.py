@@ -21,7 +21,7 @@ SKIP_PARAMETERS = [
 """Parameters that are not applicable to the SDK."""
 
 # Translation of Gurobi parameter types to Python types.
-__PARAM_TYPE_TRANSLATION = {
+PARAM_TYPE_TRANSLATION = {
     "double": "float",
     "string": "str",
     "int": "int",
@@ -61,7 +61,7 @@ class ModelOptions:
             if name in SKIP_PARAMETERS:
                 continue
 
-            param_type_string = __PARAM_TYPE_TRANSLATION[val["values"]["type"]]
+            param_type_string = PARAM_TYPE_TRANSLATION[val["values"]["type"]]
             param_type = getattr(builtins, param_type_string)
 
             description = val["description"]

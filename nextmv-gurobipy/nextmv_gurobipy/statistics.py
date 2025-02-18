@@ -1,5 +1,7 @@
 """Defines gurobipy statistics interoperability."""
 
+import time
+
 import gurobipy as gp
 from gurobipy import GRB
 
@@ -26,11 +28,16 @@ STATUS = {
 }
 
 
-def Statistics(model: gp.Model) -> nextmv.Statistics:
+def Statistics(
+    model: gp.Model,
+    run_duration_start: float | None = None,
+) -> nextmv.Statistics:
     """
     Creates a Nextmv statistics object from a Gurobi model, once it has been
     optimized. The statistics returned are quite basic, and should be extended
-    according to the custom metrics that the user wants to track.
+    according to the custom metrics that the user wants to track. The optional
+    `run_duration_start` parameter can be used to set the start time of the
+    whole run. This is useful to separate the run time from the solve time.
 
     Example:
     ----------
@@ -44,6 +51,8 @@ def Statistics(model: gp.Model) -> nextmv.Statistics:
     ----------
     model: gp.Model
         The Gurobi model.
+    run_duration_start: float | None
+        The start time of the run.
 
     Returns:
     ----------
@@ -51,8 +60,12 @@ def Statistics(model: gp.Model) -> nextmv.Statistics:
         The Nextmv statistics object.
     """
 
+    run = nextmv.RunStatistics()
+    if run_duration_start is not None:
+        run.duration = time.time() - run_duration_start
+
     return nextmv.Statistics(
-        run=nextmv.RunStatistics(),
+        run=run,
         result=nextmv.ResultStatistics(
             duration=model.Runtime,
             value=model.ObjVal,
