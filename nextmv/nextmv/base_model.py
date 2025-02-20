@@ -1,5 +1,6 @@
 """JSON class for data wrangling JSON objects."""
 
+from importlib import import_module
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -21,3 +22,24 @@ class BaseModel(BaseModel):
         """Converts the class to a dict."""
 
         return self.model_dump(mode="json", exclude_none=True, by_alias=True)
+
+
+def from_dict(data: dict[str, Any]) -> Any:
+    """
+    Load a data model instance from a dict with associated class info.
+
+    Parameters
+    ----------
+    data : dict[str, Any]
+        The data to load.
+
+    Returns
+    -------
+    Any
+        The loaded data model instance.
+    """
+
+    module = import_module(data["class"]["module"])
+    cls = getattr(module, data["class"]["name"])
+
+    return cls.from_dict(data["attributes"])
