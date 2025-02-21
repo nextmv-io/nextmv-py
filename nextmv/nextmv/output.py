@@ -184,7 +184,7 @@ class Visual(BaseModel):
     Console.
     """
 
-    schema: VisualSchema
+    visual_schema: VisualSchema = Field(alias="schema")
     """Schema of the visual asset."""
     label: str
     """Label for the custom tab of the visual asset in the Nextmv Console."""
@@ -195,8 +195,8 @@ class Visual(BaseModel):
     details."""
 
     def __post_init__(self):
-        if self.schema not in VisualSchema:
-            raise ValueError(f"unsupported schema: {self.schema}, supported schemas are {VisualSchema}")
+        if self.visual_schema not in VisualSchema:
+            raise ValueError(f"unsupported schema: {self.visual_schema}, supported schemas are {VisualSchema}")
 
         if self.visual_type != "custom-tab":
             raise ValueError(f"unsupported visual_type: {self.visual_type}, supported types are `custom-tab`")
