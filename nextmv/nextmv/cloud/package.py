@@ -250,6 +250,7 @@ def __install_dependencies(
         pip_requirements,
         "--platform=manylinux2014_aarch64",
         "--platform=manylinux_2_17_aarch64",
+        "--platform=manylinux_2_24_aarch64",
         "--platform=manylinux_2_28_aarch64",
         "--platform=linux_aarch64",
         "--only-binary=:all:",
