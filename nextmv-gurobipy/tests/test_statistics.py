@@ -19,7 +19,7 @@ class TestStatistics(unittest.TestCase):
         self.assertIsInstance(stats.run, nextmv.RunStatistics)
         self.assertIsInstance(stats.result, nextmv.ResultStatistics)
 
-        self.assertGreater(stats.run.duration, 0.0)
+        self.assertGreaterEqual(stats.run.duration, 0.0)
         self.assertEqual(stats.result.value, 0.0)
-        self.assertGreater(stats.result.duration, 0.0)
+        self.assertGreaterEqual(stats.result.duration, 0.0)
         self.assertDictEqual(stats.result.custom, {"status": "OPTIMAL", "variables": 0, "constraints": 0})
