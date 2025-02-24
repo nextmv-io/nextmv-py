@@ -17,6 +17,8 @@ SKIP_PARAMETERS = [
     "TuneBaseSettings",
     "TuneParams",
     "TuneUseFilename",
+    # Cluster manager only
+    "Username",
 ]
 """Parameters that are not applicable to the SDK."""
 
