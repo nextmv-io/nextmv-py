@@ -209,8 +209,8 @@ class Asset(BaseModel):
 
     name: str
     """Name of the asset."""
-    content: dict[str, Any]
-    """Content of the asset."""
+    content: Any
+    """Content of the asset. The type must be serializable to JSON."""
 
     content_type: Optional[str] = "json"
     """Content type of the asset. Only `json` is allowed"""
