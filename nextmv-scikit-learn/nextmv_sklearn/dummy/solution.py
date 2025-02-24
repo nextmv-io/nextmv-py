@@ -75,12 +75,14 @@ class DummyRegressorSolution(BaseModel):
         """Convert a data model instance to a dict with associated class info."""
 
         t = type(self)
+        d = self.model_dump(mode="json", exclude_none=True, by_alias=True)
+
         return {
             "class": {
                 "module": t.__module__,
                 "name": t.__name__,
             },
-            "attributes": self.model_dump(mode="json", exclude_none=True, by_alias=True),
+            "attributes": d,
         }
 
     def to_model(self) -> dummy.DummyRegressor:
