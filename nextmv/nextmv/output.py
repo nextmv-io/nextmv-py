@@ -8,7 +8,7 @@ import os
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from pydantic import Field
 
@@ -38,8 +38,8 @@ class RunStatistics(BaseModel):
     """Number of iterations."""
     custom: Optional[
         Union[
-            Any,
-            dict[str, Any],
+            any,
+            dict[str, any],
         ]
     ] = None
     """Custom statistics created by the user. Can normally expect a `dict[str,
@@ -67,8 +67,8 @@ class ResultStatistics(BaseModel):
     """Value of the result."""
     custom: Optional[
         Union[
-            Any,
-            dict[str, Any],
+            any,
+            dict[str, any],
         ]
     ] = None
     """Custom statistics created by the user. Can normally expect a `dict[str,
@@ -209,7 +209,7 @@ class Asset(BaseModel):
 
     name: str
     """Name of the asset."""
-    content: dict[str, Any]
+    content: any
     """Content of the asset."""
 
     content_type: Optional[str] = "json"
@@ -269,14 +269,14 @@ class Output:
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
         Union[
-            Union[dict[str, Any], Any],  # JSON
-            dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
+            Union[dict[str, any], any],  # JSON
+            dict[str, list[dict[str, any]]],  # CSV_ARCHIVE
         ]
     ] = None
     """The solution to the decision problem."""
-    statistics: Optional[Union[Statistics, dict[str, Any]]] = None
+    statistics: Optional[Union[Statistics, dict[str, any]]] = None
     """Statistics of the solution."""
-    csv_configurations: Optional[dict[str, Any]] = None
+    csv_configurations: Optional[dict[str, any]] = None
     """Optional configuration for writing CSV files, to be used when the
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module."""
@@ -330,10 +330,10 @@ class LocalOutputWriter(OutputWriter):
     """
 
     def _write_json(
-        output: Union[Output, dict[str, Any]],
-        options: dict[str, Any],
-        statistics: dict[str, Any],
-        assets: list[dict[str, Any]],
+        output: Union[Output, dict[str, any]],
+        options: dict[str, any],
+        statistics: dict[str, any],
+        assets: list[dict[str, any]],
         path: Optional[str] = None,
     ) -> None:
         if isinstance(output, dict):
@@ -362,9 +362,9 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_archive(
         output: Output,
-        options: dict[str, Any],
-        statistics: dict[str, Any],
-        assets: list[dict[str, Any]],
+        options: dict[str, any],
+        statistics: dict[str, any],
+        assets: list[dict[str, any]],
         path: Optional[str] = None,
     ) -> None:
         dir_path = "output"
@@ -413,7 +413,7 @@ class LocalOutputWriter(OutputWriter):
 
     def write(
         self,
-        output: Union[Output, dict[str, Any]],
+        output: Union[Output, dict[str, any]],
         path: Optional[str] = None,
         skip_stdout_reset: bool = False,
     ) -> None:
@@ -479,7 +479,7 @@ class LocalOutputWriter(OutputWriter):
         )
 
     @staticmethod
-    def _extract_statistics(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
+    def _extract_statistics(output: Union[Output, dict[str, any]]) -> dict[str, any]:
         """Extract JSON-serializable statistics."""
 
         statistics = {}
@@ -502,7 +502,7 @@ class LocalOutputWriter(OutputWriter):
         return statistics
 
     @staticmethod
-    def _extract_options(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
+    def _extract_options(output: Union[Output, dict[str, any]]) -> dict[str, any]:
         """Extract JSON-serializable options."""
 
         options = {}
@@ -525,7 +525,7 @@ class LocalOutputWriter(OutputWriter):
         return options
 
     @staticmethod
-    def _extract_assets(output: Union[Output, dict[str, Any]]) -> list[dict[str, Any]]:
+    def _extract_assets(output: Union[Output, dict[str, any]]) -> list[dict[str, any]]:
         """Extract JSON-serializable assets."""
 
         assets = []
@@ -550,7 +550,7 @@ class LocalOutputWriter(OutputWriter):
 
 
 def write_local(
-    output: Union[Output, dict[str, Any]],
+    output: Union[Output, dict[str, any]],
     path: Optional[str] = None,
     skip_stdout_reset: bool = False,
 ) -> None:
@@ -593,7 +593,7 @@ def write_local(
     writer.write(output, path, skip_stdout_reset)
 
 
-def _custom_serial(obj: Any):
+def _custom_serial(obj: any):
     """JSON serializer for objects not serializable by default one."""
 
     if isinstance(obj, (datetime.datetime | datetime.date)):
