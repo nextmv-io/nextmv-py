@@ -151,7 +151,7 @@ class Statistics(BaseModel):
     """Statistics about the last result."""
     series_data: Optional[SeriesData] = None
     """Data of the series."""
-    statistics_schema: Optional[str] = Field(alias="schema", default="v1")
+    statistics_schema: Optional[str] = Field(serialization_alias="schema", default="v1")
     """Schema (version). This class only supports `v1`."""
 
 
@@ -184,12 +184,12 @@ class Visual(BaseModel):
     Console.
     """
 
-    visual_schema: VisualSchema = Field(alias="schema")
+    visual_schema: VisualSchema = Field(serialization_alias="schema")
     """Schema of the visual asset."""
     label: str
     """Label for the custom tab of the visual asset in the Nextmv Console."""
 
-    visual_type: Optional[str] = Field(alias="type", default="custom-tab")
+    visual_type: Optional[str] = Field(serialization_alias="type", default="custom-tab")
     """Defines the type of custom visual, currently there is only one type:
     `custom-tab`. This renders the visual in its own tab view of the run
     details."""
