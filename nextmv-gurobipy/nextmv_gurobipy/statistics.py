@@ -29,10 +29,7 @@ STATUS = {
 }
 
 
-def Statistics(
-    model: gp.Model,
-    run_duration_start: Optional[float] = None,
-) -> nextmv.Statistics:
+def ModelStatistics(model: gp.Model, run_duration_start: Optional[float] = None) -> nextmv.Statistics:
     """
     Creates a Nextmv statistics object from a Gurobi model, once it has been
     optimized. The statistics returned are quite basic, and should be extended

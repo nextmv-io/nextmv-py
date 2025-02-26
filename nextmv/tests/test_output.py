@@ -321,7 +321,7 @@ class TestOutput(unittest.TestCase):
                     content_type="json",
                     description="A foo asset.",
                     visual=nextmv.Visual(
-                        schema=nextmv.VisualSchema.CHARTJS,
+                        visual_schema=nextmv.VisualSchema.CHARTJS,
                         label="A chart",
                         visual_type="custom-tab",
                     ),

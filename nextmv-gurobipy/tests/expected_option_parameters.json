@@ -1392,14 +1392,6 @@
     "choices": null
   },
   {
-    "name": "Username",
-    "param_type": "<class 'str'>",
-    "default": "",
-    "description": "Identify the user connecting to the Remote Services Manager.\n\nYou can provide either a username and password, or an access ID and a\nsecret key, to authenticate your connection to a Cluster Manager.\n\nYou can set this parameter through either a \"gurobi.lic\" file (using\n\"USERNAME=YOUR_USERNAME\") or an empty environment. Changing the\nparameter after your environment has been started will result in an\nerror.\n\nNote:\n\n  Cluster Manager only",
-    "required": false,
-    "choices": null
-  },
-  {
     "name": "VarBranch",
     "param_type": "<class 'int'>",
     "default": -1,

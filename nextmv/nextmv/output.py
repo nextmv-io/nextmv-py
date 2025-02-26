@@ -151,7 +151,7 @@ class Statistics(BaseModel):
     """Statistics about the last result."""
     series_data: Optional[SeriesData] = None
     """Data of the series."""
-    statistics_schema: Optional[str] = Field(alias="schema", default="v1")
+    statistics_schema: Optional[str] = Field(serialization_alias="schema", default="v1")
     """Schema (version). This class only supports `v1`."""
 
 
@@ -184,19 +184,19 @@ class Visual(BaseModel):
     Console.
     """
 
-    schema: VisualSchema
+    visual_schema: VisualSchema = Field(serialization_alias="schema")
     """Schema of the visual asset."""
     label: str
     """Label for the custom tab of the visual asset in the Nextmv Console."""
 
-    visual_type: Optional[str] = Field(alias="type", default="custom-tab")
+    visual_type: Optional[str] = Field(serialization_alias="type", default="custom-tab")
     """Defines the type of custom visual, currently there is only one type:
     `custom-tab`. This renders the visual in its own tab view of the run
     details."""
 
     def __post_init__(self):
-        if self.schema not in VisualSchema:
-            raise ValueError(f"unsupported schema: {self.schema}, supported schemas are {VisualSchema}")
+        if self.visual_schema not in VisualSchema:
+            raise ValueError(f"unsupported schema: {self.visual_schema}, supported schemas are {VisualSchema}")
 
         if self.visual_type != "custom-tab":
             raise ValueError(f"unsupported visual_type: {self.visual_type}, supported types are `custom-tab`")
@@ -209,8 +209,8 @@ class Asset(BaseModel):
 
     name: str
     """Name of the asset."""
-    content: dict[str, Any]
-    """Content of the asset."""
+    content: Any
+    """Content of the asset. The type must be serializable to JSON."""
 
     content_type: Optional[str] = "json"
     """Content type of the asset. Only `json` is allowed"""
