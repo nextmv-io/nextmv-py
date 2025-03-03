@@ -11,7 +11,11 @@ from nextmv.options import Options
 from nextmv.output import Output
 
 # Disable warnings from mlflow that are not relevant to the user:
-# .../site-packages/mlflow/pyfunc/utils/data_validation.py:134: UserWarning: Add type hints to the `predict` method to enable data validation and automatic signature inference during model logging. Check https://mlflow.org/docs/latest/model/python_model.html#type-hint-usage-in-pythonmodel for more details.
+# .../site-packages/mlflow/pyfunc/utils/data_validation.py:134: UserWarning:Add
+# type hints to the `predict` method to enable data validation and automatic
+# signature inference during model logging. Check
+# https://mlflow.org/docs/latest/model/python_model.html#type-hint-usage-in-pythonmodel
+# for more details.
 original_showwarning = warnings.showwarning
 
 
