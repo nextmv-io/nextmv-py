@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.logger import reset_stdout
@@ -151,7 +151,11 @@ class Statistics(BaseModel):
     """Statistics about the last result."""
     series_data: Optional[SeriesData] = None
     """Data of the series."""
-    statistics_schema: Optional[str] = Field(serialization_alias="schema", default="v1")
+    statistics_schema: Optional[str] = Field(
+        serialization_alias="schema",
+        validation_alias=AliasChoices("schema", "statistics_schema"),
+        default="v1",
+    )
     """Schema (version). This class only supports `v1`."""
 
 
@@ -184,12 +188,19 @@ class Visual(BaseModel):
     Console.
     """
 
-    visual_schema: VisualSchema = Field(serialization_alias="schema")
+    visual_schema: VisualSchema = Field(
+        serialization_alias="schema",
+        validation_alias=AliasChoices("schema", "visual_schema"),
+    )
     """Schema of the visual asset."""
     label: str
     """Label for the custom tab of the visual asset in the Nextmv Console."""
 
-    visual_type: Optional[str] = Field(serialization_alias="type", default="custom-tab")
+    visual_type: Optional[str] = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "visual_type"),
+        default="custom-tab",
+    )
     """Defines the type of custom visual, currently there is only one type:
     `custom-tab`. This renders the visual in its own tab view of the run
     details."""

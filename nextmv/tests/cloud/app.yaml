@@ -1,0 +1,22 @@
+files:
+  - main.py
+  - super_cool_model/**
+python:
+  model:
+    name: super_cool_model
+    options:
+      - choices: null
+        default: 30
+        description: Max runtime duration (in seconds).
+        name: duration
+        param_type: <class 'int'>
+        required: false
+  pip-requirements: model_requirements.txt
+runtime: ghcr.io/nextmv-io/runtime/python:3.11
+type: python
+pre-push: echo 'hello world - pre-push'
+build:
+  command: echo 'hello world - build'
+  environment:
+    SUPER: COOL
+    EXTRA: AWESOME
