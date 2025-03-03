@@ -166,7 +166,7 @@ class Model:
                 self,
                 context,
                 model_input,
-                params: dict[str, Any] | None = None,
+                params: Optional[dict[str, Any]] = None,
             ) -> Any:
                 """
                 The predict method allows us to work with mlflow’s [python_function]
