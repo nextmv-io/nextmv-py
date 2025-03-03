@@ -871,6 +871,56 @@ class Application:
 
         return Instance.from_dict(response.json())
 
+    @staticmethod
+    def new(
+        client: Client,
+        name: str,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> "Application":
+        """
+        Create a new application.
+
+        Args:
+            client: Client to use for interacting with the Nextmv Cloud API.
+            name: Name of the application.
+            id: ID of the application. Will be generated if not provided.
+            description: Description of the application.
+
+        Returns:
+            The new application.
+        """
+
+        payload = {
+            "name": name,
+        }
+
+        if description is not None:
+            payload["description"] = description
+        if id is not None:
+            payload["id"] = id
+
+        response = client.request(
+            method="POST",
+            endpoint="v1/applications",
+            payload=payload,
+        )
+
+        return Application(client=client, id=response.json()["id"])
+
+    def delete(self) -> None:
+        """
+        Delete the application.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=self.endpoint,
+        )
+
     def push(
         self,
         manifest: Optional[Manifest] = None,
