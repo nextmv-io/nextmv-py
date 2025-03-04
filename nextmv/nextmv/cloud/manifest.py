@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Optional
 
 import yaml
-from pydantic import Field
+from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
@@ -97,7 +97,11 @@ class ManifestPythonModel(BaseModel):
 class ManifestPython(BaseModel):
     """Python-specific instructions."""
 
-    pip_requirements: Optional[str] = Field(serialization_alias="pip-requirements", default=None)
+    pip_requirements: Optional[str] = Field(
+        serialization_alias="pip-requirements",
+        validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
+        default=None,
+    )
     """
     Path to a requirements.txt file containing (additional) Python
     dependencies that will be bundled with the app.
@@ -138,7 +142,11 @@ class Manifest(BaseModel):
     command. The build.environment is used to set environment variables when
     running the build command given as key-value pairs.
     """
-    pre_push: Optional[str] = Field(serialization_alias="pre-push", default=None)
+    pre_push: Optional[str] = Field(
+        serialization_alias="pre-push",
+        validation_alias=AliasChoices("pre-push", "pre_push"),
+        default=None,
+    )
     """
     Optional. A command to run before the app is pushed to the Nextmv Cloud.
     This command can be used to compile a binary, run tests or similar tasks.

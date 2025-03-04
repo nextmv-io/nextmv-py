@@ -404,3 +404,69 @@ class TestOutput(unittest.TestCase):
             }
 
             self.assertDictEqual(got, expected)
+
+    def test_visual_from_dict(self):
+        visual_dict = {
+            "schema": "chartjs",
+            "label": "A chart",
+            "type": "custom-tab",
+        }
+
+        visual = nextmv.Visual.from_dict(visual_dict)
+
+        self.assertEqual(visual.visual_schema, nextmv.VisualSchema.CHARTJS)
+        self.assertEqual(visual.label, "A chart")
+        self.assertEqual(visual.visual_type, "custom-tab")
+
+    def test_visual_from_dict_2(self):
+        visual_dict = {
+            "visual_schema": "chartjs",
+            "label": "A chart",
+            "visual_type": "custom-tab",
+        }
+
+        visual = nextmv.Visual.from_dict(visual_dict)
+
+        self.assertEqual(visual.visual_schema, nextmv.VisualSchema.CHARTJS)
+        self.assertEqual(visual.label, "A chart")
+        self.assertEqual(visual.visual_type, "custom-tab")
+
+    def test_visual_direct_instantiation(self):
+        visual = nextmv.Visual(
+            visual_schema=nextmv.VisualSchema.CHARTJS,
+            label="A chart",
+            visual_type="custom-tab",
+        )
+
+        self.assertEqual(visual.visual_schema, nextmv.VisualSchema.CHARTJS)
+        self.assertEqual(visual.label, "A chart")
+        self.assertEqual(visual.visual_type, "custom-tab")
+
+    def test_visual_direct_instantiation_2(self):
+        visual = nextmv.Visual(
+            schema=nextmv.VisualSchema.CHARTJS,
+            label="A chart",
+            type="custom-tab",
+        )
+
+        self.assertEqual(visual.visual_schema, nextmv.VisualSchema.CHARTJS)
+        self.assertEqual(visual.label, "A chart")
+        self.assertEqual(visual.visual_type, "custom-tab")
+
+    def test_visual_to_dict(self):
+        visual = nextmv.Visual(
+            visual_schema=nextmv.VisualSchema.CHARTJS,
+            label="A chart",
+            visual_type="custom-tab",
+        )
+
+        visual_dict = visual.to_dict()
+
+        self.assertDictEqual(
+            visual_dict,
+            {
+                "schema": "chartjs",
+                "label": "A chart",
+                "type": "custom-tab",
+            },
+        )

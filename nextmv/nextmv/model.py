@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import warnings
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -8,6 +9,34 @@ from nextmv.input import Input
 from nextmv.logger import log
 from nextmv.options import Options
 from nextmv.output import Output
+
+# The following block of code is used to suppress warnings from mlflow. We
+# suppress these warnings because they are not relevant to the user, and they
+# are not actionable.
+original_showwarning = warnings.showwarning
+
+
+def custom_showwarning(message, category, filename, lineno, file=None, line=None):
+    # .../site-packages/mlflow/pyfunc/utils/data_validation.py:134: UserWarning:Add
+    # type hints to the `predict` method to enable data validation and automatic
+    # signature inference during model logging. Check
+    # https://mlflow.org/docs/latest/model/python_model.html#type-hint-usage-in-pythonmodel
+    # for more details.
+    if "mlflow/pyfunc/utils/data_validation.py" in filename:
+        return
+
+    # .../site-packages/mlflow/pyfunc/__init__.py:3212: UserWarning: An input
+    # example was not provided when logging the model. To ensure the model
+    # signature functions correctly, specify the `input_example` parameter. See
+    # https://mlflow.org/docs/latest/model/signatures.html#model-input-example
+    # for more details about the benefits of using input_example.
+    if "mlflow/pyfunc/__init__.py" in filename:
+        return
+
+    original_showwarning(message, category, filename, lineno, file, line)
+
+
+warnings.showwarning = custom_showwarning
 
 # When working with the `Model`, we expect to be working in a notebook
 # environment, and not interact with the local filesystem a lot. We use the
@@ -104,7 +133,7 @@ class Model:
 
         raise NotImplementedError
 
-    def save(self, model_dir: str, configuration: ModelConfiguration) -> None:
+    def save(model_self, model_dir: str, configuration: ModelConfiguration) -> None:
         """
         Save the model to the local filesystem, in the location given by `dir`.
         The model is saved according to the configuration provided, which is of
@@ -144,7 +173,12 @@ class Model:
             `DecisionModel`.
             """
 
-            def predict(mlflow_self, context, model_input, params=None) -> Any:
+            def predict(
+                self,
+                context,
+                model_input,
+                params: Optional[dict[str, Any]] = None,
+            ) -> Any:
                 """
                 The predict method allows us to work with mlflow’s [python_function]
                 model flavor. Warning: This method should not be used or overridden
@@ -153,7 +187,7 @@ class Model:
                 [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
                 """
 
-                return self.solve(model_input)
+                return model_self.solve(model_input)
 
         # Some annoying logging from mlflow must be disabled.
         logging.disable(logging.CRITICAL)
@@ -176,8 +210,6 @@ class Model:
             python_model=MLFlowModel(),
             signature=signature,  # Allows us to work with our own `Options` class.
         )
-
-        logging.disable(logging.NOTSET)
 
         # Create an auxiliary requirements file with the model dependencies.
         requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
