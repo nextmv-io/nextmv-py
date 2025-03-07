@@ -47,7 +47,7 @@ requires-python = ">=3.9"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
-Documentation = "https://www.nextmv.io/docs"
+Documentation = "https://www.nextmv.io/docs/python-sdks/nextmv/installation"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [project.optional-dependencies]
