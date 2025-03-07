@@ -12,8 +12,9 @@ can find the source for the following packages:
   providing convenience functions for working with scikit-learn models in the
   Nextmv platform.
 
-Please refer to the individual package READMEs for more information.
+To learn more about the SDKs, visit the [docs][docs].
 
-**IMPORTANT!**
-> Please review the LICENSE on each package, as they may not all have the same
-> license.
+**IMPORTANT**: Please review the LICENSE on each package, as they may not all
+have the same license.
+
+[docs]: https://nextmv.io/docs/python-sdks/overview
