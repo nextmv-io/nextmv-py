@@ -908,6 +908,33 @@ class Application:
 
         return Application(client=client, id=response.json()["id"])
 
+    @staticmethod
+    def exists(
+        client: Client,
+        id: str,
+    ) -> bool:
+        """
+        Check if an application exists.
+
+        Args:
+            client: Client to use for interacting with the Nextmv Cloud API.
+            id: ID of the application.
+
+        Returns:
+            True if the application exists, False otherwise.
+        """
+
+        try:
+            _ = client.request(
+                method="GET",
+                endpoint=f"v1/applications/{id}",
+            )
+            return True
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                return False
+            raise e from None
+
     def delete(self) -> None:
         """
         Delete the application.
