@@ -908,6 +908,46 @@ class Application:
 
         return Application(client=client, id=response.json()["id"])
 
+    @staticmethod
+    def exists(
+        client: Client,
+        id: str,
+    ) -> bool:
+        """
+        Check if an application exists.
+
+        Args:
+            client: Client to use for interacting with the Nextmv Cloud API.
+            id: ID of the application.
+
+        Returns:
+            True if the application exists, False otherwise.
+        """
+
+        try:
+            _ = client.request(
+                method="GET",
+                endpoint=f"v1/applications/{id}",
+            )
+            # If the request was successful, the application exists.
+            return True
+        except requests.HTTPError as e:
+            if (
+                # Check whether the error is caused by a 404 status code - meaning the app does not exist.
+                (hasattr(e, "response") and hasattr(e.response, "status_code") and e.response.status_code == 404)
+                or
+                # Check a possibly nested exception as well.
+                (
+                    hasattr(e, "__cause__")
+                    and hasattr(e.__cause__, "response")
+                    and hasattr(e.__cause__.response, "status_code")
+                    and e.__cause__.response.status_code == 404
+                )
+            ):
+                return False
+            # Re-throw the exception if it is not the expected 404 error.
+            raise e from None
+
     def delete(self) -> None:
         """
         Delete the application.
