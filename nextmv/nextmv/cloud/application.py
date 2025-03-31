@@ -15,9 +15,11 @@ from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metri
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
-from nextmv.cloud.instance import Configuration, Instance
+from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.status import Status, StatusV2
+from nextmv.cloud.run import ExternalRunResult, RunConfiguration, RunInformation, RunLog, RunResult
+from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
+from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
@@ -32,42 +34,6 @@ class DownloadURL(BaseModel):
 
     url: str
     """URL to use for downloading the file."""
-
-
-class ErrorLog(BaseModel):
-    """Error log of a run, when it was not successful."""
-
-    error: Optional[str] = None
-    """Error message."""
-    stdout: Optional[str] = None
-    """Standard output."""
-    stderr: Optional[str] = None
-    """Standard error."""
-
-
-class Metadata(BaseModel):
-    """Metadata of a run, whether it was successful or not."""
-
-    application_id: str
-    """ID of the application where the run was submitted to."""
-    application_instance_id: str
-    """ID of the instance where the run was submitted to."""
-    application_version_id: str
-    """ID of the version of the application where the run was submitted to."""
-    created_at: datetime
-    """Date and time when the run was created."""
-    duration: float
-    """Duration of the run in milliseconds."""
-    error: str
-    """Error message if the run failed."""
-    input_size: float
-    """Size of the input in bytes."""
-    output_size: float
-    """Size of the output in bytes."""
-    status: Status
-    """Deprecated: use status_v2."""
-    status_v2: StatusV2
-    """Status of the run."""
 
 
 class PollingOptions(BaseModel):
@@ -93,37 +59,6 @@ class PollingOptions(BaseModel):
 
 _DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
 """Default polling options to use when polling for a run result."""
-
-
-class RunInformation(BaseModel):
-    """Information of a run."""
-
-    description: str
-    """Description of the run."""
-    id: str
-    """ID of the run."""
-    metadata: Metadata
-    """Metadata of the run."""
-    name: str
-    """Name of the run."""
-    user_email: str
-    """Email of the user who submitted the run."""
-
-
-class RunResult(RunInformation):
-    """Result of a run, whether it was successful or not."""
-
-    error_log: Optional[ErrorLog] = None
-    """Error log of the run. Only available if the run failed."""
-    output: Optional[dict[str, Any]] = None
-    """Output of the run. Only available if the run succeeded."""
-
-
-class RunLog(BaseModel):
-    """Log of a run."""
-
-    log: str
-    """Log of the run."""
 
 
 class UploadURL(BaseModel):
@@ -215,13 +150,9 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
         )
 
-    def delete_batch_experiment(self, batch_id: str) -> None:
+    def delete(self) -> None:
         """
-        Deletes a batch experiment, along with all the associated information,
-        such as its runs.
-
-        Args:
-            batch_id: ID of the batch experiment.
+        Delete the application.
 
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
@@ -229,7 +160,7 @@ class Application:
 
         _ = self.client.request(
             method="DELETE",
-            endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
+            endpoint=self.endpoint,
         )
 
     def delete_acceptance_test(self, acceptance_test_id: str) -> None:
@@ -247,6 +178,39 @@ class Application:
         _ = self.client.request(
             method="DELETE",
             endpoint=f"{self.experiments_endpoint}/acceptance/{acceptance_test_id}",
+        )
+
+    def delete_batch_experiment(self, batch_id: str) -> None:
+        """
+        Deletes a batch experiment, along with all the associated information,
+        such as its runs.
+
+        Args:
+            batch_id: ID of the batch experiment.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
+        )
+
+    def delete_secrets_collection(self, secrets_collection_id: str) -> None:
+        """
+        Deletes a secrets collection.
+
+        Args:
+            secrets_collection_id: ID of the secrets collection.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
         )
 
     def input_set(self, input_set_id: str) -> InputSet:
@@ -363,6 +327,24 @@ class Application:
 
         return [Instance.from_dict(instance) for instance in response.json()]
 
+    def list_secrets_collections(self) -> list[SecretsCollectionSummary]:
+        """
+        List all secrets collections.
+
+        Returns:
+            List of secrets collections.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/secrets",
+        )
+
+        return [SecretsCollectionSummary.from_dict(secrets) for secrets in response.json()["items"]]
+
     def list_versions(self) -> list[Version]:
         """
         List all versions.
@@ -380,6 +362,44 @@ class Application:
         )
 
         return [Version.from_dict(version) for version in response.json()]
+
+    @classmethod
+    def new(
+        cls,
+        client: Client,
+        name: str,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> "Application":
+        """
+        Create a new application.
+
+        Args:
+            client: Client to use for interacting with the Nextmv Cloud API.
+            name: Name of the application.
+            id: ID of the application. Will be generated if not provided.
+            description: Description of the application.
+
+        Returns:
+            The new application.
+        """
+
+        payload = {
+            "name": name,
+        }
+
+        if description is not None:
+            payload["description"] = description
+        if id is not None:
+            payload["id"] = id
+
+        response = client.request(
+            method="POST",
+            endpoint="v1/applications",
+            payload=payload,
+        )
+
+        return cls(client=client, id=response.json()["id"])
 
     def new_acceptance_test(
         self,
@@ -652,6 +672,52 @@ class Application:
 
         return InputSet.from_dict(response.json())
 
+    def new_instance(
+        self,
+        version_id: str,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[InstanceConfiguration] = None,
+    ) -> Instance:
+        """
+        Create a new instance and associate it with a version.
+
+        Args:
+            version_id: ID of the version to associate the instance with.
+            id: ID of the instance. Will be generated if not provided.
+            name: Name of the instance. Will be generated if not provided.
+            description: Description of the instance. Will be generated if not provided.
+            configuration: Configuration to use for the instance.
+
+        Returns:
+            Instance.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        payload = {
+            "version_id": version_id,
+        }
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if configuration is not None:
+            payload["configuration"] = configuration.to_dict()
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/instances",
+            payload=payload,
+        )
+
+        return Instance.from_dict(response.json())
+
     def new_run(  # noqa: C901 # Lot of if statements, but clear logic.
         self,
         input: Union[dict[str, Any], BaseModel, str] = None,
@@ -660,7 +726,9 @@ class Application:
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
         options: Optional[dict[str, str]] = None,
-        configuration: Optional[Configuration] = None,
+        configuration: Optional[RunConfiguration] = None,
+        batch_experiment_id: Optional[str] = None,
+        external_result: Optional[ExternalRunResult] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -720,6 +788,10 @@ class Application:
             payload["options"] = options
         if configuration is not None:
             payload["configuration"] = configuration.to_dict()
+        if batch_experiment_id is not None:
+            payload["batch_experiment_id"] = batch_experiment_id
+        if external_result is not None:
+            payload["result"] = external_result.to_dict()
 
         query_params = {
             "instance_id": instance_id if instance_id is not None else self.default_instance_id,
@@ -742,7 +814,9 @@ class Application:
         upload_id: Optional[str] = None,
         run_options: Optional[dict[str, str]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[Configuration] = None,
+        configuration: Optional[RunConfiguration] = None,
+        batch_experiment_id: Optional[str] = None,
+        external_result: Optional[ExternalRunResult] = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -780,12 +854,54 @@ class Application:
             upload_id=upload_id,
             options=run_options,
             configuration=configuration,
+            batch_experiment_id=batch_experiment_id,
+            external_result=external_result,
         )
 
         return self.run_result_with_polling(
             run_id=run_id,
             polling_options=polling_options,
         )
+
+    def new_secrets_collection(
+        self,
+        secrets: list[Secret],
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> SecretsCollectionSummary:
+        """
+        Create a new secrets collection.
+
+        Returns:
+            SecretsCollectionSummary: Summary of the secrets collection.
+
+        Raises:
+            ValueError: If no secrets are provided.
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        if len(secrets) == 0:
+            raise ValueError("secrets must be provided")
+
+        payload = {
+            "secrets": [secret.to_dict() for secret in secrets],
+        }
+
+        if id is not None:
+            payload["id"] = id
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/secrets",
+            payload=payload,
+        )
+
+        return SecretsCollectionSummary.from_dict(response.json())
 
     def new_version(
         self,
@@ -824,102 +940,6 @@ class Application:
         )
 
         return Version.from_dict(response.json())
-
-    def new_instance(
-        self,
-        version_id: str,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        configuration: Optional[Configuration] = None,
-    ) -> Instance:
-        """
-        Create a new instance and associate it with a version.
-
-        Args:
-            version_id: ID of the version to associate the instance with.
-            id: ID of the instance. Will be generated if not provided.
-            name: Name of the instance. Will be generated if not provided.
-            description: Description of the instance. Will be generated if not provided.
-            configuration: Configuration to use for the instance.
-
-        Returns:
-            Instance.
-
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-        """
-
-        payload = {
-            "version_id": version_id,
-        }
-
-        if id is not None:
-            payload["id"] = id
-        if name is not None:
-            payload["name"] = name
-        if description is not None:
-            payload["description"] = description
-        if configuration is not None:
-            payload["configuration"] = configuration.to_dict()
-
-        response = self.client.request(
-            method="POST",
-            endpoint=f"{self.endpoint}/instances",
-            payload=payload,
-        )
-
-        return Instance.from_dict(response.json())
-
-    @staticmethod
-    def new(
-        client: Client,
-        name: str,
-        id: Optional[str] = None,
-        description: Optional[str] = None,
-    ) -> "Application":
-        """
-        Create a new application.
-
-        Args:
-            client: Client to use for interacting with the Nextmv Cloud API.
-            name: Name of the application.
-            id: ID of the application. Will be generated if not provided.
-            description: Description of the application.
-
-        Returns:
-            The new application.
-        """
-
-        payload = {
-            "name": name,
-        }
-
-        if description is not None:
-            payload["description"] = description
-        if id is not None:
-            payload["id"] = id
-
-        response = client.request(
-            method="POST",
-            endpoint="v1/applications",
-            payload=payload,
-        )
-
-        return Application(client=client, id=response.json()["id"])
-
-    def delete(self) -> None:
-        """
-        Delete the application.
-
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-        """
-
-        _ = self.client.request(
-            method="DELETE",
-            endpoint=self.endpoint,
-        )
 
     def push(
         self,
@@ -1093,25 +1113,6 @@ class Application:
 
         return download_response.json()
 
-    def run_logs(self, run_id: str) -> RunLog:
-        """
-        Get the logs of a run.
-
-        Args:
-            run_id: ID of the run.
-
-        Returns:
-            Logs of the run.
-
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-        """
-        response = self.client.request(
-            method="GET",
-            endpoint=f"{self.endpoint}/runs/{run_id}/logs",
-        )
-        return RunLog.from_dict(response.json())
-
     def run_metadata(self, run_id: str) -> RunInformation:
         """
         Get the metadata of a run. The result does not include the run output.
@@ -1132,6 +1133,25 @@ class Application:
         )
 
         return RunInformation.from_dict(response.json())
+
+    def run_logs(self, run_id: str) -> RunLog:
+        """
+        Get the logs of a run.
+
+        Args:
+            run_id: ID of the run.
+
+        Returns:
+            Logs of the run.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/logs",
+        )
+        return RunLog.from_dict(response.json())
 
     def run_result(self, run_id: str) -> RunResult:
         """
@@ -1207,7 +1227,7 @@ class Application:
         name: str,
         version_id: Optional[str] = None,
         description: Optional[str] = None,
-        configuration: Optional[Configuration] = None,
+        configuration: Optional[InstanceConfiguration] = None,
     ) -> Instance:
         """
         Update an instance.
@@ -1244,6 +1264,46 @@ class Application:
         )
 
         return Instance.from_dict(response.json())
+
+    def update_secrets_collection(
+        self,
+        secrets_collection_id: str,
+        name: str,
+        description: str,
+        secrets: list[Secret],
+    ) -> SecretsCollection:
+        """
+        Update a secrets collection.
+
+        Args:
+            secrets_collection_id: ID of the secrets collection.
+            name: Name of the secrets collection.
+            description: Description of the secrets collection.
+            secrets: List of secrets to update.
+
+        Returns:
+            SecretsCollection.
+
+        Raises:
+            ValueError: If no secrets are provided.
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        if len(secrets) == 0:
+            raise ValueError("secrets must be provided")
+
+        payload = {
+            "name": name,
+            "description": description,
+            "secrets": [secret.to_dict() for secret in secrets],
+        }
+        response = self.client.request(
+            method="PUT",
+            endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
+            payload=payload,
+        )
+
+        return SecretsCollectionSummary.from_dict(response.json())
 
     def upload_large_input(
         self,
@@ -1286,6 +1346,27 @@ class Application:
         )
 
         return UploadURL.from_dict(response.json())
+
+    def secrets_collection(self, secrets_collection_id: str) -> SecretsCollection:
+        """
+        Get a secrets collection.
+
+        Args:
+            secrets_collection_id: ID of the secrets collection.
+
+        Returns:
+            SecretsCollection.
+
+        Raises:
+            requests.HTTPError: If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
+        )
+
+        return SecretsCollection.from_dict(response.json())
 
     def version(self, version_id: str) -> Version:
         """

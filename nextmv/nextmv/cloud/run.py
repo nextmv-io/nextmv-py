@@ -1,0 +1,161 @@
+"""This module contains definitions for an app run."""
+
+from datetime import datetime
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import AliasChoices, Field
+
+from nextmv.base_model import BaseModel
+from nextmv.cloud.status import Status, StatusV2
+from nextmv.input import InputFormat
+
+
+class Metadata(BaseModel):
+    """Metadata of a run, whether it was successful or not."""
+
+    application_id: str
+    """ID of the application where the run was submitted to."""
+    application_instance_id: str
+    """ID of the instance where the run was submitted to."""
+    application_version_id: str
+    """ID of the version of the application where the run was submitted to."""
+    created_at: datetime
+    """Date and time when the run was created."""
+    duration: float
+    """Duration of the run in milliseconds."""
+    error: str
+    """Error message if the run failed."""
+    input_size: float
+    """Size of the input in bytes."""
+    output_size: float
+    """Size of the output in bytes."""
+    status: Status
+    """Deprecated: use status_v2."""
+    status_v2: StatusV2
+    """Status of the run."""
+
+
+class RunInformation(BaseModel):
+    """Information of a run."""
+
+    description: str
+    """Description of the run."""
+    id: str
+    """ID of the run."""
+    metadata: Metadata
+    """Metadata of the run."""
+    name: str
+    """Name of the run."""
+    user_email: str
+    """Email of the user who submitted the run."""
+
+
+class ErrorLog(BaseModel):
+    """Error log of a run, when it was not successful."""
+
+    error: Optional[str] = None
+    """Error message."""
+    stdout: Optional[str] = None
+    """Standard output."""
+    stderr: Optional[str] = None
+    """Standard error."""
+
+
+class RunResult(RunInformation):
+    """Result of a run, whether it was successful or not."""
+
+    error_log: Optional[ErrorLog] = None
+    """Error log of the run. Only available if the run failed."""
+    output: Optional[dict[str, Any]] = None
+    """Output of the run. Only available if the run succeeded."""
+
+
+class RunLog(BaseModel):
+    """Log of a run."""
+
+    log: str
+    """Log of the run."""
+
+
+class FormatInput(BaseModel):
+    """Input format for a run configuration."""
+
+    input_type: InputFormat = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "input_type"),
+        default=InputFormat.JSON,
+    )
+    """Type of the input format."""
+
+
+class Format(BaseModel):
+    """Format for a run configuration."""
+
+    format_input: FormatInput = Field(
+        serialization_alias="input",
+        validation_alias=AliasChoices("input", "format_input"),
+    )
+    """Input format for the run configuration."""
+
+
+class RunType(str, Enum):
+    """The actual type of the run."""
+
+    STANDARD = "standard"
+    """Standard run type."""
+    EXTERNAL = "external"
+    """External run type."""
+    ENSEMBLE = "ensemble"
+    """Ensemble run type."""
+
+
+class RunTypeConfiguration(BaseModel):
+    """Defines the configuration for the type of the run that is being executed
+    on an application."""
+
+    run_type: RunType = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "run_type"),
+    )
+    """Type of the run."""
+    definition_id: Optional[str] = None
+    """ID of the definition for the run type."""
+    reference_id: Optional[str] = None
+    """ID of the reference for the run type."""
+
+
+class RunConfiguration(BaseModel):
+    """Configuration for an app run."""
+
+    execution_class: Optional[str] = None
+    """Execution class for the instance."""
+    format: Optional[Format] = None
+    """Format for the run configuration."""
+    run_type: Optional[RunTypeConfiguration] = None
+    """Run type configuration for the run."""
+    secrets_collection_id: Optional[str] = None
+    """ID of the secrets collection to use for the run."""
+
+
+class ExternalRunResult(BaseModel):
+    """Result of a run used to configure a new application run as an
+    external one."""
+
+    output_upload_id: Optional[str] = None
+    """ID of the output upload."""
+    error_upload_id: Optional[str] = None
+    """ID of the error upload."""
+    status: Optional[str] = None
+    """Status of the run."""
+    error_message: Optional[str] = None
+    """Error message of the run."""
+    execution_duration: Optional[int] = None
+    """Duration of the run, in seconds."""
+
+    def __post_init_post_parse__(self):
+        """Validations done after parsing the model."""
+
+        valid_statuses = {"succeeded", "failed"}
+        if self.status is not None and self.status not in valid_statuses:
+            raise ValueError("Invalid status value, must be one of: " + ", ".join(valid_statuses))

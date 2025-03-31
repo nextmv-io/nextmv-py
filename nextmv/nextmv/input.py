@@ -15,13 +15,13 @@ from nextmv.options import Options
 class InputFormat(str, Enum):
     """Format of an `Input`."""
 
-    JSON = "JSON"
+    JSON = "json"
     """JSON format, utf-8 encoded."""
-    TEXT = "TEXT"
+    TEXT = "text"
     """Text format, utf-8 encoded."""
-    CSV = "CSV"
+    CSV = "csv"
     """CSV format, utf-8 encoded."""
-    CSV_ARCHIVE = "CSV_ARCHIVE"
+    CSV_ARCHIVE = "csv-archive"
     """CSV archive format: multiple CSV files."""
 
 
