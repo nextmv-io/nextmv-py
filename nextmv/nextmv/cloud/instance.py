@@ -6,13 +6,15 @@ from typing import Optional
 from nextmv.base_model import BaseModel
 
 
-class Configuration(BaseModel):
+class InstanceConfiguration(BaseModel):
     """Configuration for an instance."""
 
     execution_class: Optional[str] = None
     """Execution class for the instance."""
     options: Optional[dict] = None
     """Options of the app that the instance uses."""
+    secrets_collection_id: Optional[str] = None
+    """ID of the secrets collection that the instance uses."""
 
 
 class Instance(BaseModel):
@@ -28,7 +30,7 @@ class Instance(BaseModel):
     """Name of the instance."""
     description: str
     """Description of the instance."""
-    configuration: Configuration
+    configuration: InstanceConfiguration
     """Configuration for the instance."""
     locked: bool
     """Whether the instance is locked."""
