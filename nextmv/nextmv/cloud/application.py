@@ -1,6 +1,7 @@
 """This module contains the application class."""
 
 import json
+import random
 import shutil
 import time
 from dataclasses import dataclass
@@ -37,24 +38,57 @@ class DownloadURL(BaseModel):
 
 
 class PollingOptions(BaseModel):
-    """Options to use when polling for a run result."""
+    """
+    Options to use when polling for a run result.
 
-    backoff: float = 1
-    """Backoff factor to use between polls. Leave this at 1 to poll at a
-    constant rate."""
-    delay: float = 1
-    """Delay to use between polls, in seconds."""
+    The Cloud API will be polled for the result. The polling stops if:
+
+    * The maximum number of polls (tries) are exhausted. This is specified by
+      the `max_tries` parameter.
+    * The maximum duration of the polling strategy is reached. This is
+      specified by the `max_duration` parameter.
+
+    Before conducting the first poll, the `initial_delay` is used to sleep.
+    After each poll, a sleep duration is calculated using the following
+    strategy, based on exponential backoff with jitter:
+
+    ```
+    sleep_duration = min(`max_delay`, `delay` + `backoff` * 2 ** i + Uniform(0, `jitter`))
+    ```
+
+    Where:
+    * i is the retry (poll) number.
+    * Uniform is the uniform distribution.
+
+    Note that the sleep duration is capped by the `max_delay` parameter.
+    """
+
+    backoff: float = 0.9
+    """
+    Exponential backoff factor, in seconds, to use between polls. Leave this at
+    1 to poll at a constant rate.
+    """
+    delay: float = 0.1
+    """Base delay to use between polls, in seconds."""
     initial_delay: float = 1
-    """Initial delay to use before starting the polling strategy, in
-    seconds."""
+    """
+    Initial delay to use before starting the polling strategy, in seconds.
+    """
     max_delay: float = 20
-    """Maximum delay to use between polls, in seconds. This parameter is
-    activated when the backoff parameter is greater than 1, such that the delay
-    is increasing after each poll."""
+    """Maximum delay to use between polls, in seconds."""
     max_duration: float = 300
     """Maximum duration of the polling strategy, in seconds."""
-    max_tries: int = 20
+    max_tries: int = 100
     """Maximum number of tries to use."""
+    jitter: float = 1
+    """
+    Jitter to use for the polling strategy. A uniform distribution is sampled
+    between 0 and this number. The resulting random number is added to the
+    delay for each poll, adding a random noise. Leave this at 0 to avoid using
+    random jitter.
+    """
+    verbose: bool = False
+    """Whether to log the polling strategy. This is useful for debugging."""
 
 
 _DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
@@ -573,32 +607,18 @@ class Application:
             description=description,
         )
 
-        time.sleep(polling_options.initial_delay)
-        delay = polling_options.delay
-        polling_ok = False
-        for _ in range(polling_options.max_tries):
+        def polling_func() -> tuple[AcceptanceTest, bool]:
             test_information = self.acceptance_test(acceptance_test_id=id)
             if test_information.status in [
                 ExperimentStatus.completed,
                 ExperimentStatus.failed,
                 ExperimentStatus.canceled,
             ]:
-                polling_ok = True
-                break
+                return test_information, True
 
-            if delay > polling_options.max_duration:
-                raise TimeoutError(
-                    f"acceptance_test {id} did not succeed after {delay} seconds",
-                )
+            return None, False
 
-            sleep_duration = min(delay, polling_options.max_delay)
-            time.sleep(sleep_duration)
-            delay *= polling_options.backoff
-
-        if not polling_ok:
-            raise RuntimeError(
-                f"acceptance_test {id} did not succeed after {polling_options.max_tries} tries",
-            )
+        test_information = poll(polling_options=polling_options, polling_func=polling_func)
 
         return test_information
 
@@ -785,6 +805,10 @@ class Application:
             upload_id: ID to use when running a large input.
             options: Options to use for the run.
             configuration: Configuration to use for the run.
+            batch_experiment_id: ID of a batch experiment to associate the run
+                with.
+            external_result: External result to use for the run, if this is an
+                external run.
 
         Returns:
             ID of the submitted run.
@@ -875,6 +899,10 @@ class Application:
             run_options: Options to use for the run.
             polling_options: Options to use when polling for the run result.
             configuration: Configuration to use for the run.
+            batch_experimemt_id: ID of a batch experiment to associate the run
+                with.
+            external_result: External result to use for the run, if this is an
+                external run
 
          Returns:
             Result of the run.
@@ -912,14 +940,23 @@ class Application:
         description: Optional[str] = None,
     ) -> SecretsCollectionSummary:
         """
-        Create a new secrets collection.
+        Create a new secrets collection. If no secrets are provided, a
+        ValueError is raised.
+
+        Args:
+            secrets: List of secrets to use for the secrets collection. id: ID
+            of the secrets collection. Will be generated if not provided.
+            name: Name of the secrets collection. Will be generated if not
+                provided.
+            description: Description of the secrets collection. Will be
+                generated if not provided.
 
         Returns:
             SecretsCollectionSummary: Summary of the secrets collection.
 
         Raises:
-            ValueError: If no secrets are provided.
-            requests.HTTPError: If the response status code is not 2xx.
+            ValueError: If no secrets are provided. requests.HTTPError: If the
+            response status code is not 2xx.
         """
 
         if len(secrets) == 0:
@@ -1233,32 +1270,18 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
-        time.sleep(polling_options.initial_delay)
-        delay = polling_options.delay
-        polling_ok = False
-        for _ in range(polling_options.max_tries):
+        def polling_func() -> tuple[any, bool]:
             run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status_v2 in [
+            if run_information.metadata.status_v2 in {
                 StatusV2.succeeded,
                 StatusV2.failed,
                 StatusV2.canceled,
-            ]:
-                polling_ok = True
-                break
+            }:
+                return run_information, True
 
-            if delay > polling_options.max_duration:
-                raise TimeoutError(
-                    f"run {run_id} did not succeed after {delay} seconds",
-                )
+            return None, False
 
-            sleep_duration = min(delay, polling_options.max_delay)
-            time.sleep(sleep_duration)
-            delay *= polling_options.backoff
-
-        if not polling_ok:
-            raise RuntimeError(
-                f"run {run_id} did not succeed after {polling_options.max_tries} tries",
-            )
+        run_information = poll(polling_options=polling_options, polling_func=polling_func)
 
         return self.__run_result(run_id=run_id, run_information=run_information)
 
@@ -1525,3 +1548,74 @@ class Application:
                     indent=2,
                 )
             )
+
+
+def poll(polling_options: PollingOptions, polling_func: callable) -> any:
+    """
+    Auxiliary function for polling.
+
+    The `polling_func` is a callable that must return a `tuple[any, bool]`
+    where the first element is the result of the polling and the second
+    element is a boolean indicating if the polling was successful or should be
+    retried.
+
+    This function will return the result of the `polling_func` if the polling
+    process is successful, otherwise it will raise a `TimeoutError` or
+    `RuntimeError` depending on the situation.
+
+    Parameters
+    ----------
+    polling_options : PollingOptions
+        Options for the polling process.
+    polling_func : callable
+        Function to call to check if the polling was successful.
+
+    Returns
+    -------
+    any
+        Result of the polling function.
+    """
+
+    # Start by sleeping for the duration specified as initial delay.
+    if polling_options.verbose:
+        log(f"polling | sleeping for initial delay: {polling_options.initial_delay}")
+
+    time.sleep(polling_options.initial_delay)
+
+    start_time = time.time()
+
+    # Begin the polling process.
+    for ix in range(polling_options.max_tries):
+        # We check if we can stop polling.
+        result, ok = polling_func()
+        if polling_options.verbose:
+            log(f"polling | try # {ix + 1}, ok: {ok}")
+
+        if ok:
+            return result
+
+        # An exit condition happens if we exceed the allowed duration.
+        passed = time.time() - start_time
+        if polling_options.verbose:
+            log(f"polling | elapsed time: {passed}")
+
+        if passed >= polling_options.max_duration:
+            raise TimeoutError(
+                f"polling did not succeed after {passed} seconds, exceeds max duration: {polling_options.max_duration}",
+            )
+
+        # Calculate the delay.
+        delay = polling_options.delay  # Base
+        delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
+        delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+
+        # Sleep for the calculated delay. We cannot exceed the max delay.
+        sleep_duration = min(delay, polling_options.max_delay)
+        if polling_options.verbose:
+            log(f"polling | sleeping for duration: {sleep_duration}")
+
+        time.sleep(sleep_duration)
+
+    raise RuntimeError(
+        f"polling did not succeed after {polling_options.max_tries} tries",
+    )
