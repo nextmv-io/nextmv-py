@@ -65,8 +65,7 @@ class PollingOptions(BaseModel):
 
     backoff: float = 0.9
     """
-    Exponential backoff factor, in seconds, to use between polls. Leave this at
-    1 to poll at a constant rate.
+    Exponential backoff factor, in seconds, to use between polls.
     """
     delay: float = 0.1
     """Base delay to use between polls, in seconds."""
