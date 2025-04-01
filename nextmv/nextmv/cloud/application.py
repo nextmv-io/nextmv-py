@@ -83,7 +83,7 @@ class PollingOptions(BaseModel):
     """
     Jitter to use for the polling strategy. A uniform distribution is sampled
     between 0 and this number. The resulting random number is added to the
-    delay for each poll, adding a random noise. Leave this at 0 to avoid using
+    delay for each poll, adding a random noise. Set this to 0 to avoid using
     random jitter.
     """
     verbose: bool = False
