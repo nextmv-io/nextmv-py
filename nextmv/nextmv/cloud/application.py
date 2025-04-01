@@ -407,6 +407,7 @@ class Application:
         name: str,
         id: Optional[str] = None,
         description: Optional[str] = None,
+        is_pipeline: Optional[bool] = None,
     ) -> "Application":
         """
         Create a new application.
@@ -416,6 +417,7 @@ class Application:
             name: Name of the application.
             id: ID of the application. Will be generated if not provided.
             description: Description of the application.
+            is_pipeline: Whether the application is a pipeline.
 
         Returns:
             The new application.
@@ -429,6 +431,8 @@ class Application:
             payload["description"] = description
         if id is not None:
             payload["id"] = id
+        if is_pipeline is not None:
+            payload["is_pipeline"] = is_pipeline
 
         response = client.request(
             method="POST",
