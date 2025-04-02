@@ -48,7 +48,7 @@ class Client:
     """Maximum number of retries to use for requests to the Nextmv Cloud
     API."""
     status_forcelist: list[int] = field(
-        default_factory=lambda: [429, 500, 502, 503, 504, 507, 509],
+        default_factory=lambda: [429],
     )
     """Status codes to retry for requests to the Nextmv Cloud API."""
     timeout: float = 20
