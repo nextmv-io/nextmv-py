@@ -322,6 +322,30 @@ class Output:
                 "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
 
+    def to_dict(self) -> dict[str, any]:
+        """
+        Convert the `Output` object to a dictionary.
+
+        Returns
+        -------
+        dict[str, any]
+            The dictionary representation of the `Output` object.
+        """
+
+        output_dict = {
+            "options": self.options.to_dict() if self.options is not None else None,
+            "output_format": self.output_format,
+            "solution": self.solution,
+            "statistics": self.statistics.to_dict() if self.statistics is not None else None,
+            "csv_configurations": self.csv_configurations,
+            "assets": [asset.to_dict() for asset in self.assets] if self.assets is not None else None,
+        }
+
+        if self.output_format == OutputFormat.CSV_ARCHIVE:
+            output_dict["csv_configurations"] = self.csv_configurations
+
+        return output_dict
+
 
 class OutputWriter:
     """Base class for writing outputs."""

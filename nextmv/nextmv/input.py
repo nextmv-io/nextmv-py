@@ -91,6 +91,26 @@ class Input:
         new_options = copy.deepcopy(init_options)
         self.options = new_options
 
+    def to_dict(self) -> dict[str, any]:
+        """
+        Convert the input to a dictionary.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict[str, any]
+            The input as a dictionary.
+        """
+
+        return {
+            "data": self.data,
+            "input_format": self.input_format.value,
+            "options": self.options.to_dict() if self.options is not None else None,
+        }
+
 
 class InputLoader:
     """Base class for loading inputs."""

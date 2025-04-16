@@ -18,12 +18,14 @@ from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.run import ExternalRunResult, RunConfiguration, RunInformation, RunLog, RunResult
+from nextmv.cloud.run import ExternalRunResult, RunConfiguration, RunInformation, RunLog, RunResult, TrackedRun
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
+from nextmv.input import Input
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
+from nextmv.output import Output
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 """Maximum size of the run input/output. This value is used to determine
@@ -1283,6 +1285,107 @@ class Application:
         run_information = poll(polling_options=polling_options, polling_func=polling_func)
 
         return self.__run_result(run_id=run_id, run_information=run_information)
+
+    def track_run(self, tracked_run: TrackedRun) -> str:
+        """
+        Track an external run.
+
+        This method allows you to register in Nextmv a run that happened
+        elsewhere, as though it were executed in the Nextmv platform. Having
+        information about a run in Nextmv is useful for things like
+        experimenting and testing.
+
+        Parameters
+        ----------
+        tracked_run : TrackedRun
+            The run to track.
+
+        Returns
+        -------
+        str
+            The ID of the run that was tracked.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If the tracked run does not have an input or output.
+        """
+        url_input = self.upload_url()
+
+        upload_input = tracked_run.input
+        if isinstance(tracked_run.input, Input):
+            upload_input = tracked_run.input.to_dict()
+
+        self.upload_large_input(input=upload_input, upload_url=url_input)
+
+        url_output = self.upload_url()
+
+        upload_output = tracked_run.output
+        if isinstance(tracked_run.output, Output):
+            upload_output = tracked_run.output.to_dict()
+
+        self.upload_large_input(input=upload_output, upload_url=url_output)
+
+        external_result = ExternalRunResult(
+            output_upload_id=url_output.upload_id,
+            status=tracked_run.status.value,
+            execution_duration=tracked_run.duration,
+        )
+
+        if tracked_run.logs is not None:
+            url_stderr = self.upload_url()
+            self.upload_large_input(input=tracked_run.logs_text(), upload_url=url_stderr)
+            external_result.error_upload_id = url_stderr.upload_id
+
+        if tracked_run.error is not None and tracked_run.error != "":
+            external_result.error_message = tracked_run.error
+
+        return self.new_run(upload_id=url_input.upload_id, external_result=external_result)
+
+    def track_run_with_result(
+        self,
+        tracked_run: TrackedRun,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> RunResult:
+        """
+        Track an external run and poll for the result. This is a convenience
+        method that combines the `track_run` and `run_result_with_polling`
+        methods. It applies polling logic to check when the run was
+        successfully registered.
+
+        Parameters
+        ----------
+        tracked_run : TrackedRun
+            The run to track.
+        polling_options : PollingOptions
+            Options to use when polling for the run result.
+
+        Returns
+        -------
+        RunResult
+            Result of the run.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If the tracked run does not have an input or output.
+        TimeoutError
+            If the run does not succeed after the polling strategy is
+            exhausted based on time duration.
+        RuntimeError
+            If the run does not succeed after the polling strategy is
+            exhausted based on number of tries.
+        """
+        run_id = self.track_run(tracked_run=tracked_run)
+
+        return self.run_result_with_polling(
+            run_id=run_id,
+            polling_options=polling_options,
+        )
 
     def update_instance(
         self,

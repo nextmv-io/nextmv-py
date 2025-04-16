@@ -48,6 +48,8 @@ from .run import RunLog as RunLog
 from .run import RunResult as RunResult
 from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
+from .run import TrackedRun as TrackedRun
+from .run import TrackedRunStatus as TrackedRunStatus
 from .secrets import Secret as Secret
 from .secrets import SecretsCollection as SecretsCollection
 from .secrets import SecretsCollectionSummary as SecretsCollectionSummary

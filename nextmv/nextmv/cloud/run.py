@@ -1,14 +1,17 @@
 """This module contains definitions for an app run."""
 
+import json
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.status import Status, StatusV2
-from nextmv.input import InputFormat
+from nextmv.input import Input, InputFormat
+from nextmv.output import Output, OutputFormat
 
 
 class Metadata(BaseModel):
@@ -159,3 +162,114 @@ class ExternalRunResult(BaseModel):
         valid_statuses = {"succeeded", "failed"}
         if self.status is not None and self.status not in valid_statuses:
             raise ValueError("Invalid status value, must be one of: " + ", ".join(valid_statuses))
+
+
+class TrackedRunStatus(str, Enum):
+    """
+    The status of a tracked run.
+
+    Attributes
+    ----------
+    SUCCEEDED : str
+        The run succeeded.
+    FAILED : str
+        The run failed.
+    """
+
+    SUCCEEDED = "succeeded"
+    """The run succeeded."""
+    FAILED = "failed"
+    """The run failed."""
+
+
+@dataclass
+class TrackedRun:
+    """
+    An external run that is tracked in the Nextmv platform.
+
+    Attributes
+    ----------
+    input : Union[Input, dict[str, any], str]
+        The input of the run being tracked. Please note that if the input
+        format is JSON, then the input data must be JSON serializable. This
+        field is required.
+    output : Union[Output, dict[str, any], str]
+        The output of the run being tracked. Please note that if the output
+        format is JSON, then the output data must be JSON serializable. This
+        field is required.
+    status : TrackedRunStatus
+        The status of the run being tracked. This field is required.
+    duration : Optional[int]
+        The duration of the run being tracked, in seconds. This field is
+        optional.
+    error : Optional[str]
+        An error message if the run failed. You should only specify this if the
+        run failed (the `status` is `TrackedRunStatus.FAILED`), otherwise an
+        exception will be raised. This field is optional.
+    logs : Optional[list[str]]
+        The logs of the run being tracked. Each element of the list is a line in
+        the log. This field is optional.
+    """
+
+    input: Union[Input, dict[str, any], str]
+    """The input of the run being tracked."""
+    output: Union[Output, dict[str, any], str]
+    """The output of the run being tracked. Only JSON output_format is supported."""
+    status: TrackedRunStatus
+    """The status of the run being tracked"""
+
+    duration: Optional[int] = None
+    """The duration of the run being tracked, in seconds."""
+    error: Optional[str] = None
+    """An error message if the run failed. You should only specify this if the
+    run failed, otherwise an exception will be raised."""
+    logs: Optional[list[str]] = None
+    """The logs of the run being tracked. Each element of the list is a line in
+    the log."""
+
+    def __post_init__(self):  # noqa: C901
+        """Validations done after parsing the model."""
+
+        valid_statuses = {TrackedRunStatus.SUCCEEDED, TrackedRunStatus.FAILED}
+        if self.status not in valid_statuses:
+            raise ValueError("Invalid status value, must be one of: " + ", ".join(valid_statuses))
+
+        if self.error is not None and self.error != "" and self.status != TrackedRunStatus.FAILED:
+            raise ValueError("Error message must be empty if the run succeeded.")
+
+        if isinstance(self.input, Input):
+            if self.input.input_format != InputFormat.JSON:
+                raise ValueError("Input.input_format must be JSON.")
+        elif isinstance(self.input, dict):
+            try:
+                _ = json.dumps(self.input)
+            except (TypeError, OverflowError) as e:
+                raise ValueError("Input is dict[str, any] but it is not JSON serializable") from e
+
+        if isinstance(self.output, Output):
+            if self.output.output_format != OutputFormat.JSON:
+                raise ValueError("Output.output_format must be JSON.")
+        elif isinstance(self.output, dict):
+            try:
+                _ = json.dumps(self.output)
+            except (TypeError, OverflowError) as e:
+                raise ValueError("Output is dict[str, any] but it is not JSON serializable") from e
+
+    def logs_text(self) -> str:
+        """
+        Returns the logs as a single string.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        str
+            The logs as a single string.
+        """
+
+        if self.logs is None:
+            return ""
+
+        return "\n".join(self.logs)
