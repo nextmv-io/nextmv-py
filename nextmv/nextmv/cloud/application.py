@@ -737,8 +737,8 @@ class Application:
     def new_instance(
         self,
         version_id: str,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str,
+        name: str,
         description: Optional[str] = None,
         configuration: Optional[InstanceConfiguration] = None,
     ) -> Instance:
@@ -936,8 +936,8 @@ class Application:
     def new_secrets_collection(
         self,
         secrets: list[Secret],
-        id: Optional[str] = None,
-        name: Optional[str] = None,
+        id: str,
+        name: str,
         description: Optional[str] = None,
     ) -> SecretsCollectionSummary:
         """
@@ -1437,7 +1437,7 @@ class Application:
         name: str,
         description: str,
         secrets: list[Secret],
-    ) -> SecretsCollection:
+    ) -> SecretsCollectionSummary:
         """
         Update a secrets collection.
 

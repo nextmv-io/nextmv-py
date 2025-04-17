@@ -337,7 +337,6 @@ class Output:
             "output_format": self.output_format,
             "solution": self.solution,
             "statistics": self.statistics.to_dict() if self.statistics is not None else None,
-            "csv_configurations": self.csv_configurations,
             "assets": [asset.to_dict() for asset in self.assets] if self.assets is not None else None,
         }
 
