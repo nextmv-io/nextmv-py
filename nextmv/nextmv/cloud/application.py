@@ -443,6 +443,7 @@ class Application:
         id: Optional[str] = None,
         description: Optional[str] = None,
         is_workflow: Optional[bool] = None,
+        exist_ok: bool = False,
     ) -> "Application":
         """
         Create a new application.
@@ -457,6 +458,9 @@ class Application:
         Returns:
             The new application.
         """
+
+        if cls.exists(client=client, id=id) and exist_ok:
+            return Application(client=client, id=id)
 
         payload = {
             "name": name,
