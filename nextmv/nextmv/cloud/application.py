@@ -459,7 +459,7 @@ class Application:
             The new application.
         """
 
-        if cls.exists(client=client, id=id) and exist_ok:
+        if exist_ok and cls.exists(client=client, id=id):
             return Application(client=client, id=id)
 
         payload = {
