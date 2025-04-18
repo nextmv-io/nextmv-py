@@ -22,9 +22,10 @@ from nextmv.cloud.run import ExternalRunResult, RunConfiguration, RunInformation
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
-from nextmv.input import Input
+from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
+from nextmv.options import Options
 from nextmv.output import Output
 
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
@@ -784,51 +785,93 @@ class Application:
 
         return Instance.from_dict(response.json())
 
-    def new_run(  # noqa: C901 # Lot of if statements, but clear logic.
+    def new_run(  # noqa: C901 # Refactor this function at some point.
         self,
-        input: Union[dict[str, Any], BaseModel, str] = None,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        options: Optional[dict[str, str]] = None,
-        configuration: Optional[RunConfiguration] = None,
+        options: Optional[Union[Options, dict[str, str]]] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, any]]] = None,
         batch_experiment_id: Optional[str] = None,
-        external_result: Optional[ExternalRunResult] = None,
+        external_result: Optional[Union[ExternalRunResult, dict[str, any]]] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
-        run_id of the submitted run.
+        `run_id` of the submitted run.
 
-        Args:
-            input: Input to use for the run. This can be JSON (given as dict
-            or BaseModel) or text (given as str).
-            instance_id: ID of the instance to use for the run. If not
-                provided, the default_instance_id will be used.
-            name: Name of the run.
-            description: Description of the run.
-            upload_id: ID to use when running a large input.
-            options: Options to use for the run.
-            configuration: Configuration to use for the run.
-            batch_experiment_id: ID of a batch experiment to associate the run
-                with.
-            external_result: External result to use for the run, if this is an
-                external run.
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            dict, BaseModel or string. If `nextmv.Input` is used, then the
+            input is extracted from the `.data` property. Note that for now,
+            the only supported `.input_format` for this method is `JSON`. If a
+            string is provided, the input wil be uploaded, associating it with
+            an `upload_id`. In case a dict is used, it will be used as is.
+        instance_id: Optional[str]
+            ID of the instance to use for the run. If not provided, the default
+            instance ID associated to the Class (`default_instance_id`) is
+            used.
+        name: Optional[str]
+            Name of the run.
+        description: Optional[str]
+            Description of the run.
+        upload_id: Optional[str]
+            ID to use when running a large input. If the `input` exceeds the
+            maximum allowed size, then it is uploaded and the corresponding
+            `upload_id` is used.
+        options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        configuration: Optional[Union[RunConfiguration, dict[str, any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        batch_experiment_id: Optional[str]
+            ID of a batch experiment to associate the run with. This is used
+            when the run is part of a batch experiment.
+        external_result: Optional[Union[ExternalRunResult, dict[str, any]]]
+            External result to use for the run. This can be a
+            `cloud.ExternalRunResult` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration. This is used when the run is an external run. We
+            suggest that instead of specifying this parameter, you use the
+            `track_run` method of the class.
 
-        Returns:
-            ID of the submitted run.
+        Returns
+        ----------
+        str
+            ID (`run_id`) of the run that was submitted.
 
-        Raises:
+        Raises
+        ----------
             requests.HTTPError: If the response status code is not 2xx.
+            ValueError:
+                If the `input` is of type `nextmv.Input` and the
+                `.input_format` is not `JSON`.
+                If the final `options` are not of type `dict[str,str]`.
         """
 
-        input_size = 0
+        input_data = None
         if isinstance(input, BaseModel):
-            input = input.to_dict()
-            if input is not None:
-                input_size = get_size(input)
+            input_data = input.to_dict()
         elif isinstance(input, dict):
-            input_size = get_size(input)
+            input_data = input
+        elif isinstance(input, Input):
+            if input.input_format != InputFormat.JSON:
+                raise ValueError("the only supported input format is JSON")
+            input_data = input.data
+
+        input_size = 0
+        if input_data is not None:
+            input_size = get_size(input_data)
 
         upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
 
@@ -839,29 +882,47 @@ class Application:
             upload_id = upload_url.upload_id
             upload_id_used = True
 
+        options_dict = {}
+        if isinstance(input, Input) and input.options is not None:
+            options_dict = input.options.to_cloud_dict()
+
         if options is not None:
-            for key, value in options.items():
-                if not isinstance(value, str):
-                    options[key] = json.dumps(value)
+            if isinstance(options, Options):
+                options_dict = options.to_cloud_dict()
+            elif isinstance(options, dict):
+                for k, v in options.items():
+                    if isinstance(v, str):
+                        options_dict[k] = v
+                    else:
+                        options_dict[k] = json.dumps(v)
 
         payload = {}
         if upload_id_used:
             payload["upload_id"] = upload_id
         else:
-            payload["input"] = input
+            payload["input"] = input_data
 
         if name is not None:
             payload["name"] = name
         if description is not None:
             payload["description"] = description
-        if options is not None:
-            payload["options"] = options
+        if len(options_dict) > 0:
+            for k, v in options_dict.items():
+                if not isinstance(v, str):
+                    raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
+            payload["options"] = options_dict
         if configuration is not None:
-            payload["configuration"] = configuration.to_dict()
+            configuration_dict = (
+                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
+            )
+            payload["configuration"] = configuration_dict
         if batch_experiment_id is not None:
             payload["batch_experiment_id"] = batch_experiment_id
         if external_result is not None:
-            payload["result"] = external_result.to_dict()
+            external_dict = (
+                external_result.to_dict() if isinstance(external_result, ExternalRunResult) else external_result
+            )
+            payload["result"] = external_dict
 
         query_params = {
             "instance_id": instance_id if instance_id is not None else self.default_instance_id,
@@ -877,42 +938,83 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: Union[dict[str, Any], BaseModel] = None,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
         instance_id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
-        run_options: Optional[dict[str, str]] = None,
+        run_options: Optional[Union[Options, dict[str, str]]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[RunConfiguration] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, any]]] = None,
         batch_experiment_id: Optional[str] = None,
-        external_result: Optional[ExternalRunResult] = None,
+        external_result: Optional[Union[ExternalRunResult, dict[str, any]]] = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
-        result. This is a convenience method that combines the new_run and
-        run_result_with_polling methods, applying polling logic to check when
+        result. This is a convenience method that combines the `new_run` and
+        `run_result_with_polling` methods, applying polling logic to check when
         the run succeeded.
 
-         Args:
-            input: Input to use for the run.
-            instance_id: ID of the instance to use for the run. If not
-                provided, the default_instance_id will be used.
-            name: Name of the run.
-            description: Description of the run.
-            upload_id: ID to use when running a large input.
-            run_options: Options to use for the run.
-            polling_options: Options to use when polling for the run result.
-            configuration: Configuration to use for the run.
-            batch_experimemt_id: ID of a batch experiment to associate the run
-                with.
-            external_result: External result to use for the run, if this is an
-                external run
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            dict, BaseModel or string. If `nextmv.Input` is used, then the
+            input is extracted from the `.data` property. Note that for now,
+            the only supported `.input_format` for this method is `JSON`. If a
+            string is provided, the input wil be uploaded, associating it with
+            an `upload_id`. In case a dict is used, it will be used as is.
+        instance_id: Optional[str]
+            ID of the instance to use for the run. If not provided, the default
+            instance ID associated to the Class (`default_instance_id`) is
+            used.
+        name: Optional[str]
+            Name of the run.
+        description: Optional[str]
+            Description of the run.
+        upload_id: Optional[str]
+            ID to use when running a large input. If the `input` exceeds the
+            maximum allowed size, then it is uploaded and the corresponding
+            `upload_id` is used.
+        run_options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        polling_options: PollingOptions
+            Options to use when polling for the run result. This is a
+            convenience method that combines the `new_run` and
+            `run_result_with_polling` methods, applying polling logic to check
+            when the run succeeded.
+        configuration: Optional[Union[RunConfiguration, dict[str, any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        batch_experiment_id: Optional[str]
+            ID of a batch experiment to associate the run with. This is used
+            when the run is part of a batch experiment.
+        external_result: Optional[Union[ExternalRunResult, dict[str, any]]]
+            External result to use for the run. This can be a
+            `cloud.ExternalRunResult` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration. This is used when the run is an external run. We
+            suggest that instead of specifying this parameter, you use the
+            `track_run_with_result` method of the class.
 
-         Returns:
+        Returns
+        ----------
+        RunResult
             Result of the run.
 
-        Raises:
+        Raises
+        ----------
+            ValueError:
+                If the `input` is of type `nextmv.Input` and the
+                `.input_format` is not `JSON`.
+                If the final `options` are not of type `dict[str,str]`.
             requests.HTTPError: If the response status code is not 2xx.
             TimeoutError: If the run does not succeed after the polling
                 strategy is exhausted based on time duration.
