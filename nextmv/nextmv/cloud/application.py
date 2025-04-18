@@ -808,7 +808,7 @@ class Application:
             dict, BaseModel or string. If `nextmv.Input` is used, then the
             input is extracted from the `.data` property. Note that for now,
             the only supported `.input_format` for this method is `JSON`. If a
-            string is provided, the input wil be uploaded, associating it with
+            string is provided, the input will be uploaded, associating it with
             an `upload_id`. In case a dict is used, it will be used as is.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
@@ -962,7 +962,7 @@ class Application:
             dict, BaseModel or string. If `nextmv.Input` is used, then the
             input is extracted from the `.data` property. Note that for now,
             the only supported `.input_format` for this method is `JSON`. If a
-            string is provided, the input wil be uploaded, associating it with
+            string is provided, the input will be uploaded, associating it with
             an `upload_id`. In case a dict is used, it will be used as is.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
