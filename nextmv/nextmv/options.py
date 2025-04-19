@@ -3,6 +3,7 @@
 import argparse
 import builtins
 import copy
+import json
 import os
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -197,6 +198,32 @@ class Options:
         m = model.from_dict(data={"config": self_dict})
 
         return m.to_dict()["config"]
+
+    def to_cloud_dict(self) -> dict[str, str]:
+        """
+        Converts the options to a dict that can be used in the Nextmv Cloud.
+        Cloud has a hard requirement that options are passed as strings. This
+        method converts the options to a dict with string values. This is
+        useful for passing options to the Nextmv Cloud.
+        As a side effect, this method parses the options if they have not been
+        parsed yet. See the `parse` method for more information.
+
+        Returns
+        -------
+        dict[str, str]
+            The options as a dict with string values.
+        """
+
+        options_dict = self.to_dict()
+
+        cloud_dict = {}
+        for k, v in options_dict.items():
+            if isinstance(v, str):
+                cloud_dict[k] = v
+            else:
+                cloud_dict[k] = json.dumps(v)
+
+        return cloud_dict
 
     def parameters_dict(self) -> list[dict[str, Any]]:
         """
