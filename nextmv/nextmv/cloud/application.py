@@ -805,11 +805,11 @@ class Application:
         ----------
         input: Union[Input, dict[str, Any], BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            dict, BaseModel or string. If `nextmv.Input` is used, then the
+            `dict`, `BaseModel` or `str`. If `nextmv.Input` is used, then the
             input is extracted from the `.data` property. Note that for now,
-            the only supported `.input_format` for this method is `JSON`. If a
-            string is provided, the input will be uploaded, associating it with
-            an `upload_id`. In case a dict is used, it will be used as is.
+            `InputFormat.CSV_ARCHIVE` is not supported as an
+            `input.input_format`. If an input is too large, it will be uploaded
+            with the `upload_large_input` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -855,30 +855,30 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
             ValueError:
                 If the `input` is of type `nextmv.Input` and the
-                `.input_format` is not `JSON`.
-                If the final `options` are not of type `dict[str,str]`.
+                `.input_format` is not `JSON`. If the final `options` are not
+                of type `dict[str,str]`.
         """
 
         input_data = None
         if isinstance(input, BaseModel):
             input_data = input.to_dict()
-        elif isinstance(input, dict):
+        elif isinstance(input, dict) or isinstance(input, str):
             input_data = input
         elif isinstance(input, Input):
-            if input.input_format != InputFormat.JSON:
-                raise ValueError("the only supported input format is JSON")
+            if input.input_format == InputFormat.CSV_ARCHIVE:
+                raise ValueError("csv-archive is not supported")
             input_data = input.data
 
         input_size = 0
         if input_data is not None:
             input_size = get_size(input_data)
 
-        upload_url_required = isinstance(input, str) or input_size > _MAX_RUN_SIZE
-
+        upload_url_required = input_size > _MAX_RUN_SIZE
         upload_id_used = upload_id is not None
+
         if not upload_id_used and upload_url_required:
             upload_url = self.upload_url()
-            self.upload_large_input(input=input, upload_url=upload_url)
+            self.upload_large_input(input=input_data, upload_url=upload_url)
             upload_id = upload_url.upload_id
             upload_id_used = True
 
@@ -959,11 +959,11 @@ class Application:
         ----------
         input: Union[Input, dict[str, Any], BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            dict, BaseModel or string. If `nextmv.Input` is used, then the
+            `dict`, `BaseModel` or `str`. If `nextmv.Input` is used, then the
             input is extracted from the `.data` property. Note that for now,
-            the only supported `.input_format` for this method is `JSON`. If a
-            string is provided, the input will be uploaded, associating it with
-            an `upload_id`. In case a dict is used, it will be used as is.
+            `InputFormat.CSV_ARCHIVE` is not supported as an
+            `input.input_format`. If an input is too large, it will be uploaded
+            with the `upload_large_input` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is

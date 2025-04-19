@@ -19,8 +19,6 @@ class InputFormat(str, Enum):
     """JSON format, utf-8 encoded."""
     TEXT = "text"
     """Text format, utf-8 encoded."""
-    CSV = "csv"
-    """CSV format, utf-8 encoded."""
     CSV_ARCHIVE = "csv-archive"
     """CSV archive format: multiple CSV files."""
 
