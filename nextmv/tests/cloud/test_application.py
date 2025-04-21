@@ -35,7 +35,7 @@ class TestApplication(unittest.TestCase):
 
             return "result", True
 
-        # Ths stop callback makes sure that the polling stops sooner, after 3
+        # The stop callback makes sure that the polling stops sooner, after 3
         # calls.
         def stop() -> bool:
             if counter == 3:
