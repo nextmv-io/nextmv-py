@@ -4,6 +4,7 @@ import json
 import random
 import shutil
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional, Union
@@ -40,7 +41,8 @@ class DownloadURL(BaseModel):
     """URL to use for downloading the file."""
 
 
-class PollingOptions(BaseModel):
+@dataclass
+class PollingOptions:
     """
     Options to use when polling for a run result.
 
@@ -91,6 +93,13 @@ class PollingOptions(BaseModel):
     """
     verbose: bool = False
     """Whether to log the polling strategy. This is useful for debugging."""
+    stop: Optional[Callable[[], bool]] = None
+    """
+    Function to call to check if the polling should stop. This is useful for
+    stopping the polling based on external conditions. The function should
+    return True to stop the polling and False to continue. The function does
+    not receive any arguments. The function is called before each poll.
+    """
 
 
 _DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
@@ -1758,7 +1767,7 @@ class Application:
             )
 
 
-def poll(polling_options: PollingOptions, polling_func: callable) -> any:
+def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, bool]]) -> any:
     """
     Auxiliary function for polling.
 
@@ -1791,9 +1800,16 @@ def poll(polling_options: PollingOptions, polling_func: callable) -> any:
     time.sleep(polling_options.initial_delay)
 
     start_time = time.time()
+    stopped = False
 
     # Begin the polling process.
     for ix in range(polling_options.max_tries):
+        # Check is we should stop polling according to the stop callback.
+        if polling_options.stop is not None and polling_options.stop():
+            stopped = True
+
+            break
+
         # We check if we can stop polling.
         result, ok = polling_func()
         if polling_options.verbose:
@@ -1823,6 +1839,11 @@ def poll(polling_options: PollingOptions, polling_func: callable) -> any:
             log(f"polling | sleeping for duration: {sleep_duration}")
 
         time.sleep(sleep_duration)
+
+    if stopped:
+        log("polling | stop condition met, stopping polling")
+
+        return None
 
     raise RuntimeError(
         f"polling did not succeed after {polling_options.max_tries} tries",
