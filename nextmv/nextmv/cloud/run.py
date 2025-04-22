@@ -128,6 +128,30 @@ class RunTypeConfiguration(BaseModel):
     """ID of the reference for the run type."""
 
 
+class RunQueueing(BaseModel):
+    """Queueing configuration for a run."""
+
+    priority: Optional[int] = None
+    """
+    Priority of the run in the queue. 1 is the highest priority, 10 is the
+    lowest priority.
+    """
+    disabled: Optional[bool] = None
+    """
+    Whether the run should be queued, or not. If True, the run will not be
+    queued. If False, the run will be queued.
+    """
+
+    def __post_init_post_parse__(self):
+        """Validations done after parsing the model."""
+
+        if self.priority is not None and (self.priority < 1 or self.priority > 10):
+            raise ValueError("Priority must be between 1 and 10.")
+
+        if self.disabled is not None and self.disabled not in {True, False}:
+            raise ValueError("Disabled must be a boolean value.")
+
+
 class RunConfiguration(BaseModel):
     """Configuration for an app run."""
 
@@ -139,6 +163,8 @@ class RunConfiguration(BaseModel):
     """Run type configuration for the run."""
     secrets_collection_id: Optional[str] = None
     """ID of the secrets collection to use for the run."""
+    queuing: Optional[RunQueueing] = None
+    """Queueing configuration for the run."""
 
 
 class ExternalRunResult(BaseModel):
