@@ -45,6 +45,7 @@ from .run import Metadata as Metadata
 from .run import RunConfiguration as RunConfiguration
 from .run import RunInformation as RunInformation
 from .run import RunLog as RunLog
+from .run import RunQueueing as RunQueueing
 from .run import RunResult as RunResult
 from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
