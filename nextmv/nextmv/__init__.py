@@ -6,6 +6,7 @@ from .input import Input as Input
 from .input import InputFormat as InputFormat
 from .input import InputLoader as InputLoader
 from .input import LocalInputLoader as LocalInputLoader
+from .input import load as load
 from .input import load_local as load_local
 from .logger import log as log
 from .logger import redirect_stdout as redirect_stdout
@@ -28,6 +29,7 @@ from .output import SeriesData as SeriesData
 from .output import Statistics as Statistics
 from .output import Visual as Visual
 from .output import VisualSchema as VisualSchema
+from .output import write as write
 from .output import write_local as write_local
 
 VERSION = __version__
