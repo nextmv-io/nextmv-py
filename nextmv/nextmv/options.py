@@ -6,14 +6,19 @@ import copy
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from nextmv.base_model import BaseModel
+from nextmv.deprecated import deprecated
 
 
 @dataclass
 class Parameter:
     """
+    DEPRECATION WARNING
+    ----------
+    `Parameter` is deprecated, use `Option` instead.
+
     Parameter that is used in a `Configuration`. When a parameter is required,
     it is a good practice to provide a default value for it. This is because
     the configuration will raise an error if a required parameter is not
@@ -58,9 +63,20 @@ class Parameter:
     choices: list[Optional[Any]] = None
     """Limits values to a specific set of choices."""
 
+    def __post_init__(self):
+        deprecated(
+            name="Parameter",
+            reason="`Parameter` is deprecated, use `Option` instead.",
+        )
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Parameter":
         """
+        DEPRECATION WARNING
+        ----------
+        `Parameter` is deprecated, use `Option` instead. Parameter.from_dict ->
+        Option.from_dict
+
         Creates an instance of `Parameter` from a dictionary.
 
         Parameters
@@ -73,6 +89,11 @@ class Parameter:
         Parameter
             An instance of `Parameter`.
         """
+
+        deprecated(
+            name="Parameter.from_dict",
+            reason="`Parameter` is deprecated, use `Option` instead. Parameter.from_dict -> Option.from_dict",
+        )
 
         param_type_string = data["param_type"]
         param_type = getattr(builtins, param_type_string.split("'")[1])
@@ -88,6 +109,11 @@ class Parameter:
 
     def to_dict(self) -> dict[str, Any]:
         """
+        DEPRECATION WARNING
+        ----------
+        `Parameter` is deprecated, use `Option` instead. Parameter.to_dict ->
+        Option.to_dict
+
         Converts the parameter to a dict.
 
         Returns
@@ -95,6 +121,11 @@ class Parameter:
         dict[str, Any]
             The parameter as a dict.
         """
+
+        deprecated(
+            name="Parameter.to_dict",
+            reason="`Parameter` is deprecated, use `Option` instead. Parameter.to_dict -> Option.to_dict",
+        )
 
         return {
             "name": self.name,
@@ -106,19 +137,120 @@ class Parameter:
         }
 
 
+@dataclass
+class Option:
+    """
+    `Option` that is used in `Options`. When an `Option` is required,
+    it is a good practice to provide a default value for it. This is because
+    the `Options` will raise an error if a required `Option` is not
+    provided through a command-line argument, an environment variable or a
+    default value.
+
+    Attributes
+    ----------
+    name : str
+        The name of the option.
+    option_type : type
+        The type of the option.
+    default : Any, optional
+        The default value of the option. Even though this is optional, it is
+        recommended to provide a default value for all options.
+    description : str, optional
+        An optional description of the option. This is useful for generating
+        help messages for the `Options`.
+    required : bool, optional
+        Whether the option is required. If an option is required, it will
+        be an error to not provide a value for it, either trough a command-line
+        argument, an environment variable or a default value.
+    choices : list[Optional[Any]], optional
+        Limits values to a specific set of choices.
+    """
+
+    name: str
+    """The name of the option."""
+    option_type: type
+    """The type of the option."""
+
+    default: Optional[Any] = None
+    """
+    The default value of the option. Even though this is optional, it is
+    recommended to provide a default value for all options.
+    """
+    description: Optional[str] = None
+    """
+    An optional description of the option. This is useful for generating help
+    messages for the `Options`.
+    """
+    required: bool = False
+    """
+    Whether the option is required. If a option is required, it will be an
+    error to not provide a value for it, either trough a command-line argument,
+    an environment variable or a default value.
+    """
+    choices: list[Optional[Any]] = None
+    """Limits values to a specific set of choices."""
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Option":
+        """
+        Creates an instance of `Option` from a dictionary.
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            The dictionary representation of an option.
+
+        Returns
+        -------
+        Option
+            An instance of `Option`.
+        """
+
+        option_type_string = data["option_type"]
+        option_type = getattr(builtins, option_type_string.split("'")[1])
+
+        return Option(
+            name=data["name"],
+            option_type=option_type,
+            default=data.get("default"),
+            description=data.get("description"),
+            required=data.get("required", False),
+            choices=data.get("choices"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Converts the option to a dict.
+
+        Returns
+        -------
+        dict[str, Any]
+            The option as a dict.
+        """
+
+        return {
+            "name": self.name,
+            "option_type": str(self.option_type),
+            "default": self.default,
+            "description": self.description,
+            "required": self.required,
+            "choices": self.choices,
+        }
+
+
 class Options:
     """
-    Options for a run. To initialize options, pass in one or more `Parameter`
+    Options for a run. To initialize options, pass in one or more `Option`
     objects. The options will look for the values of the given parameters in
     the following order: command-line arguments, environment variables, default
     values.
 
-    Once the options are initialized, you can access the parameters as
-    attributes of the `Options` object. For example, if you have a
-    `Parameter` object with the name "duration", you can access it as
+    Once the `Options` are initialized, you can access the underlying options as
+    attributes of the `Options` object. For example, if you have an
+    `Option` object with the name "duration", you can access it as
     `options.duration`.
 
-    If a parameter is required and not provided through a command-line
+    If an option is required and not provided through a command-line
     argument, an environment variable or a default value, an error will be
     raised.
 
@@ -132,19 +264,19 @@ class Options:
     be merged with other options. After options are parsed, you may get the
     help message by running the script with the `-h/--help` flag.
 
-    Parameters
+    Attributes
     ----------
-    *parameters : Parameter
-        The parameters that are used in the options. At least one
-        parameter is required.
+    *options : Option
+        The list of `Option` objects that are used in the options. At least one
+        option is required.
 
     Examples
     --------
     >>> import nextmv
     >>>
     >>> options = nextmv.Options(
-    ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
-    ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
+    ...     nextmv.Option("duration", str, "30s", description="solver duration", required=False),
+    ...     nextmv.Option("threads", int, 4, description="computer threads", required=False),
     ... )
     >>>
     >>> print(options.duration, options.threads, options.to_dict())
@@ -154,10 +286,11 @@ class Options:
     Raises
     ------
     ValueError
-        If a required parameter is not provided through a command-line
+        If a required option is not provided through a command-line
         argument, an environment variable or a default value.
     TypeError
-        If a parameter is not a `Parameter` object.
+        If an option is not either an `Option` or `Parameter` (deprecated)
+        object.
     ValueError
         If an environment variable is not of the type of the corresponding
         parameter.
@@ -165,10 +298,14 @@ class Options:
 
     PARSED = False
 
-    def __init__(self, *parameters: Parameter):
+    def __init__(self, *options: Option):
         """Initializes the options."""
 
-        self.parameters = copy.deepcopy(parameters)
+        # Deprecated, but kept for backwards compatibility. Remove as soon as
+        # `Parameter` is removed.
+        self.parameters = copy.deepcopy(options)
+
+        self.options = copy.deepcopy(options)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -190,7 +327,7 @@ class Options:
 
         self_dict = copy.deepcopy(self.__dict__)
 
-        rm_keys = ["parameters", "PARSED"]
+        rm_keys = ["parameters", "PARSED", "options"]
         for key in rm_keys:
             if key in self_dict:
                 self_dict.pop(key)
@@ -227,6 +364,11 @@ class Options:
 
     def parameters_dict(self) -> list[dict[str, Any]]:
         """
+        DEPRECATION WARNING
+        ----------
+        `Parameter` is deprecated, use `Option` instead. Options.parameters_dict
+        -> Options.options_dict
+
         Converts the options to a list of dicts. Each dict is the dict
         representation of a `Parameter`.
 
@@ -236,7 +378,25 @@ class Options:
             The list of dictionaries (parameter entries).
         """
 
+        deprecated(
+            name="Options.parameters_dict",
+            reason="`Parameter` is deprecated, use `Option` instead. Options.parameters_dict -> Options.options_dict",
+        )
+
         return [param.to_dict() for param in self.parameters]
+
+    def options_dict(self) -> list[dict[str, Any]]:
+        """
+        Converts the `Options` to a list of dicts. Each dict is the dict
+        representation of an `Option`.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            The list of dictionaries (`Option` entries).
+        """
+
+        return [opt.to_dict() for opt in self.options]
 
     def parse(self):
         """
@@ -257,8 +417,8 @@ class Options:
         >>> import nextmv
         >>>
         >>> options = nextmv.Options(
-        ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
-        ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
+        ...     nextmv.Option("duration", str, "30s", description="solver duration", required=False),
+        ...     nextmv.Option("threads", int, 4, description="computer threads", required=False),
         ... )
         >>> options.parse() # Does not raise an exception.
 
@@ -267,8 +427,8 @@ class Options:
         >>> import nextmv
         >>>
         >>> options = nextmv.Options(
-        ...     nextmv.Parameter("duration", str, "30s", description="solver duration", required=False),
-        ...     nextmv.Parameter("threads", int, 4, description="computer threads", required=False),
+        ...     nextmv.Option("duration", str, "30s", description="solver duration", required=False),
+        ...     nextmv.Option("threads", int, 4, description="computer threads", required=False),
         ... )
         >>> print(options.duration) # Parses the options.
         >>> options.parse() # Raises an exception because the options have already been parsed.
@@ -278,10 +438,10 @@ class Options:
         RuntimeError
             If the options have already been parsed.
         ValueError
-            If a required parameter is not provided through a command-line
+            If a required option is not provided through a command-line
             argument, an environment variable or a default value.
         TypeError
-            If a parameter is not a `Parameter` object.
+            If an option is not an `Option` or `Parameter` (deprecated) object.
         ValueError
             If an environment variable is not of the type of the corresponding
             parameter.
@@ -328,7 +488,11 @@ class Options:
                 "new options have already been parsed, cannot merge. See `Options.parse()` for more information."
             )
 
+        # Deprecated, but kept for backwards compatibility. Remove as soon as
+        # `Parameter` is removed.
         self.parameters += new.parameters
+
+        self.options += new.options
 
         self._parse()
 
@@ -356,16 +520,21 @@ class Options:
             An instance of `Options`.
         """
 
-        parameters = []
+        options = []
         for key, value in data.items():
-            parameter = Parameter(name=key, param_type=type(value), default=value)
-            parameters.append(parameter)
+            opt = Option(name=key, option_type=type(value), default=value)
+            options.append(opt)
 
-        return cls(*parameters)
+        return cls(*options)
 
     @classmethod
     def from_parameters_dict(cls, parameters_dict: list[dict[str, Any]]) -> "Options":
         """
+        DEPRECATION WARNING
+        ----------
+        `Parameter` is deprecated, use `Option` instead. Options.from_parameters_dict
+        -> Options.from_options_dict
+
         Creates an instance of `Options` from parameters in dict form. Each
         entry is the dict representation of a `Parameter`.
 
@@ -380,12 +549,42 @@ class Options:
             An instance of `Options`.
         """
 
+        deprecated(
+            name="Options.from_parameters_dict",
+            reason="`Parameter` is deprecated, use `Option` instead. "
+            "Options.from_parameters_dict -> Options.from_options_dict",
+        )
+
         parameters = []
         for parameter_dict in parameters_dict:
             parameter = Parameter.from_dict(parameter_dict)
             parameters.append(parameter)
 
         return cls(*parameters)
+
+    @classmethod
+    def from_options_dict(cls, options_dict: list[dict[str, Any]]) -> "Options":
+        """
+        Creates an instance of `Options` from a list of `Option` objects in
+        dict form. Each entry is the dict representation of an `Option`.
+
+        Parameters
+        ----------
+        data : list[dict[str, Any]]
+            The list of dictionaries (`Option` entries).
+
+        Returns
+        -------
+        Options
+            An instance of `Options`.
+        """
+
+        options = []
+        for opt_dict in options_dict:
+            opt = Option.from_dict(opt_dict)
+            options.append(opt)
+
+        return cls(*options)
 
     def __getattr__(self, name: str) -> Any:
         """
@@ -406,10 +605,10 @@ class Options:
         Raises
         ------
         ValueError
-            If a required parameter is not provided through a command-line
+            If a required option is not provided through a command-line
             argument, an environment variable or a default value.
         TypeError
-            If a parameter is not a `Parameter` object.
+            If an option is not an `Option` or `Parameter` (deprecated) object.
         ValueError
             If an environment variable is not of the type of the corresponding
             parameter.
@@ -417,7 +616,7 @@ class Options:
 
         self.PARSED = True
 
-        if not self.parameters:
+        if not self.options:
             return
 
         parser = argparse.ArgumentParser(
@@ -427,41 +626,43 @@ class Options:
             + "or environment variables.",
             allow_abbrev=False,
         )
-        params_by_field_name: dict[str, Parameter] = {}
+        options_by_field_name: dict[str, Option] = {}
 
-        for p, param in enumerate(self.parameters):
-            if not isinstance(param, Parameter):
-                raise TypeError(f"expected a <Parameter> object, but got {type(param)} in index {p}")
+        for ix, option in enumerate(self.options):
+            if not isinstance(option, Option) and not isinstance(option, Parameter):
+                raise TypeError(
+                    f"expected an <Option> (or deprecated <Parameter>) object, but got {type(option)} in index {ix}"
+                )
 
             # See comment below about ipykernel adding a `-f` argument. We
             # restrict parameters from having the name 'f' or 'fff' for that
             # reason.
-            if param.name == "f" or param.name == "fff":
-                raise ValueError("parameter names 'f', 'fff' are reserved for internal use")
+            if option.name == "f" or option.name == "fff":
+                raise ValueError("option names 'f', 'fff' are reserved for internal use")
 
-            if param.name == "PARSED":
-                raise ValueError("parameter name 'PARSED' is reserved for internal use")
+            if option.name == "PARSED":
+                raise ValueError("option name 'PARSED' is reserved for internal use")
 
             # Remove any leading '-'. This is in line with argparse's behavior.
-            param.name = param.name.lstrip("-")
+            option.name = option.name.lstrip("-")
 
             kwargs = {
-                "type": param.param_type if param.param_type is not bool else str,
-                "help": self._description(param),
+                "type": self._option_type(option) if self._option_type(option) is not bool else str,
+                "help": self._description(option),
             }
 
-            if param.choices is not None:
-                kwargs["choices"] = param.choices
+            if option.choices is not None:
+                kwargs["choices"] = option.choices
 
             parser.add_argument(
-                f"-{param.name}",
-                f"--{param.name}",
+                f"-{option.name}",
+                f"--{option.name}",
                 **kwargs,
             )
 
             # Store the parameter by its field name for easy access later. argparse
             # replaces '-' with '_', so we do the same here.
-            params_by_field_name[param.name.replace("-", "_")] = param
+            options_by_field_name[option.name.replace("-", "_")] = option
 
         # The ipkyernel uses a `-f` argument by default that it passes to the
         # execution. We don’t want to ignore this argument because we get an
@@ -479,13 +680,13 @@ class Options:
             if arg == "fff" or arg == "f":
                 continue
 
-            param = params_by_field_name[arg]
+            option = options_by_field_name[arg]
 
             # First, attempt to set the value of a parameter from the
             # command-line args.
             arg_value = getattr(args, arg)
             if arg_value is not None:
-                value = self._parameter_value(param, arg_value)
+                value = self._option_value(option, arg_value)
                 setattr(self, arg, value)
                 continue
 
@@ -495,18 +696,22 @@ class Options:
             env_value = os.getenv(upper_name)
             if env_value is not None:
                 try:
-                    typed_env_value = param.param_type(env_value) if param.param_type is not bool else env_value
+                    typed_env_value = (
+                        self._option_type(option)(env_value) if self._option_type(option) is not bool else env_value
+                    )
                 except ValueError:
-                    raise ValueError(f'environment variable "{upper_name}" is not of type {param.param_type}') from None
+                    raise ValueError(
+                        f'environment variable "{upper_name}" is not of type {self._option_type(option)}'
+                    ) from None
 
-                value = self._parameter_value(param, typed_env_value)
+                value = self._option_value(option, typed_env_value)
                 setattr(self, arg, value)
                 continue
 
             # Finally, attempt to set a default value. This is only allowed
             # for non-required parameters.
-            if not param.required:
-                setattr(self, arg, param.default)
+            if not option.required:
+                setattr(self, arg, option.default)
                 continue
 
             # At this point, the parameter is required and no value was
@@ -515,31 +720,29 @@ class Options:
                 f'parameter "{arg}" is required but not provided through: command-line args, env vars, or default value'
             )
 
-    @staticmethod
-    def _description(param: Parameter) -> str:
+    def _description(self, option: Option) -> str:
         """Returns a description for a parameter."""
 
-        description = f"[env var: {param.name.upper()}]"
+        description = f"[env var: {option.name.upper()}]"
 
-        if param.required:
+        if option.required:
             description += " (required)"
 
-        if param.default is not None:
-            description += f" (default: {param.default})"
+        if option.default is not None:
+            description += f" (default: {option.default})"
 
-        description += f" (type: {param.param_type.__name__})"
+        description += f" (type: {self._option_type(option).__name__})"
 
-        if param.description is not None:
-            description += f": {param.description}"
+        if option.description is not None:
+            description += f": {option.description}"
 
         return description
 
-    @staticmethod
-    def _parameter_value(parameter: Parameter, value: Any) -> Any:
-        """Handles how the value of a parameter is extracted."""
+    def _option_value(self, option: Option, value: Any) -> Any:
+        """Handles how the value of an option is extracted."""
 
-        param_type = parameter.param_type
-        if param_type is not bool:
+        opt_type = self._option_type(option)
+        if opt_type is not bool:
             return value
 
         value = str(value).lower()
@@ -548,3 +751,19 @@ class Options:
             return True
 
         return False
+
+    @staticmethod
+    def _option_type(option: Union[Option, Parameter]) -> type:
+        """Auxiliary function for handling the type of an option. This function
+        was introduced for backwards compatibility with the deprecated
+        `Parameter` class. Once `Parameter` is removed, this function can be removed
+        as well. When the function is removed, use the `option.option_type`
+        attribute directly, instead of calling this function.
+        """
+
+        if isinstance(option, Option):
+            return option.option_type
+        elif isinstance(option, Parameter):
+            return option.param_type
+        else:
+            raise TypeError(f"expected an <Option> (or deprecated <Parameter>) object, but got {type(option)}")
