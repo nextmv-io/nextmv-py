@@ -715,7 +715,11 @@ class Options:
     def _description(self, option: Option) -> str:
         """Returns a description for an option."""
 
-        description = f"[env var: {option.name.upper()}]"
+        description = ""
+        if isinstance(option, Parameter):
+            description = "DEPRECATED (initialized with <Parameter>, use <Option> instead) "
+
+        description += f"[env var: {option.name.upper()}]"
 
         if option.required:
             description += " (required)"

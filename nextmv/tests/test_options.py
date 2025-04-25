@@ -24,7 +24,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5, 6, 7]
+    test_scripts = [1, 2, 3, 4, 5, 6, 7, "_deprecated"]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -404,6 +404,18 @@ class TestOptions(unittest.TestCase):
         )
         self.assertEqual(result2.returncode, 0, result2.stderr)
         self.assertEqual(result2.stdout, "{'choice_opt': 'choice1'}\n")
+
+    def test_deprecated_parameter(self):
+        """Test that nextmv.Parameter can co-exist with nextmv.Option."""
+        file = self._file_name("options_deprecated.py", "..")
+        result = subprocess.run(
+            ["python3", file, "--duration", "30s", "--threads", "4"],
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "{'duration': '30s', 'threads': 4}\n")
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
