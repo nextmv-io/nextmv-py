@@ -22,9 +22,9 @@ def main() -> None:
 
     # Load the options from the manifest.
     options = None
-    parameters_dict = manifest.python.model.options
-    if parameters_dict is not None:
-        options = Options.from_parameters_dict(parameters_dict)
+    options_dict = manifest.python.model.options
+    if options_dict is not None:
+        options = Options.from_options_dict(options_dict)
 
     # Load the model.
     loaded_model = load_model(

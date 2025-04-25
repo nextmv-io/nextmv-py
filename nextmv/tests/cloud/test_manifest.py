@@ -2,14 +2,14 @@ import unittest
 
 from nextmv.cloud.manifest import Manifest, ManifestPython, ManifestRuntime, ManifestType
 from nextmv.model import ModelConfiguration
-from nextmv.options import Options, Parameter
+from nextmv.options import Option, Options
 
 
 class TestManifest(unittest.TestCase):
     def test_from_model_configuration(self):
         options = Options(
-            Parameter("param1", str, ""),
-            Parameter("param2", str, ""),
+            Option("param1", str, ""),
+            Option("param2", str, ""),
         )
         model_configuration = ModelConfiguration(
             name="super_cool_model",

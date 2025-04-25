@@ -1,9 +1,9 @@
 import nextmv
 
 options = nextmv.Options(
-    nextmv.Parameter("-dash-opt", str, default="dash"),
-    nextmv.Parameter("underscore_opt", str, default="underscore"),
-    nextmv.Parameter("camelCaseOpt", str, default="camel"),
+    nextmv.Option("-dash-opt", str, default="dash"),
+    nextmv.Option("underscore_opt", str, default="underscore"),
+    nextmv.Option("camelCaseOpt", str, default="camel"),
 )
 
 print(options.to_dict())

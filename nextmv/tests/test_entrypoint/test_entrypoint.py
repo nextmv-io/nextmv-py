@@ -53,7 +53,7 @@ class TestEntrypoint(unittest.TestCase):
         """
 
         model = SimpleDecisionModel()
-        options = nextmv.Options(nextmv.Parameter("param1", str, ""))
+        options = nextmv.Options(nextmv.Option("param1", str, ""))
 
         model_configuration = nextmv.ModelConfiguration(
             name=self.MODEL_NAME,

@@ -89,7 +89,7 @@ class ManifestPythonModel(BaseModel):
     """
     Options for the decision model. This is a data representation of the
     `nextmv.Options` class. It consists of a list of dicts. Each dict
-    represents the `nextmv.Parameter` class. It is used to be able to
+    represents the `nextmv.Option` class. It is used to be able to
     reconstruct an Options object from data when loading a decision model.
     """
 

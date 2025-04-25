@@ -10,7 +10,7 @@ class ChoiceEnum(Enum):
 
 
 options = nextmv.Options(
-    nextmv.Parameter("choice_opt", ChoiceEnum, default=ChoiceEnum.choice1),
+    nextmv.Option("choice_opt", ChoiceEnum, default=ChoiceEnum.choice1),
 )
 
 print(options.to_dict())

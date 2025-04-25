@@ -1201,12 +1201,12 @@ class Application:
 
 
         # Define the options that the model needs.
-        parameters = []
+        opt = []
         default_options = nextroute.Options()
         for name, default_value in default_options.to_dict().items():
-            parameters.append(nextmv.Parameter(name.lower(), type(default_value), default_value, name, False))
+            opt.append(nextmv.Option(name.lower(), type(default_value), default_value, name, False))
 
-        options = nextmv.Options(*parameters)
+        options = nextmv.Options(*opt)
 
         # Instantiate the model and model configuration.
         model = DecisionModel()
