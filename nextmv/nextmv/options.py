@@ -301,10 +301,6 @@ class Options:
     def __init__(self, *options: Option):
         """Initializes the options."""
 
-        # Deprecated, but kept for backwards compatibility. Remove as soon as
-        # `Parameter` is removed.
-        self.parameters = copy.deepcopy(options)
-
         self.options = copy.deepcopy(options)
 
     def to_dict(self) -> dict[str, Any]:
@@ -327,7 +323,7 @@ class Options:
 
         self_dict = copy.deepcopy(self.__dict__)
 
-        rm_keys = ["parameters", "PARSED", "options"]
+        rm_keys = ["PARSED", "options"]
         for key in rm_keys:
             if key in self_dict:
                 self_dict.pop(key)
@@ -383,7 +379,7 @@ class Options:
             reason="`Parameter` is deprecated, use `Option` instead. Options.parameters_dict -> Options.options_dict",
         )
 
-        return [param.to_dict() for param in self.parameters]
+        return [param.to_dict() for param in self.options]
 
     def options_dict(self) -> list[dict[str, Any]]:
         """
@@ -487,10 +483,6 @@ class Options:
             raise RuntimeError(
                 "new options have already been parsed, cannot merge. See `Options.parse()` for more information."
             )
-
-        # Deprecated, but kept for backwards compatibility. Remove as soon as
-        # `Parameter` is removed.
-        self.parameters += new.parameters
 
         self.options += new.options
 
@@ -635,7 +627,7 @@ class Options:
                 )
 
             # See comment below about ipykernel adding a `-f` argument. We
-            # restrict parameters from having the name 'f' or 'fff' for that
+            # restrict options from having the name 'f' or 'fff' for that
             # reason.
             if option.name == "f" or option.name == "fff":
                 raise ValueError("option names 'f', 'fff' are reserved for internal use")
@@ -660,7 +652,7 @@ class Options:
                 **kwargs,
             )
 
-            # Store the parameter by its field name for easy access later. argparse
+            # Store the option by its field name for easy access later. argparse
             # replaces '-' with '_', so we do the same here.
             options_by_field_name[option.name.replace("-", "_")] = option
 
@@ -682,7 +674,7 @@ class Options:
 
             option = options_by_field_name[arg]
 
-            # First, attempt to set the value of a parameter from the
+            # First, attempt to set the value of an option from the
             # command-line args.
             arg_value = getattr(args, arg)
             if arg_value is not None:
@@ -690,7 +682,7 @@ class Options:
                 setattr(self, arg, value)
                 continue
 
-            # Second, attempt to set the value of a parameter from the
+            # Second, attempt to set the value of am option from the
             # environment variables.
             upper_name = arg.upper()
             env_value = os.getenv(upper_name)
@@ -709,19 +701,19 @@ class Options:
                 continue
 
             # Finally, attempt to set a default value. This is only allowed
-            # for non-required parameters.
+            # for non-required options.
             if not option.required:
                 setattr(self, arg, option.default)
                 continue
 
-            # At this point, the parameter is required and no value was
+            # At this point, the option is required and no value was
             # provided
             raise ValueError(
-                f'parameter "{arg}" is required but not provided through: command-line args, env vars, or default value'
+                f'option "{arg}" is required but not provided through: command-line args, env vars, or default value'
             )
 
     def _description(self, option: Option) -> str:
-        """Returns a description for a parameter."""
+        """Returns a description for an option."""
 
         description = f"[env var: {option.name.upper()}]"
 

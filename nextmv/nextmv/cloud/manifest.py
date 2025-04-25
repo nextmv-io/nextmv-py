@@ -222,7 +222,7 @@ class Manifest(BaseModel):
         }
 
         if model_configuration.options is not None:
-            manifest_python_dict["model"]["options"] = model_configuration.options.parameters_dict()
+            manifest_python_dict["model"]["options"] = model_configuration.options.options_dict()
 
         manifest_python = ManifestPython.from_dict(manifest_python_dict)
 

@@ -33,7 +33,7 @@ class TestManifest(unittest.TestCase):
                 "pip-requirements": "model_requirements.txt",
                 "model": {
                     "name": model_configuration.name,
-                    "options": model_configuration.options.parameters_dict(),
+                    "options": model_configuration.options.options_dict(),
                 },
             }
         )

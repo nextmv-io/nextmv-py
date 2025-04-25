@@ -113,16 +113,16 @@ class TestOptions(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 1)
-        self.assertIn('parameter "duration" is required', result.stderr)
+        self.assertIn('option "duration" is required', result.stderr)
 
-    def test_no_parameters(self):
+    def test_no_options(self):
         # The test passes if no exception is raised.
         opt = nextmv.Options()
         self.assertTrue(opt)
 
-    def test_bad_parameter_type(self):
+    def test_bad_option_type(self):
         with self.assertRaises(TypeError):
-            opt = nextmv.Options("I am not a valid parameter")
+            opt = nextmv.Options("I am not a valid option")
             opt.parse()
 
     def test_bad_type_command_line_arg(self):
