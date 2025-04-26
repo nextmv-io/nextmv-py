@@ -52,6 +52,7 @@ class RunInformation(BaseModel):
     """Name of the run."""
     user_email: str
     """Email of the user who submitted the run."""
+    console_url: str = Field(default="")
 
 
 class ErrorLog(BaseModel):
