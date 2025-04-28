@@ -1434,7 +1434,7 @@ class Application:
 
         upload_input = tracked_run.input
         if isinstance(tracked_run.input, Input):
-            upload_input = tracked_run.input.to_dict()
+            upload_input = tracked_run.input.data
 
         self.upload_large_input(input=upload_input, upload_url=url_input)
 

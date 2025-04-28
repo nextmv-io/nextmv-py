@@ -163,9 +163,9 @@ class Statistics(BaseModel):
 class OutputFormat(str, Enum):
     """Format of an `Input`."""
 
-    JSON = "JSON"
+    JSON = "json"
     """JSON format, utf-8 encoded."""
-    CSV_ARCHIVE = "CSV_ARCHIVE"
+    CSV_ARCHIVE = "csv-archive"
     """CSV archive format: multiple CSV files."""
 
 
@@ -334,11 +334,10 @@ class Output:
         """
 
         output_dict = {
-            "options": self.options.to_dict() if self.options is not None else None,
-            "output_format": self.output_format,
-            "solution": self.solution,
-            "statistics": self.statistics.to_dict() if self.statistics is not None else None,
-            "assets": [asset.to_dict() for asset in self.assets] if self.assets is not None else None,
+            "options": self.options.to_dict() if self.options is not None else {},
+            "solution": self.solution if self.solution is not None else {},
+            "statistics": self.statistics.to_dict() if self.statistics is not None else {},
+            "assets": [asset.to_dict() for asset in self.assets] if self.assets is not None else [],
         }
 
         if self.output_format == OutputFormat.CSV_ARCHIVE:
