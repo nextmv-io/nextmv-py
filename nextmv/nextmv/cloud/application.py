@@ -1326,7 +1326,10 @@ class Application:
             endpoint=f"{self.endpoint}/runs/{run_id}/metadata",
         )
 
-        return RunInformation.from_dict(response.json())
+        info = RunInformation.from_dict(response.json())
+        info.console_url = self.__console_url(info.id)
+
+        return info
 
     def run_logs(self, run_id: str) -> RunLog:
         """
@@ -1702,6 +1705,8 @@ class Application:
             query_params=query_params,
         )
         result = RunResult.from_dict(response.json())
+        result.console_url = self.__console_url(result.id)
+
         if not large_output:
             return result
 
@@ -1765,6 +1770,11 @@ class Application:
                     indent=2,
                 )
             )
+
+    def __console_url(self, run_id: str) -> str:
+        """Auxiliary method to get the console URL for a run."""
+
+        return f"{self.client.console_url}/app/{self.id}/run/{run_id}?view=details"
 
 
 def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, bool]]) -> any:

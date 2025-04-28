@@ -55,6 +55,8 @@ class Client:
     """Timeout to use for requests to the Nextmv Cloud API."""
     url: str = "https://api.cloud.nextmv.io"
     """URL of the Nextmv Cloud API."""
+    console_url: str = "https://cloud.nextmv.io"
+    """URL of the Nextmv Cloud console."""
 
     def __post_init__(self):
         """Logic to run after the class is initialized."""
