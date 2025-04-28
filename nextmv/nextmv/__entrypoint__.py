@@ -20,9 +20,8 @@ def main() -> None:
 
     # Load the options from the manifest.
     options = None
-    options_dict = manifest.python.model.options
-    if options_dict is not None:
-        options = nextmv.Options.from_options_dict(options_dict)
+    if manifest.options is not None:
+        options = manifest.extract_options()
 
     # Load the model.
     loaded_model = load_model(

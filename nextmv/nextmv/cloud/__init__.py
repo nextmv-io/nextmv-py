@@ -33,6 +33,7 @@ from .instance import Instance as Instance
 from .instance import InstanceConfiguration as InstanceConfiguration
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
+from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestPython as ManifestPython
 from .manifest import ManifestPythonModel as ManifestPythonModel
 from .manifest import ManifestRuntime as ManifestRuntime

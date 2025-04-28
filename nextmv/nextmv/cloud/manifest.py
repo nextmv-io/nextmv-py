@@ -9,6 +9,7 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
+from nextmv.options import Option, Options
 
 FILE_NAME = "app.yaml"
 """Name of the app manifest file."""
@@ -113,6 +114,94 @@ class ManifestPython(BaseModel):
     """
 
 
+class ManifestOption(BaseModel):
+    """An option for the decision model that is recorded in the manifest."""
+
+    name: str
+    """The name of the option"""
+    option_type: str = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "option_type"),
+    )
+    """The type of the option"""
+
+    default: Optional[Any] = None
+    """The default value of the option"""
+    description: Optional[str] = ""
+    """The description of the option"""
+    required: bool = False
+    """Whether the option is required or not"""
+    choices: Optional[list[Any]] = None
+    """The choices for the option"""
+
+    @classmethod
+    def from_option(cls, option: Option) -> "ManifestOption":
+        """
+        Create a `ManifestOption` from an `Option`.
+
+        Parameters
+        ----------
+        option: Option
+            The option to convert.
+
+        Returns
+        -------
+        ManifestOption
+            The converted option.
+        """
+        option_type = option.option_type
+        if option_type is str:
+            option_type = "string"
+        elif option_type is bool:
+            option_type = "boolean"
+        elif option_type is int:
+            option_type = "integer"
+        elif option_type is float:
+            option_type = "float"
+        else:
+            raise ValueError(f"unknown option type: {option_type}")
+
+        return cls(
+            name=option.name,
+            option_type=option_type,
+            default=option.default,
+            description=option.description,
+            required=option.required,
+            choices=option.choices,
+        )
+
+    def to_option(self) -> Option:
+        """
+        Convert the `ManifestOption` to an `Option`.
+
+        Returns
+        -------
+        Option
+            The converted option.
+        """
+
+        option_type_string = self.option_type
+        if option_type_string == "string":
+            option_type = str
+        elif option_type_string == "boolean":
+            option_type = bool
+        elif option_type_string == "integer":
+            option_type = int
+        elif option_type_string == "float":
+            option_type = float
+        else:
+            raise ValueError(f"unknown option type: {option_type_string}")
+
+        return Option(
+            name=self.name,
+            option_type=option_type,
+            default=self.default,
+            description=self.description,
+            required=self.required,
+            choices=self.choices,
+        )
+
+
 class Manifest(BaseModel):
     """
     An application that runs on the Nextmv Platform must contain a file named
@@ -161,6 +250,11 @@ class Manifest(BaseModel):
     Optional. Only for Python apps. Contains further Python-specific
     attributes.
     """
+    options: Optional[list[ManifestOption]] = None
+    """
+    Optional. A list of options for the decision model. An option is a
+    parameter that configures the decision model.
+    """
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":
@@ -169,7 +263,7 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
+        dirpath: str
             Path to the directory containing the app.yaml file.
 
         Returns
@@ -190,7 +284,7 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
+        dirpath: str
             Path to the directory where the app.yaml file will be written.
 
         """
@@ -198,14 +292,35 @@ class Manifest(BaseModel):
         with open(os.path.join(dirpath, FILE_NAME), "w") as file:
             yaml.dump(self.to_dict(), file)
 
+    def extract_options(self) -> Options:
+        """
+        Convert the manifest options to a `nextmv.Options` object.
+
+        Returns
+        -------
+        Options
+            The converted options.
+        """
+
+        if self.options is None:
+            raise ValueError("No options found in the manifest")
+
+        options = [option.to_option() for option in self.options]
+
+        return Options(*options)
+
     @classmethod
     def from_model_configuration(cls, model_configuration: ModelConfiguration) -> "Manifest":
         """
-        Create a Python manifest from a Python model configuration.
+        Create a Python manifest from a Python model configuration. Note that
+        the `ModelConfiguration` is almost always used in conjunction with the
+        `nextmv.Model` class. If you are not implementing an instance of
+        `nextmv.Model`, maybe you should use the `from_options` method instead,
+        to initialize the manifest with the options of the model.
 
         Parameters
         ----------
-        model_configuration : ModelConfiguration
+        model_configuration: ModelConfiguration
             The model configuration.
 
         Returns
@@ -225,10 +340,44 @@ class Manifest(BaseModel):
             manifest_python_dict["model"]["options"] = model_configuration.options.options_dict()
 
         manifest_python = ManifestPython.from_dict(manifest_python_dict)
-
-        return cls(
+        manifest = cls(
             files=["main.py", f"{model_configuration.name}/**"],
             runtime=ManifestRuntime.PYTHON,
             type=ManifestType.PYTHON,
             python=manifest_python,
         )
+
+        if model_configuration.options is not None:
+            manifest.options = [ManifestOption.from_option(opt) for opt in model_configuration.options.options]
+
+        return manifest
+
+    @classmethod
+    def from_options(cls, options: Options) -> "Manifest":
+        """
+        Create a basic Python manifest from `Options`. If you have more files
+        than just a `main.py`, make sure you modify the `.files` attribute of
+        the resulting manifest. This method assumes that requirements are
+        specified in a `requirements.txt` file. You may also specify a
+        different requirements file once you instantiate the manifest.
+
+        Parameters
+        ----------
+        options: Options
+            The options to include in the manifest.
+
+        Returns
+        -------
+        Manifest
+            The manifest with the given options.
+        """
+
+        manifest = cls(
+            files=["main.py"],
+            runtime=ManifestRuntime.PYTHON,
+            type=ManifestType.PYTHON,
+            python=ManifestPython(pip_requirements="requirements.txt"),
+            options=[ManifestOption.from_option(opt) for opt in options.options],
+        )
+
+        return manifest
