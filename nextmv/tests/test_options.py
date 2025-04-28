@@ -24,7 +24,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5, 6, 7]
+    test_scripts = ["1", "2", "3", "4", "5", "6", "7", "_deprecated"]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
@@ -113,16 +113,16 @@ class TestOptions(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 1)
-        self.assertIn('parameter "duration" is required', result.stderr)
+        self.assertIn('option "duration" is required', result.stderr)
 
-    def test_no_parameters(self):
+    def test_no_options(self):
         # The test passes if no exception is raised.
         opt = nextmv.Options()
         self.assertTrue(opt)
 
-    def test_bad_parameter_type(self):
+    def test_bad_option_type(self):
         with self.assertRaises(TypeError):
-            opt = nextmv.Options("I am not a valid parameter")
+            opt = nextmv.Options("I am not a valid option")
             opt.parse()
 
     def test_bad_type_command_line_arg(self):
@@ -405,6 +405,18 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result2.returncode, 0, result2.stderr)
         self.assertEqual(result2.stdout, "{'choice_opt': 'choice1'}\n")
 
+    def test_deprecated_parameter(self):
+        """Test that nextmv.Parameter can co-exist with nextmv.Option."""
+        file = self._file_name("options_deprecated.py", "..")
+        result = subprocess.run(
+            ["python3", file, "--duration", "30s", "--threads", "4"],
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "{'duration': '30s', 'threads': 4}\n")
+
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:
         """
@@ -595,6 +607,182 @@ class TestParameter(unittest.TestCase):
         opt = nextmv.Options(
             nextmv.Parameter("foo", int, default=1),
             nextmv.Parameter("bar", int, default=2),
+        )
+
+        self.assertFalse(opt.PARSED)
+        opt.parse()
+        self.assertTrue(opt.PARSED)
+
+
+class TestOption(unittest.TestCase):
+    def test_from_dict_str(self):
+        data = {
+            "name": "i_am_a_fish",
+            "option_type": "<class 'str'>",
+            "default": "salmon",
+            "description": "I am a fish",
+            "required": False,
+        }
+        opt = nextmv.Option.from_dict(data)
+
+        self.assertEqual(opt.name, data["name"])
+        self.assertEqual(opt.option_type, str)
+        self.assertEqual(opt.default, data["default"])
+        self.assertEqual(opt.description, data["description"])
+        self.assertEqual(opt.required, data["required"])
+
+    def test_from_dict_float(self):
+        data = {
+            "name": "i_am_a_fish",
+            "option_type": "<class 'float'>",
+            "default": 3.14,
+            "description": "I am a fish",
+            "required": False,
+        }
+        opt = nextmv.Option.from_dict(data)
+
+        self.assertEqual(opt.name, data["name"])
+        self.assertEqual(opt.option_type, float)
+        self.assertEqual(opt.default, data["default"])
+        self.assertEqual(opt.description, data["description"])
+        self.assertEqual(opt.required, data["required"])
+
+    def test_from_dict_int(self):
+        data = {
+            "name": "i_am_a_fish",
+            "option_type": "<class 'int'>",
+            "default": 42,
+            "description": "I am a fish",
+            "required": False,
+        }
+        opt = nextmv.Option.from_dict(data)
+
+        self.assertEqual(opt.name, data["name"])
+        self.assertEqual(opt.option_type, int)
+        self.assertEqual(opt.default, data["default"])
+        self.assertEqual(opt.description, data["description"])
+        self.assertEqual(opt.required, data["required"])
+
+    def test_from_dict_bool(self):
+        data = {
+            "name": "i_am_a_fish",
+            "option_type": "<class 'bool'>",
+            "default": False,
+            "description": "I am a fish",
+            "required": False,
+        }
+        opt = nextmv.Option.from_dict(data)
+
+        self.assertEqual(opt.name, data["name"])
+        self.assertEqual(opt.option_type, bool)
+        self.assertEqual(opt.default, data["default"])
+        self.assertEqual(opt.description, data["description"])
+        self.assertEqual(opt.required, data["required"])
+
+    def test_to_dict_str(self):
+        opt = nextmv.Option(
+            name="i_am_a_fish",
+            option_type=str,
+            default="salmon",
+            description="I am a fish",
+            required=False,
+        )
+        data = opt.to_dict()
+
+        self.assertEqual(data["name"], opt.name)
+        self.assertEqual(data["option_type"], "<class 'str'>")
+        self.assertEqual(data["default"], opt.default)
+        self.assertEqual(data["description"], opt.description)
+        self.assertEqual(data["required"], opt.required)
+
+    def test_to_dict_float(self):
+        opt = nextmv.Option(
+            name="i_am_a_fish",
+            option_type=float,
+            default=3.14,
+            description="I am a fish",
+            required=False,
+        )
+        data = opt.to_dict()
+
+        self.assertEqual(data["name"], opt.name)
+        self.assertEqual(data["option_type"], "<class 'float'>")
+        self.assertEqual(data["default"], opt.default)
+        self.assertEqual(data["description"], opt.description)
+        self.assertEqual(data["required"], opt.required)
+
+    def test_to_dict_int(self):
+        opt = nextmv.Option(
+            name="i_am_a_fish",
+            option_type=int,
+            default=42,
+            description="I am a fish",
+            required=False,
+        )
+        data = opt.to_dict()
+
+        self.assertEqual(data["name"], opt.name)
+        self.assertEqual(data["option_type"], "<class 'int'>")
+        self.assertEqual(data["default"], opt.default)
+        self.assertEqual(data["description"], opt.description)
+        self.assertEqual(data["required"], opt.required)
+
+    def test_to_dict_bool(self):
+        opt = nextmv.Option(
+            name="i_am_a_fish",
+            option_type=bool,
+            default=False,
+            description="I am a fish",
+            required=False,
+        )
+        data = opt.to_dict()
+
+        self.assertEqual(data["name"], opt.name)
+        self.assertEqual(data["option_type"], "<class 'bool'>")
+        self.assertEqual(data["default"], opt.default)
+        self.assertEqual(data["description"], opt.description)
+        self.assertEqual(data["required"], opt.required)
+
+    def test_merge(self):
+        opt1 = nextmv.Options(
+            nextmv.Option("foo1", int, default=1),
+            nextmv.Option("bar1", int, default=2),
+        )
+        self.assertFalse(opt1.PARSED)
+
+        opt2 = nextmv.Options(
+            nextmv.Option("foo2", int, default=3),
+            nextmv.Option("bar2", int, default=4),
+        )
+        self.assertFalse(opt2.PARSED)
+
+        opt = opt1.merge(opt2)
+        self.assertTrue(opt.PARSED)
+
+        self.assertEqual(opt.foo1, 1)
+        self.assertEqual(opt.bar1, 2)
+        self.assertEqual(opt.foo2, 3)
+        self.assertEqual(opt.bar2, 4)
+
+    def test_cant_merge(self):
+        opt1 = nextmv.Options(
+            nextmv.Option("foo1", int, default=1),
+            nextmv.Option("bar1", int, default=2),
+        )
+        opt1.parse()
+
+        opt2 = nextmv.Options(
+            nextmv.Option("foo2", int, default=3),
+            nextmv.Option("bar2", int, default=4),
+        )
+
+        with self.assertRaises(RuntimeError):
+            opt1.merge(opt2)
+
+    def test_parse(self):
+        opt = nextmv.Options(
+            nextmv.Option("foo", int, default=1),
+            nextmv.Option("bar", int, default=2),
         )
 
         self.assertFalse(opt.PARSED)

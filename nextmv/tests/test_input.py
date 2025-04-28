@@ -63,7 +63,7 @@ class TestInput(unittest.TestCase):
 
     def test_local_loader_with_options(self):
         sample_input = '{"empanadas": "are_life"}\n'
-        options = nextmv.Options(nextmv.Parameter("foo", str, default="bar", required=False))
+        options = nextmv.Options(nextmv.Option("foo", str, default="bar", required=False))
         input_loader = nextmv.LocalInputLoader()
 
         with patch("sys.stdin", new=StringIO(sample_input)):

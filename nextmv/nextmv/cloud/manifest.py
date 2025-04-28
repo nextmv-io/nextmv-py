@@ -89,7 +89,7 @@ class ManifestPythonModel(BaseModel):
     """
     Options for the decision model. This is a data representation of the
     `nextmv.Options` class. It consists of a list of dicts. Each dict
-    represents the `nextmv.Parameter` class. It is used to be able to
+    represents the `nextmv.Option` class. It is used to be able to
     reconstruct an Options object from data when loading a decision model.
     """
 
@@ -222,7 +222,7 @@ class Manifest(BaseModel):
         }
 
         if model_configuration.options is not None:
-            manifest_python_dict["model"]["options"] = model_configuration.options.parameters_dict()
+            manifest_python_dict["model"]["options"] = model_configuration.options.options_dict()
 
         manifest_python = ManifestPython.from_dict(manifest_python_dict)
 

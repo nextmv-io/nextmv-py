@@ -12,6 +12,7 @@ from .logger import redirect_stdout as redirect_stdout
 from .logger import reset_stdout as reset_stdout
 from .model import Model as Model
 from .model import ModelConfiguration as ModelConfiguration
+from .options import Option as Option
 from .options import Options as Options
 from .options import Parameter as Parameter
 from .output import Asset as Asset
