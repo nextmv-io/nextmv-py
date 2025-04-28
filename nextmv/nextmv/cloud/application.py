@@ -893,11 +893,11 @@ class Application:
 
         options_dict = {}
         if isinstance(input, Input) and input.options is not None:
-            options_dict = input.options.to_cloud_dict()
+            options_dict = input.options.to_dict_cloud()
 
         if options is not None:
             if isinstance(options, Options):
-                options_dict = options.to_cloud_dict()
+                options_dict = options.to_dict_cloud()
             elif isinstance(options, dict):
                 for k, v in options.items():
                     if isinstance(v, str):

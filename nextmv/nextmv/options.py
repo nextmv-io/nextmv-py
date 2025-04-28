@@ -187,7 +187,7 @@ class Option:
     error to not provide a value for it, either trough a command-line argument,
     an environment variable or a default value.
     """
-    choices: list[Optional[Any]] = None
+    choices: Optional[list[Any]] = None
     """Limits values to a specific set of choices."""
 
     @classmethod
@@ -332,7 +332,7 @@ class Options:
 
         return m.to_dict()["config"]
 
-    def to_cloud_dict(self) -> dict[str, str]:
+    def to_dict_cloud(self) -> dict[str, str]:
         """
         Converts the options to a dict that can be used in the Nextmv Cloud.
         Cloud has a hard requirement that options are passed as strings. This
@@ -729,7 +729,7 @@ class Options:
 
         description += f" (type: {self._option_type(option).__name__})"
 
-        if option.description is not None:
+        if option.description is not None and option.description != "":
             description += f": {option.description}"
 
         return description
