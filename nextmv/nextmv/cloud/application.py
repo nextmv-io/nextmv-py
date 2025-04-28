@@ -1774,7 +1774,7 @@ class Application:
     def __console_url(self, run_id: str) -> str:
         """Auxiliary method to get the console URL for a run."""
 
-        return f"https://cloud.nextmv.io/app/{self.id}/run/{run_id}?view=details"
+        return f"{self.client.console_url}/app/{self.id}/run/{run_id}?view=details"
 
 
 def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, bool]]) -> any:
