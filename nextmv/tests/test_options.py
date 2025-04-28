@@ -24,7 +24,7 @@ class TestOptions(unittest.TestCase):
     assume that the script is one level up.
     """
 
-    test_scripts = [1, 2, 3, 4, 5, 6, 7, "_deprecated"]
+    test_scripts = ["1", "2", "3", "4", "5", "6", "7", "_deprecated"]
     """These are auxiliary scripts that are used to test different scenarios of
     instantiating an `Options` object."""
 
