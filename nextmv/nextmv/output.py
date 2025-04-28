@@ -13,6 +13,7 @@ from typing import Any, Optional, Union
 from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
+from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
 
@@ -589,6 +590,10 @@ def write_local(
     skip_stdout_reset: bool = False,
 ) -> None:
     """
+    DEPRECATION WARNING
+    ----------
+    `write_local` is deprecated, use `write` instead.
+
     This is a convenience function for instantiating a `LocalOutputWriter` and
     calling its `write` method.
 
@@ -623,7 +628,60 @@ def write_local(
         If the `Output.output_format` is not supported.
     """
 
+    deprecated(
+        name="write_local",
+        reason="`write_local` is deprecated, use `write` instead.",
+    )
+
     writer = LocalOutputWriter()
+    writer.write(output, path, skip_stdout_reset)
+
+
+_LOCAL_OUTPUT_WRITER = LocalOutputWriter()
+
+
+def write(
+    output: Union[Output, dict[str, Any]],
+    path: Optional[str] = None,
+    skip_stdout_reset: bool = False,
+    writer: Optional[OutputWriter] = _LOCAL_OUTPUT_WRITER,
+) -> None:
+    """
+    This is a convenience function for writing an `Output`, i.e.: write the
+    output to the specified destination. The `writer` is used to call the
+    `.write` method. Note that the default writes is the `LocalOutputWriter`.
+
+    Consider the following for the `path` parameter, depending on the
+    `Output.output_format`:
+
+    - `OutputFormat.JSON`: the `path` is the file where the JSON data will
+        be written. If empty or `None`, the data will be written to stdout.
+    - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
+        files will be written. If empty or `None`, the data will be written
+        to a directory named `output` under the current working directory.
+        The `Output.options` and `Output.statistics` will be written to
+        stdout.
+
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    `skip_stdout_reset` parameter to `True`.
+
+    Parameters
+    ----------
+    output : Output, dict[str, Any]
+        Output data to write.
+    path : str
+        Path to write the output data to.
+    skip_stdout_reset : bool, optional
+        Skip resetting stdout before writing the output data. Default is
+        `False`.
+
+    Raises
+    ------
+    ValueError
+        If the `Output.output_format` is not supported.
+    """
+
     writer.write(output, path, skip_stdout_reset)
 
 

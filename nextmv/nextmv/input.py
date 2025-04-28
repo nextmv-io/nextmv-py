@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
 
+from nextmv.deprecated import deprecated
 from nextmv.options import Options
 
 
@@ -311,6 +312,10 @@ def load_local(
     csv_configurations: Optional[dict[str, Any]] = None,
 ) -> Input:
     """
+    DEPRECATION WARNING
+    ----------
+    `load_local` is deprecated, use `load` instead.
+
     This is a convenience function for instantiating a `LocalInputLoader`
     and calling its `load` method.
 
@@ -357,5 +362,74 @@ def load_local(
         If the path is not a directory when working with CSV_ARCHIVE.
     """
 
+    deprecated(
+        name="load_local",
+        reason="`load_local` is deprecated, use `load` instead.",
+    )
+
     loader = LocalInputLoader()
+    return loader.load(input_format, options, path, csv_configurations)
+
+
+_LOCAL_INPUT_LOADER = LocalInputLoader()
+
+
+def load(
+    input_format: Optional[InputFormat] = InputFormat.JSON,
+    options: Optional[Options] = None,
+    path: Optional[str] = None,
+    csv_configurations: Optional[dict[str, Any]] = None,
+    loader: Optional[InputLoader] = _LOCAL_INPUT_LOADER,
+) -> Input:
+    """
+    This is a convenience function for loading an `Input`, i.e.: load the input
+    data. The `loader` is used to call the `.load` method. Note that the
+    default loader is the `LocalInputLoader`.
+
+    The input data can be in various formats. For
+    `InputFormat.JSON`, `InputFormat.TEXT`, and `InputFormat.CSV`, the data can
+    be streamed from stdin or read from a file. When the `path` argument is
+    provided (and valid), the input data is read from the file specified by
+    `path`, otherwise, it is streamed from stdin. For
+    `InputFormat.CSV_ARCHIVE`, the input data is read from the directory
+    specified by `path`. If the `path` is not provided, the default location
+    `input` is used. The directory should contain one or more files, where each
+    file in the directory is a CSV file.
+
+    The `Input` that is returned contains the `data` attribute. This data can
+    be of different types, depending on the provided `input_format`:
+
+    - `InputFormat.JSON`: the data is a `dict[str, Any]`.
+    - `InputFormat.TEXT`: the data is a `str`.
+    - `InputFormat.CSV`: the data is a `list[dict[str, Any]]`.
+    - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`.
+        Each key is the name of the CSV file, minus the `.csv` extension.
+
+    Parameters
+    ----------
+    input_format: InputFormat, optional
+        Format of the input data. Default is `InputFormat.JSON`.
+    options: Options, optional
+        Options for loading the input data.
+    path: str, optional
+        Path to the input data.
+    csv_configurations: dict[str, Any], optional
+        Configurations for loading CSV files. The default `DictReader` is used
+        when loading a CSV file, so you have the option to pass in a dictionary
+        with custom kwargs for the `DictReader`.
+    loader: InputLoader, optional
+        The loader to use for loading the input data. Default is
+        `LocalInputLoader`.
+
+    Returns
+    -------
+    Input
+        The input data.
+
+    Raises
+    ------
+    ValueError
+        If the path is not a directory when working with CSV_ARCHIVE.
+    """
+
     return loader.load(input_format, options, path, csv_configurations)

@@ -9,22 +9,20 @@ human to use it during local development. It is the standard way in which a
 
 from mlflow.pyfunc import load_model
 
-from nextmv.cloud.manifest import Manifest
-from nextmv.input import load_local
-from nextmv.options import Options
-from nextmv.output import write_local
+import nextmv
+from nextmv import cloud
 
 
 def main() -> None:
     """Entry point for the program."""
 
-    manifest = Manifest.from_yaml(".")
+    manifest = cloud.Manifest.from_yaml(".")
 
     # Load the options from the manifest.
     options = None
     options_dict = manifest.python.model.options
     if options_dict is not None:
-        options = Options.from_options_dict(options_dict)
+        options = nextmv.Options.from_options_dict(options_dict)
 
     # Load the model.
     loaded_model = load_model(
@@ -33,11 +31,11 @@ def main() -> None:
     )
 
     # Load the input and solve the model by using mlflow’s inference API.
-    input = load_local(options=options)
+    input = nextmv.load(options=options)
     output = loaded_model.predict(input)
 
     # Write the output.
-    write_local(output)
+    nextmv.write(output)
 
 
 if __name__ == "__main__":

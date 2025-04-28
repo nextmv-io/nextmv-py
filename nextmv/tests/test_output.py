@@ -273,7 +273,7 @@ class TestOutput(unittest.TestCase):
     def test_local_write_bad_output_type(self):
         output = "I am clearly not an output object."
         with self.assertRaises(TypeError):
-            nextmv.write_local(output)
+            nextmv.write(output)
 
     def test_local_write_passthrough_output(self):
         output = {
