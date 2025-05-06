@@ -241,17 +241,39 @@ class Application:
         Deletes a batch experiment, along with all the associated information,
         such as its runs.
 
-        Args:
-            batch_id: ID of the batch experiment.
+        Parameters
+        ----------
+        batch_id: str
+            ID of the batch experiment.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
         """
 
         _ = self.client.request(
             method="DELETE",
             endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
         )
+
+    def delete_scenario_test(self, scenario_test_id: str) -> None:
+        """
+        Deletes a scenario test. Scenario tests are based on the batch
+        experiments API, so this function summons `delete_batch_experiment`.
+
+        Parameters
+        ----------
+        scenario_test_id: str
+            ID of the scenario test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        _ = self.delete_batch_experiment(batch_id=scenario_test_id)
 
     def delete_secrets_collection(self, secrets_collection_id: str) -> None:
         """
@@ -370,16 +392,21 @@ class Application:
         """
         List all batch experiments.
 
-        Returns:
+        Returns
+        -------
+        list[BatchExperimentMetadata]
             List of batch experiments.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
         """
 
         response = self.client.request(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/batch",
+            query_params={"type": "batch"},
         )
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
@@ -441,6 +468,31 @@ class Application:
         )
 
         return [ManagedInput.from_dict(managed_input) for managed_input in response.json()]
+
+    def list_scenario_tests(self) -> list[BatchExperimentMetadata]:
+        """
+        List all batch scenario tests. Scenario tests are based on the batch
+        experiments API, so this function returns the same information as
+        `list_batch_experiments`, albeit using a different query parameter.
+
+        Returns
+        -------
+        list[BatchExperimentMetadata]
+            List of scenario tests.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/batch?",
+            query_params={"type": "scenario"},
+        )
+
+        return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
 
     def list_secrets_collections(self) -> list[SecretsCollectionSummary]:
         """
@@ -1718,6 +1770,30 @@ class Application:
         run_information = poll(polling_options=polling_options, polling_func=polling_func)
 
         return self.__run_result(run_id=run_id, run_information=run_information)
+
+    def scenario_test(self, scenario_test_id: str) -> BatchExperiment:
+        """
+        Get the scenario test. Scenario tests are based on batch experiments,
+        so this function will return the corresponding batch experiment
+        associated to the scenario test.
+
+        Parameters
+        ----------
+        scenario_test_id : str
+            ID of the scenario test.
+
+        Returns
+        -------
+        BatchExperiment
+            The scenario test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        return self.batch_experiment(batch_id=scenario_test_id)
 
     def track_run(self, tracked_run: TrackedRun) -> str:
         """

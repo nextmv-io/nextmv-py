@@ -10,32 +10,41 @@ class BatchExperimentInformation(BaseModel):
     """Information about a batch experiment. This serves as a base for all the
     other batch experiment models."""
 
+    id: str
+    """ID of the batch experiment."""
     name: str
     """Name of the batch experiment."""
-    input_set_id: str
-    """ID of the input set used for the experiment."""
-    instance_ids: list[str]
-    """List of instance IDs used for the experiment."""
+    created_at: datetime
+    """Creation date of the batch experiment."""
+    updated_at: datetime
+    """Last update date of the batch experiment."""
+    status: str
+    """Status of the batch experiment."""
 
     description: Optional[str] = None
     """Description of the batch experiment."""
-    id: Optional[str] = None
-    """ID of the batch experiment."""
+    number_of_requested_runs: Optional[int] = None
+    """Number of runs requested for the batch experiment."""
+    number_of_runs: Optional[int] = None
+    """Number of runs in the batch experiment."""
+    number_of_completed_runs: Optional[int] = None
+    """Number of completed runs in the batch experiment."""
+    type: Optional[str] = None
+    """Type of the batch experiment."""
+    option_sets: Optional[dict[str, dict[str, str]]] = None
+    """Option sets used for the experiment."""
 
 
 class BatchExperiment(BatchExperimentInformation):
     """A batch experiment compares two or more instances by executing all the
     inputs contained in the input set."""
 
-    created_at: datetime
-    """Creation date of the batch experiment."""
-    status: str
-    """Status of the batch experiment."""
-
+    input_set_id: str
+    """ID of the input set used for the experiment."""
+    instance_ids: list[str]
+    """List of instance IDs used for the experiment."""
     grouped_distributional_summaries: Optional[list[dict[str, Any]]] = None
     """Grouped distributional summaries of the batch experiment."""
-    option_sets: Optional[dict[str, dict[str, str]]] = None
-    """Option sets used for the experiment."""
 
 
 class BatchExperimentRun(BaseModel):
@@ -92,9 +101,5 @@ class BatchExperimentRun(BaseModel):
 class BatchExperimentMetadata(BatchExperimentInformation):
     """Metadata of a batch experiment."""
 
-    status: str
-    """Status of the batch experiment."""
-    created_at: datetime
-    """Creation date of the batch experiment."""
-    number_of_runs: int
-    """Number of runs in the batch experiment."""
+    app_id: str
+    """ID of the application used for the batch experiment."""
