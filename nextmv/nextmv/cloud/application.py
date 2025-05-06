@@ -16,10 +16,21 @@ from nextmv.cloud import package
 from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
 from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
 from nextmv.cloud.client import Client, get_size
-from nextmv.cloud.input_set import InputSet
+from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.run import ExternalRunResult, RunConfiguration, RunInformation, RunLog, RunResult, TrackedRun
+from nextmv.cloud.run import (
+    ExternalRunResult,
+    Format,
+    FormatInput,
+    RunConfiguration,
+    RunInformation,
+    RunLog,
+    RunResult,
+    TrackedRun,
+)
+from nextmv.cloud.safe import name_and_id
+from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
@@ -409,6 +420,28 @@ class Application:
 
         return [Instance.from_dict(instance) for instance in response.json()]
 
+    def list_managed_inputs(self) -> list[ManagedInput]:
+        """
+        List all managed inputs.
+
+        Returns
+        -------
+        list[ManagedInput]
+            List of managed inputs.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/inputs",
+        )
+
+        return [ManagedInput.from_dict(managed_input) for managed_input in response.json()]
+
     def list_secrets_collections(self) -> list[SecretsCollectionSummary]:
         """
         List all secrets collections.
@@ -444,6 +477,33 @@ class Application:
         )
 
         return [Version.from_dict(version) for version in response.json()]
+
+    def managed_input(self, managed_input_id: str) -> ManagedInput:
+        """
+        Get a managed input.
+
+        Parameters
+        ----------
+        managed_input_id: str
+            ID of the managed input.
+
+        Returns
+        -------
+        ManagedInput
+            The managed input.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/inputs/{managed_input_id}",
+        )
+
+        return ManagedInput.from_dict(response.json())
 
     @classmethod
     def new(
@@ -641,36 +701,56 @@ class Application:
         self,
         name: str,
         input_set_id: str,
-        instance_ids: list[str] = None,
+        instance_ids: Optional[list[str]] = None,
         description: Optional[str] = None,
         id: Optional[str] = None,
         option_sets: Optional[dict[str, dict[str, str]]] = None,
         runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
+        type: Optional[str] = "batch",
     ) -> str:
         """
         Create a new batch experiment.
 
-        Args:
-            name: Name of the batch experiment.
-            input_set_id: ID of the input set to use for the experiment.
-            instance_ids: List of instance IDs to use for the experiment.
-            description: Description of the batch experiment.
-            id: ID of the batch experiment.
-            option_sets: Option sets to use for the experiment.
-            runs: Runs to use for the experiment.
+        Parameters
+        ----------
+        name: str
+            Name of the batch experiment.
+        input_set_id: str
+            ID of the input set to use for the batch experiment.
+        instance_ids: list[str]
+            List of instance IDs to use for the batch experiment.
+        description: Optional[str]
+            Optional description of the batch experiment.
+        id: Optional[str]
+            ID of the batch experiment. Will be generated if not provided.
+        option_sets: Optional[dict[str, dict[str, str]]]
+            Option sets to use for the batch experiment. This is a dictionary
+            where the keys are option set IDs and the values are dictionaries
+            with the actual options.
+        runs: Optional[list[BatchExperimentRun]]
+            List of runs to use for the batch experiment.
+        type: Optional[str]
+            Type of the batch experiment. This is used to determine the
+            experiment type. The default value is "batch". If you want to
+            create a scenario test, set this to "scenario".
 
-        Returns:
+        Returns
+        -------
+        str
             ID of the batch experiment.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
         """
 
         payload = {
             "name": name,
             "input_set_id": input_set_id,
-            "instance_ids": instance_ids,
         }
+        if instance_ids is not None:
+            payload["instance_ids"] = instance_ids
         if description is not None:
             payload["description"] = description
         if id is not None:
@@ -682,6 +762,8 @@ class Application:
             for i, run in enumerate(runs):
                 payload_runs[i] = run.to_dict() if isinstance(run, BatchExperimentRun) else run
             payload["runs"] = payload_runs
+        if type is not None:
+            payload["type"] = type
 
         response = self.client.request(
             method="POST",
@@ -701,26 +783,61 @@ class Application:
         maximum_runs: Optional[int] = None,
         run_ids: Optional[list[str]] = None,
         start_time: Optional[datetime] = None,
+        inputs: Optional[list[ManagedInput]] = None,
     ) -> InputSet:
         """
-        Create a new input set.
+        Create a new input set. You can create an input set from three
+        different methodologies:
 
-        Args:
-            id: ID of the input set.
-            name: Name of the input set.
-            description: Description of the input set.
-            end_time: End time of the runs to construct the input set.
-            instance_id: ID of the instance to use for the input set. If not
-                provided, the default_instance_id will be used.
-            maximum_runs: Maximum number of runs to use for the input set.
-            run_ids: IDs of the runs to use for the input set.
-            start_time: Start time of the runs to construct the input set.
+        1. Using `instance_id`, `start_time`, `end_time` and `maximum_runs`.
+           Instance runs will be obtained from the application matching the
+           criteria of dates and maximum number of runs.
+        2. Using `run_ids`. The input set will be created using the list of
+           runs specified by the user.
+        3. Using `inputs`. The input set will be created using the list of
+           inputs specified by the user. This is useful for creating an input
+           set from a list of inputs that are already available in the
+           application.
 
-        Returns:
-            Input set.
+        Parameters
+        ----------
+        id: str
+            ID of the input set
+        name: str
+            Name of the input set.
+        description: Optional[str]
+            Optional description of the input set.
+        end_time: Optional[datetime]
+            End time of the input set. This is used to filter the runs
+            associated with the input set.
+        instance_id: Optional[str]
+            ID of the instance to use for the input set. This is used to
+            filter the runs associated with the input set. If not provided,
+            the application’s `default_instance_id` is used.
+        maximum_runs: Optional[int]
+            Maximum number of runs to use for the input set. This is used to
+            filter the runs associated with the input set. If not provided,
+            all runs are used.
+        run_ids: Optional[list[str]]
+            List of run IDs to use for the input set.
+        start_time: Optional[datetime]
+            Start time of the input set. This is used to filter the runs
+            associated with the input set.
+        inputs: Optional[list[ExperimentInput]]
+            List of inputs to use for the input set. This is used to create
+            the input set from a list of inputs that are already available in
+            the application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+
+        Returns
+        -------
+        InputSet
+            The new input set.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
         """
 
         payload = {
@@ -739,6 +856,8 @@ class Application:
             payload["run_ids"] = run_ids
         if start_time is not None:
             payload["start_time"] = start_time.isoformat()
+        if inputs is not None:
+            payload["inputs"] = [input.to_dict() for input in inputs]
 
         response = self.client.request(
             method="POST",
@@ -793,6 +912,84 @@ class Application:
         )
 
         return Instance.from_dict(response.json())
+
+    def new_managed_input(
+        self,
+        id: str,
+        name: str,
+        description: Optional[str] = None,
+        upload_id: Optional[str] = None,
+        run_id: Optional[str] = None,
+        format: Optional[Union[Format, dict[str, any]]] = None,
+    ) -> ManagedInput:
+        """
+        Create a new managed input. There are two methods for creating a
+        managed input:
+
+        1. Specifying the `upload_id` parameter. You may use the `upload_url`
+           method to obtain the upload ID and the `upload_large_input` method
+           to upload the data to it.
+        2. Specifying the `run_id` parameter. The managed input will be
+           created from the run specified by the `run_id` parameter.
+
+        Either the `upload_id` or the `run_id` parameter must be specified.
+
+        Parameters
+        ----------
+        id: str
+            ID of the managed input.
+        name: str
+            Name of the managed input.
+        description: Optional[str]
+            Optional description of the managed input.
+        upload_id: Optional[str]
+            ID of the upload to use for the managed input.
+        run_id: Optional[str]
+            ID of the run to use for the managed input.
+        format: Optional[Format]
+            Format of the managed input. Default will be formatted as `JSON`.
+
+        Returns
+        -------
+        ManagedInput
+            The new managed input.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If neither the `upload_id` nor the `run_id` parameter is
+            specified.
+        """
+
+        if upload_id is None and run_id is None:
+            raise ValueError("Either upload_id or run_id must be specified")
+
+        payload = {
+            "id": id,
+            "name": name,
+        }
+
+        if description is not None:
+            payload["description"] = description
+        if upload_id is not None:
+            payload["upload_id"] = upload_id
+        if run_id is not None:
+            payload["run_id"] = run_id
+
+        if format is not None:
+            payload["format"] = format.to_dict() if isinstance(format, Format) else format
+        else:
+            payload["format"] = Format(format_input=FormatInput(input_type=InputFormat.JSON)).to_dict()
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.experiments_endpoint}/inputs",
+            payload=payload,
+        )
+
+        return ManagedInput.from_dict(response.json())
 
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self,
@@ -1046,6 +1243,124 @@ class Application:
         return self.run_result_with_polling(
             run_id=run_id,
             polling_options=polling_options,
+        )
+
+    def new_scenario_test(
+        self,
+        id: str,
+        name: str,
+        scenarios: list[Scenario],
+        description: Optional[str] = None,
+        repetitions: Optional[int] = 0,
+    ) -> str:
+        """
+        Create a new scenario test. The test is based on `scenarios` and you
+        may specify `repetitions` to run the test multiple times. 0 repetitions
+        means that the tests will be executed once. 1 repetition means that the
+        test will be repeated once, i.e.: it will be executed twice. 2
+        repetitions equals 3 executions, so on, and so forth.
+
+        For each scenario, consider the `scenario_input` and `configuration`.
+        The `scenario_input.scenario_input_type` allows you to specify the data
+        that will be used for that scenario.
+
+        - `ScenarioInputType.INPUT_SET`: the data should be taken from an
+          existing input set.
+        - `ScenarioInputType.INPUT`: the data should be taken from a list of
+          existing inputs. When using this type, an input set will be created
+          from this set of managed inputs.
+        - `ScenarioInputType.New`: a new set of data will be uploaded as a set
+          of managed inputs. A new input set will be created from this set of
+          managed inputs.
+
+        On the other hand, the `configuration` allows you to specify multiple
+        option variations for the scenario. Please see the
+        `ScenarioConfiguration` class for more information.
+
+        The scenario tests uses the batch experiments API under the hood.
+
+        Parameters
+        ----------
+        id: str
+            ID of the scenario test.
+        name: str
+            Name of the scenario test.
+        scenarios: list[Scenario]
+            List of scenarios to use for the scenario test. At least one
+            scenario should be provided.
+        description: Optional[str]
+            Optional description of the scenario test.
+        repetitions: Optional[int]
+            Number of repetitions to use for the scenario test. 0
+            repetitions means that the tests will be executed once. 1
+            repetition means that the test will be repeated once, i.e.: it
+            will be executed twice. 2 repetitions equals 3 executions, so on,
+            and so forth.
+
+        Returns
+        -------
+        str
+            ID of the scenario test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If no scenarios are provided.
+        """
+
+        if len(scenarios) < 1:
+            raise ValueError("At least one scenario must be provided")
+
+        # Save all the information needed by scenario.
+        input_sets = {}
+        scenarios_by_id = {}
+        instances = {}
+        for scenario_ix, scenario in enumerate(scenarios):
+            scenario_id = f"scenario-{scenario_ix}" if scenario.scenario_id is None else scenario.scenario_id
+            instance = self.instance(instance_id=scenario.instance_id)
+
+            # Each scenario is associated to an input set, so we must either
+            # get it or create it.
+            input_set = self.__input_set_for_scenario(scenario, scenario_id)
+
+            scenarios_by_id[scenario_id] = scenario
+            instances[scenario_id] = instance
+            input_sets[scenario_id] = input_set
+
+        # Calculate the combinations of all the option sets across scenarios.
+        opt_sets_by_scenario = _option_sets(scenarios)
+
+        # The scenario tests results in multiple individual runs.
+        runs = []
+        run_counter = 0
+        for scenario_id, scenario_opt_sets in opt_sets_by_scenario.items():
+            input_set = input_sets[scenario_id]
+            scenario = scenarios_by_id[scenario_id]
+
+            for set_key in scenario_opt_sets.keys():
+                for input_id in input_set.input_ids:
+                    for repetition in range(repetitions):
+                        run_counter += 1
+                        run = BatchExperimentRun(
+                            input_id=input_id,
+                            input_set_id=input_set.id,
+                            instance_id=scenario.instance_id,
+                            option_set=set_key,
+                            scenario_id=scenario_id,
+                            repetition=repetition,
+                            run_number=f"{run_counter}",
+                        )
+                        runs.append(run)
+
+        self.new_batch_experiment(
+            id=id,
+            name=name,
+            description=description,
+            type="scenario",
+            option_sets=opt_sets_by_scenario,
+            runs=runs,
         )
 
     def new_secrets_collection(
@@ -1549,6 +1864,45 @@ class Application:
 
         return Instance.from_dict(response.json())
 
+    def update_managed_input(
+        self,
+        managed_input_id: str,
+        name: str,
+        description: str,
+    ) -> None:
+        """
+        Update a managed input.
+
+        Parameters
+        ----------
+        managed_input_id : str
+            ID of the managed input to update.
+        name : str
+            Name of the managed input.
+        description : str
+            Description of the managed input.
+
+        Returns
+        -------
+        None
+            No return value.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        payload = {
+            "name": name,
+            "description": description,
+        }
+        _ = self.client.request(
+            method="PUT",
+            endpoint=f"{self.experiments_endpoint}/inputs/{managed_input_id}",
+            payload=payload,
+        )
+
     def update_secrets_collection(
         self,
         secrets_collection_id: str,
@@ -1775,6 +2129,56 @@ class Application:
         """Auxiliary method to get the console URL for a run."""
 
         return f"{self.client.console_url}/app/{self.id}/run/{run_id}?view=details"
+
+    def __input_set_for_scenario(self, scenario: Scenario, scenario_id: str) -> InputSet:
+        # If working with an input set, there is no need to create one.
+        if scenario.scenario_input.scenario_input_type == ScenarioInputType.INPUT_SET:
+            input_set = self.input_set(input_set_id=scenario.scenario_input.scenario_input_data)
+            return input_set
+
+        # If working with a list of managed inputs, we need to create an
+        # input set.
+        if scenario.scenario_input.scenario_input_type == ScenarioInputType.INPUT:
+            name, id = name_and_id(prefix="inpset", entity_id=scenario_id)
+            input_set = self.new_input_set(
+                id=id,
+                name=name,
+                description=f"Automatically created from scenario test: {id}",
+                maximum_runs=20,
+                inputs=[
+                    ManagedInput.from_dict(data={"id": input_id})
+                    for input_id in scenario.scenario_input.scenario_input_data
+                ],
+            )
+            return input_set
+
+        # If working with new data, we need to create managed inputs, and then,
+        # an input set.
+        if scenario.scenario_input.scenario_input_type == ScenarioInputType.NEW:
+            managed_inputs = []
+            for data in scenario.scenario_input.scenario_input_data:
+                upload_url = self.upload_url()
+                self.upload_large_input(input=data, upload_url=upload_url)
+                name, id = name_and_id(prefix="man-input", entity_id=scenario_id)
+                managed_input = self.new_managed_input(
+                    id=id,
+                    name=name,
+                    description=f"Automatically created from scenario test: {id}",
+                    upload_id=upload_url.upload_id,
+                )
+                managed_inputs.append(managed_input)
+
+            name, id = name_and_id(prefix="inpset", entity_id=scenario_id)
+            input_set = self.new_input_set(
+                id=id,
+                name=name,
+                description=f"Automatically created from scenario test: {id}",
+                maximum_runs=20,
+                inputs=managed_inputs,
+            )
+            return input_set
+
+        raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
 
 def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, bool]]) -> any:

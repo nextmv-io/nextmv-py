@@ -39,7 +39,30 @@ class BatchExperiment(BatchExperimentInformation):
 
 
 class BatchExperimentRun(BaseModel):
-    """A batch experiment run is a single execution of a batch experiment."""
+    """
+    A batch experiment run is a single execution of a batch experiment. It
+    contains information about the experiment, the input used, and the
+    configuration used for the run.
+
+    Attributes
+    ----------
+    option_set : str
+        Option set used for the experiment.
+    input_id : str
+        ID of the input used for the experiment.
+    instance_id : Optional[str]
+        ID of the instance used for the experiment.
+    version_id : Optional[str]
+        ID of the version used for the experiment.
+    input_set_id : Optional[str]
+        ID of the input set used for the experiment.
+    scenario_id : Optional[str]
+        If the batch experiment is a scenario test, this is the ID of that test.
+    repetition : Optional[int]
+        Repetition number of the experiment.
+    run_number : Optional[str]
+        Run number of the experiment.
+    """
 
     option_set: str
     """Option set used for the experiment."""
@@ -50,8 +73,16 @@ class BatchExperimentRun(BaseModel):
     """ID of the instance used for the experiment."""
     version_id: Optional[str] = None
     """ID of the version used for the experiment."""
+    input_set_id: Optional[str] = None
+    """ID of the input set used for the experiment."""
+    scenario_id: Optional[str] = None
+    """If the batch experiment is a scenario test, this is the ID of that test."""
+    repetition: Optional[int] = None
+    """Repetition number of the experiment."""
+    run_number: Optional[str] = None
+    """Run number of the experiment."""
 
-    def __post_init__(self):
+    def __post_init_post_parse__(self):
         """Logic to run after the class is initialized."""
 
         if self.instance_id is None and self.version_id is None:
