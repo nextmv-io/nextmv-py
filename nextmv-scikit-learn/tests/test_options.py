@@ -41,7 +41,7 @@ class TestOptions(unittest.TestCase):
 
     def compare(self, opt: any, expected_path: str):
         n_opt = opt.to_nextmv()
-        got = n_opt.parameters_dict()
+        got = n_opt.options_dict()
 
         path = os.path.join(os.path.dirname(__file__), f"expected_{expected_path}_option_parameters.json")
         with open(path) as f:

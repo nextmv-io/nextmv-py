@@ -3,24 +3,24 @@
 import nextmv
 
 LINEAR_REGRESSION_PARAMETERS = [
-    nextmv.Parameter(
+    nextmv.Option(
         name="fit_intercept",
-        param_type=bool,
+        option_type=bool,
         description="Whether to calculate the intercept for this model.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="copy_X",
-        param_type=bool,
+        option_type=bool,
         description="If True, X will be copied; else, it may be overwritten.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_jobs",
-        param_type=int,
+        option_type=int,
         description="The number of jobs to use for the computation.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="positive",
-        param_type=bool,
+        option_type=bool,
         description="When set to True, forces the coefficients to be positive.",
     ),
 ]

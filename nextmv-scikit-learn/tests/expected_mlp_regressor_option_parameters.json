@@ -1,7 +1,7 @@
 [
   {
     "name": "hidden_layer_sizes",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": null,
     "description": "The ith element represents the number of neurons in the ith hidden layer. (e.g. \"1,2,3\")",
     "required": false,
@@ -9,32 +9,23 @@
   },
   {
     "name": "activation",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": null,
     "description": "Activation function for the hidden layer.",
     "required": false,
-    "choices": [
-      "identity",
-      "logistic",
-      "tanh",
-      "relu"
-    ]
+    "choices": ["identity", "logistic", "tanh", "relu"]
   },
   {
     "name": "solver",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": null,
     "description": "The solver for weight optimization.",
     "required": false,
-    "choices": [
-      "lbfgs",
-      "sgd",
-      "adam"
-    ]
+    "choices": ["lbfgs", "sgd", "adam"]
   },
   {
     "name": "alpha",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Strength of the L2 regularization term.",
     "required": false,
@@ -42,7 +33,7 @@
   },
   {
     "name": "batch_size",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Size of minibatches for stochastic optimizers.",
     "required": false,
@@ -50,19 +41,15 @@
   },
   {
     "name": "learning_rate",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": null,
     "description": "Learning rate schedule for weight updates.",
     "required": false,
-    "choices": [
-      "constant",
-      "invscaling",
-      "adaptive"
-    ]
+    "choices": ["constant", "invscaling", "adaptive"]
   },
   {
     "name": "learning_rate_init",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The initial learning rate used.",
     "required": false,
@@ -70,7 +57,7 @@
   },
   {
     "name": "power_t",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The exponent for inverse scaling learning rate.",
     "required": false,
@@ -78,7 +65,7 @@
   },
   {
     "name": "max_iter",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Maximum number of iterations.",
     "required": false,
@@ -86,7 +73,7 @@
   },
   {
     "name": "shuffle",
-    "param_type": "<class 'bool'>",
+    "option_type": "<class 'bool'>",
     "default": null,
     "description": "Whether to shuffle samples in each iteration.",
     "required": false,
@@ -94,7 +81,7 @@
   },
   {
     "name": "random_state",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Determines random number generation for weights and bias initialization, train-test split if early stopping is used, and batch sampling when solver='sgd' or 'adam'.",
     "required": false,
@@ -102,7 +89,7 @@
   },
   {
     "name": "tol",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Tolerance for the optimization.",
     "required": false,
@@ -110,7 +97,7 @@
   },
   {
     "name": "verbose",
-    "param_type": "<class 'bool'>",
+    "option_type": "<class 'bool'>",
     "default": null,
     "description": "Whether to print progress messages to stdout.",
     "required": false,
@@ -118,7 +105,7 @@
   },
   {
     "name": "warm_start",
-    "param_type": "<class 'bool'>",
+    "option_type": "<class 'bool'>",
     "default": null,
     "description": "When set to True, reuse the solution of the previous call to fit as initialization.",
     "required": false,
@@ -126,7 +113,7 @@
   },
   {
     "name": "momentum",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Momentum for gradient descent update.",
     "required": false,
@@ -134,7 +121,7 @@
   },
   {
     "name": "nesterovs_momentum",
-    "param_type": "<class 'bool'>",
+    "option_type": "<class 'bool'>",
     "default": null,
     "description": "Whether to use Nesterov's momentum.",
     "required": false,
@@ -142,7 +129,7 @@
   },
   {
     "name": "early_stopping",
-    "param_type": "<class 'bool'>",
+    "option_type": "<class 'bool'>",
     "default": null,
     "description": "Whether to use early stopping to terminate training when validation score is not improving.",
     "required": false,
@@ -150,7 +137,7 @@
   },
   {
     "name": "validation_fraction",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The proportion of training data to set aside as validation set for early stopping.",
     "required": false,
@@ -158,7 +145,7 @@
   },
   {
     "name": "beta_1",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Exponential decay rate for estimates of first moment vector in adam.",
     "required": false,
@@ -166,7 +153,7 @@
   },
   {
     "name": "beta_2",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Exponential decay rate for estimates of second moment vector in adam.",
     "required": false,
@@ -174,7 +161,7 @@
   },
   {
     "name": "epsilon",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Value for numerical stability in adam.",
     "required": false,
@@ -182,7 +169,7 @@
   },
   {
     "name": "n_iter_no_change",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Maximum number of epochs to not meet tol improvement.",
     "required": false,
@@ -190,7 +177,7 @@
   },
   {
     "name": "max_fun",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Only used when solver='lbfgs'.",
     "required": false,

@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "scikit-learn>=1.6.1",
-    "nextmv>=0.18.0"
+    "nextmv>=0.25.0"
 ]
 description = "An SDK for integrating scikit-learn with the Nextmv platform"
 dynamic = [

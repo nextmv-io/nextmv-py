@@ -1,20 +1,15 @@
 [
   {
     "name": "strategy",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": null,
     "description": "Strategy to use to generate predictions.",
     "required": false,
-    "choices": [
-      "mean",
-      "median",
-      "quantile",
-      "constant"
-    ]
+    "choices": ["mean", "median", "quantile", "constant"]
   },
   {
     "name": "constant",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The explicit constant as predicted by the \"constant\" strategy.",
     "required": false,
@@ -22,7 +17,7 @@
   },
   {
     "name": "quantile",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The quantile to predict using the \"quantile\" strategy.",
     "required": false,

@@ -1,7 +1,7 @@
 [
   {
     "name": "criterion",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": "squared_error",
     "description": "The function to measure the quality of a split.",
     "required": false,
@@ -9,7 +9,7 @@
   },
   {
     "name": "splitter",
-    "param_type": "<class 'str'>",
+    "option_type": "<class 'str'>",
     "default": "best",
     "description": "The strategy used to choose the split at each node.",
     "required": false,
@@ -17,7 +17,7 @@
   },
   {
     "name": "max_depth",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "The maximum depth of the tree.",
     "required": false,
@@ -25,7 +25,7 @@
   },
   {
     "name": "min_samples_split",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "The minimum number of samples required to split an internal node.",
     "required": false,
@@ -33,7 +33,7 @@
   },
   {
     "name": "min_samples_leaf",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "The minimum number of samples required to be at a leaf node.",
     "required": false,
@@ -41,7 +41,7 @@
   },
   {
     "name": "min_weight_fraction_leaf",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
     "required": false,
@@ -49,7 +49,7 @@
   },
   {
     "name": "max_features",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "The number of features to consider when looking for the best split.",
     "required": false,
@@ -57,7 +57,7 @@
   },
   {
     "name": "random_state",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Controls the randomness of the estimator.",
     "required": false,
@@ -65,7 +65,7 @@
   },
   {
     "name": "max_leaf_nodes",
-    "param_type": "<class 'int'>",
+    "option_type": "<class 'int'>",
     "default": null,
     "description": "Grow a tree with max_leaf_nodes in best-first fashion.",
     "required": false,
@@ -73,7 +73,7 @@
   },
   {
     "name": "min_impurity_decrease",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "A node will be split if this split induces a decrease of the impurity #.",
     "required": false,
@@ -81,7 +81,7 @@
   },
   {
     "name": "ccp_alpha",
-    "param_type": "<class 'float'>",
+    "option_type": "<class 'float'>",
     "default": null,
     "description": "Complexity parameter used for Minimal Cost-Complexity Pruning.",
     "required": false,

@@ -3,104 +3,104 @@
 import nextmv
 
 GRADIENT_BOOSTING_REGRESSOR_PARAMETERS = [
-    nextmv.Parameter(
+    nextmv.Option(
         name="loss",
-        param_type=str,
+        option_type=str,
         choices=["squared_error", "absolute_error", "huber", "quantile"],
         description="Loss function to be optimized.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="learning_rate",
-        param_type=float,
+        option_type=float,
         description="Learning rate shrinks the contribution of each tree by learning_rate.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_estimators",
-        param_type=int,
+        option_type=int,
         description="The number of boosting stages to perform.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="subsample",
-        param_type=float,
+        option_type=float,
         description="The fraction of samples to be used for fitting the individual base learners.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="criterion",
-        param_type=str,
+        option_type=str,
         choices=["friedman_mse", "squared_error"],
         description="The function to measure the quality of a split.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_samples_split",
-        param_type=int,
+        option_type=int,
         description="The minimum number of samples required to split an internal node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_samples_leaf",
-        param_type=int,
+        option_type=int,
         description="The minimum number of samples required to be at a leaf node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_weight_fraction_leaf",
-        param_type=float,
+        option_type=float,
         description="The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_depth",
-        param_type=int,
+        option_type=int,
         description="Maximum depth of the individual regression estimators.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_impurity_decrease",
-        param_type=float,
+        option_type=float,
         description="A node will be split if this split induces a decrease of the impurity greater than "
         "or equal to this value.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="random_state",
-        param_type=int,
+        option_type=int,
         description="Controls the random seed given to each Tree estimator at each boosting iteration.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_features",
-        param_type=int,
+        option_type=int,
         description="The number of features to consider when looking for the best split.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="alpha",
-        param_type=float,
+        option_type=float,
         description="The alpha-quantile of the huber loss function and the quantile loss function.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_leaf_nodes",
-        param_type=int,
+        option_type=int,
         description="Grow trees with max_leaf_nodes in best-first fashion.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="warm_start",
-        param_type=bool,
+        option_type=bool,
         description="When set to True, reuse the solution of the previous call to fit and add more estimators "
         "to the ensemble, otherwise, just erase the previous solution.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="validation_fraction",
-        param_type=float,
+        option_type=float,
         description="The proportion of training data to set aside as validation set for early stopping.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_iter_no_change",
-        param_type=int,
+        option_type=int,
         description="n_iter_no_change is used to decide if early stopping will be used to terminate training "
         "when validation score is not improving.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="tol",
-        param_type=float,
+        option_type=float,
         description="Tolerance for the early stopping.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="ccp_alpha",
-        param_type=float,
+        option_type=float,
         description="Complexity parameter used for Minimal Cost-Complexity Pruning.",
     ),
 ]
@@ -119,98 +119,98 @@ class GradientBoostingRegressorOptions:
 
 
 RANDOM_FOREST_REGRESSOR_PARAMETERS = [
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_estimators",
-        param_type=int,
+        option_type=int,
         description="The number of trees in the forest.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="criterion",
-        param_type=str,
+        option_type=str,
         choices=["squared_error", "absolute_error", "friedman_mse", "poisson"],
         description="The function to measure the quality of a split.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_depth",
-        param_type=int,
+        option_type=int,
         description="The maximum depth of the tree.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_samples_split",
-        param_type=int,
+        option_type=int,
         description="The minimum number of samples required to split an internal node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_samples_leaf",
-        param_type=int,
+        option_type=int,
         description="The minimum number of samples required to be at a leaf node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_weight_fraction_leaf",
-        param_type=float,
+        option_type=float,
         description="The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_features",
-        param_type=int,
+        option_type=int,
         description="The number of features to consider when looking for the best split.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_leaf_nodes",
-        param_type=int,
+        option_type=int,
         description="Grow trees with max_leaf_nodes in best-first fashion.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="min_impurity_decrease",
-        param_type=float,
+        option_type=float,
         description="A node will be split if this split induces a decrease of the impurity greater than or "
         "equal to this value.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="bootstrap",
-        param_type=bool,
+        option_type=bool,
         description="Whether bootstrap samples are used when building trees.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="oob_score",
-        param_type=bool,
+        option_type=bool,
         description="Whether to use out-of-bag samples to estimate the generalization score.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_jobs",
-        param_type=int,
+        option_type=int,
         description="The number of jobs to run in parallel.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="random_state",
-        param_type=int,
+        option_type=int,
         description="Controls both the randomness of the bootstrapping of the samples used when building "
         "trees and the sampling of the features.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="verbose",
-        param_type=int,
+        option_type=int,
         description="Controls the verbosity when fitting and predicting.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="warm_start",
-        param_type=bool,
+        option_type=bool,
         description="When set to True, reuse the solution of the previous call to fit and add more estimators "
         "to the ensemble, otherwise, just erase the previous solution.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="ccp_alpha",
-        param_type=float,
+        option_type=float,
         description="Complexity parameter used for Minimal Cost-Complexity Pruning.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_samples",
-        param_type=int,
+        option_type=int,
         description="If bootstrap is True, the number of samples to draw from X to train each base estimator.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="monotonic_cst",
-        param_type=int,
+        option_type=int,
         description="Indicates the monotonicity constraint to enforce on each feature.",
     ),
 ]
