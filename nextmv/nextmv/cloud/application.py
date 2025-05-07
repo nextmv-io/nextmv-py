@@ -30,7 +30,7 @@ from nextmv.cloud.run import (
     TrackedRun,
 )
 from nextmv.cloud.safe import name_and_id
-from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets
+from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
@@ -273,7 +273,7 @@ class Application:
             If the response status code is not 2xx.
         """
 
-        _ = self.delete_batch_experiment(batch_id=scenario_test_id)
+        self.delete_batch_experiment(batch_id=scenario_test_id)
 
     def delete_secrets_collection(self, secrets_collection_id: str) -> None:
         """
@@ -488,7 +488,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/batch?",
+            endpoint=f"{self.experiments_endpoint}/batch",
             query_params={"type": "scenario"},
         )
 
@@ -1366,19 +1366,18 @@ class Application:
         if len(scenarios) < 1:
             raise ValueError("At least one scenario must be provided")
 
+        scenarios_by_id = _scenarios_by_id(scenarios)
+
         # Save all the information needed by scenario.
         input_sets = {}
-        scenarios_by_id = {}
         instances = {}
-        for scenario_ix, scenario in enumerate(scenarios, start=1):
-            scenario_id = f"scenario-{scenario_ix}" if scenario.scenario_id is None else scenario.scenario_id
+        for scenario_id, scenario in scenarios_by_id.items():
             instance = self.instance(instance_id=scenario.instance_id)
 
             # Each scenario is associated to an input set, so we must either
             # get it or create it.
             input_set = self.__input_set_for_scenario(scenario, scenario_id)
 
-            scenarios_by_id[scenario_id] = scenario
             instances[scenario_id] = instance
             input_sets[scenario_id] = input_set
 
@@ -2043,7 +2042,7 @@ class Application:
         if isinstance(input, dict):
             input = json.dumps(input)
 
-        _ = self.client.upload_to_presigned_url(
+        self.client.upload_to_presigned_url(
             url=upload_url.upload_url,
             data=input,
         )

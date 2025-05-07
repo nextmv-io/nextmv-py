@@ -165,7 +165,7 @@ class RunConfiguration(BaseModel):
     secrets_collection_id: Optional[str] = None
     """ID of the secrets collection to use for the run."""
     queuing: Optional[RunQueuing] = None
-    """Queueing configuration for the run."""
+    """Queuing configuration for the run."""
 
 
 class ExternalRunResult(BaseModel):

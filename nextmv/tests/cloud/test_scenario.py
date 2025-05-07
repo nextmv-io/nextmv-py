@@ -1,6 +1,6 @@
 import unittest
 
-from nextmv.cloud.scenario import Scenario, ScenarioConfiguration, _option_sets
+from nextmv.cloud.scenario import Scenario, ScenarioConfiguration, _option_sets, _scenarios_by_id
 
 
 class TestScenarioTest(unittest.TestCase):
@@ -71,6 +71,32 @@ class TestScenarioTest(unittest.TestCase):
                 },
             },
         )
+
+    def test_scenarios_by_id(self):
+        scenarios = [
+            Scenario(
+                scenario_input=None,
+                instance_id="foo",
+            ),
+            Scenario(
+                scenario_input=None,
+                instance_id="bar",
+            ),
+        ]
+
+        scenarios_by_id = _scenarios_by_id(scenarios)
+        self.assertEqual(len(scenarios_by_id), 2)
+
+        # Scenarios cannot have duplicate IDs.
+        scenarios.append(
+            Scenario(
+                scenario_id="scenario-1",
+                scenario_input=None,
+                instance_id="foo",
+            ),
+        )
+        with self.assertRaises(ValueError):
+            scenarios_by_id = _scenarios_by_id(scenarios)
 
 
 class TestScenario(unittest.TestCase):

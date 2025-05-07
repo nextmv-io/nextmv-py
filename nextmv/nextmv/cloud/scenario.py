@@ -12,9 +12,9 @@ class ScenarioConfiguration:
     Configuration for a scenario.
 
     You can define multiple values for a single option, which will result in
-    multiple scenarios being created. For example, if you have a configuration
+    multiple runs being created. For example, if you have a configuration
     option "x" with values [1, 2], and a configuration option "y" with values
-    [3, 4], then the following scenarios will be created:
+    [3, 4], then the following runs will be created:
     - x=1, y=3
     - x=1, y=4
     - x=2, y=3
@@ -196,10 +196,9 @@ def _option_sets(scenarios: list[Scenario]) -> dict[str, dict[str, dict[str, str
     """
 
     sets_by_scenario = {}
-    for scenario_ix, scenario in enumerate(scenarios, start=1):
+    scenarios_by_id = _scenarios_by_id(scenarios)
+    for scenario_id, scenario in scenarios_by_id.items():
         combinations = scenario.option_combinations()
-        scenario_id = f"scenario-{scenario_ix}" if scenario.scenario_id is None else scenario.scenario_id
-
         option_sets = {}
         for comb_ix, combination in enumerate(combinations):
             option_sets[f"{scenario_id}_{comb_ix}"] = combination
@@ -207,3 +206,24 @@ def _option_sets(scenarios: list[Scenario]) -> dict[str, dict[str, dict[str, str
         sets_by_scenario[scenario_id] = option_sets
 
     return sets_by_scenario
+
+
+def _scenarios_by_id(scenarios: list[Scenario]) -> dict[str, Scenario]:
+    """
+    This function maps a scenario to its ID. A scenario ID is created if it
+    wasn’t defined. This function also checks that there are no duplicate
+    scenario IDs.
+    """
+
+    scenario_by_id = {}
+    ids_used = {}
+    for scenario_ix, scenario in enumerate(scenarios, start=1):
+        scenario_id = f"scenario-{scenario_ix}" if scenario.scenario_id is None else scenario.scenario_id
+        used = ids_used.get(scenario_id) is not None
+        if used:
+            raise ValueError(f"Duplicate scenario ID found: {scenario_id}")
+
+        ids_used[scenario_id] = True
+        scenario_by_id[scenario_id] = scenario
+
+    return scenario_by_id
