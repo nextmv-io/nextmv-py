@@ -49,8 +49,8 @@ def Model(options: nextmv.Options, license_path: Optional[str] = "") -> gp.Model
     model = gp.Model(env=env)
 
     gp_names = [val["name"] for val in param_details.values()]
-    for parameter in options.parameters:
-        name = parameter.name
+    for opt in options.options:
+        name = opt.name
         if name not in gp_names:
             continue
 
