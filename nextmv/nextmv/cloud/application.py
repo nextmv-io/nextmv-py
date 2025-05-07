@@ -1799,7 +1799,7 @@ class Application:
 
         return self.batch_experiment(batch_id=scenario_test_id)
 
-    def track_run(self, tracked_run: TrackedRun) -> str:
+    def track_run(self, tracked_run: TrackedRun, instance_id: Optional[str] = None) -> str:
         """
         Track an external run.
 
@@ -1812,6 +1812,9 @@ class Application:
         ----------
         tracked_run : TrackedRun
             The run to track.
+        instance_id: Optional[str]
+            Optional instance ID if you want to associate your tracked run with
+            an instance.
 
         Returns
         -------
@@ -1855,12 +1858,17 @@ class Application:
         if tracked_run.error is not None and tracked_run.error != "":
             external_result.error_message = tracked_run.error
 
-        return self.new_run(upload_id=url_input.upload_id, external_result=external_result)
+        return self.new_run(
+            upload_id=url_input.upload_id,
+            external_result=external_result,
+            instance_id=instance_id,
+        )
 
     def track_run_with_result(
         self,
         tracked_run: TrackedRun,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        instance_id: Optional[str] = None,
     ) -> RunResult:
         """
         Track an external run and poll for the result. This is a convenience
@@ -1874,6 +1882,9 @@ class Application:
             The run to track.
         polling_options : PollingOptions
             Options to use when polling for the run result.
+        instance_id: Optional[str]
+            Optional instance ID if you want to associate your tracked run with
+            an instance.
 
         Returns
         -------
@@ -1893,7 +1904,7 @@ class Application:
             If the run does not succeed after the polling strategy is
             exhausted based on number of tries.
         """
-        run_id = self.track_run(tracked_run=tracked_run)
+        run_id = self.track_run(tracked_run=tracked_run, instance_id=instance_id)
 
         return self.run_result_with_polling(
             run_id=run_id,
