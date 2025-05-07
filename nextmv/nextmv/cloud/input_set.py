@@ -12,11 +12,11 @@ class ManagedInput(BaseModel):
 
     id: str
     """ID of the input."""
-    name: str
-    """Name of the input."""
-    description: str
-    """Description of the input."""
 
+    name: Optional[str] = None
+    """Name of the input."""
+    description: Optional[str] = None
+    """Description of the input."""
     run_id: Optional[str] = None
     """ID of the run that created the input."""
     upload_id: Optional[str] = None

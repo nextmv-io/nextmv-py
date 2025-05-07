@@ -464,7 +464,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/inputs",
+            endpoint=f"{self.endpoint}/inputs",
         )
 
         return [ManagedInput.from_dict(managed_input) for managed_input in response.json()]
@@ -552,7 +552,7 @@ class Application:
 
         response = self.client.request(
             method="GET",
-            endpoint=f"{self.experiments_endpoint}/inputs/{managed_input_id}",
+            endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
         )
 
         return ManagedInput.from_dict(response.json())
@@ -752,7 +752,7 @@ class Application:
     def new_batch_experiment(
         self,
         name: str,
-        input_set_id: str,
+        input_set_id: Optional[str] = None,
         instance_ids: Optional[list[str]] = None,
         description: Optional[str] = None,
         id: Optional[str] = None,
@@ -799,8 +799,9 @@ class Application:
 
         payload = {
             "name": name,
-            "input_set_id": input_set_id,
         }
+        if input_set_id is not None:
+            payload["input_set_id"] = input_set_id
         if instance_ids is not None:
             payload["instance_ids"] = instance_ids
         if description is not None:
@@ -1037,7 +1038,7 @@ class Application:
 
         response = self.client.request(
             method="POST",
-            endpoint=f"{self.experiments_endpoint}/inputs",
+            endpoint=f"{self.endpoint}/inputs",
             payload=payload,
         )
 
@@ -1369,7 +1370,7 @@ class Application:
         input_sets = {}
         scenarios_by_id = {}
         instances = {}
-        for scenario_ix, scenario in enumerate(scenarios):
+        for scenario_ix, scenario in enumerate(scenarios, start=1):
             scenario_id = f"scenario-{scenario_ix}" if scenario.scenario_id is None else scenario.scenario_id
             instance = self.instance(instance_id=scenario.instance_id)
 
@@ -1387,13 +1388,17 @@ class Application:
         # The scenario tests results in multiple individual runs.
         runs = []
         run_counter = 0
+        opt_sets = {}
         for scenario_id, scenario_opt_sets in opt_sets_by_scenario.items():
+            opt_sets = {**opt_sets, **scenario_opt_sets}
             input_set = input_sets[scenario_id]
             scenario = scenarios_by_id[scenario_id]
 
             for set_key in scenario_opt_sets.keys():
-                for input_id in input_set.input_ids:
-                    for repetition in range(repetitions):
+                inputs = input_set.input_ids if len(input_set.input_ids) > 0 else input_set.inputs
+                for input in inputs:
+                    input_id = input.id if isinstance(input, ManagedInput) else input
+                    for repetition in range(repetitions + 1):
                         run_counter += 1
                         run = BatchExperimentRun(
                             input_id=input_id,
@@ -1406,12 +1411,12 @@ class Application:
                         )
                         runs.append(run)
 
-        self.new_batch_experiment(
+        return self.new_batch_experiment(
             id=id,
             name=name,
             description=description,
             type="scenario",
-            option_sets=opt_sets_by_scenario,
+            option_sets=opt_sets,
             runs=runs,
         )
 
@@ -1975,7 +1980,7 @@ class Application:
         }
         _ = self.client.request(
             method="PUT",
-            endpoint=f"{self.experiments_endpoint}/inputs/{managed_input_id}",
+            endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
             payload=payload,
         )
 

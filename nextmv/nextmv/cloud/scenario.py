@@ -166,6 +166,9 @@ class Scenario:
             options derived from the configuration.
         """
 
+        if self.configuration is None or len(self.configuration) == 0:
+            return [{}]
+
         keys, value_lists = zip(*((config.name, config.values) for config in self.configuration))
         combinations = [dict(zip(keys, values)) for values in itertools.product(*value_lists)]
 
