@@ -127,9 +127,9 @@ class TestModel(unittest.TestCase):
             statistics=stats,
         )
 
-        nextmv.write_local(output, self.SOLUTION_FILE_NAME)
+        nextmv.write(output, self.SOLUTION_FILE_NAME)
 
-        nm_input = nextmv.load_local(path=self.SOLUTION_FILE_NAME)
+        nm_input = nextmv.load(path=self.SOLUTION_FILE_NAME)
 
         sol_2 = nextmv.from_dict(nm_input.data["solution"])
         self.assertIsNotNone(sol_2)

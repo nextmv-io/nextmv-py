@@ -3,124 +3,124 @@
 import nextmv
 
 MLP_REGRESSOR_PARAMETERS = [
-    nextmv.Parameter(
+    nextmv.Option(
         name="hidden_layer_sizes",
-        param_type=str,
+        option_type=str,
         description='The ith element represents the number of neurons in the ith hidden layer. (e.g. "1,2,3")',
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="activation",
-        param_type=str,
+        option_type=str,
         choices=["identity", "logistic", "tanh", "relu"],
         description="Activation function for the hidden layer.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="solver",
-        param_type=str,
+        option_type=str,
         choices=["lbfgs", "sgd", "adam"],
         description="The solver for weight optimization.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="alpha",
-        param_type=float,
+        option_type=float,
         description="Strength of the L2 regularization term.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="batch_size",
-        param_type=int,
+        option_type=int,
         description="Size of minibatches for stochastic optimizers.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="learning_rate",
-        param_type=str,
+        option_type=str,
         choices=["constant", "invscaling", "adaptive"],
         description="Learning rate schedule for weight updates.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="learning_rate_init",
-        param_type=float,
+        option_type=float,
         description="The initial learning rate used.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="power_t",
-        param_type=float,
+        option_type=float,
         description="The exponent for inverse scaling learning rate.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_iter",
-        param_type=int,
+        option_type=int,
         description="Maximum number of iterations.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="shuffle",
-        param_type=bool,
+        option_type=bool,
         description="Whether to shuffle samples in each iteration.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="random_state",
-        param_type=int,
+        option_type=int,
         description="Determines random number generation for weights and "
         "bias initialization, train-test split if early stopping is used, "
         "and batch sampling when solver='sgd' or 'adam'.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="tol",
-        param_type=float,
+        option_type=float,
         description="Tolerance for the optimization.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="verbose",
-        param_type=bool,
+        option_type=bool,
         description="Whether to print progress messages to stdout.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="warm_start",
-        param_type=bool,
+        option_type=bool,
         description="When set to True, reuse the solution of the previous call to fit as initialization.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="momentum",
-        param_type=float,
+        option_type=float,
         description="Momentum for gradient descent update.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="nesterovs_momentum",
-        param_type=bool,
+        option_type=bool,
         description="Whether to use Nesterov's momentum.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="early_stopping",
-        param_type=bool,
+        option_type=bool,
         description="Whether to use early stopping to terminate training when validation score is not improving.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="validation_fraction",
-        param_type=float,
+        option_type=float,
         description="The proportion of training data to set aside as validation set for early stopping.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="beta_1",
-        param_type=float,
+        option_type=float,
         description="Exponential decay rate for estimates of first moment vector in adam.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="beta_2",
-        param_type=float,
+        option_type=float,
         description="Exponential decay rate for estimates of second moment vector in adam.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="epsilon",
-        param_type=float,
+        option_type=float,
         description="Value for numerical stability in adam.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="n_iter_no_change",
-        param_type=int,
+        option_type=int,
         description="Maximum number of epochs to not meet tol improvement.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="max_fun",
-        param_type=int,
+        option_type=int,
         description="Only used when solver='lbfgs'.",
     ),
 ]

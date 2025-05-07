@@ -3,20 +3,20 @@
 import nextmv
 
 DUMMY_REGRESSOR_PARAMETERS = [
-    nextmv.Parameter(
+    nextmv.Option(
         name="strategy",
-        param_type=str,
+        option_type=str,
         choices=["mean", "median", "quantile", "constant"],
         description="Strategy to use to generate predictions.",
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="constant",
-        param_type=float,
+        option_type=float,
         description='The explicit constant as predicted by the "constant" strategy.',
     ),
-    nextmv.Parameter(
+    nextmv.Option(
         name="quantile",
-        param_type=float,
+        option_type=float,
         description='The quantile to predict using the "quantile" strategy.',
     ),
 ]
