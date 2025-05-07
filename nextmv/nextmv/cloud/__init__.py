@@ -29,6 +29,7 @@ from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .client import Client as Client
 from .input_set import InputSet as InputSet
+from .input_set import ManagedInput as ManagedInput
 from .instance import Instance as Instance
 from .instance import InstanceConfiguration as InstanceConfiguration
 from .manifest import Manifest as Manifest
@@ -46,12 +47,16 @@ from .run import Metadata as Metadata
 from .run import RunConfiguration as RunConfiguration
 from .run import RunInformation as RunInformation
 from .run import RunLog as RunLog
-from .run import RunQueueing as RunQueueing
+from .run import RunQueuing as RunQueuing
 from .run import RunResult as RunResult
 from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
 from .run import TrackedRun as TrackedRun
 from .run import TrackedRunStatus as TrackedRunStatus
+from .scenario import Scenario as Scenario
+from .scenario import ScenarioConfiguration as ScenarioConfiguration
+from .scenario import ScenarioInput as ScenarioInput
+from .scenario import ScenarioInputType as ScenarioInputType
 from .secrets import Secret as Secret
 from .secrets import SecretsCollection as SecretsCollection
 from .secrets import SecretsCollectionSummary as SecretsCollectionSummary
