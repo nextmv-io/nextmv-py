@@ -349,7 +349,7 @@ class Output:
 class OutputWriter:
     """Base class for writing outputs."""
 
-    def write(self, output: Output, *args, **kwargs) -> None:
+    def write(self, output: Union[Output, dict[str, Any], BaseModel], *args, **kwargs) -> None:
         """
         Write the output data. This method should be implemented by subclasses.
         """
@@ -364,7 +364,7 @@ class LocalOutputWriter(OutputWriter):
     """
 
     def _write_json(
-        output: Union[Output, dict[str, Any]],
+        output: Union[Output, dict[str, Any], BaseModel],
         options: dict[str, Any],
         statistics: dict[str, Any],
         assets: list[dict[str, Any]],
@@ -372,6 +372,8 @@ class LocalOutputWriter(OutputWriter):
     ) -> None:
         if isinstance(output, dict):
             final_output = output
+        elif isinstance(output, BaseModel):
+            final_output = output.to_dict()
         else:
             solution = output.solution if output.solution is not None else {}
             final_output = {
@@ -447,7 +449,7 @@ class LocalOutputWriter(OutputWriter):
 
     def write(
         self,
-        output: Union[Output, dict[str, Any]],
+        output: Union[Output, dict[str, Any], BaseModel],
         path: Optional[str] = None,
         skip_stdout_reset: bool = False,
     ) -> None:
@@ -497,8 +499,12 @@ class LocalOutputWriter(OutputWriter):
             output_format = output.output_format
         elif isinstance(output, dict):
             output_format = OutputFormat.JSON
+        elif isinstance(output, BaseModel):
+            output_format = OutputFormat.JSON
         else:
-            raise TypeError(f"unsupported output type: {type(output)}, supported types are `Output` or `dict`")
+            raise TypeError(
+                f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
+            )
 
         statistics = self._extract_statistics(output)
         options = self._extract_options(output)
@@ -640,7 +646,7 @@ _LOCAL_OUTPUT_WRITER = LocalOutputWriter()
 
 
 def write(
-    output: Union[Output, dict[str, Any]],
+    output: Union[Output, dict[str, Any], BaseModel],
     path: Optional[str] = None,
     skip_stdout_reset: bool = False,
     writer: Optional[OutputWriter] = _LOCAL_OUTPUT_WRITER,
