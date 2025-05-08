@@ -14,7 +14,12 @@ import requests
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
 from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
-from nextmv.cloud.batch_experiment import BatchExperiment, BatchExperimentMetadata, BatchExperimentRun
+from nextmv.cloud.batch_experiment import (
+    BatchExperiment,
+    BatchExperimentInformation,
+    BatchExperimentMetadata,
+    BatchExperimentRun,
+)
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
@@ -1955,6 +1960,47 @@ class Application:
 
         return Instance.from_dict(response.json())
 
+    def update_batch_experiment(
+        self,
+        batch_experiment_id: str,
+        name: str,
+        description: str,
+    ) -> BatchExperimentInformation:
+        """
+        Update a batch experiment.
+
+        Parameters
+        ----------
+        batch_experiment_id : str
+            ID of the batch experiment to update.
+        name : str
+            Name of the batch experiment.
+        description : str
+            Description of the batch experiment.
+
+        Returns
+        -------
+        BatchExperimentInformation
+            The information with the updated batch experiment.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        payload = {
+            "name": name,
+            "description": description,
+        }
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_experiment_id}",
+            payload=payload,
+        )
+
+        return BatchExperimentInformation.from_dict(response.json())
+
     def update_managed_input(
         self,
         managed_input_id: str,
@@ -1992,6 +2038,43 @@ class Application:
             method="PUT",
             endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
             payload=payload,
+        )
+
+    def update_scenario_test(
+        self,
+        scenario_test_id: str,
+        name: str,
+        description: str,
+    ) -> BatchExperimentInformation:
+        """
+        Update a scenario test. Scenario tests use the batch experiments API,
+        so this method calls the `update_batch_experiment` method, and thus the
+        return type is the same.
+
+        Parameters
+        ----------
+        scenario_test_id : str
+            ID of the scenario test to update.
+        name : str
+            Name of the scenario test.
+        description : str
+            Description of the scenario test.
+
+        Returns
+        -------
+        BatchExperimentInformation
+            The information with the updated scenario test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        return self.update_batch_experiment(
+            batch_experiment_id=scenario_test_id,
+            name=name,
+            description=description,
         )
 
     def update_secrets_collection(

@@ -18,9 +18,9 @@ class BatchExperimentInformation(BaseModel):
     """Creation date of the batch experiment."""
     updated_at: datetime
     """Last update date of the batch experiment."""
-    status: str
-    """Status of the batch experiment."""
 
+    status: Optional[str] = None
+    """Status of the batch experiment."""
     description: Optional[str] = None
     """Description of the batch experiment."""
     number_of_requested_runs: Optional[int] = None
@@ -101,5 +101,5 @@ class BatchExperimentRun(BaseModel):
 class BatchExperimentMetadata(BatchExperimentInformation):
     """Metadata of a batch experiment."""
 
-    app_id: str
+    app_id: Optional[str] = None
     """ID of the application used for the batch experiment."""
