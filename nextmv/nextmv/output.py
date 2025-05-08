@@ -372,7 +372,7 @@ class LocalOutputWriter(OutputWriter):
     ) -> None:
         if isinstance(output, dict):
             final_output = output
-        if isinstance(output, BaseModel):
+        elif isinstance(output, BaseModel):
             final_output = output.to_dict()
         else:
             solution = output.solution if output.solution is not None else {}

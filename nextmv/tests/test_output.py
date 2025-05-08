@@ -4,10 +4,11 @@ import os
 import shutil
 import unittest
 from io import StringIO
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import nextmv
+from nextmv.base_model import BaseModel
 
 
 class TestOutput(unittest.TestCase):
@@ -291,6 +292,32 @@ class TestOutput(unittest.TestCase):
 
             got = json.loads(mock_stdout.getvalue())
             expected = output
+
+            self.assertDictEqual(got, expected)
+
+    def test_local_write_base_model(self):
+        class myClass(BaseModel):
+            output: dict[str, Any]
+
+        output = {
+            "i_am": "a_crazy_object",
+            "with": [
+                {"nested": "values"},
+                {"and": "more_craziness"},
+            ],
+        }
+        custom_class = myClass(output=output)
+
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(custom_class, skip_stdout_reset=True)
+
+            got = json.loads(mock_stdout.getvalue())
+
+            # We test that the `write` method calls the `.to_dict()` method if
+            # it detects the output type to be an instance of `BaseModel`.
+            expected = {"output": output}
 
             self.assertDictEqual(got, expected)
 
