@@ -1,7 +1,7 @@
 """Defines gurobipy statistics interoperability."""
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -62,15 +62,21 @@ def ModelStatistics(model: gp.Model, run_duration_start: Optional[float] = None)
     if run_duration_start is not None:
         run.duration = time.time() - run_duration_start
 
+    def safe_get(attr_name: str) -> Optional[Any]:
+        """
+        Safely get an attribute from the model by returning None if it does not exist.
+        """
+        return getattr(model, attr_name, None)
+
     return nextmv.Statistics(
         run=run,
         result=nextmv.ResultStatistics(
-            duration=model.Runtime,
-            value=model.ObjVal,
+            duration=safe_get("Runtime"),
+            value=safe_get("ObjVal"),
             custom={
-                "status": STATUS.get(model.Status, "UNKNOWN"),
-                "variables": model.NumVars,
-                "constraints": model.NumConstrs,
+                "status": STATUS.get(safe_get("Status"), "UNKNOWN"),
+                "variables": safe_get("NumVars"),
+                "constraints": safe_get("NumConstrs"),
             },
         ),
         series_data=nextmv.SeriesData(),
