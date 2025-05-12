@@ -1,7 +1,7 @@
 """Defines gurobipy statistics interoperability."""
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -62,7 +62,7 @@ def ModelStatistics(model: gp.Model, run_duration_start: Optional[float] = None)
     if run_duration_start is not None:
         run.duration = time.time() - run_duration_start
 
-    def safe_get(attr_name: str):
+    def safe_get(attr_name: str) -> Optional[Any]:
         """
         Safely get an attribute from the model by returning None if it does not exist.
         """
