@@ -1519,8 +1519,8 @@ class Application:
         if exist_ok and id is None:
             raise ValueError("If exist_ok is True, id must be provided")
 
-        if exist_ok and self.version_exists(id=id):
-            return self.version(id=id)
+        if exist_ok and self.version_exists(version_id=id):
+            return self.version(version_id=id)
 
         payload = {}
 
@@ -2229,19 +2229,19 @@ class Application:
 
         return Version.from_dict(response.json())
 
-    def version_exists(self, id: str) -> bool:
+    def version_exists(self, version_id: str) -> bool:
         """
         Check if a version exists.
 
         Args:
-            id: ID of the version.
+            version_id: ID of the version.
 
         Returns:
             bool: True if the version exists, False otherwise.
         """
 
         try:
-            self.version(id=id)
+            self.version(version_id=version_id)
             return True
         except requests.HTTPError as e:
             if _is_not_exist_error(e):
