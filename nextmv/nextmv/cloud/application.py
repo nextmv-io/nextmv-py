@@ -317,18 +317,7 @@ class Application:
             # If the request was successful, the application exists.
             return True
         except requests.HTTPError as e:
-            if (
-                # Check whether the error is caused by a 404 status code - meaning the app does not exist.
-                (hasattr(e, "response") and hasattr(e.response, "status_code") and e.response.status_code == 404)
-                or
-                # Check a possibly nested exception as well.
-                (
-                    hasattr(e, "__cause__")
-                    and hasattr(e.__cause__, "response")
-                    and hasattr(e.__cause__.response, "status_code")
-                    and e.__cause__.response.status_code == 404
-                )
-            ):
+            if _is_not_exist_error(e):
                 return False
             # Re-throw the exception if it is not the expected 404 error.
             raise e from None
@@ -374,6 +363,25 @@ class Application:
         )
 
         return Instance.from_dict(response.json())
+
+    def instance_exists(self, instance_id: str) -> bool:
+        """
+        Check if an instance exists.
+
+        Args:
+            instance_id: ID of the instance.
+
+        Returns:
+            True if the instance exists, False otherwise.
+        """
+
+        try:
+            self.instance(instance_id=instance_id)
+            return True
+        except requests.HTTPError as e:
+            if _is_not_exist_error(e):
+                return False
+            raise e
 
     def list_acceptance_tests(self) -> list[AcceptanceTest]:
         """
@@ -581,6 +589,8 @@ class Application:
             id: ID of the application. Will be generated if not provided.
             description: Description of the application.
             is_workflow: Whether the application is a Decision Workflow.
+            exist_ok: If True and an application with the same ID already exists,
+                return the existing application instead of creating a new one.
 
         Returns:
             The new application.
@@ -932,6 +942,7 @@ class Application:
         name: str,
         description: Optional[str] = None,
         configuration: Optional[InstanceConfiguration] = None,
+        exist_ok: bool = False,
     ) -> Instance:
         """
         Create a new instance and associate it with a version.
@@ -942,6 +953,8 @@ class Application:
             name: Name of the instance. Will be generated if not provided.
             description: Description of the instance. Will be generated if not provided.
             configuration: Configuration to use for the instance.
+            exist_ok: If True and an instance with the same ID already exists,
+                return the existing instance instead of creating a new one.
 
         Returns:
             Instance.
@@ -949,6 +962,12 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
+
+        if exist_ok and id is None:
+            raise ValueError("If exist_ok is True, id must be provided")
+
+        if exist_ok and self.instance_exists(instance_id=id):
+            return self.instance(instance_id=id)
 
         payload = {
             "version_id": version_id,
@@ -1478,6 +1497,7 @@ class Application:
         id: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        exist_ok: bool = False,
     ) -> Version:
         """
         Create a new version using the current dev binary.
@@ -1486,6 +1506,8 @@ class Application:
             id: ID of the version. Will be generated if not provided.
             name: Name of the version. Will be generated if not provided.
             description: Description of the version. Will be generated if not provided.
+            exist_ok: If True and a version with the same ID already exists,
+                return the existing version instead of creating a new one.
 
         Returns:
             Version.
@@ -1493,6 +1515,12 @@ class Application:
         Raises:
             requests.HTTPError: If the response status code is not 2xx.
         """
+
+        if exist_ok and id is None:
+            raise ValueError("If exist_ok is True, id must be provided")
+
+        if exist_ok and self.version_exists(id=id):
+            return self.version(id=id)
 
         payload = {}
 
@@ -2201,6 +2229,25 @@ class Application:
 
         return Version.from_dict(response.json())
 
+    def version_exists(self, id: str) -> bool:
+        """
+        Check if a version exists.
+
+        Args:
+            id: ID of the version.
+
+        Returns:
+            bool: True if the version exists, False otherwise.
+        """
+
+        try:
+            self.version(id=id)
+            return True
+        except requests.HTTPError as e:
+            if _is_not_exist_error(e):
+                return False
+            raise e
+
     def __run_result(
         self,
         run_id: str,
@@ -2436,3 +2483,29 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, 
     raise RuntimeError(
         f"polling did not succeed after {polling_options.max_tries} tries",
     )
+
+
+def _is_not_exist_error(e: requests.HTTPError) -> bool:
+    """
+    Check if the error is a known 404 Not Found error.
+
+    Args:
+        e: HTTPError to check.
+
+    Returns:
+        True if the error is a 404 Not Found error, False otherwise.
+    """
+    if (
+        # Check whether the error is caused by a 404 status code - meaning the app does not exist.
+        (hasattr(e, "response") and hasattr(e.response, "status_code") and e.response.status_code == 404)
+        or
+        # Check a possibly nested exception as well.
+        (
+            hasattr(e, "__cause__")
+            and hasattr(e.__cause__, "response")
+            and hasattr(e.__cause__.response, "status_code")
+            and e.__cause__.response.status_code == 404
+        )
+    ):
+        return True
+    return False
