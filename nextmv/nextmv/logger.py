@@ -3,13 +3,17 @@
 import sys
 
 __original_stdout = None
+__stdout_redirected = False
 
 
 def redirect_stdout() -> None:
     """Redirect all messages written to stdout to stderr. When you do not want
     to redirect stdout anymore, call `reset_stdout`."""
 
-    global __original_stdout
+    global __original_stdout, __stdout_redirected
+    if __stdout_redirected:
+        return
+    __stdout_redirected = True
 
     __original_stdout = sys.stdout
     sys.stdout = sys.stderr
@@ -19,7 +23,10 @@ def reset_stdout() -> None:
     """Reset stdout to its original value. This function should always be
     called after `redirect_stdout` to avoid unexpected behavior."""
 
-    global __original_stdout
+    global __original_stdout, __stdout_redirected
+    if not __stdout_redirected:
+        return
+    __stdout_redirected = False
 
     if __original_stdout is None:
         sys.stdout = sys.__stdout__
