@@ -14,6 +14,38 @@ from nextmv.input import Input, InputFormat
 from nextmv.output import Output, OutputFormat
 
 
+def run_duration(
+    start: Union[datetime, float],
+    end: Union[datetime, float],
+) -> int:
+    """
+    Calculate the duration of a run in milliseconds.
+
+    Parameters
+    ----------
+    start : Union[datetime, float]
+        The start time of the run. Can be a datetime object or a float
+        representing the start time in seconds since the epoch.
+    end : Union[datetime, float]
+        The end time of the run. Can be a datetime object or a float
+        representing the end time in seconds since the epoch.
+
+    Returns
+    -------
+    int
+        The duration of the run in milliseconds.
+    """
+    if isinstance(start, float) and isinstance(end, float):
+        if start > end:
+            raise ValueError("Start time must be before end time.")
+        return int(round((end - start) * 1000))
+    if isinstance(start, datetime) and isinstance(end, datetime):
+        if start > end:
+            raise ValueError("Start time must be before end time.")
+        return int(round((end - start).total_seconds() * 1000))
+    raise TypeError("Start and end must be either datetime or float.")
+
+
 class Metadata(BaseModel):
     """Metadata of a run, whether it was successful or not."""
 
@@ -181,7 +213,7 @@ class ExternalRunResult(BaseModel):
     error_message: Optional[str] = None
     """Error message of the run."""
     execution_duration: Optional[int] = None
-    """Duration of the run, in seconds."""
+    """Duration of the run, in milliseconds."""
 
     def __post_init_post_parse__(self):
         """Validations done after parsing the model."""
@@ -246,7 +278,7 @@ class TrackedRun:
     """The status of the run being tracked"""
 
     duration: Optional[int] = None
-    """The duration of the run being tracked, in seconds."""
+    """The duration of the run being tracked, in milliseconds."""
     error: Optional[str] = None
     """An error message if the run failed. You should only specify this if the
     run failed, otherwise an exception will be raised."""
