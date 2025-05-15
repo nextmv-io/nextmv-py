@@ -245,7 +245,7 @@ class TrackedRun:
     status: TrackedRunStatus
     """The status of the run being tracked"""
 
-    duration: Optional[int] = None
+    duration: Optional[float] = None
     """The duration of the run being tracked, in seconds."""
     error: Optional[str] = None
     """An error message if the run failed. You should only specify this if the
