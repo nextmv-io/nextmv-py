@@ -180,7 +180,7 @@ class ExternalRunResult(BaseModel):
     """Status of the run."""
     error_message: Optional[str] = None
     """Error message of the run."""
-    execution_duration: Optional[int] = None
+    execution_duration: Optional[float] = None
     """Duration of the run, in seconds."""
 
     def __post_init_post_parse__(self):
