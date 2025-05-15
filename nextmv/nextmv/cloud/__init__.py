@@ -53,6 +53,7 @@ from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
 from .run import TrackedRun as TrackedRun
 from .run import TrackedRunStatus as TrackedRunStatus
+from .run import run_duration as run_duration
 from .scenario import Scenario as Scenario
 from .scenario import ScenarioConfiguration as ScenarioConfiguration
 from .scenario import ScenarioInput as ScenarioInput
