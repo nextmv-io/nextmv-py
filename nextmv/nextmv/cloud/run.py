@@ -23,10 +23,12 @@ def run_duration(
 
     Parameters
     ----------
-    start : datetime
-        The start time of the run.
-    end : datetime
-        The end time of the run.
+    start : Union[datetime, float]
+        The start time of the run. Can be a datetime object or a float
+        representing the start time in seconds since the epoch.
+    end : Union[datetime, float]
+        The end time of the run. Can be a datetime object or a float
+        representing the end time in seconds since the epoch.
 
     Returns
     -------
