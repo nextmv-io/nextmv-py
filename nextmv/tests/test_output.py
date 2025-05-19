@@ -73,6 +73,27 @@ class TestOutput(unittest.TestCase):
 
             self.assertDictEqual(got, expected)
 
+    def test_local_writer_json_stdout_with_configurations(self):
+        output = nextmv.Output(
+            output_format=nextmv.OutputFormat.JSON,
+            solution={"empanadas": "are_life"},
+            statistics={"foo": "bar"},
+            json_configurations={
+                "indent": None,
+                "separators": (",", ":"),
+                "sort_keys": True,
+            },
+        )
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+
+            self.assertEqual(
+                mock_stdout.getvalue(),
+                '{"assets":[],"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
+            )
+
     def test_local_writer_json_stdout_with_options(self):
         options = nextmv.Options()
         options.duration = 5
