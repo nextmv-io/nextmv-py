@@ -292,6 +292,10 @@ class Output:
     """Optional configuration for writing CSV files, to be used when the
     `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module."""
+    json_configurations: Optional[dict[str, Any]] = None
+    """Optional configuration for writing JSON files, to be used when the
+    `output_format` is OutputFormat.JSON. These configurations are passed as
+    kwargs to the `json.dumps` function."""
     assets: Optional[list[Asset]] = None
     """Optional list of assets to be included in the output."""
 
@@ -342,6 +346,8 @@ class Output:
 
         if self.output_format == OutputFormat.CSV_ARCHIVE:
             output_dict["csv_configurations"] = self.csv_configurations
+        elif self.output_format == OutputFormat.JSON:
+            output_dict["json_configurations"] = self.json_configurations
 
         return output_dict
 
@@ -383,10 +389,23 @@ class LocalOutputWriter(OutputWriter):
                 "assets": assets,
             }
 
+        json_configurations = {}
+        if hasattr(output, "json_configurations") and output.json_configurations is not None:
+            json_configurations = output.json_configurations
+
+        indent, custom_serial = 2, _custom_serial
+        if "indent" in json_configurations:
+            indent = json_configurations["indent"]
+            del json_configurations["indent"]
+        if "default" in json_configurations:
+            custom_serial = json_configurations["default"]
+            del json_configurations["default"]
+
         serialized = json.dumps(
             final_output,
-            indent=2,
-            default=_custom_serial,
+            indent=indent,
+            default=custom_serial,
+            **json_configurations,
         )
 
         if path is None or path == "":
