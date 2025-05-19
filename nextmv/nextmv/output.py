@@ -389,9 +389,9 @@ class LocalOutputWriter(OutputWriter):
                 "assets": assets,
             }
 
-        json_configurations = output.json_configurations
-        if json_configurations is None:
-            json_configurations = {}
+        json_configurations = {}
+        if hasattr(output, "json_configurations") and output.json_configurations is not None:
+            json_configurations = output.json_configurations
 
         indent, custom_serial = 2, _custom_serial
         if "indent" in json_configurations:
