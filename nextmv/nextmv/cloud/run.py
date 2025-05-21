@@ -331,4 +331,10 @@ class TrackedRun:
         if self.logs is None:
             return ""
 
-        return "\n".join(self.logs)
+        if isinstance(self.logs, str):
+            return self.logs
+
+        if isinstance(self.logs, list):
+            return "\n".join(self.logs)
+
+        raise TypeError("Logs must be a string or a list of strings.")
