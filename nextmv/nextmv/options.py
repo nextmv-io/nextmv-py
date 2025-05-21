@@ -164,6 +164,11 @@ class Option:
         argument, an environment variable or a default value.
     choices : list[Optional[Any]], optional
         Limits values to a specific set of choices.
+    additional_attributes : dict[str, Any], optional
+        Optional additional attributes for the option. The Nextmv Cloud may
+        perform validation on these attributes. For example, the maximum length
+        of a string or the maximum value of an integer. These additional
+        attributes will be shown in the help message of the `Options`.
     """
 
     name: str
@@ -189,6 +194,13 @@ class Option:
     """
     choices: Optional[list[Any]] = None
     """Limits values to a specific set of choices."""
+    additional_attributes: Optional[dict[str, Any]] = None
+    """
+    Optional additional attributes for the option. The Nextmv Cloud may
+    perform validation on these attributes. For example, the maximum length of
+    a string or the maximum value of an integer. These additional attributes
+    will be shown in the help message of the `Options`.
+    """
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Option":
@@ -209,13 +221,14 @@ class Option:
         option_type_string = data["option_type"]
         option_type = getattr(builtins, option_type_string.split("'")[1])
 
-        return Option(
+        return cls(
             name=data["name"],
             option_type=option_type,
             default=data.get("default"),
             description=data.get("description"),
             required=data.get("required", False),
             choices=data.get("choices"),
+            additional_attributes=data.get("additional_attributes"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -235,6 +248,7 @@ class Option:
             "description": self.description,
             "required": self.required,
             "choices": self.choices,
+            "additional_attributes": self.additional_attributes,
         }
 
 
@@ -728,6 +742,9 @@ class Options:
             description += f" (default: {option.default})"
 
         description += f" (type: {self._option_type(option).__name__})"
+
+        if isinstance(option, Option) and option.additional_attributes is not None:
+            description += f" (additional attributes: {option.additional_attributes})"
 
         if option.description is not None and option.description != "":
             description += f": {option.description}"
