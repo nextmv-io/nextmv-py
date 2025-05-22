@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from typing import Any
 
 from nextmv_sklearn.dummy import DummyRegressorOptions
 from nextmv_sklearn.ensemble import GradientBoostingRegressorOptions, RandomForestRegressorOptions
@@ -39,7 +40,7 @@ class TestOptions(unittest.TestCase):
         self.assertIsNotNone(opt)
         self.compare(opt, "decision_tree")
 
-    def compare(self, opt: any, expected_path: str):
+    def compare(self, opt: Any, expected_path: str):
         n_opt = opt.to_nextmv()
         got = n_opt.options_dict()
 

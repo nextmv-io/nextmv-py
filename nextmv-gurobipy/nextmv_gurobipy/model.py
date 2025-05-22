@@ -16,7 +16,7 @@ def Model(options: nextmv.Options, license_path: Optional[str] = "") -> gp.Model
     it can be used as any other Gurobi model. This loader will look for the
     `gurobi.lic` file in the provided `license_path`. If the file is not found,
     it will not be read. This means that by default, you will be working with
-    Gurobi’s community license.
+    Gurobi's community license.
 
     Only the parameters that are available in the Gurobi API are set. If a
     parameter is not available, it will be skipped.

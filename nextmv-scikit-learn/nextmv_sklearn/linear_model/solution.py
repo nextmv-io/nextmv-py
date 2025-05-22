@@ -38,13 +38,13 @@ class LinearRegressionSolution(BaseModel):
     that are all strings."""
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "LinearRegressionSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "LinearRegressionSolution":
         """
         Creates a LinearRegressionSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns

@@ -47,7 +47,7 @@ warnings.showwarning = custom_showwarning
 # the model requires and that we install and bundle with the app.
 _REQUIREMENTS_FILE = "model_requirements.txt"
 
-# When working in a notebook environment, we don’t really create a `main.py`
+# When working in a notebook environment, we don't really create a `main.py`
 # file with the main entrypoint of the program. Because the logic is mostly
 # encoded inside the `Model` class, we need to create a `main.py` file that we
 # can run in Nextmv Cloud. This file is used as that entrypoint.
@@ -148,7 +148,7 @@ class Model:
             saved and loaded.
         """
 
-        # mlflow is a big package. We don’t want to make it a dependency of
+        # mlflow is a big package. We don't want to make it a dependency of
         # `nextmv` because it is not always needed. We only need it if we are
         # working with the "app from model" logic, which involves working with
         # this `Model` class.
@@ -180,7 +180,7 @@ class Model:
                 params: Optional[dict[str, Any]] = None,
             ) -> Any:
                 """
-                The predict method allows us to work with mlflow’s [python_function]
+                The predict method allows us to work with mlflow's [python_function]
                 model flavor. Warning: This method should not be used or overridden
                 directly. Instead, you should implement the `solve` method.
 
