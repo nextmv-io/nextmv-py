@@ -252,7 +252,7 @@ class Output:
     result of the decision problem. The solution’s type must match the
     `output_format`:
 
-    - `OutputFormat.JSON`: the data must be `dict[str, Any]`.
+    - `OutputFormat.JSON`: the data must be `dict[str, Any]`, or `Any`.
     - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
       Any]]]`. The keys represent the file names where the data should be
       written. The values are lists of dictionaries, where each dictionary
@@ -263,20 +263,73 @@ class Output:
     dictionary, we recommend using the `Statistics` class to ensure that the
     data is correctly formatted.
 
-    Parameters
+    The assets are used to keep track of different downloadable information that
+    is part of the output. The assets can be of type `Asset` or a simple
+    dictionary, but we recommend using the `Asset` class to ensure that the data is
+    correctly formatted.
+
+    Attributes
     ----------
-    options : Options, optional
-        Options that the `Input` were created with.
-    output_format : OutputFormat, optional
+    options : Optional[Union[Options, dict[str, Any]]]
+        Options that the `Output` was created with. These options can be of type
+        `Options` or a simple dictionary. If the options are of type `Options`,
+        they will be serialized to a dictionary using the `to_dict` method. If
+        they are a dictionary, they will be used as is. If the options are not
+        provided, an empty dictionary will be used. If the options are of type
+        `dict`, then the dictionary should have the following structure:
+        ```
+        {
+            "duration": "30",
+            "threads": 4,
+        }
+        ```
+    output_format : Optional[OutputFormat]
         Format of the output data. Default is `OutputFormat.JSON`.
-    solution : Union[dict[str, Any], dict[str, list[dict[str, Any]]], optional
-        The solution to the decision problem.
-    statistics : Union[Statistics, dict[str, Any], optional
-        Statistics of the solution.
+    solution : Optional[Union[dict[str, Any], dict[str, list[dict[str, Any]]]]
+        The solution to the decision problem. The type must match the
+        `output_format`:
+        - `OutputFormat.JSON`: the data must be `dict[str, Any]`.
+        - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str,
+          list[dict[str, Any]]]`. The keys represent the file names where the
+          data should be written. The values are lists of dictionaries, where
+          each dictionary represents a row in the CSV file.
+    statistics : Optional[Union[Statistics, dict[str, Any]]]
+        Statistics of the solution. These statistics can be of type
+        `Statistics` or a simple dictionary. If the statistics are of type
+        `Statistics`, they will be serialized to a dictionary using the
+        `to_dict` method. If they are a dictionary, they will be used as is. If
+        the statistics are not provided, an empty dictionary will be used.
+    csv_configurations : Optional[dict[str, Any]]
+        Optional configuration for writing CSV files, to be used when the
+        `output_format` is `OutputFormat.CSV_ARCHIVE`. These configurations are
+        passed as kwargs to the `DictWriter` class from the `csv` module.
+    json_configurations : Optional[dict[str, Any]]
+        Optional configuration for writing JSON files, to be used when the
+        `output_format` is `OutputFormat.JSON`. These configurations are passed
+        as kwargs to the `json.dumps` function.
+    assets : Optional[list[Union[Asset, dict[str, Any]]]]
+        Optional list of assets to be included in the output. These assets can
+        be of type `Asset` or a simple dictionary. If the assets are of type
+        `Asset`, they will be serialized to a dictionary using the `to_dict`
+        method. If they are a dictionary, they will be used as is. If the
+        assets are not provided, an empty list will be used.
     """
 
-    options: Optional[Options] = None
-    """Options that the `Input` were created with."""
+    options: Optional[Union[Options, dict[str, Any]]] = None
+    """
+    Options that the `Output` was created with. These options can be of type
+    `Options` or a simple dictionary. If the options are of type `Options`,
+    they will be serialized to a dictionary using the `to_dict` method. If
+    they are a dictionary, they will be used as is. If the options are not
+    provided, an empty dictionary will be used. If the options are of type
+    `dict`, then the dictionary should have the following structure:
+    ```
+    {
+        "duration": "30",
+        "threads": 4,
+    }
+    ```
+    """
     output_format: Optional[OutputFormat] = OutputFormat.JSON
     """Format of the output data. Default is `OutputFormat.JSON`."""
     solution: Optional[
@@ -287,17 +340,33 @@ class Output:
     ] = None
     """The solution to the decision problem."""
     statistics: Optional[Union[Statistics, dict[str, Any]]] = None
-    """Statistics of the solution."""
+    """
+    Statistics of the solution. These statistics can be of type `Statistics` or a
+    simple dictionary. If the statistics are of type `Statistics`, they will be
+    serialized to a dictionary using the `to_dict` method. If they are a
+    dictionary, they will be used as is. If the statistics are not provided, an
+    empty dictionary will be used.
+    """
     csv_configurations: Optional[dict[str, Any]] = None
-    """Optional configuration for writing CSV files, to be used when the
-    `output_format` is OutputFormat.CSV_ARCHIVE. These configurations are
-    passed as kwargs to the `DictWriter` class from the `csv` module."""
+    """
+    Optional configuration for writing CSV files, to be used when the
+    `output_format` is `OutputFormat.CSV_ARCHIVE`. These configurations are
+    passed as kwargs to the `DictWriter` class from the `csv` module.
+    """
     json_configurations: Optional[dict[str, Any]] = None
-    """Optional configuration for writing JSON files, to be used when the
-    `output_format` is OutputFormat.JSON. These configurations are passed as
-    kwargs to the `json.dumps` function."""
-    assets: Optional[list[Asset]] = None
-    """Optional list of assets to be included in the output."""
+    """
+    Optional configuration for writing JSON files, to be used when the
+    `output_format` is `OutputFormat.JSON`. These configurations are passed as
+    kwargs to the `json.dumps` function.
+    """
+    assets: Optional[list[Union[Asset, dict[str, Any]]]] = None
+    """
+    Optional list of assets to be included in the output. These assets can be of
+    type `Asset` or a simple dictionary. If the assets are of type `Asset`, they
+    will be serialized to a dictionary using the `to_dict` method. If they are a
+    dictionary, they will be used as is. If the assets are not provided, an
+    empty list will be used.
+    """
 
     def __post_init__(self):
         """Check that the solution matches the format given to initialize the
@@ -327,7 +396,7 @@ class Output:
                 "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, any]:  # noqa: C901
         """
         Convert the `Output` object to a dictionary.
 
@@ -337,16 +406,66 @@ class Output:
             The dictionary representation of the `Output` object.
         """
 
+        # Options need to end up as a dict, so we achieve that based on the
+        # type of options that were used to create the class.
+        if self.options is None:
+            options = {}
+        elif isinstance(self.options, Options):
+            options = self.options.to_dict()
+        elif isinstance(self.options, dict):
+            options = self.options
+        else:
+            raise TypeError(f"unsupported options type: {type(self.options)}, supported types are `Options` or `dict`")
+
+        # Statistics need to end up as a dict, so we achieve that based on the
+        # type of statistics that were used to create the class.
+        if self.statistics is None:
+            statistics = {}
+        elif isinstance(self.statistics, Statistics):
+            statistics = self.statistics.to_dict()
+        elif isinstance(self.statistics, dict):
+            statistics = self.statistics
+        else:
+            raise TypeError(
+                f"unsupported statistics type: {type(self.statistics)}, supported types are `Statistics` or `dict`"
+            )
+
+        # Assets need to end up as a list of dicts, so we achieve that based on
+        # the type of each asset in the list.
+        assets = []
+        if isinstance(self.assets, list):
+            for ix, asset in enumerate(self.assets):
+                if isinstance(asset, Asset):
+                    assets.append(asset.to_dict())
+                elif isinstance(asset, dict):
+                    assets.append(asset)
+                else:
+                    raise TypeError(
+                        f"unsupported asset {ix}, type: {type(asset)}; supported types are `Asset` or `dict`"
+                    )
+        elif self.assets is not None:
+            raise TypeError(f"unsupported assets type: {type(self.assets)}, supported types are `list`")
+
         output_dict = {
-            "options": self.options.to_dict() if self.options is not None else {},
+            "options": options,
             "solution": self.solution if self.solution is not None else {},
-            "statistics": self.statistics.to_dict() if self.statistics is not None else {},
-            "assets": [asset.to_dict() for asset in self.assets] if self.assets is not None else [],
+            "statistics": statistics,
+            "assets": assets,
         }
 
-        if self.output_format == OutputFormat.CSV_ARCHIVE:
+        # Add the auxiliary configurations to the output dictionary if they are
+        # defined and not empty.
+        if (
+            self.output_format == OutputFormat.CSV_ARCHIVE
+            and self.csv_configurations is not None
+            and self.csv_configurations != {}
+        ):
             output_dict["csv_configurations"] = self.csv_configurations
-        elif self.output_format == OutputFormat.JSON:
+        elif (
+            self.output_format == OutputFormat.JSON
+            and self.json_configurations is not None
+            and self.json_configurations != {}
+        ):
             output_dict["json_configurations"] = self.json_configurations
 
         return output_dict
@@ -371,24 +490,9 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_json(
         output: Union[Output, dict[str, Any], BaseModel],
-        options: dict[str, Any],
-        statistics: dict[str, Any],
-        assets: list[dict[str, Any]],
+        output_dict: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
-        if isinstance(output, dict):
-            final_output = output
-        elif isinstance(output, BaseModel):
-            final_output = output.to_dict()
-        else:
-            solution = output.solution if output.solution is not None else {}
-            final_output = {
-                "options": options,
-                "solution": solution,
-                "statistics": statistics,
-                "assets": assets,
-            }
-
         json_configurations = {}
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
@@ -402,7 +506,7 @@ class LocalOutputWriter(OutputWriter):
             del json_configurations["default"]
 
         serialized = json.dumps(
-            final_output,
+            output_dict,
             indent=indent,
             default=custom_serial,
             **json_configurations,
@@ -416,10 +520,8 @@ class LocalOutputWriter(OutputWriter):
             file.write(serialized + "\n")
 
     def _write_archive(
-        output: Output,
-        options: dict[str, Any],
-        statistics: dict[str, Any],
-        assets: list[dict[str, Any]],
+        output: Union[Output, dict[str, Any], BaseModel],
+        output_dict: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
         dir_path = "output"
@@ -434,9 +536,9 @@ class LocalOutputWriter(OutputWriter):
 
         serialized = json.dumps(
             {
-                "options": options,
-                "statistics": statistics,
-                "assets": assets,
+                "options": output_dict.get("options", {}),
+                "statistics": output_dict.get("statistics", {}),
+                "assets": output_dict.get("assets", []),
             },
             indent=2,
         )
@@ -525,87 +627,23 @@ class LocalOutputWriter(OutputWriter):
                 f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
             )
 
-        statistics = self._extract_statistics(output)
-        options = self._extract_options(output)
-        assets = self._extract_assets(output)
+        output_dict = {}
+        if isinstance(output, Output):
+            output_dict = output.to_dict()
+        elif isinstance(output, BaseModel):
+            output_dict = output.to_dict()
+        elif isinstance(output, dict):
+            output_dict = output
+        else:
+            raise TypeError(
+                f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
+            )
 
         self.FILE_WRITERS[output_format](
             output=output,
-            options=options,
-            statistics=statistics,
-            assets=assets,
+            output_dict=output_dict,
             path=path,
         )
-
-    @staticmethod
-    def _extract_statistics(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
-        """Extract JSON-serializable statistics."""
-
-        statistics = {}
-
-        if not isinstance(output, Output):
-            return statistics
-
-        stats = output.statistics
-
-        if stats is None:
-            return statistics
-
-        if isinstance(stats, Statistics):
-            statistics = stats.to_dict()
-        elif isinstance(stats, dict):
-            statistics = stats
-        else:
-            raise TypeError(f"unsupported statistics type: {type(stats)}, supported types are `Statistics` or `dict`")
-
-        return statistics
-
-    @staticmethod
-    def _extract_options(output: Union[Output, dict[str, Any]]) -> dict[str, Any]:
-        """Extract JSON-serializable options."""
-
-        options = {}
-
-        if not isinstance(output, Output):
-            return options
-
-        opt = output.options
-
-        if opt is None:
-            return options
-
-        if isinstance(opt, Options):
-            options = opt.to_dict()
-        elif isinstance(opt, dict):
-            options = opt
-        else:
-            raise TypeError(f"unsupported options type: {type(opt)}, supported types are `Options` or `dict`")
-
-        return options
-
-    @staticmethod
-    def _extract_assets(output: Union[Output, dict[str, Any]]) -> list[dict[str, Any]]:
-        """Extract JSON-serializable assets."""
-
-        assets = []
-
-        if not isinstance(output, Output):
-            return assets
-
-        assts = output.assets
-
-        if assts is None:
-            return assets
-
-        for ix, asset in enumerate(assts):
-            if isinstance(asset, Asset):
-                assets.append(asset.to_dict())
-            elif isinstance(asset, dict):
-                assets.append(asset)
-            else:
-                raise TypeError(f"unsupported asset {ix}, type: {type(asset)}; supported types are `Asset` or `dict`")
-
-        return assets
 
 
 def write_local(

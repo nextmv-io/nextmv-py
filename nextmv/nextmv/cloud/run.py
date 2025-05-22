@@ -270,9 +270,9 @@ class TrackedRun:
         the log. This field is optional.
     """
 
-    input: Union[Input, dict[str, any], str]
+    input: Union[Input, dict[str, Any], str]
     """The input of the run being tracked."""
-    output: Union[Output, dict[str, any], str]
+    output: Union[Output, dict[str, Any], str]
     """The output of the run being tracked. Only JSON output_format is supported."""
     status: TrackedRunStatus
     """The status of the run being tracked"""
