@@ -211,7 +211,7 @@ def _option_sets(scenarios: list[Scenario]) -> dict[str, dict[str, dict[str, str
 def _scenarios_by_id(scenarios: list[Scenario]) -> dict[str, Scenario]:
     """
     This function maps a scenario to its ID. A scenario ID is created if it
-    wasn’t defined. This function also checks that there are no duplicate
+    wasn't defined. This function also checks that there are no duplicate
     scenario IDs.
     """
 

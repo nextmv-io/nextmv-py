@@ -1,4 +1,5 @@
 import unittest
+from typing import Any
 
 from nextmv_sklearn.dummy import DummyRegressor, DummyRegressorOptions
 from nextmv_sklearn.ensemble import (
@@ -48,7 +49,7 @@ class TestModel(unittest.TestCase):
         dt_reg = DecisionTreeRegressor(dt_opt)
         self.assert_model(dt_reg)
 
-    def assert_model(self, model: any):
+    def assert_model(self, model: Any):
         fit = model.fit(self.X, self.y)
         pred = model.predict(self.X[:1])
         self.assertIsNotNone(fit)

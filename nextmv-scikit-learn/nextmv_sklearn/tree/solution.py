@@ -2,7 +2,7 @@
 
 import base64
 import pickle
-from typing import Annotated
+from typing import Annotated, Any
 
 import numpy as np
 from pydantic import BaseModel, BeforeValidator, ConfigDict, PlainSerializer
@@ -35,13 +35,13 @@ class DecisionTreeRegressorSolution(BaseModel):
     """The underlying Tree object."""
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "DecisionTreeRegressorSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "DecisionTreeRegressorSolution":
         """
         Creates a DecisionTreeRegressorSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns

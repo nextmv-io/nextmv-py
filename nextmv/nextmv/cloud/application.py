@@ -881,7 +881,7 @@ class Application:
         instance_id: Optional[str]
             ID of the instance to use for the input set. This is used to
             filter the runs associated with the input set. If not provided,
-            the application’s `default_instance_id` is used.
+            the application's `default_instance_id` is used.
         maximum_runs: Optional[int]
             Maximum number of runs to use for the input set. This is used to
             filter the runs associated with the input set. If not provided,
@@ -997,7 +997,7 @@ class Application:
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
         run_id: Optional[str] = None,
-        format: Optional[Union[Format, dict[str, any]]] = None,
+        format: Optional[Union[Format, dict[str, Any]]] = None,
     ) -> ManagedInput:
         """
         Create a new managed input. There are two methods for creating a
@@ -1076,9 +1076,9 @@ class Application:
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
         options: Optional[Union[Options, dict[str, str]]] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, any]]] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
-        external_result: Optional[Union[ExternalRunResult, dict[str, any]]] = None,
+        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -1112,7 +1112,7 @@ class Application:
             used, the options are extracted from the `.to_cloud_dict()` method.
             Note that specifying `options` overrides the `input.options` (if
             the `input` is of type `nextmv.Input`).
-        configuration: Optional[Union[RunConfiguration, dict[str, any]]]
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
             Configuration to use for the run. This can be a
             `cloud.RunConfiguration` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
@@ -1120,7 +1120,7 @@ class Application:
         batch_experiment_id: Optional[str]
             ID of a batch experiment to associate the run with. This is used
             when the run is part of a batch experiment.
-        external_result: Optional[Union[ExternalRunResult, dict[str, any]]]
+        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]]
             External result to use for the run. This can be a
             `cloud.ExternalRunResult` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
@@ -1228,9 +1228,9 @@ class Application:
         upload_id: Optional[str] = None,
         run_options: Optional[Union[Options, dict[str, str]]] = None,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[Union[RunConfiguration, dict[str, any]]] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
-        external_result: Optional[Union[ExternalRunResult, dict[str, any]]] = None,
+        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -1271,7 +1271,7 @@ class Application:
             convenience method that combines the `new_run` and
             `run_result_with_polling` methods, applying polling logic to check
             when the run succeeded.
-        configuration: Optional[Union[RunConfiguration, dict[str, any]]]
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
             Configuration to use for the run. This can be a
             `cloud.RunConfiguration` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
@@ -1279,7 +1279,7 @@ class Application:
         batch_experiment_id: Optional[str]
             ID of a batch experiment to associate the run with. This is used
             when the run is part of a batch experiment.
-        external_result: Optional[Union[ExternalRunResult, dict[str, any]]]
+        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]]
             External result to use for the run. This can be a
             `cloud.ExternalRunResult` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
@@ -1555,7 +1555,7 @@ class Application:
         exception will be raised.
 
         There are two ways to push an app to Nextmv Cloud:
-        1. Specifying `app_dir`, which is the path to an app’s root directory.
+        1. Specifying `app_dir`, which is the path to an app's root directory.
         This acts as an external strategy, where the app is composed of files
         in a directory and those apps are packaged and pushed to Nextmv Cloud.
         2. Specifying a `model` and `model_configuration`. This acts as an
@@ -1566,7 +1566,7 @@ class Application:
         Examples
         -------
 
-        1. Push an app using an external strategy, i.e., specifying the app’s
+        1. Push an app using an external strategy, i.e., specifying the app's
         directory:
         ```python
         import os
@@ -1640,7 +1640,7 @@ class Application:
         manifest : Optional[Manifest], optional
             The manifest for the app, by default None.
         app_dir : Optional[str], optional
-            The path to the app’s directory, by default None.
+            The path to the app's directory, by default None.
         verbose : bool, optional
             Whether to print verbose output, by default False.
         """
@@ -1793,7 +1793,7 @@ class Application:
             requests.HTTPError: If the response status code is not 2xx.
         """
 
-        def polling_func() -> tuple[any, bool]:
+        def polling_func() -> tuple[Any, bool]:
             run_information = self.run_metadata(run_id=run_id)
             if run_information.metadata.status_v2 in {
                 StatusV2.succeeded,
@@ -2406,11 +2406,11 @@ class Application:
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
 
-def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, bool]]) -> any:
+def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:
     """
     Auxiliary function for polling.
 
-    The `polling_func` is a callable that must return a `tuple[any, bool]`
+    The `polling_func` is a callable that must return a `tuple[Any, bool]`
     where the first element is the result of the polling and the second
     element is a boolean indicating if the polling was successful or should be
     retried.
@@ -2428,7 +2428,7 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[any, 
 
     Returns
     -------
-    any
+    Any
         Result of the polling function.
     """
 

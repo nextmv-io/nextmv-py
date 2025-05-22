@@ -1,4 +1,5 @@
 import unittest
+from typing import Any
 
 from nextmv.cloud.application import PollingOptions, poll
 
@@ -7,7 +8,7 @@ class TestApplication(unittest.TestCase):
     def test_poll(self):
         counter = 0
 
-        def polling_func() -> tuple[any, bool]:
+        def polling_func() -> tuple[Any, bool]:
             nonlocal counter
             counter += 1
 
@@ -26,7 +27,7 @@ class TestApplication(unittest.TestCase):
         counter = 0
 
         # The polling func would stop after 9 calls.
-        def polling_func() -> tuple[any, bool]:
+        def polling_func() -> tuple[Any, bool]:
             nonlocal counter
             counter += 1
 

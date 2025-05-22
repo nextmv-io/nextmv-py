@@ -1,5 +1,7 @@
 """Defines sklearn.dummy solution interoperability."""
 
+from typing import Any
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 from sklearn import dummy
@@ -24,13 +26,13 @@ class DummyRegressorSolution(BaseModel):
     """Number of outputs."""
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "DummyRegressorSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "DummyRegressorSolution":
         """
         Creates a DummyRegressorSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns
