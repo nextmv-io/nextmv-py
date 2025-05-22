@@ -2327,6 +2327,10 @@ class Application:
                 "runtime": manifest.runtime,
             },
         }
+
+        if manifest.configuration is not None and manifest.configuration.options is not None:
+            activation_request["requirements"]["options"] = manifest.configuration.options.to_dict()
+
         response = self.client.request(
             method="PUT",
             endpoint=endpoint,
