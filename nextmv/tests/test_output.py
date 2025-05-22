@@ -14,6 +14,177 @@ from nextmv.base_model import BaseModel
 class TestOutput(unittest.TestCase):
     """Tests for the various classes for writing an output."""
 
+    def test_post_init_validation(self):
+        """Test the validation in __post_init__ for different scenarios."""
+
+        # Test with None solution - should not raise any errors
+        output = nextmv.Output()
+        self.assertIsNone(output.solution)
+
+        # Test valid JSON serializable object
+        output = nextmv.Output(solution={"test": 123})
+        self.assertEqual(output.solution, {"test": 123})
+
+        # Test JSON with non-serializable object
+        with self.assertRaises(ValueError) as context:
+
+            class NonSerializable:
+                pass
+
+            nextmv.Output(solution=NonSerializable())
+
+        self.assertIn("which is not JSON serializable", str(context.exception))
+
+        # Test CSV_ARCHIVE with valid dict
+        output = nextmv.Output(
+            output_format=nextmv.OutputFormat.CSV_ARCHIVE, solution={"file": [{"col1": 1, "col2": 2}]}
+        )
+        self.assertEqual(output.solution, {"file": [{"col1": 1, "col2": 2}]})
+
+        # Test CSV_ARCHIVE with non-dict
+        with self.assertRaises(ValueError) as context:
+            nextmv.Output(output_format=nextmv.OutputFormat.CSV_ARCHIVE, solution=["not a dict"])
+
+        self.assertIn("supported type is `dict`", str(context.exception))
+
+    def test_post_init_options_copied(self):
+        """Test that options are deep-copied in __post_init__."""
+
+        options = {"duration": 10}
+        output = nextmv.Output(options=options)
+
+        # Modify the original options
+        options["duration"] = 20
+
+        # The output's options should not be affected by the modification
+        self.assertEqual(output.options["duration"], 10)
+
+    def test_to_dict(self):
+        """Test the to_dict method for different cases."""
+
+        # Test with None values for options, statistics, and assets
+        output = nextmv.Output()
+        expected = {
+            "options": {},
+            "solution": {},
+            "statistics": {},
+            "assets": [],
+        }
+        self.assertDictEqual(output.to_dict(), expected)
+
+        # Test with Options object
+        options = nextmv.Options()
+        options.duration = 30
+        output = nextmv.Output(options=options)
+        result = output.to_dict()
+        self.assertEqual(result["options"]["duration"], 30)
+
+        # Test with dictionary options
+        options_dict = {"duration": 45, "threads": 4}
+        output = nextmv.Output(options=options_dict)
+        result = output.to_dict()
+        self.assertEqual(result["options"]["duration"], 45)
+        self.assertEqual(result["options"]["threads"], 4)
+
+        # Test with Statistics object
+        run_stats = nextmv.RunStatistics(duration=10.5, iterations=100)
+        statistics = nextmv.Statistics(run=run_stats)
+        output = nextmv.Output(statistics=statistics)
+        result = output.to_dict()
+        self.assertEqual(result["statistics"]["run"]["duration"], 10.5)
+        self.assertEqual(result["statistics"]["run"]["iterations"], 100)
+
+        # Test with dictionary statistics
+        stats_dict = {"custom_metric": 123.45}
+        output = nextmv.Output(statistics=stats_dict)
+        result = output.to_dict()
+        self.assertEqual(result["statistics"]["custom_metric"], 123.45)
+
+        # Test with list of Asset objects
+        asset1 = nextmv.Asset(name="asset1", content={"data": [1, 2, 3]}, description="Test asset")
+        asset2 = nextmv.Asset(
+            name="asset2",
+            content={"data": "value"},
+        )
+        output = nextmv.Output(assets=[asset1, asset2])
+        result = output.to_dict()
+        self.assertEqual(len(result["assets"]), 2)
+        self.assertEqual(result["assets"][0]["name"], "asset1")
+        self.assertEqual(result["assets"][1]["name"], "asset2")
+
+        # Test with list of dictionary assets
+        asset_dicts = [{"name": "asset3", "content": {"data": [4, 5, 6]}, "content_type": "json"}]
+        output = nextmv.Output(assets=asset_dicts)
+        result = output.to_dict()
+        self.assertEqual(result["assets"][0]["name"], "asset3")
+
+        # Test with JSON configurations
+        json_config = {"indent": 4, "sort_keys": True}
+        output = nextmv.Output(output_format=nextmv.OutputFormat.JSON, json_configurations=json_config)
+        result = output.to_dict()
+        self.assertEqual(result["json_configurations"]["indent"], 4)
+        self.assertEqual(result["json_configurations"]["sort_keys"], True)
+
+        # Test with CSV configurations
+        csv_config = {"delimiter": ";", "quoting": csv.QUOTE_NONNUMERIC}
+        output = nextmv.Output(output_format=nextmv.OutputFormat.CSV_ARCHIVE, csv_configurations=csv_config)
+        result = output.to_dict()
+        self.assertEqual(result["csv_configurations"]["delimiter"], ";")
+        self.assertEqual(result["csv_configurations"]["quoting"], csv.QUOTE_NONNUMERIC)
+
+        # Test with invalid options type
+        with self.assertRaises(TypeError) as context:
+            output = nextmv.Output(options=123)
+            output.to_dict()
+        self.assertIn("unsupported options type", str(context.exception))
+
+        # Test with invalid statistics type
+        with self.assertRaises(TypeError) as context:
+            output = nextmv.Output(statistics=123)
+            output.to_dict()
+        self.assertIn("unsupported statistics type", str(context.exception))
+
+        # Test with invalid assets type
+        with self.assertRaises(TypeError) as context:
+            output = nextmv.Output(assets=123)
+            output.to_dict()
+        self.assertIn("unsupported assets type", str(context.exception))
+
+        # Test with invalid asset in assets list
+        with self.assertRaises(TypeError) as context:
+            output = nextmv.Output(assets=[123])
+            output.to_dict()
+        self.assertIn("unsupported asset 0, type", str(context.exception))
+
+        # Test with complex nested structure
+        options = nextmv.Options()
+        options.duration = 30
+        run_stats = nextmv.RunStatistics(duration=10.5, iterations=100)
+        result_stats = nextmv.ResultStatistics(value=42.0)
+        statistics = nextmv.Statistics(run=run_stats, result=result_stats)
+        asset = nextmv.Asset(
+            name="asset1",
+            content={"data": [1, 2, 3]},
+            visual=nextmv.Visual(visual_schema=nextmv.VisualSchema.CHARTJS, label="Test Chart"),
+        )
+        output = nextmv.Output(
+            options=options,
+            statistics=statistics,
+            assets=[asset],
+            solution={"value": 42},
+            output_format=nextmv.OutputFormat.JSON,
+            json_configurations={"indent": 4},
+        )
+
+        result = output.to_dict()
+        self.assertEqual(result["options"]["duration"], 30)
+        self.assertEqual(result["statistics"]["run"]["duration"], 10.5)
+        self.assertEqual(result["statistics"]["result"]["value"], 42.0)
+        self.assertEqual(result["assets"][0]["name"], "asset1")
+        self.assertEqual(result["assets"][0]["visual"]["schema"], "chartjs")
+        self.assertEqual(result["solution"]["value"], 42)
+        self.assertEqual(result["json_configurations"]["indent"], 4)
+
     def test_local_writer_json_stdout_default(self):
         output = nextmv.Output(
             solution={"empanadas": "are_life"},
@@ -91,7 +262,7 @@ class TestOutput(unittest.TestCase):
 
             self.assertEqual(
                 mock_stdout.getvalue(),
-                '{"assets":[],"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
+                '{"assets":[],"json_configurations":{"separators":[",",":"],"sort_keys":true},"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
             )
 
     def test_local_writer_json_stdout_with_options(self):
@@ -235,62 +406,6 @@ class TestOutput(unittest.TestCase):
 
         # Removes the output directory after the test is executed.
         shutil.rmtree(output_dir)
-
-    def _test_local_writer_csvarchive(
-        self,
-        write_path: str,
-        function_path: Optional[str] = None,
-    ) -> None:
-        """Auxiliary function that is used to test the flow of a CSV archive
-        output output writer but with different directories."""
-
-        options = nextmv.Options()
-        options.parse()
-        options.duration = 5
-        options.solver = "highs"
-
-        solution = {
-            "empanadas": [
-                {"are": 2.0, "life": 3.0},
-                {"are": 5.0, "life": 6.0},
-            ],
-        }
-
-        output = nextmv.Output(
-            options=options,
-            output_format=nextmv.OutputFormat.CSV_ARCHIVE,
-            solution=solution,
-            statistics={"foo": "bar"},
-            csv_configurations={"quoting": csv.QUOTE_NONNUMERIC},
-        )
-        output_writer = nextmv.LocalOutputWriter()
-
-        with patch("sys.stdout", new=StringIO()) as mock_stdout:
-            output_writer.write(output, path=function_path, skip_stdout_reset=True)
-
-            stdout_got = json.loads(mock_stdout.getvalue())
-            stdout_expected = {
-                "options": {
-                    "duration": 5,
-                    "solver": "highs",
-                },
-                "statistics": {"foo": "bar"},
-                "assets": [],
-            }
-
-            self.assertDictEqual(stdout_got, stdout_expected)
-
-        with open(f"{write_path}/empanadas.csv") as file:
-            csv_got = file.read()
-
-        csv_expected = '"are","life"\n2.0,3.0\n5.0,6.0\n'
-
-        self.assertEqual(csv_got, csv_expected)
-
-        self.assertTrue(os.path.exists(write_path))
-
-        # Removes the output directory after the test is executed.
-        shutil.rmtree(write_path)
 
     def test_local_write_bad_output_type(self):
         output = "I am clearly not an output object."
@@ -518,3 +633,59 @@ class TestOutput(unittest.TestCase):
                 "type": "custom-tab",
             },
         )
+
+    def _test_local_writer_csvarchive(
+        self,
+        write_path: str,
+        function_path: Optional[str] = None,
+    ) -> None:
+        """Auxiliary function that is used to test the flow of a CSV archive
+        output output writer but with different directories."""
+
+        options = nextmv.Options()
+        options.parse()
+        options.duration = 5
+        options.solver = "highs"
+
+        solution = {
+            "empanadas": [
+                {"are": 2.0, "life": 3.0},
+                {"are": 5.0, "life": 6.0},
+            ],
+        }
+
+        output = nextmv.Output(
+            options=options,
+            output_format=nextmv.OutputFormat.CSV_ARCHIVE,
+            solution=solution,
+            statistics={"foo": "bar"},
+            csv_configurations={"quoting": csv.QUOTE_NONNUMERIC},
+        )
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, path=function_path, skip_stdout_reset=True)
+
+            stdout_got = json.loads(mock_stdout.getvalue())
+            stdout_expected = {
+                "options": {
+                    "duration": 5,
+                    "solver": "highs",
+                },
+                "statistics": {"foo": "bar"},
+                "assets": [],
+            }
+
+            self.assertDictEqual(stdout_got, stdout_expected)
+
+        with open(f"{write_path}/empanadas.csv") as file:
+            csv_got = file.read()
+
+        csv_expected = '"are","life"\n2.0,3.0\n5.0,6.0\n'
+
+        self.assertEqual(csv_got, csv_expected)
+
+        self.assertTrue(os.path.exists(write_path))
+
+        # Removes the output directory after the test is executed.
+        shutil.rmtree(write_path)
