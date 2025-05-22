@@ -16,8 +16,19 @@ FILE_NAME = "app.yaml"
 
 
 class ManifestType(str, Enum):
-    """Type of application in the manifest, based on the programming
-    language."""
+    """
+    Type of application in the manifest, based on the programming
+    language.
+
+    Attributes
+    ----------
+    PYTHON: str
+        Python format
+    GO: str
+        Go format
+    JAVA: str
+        Java format
+    """
 
     PYTHON = "python"
     """Python format"""
@@ -28,7 +39,23 @@ class ManifestType(str, Enum):
 
 
 class ManifestRuntime(str, Enum):
-    """Runtime (environment) where the app will be run on Nextmv Cloud."""
+    """
+    Runtime (environment) where the app will be run on Nextmv Cloud.
+
+    Attributes
+    ----------
+    DEFAULT: str
+        This runtime is used to run compiled applications such as Go binaries.
+    PYTHON: str
+        This runtime is used as the basis for all other Python runtimes and
+        Python applications.
+    JAVA: str
+        This runtime is used to run Java applications.
+    PYOMO: str
+        This runtime provisions Python packages to run Pyomo applications.
+    HEXALY: str
+        This runtime provisions Python packages to run Hexaly applications.
+    """
 
     DEFAULT = "ghcr.io/nextmv-io/runtime/default:latest"
     """This runtime is used to run compiled applications such as Go binaries."""
@@ -49,7 +76,20 @@ class ManifestRuntime(str, Enum):
 
 
 class ManifestBuild(BaseModel):
-    """Build-specific attributes."""
+    """
+    Build-specific attributes.
+
+    Attributes
+    ----------
+    command: Optional[str]
+        The command to run to build the app. This command will be executed
+        without a shell, i.e., directly. The command must exit with a status of
+        0 to continue the push process of the app to Nextmv Cloud. This command
+        is executed prior to the pre-push command.
+    environment: Optional[dict[str, Any]]
+        Environment variables to set when running the build command given as
+        key-value pairs.
+    """
 
     command: Optional[str] = None
     """
@@ -82,7 +122,19 @@ class ManifestBuild(BaseModel):
 
 
 class ManifestPythonModel(BaseModel):
-    """Model-specific instructions for a Python app."""
+    """
+    Model-specific instructions for a Python app.
+
+    Attributes
+    ----------
+    name: str
+        The name of the decision model.
+    options: Optional[list[dict[str, Any]]]
+        Options for the decision model. This is a data representation of the
+        `nextmv.Options` class. It consists of a list of dicts. Each dict
+        represents the `nextmv.Option` class. It is used to be able to
+        reconstruct an Options object from data when loading a decision model.
+    """
 
     name: str
     """The name of the decision model."""
@@ -96,7 +148,18 @@ class ManifestPythonModel(BaseModel):
 
 
 class ManifestPython(BaseModel):
-    """Python-specific instructions."""
+    """
+    Python-specific instructions.
+
+    Attributes
+    ----------
+    pip_requirements: Optional[str]
+        Path to a requirements.txt file containing (additional) Python
+        dependencies that will be bundled with the app.
+    model: Optional[ManifestPythonModel]
+        Information about an encoded decision model as handlded via mlflow. This
+        information is used to load the decision model from the app bundle.
+    """
 
     pip_requirements: Optional[str] = Field(
         serialization_alias="pip-requirements",
@@ -115,7 +178,23 @@ class ManifestPython(BaseModel):
 
 
 class ManifestOption(BaseModel):
-    """An option for the decision model that is recorded in the manifest."""
+    """
+    An option for the decision model that is recorded in the manifest.
+
+    Attributes
+    ----------
+    name: str
+        The name of the option.
+    option_type: str
+        The type of the option. This is a string representation of the
+        `nextmv.Option` class.
+    default: Optional[Any]
+        The default value of the option.
+    description: Optional[str]
+        The description of the option.
+    required: bool
+        Whether the option is required or not.
+    """
 
     name: str
     """The name of the option"""
@@ -131,8 +210,13 @@ class ManifestOption(BaseModel):
     """The description of the option"""
     required: bool = False
     """Whether the option is required or not"""
-    choices: Optional[list[Any]] = None
-    """The choices for the option"""
+    additional_attributes: Optional[dict[str, Any]] = None
+    """
+    Optional additional attributes for the option. The Nextmv Cloud may
+    perform validation on these attributes. For example, the maximum length of
+    a string or the maximum value of an integer. These additional attributes
+    will be shown in the help message of the `Options`.
+    """
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
@@ -153,9 +237,9 @@ class ManifestOption(BaseModel):
         if option_type is str:
             option_type = "string"
         elif option_type is bool:
-            option_type = "boolean"
+            option_type = "bool"
         elif option_type is int:
-            option_type = "integer"
+            option_type = "int"
         elif option_type is float:
             option_type = "float"
         else:
@@ -167,7 +251,7 @@ class ManifestOption(BaseModel):
             default=option.default,
             description=option.description,
             required=option.required,
-            choices=option.choices,
+            additional_attributes=option.additional_attributes,
         )
 
     def to_option(self) -> Option:
@@ -183,9 +267,9 @@ class ManifestOption(BaseModel):
         option_type_string = self.option_type
         if option_type_string == "string":
             option_type = str
-        elif option_type_string == "boolean":
+        elif option_type_string == "bool":
             option_type = bool
-        elif option_type_string == "integer":
+        elif option_type_string == "int":
             option_type = int
         elif option_type_string == "float":
             option_type = float
@@ -198,8 +282,45 @@ class ManifestOption(BaseModel):
             default=self.default,
             description=self.description,
             required=self.required,
-            choices=self.choices,
+            additional_attributes=self.additional_attributes,
         )
+
+
+class ManifestOptions(BaseModel):
+    """
+    Options for the decision model.
+
+    Attributes
+    ----------
+    strict: bool
+        If strict is set to `True`, only the listed options will be allowed.
+    items: list[ManifestOption]
+        Optional. The actual list of options for the decision model. An option
+        is a parameter that configures the decision model.
+    """
+
+    strict: Optional[bool] = False
+    """If strict is set to `True`, only the listed options will be allowed."""
+    items: Optional[list[ManifestOption]] = None
+    """
+    Optional. The actual list of options for the decision model. An option is a
+    parameter that configures the decision model.
+    """
+
+
+class ManifestConfiguration(BaseModel):
+    """
+    Configuration for the decision model.
+
+    Attributes
+    ----------
+    options: ManifestOptions
+        Optional. The actual list of options for the decision model. An option
+        is a parameter that configures the decision model.
+    """
+
+    options: ManifestOptions
+    """Options for the decision model."""
 
 
 class Manifest(BaseModel):
@@ -210,6 +331,34 @@ class Manifest(BaseModel):
 
     This class represents the app manifest and allows you to load it from a
     file or create it programmatically.
+
+    Attributes
+    ----------
+    files: list[str]
+        Mandatory. The files to include (or exclude) in the app.
+    runtime: ManifestRuntime
+        Mandatory. The runtime to use for the app, it provides the environment
+        in which the app runs.
+    type: ManifestType
+        Mandatory. Type of application, based on the programming language.
+    build: Optional[ManifestBuild]
+        Optional. Build-specific attributes. The build.command to run to build
+        the app. This command will be executed without a shell, i.e., directly.
+        The command must exit with a status of 0 to continue the push process of
+        the app to Nextmv Cloud. This command is executed prior to the pre-push
+        command. The build.environment is used to set environment variables when
+        running the build command given as key-value pairs.
+    pre_push: Optional[str]
+        Optional. A command to run before the app is pushed to the Nextmv Cloud.
+        This command can be used to compile a binary, run tests or similar tasks.
+        One difference with what is specified under build, is that the command
+        will be executed via
+    python: Optional[ManifestPython]
+        Optional. Only for Python apps. Contains further Python-specific
+        attributes.
+    configuration: Optional[ManifestConfiguration]
+        Optional. A list of options for the decision model. An option is a
+        parameter that configures the decision model.
     """
 
     files: list[str]
@@ -250,7 +399,7 @@ class Manifest(BaseModel):
     Optional. Only for Python apps. Contains further Python-specific
     attributes.
     """
-    options: Optional[list[ManifestOption]] = None
+    configuration: Optional[ManifestConfiguration] = None
     """
     Optional. A list of options for the decision model. An option is a
     parameter that configures the decision model.
@@ -292,20 +441,23 @@ class Manifest(BaseModel):
         with open(os.path.join(dirpath, FILE_NAME), "w") as file:
             yaml.dump(self.to_dict(), file)
 
-    def extract_options(self) -> Options:
+    def extract_options(self) -> Optional[Options]:
         """
-        Convert the manifest options to a `nextmv.Options` object.
+        Convert the manifest options to a `nextmv.Options` object. If the
+        manifest does not have valid options defined in
+        `.configuration.options.items`, this method simply returns a `None`.
 
         Returns
         -------
-        Options
-            The converted options.
+        Optional[Options]
+            The options extracted from the manifest. If no options are found,
+            `None` is returned.
         """
 
-        if self.options is None:
-            raise ValueError("No options found in the manifest")
+        if self.configuration is None or self.configuration.options is None or self.configuration.options.items is None:
+            return None
 
-        options = [option.to_option() for option in self.options]
+        options = [option.to_option() for option in self.configuration.options.items]
 
         return Options(*options)
 
@@ -348,7 +500,12 @@ class Manifest(BaseModel):
         )
 
         if model_configuration.options is not None:
-            manifest.options = [ManifestOption.from_option(opt) for opt in model_configuration.options.options]
+            manifest.configuration = ManifestConfiguration(
+                options=ManifestOptions(
+                    strict=False,
+                    items=[ManifestOption.from_option(opt) for opt in model_configuration.options.options],
+                ),
+            )
 
         return manifest
 
@@ -377,7 +534,12 @@ class Manifest(BaseModel):
             runtime=ManifestRuntime.PYTHON,
             type=ManifestType.PYTHON,
             python=ManifestPython(pip_requirements="requirements.txt"),
-            options=[ManifestOption.from_option(opt) for opt in options.options],
+            configuration=ManifestConfiguration(
+                options=ManifestOptions(
+                    strict=False,
+                    items=[ManifestOption.from_option(opt) for opt in options.options],
+                ),
+            ),
         )
 
         return manifest
