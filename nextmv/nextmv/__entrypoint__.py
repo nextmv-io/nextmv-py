@@ -19,9 +19,7 @@ def main() -> None:
     manifest = cloud.Manifest.from_yaml(".")
 
     # Load the options from the manifest.
-    options = None
-    if manifest.options is not None:
-        options = manifest.extract_options()
+    options = manifest.extract_options()
 
     # Load the model.
     loaded_model = load_model(

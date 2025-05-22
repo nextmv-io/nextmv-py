@@ -66,7 +66,7 @@ class Parameter:
     def __post_init__(self):
         deprecated(
             name="Parameter",
-            reason="`Parameter` is deprecated, use `Option` instead.",
+            reason="`Parameter` is deprecated, use `Option` instead",
         )
 
     @classmethod

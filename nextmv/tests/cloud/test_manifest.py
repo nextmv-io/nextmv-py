@@ -80,7 +80,6 @@ class TestManifest(unittest.TestCase):
             manifest.python.model.options,
             [
                 {
-                    "choices": None,
                     "default": 30,
                     "description": "Max runtime duration (in seconds).",
                     "name": "duration",
@@ -108,8 +107,8 @@ class TestManifest(unittest.TestCase):
 
         found = {
             "string": False,
-            "boolean": False,
-            "integer": False,
+            "bool": False,
+            "int": False,
             "float": False,
         }
 
@@ -117,16 +116,22 @@ class TestManifest(unittest.TestCase):
             if option.option_type is str:
                 found["string"] = True
             elif option.option_type is bool:
-                found["boolean"] = True
+                found["bool"] = True
             elif option.option_type is int:
-                found["integer"] = True
+                found["int"] = True
             elif option.option_type is float:
                 found["float"] = True
 
         self.assertTrue(found["string"])
-        self.assertTrue(found["boolean"])
-        self.assertTrue(found["integer"])
+        self.assertTrue(found["bool"])
+        self.assertTrue(found["int"])
         self.assertTrue(found["float"])
+
+        manifest2 = Manifest(
+            files=["main.py"],
+        )
+        options2 = manifest2.extract_options()
+        self.assertIsNone(options2)
 
     def test_from_options(self):
         options = Options(
@@ -142,7 +147,7 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest.type, ManifestType.PYTHON)
         self.assertEqual(manifest.python.pip_requirements, "requirements.txt")
         self.assertListEqual(
-            manifest.options,
+            manifest.configuration.options.items,
             [
                 ManifestOption(
                     name="param1",
@@ -153,14 +158,14 @@ class TestManifest(unittest.TestCase):
                 ),
                 ManifestOption(
                     name="param2",
-                    option_type="boolean",
+                    option_type="bool",
                     default=True,
                     description="A description",
                     required=True,
                 ),
                 ManifestOption(
                     name="param3",
-                    option_type="integer",
+                    option_type="int",
                     default=42,
                     description="A description",
                     required=True,
@@ -187,12 +192,12 @@ class TestManifestOption(unittest.TestCase):
             {
                 "name": "bool option",
                 "option": Option("param2", bool, True, "A description", True),
-                "expected_option_type": "boolean",
+                "expected_option_type": "bool",
             },
             {
                 "name": "int option",
                 "option": Option("param3", int, 42, "A description", True),
-                "expected_option_type": "integer",
+                "expected_option_type": "int",
             },
             {
                 "name": "float option",
@@ -211,7 +216,6 @@ class TestManifestOption(unittest.TestCase):
                 self.assertEqual(manifest_option.default, option.default)
                 self.assertEqual(manifest_option.description, option.description)
                 self.assertEqual(manifest_option.required, option.required)
-                self.assertEqual(manifest_option.choices, option.choices)
 
     def test_to_option(self):
         test_cases = [
@@ -230,7 +234,7 @@ class TestManifestOption(unittest.TestCase):
                 "name": "bool option",
                 "manifest_option": ManifestOption(
                     name="param2",
-                    option_type="boolean",
+                    option_type="bool",
                     default=True,
                     description="A description",
                     required=True,
@@ -241,7 +245,7 @@ class TestManifestOption(unittest.TestCase):
                 "name": "int option",
                 "manifest_option": ManifestOption(
                     name="param3",
-                    option_type="integer",
+                    option_type="int",
                     default=42,
                     description="A description",
                     required=True,
@@ -271,4 +275,3 @@ class TestManifestOption(unittest.TestCase):
                 self.assertEqual(option.default, manifest_option.default)
                 self.assertEqual(option.description, manifest_option.description)
                 self.assertEqual(option.required, manifest_option.required)
-                self.assertEqual(option.choices, manifest_option.choices)

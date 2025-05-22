@@ -5,10 +5,9 @@ python:
   model:
     name: super_cool_model
     options:
-      - choices: null
+      - name: duration
         default: 30
         description: Max runtime duration (in seconds).
-        name: duration
         param_type: <class 'int'>
         required: false
   pip-requirements: model_requirements.txt
@@ -20,24 +19,27 @@ build:
   environment:
     SUPER: COOL
     EXTRA: AWESOME
-options:
-  - name: a string parameter
-    option_type: string
-    default: a default value
-    description: a description
-    required: true
-  - name: a boolean parameter
-    option_type: boolean
-    default: true
-    description: a description
-    required: false
-  - name: an integer parameter
-    option_type: integer
-    default: 42
-    description: a description
-    required: false
-  - name: a float parameter
-    option_type: float
-    default: 3.14
-    description: a description
-    required: false
+configuration:
+  options:
+    strict: false
+    items:
+      - name: a string parameter
+        option_type: string
+        default: a default value
+        description: a description
+        required: true
+      - name: a boolean parameter
+        option_type: bool
+        default: true
+        description: a description
+        required: false
+      - name: an integer parameter
+        option_type: int
+        default: 42
+        description: a description
+        required: false
+      - name: a float parameter
+        option_type: float
+        default: 3.14
+        description: a description
+        required: false

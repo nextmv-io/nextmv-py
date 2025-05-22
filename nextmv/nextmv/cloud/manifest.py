@@ -441,24 +441,21 @@ class Manifest(BaseModel):
         with open(os.path.join(dirpath, FILE_NAME), "w") as file:
             yaml.dump(self.to_dict(), file)
 
-    def extract_options(self) -> Options:
+    def extract_options(self) -> Optional[Options]:
         """
-        Convert the manifest options to a `nextmv.Options` object.
+        Convert the manifest options to a `nextmv.Options` object. If the
+        manifest does not have valid options defined in
+        `.configuration.options.items`, this method simply returns a `None`.
 
         Returns
         -------
-        Options
-            The converted options.
+        Optional[Options]
+            The options extracted from the manifest. If no options are found,
+            `None` is returned.
         """
 
-        if self.configuration is None:
-            raise ValueError("No configuration found in the manifest")
-
-        if self.configuration.options is None:
-            raise ValueError("No options found in the manifest configuration")
-
-        if self.configuration.options.items is None:
-            raise ValueError("No items found in the manifest configuration options")
+        if self.configuration is None or self.configuration.options is None or self.configuration.options.items is None:
+            return None
 
         options = [option.to_option() for option in self.configuration.options.items]
 
@@ -503,7 +500,12 @@ class Manifest(BaseModel):
         )
 
         if model_configuration.options is not None:
-            manifest.options = [ManifestOption.from_option(opt) for opt in model_configuration.options.options]
+            manifest.configuration = ManifestConfiguration(
+                options=ManifestOptions(
+                    strict=False,
+                    items=[ManifestOption.from_option(opt) for opt in model_configuration.options.options],
+                ),
+            )
 
         return manifest
 
