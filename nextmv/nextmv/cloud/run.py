@@ -248,11 +248,11 @@ class TrackedRun:
 
     Attributes
     ----------
-    input : Union[Input, dict[str, any], str]
+    input : Union[Input, dict[str, Any], str]
         The input of the run being tracked. Please note that if the input
         format is JSON, then the input data must be JSON serializable. This
         field is required.
-    output : Union[Output, dict[str, any], str]
+    output : Union[Output, dict[str, Any], str]
         The output of the run being tracked. Please note that if the output
         format is JSON, then the output data must be JSON serializable. This
         field is required.
@@ -303,7 +303,7 @@ class TrackedRun:
             try:
                 _ = json.dumps(self.input)
             except (TypeError, OverflowError) as e:
-                raise ValueError("Input is dict[str, any] but it is not JSON serializable") from e
+                raise ValueError("Input is dict[str, Any] but it is not JSON serializable") from e
 
         if isinstance(self.output, Output):
             if self.output.output_format != OutputFormat.JSON:
@@ -312,7 +312,7 @@ class TrackedRun:
             try:
                 _ = json.dumps(self.output)
             except (TypeError, OverflowError) as e:
-                raise ValueError("Output is dict[str, any] but it is not JSON serializable") from e
+                raise ValueError("Output is dict[str, Any] but it is not JSON serializable") from e
 
     def logs_text(self) -> str:
         """

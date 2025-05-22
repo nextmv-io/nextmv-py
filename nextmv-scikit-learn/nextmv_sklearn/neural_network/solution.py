@@ -52,13 +52,13 @@ class MLPRegressorSolution(BaseModel):
     """Name of the output activation function."""
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "MLPRegressorSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "MLPRegressorSolution":
         """
         Creates a MLPRegressorSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns

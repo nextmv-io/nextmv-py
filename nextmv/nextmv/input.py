@@ -92,7 +92,7 @@ class Input:
         new_options = copy.deepcopy(init_options)
         self.options = new_options
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the input to a dictionary.
 
@@ -102,7 +102,7 @@ class Input:
 
         Returns
         -------
-        dict[str, any]
+        dict[str, Any]
             The input as a dictionary.
         """
 

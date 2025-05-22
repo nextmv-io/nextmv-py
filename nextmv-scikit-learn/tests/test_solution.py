@@ -1,5 +1,6 @@
 import os
 import unittest
+from typing import Any
 
 from nextmv_sklearn.dummy import DummyRegressor, DummyRegressorOptions, DummyRegressorSolution, DummyRegressorStatistics
 from nextmv_sklearn.ensemble import (
@@ -109,8 +110,8 @@ class TestModel(unittest.TestCase):
     def assert_load_model(
         self,
         opt: nextmv.Options,
-        model: any,
-        solution_class: any,
+        model: Any,
+        solution_class: Any,
         statistics: callable,
     ):
         fit = model.fit(self.X, self.y)

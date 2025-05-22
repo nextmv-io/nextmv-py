@@ -1,11 +1,11 @@
 """Defines gurobipy solution interoperability."""
 
-from typing import Optional
+from typing import Any, Optional
 
 import gurobipy as gp
 
 
-def ModelSolution(model: gp.Model) -> Optional[dict[str, any]]:
+def ModelSolution(model: gp.Model) -> Optional[dict[str, Any]]:
     """
     Creates a basic solution dictionary from a Gurobi model. The simple
     solution dictionary contains the variable name and the value of the
@@ -21,7 +21,7 @@ def ModelSolution(model: gp.Model) -> Optional[dict[str, any]]:
 
     Returns:
     ----------
-    dict[str, any] | None
+    dict[str, Any] | None
         The solution dictionary.
     """
 

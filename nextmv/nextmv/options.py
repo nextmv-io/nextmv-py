@@ -657,7 +657,7 @@ class Options:
             options_by_field_name[option.name.replace("-", "_")] = option
 
         # The ipkyernel uses a `-f` argument by default that it passes to the
-        # execution. We don’t want to ignore this argument because we get an
+        # execution. We don't want to ignore this argument because we get an
         # error. Fix source: https://stackoverflow.com/a/56349168
         parser.add_argument(
             "-f",

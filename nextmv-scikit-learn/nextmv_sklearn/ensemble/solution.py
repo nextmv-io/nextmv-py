@@ -56,13 +56,13 @@ class GradientBoostingRegressorSolution(BaseModel):
     loss: Loss = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "GradientBoostingRegressorSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "GradientBoostingRegressorSolution":
         """
         Creates a GradientBoostingRegressorSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns
@@ -185,13 +185,13 @@ class RandomForestRegressorSolution(BaseModel):
     """Prediction computed with out-of-bag estimate on the training set."""
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> "RandomForestRegressorSolution":
+    def from_dict(cls, data: dict[str, Any]) -> "RandomForestRegressorSolution":
         """
         Creates a RandomForestRegressorSolution instance from a dictionary.
 
         Parameters
         ----------
-        data : dict[str, any]
+        data : dict[str, Any]
             Dictionary containing the model attributes.
 
         Returns

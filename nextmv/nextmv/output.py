@@ -249,7 +249,7 @@ class Output:
     serialized to the write location.
 
     The most important part of the output is the solution, which represents the
-    result of the decision problem. The solution’s type must match the
+    result of the decision problem. The solution's type must match the
     `output_format`:
 
     - `OutputFormat.JSON`: the data must be `dict[str, Any]`, or `Any`.
@@ -396,13 +396,13 @@ class Output:
                 "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
 
-    def to_dict(self) -> dict[str, any]:  # noqa: C901
+    def to_dict(self) -> dict[str, Any]:  # noqa: C901
         """
         Convert the `Output` object to a dictionary.
 
         Returns
         -------
-        dict[str, any]
+        dict[str, Any]
             The dictionary representation of the `Output` object.
         """
 

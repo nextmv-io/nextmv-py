@@ -1,5 +1,5 @@
 """
-When working in a notebook environment, we don’t really create a `main.py` file
+When working in a notebook environment, we don't really create a `main.py` file
 with the main entrypoint of the program. Because the logic is mostly encoded
 inside the `Model` class, we need to create a `main.py` file that we can run in
 Nextmv Cloud. This file is used as that entrypoint. It is not intended for a
@@ -29,7 +29,7 @@ def main() -> None:
         suppress_warnings=True,
     )
 
-    # Load the input and solve the model by using mlflow’s inference API.
+    # Load the input and solve the model by using mlflow's inference API.
     input = nextmv.load(options=options)
     output = loaded_model.predict(input)
 
