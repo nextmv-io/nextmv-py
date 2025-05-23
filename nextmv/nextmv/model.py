@@ -1,3 +1,20 @@
+"""
+Model module for creating and saving decision models in Nextmv Cloud.
+
+This module provides the base classes and functionality for creating decision models
+that can be deployed and run in Nextmv Cloud. The main components are:
+
+Classes
+-------
+Model
+    Base class for defining decision models.
+ModelConfiguration
+    Configuration for packaging and deploying models.
+
+Models defined using this module can be packaged with their dependencies and
+deployed to Nextmv Cloud for execution.
+"""
+
 import logging
 import os
 import shutil
@@ -13,10 +30,44 @@ from nextmv.output import Output
 # The following block of code is used to suppress warnings from mlflow. We
 # suppress these warnings because they are not relevant to the user, and they
 # are not actionable.
-original_showwarning = warnings.showwarning
+
+"""
+Module-level function and variable to suppress warnings from mlflow.
+"""
+
+_original_showwarning = warnings.showwarning
+"""Original showwarning function from the warnings module."""
 
 
-def custom_showwarning(message, category, filename, lineno, file=None, line=None):
+def _custom_showwarning(message, category, filename, lineno, file=None, line=None):
+    """
+    Custom warning handler that suppresses specific mlflow warnings.
+
+    This function filters out non-actionable warnings from the mlflow library
+    to keep the console output clean and relevant for the user.
+
+    Parameters
+    ----------
+    message : str
+        The warning message.
+    category : Warning
+        The warning category.
+    filename : str
+        The filename where the warning was raised.
+    lineno : int
+        The line number where the warning was raised.
+    file : file, optional
+        The file to write the warning to.
+    line : str, optional
+        The line of source code to be included in the warning message.
+
+    Returns
+    -------
+    None
+        If the warning matches certain patterns, the function returns early
+        without showing the warning. Otherwise, it delegates to the original
+        warning handler.
+    """
     # .../site-packages/mlflow/pyfunc/utils/data_validation.py:134: UserWarning:Add
     # type hints to the `predict` method to enable data validation and automatic
     # signature inference during model logging. Check
@@ -33,10 +84,10 @@ def custom_showwarning(message, category, filename, lineno, file=None, line=None
     if "mlflow/pyfunc/__init__.py" in filename:
         return
 
-    original_showwarning(message, category, filename, lineno, file, line)
+    _original_showwarning(message, category, filename, lineno, file, line)
 
 
-warnings.showwarning = custom_showwarning
+warnings.showwarning = _custom_showwarning
 
 # When working with the `Model`, we expect to be working in a notebook
 # environment, and not interact with the local filesystem a lot. We use the
@@ -53,23 +104,43 @@ _REQUIREMENTS_FILE = "model_requirements.txt"
 # can run in Nextmv Cloud. This file is used as that entrypoint.
 _ENTRYPOINT_FILE = "__entrypoint__.py"
 
+
+# Required mlflow dependency version for model packaging.
 _MLFLOW_DEPENDENCY = "mlflow>=2.18.0"
 
 
 @dataclass
 class ModelConfiguration:
     """
-    ModelConfiguration is a class that holds the configuration for a
-    model. It is used to define how a Python model is encoded and loaded.
+    Configuration class for Nextmv models.
 
-    The `name` is required, and should be a personalized name for the model.
+    You can import the `ModelConfiguration` class directly from `nextmv`:
 
-    You may specify the `requirements` that your decision model requires. This
-    is done by passing a list of requirements, as if they were lines in a
-    `requirements.txt` file. An example of this is `["nextmv==0.1.0"]`.
+    ```python
+    from nextmv import ModelConfiguration
+    ```
 
-    Lastly, if your decision model requires options, you may specify them by
-    passing an instance of `Options`.
+    This class holds the configuration for a model, defining how a Python model
+    is encoded and loaded for use in Nextmv Cloud.
+
+    Parameters
+    ----------
+    name : str
+        A personalized name for the model. This is required.
+    requirements : list[str], optional
+        A list of Python dependencies that the decision model requires,
+        formatted as they would appear in a requirements.txt file.
+    options : Options, optional
+        Options that the decision model requires.
+
+    Examples
+    --------
+    >>> from nextmv import ModelConfiguration, Options
+    >>> config = ModelConfiguration(
+    ...     name="my_routing_model",
+    ...     requirements=["nextroute>=1.0.0"],
+    ...     options=Options({"max_time": 60})
+    ... )
     """
 
     name: str
@@ -83,41 +154,50 @@ class ModelConfiguration:
 
 class Model:
     """
-    Model is the base class for defining a decision model that runs in Nextmv
-    Cloud. You must create a subclass of this class and implement the `solve`
-    method. The `solve` method is the main entry point of your model and should
-    return an output with a solution (decision).
+    Base class for defining decision models that run in Nextmv Cloud.
 
-    Example
-    -------
+    You can import the `Model` class directly from `nextmv`:
+
     ```python
-    import nextroute
+    from nextmv import Model
+    ```
 
-    import nextmv
+    This class serves as a foundation for creating decision models that can be
+    deployed to Nextmv Cloud. Subclasses must implement the `solve` method,
+    which is the main entry point for processing inputs and producing decisions.
 
+    Methods
+    -------
+    solve(input)
+        Process input data and produce a decision output.
+    save(model_dir, configuration)
+        Save the model to the filesystem for deployment.
 
-    # Define the model that makes decisions. This model uses the Nextroute library
-    # to solve a routing problem.
-    class DecisionModel(nextmv.Model):
-        def solve(self, input: nextmv.Input) -> nextmv.Output:
-            nextroute_input = nextroute.schema.Input.from_dict(input.data)
-            nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
-            nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
-
-            return nextmv.Output(
-                options=input.options,
-                solution=nextroute_output.solutions[0].to_dict(),
-                statistics=nextroute_output.statistics.to_dict(),
-            )
-        ```
+    Examples
+    --------
+    >>> import nextroute
+    >>> import nextmv
+    >>>
+    >>> class DecisionModel(nextmv.Model):
+    ...     def solve(self, input: nextmv.Input) -> nextmv.Output:
+    ...         nextroute_input = nextroute.schema.Input.from_dict(input.data)
+    ...         nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
+    ...         nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
+    ...
+    ...         return nextmv.Output(
+    ...             options=input.options,
+    ...             solution=nextroute_output.solutions[0].to_dict(),
+    ...             statistics=nextroute_output.statistics.to_dict(),
+    ...         )
     """
 
     def solve(self, input: Input) -> Output:
         """
-        The `solve` method is the main entry point of your model. You must
-        implement this method yourself. It receives a `nextmv.Input` and should
-        process it to produce a `nextmv.Output`, which is the solution to the
-        decision model/problem.
+        Process input data and produce a decision output.
+
+        This is the main entry point of your model that you must implement in
+        subclasses. It receives input data and should process it to produce an
+        output containing the solution to the decision problem.
 
         Parameters
         ----------
@@ -129,23 +209,63 @@ class Model:
         Output
             The output of the model, which is the solution to the decision
             model/problem.
+
+        Raises
+        ------
+        NotImplementedError
+            When called on the base Model class, as this method must be
+            implemented by subclasses.
+
+        Examples
+        --------
+        >>> def solve(self, input: Input) -> Output:
+        ...     # Process input data
+        ...     result = self._process_data(input.data)
+        ...
+        ...     # Return formatted output
+        ...     return Output(
+        ...         options=input.options,
+        ...         solution=result,
+        ...         statistics={"processing_time": 0.5}
+        ...     )
         """
 
         raise NotImplementedError
 
     def save(model_self, model_dir: str, configuration: ModelConfiguration) -> None:
         """
-        Save the model to the local filesystem, in the location given by `dir`.
-        The model is saved according to the configuration provided, which is of
-        type `ModelConfiguration`.
+        Save the model to the local filesystem for deployment.
+
+        This method packages the model according to the provided configuration,
+        creating all necessary files and dependencies for deployment to Nextmv
+        Cloud.
 
         Parameters
         ----------
-        dir : str
+        model_dir : str
             The directory where the model will be saved.
         configuration : ModelConfiguration
             The configuration of the model, which defines how the model is
             saved and loaded.
+
+        Raises
+        ------
+        ImportError
+            If mlflow is not installed, which is required for model packaging.
+
+        Notes
+        -----
+        This method uses mlflow for model packaging, creating the necessary
+        files and directory structure for deployment.
+
+        Examples
+        --------
+        >>> model = MyDecisionModel()
+        >>> config = ModelConfiguration(
+        ...     name="routing_model",
+        ...     requirements=["pandas", "numpy"]
+        ... )
+        >>> model.save("/tmp/my_model", config)
         """
 
         # mlflow is a big package. We don't want to make it a dependency of
@@ -165,12 +285,15 @@ class Model:
 
         class MLFlowModel(PythonModel):
             """
-            The `MLFlowModel` class exists as a transient class to translate a
-            Nextmv `DecisionModel` into an `mlflow.pyfunc.PythonModel`. This
-            class must comply with the inference API of mlflow, which is why it
-            has a `predict` method. The translation happens by having this
-            `predict` method call the user-defined `solve` method of the
-            `DecisionModel`.
+            Transient class to translate a Nextmv Decision Model into an MLflow PythonModel.
+
+            This class complies with the MLflow inference API, implementing a `predict`
+            method that calls the user-defined `solve` method of the Nextmv Decision Model.
+
+            Methods
+            -------
+            predict(context, model_input, params)
+                MLflow-compliant predict method that delegates to the Nextmv model's solve method.
             """
 
             def predict(
@@ -180,11 +303,28 @@ class Model:
                 params: Optional[dict[str, Any]] = None,
             ) -> Any:
                 """
-                The predict method allows us to work with mlflow's [python_function]
-                model flavor. Warning: This method should not be used or overridden
-                directly. Instead, you should implement the `solve` method.
+                MLflow-compliant prediction method that calls the Nextmv model's solve method.
 
-                [python_function]: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
+                This method enables compatibility with MLflow's python_function model flavor.
+
+                Parameters
+                ----------
+                context : mlflow.pyfunc.PythonModelContext
+                    The MLflow model context.
+                model_input : Any
+                    The input data for prediction, passed to the solve method.
+                params : Optional[dict[str, Any]], optional
+                    Additional parameters for prediction.
+
+                Returns
+                -------
+                Any
+                    The result from the Nextmv model's solve method.
+
+                Notes
+                -----
+                This method should not be used or overridden directly. Instead,
+                implement the `solve` method in your Nextmv Model subclass.
                 """
 
                 return model_self.solve(model_input)
@@ -231,7 +371,34 @@ def _cleanup_python_model(
     model_configuration: Optional[ModelConfiguration] = None,
     verbose: bool = False,
 ) -> None:
-    """Cleans up the Python-specific model packaging logic."""
+    """
+    Clean up Python-specific model packaging artifacts.
+
+    This function removes temporary files and directories created during the
+    model packaging process.
+
+    Parameters
+    ----------
+    model_dir : str
+        The directory where the model was saved.
+    model_configuration : Optional[ModelConfiguration], optional
+        The configuration of the model. If None, the function returns early.
+    verbose : bool, default=False
+        If True, log a message when cleanup is complete.
+
+    Returns
+    -------
+    None
+        This function does not return anything.
+
+    Notes
+    -----
+    Files and directories removed include:
+    - The model directory itself
+    - The mlruns directory created by MLflow
+    - The requirements file
+    - The main.py file
+    """
 
     if model_configuration is None:
         return

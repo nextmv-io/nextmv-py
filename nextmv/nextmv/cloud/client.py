@@ -1,4 +1,18 @@
-"""Module with the client class."""
+"""Module with the client class.
+
+This module provides the `Client` class for interacting with the Nextmv Cloud
+API, and a helper function `get_size` to determine the size of objects.
+
+Classes
+-------
+Client
+    Client that interacts directly with the Nextmv Cloud API.
+
+Functions
+---------
+get_size(obj)
+    Finds the size of an object in bytes.
+"""
 
 import json
 import os
@@ -11,16 +25,76 @@ import yaml
 from requests.adapters import HTTPAdapter, Retry
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
-"""Maximum size of the payload handled by the Nextmv Cloud API."""
+"""int: Maximum size of the payload handled by the Nextmv Cloud API.
+
+This constant defines the upper limit for the size of data payloads that can
+be sent to the Nextmv Cloud API, specifically for lambda functions. It is set
+to 500 MiB.
+"""
 
 
 @dataclass
 class Client:
     """
-    Client that interacts directly with the Nextmv Cloud API. The API key will
-    be searched, in order of precedence, in: the api_key arg in the
-    constructor, the NEXTMV_API_KEY environment variable, the
-    ~/.nextmv/config.yaml file used by the Nextmv CLI.
+    Client that interacts directly with the Nextmv Cloud API.
+
+    You can import the `Client` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import Client
+    ```
+
+    The API key will be searched, in order of precedence, in:
+
+    1. The `api_key` argument in the constructor.
+    2. The `NEXTMV_API_KEY` environment variable.
+    3. The `~/.nextmv/config.yaml` file used by the Nextmv CLI.
+
+    Parameters
+    ----------
+    api_key : str, optional
+        API key to use for authenticating with the Nextmv Cloud API. If not
+        provided, the client will look for the `NEXTMV_API_KEY` environment
+        variable.
+    allowed_methods : list[str]
+        Allowed HTTP methods to use for retries in requests to the Nextmv
+        Cloud API. Defaults to ``["GET", "POST", "PUT", "DELETE"]``.
+    backoff_factor : float
+        Exponential backoff factor to use for requests to the Nextmv Cloud
+        API. Defaults to ``1``.
+    backoff_jitter : float
+        Jitter to use for requests to the Nextmv Cloud API when backing off.
+        Defaults to ``0.1``.
+    backoff_max : float
+        Maximum backoff time to use for requests to the Nextmv Cloud API, in
+        seconds. Defaults to ``60``.
+    configuration_file : str
+        Path to the configuration file used by the Nextmv CLI. Defaults to
+        ``"~/.nextmv/config.yaml"``.
+    headers : dict[str, str], optional
+        Headers to use for requests to the Nextmv Cloud API. Automatically
+        set up with the API key.
+    max_retries : int
+        Maximum number of retries to use for requests to the Nextmv Cloud
+        API. Defaults to ``10``.
+    status_forcelist : list[int]
+        Status codes to retry for requests to the Nextmv Cloud API. Defaults
+        to ``[429]``.
+    timeout : float
+        Timeout to use for requests to the Nextmv Cloud API, in seconds.
+        Defaults to ``20``.
+    url : str
+        URL of the Nextmv Cloud API. Defaults to
+        ``"https://api.cloud.nextmv.io"``.
+    console_url : str
+        URL of the Nextmv Cloud console. Defaults to
+        ``"https://cloud.nextmv.io"``.
+
+    Examples
+    --------
+    >>> client = Client(api_key="YOUR_API_KEY")
+    >>> response = client.request(method="GET", endpoint="/v1/applications")
+    >>> print(response.json())
     """
 
     api_key: Optional[str] = None
@@ -59,7 +133,23 @@ class Client:
     """URL of the Nextmv Cloud console."""
 
     def __post_init__(self):
-        """Logic to run after the class is initialized."""
+        """
+        Initializes the client after dataclass construction.
+
+        This method handles the logic for API key retrieval and header
+        setup. It checks for the API key in the constructor, environment
+        variables, and the configuration file, in that order.
+
+        Raises
+        ------
+        ValueError
+            If `api_key` is an empty string.
+            If no API key is found in any of the lookup locations.
+            If a profile is specified via `NEXTMV_PROFILE` but not found in
+            the configuration file.
+            If `apikey` is not found in the configuration file for the
+            selected profile.
+        """
 
         if self.api_key is not None and self.api_key != "":
             self._set_headers_api_key(self.api_key)
@@ -77,7 +167,7 @@ class Client:
         config_path = os.path.expanduser(self.configuration_file)
         if not os.path.exists(config_path):
             raise ValueError(
-                "no API key set in constructor or NEXTMV_API_KEY env var, and ~/.nextmv/config.yaml does not exist"
+                f"no API key set in constructor or NEXTMV_API_KEY env var, and {self.configuration_file} does not exist"
             )
 
         with open(config_path) as f:
@@ -88,11 +178,11 @@ class Client:
         if profile is not None:
             parent = config.get(profile)
             if parent is None:
-                raise ValueError(f"profile {profile} set via NEXTMV_PROFILE but not found in ~/.nextmv/config.yaml")
+                raise ValueError(f"profile {profile} set via NEXTMV_PROFILE but not found in {self.configuration_file}")
 
         api_key = parent.get("apikey")
         if api_key is None:
-            raise ValueError("no apiKey found in ~/.nextmv/config.yaml")
+            raise ValueError(f"no apiKey found in {self.configuration_file}")
         self.api_key = api_key
 
         endpoint = parent.get("endpoint")
@@ -111,25 +201,61 @@ class Client:
         query_params: Optional[dict[str, Any]] = None,
     ) -> requests.Response:
         """
-        Method to make a request to the Nextmv Cloud API.
+        Makes a request to the Nextmv Cloud API.
 
-        Args:
-            method: HTTP method to use. Valid methods include: GET, POST.
-            endpoint: Endpoint to send the request to.
-            data: Data to send with the request.
-            headers: Headers to send with the request.
-            payload: Payload to send with the request. Prefer using this over
-                data.
-            query_params: Query parameters to send with the request.
+        Parameters
+        ----------
+        method : str
+            HTTP method to use (e.g., "GET", "POST").
+        endpoint : str
+            API endpoint to send the request to (e.g., "/v1/applications").
+        data : Any, optional
+            Data to send in the request body. Typically used for form data.
+            Cannot be used if `payload` is also provided.
+        headers : dict[str, str], optional
+            Additional headers to send with the request. These will override
+            the default client headers if keys conflict.
+        payload : dict[str, Any], optional
+            JSON payload to send with the request. Prefer using this over
+            `data` for JSON requests. Cannot be used if `data` is also
+            provided.
+        query_params : dict[str, Any], optional
+            Query parameters to append to the request URL.
 
-        Returns:
-            Response from the Nextmv Cloud API.
+        Returns
+        -------
+        requests.Response
+            The response object from the Nextmv Cloud API.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-            ValueError: If both data and payload are provided.
-            ValueError: If the payload size exceeds the maximum allowed size.
-            ValueError: If the data size exceeds the maximum allowed size.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not in the 2xx range.
+        ValueError
+            If both `data` and `payload` are provided.
+            If the `payload` size exceeds `_MAX_LAMBDA_PAYLOAD_SIZE`.
+            If the `data` size exceeds `_MAX_LAMBDA_PAYLOAD_SIZE`.
+
+        Examples
+        --------
+        >>> client = Client(api_key="YOUR_API_KEY")
+        >>> # Get a list of applications
+        >>> response = client.request(method="GET", endpoint="/v1/applications")
+        >>> print(response.status_code)
+        200
+        >>> # Create a new run
+        >>> run_payload = {
+        ...     "applicationId": "app_id",
+        ...     "instanceId": "instance_id",
+        ...     "input": {"value": 10}
+        ... }
+        >>> response = client.request(
+        ...     method="POST",
+        ...     endpoint="/v1/runs",
+        ...     payload=run_payload
+        ... )
+        >>> print(response.json()["id"])
+        run_xxxxxxxxxxxx
         """
 
         if payload is not None and data is not None:
@@ -159,7 +285,7 @@ class Client:
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
 
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "url": urljoin(self.url, endpoint),
             "timeout": self.timeout,
         }
@@ -182,19 +308,38 @@ class Client:
 
         return response
 
-    def upload_to_presigned_url(
-        self,
-        data: Union[dict[str, Any], str],
-        url: str,
-    ) -> None:
+    def upload_to_presigned_url(self, data: Union[dict[str, Any], str], url: str) -> None:
         """
-        Method to upload data to a presigned URL of the Nextmv Cloud API.
-        Args:
-            data: data to upload.
-            url: URL to upload the data to.
+        Uploads data to a presigned URL.
+
+        This method is typically used for uploading large input or output files
+        directly to cloud storage, bypassing the main API for efficiency.
+
+        Parameters
+        ----------
+        data : dict[str, Any] or str
+            The data to upload. If a dictionary is provided, it will be
+            JSON-serialized. If a string is provided, it will be uploaded
+            as is.
+        url : str
+            The presigned URL to which the data will be uploaded.
+
+        Raises
+        ------
+        ValueError
+            If `data` is not a dictionary or a string.
+        requests.HTTPError
+            If the upload request fails.
+
+        Examples
+        --------
+        Assume `presigned_upload_url` is obtained from a previous API call.
+        >>> client = Client(api_key="YOUR_API_KEY")
+        >>> input_data = {"value": 42, "items": [1, 2, 3]}
+        >>> client.upload_to_presigned_url(data=input_data, url="PRE_SIGNED_URL") # doctest: +SKIP
         """
 
-        upload_data = None
+        upload_data: Optional[str] = None
         if isinstance(data, dict):
             upload_data = json.dumps(data, separators=(",", ":"))
         elif isinstance(data, str):
@@ -213,7 +358,7 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "url": url,
             "timeout": self.timeout,
             "data": upload_data,
@@ -226,11 +371,21 @@ class Client:
         except requests.HTTPError as e:
             raise requests.HTTPError(
                 f"upload to presigned URL {url} failed with "
-                + f"status code {response.status_code} and message: {response.text}"
+                f"status code {response.status_code} and message: {response.text}"
             ) from e
 
     def _set_headers_api_key(self, api_key: str) -> None:
-        """Sets the API key to use for requests to the Nextmv Cloud API."""
+        """
+        Sets the Authorization and Content-Type headers.
+
+        This is an internal method used to configure the necessary headers
+        for API authentication and content type specification.
+
+        Parameters
+        ----------
+        api_key : str
+            The API key to be included in the Authorization header.
+        """
 
         self.headers = {
             "Authorization": f"Bearer {api_key}",
@@ -238,8 +393,47 @@ class Client:
         }
 
 
-def get_size(obj: Union[dict[str, Any], IO[bytes]]) -> int:
-    """Finds the size of an object in bytes."""
+def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
+    """
+    Finds the size of an object in bytes.
+
+    This function supports dictionaries (JSON-serialized), file-like objects
+    (by reading their content), and strings.
+
+    Parameters
+    ----------
+    obj : dict[str, Any] or IO[bytes] or str
+        The object whose size is to be determined.
+        - If a dict, it's converted to a JSON string.
+        - If a file-like object (e.g., opened file), its size is read.
+        - If a string, its UTF-8 encoded byte length is calculated.
+
+    Returns
+    -------
+    int
+        The size of the object in bytes.
+
+    Raises
+    ------
+    TypeError
+        If the object type is not supported (i.e., not a dict,
+        file-like object, or string).
+
+    Examples
+    --------
+    >>> my_dict = {"key": "value", "number": 123}
+    >>> get_size(my_dict)
+    30
+    >>> import io
+    >>> my_string = "Hello, Nextmv!"
+    >>> string_io = io.StringIO(my_string)
+    >>> # To get size of underlying buffer for StringIO, we need to encode
+    >>> string_bytes_io = io.BytesIO(my_string.encode('utf-8'))
+    >>> get_size(string_bytes_io)
+    14
+    >>> get_size("Hello, Nextmv!")
+    14
+    """
 
     if isinstance(obj, dict):
         obj_str = json.dumps(obj, separators=(",", ":"))
@@ -255,4 +449,4 @@ def get_size(obj: Union[dict[str, Any], IO[bytes]]) -> int:
         return len(obj.encode("utf-8"))
 
     else:
-        raise TypeError("Unsupported type. Only dictionaries and file objects are supported.")
+        raise TypeError("Unsupported type. Only dictionaries, file objects (IO[bytes]), and strings are supported.")

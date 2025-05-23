@@ -5,7 +5,8 @@
     "default": null,
     "description": "Whether to calculate the intercept for this model.",
     "required": false,
-    "choices": null
+    "choices": null,
+    "additional_attributes": null
   },
   {
     "name": "copy_X",
@@ -13,7 +14,8 @@
     "default": null,
     "description": "If True, X will be copied; else, it may be overwritten.",
     "required": false,
-    "choices": null
+    "choices": null,
+    "additional_attributes": null
   },
   {
     "name": "n_jobs",
@@ -21,7 +23,8 @@
     "default": null,
     "description": "The number of jobs to use for the computation.",
     "required": false,
-    "choices": null
+    "choices": null,
+    "additional_attributes": null
   },
   {
     "name": "positive",
@@ -29,6 +32,7 @@
     "default": null,
     "description": "When set to True, forces the coefficients to be positive.",
     "required": false,
-    "choices": null
+    "choices": null,
+    "additional_attributes": null
   }
 ]

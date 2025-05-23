@@ -1,4 +1,17 @@
-"""Defines sklearn.neural_network solution interoperability."""
+"""Defines sklearn.neural_network solution interoperability.
+
+This module provides functionality for interacting with scikit-learn's neural network models.
+
+Classes
+-------
+MLPRegressorSolution
+    A Pydantic model representation of scikit-learn's MLPRegressor.
+
+Variables
+---------
+Loss
+    An annotated type for handling loss values in scikit-learn models.
+"""
 
 import base64
 import pickle
@@ -15,10 +28,74 @@ Loss = Annotated[
     BeforeValidator(lambda x: x),
     PlainSerializer(lambda x: base64.b64encode(pickle.dumps(x))),
 ]
+"""
+Annotated type for serialization and validation of scikit-learn loss objects.
+
+This type encodes a pickle serialized representation of a loss object as a base64 string,
+to ensure that loss objects can be safely serialized and deserialized.
+"""
 
 
 class MLPRegressorSolution(BaseModel):
-    """MLP Regressor scikit-learn model representation."""
+    """MLP Regressor scikit-learn model representation.
+
+    You can import the `MLPRegressorSolution` class directly from `neural_network`:
+
+    ```python
+    from nextmv_sklearn.neural_network import MLPRegressorSolution
+    ```
+
+    This class provides a Pydantic model representation of scikit-learn's MLPRegressor
+    model, enabling serialization, deserialization, and conversion between model formats.
+
+    Parameters
+    ----------
+    loss_ : float, default=0.0
+        The current loss computed with the loss function.
+    best_loss_ : float, default=0.0
+        The minimum loss reached by the solver throughout fitting.
+    loss_curve_ : list[np.float64], optional
+        Loss value evaluated at the end of each training step.
+    validation_scores_ : list[float], optional
+        The score at each iteration on a held-out validation set.
+    best_validation_score_ : float, optional
+        The best validation score (i.e. R2 score) that triggered the early stopping.
+    t_ : int, default=0
+        The number of training samples seen by the solver during fitting.
+    coefs_ : list[ndarray], optional
+        The ith element in the list represents the weight matrix corresponding to layer i.
+    intercepts_ : list[ndarray], optional
+        The ith element in the list represents the bias vector corresponding to layer i + 1.
+    n_features_in_ : int, default=0
+        Number of features seen during fit.
+    feature_names_in_ : ndarray, optional
+        Names of features seen during fit.
+    n_iter_ : int, default=0
+        The number of iterations the solver has run.
+    n_layers_ : int, default=0
+        Number of layers.
+    n_outputs_ : int, default=0
+        Number of outputs.
+    out_activation_ : str, optional
+        Name of the output activation function.
+
+    Examples
+    --------
+    >>> from sklearn.neural_network import MLPRegressor
+    >>> from nextmv_sklearn.neural_network import MLPRegressorSolution
+    >>>
+    >>> # Create and train a sklearn MLPRegressor
+    >>> regressor = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500)
+    >>> regressor.fit(X_train, y_train)
+    >>>
+    >>> # Convert to MLPRegressorSolution for serialization
+    >>> solution = MLPRegressorSolution.from_model(regressor)
+    >>> solution_dict = solution.to_dict()
+    >>>
+    >>> # Later, recreate the solution and convert back to sklearn model
+    >>> restored_solution = MLPRegressorSolution.from_dict(solution_dict["attributes"])
+    >>> restored_model = restored_solution.to_model()
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -65,6 +142,11 @@ class MLPRegressorSolution(BaseModel):
         -------
         MLPRegressorSolution
             Instance of MLPRegressorSolution.
+
+        Examples
+        --------
+        >>> solution_dict = {"loss_": 0.15, "n_layers_": 3, "n_outputs_": 1}
+        >>> solution = MLPRegressorSolution.from_dict(solution_dict)
         """
 
         if "loss_curve_" in data:
@@ -96,7 +178,13 @@ class MLPRegressorSolution(BaseModel):
         Returns
         -------
         MLPRegressorSolution
-            Instance of MLPRegressor
+            Instance of MLPRegressorSolution.
+
+        Examples
+        --------
+        >>> from sklearn.neural_network import MLPRegressor
+        >>> regressor = MLPRegressor().fit(X, y)
+        >>> solution = MLPRegressorSolution.from_model(regressor)
         """
 
         data = {}
@@ -108,9 +196,22 @@ class MLPRegressorSolution(BaseModel):
 
         return cls(**data)
 
-    def to_dict(self):
-        """Convert a data model instance to a dict with associated class
-        info."""
+    def to_dict(self) -> dict:
+        """
+        Convert a data model instance to a dict with associated class info.
+
+        Returns
+        -------
+        dict
+            Dictionary containing class information and model attributes.
+
+        Examples
+        --------
+        >>> solution = MLPRegressorSolution.from_model(regressor)
+        >>> solution_dict = solution.to_dict()
+        >>> print(solution_dict["class"]["name"])
+        'MLPRegressorSolution'
+        """
 
         d = self.model_dump(mode="json", exclude_none=True, by_alias=True)
 
@@ -132,6 +233,12 @@ class MLPRegressorSolution(BaseModel):
         -------
         MLPRegressor
             scikit-learn MLPRegressor model.
+
+        Examples
+        --------
+        >>> solution = MLPRegressorSolution.from_dict(solution_data)
+        >>> model = solution.to_model()
+        >>> predictions = model.predict(X_test)
         """
 
         m = neural_network.MLPRegressor()

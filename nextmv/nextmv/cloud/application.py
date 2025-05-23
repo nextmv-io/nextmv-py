@@ -1,4 +1,26 @@
-"""This module contains the application class."""
+"""
+Application module for interacting with Nextmv Cloud applications.
+
+This module provides functionality to interact with applications in Nextmv Cloud,
+including application management, running applications, and managing experiments
+and inputs.
+
+Classes
+-------
+DownloadURL
+    Result of getting a download URL.
+PollingOptions
+    Options for polling when waiting for run results.
+UploadURL
+    Result of getting an upload URL.
+Application
+    Class for interacting with applications in Nextmv Cloud.
+
+Functions
+---------
+poll
+    Function to poll for results with configurable options.
+"""
 
 import json
 import random
@@ -34,7 +56,7 @@ from nextmv.cloud.run import (
     RunResult,
     TrackedRun,
 )
-from nextmv.cloud.safe import name_and_id
+from nextmv.cloud.safe import _name_and_id
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
@@ -45,13 +67,36 @@ from nextmv.model import Model, ModelConfiguration
 from nextmv.options import Options
 from nextmv.output import Output
 
+# Maximum size of the run input/output in bytes. This constant defines the
+# maximum allowed size for run inputs and outputs. When the size exceeds this
+# value, the system will automatically use the large input upload and/or large
+# result download endpoints.
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
-"""Maximum size of the run input/output. This value is used to determine
-whether to use the large input upload and/or result download endpoints."""
 
 
 class DownloadURL(BaseModel):
-    """Result of getting a download URL."""
+    """
+    Result of getting a download URL.
+
+    You can import the `DownloadURL` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import DownloadURL
+    ```
+
+    This class represents a download URL that can be used to fetch content
+    from Nextmv Cloud, typically used for downloading large run results.
+
+    Attributes
+    ----------
+    url : str
+        URL to use for downloading the file.
+
+    Examples
+    --------
+    >>> download_url = DownloadURL(url="https://example.com/download")
+    >>> response = requests.get(download_url.url)
+    """
 
     url: str
     """URL to use for downloading the file."""
@@ -61,6 +106,12 @@ class DownloadURL(BaseModel):
 class PollingOptions:
     """
     Options to use when polling for a run result.
+
+    You can import the `PollingOptions` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import PollingOptions
+    ```
 
     The Cloud API will be polled for the result. The polling stops if:
 
@@ -82,6 +133,43 @@ class PollingOptions:
     * Uniform is the uniform distribution.
 
     Note that the sleep duration is capped by the `max_delay` parameter.
+
+    Parameters
+    ----------
+    backoff : float, default=0.9
+        Exponential backoff factor, in seconds, to use between polls.
+    delay : float, default=0.1
+        Base delay to use between polls, in seconds.
+    initial_delay : float, default=1.0
+        Initial delay to use before starting the polling strategy, in seconds.
+    max_delay : float, default=20.0
+        Maximum delay to use between polls, in seconds.
+    max_duration : float, default=300.0
+        Maximum duration of the polling strategy, in seconds.
+    max_tries : int, default=100
+        Maximum number of tries to use.
+    jitter : float, default=1.0
+        Jitter to use for the polling strategy. A uniform distribution is sampled
+        between 0 and this number. The resulting random number is added to the
+        delay for each poll, adding a random noise. Set this to 0 to avoid using
+        random jitter.
+    verbose : bool, default=False
+        Whether to log the polling strategy. This is useful for debugging.
+    stop : callable, default=None
+        Function to call to check if the polling should stop. This is useful for
+        stopping the polling based on external conditions. The function should
+        return True to stop the polling and False to continue. The function does
+        not receive any arguments. The function is called before each poll.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import PollingOptions
+    >>> # Create polling options with custom settings
+    >>> polling_options = PollingOptions(
+    ...     max_tries=50,
+    ...     max_duration=600,
+    ...     verbose=True
+    ... )
     """
 
     backoff: float = 0.9
@@ -118,12 +206,39 @@ class PollingOptions:
     """
 
 
+# Default polling options to use when polling for a run result. This constant
+# provides the default values for `PollingOptions` used across the module.
+# Using these defaults is recommended for most use cases unless specific timing
+# needs are required.
 _DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
-"""Default polling options to use when polling for a run result."""
 
 
 class UploadURL(BaseModel):
-    """Result of getting an upload URL."""
+    """
+    Result of getting an upload URL.
+
+    You can import the `UploadURL` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import UploadURL
+    ```
+
+    This class represents an upload URL that can be used to send data to
+    Nextmv Cloud, typically used for uploading large inputs for runs.
+
+    Attributes
+    ----------
+    upload_id : str
+        ID of the upload, used to reference the uploaded content.
+    upload_url : str
+        URL to use for uploading the file.
+
+    Examples
+    --------
+    >>> upload_url = UploadURL(upload_id="123", upload_url="https://example.com/upload")
+    >>> with open("large_input.json", "rb") as f:
+    ...     requests.put(upload_url.upload_url, data=f)
+    """
 
     upload_id: str
     """ID of the upload."""
@@ -133,7 +248,40 @@ class UploadURL(BaseModel):
 
 @dataclass
 class Application:
-    """An application is a published decision model that can be executed."""
+    """
+    A published decision model that can be executed.
+
+    You can import the `Application` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import Application
+    ```
+
+    This class represents an application in Nextmv Cloud, providing methods to
+    interact with the application, run it with different inputs, manage versions,
+    instances, experiments, and more.
+
+    Parameters
+    ----------
+    client : Client
+        Client to use for interacting with the Nextmv Cloud API.
+    id : str
+        ID of the application.
+    default_instance_id : str, default="devint"
+        Default instance ID to use for submitting runs.
+    endpoint : str, default="v1/applications/{id}"
+        Base endpoint for the application.
+    experiments_endpoint : str, default="{base}/experiments"
+        Base endpoint for the experiments in the application.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import Client, Application
+    >>> client = Client(api_key="your-api-key")
+    >>> app = Application(client=client, id="your-app-id")
+    >>> # Retrieve app information
+    >>> instances = app.list_instances()
+    """
 
     client: Client
     """Client to use for interacting with the Nextmv Cloud API."""
@@ -148,25 +296,39 @@ class Application:
     """Base endpoint for the experiments in the application."""
 
     def __post_init__(self):
-        """Logic to run after the class is initialized."""
+        """Initialize the endpoint and experiments_endpoint attributes.
 
+        This method is automatically called after class initialization to
+        format the endpoint and experiments_endpoint URLs with the application ID.
+        """
         self.endpoint = self.endpoint.format(id=self.id)
         self.experiments_endpoint = self.experiments_endpoint.format(base=self.endpoint)
 
     def acceptance_test(self, acceptance_test_id: str) -> AcceptanceTest:
         """
-        Get an acceptance test.
+        Retrieve details of an acceptance test.
 
-        Args:
-            acceptance_test_id: ID of the acceptance test.
+        Parameters
+        ----------
+        acceptance_test_id : str
+            ID of the acceptance test to retrieve.
 
-        Returns:
-            Acceptance test.
+        Returns
+        -------
+        AcceptanceTest
+            The requested acceptance test details.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> test = app.acceptance_test("test-123")
+        >>> print(test.name)
+        'My Test'
         """
-
         response = self.client.request(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/acceptance/{acceptance_test_id}",
@@ -178,14 +340,26 @@ class Application:
         """
         Get a batch experiment.
 
-        Args:
-            batch_id: ID of the batch experiment.
+        Parameters
+        ----------
+        batch_id : str
+            ID of the batch experiment.
 
-        Returns:
-            Batch experiment.
+        Returns
+        -------
+        BatchExperiment
+            The requested batch experiment details.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> batch_exp = app.batch_experiment("batch-123")
+        >>> print(batch_exp.name)
+        'My Batch Experiment'
         """
 
         response = self.client.request(
@@ -199,11 +373,19 @@ class Application:
         """
         Cancel a run.
 
-        Args:
-            run_id: ID of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to cancel.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.cancel_run("run-456")
         """
 
         _ = self.client.request(
@@ -215,8 +397,16 @@ class Application:
         """
         Delete the application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Permanently removes the application from Nextmv Cloud.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete()  # Permanently deletes the application
         """
 
         _ = self.client.request(
@@ -226,14 +416,24 @@ class Application:
 
     def delete_acceptance_test(self, acceptance_test_id: str) -> None:
         """
-        Deletes an acceptance test, along with all the associated information
+        Delete an acceptance test.
+
+        Deletes an acceptance test along with all the associated information
         such as the underlying batch experiment.
 
-        Args:
-            acceptance_test_id: ID of the acceptance test.
+        Parameters
+        ----------
+        acceptance_test_id : str
+            ID of the acceptance test to delete.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_acceptance_test("test-123")
         """
 
         _ = self.client.request(
@@ -243,18 +443,24 @@ class Application:
 
     def delete_batch_experiment(self, batch_id: str) -> None:
         """
-        Deletes a batch experiment, along with all the associated information,
+        Delete a batch experiment.
+
+        Deletes a batch experiment along with all the associated information,
         such as its runs.
 
         Parameters
         ----------
-        batch_id: str
-            ID of the batch experiment.
+        batch_id : str
+            ID of the batch experiment to delete.
 
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_batch_experiment("batch-123")
         """
 
         _ = self.client.request(
@@ -264,31 +470,45 @@ class Application:
 
     def delete_scenario_test(self, scenario_test_id: str) -> None:
         """
+        Delete a scenario test.
+
         Deletes a scenario test. Scenario tests are based on the batch
         experiments API, so this function summons `delete_batch_experiment`.
 
         Parameters
         ----------
-        scenario_test_id: str
-            ID of the scenario test.
+        scenario_test_id : str
+            ID of the scenario test to delete.
 
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_scenario_test("scenario-123")
         """
 
         self.delete_batch_experiment(batch_id=scenario_test_id)
 
     def delete_secrets_collection(self, secrets_collection_id: str) -> None:
         """
-        Deletes a secrets collection.
+        Delete a secrets collection.
 
-        Args:
-            secrets_collection_id: ID of the secrets collection.
+        Parameters
+        ----------
+        secrets_collection_id : str
+            ID of the secrets collection to delete.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_secrets_collection("secrets-123")
         """
 
         _ = self.client.request(
@@ -301,12 +521,24 @@ class Application:
         """
         Check if an application exists.
 
-        Args:
-            client: Client to use for interacting with the Nextmv Cloud API.
-            id: ID of the application.
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        id : str
+            ID of the application to check.
 
-        Returns:
+        Returns
+        -------
+        bool
             True if the application exists, False otherwise.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client
+        >>> client = Client(api_key="your-api-key")
+        >>> Application.exists(client, "app-123")
+        True
         """
 
         try:
@@ -326,14 +558,26 @@ class Application:
         """
         Get an input set.
 
-        Args:
-            input_set_id: ID of the input set.
+        Parameters
+        ----------
+        input_set_id : str
+            ID of the input set to retrieve.
 
-        Returns:
-            Input set.
+        Returns
+        -------
+        InputSet
+            The requested input set.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> input_set = app.input_set("input-set-123")
+        >>> print(input_set.name)
+        'My Input Set'
         """
 
         response = self.client.request(
@@ -347,14 +591,26 @@ class Application:
         """
         Get an instance.
 
-        Args:
-            instance_id: ID of the instance.
+        Parameters
+        ----------
+        instance_id : str
+            ID of the instance to retrieve.
 
-        Returns:
-            Instance.
+        Returns
+        -------
+        Instance
+            The requested instance details.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> instance = app.instance("instance-123")
+        >>> print(instance.name)
+        'Production Instance'
         """
 
         response = self.client.request(
@@ -368,11 +624,20 @@ class Application:
         """
         Check if an instance exists.
 
-        Args:
-            instance_id: ID of the instance.
+        Parameters
+        ----------
+        instance_id : str
+            ID of the instance to check.
 
-        Returns:
+        Returns
+        -------
+        bool
             True if the instance exists, False otherwise.
+
+        Examples
+        --------
+        >>> app.instance_exists("instance-123")
+        True
         """
 
         try:
@@ -387,11 +652,23 @@ class Application:
         """
         List all acceptance tests.
 
-        Returns:
-            List of acceptance tests.
+        Returns
+        -------
+        list[AcceptanceTest]
+            List of all acceptance tests associated with this application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> tests = app.list_acceptance_tests()
+        >>> for test in tests:
+        ...     print(test.name)
+        'Test 1'
+        'Test 2'
         """
 
         response = self.client.request(
@@ -428,11 +705,23 @@ class Application:
         """
         List all input sets.
 
-        Returns:
-            List of input sets.
+        Returns
+        -------
+        list[InputSet]
+            List of all input sets associated with this application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> input_sets = app.list_input_sets()
+        >>> for input_set in input_sets:
+        ...     print(input_set.name)
+        'Input Set 1'
+        'Input Set 2'
         """
 
         response = self.client.request(
@@ -446,11 +735,23 @@ class Application:
         """
         List all instances.
 
-        Returns:
-            List of instances.
+        Returns
+        -------
+        list[Instance]
+            List of all instances associated with this application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> instances = app.list_instances()
+        >>> for instance in instances:
+        ...     print(instance.name)
+        'Development Instance'
+        'Production Instance'
         """
 
         response = self.client.request(
@@ -511,11 +812,23 @@ class Application:
         """
         List all secrets collections.
 
-        Returns:
-            List of secrets collections.
+        Returns
+        -------
+        list[SecretsCollectionSummary]
+            List of all secrets collections associated with this application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> collections = app.list_secrets_collections()
+        >>> for collection in collections:
+        ...     print(collection.name)
+        'API Keys'
+        'Database Credentials'
         """
 
         response = self.client.request(
@@ -529,11 +842,23 @@ class Application:
         """
         List all versions.
 
-        Returns:
-            List of versions.
+        Returns
+        -------
+        list[Version]
+            List of all versions associated with this application.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> versions = app.list_versions()
+        >>> for version in versions:
+        ...     print(version.name)
+        'v1.0.0'
+        'v1.1.0'
         """
 
         response = self.client.request(
@@ -583,17 +908,32 @@ class Application:
         """
         Create a new application.
 
-        Args:
-            client: Client to use for interacting with the Nextmv Cloud API.
-            name: Name of the application.
-            id: ID of the application. Will be generated if not provided.
-            description: Description of the application.
-            is_workflow: Whether the application is a Decision Workflow.
-            exist_ok: If True and an application with the same ID already exists,
-                return the existing application instead of creating a new one.
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        name : str
+            Name of the application.
+        id : str, optional
+            ID of the application. Will be generated if not provided.
+        description : str, optional
+            Description of the application.
+        is_workflow : bool, optional
+            Whether the application is a Decision Workflow.
+        exist_ok : bool, default=False
+            If True and an application with the same ID already exists,
+            return the existing application instead of creating a new one.
 
-        Returns:
-            The new application.
+        Returns
+        -------
+        Application
+            The newly created (or existing) application.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client
+        >>> client = Client(api_key="your-api-key")
+        >>> app = Application.new(client=client, name="My New App", id="my-app")
         """
 
         if exist_ok and cls.exists(client=client, id=id):
@@ -629,30 +969,44 @@ class Application:
         description: Optional[str] = None,
     ) -> AcceptanceTest:
         """
-        Create a new acceptance test. The acceptance test is based on a batch
-        experiment. If you already started a batch experiment, you don't need
-        to provide the input_set_id parameter. In that case, the ID of the
-        acceptance test and the batch experiment must be the same. If the batch
-        experiment does not exist, you can provide the input_set_id parameter
-        and a new batch experiment will be created for you.
+        Create a new acceptance test.
 
-        Args:
-            candidate_instance_id: ID of the candidate instance.
-            baseline_instance_id: ID of the baseline instance.
-            id: ID of the acceptance test.
-            metrics: List of metrics to use for the acceptance test.
-            name: Name of the acceptance test.
-            input_set_id: ID of the input set to use for the underlying batch
-                experiment, in case it hasn't been started.
-            description: Description of the acceptance test.
+        The acceptance test is based on a batch experiment. If you already
+        started a batch experiment, you don't need to provide the input_set_id
+        parameter. In that case, the ID of the acceptance test and the batch
+        experiment must be the same. If the batch experiment does not exist,
+        you can provide the input_set_id parameter and a new batch experiment
+        will be created for you.
 
-        Returns:
-            Acceptance test.
+        Parameters
+        ----------
+        candidate_instance_id : str
+            ID of the candidate instance.
+        baseline_instance_id : str
+            ID of the baseline instance.
+        id : str
+            ID of the acceptance test.
+        metrics : list[Union[Metric, dict[str, Any]]]
+            List of metrics to use for the acceptance test.
+        name : str
+            Name of the acceptance test.
+        input_set_id : Optional[str], default=None
+            ID of the input set to use for the underlying batch experiment,
+            in case it hasn't been started.
+        description : Optional[str], default=None
+            Description of the acceptance test.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-            ValueError: If the batch experiment ID does not match the
-                acceptance test ID.
+        Returns
+        -------
+        AcceptanceTest
+            The created acceptance test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If the batch experiment ID does not match the acceptance test ID.
         """
 
         if input_set_id is None:
@@ -714,30 +1068,59 @@ class Application:
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
-        Create a new acceptance test and poll for the result. This is a
-        convenience method that combines the new_acceptance_test with polling
+        Create a new acceptance test and poll for the result.
+
+        This is a convenience method that combines the new_acceptance_test with polling
         logic to check when the acceptance test is done.
 
-        Args:
-            candidate_instance_id: ID of the candidate instance.
-            baseline_instance_id: ID of the baseline instance.
-            id: ID of the acceptance test.
-            metrics: List of metrics to use for the acceptance test.
-            name: Name of the acceptance test.
-            input_set_id: ID of the input set to use for the underlying batch
-                experiment, in case it hasn't been started.
-            description: Description of the acceptance test.
-            polling_options: Options to use when polling for the run result.
+        Parameters
+        ----------
+        candidate_instance_id : str
+            ID of the candidate instance.
+        baseline_instance_id : str
+            ID of the baseline instance.
+        id : str
+            ID of the acceptance test.
+        metrics : list[Union[Metric, dict[str, Any]]]
+            List of metrics to use for the acceptance test.
+        name : str
+            Name of the acceptance test.
+        input_set_id : Optional[str], default=None
+            ID of the input set to use for the underlying batch experiment,
+            in case it hasn't been started.
+        description : Optional[str], default=None
+            Description of the acceptance test.
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the acceptance test result.
 
-        Returns:
-            Result of the acceptance test.
+        Returns
+        -------
+        AcceptanceTest
+            The completed acceptance test with results.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
-            TimeoutError: If the acceptance test does not succeed after the
-                polling strategy is exhausted based on time duration.
-            RuntimeError: If the acceptance test does not succeed after the
-                polling strategy is exhausted based on number of tries.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the acceptance test does not succeed after the
+            polling strategy is exhausted based on time duration.
+        RuntimeError
+            If the acceptance test does not succeed after the
+            polling strategy is exhausted based on number of tries.
+
+        Examples
+        --------
+        >>> test = app.new_acceptance_test_with_result(
+        ...     candidate_instance_id="candidate-123",
+        ...     baseline_instance_id="baseline-456",
+        ...     id="test-789",
+        ...     metrics=[Metric(name="objective", type="numeric")],
+        ...     name="Performance Test",
+        ...     input_set_id="input-set-123"
+        ... )
+        >>> print(test.status)
+        'completed'
         """
         _ = self.new_acceptance_test(
             candidate_instance_id=candidate_instance_id,
@@ -896,7 +1279,6 @@ class Application:
             the input set from a list of inputs that are already available in
             the application.
 
-
         Returns
         -------
         InputSet
@@ -947,20 +1329,49 @@ class Application:
         """
         Create a new instance and associate it with a version.
 
-        Args:
-            version_id: ID of the version to associate the instance with.
-            id: ID of the instance. Will be generated if not provided.
-            name: Name of the instance. Will be generated if not provided.
-            description: Description of the instance. Will be generated if not provided.
-            configuration: Configuration to use for the instance.
-            exist_ok: If True and an instance with the same ID already exists,
-                return the existing instance instead of creating a new one.
+        This method creates a new instance associated with a specific version of the application.
+        Instances are configurations of an application version that can be executed.
 
-        Returns:
-            Instance.
+        Parameters
+        ----------
+        version_id : str
+            ID of the version to associate the instance with.
+        id : str
+            ID of the instance. Will be generated if not provided.
+        name : str
+            Name of the instance. Will be generated if not provided.
+        description : Optional[str], default=None
+            Description of the instance.
+        configuration : Optional[InstanceConfiguration], default=None
+            Configuration to use for the instance. This can include resources,
+            timeouts, and other execution parameters.
+        exist_ok : bool, default=False
+            If True and an instance with the same ID already exists,
+            return the existing instance instead of creating a new one.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        Instance
+            The newly created (or existing) instance.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If exist_ok is True and id is None.
+
+        Examples
+        --------
+        >>> # Create a new instance for a specific version
+        >>> instance = app.new_instance(
+        ...     version_id="version-123",
+        ...     id="prod-instance",
+        ...     name="Production Instance",
+        ...     description="Instance for production use"
+        ... )
+        >>> print(instance.name)
+        'Production Instance'
         """
 
         if exist_ok and id is None:
@@ -1135,11 +1546,11 @@ class Application:
 
         Raises
         ----------
-            requests.HTTPError: If the response status code is not 2xx.
-            ValueError:
-                If the `input` is of type `nextmv.Input` and the
-                `.input_format` is not `JSON`. If the final `options` are not
-                of type `dict[str,str]`.
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If the `input` is of type `nextmv.Input` and the .input_format` is
+            not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
         input_data = None
@@ -1279,7 +1690,7 @@ class Application:
         batch_experiment_id: Optional[str]
             ID of a batch experiment to associate the run with. This is used
             when the run is part of a batch experiment.
-        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]]
+        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None
             External result to use for the run. This can be a
             `cloud.ExternalRunResult` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
@@ -1294,15 +1705,17 @@ class Application:
 
         Raises
         ----------
-            ValueError:
-                If the `input` is of type `nextmv.Input` and the
-                `.input_format` is not `JSON`.
-                If the final `options` are not of type `dict[str,str]`.
-            requests.HTTPError: If the response status code is not 2xx.
-            TimeoutError: If the run does not succeed after the polling
-                strategy is exhausted based on time duration.
-            RuntimeError: If the run does not succeed after the polling
-                strategy is exhausted based on number of tries.
+        ValueError
+            If the `input` is of type `nextmv.Input` and the `.input_format` is
+            not `JSON`. If the final `options` are not of type `dict[str,str]`.
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the run does not succeed after the polling strategy is exhausted
+            based on time duration.
+        RuntimeError
+            If the run does not succeed after the polling strategy is exhausted
+            based on number of tries.
         """
 
         run_id = self.new_run(
@@ -1451,23 +1864,53 @@ class Application:
         description: Optional[str] = None,
     ) -> SecretsCollectionSummary:
         """
-        Create a new secrets collection. If no secrets are provided, a
-        ValueError is raised.
+        Create a new secrets collection.
 
-        Args:
-            secrets: List of secrets to use for the secrets collection. id: ID
-            of the secrets collection. Will be generated if not provided.
-            name: Name of the secrets collection. Will be generated if not
-                provided.
-            description: Description of the secrets collection. Will be
-                generated if not provided.
+        This method creates a new secrets collection with the provided secrets.
+        A secrets collection is a group of key-value pairs that can be used by
+        your application instances during execution. If no secrets are provided,
+        a ValueError is raised.
 
-        Returns:
-            SecretsCollectionSummary: Summary of the secrets collection.
+        Parameters
+        ----------
+        secrets : list[Secret]
+            List of secrets to use for the secrets collection. Each secret
+            should be an instance of the Secret class containing a key and value.
+        id : str
+            ID of the secrets collection.
+        name : str
+            Name of the secrets collection.
+        description : Optional[str], default=None
+            Description of the secrets collection.
 
-        Raises:
-            ValueError: If no secrets are provided. requests.HTTPError: If the
-            response status code is not 2xx.
+        Returns
+        -------
+        SecretsCollectionSummary
+            Summary of the secrets collection including its metadata.
+
+        Raises
+        ------
+        ValueError
+            If no secrets are provided.
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Create a new secrets collection with API keys
+        >>> from nextmv.cloud import Secret
+        >>> secrets = [
+        ...     Secret(key="API_KEY", value="your-api-key"),
+        ...     Secret(key="DATABASE_URL", value="your-database-url")
+        ... ]
+        >>> collection = app.new_secrets_collection(
+        ...     secrets=secrets,
+        ...     id="api-secrets",
+        ...     name="API Secrets",
+        ...     description="Collection of API secrets for external services"
+        ... )
+        >>> print(collection.id)
+        'api-secrets'
         """
 
         if len(secrets) == 0:
@@ -1502,18 +1945,51 @@ class Application:
         """
         Create a new version using the current dev binary.
 
-        Args:
-            id: ID of the version. Will be generated if not provided.
-            name: Name of the version. Will be generated if not provided.
-            description: Description of the version. Will be generated if not provided.
-            exist_ok: If True and a version with the same ID already exists,
-                return the existing version instead of creating a new one.
+        This method creates a new version of the application using the current development
+        binary. Application versions represent different iterations of your application's
+        code and configuration that can be deployed.
 
-        Returns:
-            Version.
+        Parameters
+        ----------
+        id : Optional[str], default=None
+            ID of the version. If not provided, a unique ID will be generated.
+        name : Optional[str], default=None
+            Name of the version. If not provided, a name will be generated.
+        description : Optional[str], default=None
+            Description of the version. If not provided, a description will be generated.
+        exist_ok : bool, default=False
+            If True and a version with the same ID already exists,
+            return the existing version instead of creating a new one.
+            If True, the 'id' parameter must be provided.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        Version
+            The newly created (or existing) version.
+
+        Raises
+        ------
+        ValueError
+            If exist_ok is True and id is None.
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Create a new version
+        >>> version = app.new_version(
+        ...     id="v1.0.0",
+        ...     name="Initial Release",
+        ...     description="First stable version"
+        ... )
+        >>> print(version.id)
+        'v1.0.0'
+
+        >>> # Get or create a version with exist_ok
+        >>> version = app.new_version(
+        ...     id="v1.0.0",
+        ...     exist_ok=True
+        ... )
         """
 
         if exist_ok and id is None:
@@ -1563,86 +2039,96 @@ class Application:
         `nextmv.Model`. The model is encoded, some dependencies and
         accompanying files are packaged, and the app is pushed to Nextmv Cloud.
 
-        Examples
-        -------
-
-        1. Push an app using an external strategy, i.e., specifying the app's
-        directory:
-        ```python
-        import os
-
-        from nextmv import cloud
-
-        client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
-        app = cloud.Application(client=client, id="<YOUR-APP-ID>")
-        app.push()  # Use verbose=True for step-by-step output.
-        ```
-
-        2. Push an app using an internal strategy, i.e., specifying the model
-        and model configuration:
-        ```python
-        import os
-
-        import nextroute
-
-        import nextmv
-        import nextmv.cloud
-
-
-        # Define the model that makes decisions. This model uses the Nextroute
-        # library to solve a vehicle routing problem.
-        class DecisionModel(nextmv.Model):
-            def solve(self, input: nextmv.Input) -> nextmv.Output:
-                nextroute_input = nextroute.schema.Input.from_dict(input.data)
-                nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
-                nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
-
-                return nextmv.Output(
-                    options=input.options,
-                    solution=nextroute_output.solutions[0].to_dict(),
-                    statistics=nextroute_output.statistics.to_dict(),
-                )
-
-
-        # Define the options that the model needs.
-        opt = []
-        default_options = nextroute.Options()
-        for name, default_value in default_options.to_dict().items():
-            opt.append(nextmv.Option(name.lower(), type(default_value), default_value, name, False))
-
-        options = nextmv.Options(*opt)
-
-        # Instantiate the model and model configuration.
-        model = DecisionModel()
-        model_configuration = nextmv.ModelConfiguration(
-            name="python_nextroute_model",
-            requirements=[
-                "nextroute==1.8.1",
-                "nextmv==0.14.0.dev1",
-            ],
-            options=options,
-        )
-
-        # Define the Nextmv application and push the model to the cloud.
-        client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
-        app = cloud.Application(client=client, id="<YOUR-APP-ID>")
-        manifest = nextmv.cloud.default_python_manifest()
-        app.push(
-            manifest=manifest,
-            verbose=True,
-            model=model,
-            model_configuration=model_configuration,
-        )
-        ```
-
         Parameters
         ----------
-        manifest : Optional[Manifest], optional
-            The manifest for the app, by default None.
-        app_dir : Optional[str], optional
-            The path to the app's directory, by default None.
-        verbose : bool, optional
-            Whether to print verbose output, by default False.
+        manifest : Optional[Manifest], default=None
+            The manifest for the app. If None, an `app.yaml` file in the provided
+            app directory will be used.
+        app_dir : Optional[str], default=None
+            The path to the app's root directory. If None, the current directory
+            will be used. This is for the external strategy approach.
+        verbose : bool, default=False
+            Whether to print verbose output during the push process.
+        model : Optional[Model], default=None
+            The Python-native model to push. Must be specified together with
+            `model_configuration`. This is for the internal strategy approach.
+        model_configuration : Optional[ModelConfiguration], default=None
+            Configuration for the Python-native model. Must be specified together
+            with `model`.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If neither app_dir nor model/model_configuration is provided correctly,
+            or if only one of model and model_configuration is provided.
+        TypeError
+            If model is not an instance of nextmv.Model or if model_configuration
+            is not an instance of nextmv.ModelConfiguration.
+        Exception
+            If there's an error in the build, packaging, or cleanup process.
+
+        Examples
+        --------
+        1. Push an app using an external strategy (directory-based):
+
+        >>> import os
+        >>> from nextmv import cloud
+        >>> client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+        >>> app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+        >>> app.push()  # Use verbose=True for step-by-step output.
+
+        2. Push an app using an internal strategy (Python-native model):
+
+        >>> import os
+        >>> import nextroute
+        >>> import nextmv
+        >>> import nextmv.cloud
+        >>>
+        >>> # Define the model that makes decisions
+        >>> class DecisionModel(nextmv.Model):
+        ...     def solve(self, input: nextmv.Input) -> nextmv.Output:
+        ...         nextroute_input = nextroute.schema.Input.from_dict(input.data)
+        ...         nextroute_options = nextroute.Options.extract_from_dict(input.options.to_dict())
+        ...         nextroute_output = nextroute.solve(nextroute_input, nextroute_options)
+        ...
+        ...         return nextmv.Output(
+        ...             options=input.options,
+        ...             solution=nextroute_output.solutions[0].to_dict(),
+        ...             statistics=nextroute_output.statistics.to_dict(),
+        ...         )
+        >>>
+        >>> # Define the options that the model needs
+        >>> opt = []
+        >>> default_options = nextroute.Options()
+        >>> for name, default_value in default_options.to_dict().items():
+        ...     opt.append(nextmv.Option(name.lower(), type(default_value), default_value, name, False))
+        >>> options = nextmv.Options(*opt)
+        >>>
+        >>> # Instantiate the model and model configuration
+        >>> model = DecisionModel()
+        >>> model_configuration = nextmv.ModelConfiguration(
+        ...     name="python_nextroute_model",
+        ...     requirements=[
+        ...         "nextroute==1.8.1",
+        ...         "nextmv==0.14.0.dev1",
+        ...     ],
+        ...     options=options,
+        ... )
+        >>>
+        >>> # Push the model to Nextmv Cloud
+        >>> client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+        >>> app = cloud.Application(client=client, id="<YOUR-APP-ID>")
+        >>> manifest = nextmv.cloud.default_python_manifest()
+        >>> app.push(
+        ...     manifest=manifest,
+        ...     verbose=True,
+        ...     model=model,
+        ...     model_configuration=model_configuration,
+        ... )
         """
 
         if verbose:
@@ -1677,14 +2163,31 @@ class Application:
         """
         Get the input of a run.
 
-        Args:
-            run_id: ID of the run.
+        Retrieves the input data that was used for a specific run. This method
+        handles both small and large inputs automatically - if the input size
+        exceeds the maximum allowed size, it will fetch the input from a
+        download URL.
 
-        Returns:
-            Input of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the input for.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        dict[str, Any]
+            Input data of the run as a dictionary.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> input_data = app.run_input("run-123")
+        >>> print(input_data)
+        {'locations': [...], 'vehicles': [...]}
         """
         run_information = self.run_metadata(run_id=run_id)
 
@@ -1713,16 +2216,31 @@ class Application:
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """
-        Get the metadata of a run. The result does not include the run output.
+        Get the metadata of a run.
 
-        Args:
-            run_id: ID of the run.
+        Retrieves information about a run without including the run output.
+        This is useful when you only need the run's status and metadata.
 
-        Returns:
-            Metadata of the run (Run result with no output).
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve metadata for.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        RunInformation
+            Metadata of the run (run information without output).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> metadata = app.run_metadata("run-123")
+        >>> print(metadata.metadata.status_v2)
+        StatusV2.succeeded
         """
 
         response = self.client.request(
@@ -1739,14 +2257,26 @@ class Application:
         """
         Get the logs of a run.
 
-        Args:
-            run_id: ID of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to get logs for.
 
-        Returns:
+        Returns
+        -------
+        RunLog
             Logs of the run.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> logs = app.run_logs("run-123")
+        >>> print(logs.stderr)
+        'Warning: resource usage exceeded'
         """
         response = self.client.request(
             method="GET",
@@ -1756,16 +2286,30 @@ class Application:
 
     def run_result(self, run_id: str) -> RunResult:
         """
-        Get the result of a run. The result includes the run output.
+        Get the result of a run.
 
-        Args:
-            run_id: ID of the run.
+        Retrieves the complete result of a run, including the run output.
 
-        Returns:
-            Result of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to get results for.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        RunResult
+            Result of the run, including output.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> result = app.run_result("run-123")
+        >>> print(result.metadata.status_v2)
+        'succeeded'
         """
 
         run_information = self.run_metadata(run_id=run_id)
@@ -1778,19 +2322,44 @@ class Application:
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
     ) -> RunResult:
         """
-        Get the result of a run. The result includes the run output. This
-        method polls for the result until the run finishes executing or the
-        polling strategy is exhausted.
+        Get the result of a run with polling.
 
-        Args:
-            run_id: ID of the run.
-            polling_options: Options to use when polling for the run result.
+        Retrieves the result of a run including the run output. This method polls
+        for the result until the run finishes executing or the polling strategy
+        is exhausted.
 
-        Returns:
-            Result of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the result for.
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the run result.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        RunResult
+            Complete result of the run including output data.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the run does not complete after the polling strategy is
+            exhausted based on time duration.
+        RuntimeError
+            If the run does not complete after the polling strategy is
+            exhausted based on number of tries.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import PollingOptions
+        >>> # Create custom polling options
+        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
+        >>> # Get run result with polling
+        >>> result = app.run_result_with_polling("run-123", polling_opts)
+        >>> print(result.output)
+        {'solution': {...}}
         """
 
         def polling_func() -> tuple[Any, bool]:
@@ -1810,24 +2379,34 @@ class Application:
 
     def scenario_test(self, scenario_test_id: str) -> BatchExperiment:
         """
-        Get the scenario test. Scenario tests are based on batch experiments,
-        so this function will return the corresponding batch experiment
-        associated to the scenario test.
+        Get a scenario test.
+
+        Retrieves a scenario test by ID. Scenario tests are based on batch experiments,
+        so this function returns the corresponding batch experiment associated with
+        the scenario test.
 
         Parameters
         ----------
         scenario_test_id : str
-            ID of the scenario test.
+            ID of the scenario test to retrieve.
 
         Returns
         -------
         BatchExperiment
-            The scenario test.
+            The scenario test details as a batch experiment.
 
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> test = app.scenario_test("scenario-123")
+        >>> print(test.name)
+        'My Scenario Test'
+        >>> print(test.type)
+        'scenario'
         """
 
         return self.batch_experiment(batch_id=scenario_test_id)
@@ -1845,7 +2424,7 @@ class Application:
         ----------
         tracked_run : TrackedRun
             The run to track.
-        instance_id: Optional[str]
+        instance_id : Optional[str], default=None
             Optional instance ID if you want to associate your tracked run with
             an instance.
 
@@ -1860,7 +2439,16 @@ class Application:
             If the response status code is not 2xx.
         ValueError
             If the tracked run does not have an input or output.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Application
+        >>> from nextmv.cloud.run import TrackedRun
+        >>> app = Application(id="app_123")
+        >>> tracked_run = TrackedRun(input={"data": [...]}, output={"solution": [...]})
+        >>> run_id = app.track_run(tracked_run)
         """
+
         url_input = self.upload_url()
 
         upload_input = tracked_run.input
@@ -1955,18 +2543,28 @@ class Application:
         """
         Update an instance.
 
-        Args:
-            id: ID of the instance to update.
-            version_id: ID of the version to associate the instance with.
-            name: Name of the instance.
-            description: Description of the instance.
-            configuration: Configuration to use for the instance.
+        Parameters
+        ----------
+        id : str
+            ID of the instance to update.
+        name : str
+            Name of the instance.
+        version_id : Optional[str], default=None
+            ID of the version to associate the instance with.
+        description : Optional[str], default=None
+            Description of the instance.
+        configuration : Optional[InstanceConfiguration], default=None
+            Configuration to use for the instance.
 
-        Returns:
-            Instance.
+        Returns
+        -------
+        Instance
+            The updated instance.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
         """
 
         payload = {}
@@ -2075,28 +2673,40 @@ class Application:
         description: str,
     ) -> BatchExperimentInformation:
         """
-        Update a scenario test. Scenario tests use the batch experiments API,
-        so this method calls the `update_batch_experiment` method, and thus the
-        return type is the same.
+        Update a scenario test.
+
+        Updates a scenario test with new name and description. Scenario tests
+        use the batch experiments API, so this method calls the
+        `update_batch_experiment` method, and thus the return type is the same.
 
         Parameters
         ----------
         scenario_test_id : str
             ID of the scenario test to update.
         name : str
-            Name of the scenario test.
+            New name for the scenario test.
         description : str
-            Description of the scenario test.
+            New description for the scenario test.
 
         Returns
         -------
         BatchExperimentInformation
-            The information with the updated scenario test.
+            The information about the updated scenario test.
 
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> info = app.update_scenario_test(
+        ...     scenario_test_id="scenario-123",
+        ...     name="Updated Test Name",
+        ...     description="Updated description for this test"
+        ... )
+        >>> print(info.name)
+        'Updated Test Name'
         """
 
         return self.update_batch_experiment(
@@ -2115,18 +2725,50 @@ class Application:
         """
         Update a secrets collection.
 
-        Args:
-            secrets_collection_id: ID of the secrets collection.
-            name: Name of the secrets collection.
-            description: Description of the secrets collection.
-            secrets: List of secrets to update.
+        This method updates an existing secrets collection with new values for name,
+        description, and secrets. A secrets collection is a group of key-value pairs
+        that can be used by your application instances during execution.
 
-        Returns:
-            SecretsCollection.
+        Parameters
+        ----------
+        secrets_collection_id : str
+            ID of the secrets collection to update.
+        name : str
+            New name for the secrets collection.
+        description : str
+            New description for the secrets collection.
+        secrets : list[Secret]
+            List of secrets to update. Each secret should be an instance of the
+            Secret class containing a key and value.
 
-        Raises:
-            ValueError: If no secrets are provided.
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        SecretsCollectionSummary
+            Summary of the updated secrets collection including its metadata.
+
+        Raises
+        ------
+        ValueError
+            If no secrets are provided.
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Update an existing secrets collection
+        >>> from nextmv.cloud import Secret
+        >>> updated_secrets = [
+        ...     Secret(key="API_KEY", value="new-api-key"),
+        ...     Secret(key="DATABASE_URL", value="new-database-url")
+        ... ]
+        >>> updated_collection = app.update_secrets_collection(
+        ...     secrets_collection_id="api-secrets",
+        ...     name="Updated API Secrets",
+        ...     description="Updated collection of API secrets",
+        ...     secrets=updated_secrets
+        ... )
+        >>> print(updated_collection.id)
+        'api-secrets'
         """
 
         if len(secrets) == 0:
@@ -2151,14 +2793,40 @@ class Application:
         upload_url: UploadURL,
     ) -> None:
         """
-        Upload the file located at the given path to the provided upload URL.
+        Upload large input data to the provided upload URL.
 
-        Args:
-            upload_url: Upload URL to use for uploading the file.
-            input: Input to use for the run.
+        This method allows uploading large input data (either a dictionary or string)
+        to a pre-signed URL. If the input is a dictionary, it will be converted to
+        a JSON string before upload.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Parameters
+        ----------
+        input : Union[dict[str, Any], str]
+            Input data to upload. Can be either a dictionary that will be
+            converted to JSON, or a pre-formatted JSON string.
+        upload_url : UploadURL
+            Upload URL object containing the pre-signed URL to use for uploading.
+
+        Returns
+        -------
+        None
+            This method doesn't return anything.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Upload a dictionary as JSON
+        >>> data = {"locations": [...], "vehicles": [...]}
+        >>> url = app.upload_url()
+        >>> app.upload_large_input(input=data, upload_url=url)
+        >>>
+        >>> # Upload a pre-formatted JSON string
+        >>> json_str = '{"locations": [...], "vehicles": [...]}'
+        >>> app.upload_large_input(input=json_str, upload_url=url)
         """
 
         if isinstance(input, dict):
@@ -2173,11 +2841,27 @@ class Application:
         """
         Get an upload URL to use for uploading a file.
 
-        Returns:
-            Result of getting an upload URL.
+        This method generates a pre-signed URL that can be used to upload large files
+        to Nextmv Cloud. It's primarily used for uploading large input data, output
+        results, or log files that exceed the size limits for direct API calls.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        UploadURL
+            An object containing both the upload URL and an upload ID for reference.
+            The upload URL is a pre-signed URL that allows temporary write access.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Get an upload URL and upload large input data
+        >>> upload_url = app.upload_url()
+        >>> large_input = {"locations": [...], "vehicles": [...]}
+        >>> app.upload_large_input(input=large_input, upload_url=upload_url)
         """
 
         response = self.client.request(
@@ -2191,14 +2875,38 @@ class Application:
         """
         Get a secrets collection.
 
-        Args:
-            secrets_collection_id: ID of the secrets collection.
+        This method retrieves a secrets collection by its ID. A secrets collection
+        is a group of key-value pairs that can be used by your application
+        instances during execution.
 
-        Returns:
-            SecretsCollection.
+        Parameters
+        ----------
+        secrets_collection_id : str
+            ID of the secrets collection to retrieve.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        SecretsCollection
+            The requested secrets collection, including all secret values
+            and metadata.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Retrieve a secrets collection
+        >>> collection = app.secrets_collection("api-secrets")
+        >>> print(collection.name)
+        'API Secrets'
+        >>> print(len(collection.secrets))
+        2
+        >>> for secret in collection.secrets:
+        ...     print(secret.location)
+        'API_KEY'
+        'DATABASE_URL'
         """
 
         response = self.client.request(
@@ -2212,14 +2920,32 @@ class Application:
         """
         Get a version.
 
-        Args:
-            version_id: ID of the version.
+        Retrieves a specific version of the application by its ID. Application versions
+        represent different iterations of your application's code and configuration.
 
-        Returns:
-            Version.
+        Parameters
+        ----------
+        version_id : str
+            ID of the version to retrieve.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        Version
+            The version object containing details about the requested application version.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Retrieve a specific version
+        >>> version = app.version("v1.0.0")
+        >>> print(version.id)
+        'v1.0.0'
+        >>> print(version.name)
+        'Initial Release'
         """
 
         response = self.client.request(
@@ -2233,11 +2959,34 @@ class Application:
         """
         Check if a version exists.
 
-        Args:
-            version_id: ID of the version.
+        This method checks if a specific version of the application exists by
+        attempting to retrieve it. It handles HTTP errors for non-existent versions
+        and returns a boolean indicating existence.
 
-        Returns:
-            bool: True if the version exists, False otherwise.
+        Parameters
+        ----------
+        version_id : str
+            ID of the version to check for existence.
+
+        Returns
+        -------
+        bool
+            True if the version exists, False otherwise.
+
+        Raises
+        ------
+        requests.HTTPError
+            If an HTTP error occurs that is not related to the non-existence
+            of the version.
+
+        Examples
+        --------
+        >>> # Check if a version exists
+        >>> exists = app.version_exists("v1.0.0")
+        >>> if exists:
+        ...     print("Version exists!")
+        ... else:
+        ...     print("Version does not exist.")
         """
 
         try:
@@ -2254,19 +3003,38 @@ class Application:
         run_information: RunInformation,
     ) -> RunResult:
         """
-        Get the result of a run. The result includes the run output. This is a
-        private method that is the base for retrieving a run result, regardless
-        of polling.
+        Get the result of a run.
 
-        Args:
-            run_id: ID of the run.
-            run_information: Information of the run.
+        This is a private method that retrieves the complete result of a run,
+        including the output data. It handles both small and large outputs,
+        automatically using the appropriate API endpoints based on the output
+        size. This method serves as the base implementation for retrieving
+        run results, regardless of polling strategy.
 
-        Returns:
-            Result of the run.
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the result for.
+        run_information : RunInformation
+            Information about the run, including metadata such as output size.
 
-        Raises:
-            requests.HTTPError: If the response status code is not 2xx.
+        Returns
+        -------
+        RunResult
+            Result of the run, including all metadata and output data.
+            For large outputs, the method will fetch the output from
+            a download URL.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Notes
+        -----
+        This method automatically handles large outputs by checking if the
+        output size exceeds _MAX_RUN_SIZE. If it does, the method will request
+        a download URL and fetch the output data separately.
         """
         query_params = None
         large_output = False
@@ -2364,7 +3132,7 @@ class Application:
         # If working with a list of managed inputs, we need to create an
         # input set.
         if scenario.scenario_input.scenario_input_type == ScenarioInputType.INPUT:
-            name, id = name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -2384,7 +3152,7 @@ class Application:
             for data in scenario.scenario_input.scenario_input_data:
                 upload_url = self.upload_url()
                 self.upload_large_input(input=data, upload_url=upload_url)
-                name, id = name_and_id(prefix="man-input", entity_id=scenario_id)
+                name, id = _name_and_id(prefix="man-input", entity_id=scenario_id)
                 managed_input = self.new_managed_input(
                     id=id,
                     name=name,
@@ -2393,7 +3161,7 @@ class Application:
                 )
                 managed_inputs.append(managed_input)
 
-            name, id = name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -2408,28 +3176,71 @@ class Application:
 
 def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:
     """
-    Auxiliary function for polling.
+    Poll a function until it succeeds or the polling strategy is exhausted.
+
+    You can import the `poll` function directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import poll
+    ```
+
+    This function implements a flexible polling strategy with exponential backoff
+    and jitter. It calls the provided polling function repeatedly until it indicates
+    success, the maximum number of tries is reached, or the maximum duration is exceeded.
 
     The `polling_func` is a callable that must return a `tuple[Any, bool]`
     where the first element is the result of the polling and the second
     element is a boolean indicating if the polling was successful or should be
     retried.
 
-    This function will return the result of the `polling_func` if the polling
-    process is successful, otherwise it will raise a `TimeoutError` or
-    `RuntimeError` depending on the situation.
-
     Parameters
     ----------
     polling_options : PollingOptions
-        Options for the polling process.
+        Options for configuring the polling behavior, including retry counts,
+        delays, timeouts, and verbosity settings.
     polling_func : callable
-        Function to call to check if the polling was successful.
+        Function to call to check if the polling was successful. Must return a tuple
+        where the first element is the result value and the second is a boolean
+        indicating success (True) or need to retry (False).
 
     Returns
     -------
     Any
-        Result of the polling function.
+        Result value from the polling function when successful.
+
+    Raises
+    ------
+    TimeoutError
+        If the polling exceeds the maximum duration specified in polling_options.
+    RuntimeError
+        If the maximum number of tries is exhausted without success.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import PollingOptions, poll
+    >>> import time
+    >>>
+    >>> # Define a polling function that succeeds after 3 tries
+    >>> counter = 0
+    >>> def check_completion() -> tuple[str, bool]:
+    ...     global counter
+    ...     counter += 1
+    ...     if counter >= 3:
+    ...         return "Success", True
+    ...     return None, False
+    ...
+    >>> # Configure polling options
+    >>> options = PollingOptions(
+    ...     max_tries=5,
+    ...     delay=0.1,
+    ...     backoff=0.2,
+    ...     verbose=True
+    ... )
+    >>>
+    >>> # Poll until the function succeeds
+    >>> result = poll(options, check_completion)
+    >>> print(result)
+    'Success'
     """
 
     # Start by sleeping for the duration specified as initial delay.
@@ -2493,11 +3304,31 @@ def _is_not_exist_error(e: requests.HTTPError) -> bool:
     """
     Check if the error is a known 404 Not Found error.
 
-    Args:
-        e: HTTPError to check.
+    This is an internal helper function that examines HTTPError objects to determine
+    if they represent a "Not Found" (404) condition, either directly or through a
+    nested exception.
 
-    Returns:
+    Parameters
+    ----------
+    e : requests.HTTPError
+        The HTTP error to check.
+
+    Returns
+    -------
+    bool
         True if the error is a 404 Not Found error, False otherwise.
+
+    Examples
+    --------
+    >>> try:
+    ...     response = requests.get('https://api.example.com/nonexistent')
+    ...     response.raise_for_status()
+    ... except requests.HTTPError as err:
+    ...     if _is_not_exist_error(err):
+    ...         print("Resource does not exist")
+    ...     else:
+    ...         print("Another error occurred")
+    Resource does not exist
     """
     if (
         # Check whether the error is caused by a 404 status code - meaning the app does not exist.

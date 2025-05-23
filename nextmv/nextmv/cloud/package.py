@@ -10,7 +10,7 @@ import tarfile
 import tempfile
 from typing import Optional
 
-from nextmv.cloud.manifest import FILE_NAME, Manifest, ManifestBuild, ManifestType
+from nextmv.cloud.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 
@@ -55,7 +55,7 @@ def _package(
                 raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
 
         if verbose:
-            log(f'📋 Copied files listed in "{FILE_NAME}" manifest.')
+            log(f'📋 Copied files listed in "{MANIFEST_FILE_NAME}" manifest.')
 
         if manifest.type == ManifestType.PYTHON:
             _cleanup_python_model(app_dir, model_configuration, verbose)

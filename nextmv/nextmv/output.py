@@ -1,4 +1,44 @@
-"""Module for handling output destinations and data."""
+"""
+Module for handling output destinations and data.
+
+This module provides classes and functions for handling the output of decision
+problems, including formatting, serialization, and writing to various
+destinations.
+
+Classes
+-------
+RunStatistics
+    Statistics about a general run.
+ResultStatistics
+    Statistics about a specific result.
+DataPoint
+    A data point representing a 2D coordinate.
+Series
+    A series of data points for visualization or analysis.
+SeriesData
+    Data container for multiple series of data points.
+Statistics
+    Complete statistics container for a solution, including run metrics and result data.
+OutputFormat
+    Enumeration of supported output formats.
+VisualSchema
+    Enumeration of supported visualization schemas.
+Visual
+    Visual schema definition for an asset.
+Asset
+    Represents downloadable information that is part of the `Output`.
+Output
+    A class for representing the output of a decision problem.
+OutputWriter
+    Base class for writing outputs to different destinations.
+LocalOutputWriter
+    Class for writing outputs to local files or stdout.
+
+Functions
+---------
+write
+    Write the output to the specified destination.
+"""
 
 import copy
 import csv
@@ -22,6 +62,12 @@ class RunStatistics(BaseModel):
     """
     Statistics about a general run.
 
+    You can import the `RunStatistics` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunStatistics
+    ```
+
     Parameters
     ----------
     duration : float, optional
@@ -31,6 +77,16 @@ class RunStatistics(BaseModel):
     custom : Union[Any, dict[str, Any]], optional
         Custom statistics created by the user. Can normally expect a `dict[str,
         Any]`.
+
+    Examples
+    --------
+    >>> from nextmv.output import RunStatistics
+    >>> stats = RunStatistics(duration=10.5, iterations=100)
+    >>> stats.duration
+    10.5
+    >>> stats.custom = {"convergence": 0.001}
+    >>> stats.to_dict()
+    {'duration': 10.5, 'iterations': 100, 'custom': {'convergence': 0.001}}
     """
 
     duration: Optional[float] = None
@@ -51,6 +107,12 @@ class ResultStatistics(BaseModel):
     """
     Statistics about a specific result.
 
+    You can import the `ResultStatistics` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ResultStatistics
+    ```
+
     Parameters
     ----------
     duration : float, optional
@@ -60,6 +122,16 @@ class ResultStatistics(BaseModel):
     custom : Union[Any, dict[str, Any]], optional
         Custom statistics created by the user. Can normally expect a `dict[str,
         Any]`.
+
+    Examples
+    --------
+    >>> from nextmv.output import ResultStatistics
+    >>> result_stats = ResultStatistics(duration=5.2, value=42.0)
+    >>> result_stats.value
+    42.0
+    >>> result_stats.custom = {"gap": 0.05}
+    >>> result_stats.to_dict()
+    {'duration': 5.2, 'value': 42.0, 'custom': {'gap': 0.05}}
     """
 
     duration: Optional[float] = None
@@ -78,7 +150,13 @@ class ResultStatistics(BaseModel):
 
 class DataPoint(BaseModel):
     """
-    A data point.
+    A data point representing a 2D coordinate.
+
+    You can import the `DataPoint` class directly from `nextmv`:
+
+    ```python
+    from nextmv import DataPoint
+    ```
 
     Parameters
     ----------
@@ -86,6 +164,15 @@ class DataPoint(BaseModel):
         X coordinate of the data point.
     y : float
         Y coordinate of the data point.
+
+    Examples
+    --------
+    >>> from nextmv.output import DataPoint
+    >>> point = DataPoint(x=3.5, y=4.2)
+    >>> point.x
+    3.5
+    >>> point.to_dict()
+    {'x': 3.5, 'y': 4.2}
     """
 
     x: float
@@ -96,14 +183,30 @@ class DataPoint(BaseModel):
 
 class Series(BaseModel):
     """
-    A series of data points.
+    A series of data points for visualization or analysis.
+
+    You can import the `Series` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Series
+    ```
 
     Parameters
     ----------
     name : str, optional
         Name of the series.
     data_points : list[DataPoint], optional
-        Data of the series.
+        Data points of the series.
+
+    Examples
+    --------
+    >>> from nextmv.output import Series, DataPoint
+    >>> points = [DataPoint(x=1.0, y=2.0), DataPoint(x=2.0, y=3.0)]
+    >>> series = Series(name="Example Series", data_points=points)
+    >>> series.name
+    'Example Series'
+    >>> len(series.data_points)
+    2
     """
 
     name: Optional[str] = None
@@ -114,7 +217,13 @@ class Series(BaseModel):
 
 class SeriesData(BaseModel):
     """
-    Data of a series.
+    Data container for multiple series of data points.
+
+    You can import the `SeriesData` class directly from `nextmv`:
+
+    ```python
+    from nextmv import SeriesData
+    ```
 
     Parameters
     ----------
@@ -122,6 +231,17 @@ class SeriesData(BaseModel):
         A series for the value of the solution.
     custom : list[Series], optional
         A list of series for custom statistics.
+
+    Examples
+    --------
+    >>> from nextmv.output import SeriesData, Series, DataPoint
+    >>> value_series = Series(name="Solution Value", data_points=[DataPoint(x=0, y=10), DataPoint(x=1, y=5)])
+    >>> custom_series = [Series(name="Gap", data_points=[DataPoint(x=0, y=0.5), DataPoint(x=1, y=0.1)])]
+    >>> series_data = SeriesData(value=value_series, custom=custom_series)
+    >>> series_data.value.name
+    'Solution Value'
+    >>> len(series_data.custom)
+    1
     """
 
     value: Optional[Series] = None
@@ -132,7 +252,14 @@ class SeriesData(BaseModel):
 
 class Statistics(BaseModel):
     """
-    Statistics of a solution.
+    Complete statistics container for a solution, including run metrics and
+    result data.
+
+    You can import the `Statistics` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Statistics
+    ```
 
     Parameters
     ----------
@@ -144,6 +271,17 @@ class Statistics(BaseModel):
         Series data about some metric.
     statistics_schema : str, optional
         Schema (version). This class only supports `v1`.
+
+    Examples
+    --------
+    >>> from nextmv.output import Statistics, RunStatistics, ResultStatistics
+    >>> run_stats = RunStatistics(duration=10.0, iterations=50)
+    >>> result_stats = ResultStatistics(value=100.0)
+    >>> stats = Statistics(run=run_stats, result=result_stats, statistics_schema="v1")
+    >>> stats.run.duration
+    10.0
+    >>> stats.result.value
+    100.0
     """
 
     run: Optional[RunStatistics] = None
@@ -161,7 +299,25 @@ class Statistics(BaseModel):
 
 
 class OutputFormat(str, Enum):
-    """Format of an `Input`."""
+    """
+    Enumeration of supported output formats.
+
+    You can import the `OutputFormat` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OutputFormat
+    ```
+
+    This enum defines the different formats that can be used for outputting data.
+    Each format has specific requirements and behaviors when writing.
+
+    Attributes
+    ----------
+    JSON : str
+        JSON format, utf-8 encoded.
+    CSV_ARCHIVE : str
+        CSV archive format: multiple CSV files.
+    """
 
     JSON = "json"
     """JSON format, utf-8 encoded."""
@@ -170,7 +326,27 @@ class OutputFormat(str, Enum):
 
 
 class VisualSchema(str, Enum):
-    """Schema of a visual asset."""
+    """
+    Enumeration of supported visualization schemas.
+
+    You can import the `VisualSchema` class directly from `nextmv`:
+
+    ```python
+    from nextmv import VisualSchema
+    ```
+
+    This enum defines the different visualization libraries or rendering methods
+    that can be used to display custom asset data in the Nextmv Console.
+
+    Attributes
+    ----------
+    CHARTJS : str
+        Tells Nextmv Console to render the custom asset data with the Chart.js library.
+    GEOJSON : str
+        Tells Nextmv Console to render the custom asset data as GeoJSON on a map.
+    PLOTLY : str
+        Tells Nextmv Console to render the custom asset data with the Plotly library.
+    """
 
     CHARTJS = "chartjs"
     """Tells Nextmv Console to render the custom asset data with the Chart.js
@@ -185,8 +361,39 @@ class VisualSchema(str, Enum):
 
 class Visual(BaseModel):
     """
-    Visual schema of an asset that defines how it is plotted in the Nextmv
-    Console.
+    Visual schema definition for an asset.
+
+    You can import the `Visual` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Visual
+    ```
+
+    This class defines how an asset is plotted in the Nextmv Console,
+    including the schema type, label, and display type.
+
+    Parameters
+    ----------
+    visual_schema : VisualSchema
+        Schema of the visual asset.
+    label : str
+        Label for the custom tab of the visual asset in the Nextmv Console.
+    visual_type : str, optional
+        Defines the type of custom visual. Default is "custom-tab".
+
+    Raises
+    ------
+    ValueError
+        If an unsupported schema or visual_type is provided.
+
+    Examples
+    --------
+    >>> from nextmv.output import Visual, VisualSchema
+    >>> visual = Visual(visual_schema=VisualSchema.CHARTJS, label="Performance Chart")
+    >>> visual.visual_schema
+    <VisualSchema.CHARTJS: 'chartjs'>
+    >>> visual.label
+    'Performance Chart'
     """
 
     visual_schema: VisualSchema = Field(
@@ -207,6 +414,14 @@ class Visual(BaseModel):
     details."""
 
     def __post_init__(self):
+        """
+        Validate the visual schema and type.
+
+        Raises
+        ------
+        ValueError
+            If the visual_schema is not in VisualSchema or if visual_type is not 'custom-tab'.
+        """
         if self.visual_schema not in VisualSchema:
             raise ValueError(f"unsupported schema: {self.visual_schema}, supported schemas are {VisualSchema}")
 
@@ -216,7 +431,47 @@ class Visual(BaseModel):
 
 class Asset(BaseModel):
     """
-    An asset represents downloadable information that is part of the `Output`.
+    Represents downloadable information that is part of the `Output`.
+
+    You can import the `Asset` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Asset
+    ```
+
+    An asset contains content that can be serialized to JSON and optionally
+    includes visual information for rendering in the Nextmv Console.
+
+    Parameters
+    ----------
+    name : str
+        Name of the asset.
+    content : Any
+        Content of the asset. The type must be serializable to JSON.
+    content_type : str, optional
+        Content type of the asset. Only "json" is currently supported. Default is "json".
+    description : str, optional
+        Description of the asset. Default is None.
+    visual : Visual, optional
+        Visual schema of the asset. Default is None.
+
+    Raises
+    ------
+    ValueError
+        If the content_type is not "json".
+
+    Examples
+    --------
+    >>> from nextmv.output import Asset, Visual, VisualSchema
+    >>> visual = Visual(visual_schema=VisualSchema.CHARTJS, label="Solution Progress")
+    >>> asset = Asset(
+    ...     name="optimization_progress",
+    ...     content={"iterations": [1, 2, 3], "values": [10, 8, 7]},
+    ...     description="Optimization progress over iterations",
+    ...     visual=visual
+    ... )
+    >>> asset.name
+    'optimization_progress'
     """
 
     name: str
@@ -232,6 +487,14 @@ class Asset(BaseModel):
     """Visual schema of the asset."""
 
     def __post_init__(self):
+        """
+        Validate the content type.
+
+        Raises
+        ------
+        ValueError
+            If the content_type is not "json".
+        """
         if self.content_type != "json":
             raise ValueError(f"unsupported content_type: {self.content_type}, supported types are `json`")
 
@@ -239,80 +502,68 @@ class Asset(BaseModel):
 @dataclass
 class Output:
     """
-    Output of a decision problem. This class is used to be later be written to
-    some location.
+    Output of a decision problem.
 
-    The output can be in different formats, such as JSON (default) or
-    CSV_ARCHIVE.
+    You can import the `Output` class directly from `nextmv`:
 
-    If you used options, you can also include them in the output, to be
-    serialized to the write location.
+    ```python
+    from nextmv import Output
+    ```
 
-    The most important part of the output is the solution, which represents the
-    result of the decision problem. The solution's type must match the
-    `output_format`:
+    This class is used to structure the output of a decision problem that
+    can later be written to various destinations. It supports different output
+    formats and allows for customization of the serialization process.
 
-    - `OutputFormat.JSON`: the data must be `dict[str, Any]`, or `Any`.
-    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
-      Any]]]`. The keys represent the file names where the data should be
-      written. The values are lists of dictionaries, where each dictionary
-      represents a row in the CSV file.
-
-    The statistics are used to keep track of different metrics that were
-    obtained after the run was completed. Although it can be a simple
-    dictionary, we recommend using the `Statistics` class to ensure that the
-    data is correctly formatted.
-
-    The assets are used to keep track of different downloadable information that
-    is part of the output. The assets can be of type `Asset` or a simple
-    dictionary, but we recommend using the `Asset` class to ensure that the data is
-    correctly formatted.
-
-    Attributes
+    Parameters
     ----------
-    options : Optional[Union[Options, dict[str, Any]]]
+    options : Optional[Union[Options, dict[str, Any]]], optional
         Options that the `Output` was created with. These options can be of type
-        `Options` or a simple dictionary. If the options are of type `Options`,
-        they will be serialized to a dictionary using the `to_dict` method. If
-        they are a dictionary, they will be used as is. If the options are not
-        provided, an empty dictionary will be used. If the options are of type
-        `dict`, then the dictionary should have the following structure:
-        ```
-        {
-            "duration": "30",
-            "threads": 4,
-        }
-        ```
-    output_format : Optional[OutputFormat]
+        `Options` or a simple dictionary. Default is None.
+    output_format : Optional[OutputFormat], optional
         Format of the output data. Default is `OutputFormat.JSON`.
-    solution : Optional[Union[dict[str, Any], dict[str, list[dict[str, Any]]]]
+    solution : Optional[Union[dict[str, Any], Any, dict[str, list[dict[str, Any]]]]], optional
         The solution to the decision problem. The type must match the
-        `output_format`:
-        - `OutputFormat.JSON`: the data must be `dict[str, Any]`.
-        - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str,
-          list[dict[str, Any]]]`. The keys represent the file names where the
-          data should be written. The values are lists of dictionaries, where
-          each dictionary represents a row in the CSV file.
-    statistics : Optional[Union[Statistics, dict[str, Any]]]
-        Statistics of the solution. These statistics can be of type
-        `Statistics` or a simple dictionary. If the statistics are of type
-        `Statistics`, they will be serialized to a dictionary using the
-        `to_dict` method. If they are a dictionary, they will be used as is. If
-        the statistics are not provided, an empty dictionary will be used.
-    csv_configurations : Optional[dict[str, Any]]
-        Optional configuration for writing CSV files, to be used when the
-        `output_format` is `OutputFormat.CSV_ARCHIVE`. These configurations are
-        passed as kwargs to the `DictWriter` class from the `csv` module.
-    json_configurations : Optional[dict[str, Any]]
-        Optional configuration for writing JSON files, to be used when the
-        `output_format` is `OutputFormat.JSON`. These configurations are passed
-        as kwargs to the `json.dumps` function.
-    assets : Optional[list[Union[Asset, dict[str, Any]]]]
-        Optional list of assets to be included in the output. These assets can
-        be of type `Asset` or a simple dictionary. If the assets are of type
-        `Asset`, they will be serialized to a dictionary using the `to_dict`
-        method. If they are a dictionary, they will be used as is. If the
-        assets are not provided, an empty list will be used.
+        `output_format`. Default is None.
+    statistics : Optional[Union[Statistics, dict[str, Any]]], optional
+        Statistics of the solution. Default is None.
+    csv_configurations : Optional[dict[str, Any]], optional
+        Configuration for writing CSV files. Default is None.
+    json_configurations : Optional[dict[str, Any]], optional
+        Configuration for writing JSON files. Default is None.
+    assets : Optional[list[Union[Asset, dict[str, Any]]]], optional
+        List of assets to be included in the output. Default is None.
+
+    Raises
+    ------
+    ValueError
+        If the solution is not compatible with the specified output_format.
+    TypeError
+        If options, statistics, or assets have unsupported types.
+
+    Notes
+    -----
+    The solution's type must match the `output_format`:
+
+    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
+    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str, Any]]]`.
+      The keys represent the file names where the data should be written. The values
+      are lists of dictionaries, where each dictionary represents a row in the CSV file.
+
+    Examples
+    --------
+    >>> from nextmv.output import Output, OutputFormat, Statistics, RunStatistics
+    >>> run_stats = RunStatistics(duration=30.0, iterations=100)
+    >>> stats = Statistics(run=run_stats)
+    >>> solution = {"routes": [{"vehicle": 1, "stops": [1, 2, 3]}, {"vehicle": 2, "stops": [4, 5]}]}
+    >>> output = Output(
+    ...     output_format=OutputFormat.JSON,
+    ...     solution=solution,
+    ...     statistics=stats,
+    ...     json_configurations={"indent": 4}
+    ... )
+    >>> output_dict = output.to_dict()
+    >>> "solution" in output_dict and "statistics" in output_dict
+    True
     """
 
     options: Optional[Union[Options, dict[str, Any]]] = None
@@ -323,7 +574,8 @@ class Output:
     they are a dictionary, they will be used as is. If the options are not
     provided, an empty dictionary will be used. If the options are of type
     `dict`, then the dictionary should have the following structure:
-    ```
+
+    ```python
     {
         "duration": "30",
         "threads": 4,
@@ -369,9 +621,18 @@ class Output:
     """
 
     def __post_init__(self):
-        """Check that the solution matches the format given to initialize the
-        class."""
+        """
+        Initialize and validate the Output instance.
 
+        This method performs two main tasks:
+        1. Creates a deep copy of the options to preserve the original values
+        2. Validates that the solution matches the specified output_format
+
+        Raises
+        ------
+        ValueError
+            If the solution is not compatible with the specified output_format.
+        """
         # Capture a snapshot of the options that were used to create the class
         # so even if they are changed later, we have a record of the original.
         init_options = self.options
@@ -472,20 +733,72 @@ class Output:
 
 
 class OutputWriter:
-    """Base class for writing outputs."""
+    """
+    Base class for writing outputs.
+
+    You can import the `OutputWriter` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OutputWriter
+    ```
+
+    This is an abstract base class that defines the interface for writing outputs
+    to different destinations. Subclasses should implement the `write` method.
+
+    Examples
+    --------
+    >>> class CustomOutputWriter(OutputWriter):
+    ...     def write(self, output, path=None, **kwargs):
+    ...         # Custom implementation for writing output
+    ...         print(f"Writing output to {path}")
+    """
 
     def write(self, output: Union[Output, dict[str, Any], BaseModel], *args, **kwargs) -> None:
         """
-        Write the output data. This method should be implemented by subclasses.
-        """
+        Write the output data.
 
+        This is an abstract method that should be implemented by subclasses.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel]
+            The output data to write.
+        *args
+            Variable length argument list.
+        **kwargs
+            Arbitrary keyword arguments.
+
+        Raises
+        ------
+        NotImplementedError
+            This method must be implemented by subclasses.
+        """
         raise NotImplementedError
 
 
 class LocalOutputWriter(OutputWriter):
     """
-    Class for write outputs to local files or stdout. Call the `write` method
-    to write the output data.
+    Class for writing outputs to local files or stdout.
+
+    You can import the `LocalOutputWriter` class directly from `nextmv`:
+
+    ```python
+    from nextmv import LocalOutputWriter
+    ```
+
+    This class implements the OutputWriter interface to write output data to
+    local files or stdout. The destination and format depend on the output
+    format and the provided path.
+
+    Examples
+    --------
+    >>> from nextmv.output import LocalOutputWriter, Output, Statistics
+    >>> writer = LocalOutputWriter()
+    >>> output = Output(solution={"result": 42}, statistics=Statistics())
+    >>> # Write to stdout
+    >>> writer.write(output, path=None)
+    >>> # Write to a file
+    >>> writer.write(output, path="results.json")
     """
 
     def _write_json(
@@ -493,6 +806,18 @@ class LocalOutputWriter(OutputWriter):
         output_dict: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
+        """
+        Write output in JSON format.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel]
+            The output object containing configuration.
+        output_dict : dict[str, Any]
+            Dictionary representation of the output to write.
+        path : str, optional
+            Path to write the output. If None or empty, writes to stdout.
+        """
         json_configurations = {}
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
@@ -524,6 +849,24 @@ class LocalOutputWriter(OutputWriter):
         output_dict: dict[str, Any],
         path: Optional[str] = None,
     ) -> None:
+        """
+        Write output in CSV archive format.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel]
+            The output object containing configuration and solution data.
+        output_dict : dict[str, Any]
+            Dictionary representation of the output to write.
+        path : str, optional
+            Directory path to write the CSV files. If None or empty,
+            writes to a directory named "output" in the current working directory.
+
+        Raises
+        ------
+        ValueError
+            If the path is an existing file instead of a directory.
+        """
         dir_path = "output"
         if path is not None and path != "":
             if os.path.isfile(path):
@@ -567,6 +910,7 @@ class LocalOutputWriter(OutputWriter):
         OutputFormat.JSON: _write_json,
         OutputFormat.CSV_ARCHIVE: _write_archive,
     }
+    """Dictionary mapping output formats to writer functions."""
 
     def write(
         self,
@@ -575,40 +919,48 @@ class LocalOutputWriter(OutputWriter):
         skip_stdout_reset: bool = False,
     ) -> None:
         """
-        Write the `output` to the local filesystem. Consider the following for
-        the `path` parameter, depending on the `Output.output_format`:
+        Write the output to the local filesystem or stdout.
 
-        - `OutputFormat.JSON`: the `path` is the file where the JSON data will
-            be written. If empty or `None`, the data will be written to stdout.
-        - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
-            files will be written. If empty or `None`, the data will be written
-            to a directory named `output` under the current working directory.
-            The `Output.options` and `Output.statistics` will be written to
-            stdout.
-
-        This function detects if stdout was redirected and resets it to avoid
-        unexpected behavior. If you want to skip this behavior, set the
-        `skip_stdout_reset` parameter to `True`.
-
-        If the `output` is a `dict`, it will be simply written to the specified
-        `path`, as a passthrough. On the other hand, if the `output` is of type
-        `Output`, a more structured object will be written, which adheres to
-        the schema specified by the corresponding `Output` class.
+        This method writes the provided output to the specified path or to stdout,
+        depending on the output format and the path parameter.
 
         Parameters
         ----------
-        output: Output, dict[str, Any]
-            Output data to write.
-        path : str
-            Path to write the output data to.
+        output : Union[Output, dict[str, Any], BaseModel]
+            Output data to write. Can be an Output object, a dictionary, or a BaseModel.
+        path : str, optional
+            Path to write the output data to. The interpretation depends on the output format:
+            - For OutputFormat.JSON: File path for the JSON output. If None or empty, writes to stdout.
+            - For OutputFormat.CSV_ARCHIVE: Directory path for CSV files. If None or empty,
+              writes to a directory named "output" in the current working directory.
         skip_stdout_reset : bool, optional
-            Skip resetting stdout before writing the output data. Default is
-            `False`.
+            Skip resetting stdout before writing the output data. Default is False.
 
         Raises
         ------
         ValueError
-            If the `Output.output_format` is not supported.
+            If the Output.output_format is not supported.
+        TypeError
+            If the output is of an unsupported type.
+
+        Notes
+        -----
+        This function detects if stdout was redirected and resets it to avoid
+        unexpected behavior. If you want to skip this behavior, set the
+        skip_stdout_reset parameter to True.
+
+        If the output is a dict or a BaseModel, it will be written as JSON. If
+        the output is an Output object, it will be written according to its
+        output_format.
+
+        Examples
+        --------
+        >>> from nextmv.output import LocalOutputWriter, Output
+        >>> writer = LocalOutputWriter()
+        >>> # Write JSON to a file
+        >>> writer.write(Output(solution={"result": 42}), path="result.json")
+        >>> # Write JSON to stdout
+        >>> writer.write({"simple": "data"})
         """
 
         # If the user forgot to reset stdout after redirecting it, we need to
@@ -652,42 +1004,50 @@ def write_local(
     skip_stdout_reset: bool = False,
 ) -> None:
     """
-    DEPRECATION WARNING
-    ----------
-    `write_local` is deprecated, use `write` instead.
+    !!! warning
+        `write_local` is deprecated, use `write` instead.
+
+    Write the output to the local filesystem or stdout.
 
     This is a convenience function for instantiating a `LocalOutputWriter` and
     calling its `write` method.
 
-    Write the `output` to the local filesystem. Consider the following for the
-    `path` parameter, depending on the `Output.output_format`:
-
-    - `OutputFormat.JSON`: the `path` is the file where the JSON data will
-        be written. If empty or `None`, the data will be written to stdout.
-    - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
-        files will be written. If empty or `None`, the data will be written
-        to a directory named `output` under the current working directory.
-        The `Output.options` and `Output.statistics` will be written to
-        stdout.
-
-    This function detects if stdout was redirected and resets it to avoid
-    unexpected behavior. If you want to skip this behavior, set the
-    `skip_stdout_reset` parameter to `True`.
-
     Parameters
     ----------
-    output : Output, dict[str, Any]
-        Output data to write.
-    path : str
-        Path to write the output data to.
+    output : Union[Output, dict[str, Any]]
+        Output data to write. Can be an Output object or a dictionary.
+    path : str, optional
+        Path to write the output data to. The interpretation depends on the
+        output format:
+
+        - For `OutputFormat.JSON`: File path for the JSON output. If None or
+          empty, writes to stdout.
+        - For `OutputFormat.CSV_ARCHIVE`: Directory path for CSV files. If None
+          or empty, writes to a directory named "output" in the current working
+          directory.
     skip_stdout_reset : bool, optional
-        Skip resetting stdout before writing the output data. Default is
-        `False`.
+        Skip resetting stdout before writing the output data. Default is False.
 
     Raises
     ------
     ValueError
-        If the `Output.output_format` is not supported.
+        If the Output.output_format is not supported.
+    TypeError
+        If the output is of an unsupported type.
+
+    Notes
+    -----
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    skip_stdout_reset parameter to True.
+
+    Examples
+    --------
+    >>> from nextmv.output import write_local, Output
+    >>> # Write JSON to a file
+    >>> write_local(Output(solution={"result": 42}), path="result.json")
+    >>> # Write JSON to stdout
+    >>> write_local({"simple": "data"})
     """
 
     deprecated(
@@ -700,6 +1060,7 @@ def write_local(
 
 
 _LOCAL_OUTPUT_WRITER = LocalOutputWriter()
+"""Default LocalOutputWriter instance used by the write function."""
 
 
 def write(
@@ -709,46 +1070,78 @@ def write(
     writer: Optional[OutputWriter] = _LOCAL_OUTPUT_WRITER,
 ) -> None:
     """
-    This is a convenience function for writing an `Output`, i.e.: write the
-    output to the specified destination. The `writer` is used to call the
-    `.write` method. Note that the default writes is the `LocalOutputWriter`.
+    Write the output to the specified destination.
 
-    Consider the following for the `path` parameter, depending on the
-    `Output.output_format`:
+    You can import the `write` function directly from `nextmv`:
 
-    - `OutputFormat.JSON`: the `path` is the file where the JSON data will
-        be written. If empty or `None`, the data will be written to stdout.
-    - `OutputFormat.CSV_ARCHIVE`: the `path` is the directory where the CSV
-        files will be written. If empty or `None`, the data will be written
-        to a directory named `output` under the current working directory.
-        The `Output.options` and `Output.statistics` will be written to
-        stdout.
+    ```python
+    from nextmv import write
+    ```
 
-    This function detects if stdout was redirected and resets it to avoid
-    unexpected behavior. If you want to skip this behavior, set the
-    `skip_stdout_reset` parameter to `True`.
+    This is a convenience function for writing output data using a provided writer.
+    By default, it uses the `LocalOutputWriter` to write to files or stdout.
 
     Parameters
     ----------
-    output : Output, dict[str, Any]
-        Output data to write.
-    path : str
-        Path to write the output data to.
+    output : Union[Output, dict[str, Any], BaseModel]
+        Output data to write. Can be an Output object, a dictionary, or a BaseModel.
+    path : str, optional
+        Path to write the output data to. The interpretation depends on the
+        output format:
+
+        - For `OutputFormat.JSON`: File path for the JSON output. If None or
+          empty, writes to stdout.
+        - For `OutputFormat.CSV_ARCHIVE`: Directory path for CSV files. If None
+          or empty, writes to a directory named "output" in the current working
+          directory.
     skip_stdout_reset : bool, optional
-        Skip resetting stdout before writing the output data. Default is
-        `False`.
+        Skip resetting stdout before writing the output data. Default is False.
+    writer : OutputWriter, optional
+        The writer to use for writing the output. Default is a
+        `LocalOutputWriter` instance.
 
     Raises
     ------
     ValueError
-        If the `Output.output_format` is not supported.
+        If the Output.output_format is not supported.
+    TypeError
+        If the output is of an unsupported type.
+
+    Examples
+    --------
+    >>> from nextmv.output import write, Output, OutputFormat
+    >>> # Write JSON to a file
+    >>> write(Output(solution={"result": 42}), path="result.json")
+    >>> # Write CSV archive
+    >>> data = {"vehicles": [{"id": 1, "capacity": 100}, {"id": 2, "capacity": 150}]}
+    >>> write(Output(output_format=OutputFormat.CSV_ARCHIVE, solution=data), path="output_dir")
     """
 
     writer.write(output, path, skip_stdout_reset)
 
 
-def _custom_serial(obj: Any):
-    """JSON serializer for objects not serializable by default one."""
+def _custom_serial(obj: Any) -> str:
+    """
+    JSON serializer for objects not serializable by default json serializer.
+
+    This function provides custom serialization for datetime objects, converting
+    them to ISO format strings.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to serialize.
+
+    Returns
+    -------
+    str
+        The serialized representation of the object.
+
+    Raises
+    ------
+    TypeError
+        If the object type is not supported for serialization.
+    """
 
     if isinstance(obj, (datetime.datetime | datetime.date)):
         return obj.isoformat()

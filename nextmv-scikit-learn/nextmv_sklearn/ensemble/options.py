@@ -1,4 +1,21 @@
-"""Defines sklearn.ensemble options interoperability."""
+"""Defines sklearn.ensemble options interoperability.
+
+This module provides classes to handle scikit-learn ensemble model options for integration with Nextmv.
+
+Classes
+-------
+GradientBoostingRegressorOptions
+    Options wrapper for sklearn.ensemble.GradientBoostingRegressor.
+RandomForestRegressorOptions
+    Options wrapper for sklearn.ensemble.RandomForestRegressor.
+
+Variables
+---------
+GRADIENT_BOOSTING_REGRESSOR_PARAMETERS
+    List of option parameters for GradientBoostingRegressor.
+RANDOM_FOREST_REGRESSOR_PARAMETERS
+    List of option parameters for RandomForestRegressor.
+"""
 
 import nextmv
 
@@ -104,16 +121,70 @@ GRADIENT_BOOSTING_REGRESSOR_PARAMETERS = [
         description="Complexity parameter used for Minimal Cost-Complexity Pruning.",
     ),
 ]
+"""
+Parameters for scikit-learn's GradientBoostingRegressor.
+
+You can import the `GRADIENT_BOOSTING_REGRESSOR_PARAMETERS` constant directly
+from `ensemble`:
+
+```python
+from nextmv_sklearn.ensemble import GRADIENT_BOOSTING_REGRESSOR_PARAMETERS
+```
+
+This constant defines all available parameters that can be configured for the
+scikit-learn GradientBoostingRegressor model through Nextmv options system.
+
+See Also
+--------
+sklearn.ensemble.GradientBoostingRegressor : The scikit-learn class this configures.
+GradientBoostingRegressorOptions : Class that uses these parameters.
+"""
 
 
 class GradientBoostingRegressorOptions:
-    """Options for the sklearn.ensemble.GradientBoostingRegressor."""
+    """Options for the sklearn.ensemble.GradientBoostingRegressor.
+
+    You can import the `GradientBoostingRegressorOptions` class directly from `ensemble`:
+
+    ```python
+    from nextmv_sklearn.ensemble import GradientBoostingRegressorOptions
+    ```
+
+    This class provides configuration options for scikit-learn's GradientBoostingRegressor,
+    allowing integration with Nextmv's options system. It encapsulates all parameters
+    available for the scikit-learn implementation.
+
+    Attributes
+    ----------
+    params : list
+        List of Nextmv options parameters for GradientBoostingRegressor configuration.
+
+    Examples
+    --------
+    >>> from nextmv_sklearn.ensemble import GradientBoostingRegressorOptions
+    >>> options = GradientBoostingRegressorOptions()
+    >>> nextmv_options = options.to_nextmv()
+    """
 
     def __init__(self):
+        """Initialize GradientBoostingRegressorOptions.
+
+        Sets up the parameters from the predefined list of GradientBoostingRegressor
+        parameters.
+        """
         self.params = GRADIENT_BOOSTING_REGRESSOR_PARAMETERS
 
     def to_nextmv(self) -> nextmv.Options:
-        """Converts the options to a Nextmv options object."""
+        """Converts the options to a Nextmv options object.
+
+        Transforms the internal parameters into a Nextmv options object that can be
+        used for configuration and command-line parsing.
+
+        Returns
+        -------
+        nextmv.Options
+            A Nextmv options object containing all parameters for the GradientBoostingRegressor.
+        """
 
         return nextmv.Options(*self.params)
 
@@ -214,15 +285,68 @@ RANDOM_FOREST_REGRESSOR_PARAMETERS = [
         description="Indicates the monotonicity constraint to enforce on each feature.",
     ),
 ]
+"""
+Parameters for scikit-learn's RandomForestRegressor.
+
+You can import the `RANDOM_FOREST_REGRESSOR_PARAMETERS` constant directly from `ensemble`:
+
+```python
+from nextmv_sklearn.ensemble import RANDOM_FOREST_REGRESSOR_PARAMETERS
+```
+
+This constant defines all available parameters that can be configured for the
+scikit-learn RandomForestRegressor model through Nextmv options system.
+
+See Also
+--------
+sklearn.ensemble.RandomForestRegressor : The scikit-learn class this configures.
+RandomForestRegressorOptions : Class that uses these parameters.
+"""
 
 
 class RandomForestRegressorOptions:
-    """Options for the sklearn.ensemble.RandomForestRegressor."""
+    """Options for the sklearn.ensemble.RandomForestRegressor.
+
+    You can import the `RandomForestRegressorOptions` class directly from `ensemble`:
+
+    ```python
+    from nextmv_sklearn.ensemble import RandomForestRegressorOptions
+    ```
+
+    This class provides configuration options for scikit-learn's RandomForestRegressor,
+    allowing integration with Nextmv's options system. It encapsulates all parameters
+    available for the scikit-learn implementation.
+
+    Attributes
+    ----------
+    params : list
+        List of Nextmv options parameters for RandomForestRegressor configuration.
+
+    Examples
+    --------
+    >>> from nextmv_sklearn.ensemble import RandomForestRegressorOptions
+    >>> options = RandomForestRegressorOptions()
+    >>> nextmv_options = options.to_nextmv()
+    """
 
     def __init__(self):
+        """Initialize RandomForestRegressorOptions.
+
+        Sets up the parameters from the predefined list of RandomForestRegressor
+        parameters.
+        """
         self.params = RANDOM_FOREST_REGRESSOR_PARAMETERS
 
     def to_nextmv(self) -> nextmv.Options:
-        """Converts the options to a Nextmv options object."""
+        """Converts the options to a Nextmv options object.
+
+        Transforms the internal parameters into a Nextmv options object that can be
+        used for configuration and command-line parsing.
+
+        Returns
+        -------
+        nextmv.Options
+            A Nextmv options object containing all parameters for the RandomForestRegressor.
+        """
 
         return nextmv.Options(*self.params)

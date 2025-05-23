@@ -1,0 +1,51 @@
+// Reference: https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint
+// Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#rules
+//
+// Run markdown linting:
+// - Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2):
+// npm install markdownlint-cli2 --global
+// - Lint. Stand at the root of the repo and run:
+// markdownlint-cli2 "**/*.md"
+// - Ignore a certain rule for some lines:
+// <!-- markdownlint-disable MD013 -->
+// Your line here
+// <!-- markdownlint-enable MD013 -->
+{
+  // Use the default configurations as a starting point
+  "default": true,
+
+  // Max line length configurations
+  "MD013": {
+    "code_blocks": false,
+    "headings": false,
+    "line_length": 100,
+    "stern": false,
+    "strict": false,
+    "tables": false
+  },
+
+  // GitBook compatibility configurations
+  // Unordered lists use asterisks
+  "MD004": { "style": "asterisk" },
+
+  // First line in a file should be a top-level heading specifying a
+  // description, as such:
+  // ---
+  // description: You will learn the basics of getting started on cloud.
+  // ---
+  "MD041": { "level": 1, "front_matter_title": "^\\s*description\\s*[:=]" },
+
+  // There can only be a single top-level heading, which should be the YAML
+  // front matter containing the "title" property.
+  "MD025": { "level": 1, "front_matter_title": "^\\s*title\\s*[:=]" },
+
+  // Don't enforce heading level continuity.
+  "MD001": false,
+
+  // Use spaces as opposed to hard-tabs for consistency.
+  "MD010": { "spaces_per_tab": 4 },
+
+  // Material for mkdocs has admonitions which are indented by 4 spaces and not
+  // fenced.
+  "MD046": false
+}

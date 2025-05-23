@@ -1,4 +1,19 @@
-"""Configuration for a run."""
+"""
+Configuration management for application runs.
+
+This module provides classes for handling configuration options for
+applications. It supports reading options from command-line arguments,
+environment variables, and default values in a prioritized manner. The module
+includes classes for defining individual options (`Option`) and managing
+collections of options (`Options`).
+
+Classes
+-------
+Option
+    Class for defining individual options for configuration.
+Options
+    Class for managing collections of options.
+"""
 
 import argparse
 import builtins
@@ -15,9 +30,8 @@ from nextmv.deprecated import deprecated
 @dataclass
 class Parameter:
     """
-    DEPRECATION WARNING
-    ----------
-    `Parameter` is deprecated, use `Option` instead.
+    !!! warning
+        `Parameter` is deprecated, use `Option` instead.
 
     Parameter that is used in a `Configuration`. When a parameter is required,
     it is a good practice to provide a default value for it. This is because
@@ -29,20 +43,30 @@ class Parameter:
     ----------
     name : str
         The name of the parameter.
+
     param_type : type
         The type of the parameter.
+
     default : Any, optional
         The default value of the parameter. Even though this is optional, it is
         recommended to provide a default value for all parameters.
+
     description : str, optional
         An optional description of the parameter. This is useful for generating
         help messages for the configuration.
+
     required : bool, optional
         Whether the parameter is required. If a parameter is required, it will
-        be an error to not provide a value for it, either trough a command-line
+        be an error to not provide a value for it, either through a command-line
         argument, an environment variable or a default value.
+
     choices : list[Optional[Any]], optional
         Limits values to a specific set of choices.
+
+    Examples
+    --------
+    >>> from nextmv.options import Parameter
+    >>> parameter = Parameter("timeout", int, 60, "The maximum timeout in seconds", required=True)
     """
 
     name: str
@@ -64,6 +88,12 @@ class Parameter:
     """Limits values to a specific set of choices."""
 
     def __post_init__(self):
+        """
+        Post-initialization hook that marks this class as deprecated.
+
+        This method is automatically called after the object is initialized.
+        It displays a deprecation warning to inform users to use the `Option` class instead.
+        """
         deprecated(
             name="Parameter",
             reason="`Parameter` is deprecated, use `Option` instead",
@@ -72,10 +102,9 @@ class Parameter:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Parameter":
         """
-        DEPRECATION WARNING
-        ----------
-        `Parameter` is deprecated, use `Option` instead. Parameter.from_dict ->
-        Option.from_dict
+        !!! warning
+            `Parameter` is deprecated, use `Option` instead.
+            `Parameter.from_dict` -> `Option.from_dict`
 
         Creates an instance of `Parameter` from a dictionary.
 
@@ -109,17 +138,26 @@ class Parameter:
 
     def to_dict(self) -> dict[str, Any]:
         """
-        DEPRECATION WARNING
-        ----------
-        `Parameter` is deprecated, use `Option` instead. Parameter.to_dict ->
-        Option.to_dict
+        !!! warning
+            `Parameter` is deprecated, use `Option` instead.
+            `Parameter.to_dict` -> `Option.to_dict`
 
         Converts the parameter to a dict.
 
         Returns
         -------
         dict[str, Any]
-            The parameter as a dict.
+            The parameter as a dict with its name, type, default value,
+            description, required flag, and choices.
+
+        Examples
+        --------
+        >>> param = Parameter("timeout", int, 60, "Maximum time in seconds", True)
+        >>> param_dict = param.to_dict()
+        >>> param_dict["name"]
+        'timeout'
+        >>> param_dict["default"]
+        60
         """
 
         deprecated(
@@ -140,16 +178,24 @@ class Parameter:
 @dataclass
 class Option:
     """
-    `Option` that is used in `Options`. When an `Option` is required,
-    it is a good practice to provide a default value for it. This is because
-    the `Options` will raise an error if a required `Option` is not
+    An option that is used in `Options`.
+
+    You can import the `Option` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Option
+    ```
+
+    Options provide a way to configure application behavior. When an `Option`
+    is required, it is a good practice to provide a default value for it. This
+    is because the `Options` will raise an error if a required `Option` is not
     provided through a command-line argument, an environment variable or a
     default value.
 
-    Attributes
+    Parameters
     ----------
     name : str
-        The name of the option.
+        `name`. The name of the option.
     option_type : type
         The type of the option.
     default : Any, optional
@@ -160,7 +206,7 @@ class Option:
         help messages for the `Options`.
     required : bool, optional
         Whether the option is required. If an option is required, it will
-        be an error to not provide a value for it, either trough a command-line
+        be an error to not provide a value for it, either through a command-line
         argument, an environment variable or a default value.
     choices : list[Optional[Any]], optional
         Limits values to a specific set of choices.
@@ -169,6 +215,15 @@ class Option:
         perform validation on these attributes. For example, the maximum length
         of a string or the maximum value of an integer. These additional
         attributes will be shown in the help message of the `Options`.
+
+    Examples
+    --------
+    ```python
+    from nextmv.options import Option
+    opt = Option("duration", str, "30s", description="solver duration", required=False)
+    opt.name
+    opt.default
+    ```
     """
 
     name: str
@@ -209,13 +264,23 @@ class Option:
 
         Parameters
         ----------
-        data : dict[str, Any]
+
+        data: dict[str, Any]
             The dictionary representation of an option.
 
         Returns
         -------
         Option
             An instance of `Option`.
+
+        Examples
+        --------
+        >>> opt_dict = {"name": "timeout", "option_type": "<class 'int'>", "default": 60}
+        >>> option = Option.from_dict(opt_dict)
+        >>> option.name
+        'timeout'
+        >>> option.default
+        60
         """
 
         option_type_string = data["option_type"]
@@ -238,7 +303,16 @@ class Option:
         Returns
         -------
         dict[str, Any]
-            The option as a dict.
+            The option as a dict with all its attributes.
+
+        Examples
+        --------
+        >>> opt = Option("duration", str, "30s", description="solver duration")
+        >>> opt_dict = opt.to_dict()
+        >>> opt_dict["name"]
+        'duration'
+        >>> opt_dict["default"]
+        '30s'
         """
 
         return {
@@ -254,10 +328,17 @@ class Option:
 
 class Options:
     """
-    Options for a run. To initialize options, pass in one or more `Option`
-    objects. The options will look for the values of the given parameters in
-    the following order: command-line arguments, environment variables, default
-    values.
+    Options container for application configuration.
+
+    You can import the `Options` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Options
+    ```
+
+    To initialize options, pass in one or more `Option` objects. The options
+    will look for the values of the given parameters in the following order:
+    command-line arguments, environment variables, default values.
 
     Once the `Options` are initialized, you can access the underlying options as
     attributes of the `Options` object. For example, if you have an
@@ -278,7 +359,7 @@ class Options:
     be merged with other options. After options are parsed, you may get the
     help message by running the script with the `-h/--help` flag.
 
-    Attributes
+    Parameters
     ----------
     *options : Option
         The list of `Option` objects that are used in the options. At least one
@@ -294,7 +375,6 @@ class Options:
     ... )
     >>>
     >>> print(options.duration, options.threads, options.to_dict())
-
     30s 4 {"duration": "30s", "threads": 4}
 
     Raises
@@ -313,8 +393,14 @@ class Options:
     PARSED = False
 
     def __init__(self, *options: Option):
-        """Initializes the options."""
+        """
+        Initialize an Options instance with the provided option objects.
 
+        Parameters
+        ----------
+        *options : Option
+            The option objects to include in this Options instance.
+        """
         self.options = copy.deepcopy(options)
 
     def to_dict(self) -> dict[str, Any]:
@@ -326,7 +412,17 @@ class Options:
         Returns
         -------
         dict[str, Any]
-            The options as a dict.
+            The options as a dict where keys are option names and values
+            are the corresponding option values.
+
+        Examples
+        --------
+        >>> options = Options(Option("duration", str, "30s"), Option("threads", int, 4))
+        >>> options_dict = options.to_dict()
+        >>> options_dict["duration"]
+        '30s'
+        >>> options_dict["threads"]
+        4
         """
 
         if not self.PARSED:
@@ -349,16 +445,28 @@ class Options:
     def to_dict_cloud(self) -> dict[str, str]:
         """
         Converts the options to a dict that can be used in the Nextmv Cloud.
+
         Cloud has a hard requirement that options are passed as strings. This
         method converts the options to a dict with string values. This is
         useful for passing options to the Nextmv Cloud.
+
         As a side effect, this method parses the options if they have not been
         parsed yet. See the `parse` method for more information.
 
         Returns
         -------
         dict[str, str]
-            The options as a dict with string values.
+            The options as a dict with string values where non-string values
+            are JSON-encoded.
+
+        Examples
+        --------
+        >>> options = Options(Option("duration", str, "30s"), Option("threads", int, 4))
+        >>> cloud_dict = options.to_dict_cloud()
+        >>> cloud_dict["duration"]
+        '30s'
+        >>> cloud_dict["threads"]
+        '4'
         """
 
         options_dict = self.to_dict()
@@ -374,10 +482,8 @@ class Options:
 
     def parameters_dict(self) -> list[dict[str, Any]]:
         """
-        DEPRECATION WARNING
-        ----------
-        `Parameter` is deprecated, use `Option` instead. Options.parameters_dict
-        -> Options.options_dict
+        !!! warning
+            `Parameter` is deprecated, use `Option` instead. `Options.parameters_dict` -> `Options.options_dict`
 
         Converts the options to a list of dicts. Each dict is the dict
         representation of a `Parameter`.
@@ -404,6 +510,15 @@ class Options:
         -------
         list[dict[str, Any]]
             The list of dictionaries (`Option` entries).
+
+        Examples
+        --------
+        >>> options = Options(Option("duration", str, "30s"), Option("threads", int, 4))
+        >>> opt_dicts = options.options_dict()
+        >>> opt_dicts[0]["name"]
+        'duration'
+        >>> opt_dicts[1]["name"]
+        'threads'
         """
 
         return [opt.to_dict() for opt in self.options]
@@ -422,7 +537,7 @@ class Options:
         After Options have been parsed, they cannot be merged with other
         Options. If you need to merge Options, do so before parsing them.
 
-        Example 1
+        Examples
         -------
         >>> import nextmv
         >>>
@@ -432,8 +547,6 @@ class Options:
         ... )
         >>> options.parse() # Does not raise an exception.
 
-        Example 2
-        -------
         >>> import nextmv
         >>>
         >>> options = nextmv.Options(
@@ -464,16 +577,22 @@ class Options:
 
     def merge(self, new: "Options") -> "Options":
         """
-        Merges the current options with the new options. This method cannot be
-        used if any of the options have been parsed. When options are parsed,
-        values are read from the command-line arguments, environment variables
-        and default values. Merging options after parsing would result in
-        unpredictable behavior.
+        Merges the current options with the new options.
+
+        This method cannot be used if any of the options have been parsed. When
+        options are parsed, values are read from the command-line arguments,
+        environment variables and default values. Merging options after parsing
+        would result in unpredictable behavior.
 
         Parameters
         ----------
         new : Options
-            The new options to merge.
+            The new options to merge with the current options.
+
+        Returns
+        -------
+        Options
+            The merged options object (self).
 
         Raises
         ------
@@ -482,10 +601,15 @@ class Options:
         RuntimeError
             If the new options have already been parsed.
 
-        Returns
-        -------
-        Options
-            The merged options.
+        Examples
+        --------
+        >>> opt1 = Options(Option("duration", str, "30s"))
+        >>> opt2 = Options(Option("threads", int, 4))
+        >>> merged = opt1.merge(opt2)
+        >>> merged.duration
+        '30s'
+        >>> merged.threads
+        4
         """
 
         if self.PARSED:
@@ -507,13 +631,16 @@ class Options:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Options":
         """
-        Creates an instance of `Options` from a dictionary. The dictionary
-        should have the following structure:
+        Creates an instance of `Options` from a dictionary.
 
+        The dictionary should have the following structure:
+
+        ```python
         {
             "duration": "30",
             "threads": 4,
         }
+        ```
 
         Parameters
         ----------
@@ -523,7 +650,16 @@ class Options:
         Returns
         -------
         Options
-            An instance of `Options`.
+            An instance of `Options` with options created from the dictionary.
+
+        Examples
+        --------
+        >>> data = {"duration": "30s", "threads": 4}
+        >>> options = Options.from_dict(data)
+        >>> options.duration
+        '30s'
+        >>> options.threads
+        4
         """
 
         options = []
@@ -536,17 +672,17 @@ class Options:
     @classmethod
     def from_parameters_dict(cls, parameters_dict: list[dict[str, Any]]) -> "Options":
         """
-        DEPRECATION WARNING
-        ----------
-        `Parameter` is deprecated, use `Option` instead. Options.from_parameters_dict
-        -> Options.from_options_dict
+        !!! warning
+
+            `Parameter` is deprecated, use `Option` instead.
+            `Options.from_parameters_dict` -> `Options.from_options_dict`
 
         Creates an instance of `Options` from parameters in dict form. Each
         entry is the dict representation of a `Parameter`.
 
         Parameters
         ----------
-        data : list[dict[str, Any]]
+        parameters_dict : list[dict[str, Any]]
             The list of dictionaries (parameter entries).
 
         Returns
@@ -576,13 +712,25 @@ class Options:
 
         Parameters
         ----------
-        data : list[dict[str, Any]]
+        options_dict : list[dict[str, Any]]
             The list of dictionaries (`Option` entries).
 
         Returns
         -------
         Options
             An instance of `Options`.
+
+        Examples
+        --------
+        >>> options_dict = [
+        ...     {"name": "duration", "option_type": "<class 'str'>", "default": "30s"},
+        ...     {"name": "threads", "option_type": "<class 'int'>", "default": 4}
+        ... ]
+        >>> options = Options.from_options_dict(options_dict)
+        >>> options.duration
+        '30s'
+        >>> options.threads
+        4
         """
 
         options = []
@@ -594,8 +742,20 @@ class Options:
 
     def __getattr__(self, name: str) -> Any:
         """
-        Gets an attribute of the options. This is called when an attribute
-        is accessed. It parses the options if they have not been parsed yet.
+        Gets an attribute of the options.
+
+        This is called when an attribute is accessed. It parses the options
+        if they have not been parsed yet.
+
+        Parameters
+        ----------
+        name : str
+            The name of the attribute to get.
+
+        Returns
+        -------
+        Any
+            The value of the attribute.
         """
 
         if not self.PARSED:
@@ -607,6 +767,10 @@ class Options:
         """
         Parses the options using command-line arguments, environment variables
         and default values.
+
+        This is an internal method that is called by `parse()` and `__getattr__()`.
+        It sets the `PARSED` flag to True and sets the values of the options
+        based on command-line arguments, environment variables, and default values.
 
         Raises
         ------
@@ -727,7 +891,22 @@ class Options:
             )
 
     def _description(self, option: Option) -> str:
-        """Returns a description for an option."""
+        """
+        Returns a description for an option.
+
+        This is an internal method used to create the help text for options
+        in the command-line argument parser.
+
+        Parameters
+        ----------
+        option : Option
+            The option to get the description for.
+
+        Returns
+        -------
+        str
+            A formatted description string for the option.
+        """
 
         description = ""
         if isinstance(option, Parameter):
@@ -752,7 +931,26 @@ class Options:
         return description
 
     def _option_value(self, option: Option, value: Any) -> Any:
-        """Handles how the value of an option is extracted."""
+        """
+        Handles how the value of an option is extracted.
+
+        This is an internal method that converts string values to boolean
+        values for boolean options.
+
+        Parameters
+        ----------
+        option : Option
+            The option to extract the value for.
+        value : Any
+            The value to extract.
+
+        Returns
+        -------
+        Any
+            The extracted value. For boolean options, string values like
+            "true", "1", "t", "y", and "yes" are converted to True, and
+            other values are converted to False.
+        """
 
         opt_type = self._option_type(option)
         if opt_type is not bool:
@@ -767,11 +965,28 @@ class Options:
 
     @staticmethod
     def _option_type(option: Union[Option, Parameter]) -> type:
-        """Auxiliary function for handling the type of an option. This function
-        was introduced for backwards compatibility with the deprecated
-        `Parameter` class. Once `Parameter` is removed, this function can be removed
-        as well. When the function is removed, use the `option.option_type`
-        attribute directly, instead of calling this function.
+        """
+        Get the type of an option.
+
+        This auxiliary function was introduced for backwards compatibility with
+        the deprecated `Parameter` class. Once `Parameter` is removed, this function
+        can be removed as well. When the function is removed, use the
+        `option.option_type` attribute directly, instead of calling this function.
+
+        Parameters
+        ----------
+        option : Union[Option, Parameter]
+            The option to get the type for.
+
+        Returns
+        -------
+        type
+            The type of the option.
+
+        Raises
+        ------
+        TypeError
+            If the option is not an `Option` or `Parameter` object.
         """
 
         if isinstance(option, Option):
