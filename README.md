@@ -15,8 +15,8 @@
 <a href="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-lint.yml" target="_blank">
     <img src="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-lint.yml/badge.svg?event=push&branch=develop" alt="Test">
 </a>
-<a href="https://pypi.org/project/nextmv-scikit-learn" target="_blank">
-    <img src="https://img.shields.io/pypi/pyversions/nextmv-scikit-learn.svg?color=%2334D058" alt="Supported Python versions">
+<a href="https://pypi.org/project/nextmv" target="_blank">
+    <img src="https://img.shields.io/pypi/pyversions/nextmv.svg?color=%2334D058" alt="Supported Python versions">
 </a>
 </p>
 <p align="center">

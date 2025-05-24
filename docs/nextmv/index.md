@@ -1,5 +1,24 @@
 # Overview
 
+<!-- markdownlint-disable MD033 MD013 -->
+
+<p align="center">
+  <a href="https://nextmv.io"><img src="https://cdn.prod.website-files.com/60dee0fad10d14c8ab66dd74/674628a824bc14307c1727aa_blog-prototype-p-2000.png" alt="Nextmv" width="45%"></a>
+</p>
+<p align="center">
+    <em>Nextmv: The home for all your optimization work</em>
+</p>
+<p align="center">
+<a href="https://pypi.org/project/nextmv" target="_blank">
+    <img src="https://img.shields.io/pypi/pyversions/nextmv.svg?color=%2334D058" alt="Supported Python versions">
+</a>
+<a href="https://pypi.org/project/nextmv" target="_blank">
+    <img src="https://img.shields.io/pypi/v/nextmv?color=%2334D058&label=nextmv" alt="Package version">
+</a>
+</p>
+
+<!-- markdownlint-enable MD033 MD013 -->
+
 The [Nextmv Python SDK][nextmv], `nextmv`, is a package to interact
 programmatically with the Nextmv Platform from Python. A great way to get
 started is to check out the [community apps][community-apps-get-started]. The
