@@ -6,7 +6,7 @@
   <a href="https://nextmv.io"><img src="https://cdn.prod.website-files.com/60ca04db4f6f99b4bc1e050f/6509052c3f0767faf754ce3b_illustration-rabbits-decision-stacks-routing-scheduling-tier-3.svg" alt="Nextmv"></a>
 </p>
 <p align="center">
-    <em>Nextmv Python SDKs: The home for all your optimization work</em>
+    <em>Nextmv: The home for all your optimization work</em>
 </p>
 <p align="center">
 <a href="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-test.yml" target="_blank">
