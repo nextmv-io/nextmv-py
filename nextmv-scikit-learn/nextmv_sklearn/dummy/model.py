@@ -1,4 +1,12 @@
-"""Defines sklearn.dummy models interoperability."""
+"""Defines sklearn.dummy models interoperability.
+
+This module provides integration between nextmv and scikit-learn's dummy models.
+
+Functions
+---------
+DummyRegressor : function
+    Creates a sklearn.dummy.DummyRegressor from provided options.
+"""
 
 from sklearn import dummy
 
@@ -11,15 +19,35 @@ def DummyRegressor(options: nextmv.Options) -> dummy.DummyRegressor:
     """
     Creates a `sklearn.dummy.DummyRegressor` from the provided options.
 
+    You can import the `DummyRegressor` function directly from `dummy`:
+
+    ```python
+    from nextmv_sklearn.dummy import DummyRegressor
+    ```
+
+    The DummyRegressor is a regressor that makes predictions using simple rules,
+    which can be useful as a baseline for comparison against actual regressors.
+
     Parameters
     ----------
     options : nextmv.Options
-        Options for the DummyRegressor.
+        Options for the DummyRegressor. Should be created using
+        DummyRegressorOptions.to_nextmv() from the options module.
 
     Returns
     -------
-    DummyRegressor
-        A sklearn.dummy.DummyRegressor instance.
+    sklearn.dummy.DummyRegressor
+        A sklearn.dummy.DummyRegressor instance configured with the provided options.
+
+    Examples
+    --------
+    >>> from nextmv_sklearn.dummy import DummyRegressor
+    >>> from nextmv_sklearn.dummy.options import DummyRegressorOptions
+    >>> options = DummyRegressorOptions()
+    >>> # Configure options as needed
+    >>> regressor = DummyRegressor(options.to_nextmv())
+    >>> regressor.fit(X_train, y_train)
+    >>> predictions = regressor.predict(X_test)
     """
 
     names = {p.name for p in DUMMY_REGRESSOR_PARAMETERS}

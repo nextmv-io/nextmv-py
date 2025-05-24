@@ -1,4 +1,18 @@
-"""Defines sklearn.neural_network models interoperability."""
+"""Defines sklearn.neural_network models interoperability.
+
+This module provides options classes for scikit-learn neural network models
+that can be used with the Nextmv platform.
+
+Classes
+-------
+MLPRegressorOptions
+    Options class for scikit-learn's MLPRegressor.
+
+Variables
+---------
+MLP_REGRESSOR_PARAMETERS
+    List of Nextmv Option objects for MLPRegressor.
+"""
 
 import nextmv
 
@@ -124,15 +138,59 @@ MLP_REGRESSOR_PARAMETERS = [
         description="Only used when solver='lbfgs'.",
     ),
 ]
+"""List of options for scikit-learn's MLPRegressor.
+
+You can import the MLP_REGRESSOR_PARAMETERS directly from neural_network:
+
+```python
+from nextmv_sklearn.neural_network import MLP_REGRESSOR_PARAMETERS
+```
+
+This list contains all the parameters that can be configured for a MLPRegressor
+model from scikit-learn. Each option is defined as a nextmv.Option object.
+"""
 
 
 class MLPRegressorOptions:
-    """Options for the sklearn.neural_newtork.MLPRegressor."""
+    """Options for the sklearn.neural_newtork.MLPRegressor.
+
+    You can import the MLPRegressorOptions class directly from neural_network:
+
+    ```python
+    from nextmv_sklearn.neural_network import MLPRegressorOptions
+    ```
+
+    This class provides a convenient way to configure options for the
+    scikit-learn MLPRegressor model to be used with Nextmv platform.
+
+    Attributes
+    ----------
+    params : list
+        List of nextmv.Option objects that define the parameters for the MLPRegressor.
+
+    Examples
+    --------
+    >>> from nextmv_sklearn.neural_network import MLPRegressorOptions
+    >>> options = MLPRegressorOptions()
+    >>> nextmv_options = options.to_nextmv()
+    """
 
     def __init__(self):
         self.params = MLP_REGRESSOR_PARAMETERS
 
     def to_nextmv(self) -> nextmv.Options:
-        """Converts the options to a Nextmv options object."""
+        """Converts the options to a Nextmv options object.
+
+        Returns
+        -------
+        nextmv.Options
+            A Nextmv options object containing all the parameters for the MLPRegressor.
+
+        Examples
+        --------
+        >>> options = MLPRegressorOptions()
+        >>> nextmv_options = options.to_nextmv()
+        >>> # Use nextmv_options with a Nextmv model
+        """
 
         return nextmv.Options(*self.params)
