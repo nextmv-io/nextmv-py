@@ -364,7 +364,7 @@ class ManifestOption(BaseModel):
     name: str
     """The name of the option"""
     option_type: str = Field(
-        serialization_alias="type",
+        serialization_alias="option_type",
         validation_alias=AliasChoices("type", "option_type"),
     )
     """The type of the option (e.g., "string", "int", "bool", "float)."""
