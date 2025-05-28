@@ -233,11 +233,25 @@ def __install_dependencies(
         return
 
     pip_requirements = manifest.python.pip_requirements
+
     if pip_requirements is None or pip_requirements == "":
+        # If no pip requirements are specified, we do not install any dependencies.
         return
 
-    if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
-        raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
+    if isinstance(pip_requirements, list):
+        # If pip_requirements is a list, we write it to a temporary file so that we can
+        # pass it to pip.
+        pip_requirements_file = os.path.join(temp_dir, "requirements.txt")
+        with open(pip_requirements_file, "w") as f:
+            for requirement in pip_requirements:
+                f.write(requirement + "\n")
+        pip_requirements = pip_requirements_file
+    elif isinstance(pip_requirements, str):
+        # If pip_requirements is a string, we expect it to be a file path to a
+        # requirements file.
+        pip_requirements = pip_requirements.strip()
+        if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
+            raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
 
     py_cmd = __get_python_command()
     dep_dir = os.path.join(".nextmv", "python", "deps")

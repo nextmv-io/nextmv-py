@@ -33,7 +33,7 @@ FILE_NAME
 
 import os
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import yaml
 from pydantic import AliasChoices, Field
@@ -282,7 +282,9 @@ class ManifestPython(BaseModel):
     ----------
     pip_requirements : Optional[str], default=None
         Path to a requirements.txt file containing (additional) Python
-        dependencies that will be bundled with the app.
+        dependencies that will be bundled with the app. Alternatively, you can provide a
+        list of strings, each representing a package to install, e.g.,
+        `["nextmv==0.28.2", "ortools==9.12.4544"]`.
         Aliases: `pip-requirements`.
     model : Optional[ManifestPythonModel], default=None
         Information about an encoded decision model as handled via mlflow. This
@@ -299,7 +301,7 @@ class ManifestPython(BaseModel):
     'requirements.txt'
     """
 
-    pip_requirements: Optional[str] = Field(
+    pip_requirements: Optional[Union[str, list]] = Field(
         serialization_alias="pip-requirements",
         validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
         default=None,
