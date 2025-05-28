@@ -301,7 +301,7 @@ class ManifestPython(BaseModel):
     'requirements.txt'
     """
 
-    pip_requirements: Optional[Union[str, list]] = Field(
+    pip_requirements: Optional[Union[str, list[str]]] = Field(
         serialization_alias="pip-requirements",
         validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
         default=None,
