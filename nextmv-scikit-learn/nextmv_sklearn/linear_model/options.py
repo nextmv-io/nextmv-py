@@ -19,21 +19,25 @@ LINEAR_REGRESSION_PARAMETERS = [
     nextmv.Option(
         name="fit_intercept",
         option_type=bool,
+        default=True,
         description="Whether to calculate the intercept for this model.",
     ),
     nextmv.Option(
         name="copy_X",
         option_type=bool,
+        default=True,
         description="If True, X will be copied; else, it may be overwritten.",
     ),
     nextmv.Option(
         name="n_jobs",
         option_type=int,
+        default=None,
         description="The number of jobs to use for the computation.",
     ),
     nextmv.Option(
         name="positive",
         option_type=bool,
+        default=False,
         description="When set to True, forces the coefficients to be positive.",
     ),
 ]
