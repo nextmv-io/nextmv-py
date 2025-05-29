@@ -31,7 +31,7 @@ LINEAR_REGRESSION_PARAMETERS = [
     nextmv.Option(
         name="n_jobs",
         option_type=int,
-        default=None,
+        default=1,
         description="The number of jobs to use for the computation.",
     ),
     nextmv.Option(
