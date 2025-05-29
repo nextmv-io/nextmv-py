@@ -16,22 +16,28 @@ following minimum requirements:
 To push an app to Nextmv Cloud using the `nextmv` Python SDK, you can use one
 of the following strategies:
 
-* [Directory strategy][directory-strategy]: push an _existing_ app that is
-      composed of files in a directory.
-* [Python strategy][python-strategy]: describe and push an app purely in
-      Python (without the need for an [`app.yaml` manifest][app-manifest]
-      for example).
-* [Internal strategy][internal-strategy]: push an app that is created from a
-  [`nextmv.Model`][model].
+* [File strategy][file-strategy]: push an _existing_ app that exists
+      as file(s) in a directory. This is the most common strategy.
+* [Object strategy][object-strategy]: push an app that is created from a
+  [`nextmv.Model`][model] directly from the in-memory object.
 
-## Directory strategy
+## File strategy
 
-The directory strategy consists of specifying `app_dir`, which is the path to an
-app’s root directory. The app is composed of files in a directory and those
-apps are packaged and pushed to Nextmv Cloud. This is language-agnostic and
-works for an app written in any language. It is particularly useful
-when the app is already structured as a directory with the necessary files (like
-apps cloned from [community apps][community-apps]).
+The file strategy assumes that the model exists as source code on disk. We can
+distinguish between two types of file strategies:
+
+* **Directory based**: the app is described with a [`app.yaml`][app-manifest]
+  manifest file.
+* **Code based**: the app is described in Python as code.
+
+### Directory based
+
+The directory based file strategy consists of specifying `app_dir`, which is the
+path to an app’s root directory. The app is composed of files in a directory and
+those apps are packaged and pushed to Nextmv Cloud. This is language-agnostic
+and works for an app written in any language. It is particularly useful when the
+app is already structured as a directory with the necessary files (like apps
+cloned from [community apps][community-apps]).
 
 Place the following script in the root of your app directory and run it to push
 your app to the Nextmv Cloud. This is equivalent to using the [Nextmv CLI][cli]
@@ -50,12 +56,12 @@ app.push()  # Use verbose=True for step-by-step output.
 
 You can also specify the `app_dir` parameter to point to a specific directory
 
-## Python strategy
+### Code based
 
-The Python strategy consists of describing your app in Python and pushing it to
-Nextmv Cloud. This is very similar to the directory strategy, but you can define
-your app as code and keep it in a single file. This approach is still
-language-agnostic.
+The code based file strategy consists of describing your app in Python and
+pushing it to Nextmv Cloud. This is very similar to the directory based
+approach, but you can define your app as code and keep it in a single file.
+This approach is still language-agnostic.
 
 For example, if you have a simply Python app consisting of a single `main.py`
 file, you can push it to Nextmv Cloud using the following `push.py` script. This
@@ -88,12 +94,11 @@ app.push(
 )
 ```
 
-## Internal strategy
+## Object strategy
 
-The internal strategy consists of specifying a `model` and
-`model_configuration`. This is useful when you are in an interactive environment
-like a Jupyter notebook or a Python script, and you want to push the model
-_object_ directly.
+The object strategy consists of specifying a `model` and `model_configuration`.
+This is useful when you are in an interactive environment like a Jupyter
+notebook or a Python script, and you want to push the model _object_ directly.
 
 This acts as a Python-native strategy called "Apps from
 Models", where an app is created from a [`Nextmv.Model`][model]. The model is
@@ -145,8 +150,7 @@ app.push( # Use verbose=True for step-by-step output.
 [cli]: https://docs.nextmv.io/docs/using-nextmv/reference/cli
 [model]: ../model.md
 [app-manifest]: https://docs.nextmv.io/docs/using-nextmv/deploy/app/manifest
-[directory-strategy]: #directory-strategy
-[python-strategy]: #python-strategy
-[internal-strategy]: #internal-strategy
+[file-strategy]: #file-strategy
+[object-strategy]: #object-strategy
 [community-apps]: https://github.com/nextmv-io/community-apps
 [python-ortools-knapsack]: https://github.com/nextmv-io/community-apps/tree/develop/python-ortools-knapsack
