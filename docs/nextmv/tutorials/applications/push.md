@@ -26,7 +26,7 @@ of the following strategies:
 The file strategy assumes that the model exists as source code on disk. We can
 distinguish between two types of file strategies:
 
-* **Directory based**: the app is described with a [`app.yaml`][app-manifest]
+* **Directory based**: the app is described with an [`app.yaml`][app-manifest]
   manifest file.
 * **Code based**: the app is described in Python as code.
 
@@ -54,7 +54,18 @@ app = cloud.Application(client=client, id="<YOUR_APP_ID>")
 app.push()  # Use verbose=True for step-by-step output.
 ```
 
-You can also specify the `app_dir` parameter to point to a specific directory
+You can also specify the `app_dir` parameter to point to a specific directory.
+
+The typical structure of an app directory for the directory based file strategy
+looks like this:
+
+```txt
+.
+├── app.yaml          # Describes the app and its dependencies
+├── requirements.txt  # Lists the dependencies
+├── main.py           # The actual app / model code
+└── push.py           # Python script to define and push the app (see below)
+```
 
 ### Code based
 
@@ -92,6 +103,17 @@ app.push(
         runtime=cloud.ManifestRuntime.PYTHON,
     ),
 )
+```
+
+The typical structure of an app directory for the code based file strategy looks
+like this:
+
+```txt
+.
+├── app.yaml          # Describes the app and its dependencies
+├── requirements.txt  # Lists the dependencies
+├── main.py           # The actual app / model code
+└── push.py           # Python script to define and push the app (see below)
 ```
 
 ## Object strategy
