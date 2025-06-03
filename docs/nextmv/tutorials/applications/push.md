@@ -110,8 +110,6 @@ like this:
 
 ```txt
 .
-├── app.yaml          # Describes the app and its dependencies
-├── requirements.txt  # Lists the dependencies
 ├── main.py           # The actual app / model code
 └── push.py           # Python script to define and push the app (see below)
 ```
