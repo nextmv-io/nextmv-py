@@ -575,7 +575,7 @@ class Options:
 
         self._parse()
 
-    def merge(self, new: "Options") -> "Options":
+    def merge(self, *new: "Options", skip_parse: bool = False) -> "Options":
         """
         Merges the current options with the new options.
 
@@ -587,7 +587,11 @@ class Options:
         Parameters
         ----------
         new : Options
-            The new options to merge with the current options.
+            The new options to merge with the current options. At least one new option set
+            is required to merge. Multiple `Options` instances can be passed.
+        skip_parse : bool, optional
+            If True, the merged options will not be parsed after merging. This is useful
+            if you want to merge further options after this merge. The default is False.
 
         Returns
         -------
@@ -605,11 +609,14 @@ class Options:
         --------
         >>> opt1 = Options(Option("duration", str, "30s"))
         >>> opt2 = Options(Option("threads", int, 4))
-        >>> merged = opt1.merge(opt2)
+        >>> opt3 = Options(Option("verbose", bool, False))
+        >>> merged = opt1.merge(opt2, opt3)
         >>> merged.duration
         '30s'
         >>> merged.threads
         4
+        >>> merged.verbose
+        False
         """
 
         if self.PARSED:
@@ -617,14 +624,24 @@ class Options:
                 "base options have already been parsed, cannot merge. See `Options.parse()` for more information."
             )
 
-        if new.PARSED:
-            raise RuntimeError(
-                "new options have already been parsed, cannot merge. See `Options.parse()` for more information."
-            )
+        if not new:
+            raise ValueError("at least one new Options instance is required to merge")
 
-        self.options += new.options
+        for i, opt in enumerate(new):
+            if not isinstance(opt, Options):
+                raise TypeError(f"expected an <Options> object, but got {type(opt)} in index {i}")
+            if opt.PARSED:
+                raise RuntimeError(
+                    f"new options at index {i} have already been parsed, cannot merge. "
+                    + "See `Options.parse()` for more information."
+                )
 
-        self._parse()
+        # Add the new options to the current options.
+        for n in new:
+            self.options += n.options
+
+        if not skip_parse:
+            self.parse()
 
         return self
 
