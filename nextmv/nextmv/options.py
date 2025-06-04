@@ -627,7 +627,8 @@ class Options:
 
         self.options += new.options
 
-        self._parse()
+        if not skip_parse:
+            self._parse()
 
         return self
 
