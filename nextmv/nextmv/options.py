@@ -587,7 +587,8 @@ class Options:
         Parameters
         ----------
         new : Options
-            The new options to merge with the current options.
+            The new options to merge with the current options. At least one new option set
+            is required to merge. Multiple `Options` instances can be passed.
         skip_parse : bool, optional
             If True, the merged options will not be parsed after merging. This is useful
             if you want to merge further options after this merge. The default is False.

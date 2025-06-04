@@ -79,11 +79,14 @@ options1 = nextmv.Options(
 options2 = nextmv.Options(
     nextmv.Option("str_option2", str, "default value", "A string option", required=True),
     nextmv.Option("int_option2", int, 1, "An int option", required=False),
+)
+
+options3 = nextmv.Options(
     nextmv.Option("float_option2", float, 1.0, "A float option", required=False),
     nextmv.Option("bool_option2", bool, True, "A bool option", required=True),
 )
 
-options = options1.merge(options2)
+options = options1.merge(options2, options3)
 
 print(options.str_option1)
 print(options.int_option1)
