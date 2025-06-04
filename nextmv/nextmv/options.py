@@ -676,15 +676,15 @@ class Options:
         if not options:
             raise ValueError("at least one Options instance is required to merge")
 
-        merged = []
+        merged_options_list = []
         for opt in options:
             if opt.PARSED:
                 raise RuntimeError(
                     "options have already been parsed, cannot merge. See `Options.parse()` for more information."
                 )
-            merged += opt.options
+            merged_options_list += opt.options
 
-        merged_options = cls(*merged)
+        merged_options = cls(*merged_options_list)
 
         if not skip_parse:
             merged_options._parse()
