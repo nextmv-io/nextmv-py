@@ -575,7 +575,7 @@ class Options:
 
         self._parse()
 
-    def merge(self, new: "Options", skip_parse: bool = False) -> "Options":
+    def merge(self, *new: "Options", skip_parse: bool = False) -> "Options":
         """
         Merges the current options with the new options.
 
@@ -608,11 +608,14 @@ class Options:
         --------
         >>> opt1 = Options(Option("duration", str, "30s"))
         >>> opt2 = Options(Option("threads", int, 4))
-        >>> merged = opt1.merge(opt2)
+        >>> opt3 = Options(Option("verbose", bool, False))
+        >>> merged = opt1.merge(opt2, opt3)
         >>> merged.duration
         '30s'
         >>> merged.threads
         4
+        >>> merged.verbose
+        False
         """
 
         if self.PARSED:
@@ -620,76 +623,26 @@ class Options:
                 "base options have already been parsed, cannot merge. See `Options.parse()` for more information."
             )
 
-        if new.PARSED:
-            raise RuntimeError(
-                "new options have already been parsed, cannot merge. See `Options.parse()` for more information."
-            )
+        if not new:
+            raise ValueError("at least one new Options instance is required to merge")
 
-        self.options += new.options
-
-        if not skip_parse:
-            self._parse()
-
-        return self
-
-    @classmethod
-    def merge_all(cls, *options: "Options", skip_parse: bool = False) -> "Options":
-        """
-        Merges multiple `Options` instances into a single `Options` instance.
-
-        This method cannot be used if any of the options have been parsed already. When
-        options are parsed, values are read from the command-line arguments, environment
-        variables and default values. Merging options after parsing would result in
-        unpredictable behavior.
-
-        Parameters
-        ----------
-        *options : Options
-            The `Options` instances to merge. At least one `Options` instance is required.
-        skip_parse : bool, optional
-            If True, the merged options will not be parsed after merging. This is useful
-            if you want to merge further options after this merge. The default is False.
-
-        Returns
-        -------
-        Options
-            A new `Options` instance containing all options from the provided instances.
-
-        Raises
-        ------
-        ValueError
-            If no `Options` instances are provided to merge.
-        RuntimeError
-            If any of the provided `Options` instances have already been parsed.
-
-        Examples
-        --------
-        >>> opt1 = Options(Option("duration", str, "30s"))
-        >>> opt2 = Options(Option("threads", int, 4))
-        >>> merged = Options.merge_all(opt1, opt2)
-        >>> merged.duration
-        '30s'
-        >>> merged.threads
-        4
-        """
-
-        if not options:
-            raise ValueError("at least one Options instance is required to merge")
-
-        merged_options_list = []
-        for opt in options:
+        for i, opt in enumerate(new):
+            if not isinstance(opt, Options):
+                raise TypeError(f"expected an <Options> object, but got {type(opt)} in index {i}")
             if opt.PARSED:
                 raise RuntimeError(
-                    "options have already been parsed, cannot merge. See `Options.parse()` for more information."
+                    f"new options at index {i} have already been parsed, cannot merge. "
+                    + "See `Options.parse()` for more information."
                 )
-            merged_options_list += opt.options
 
-        merged_options = cls(*merged_options_list)
+        # Add the new options to the current options.
+        for n in new:
+            self.options += n.options
 
         if not skip_parse:
-            merged_options._parse()
+            self.parse()
 
-        return merged_options
+        return self
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Options":

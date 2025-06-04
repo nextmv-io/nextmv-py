@@ -623,7 +623,7 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(opt.foo3, 5)
         self.assertEqual(opt.bar3, 6)
 
-    def test_merge_all(self):
+    def test_merge_multi(self):
         opt1 = nextmv.Options(
             nextmv.Parameter("foo1", int, default=1),
             nextmv.Parameter("bar1", int, default=2),
@@ -642,14 +642,14 @@ class TestParameter(unittest.TestCase):
         )
         self.assertFalse(opt3.PARSED)
 
-        opt = nextmv.Options.merge_all(opt1, opt2, opt3)
-        self.assertTrue(opt.PARSED)
-        self.assertEqual(opt.foo1, 1)
-        self.assertEqual(opt.bar1, 2)
-        self.assertEqual(opt.foo2, 3)
-        self.assertEqual(opt.bar2, 4)
-        self.assertEqual(opt.foo3, 5)
-        self.assertEqual(opt.bar3, 6)
+        opt1.merge(opt2, opt3)
+        self.assertTrue(opt1.PARSED)
+        self.assertEqual(opt1.foo1, 1)
+        self.assertEqual(opt1.bar1, 2)
+        self.assertEqual(opt1.foo2, 3)
+        self.assertEqual(opt1.bar2, 4)
+        self.assertEqual(opt1.foo3, 5)
+        self.assertEqual(opt1.bar3, 6)
 
     def test_cant_merge(self):
         opt1 = nextmv.Options(
