@@ -25,19 +25,15 @@ def serialize_json(
         A JSON string representation of the object.
     """
 
-    custom_serial, separators = _custom_serial, (",", ":")
+    # Apply some default configuration if not provided
     json_configurations = json_configurations or {}
-    if "default" in json_configurations:
-        custom_serial = json_configurations["default"]
-        del json_configurations["default"]
-    if "separators" in json_configurations:
-        separators = json_configurations["separators"]
-        del json_configurations["separators"]
+    if "default" not in json_configurations:
+        json_configurations["default"] = _custom_serial
+    if "separators" not in json_configurations:
+        json_configurations["separators"] = (",", ":")
 
     return json.dumps(
         obj,
-        default=custom_serial,
-        separators=separators,
         **json_configurations,
     )
 
