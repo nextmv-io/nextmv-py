@@ -38,6 +38,7 @@ class TestSerialization(unittest.TestCase):
         json_configurations = {
             "indent": 2,
             "default": nextmv.serialization._custom_serial,
+            "separators": (",", ": "),
         }
         serialized = nextmv.serialization.serialize_json(data, json_configurations)
         expected = json.dumps(
