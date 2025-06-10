@@ -721,12 +721,6 @@ class Output:
             and self.csv_configurations != {}
         ):
             output_dict["csv_configurations"] = self.csv_configurations
-        elif (
-            self.output_format == OutputFormat.JSON
-            and self.json_configurations is not None
-            and self.json_configurations != {}
-        ):
-            output_dict["json_configurations"] = self.json_configurations
 
         return output_dict
 

@@ -118,13 +118,6 @@ class TestOutput(unittest.TestCase):
         result = output.to_dict()
         self.assertEqual(result["assets"][0]["name"], "asset3")
 
-        # Test with JSON configurations
-        json_config = {"indent": 4, "sort_keys": True}
-        output = nextmv.Output(output_format=nextmv.OutputFormat.JSON, json_configurations=json_config)
-        result = output.to_dict()
-        self.assertEqual(result["json_configurations"]["indent"], 4)
-        self.assertEqual(result["json_configurations"]["sort_keys"], True)
-
         # Test with CSV configurations
         csv_config = {"delimiter": ";", "quoting": csv.QUOTE_NONNUMERIC}
         output = nextmv.Output(output_format=nextmv.OutputFormat.CSV_ARCHIVE, csv_configurations=csv_config)
@@ -183,7 +176,6 @@ class TestOutput(unittest.TestCase):
         self.assertEqual(result["assets"][0]["name"], "asset1")
         self.assertEqual(result["assets"][0]["visual"]["schema"], "chartjs")
         self.assertEqual(result["solution"]["value"], 42)
-        self.assertEqual(result["json_configurations"]["indent"], 4)
 
     def test_local_writer_json_stdout_default(self):
         output = nextmv.Output(
@@ -262,7 +254,7 @@ class TestOutput(unittest.TestCase):
 
             self.assertEqual(
                 mock_stdout.getvalue(),
-                '{"assets":[],"json_configurations":{"separators":[",",":"],"sort_keys":true},"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
+                '{"assets":[],"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
             )
 
     def test_local_writer_json_stdout_with_options(self):
