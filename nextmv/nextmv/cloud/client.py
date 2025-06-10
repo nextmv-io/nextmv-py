@@ -294,7 +294,7 @@ class Client:
         if data is not None:
             kwargs["data"] = data
         if payload is not None:
-            if isinstance(payload, dict) or isinstance(payload, list):
+            if isinstance(payload, (dict, list)):
                 data = serialize_json(payload)
                 kwargs["data"] = data
             else:
