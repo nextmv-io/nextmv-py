@@ -42,8 +42,6 @@ write
 
 import copy
 import csv
-import datetime
-import json
 import os
 import sys
 from dataclasses import dataclass
@@ -56,6 +54,7 @@ from nextmv.base_model import BaseModel
 from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
+from nextmv.serialization import serialize_json
 
 
 class RunStatistics(BaseModel):
@@ -644,7 +643,7 @@ class Output:
 
         if self.output_format == OutputFormat.JSON:
             try:
-                _ = json.dumps(self.solution, default=_custom_serial)
+                _ = serialize_json(self.solution)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Output has output_format OutputFormat.JSON and "
@@ -822,19 +821,9 @@ class LocalOutputWriter(OutputWriter):
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
 
-        indent, custom_serial = 2, _custom_serial
-        if "indent" in json_configurations:
-            indent = json_configurations["indent"]
-            del json_configurations["indent"]
-        if "default" in json_configurations:
-            custom_serial = json_configurations["default"]
-            del json_configurations["default"]
-
-        serialized = json.dumps(
+        serialized = serialize_json(
             output_dict,
-            indent=indent,
-            default=custom_serial,
-            **json_configurations,
+            json_configurations=json_configurations,
         )
 
         if path is None or path == "":
@@ -877,13 +866,17 @@ class LocalOutputWriter(OutputWriter):
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        serialized = json.dumps(
+        json_configurations = {}
+        if hasattr(output, "json_configurations") and output.json_configurations is not None:
+            json_configurations = output.json_configurations
+
+        serialized = serialize_json(
             {
                 "options": output_dict.get("options", {}),
                 "statistics": output_dict.get("statistics", {}),
                 "assets": output_dict.get("assets", []),
             },
-            indent=2,
+            json_configurations=json_configurations,
         )
         print(serialized, file=sys.stdout)
 
@@ -1118,32 +1111,3 @@ def write(
     """
 
     writer.write(output, path, skip_stdout_reset)
-
-
-def _custom_serial(obj: Any) -> str:
-    """
-    JSON serializer for objects not serializable by default json serializer.
-
-    This function provides custom serialization for datetime objects, converting
-    them to ISO format strings.
-
-    Parameters
-    ----------
-    obj : Any
-        The object to serialize.
-
-    Returns
-    -------
-    str
-        The serialized representation of the object.
-
-    Raises
-    ------
-    TypeError
-        If the object type is not supported for serialization.
-    """
-
-    if isinstance(obj, (datetime.datetime | datetime.date)):
-        return obj.isoformat()
-
-    raise TypeError(f"Type {type(obj)} not serializable")

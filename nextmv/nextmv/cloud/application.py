@@ -66,6 +66,7 @@ from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
 from nextmv.options import Options
 from nextmv.output import Output
+from nextmv.serialization import serialize_json
 
 # Maximum size of the run input/output in bytes. This constant defines the
 # maximum allowed size for run inputs and outputs. When the size exceeds this
@@ -1588,7 +1589,7 @@ class Application:
                     if isinstance(v, str):
                         options_dict[k] = v
                     else:
-                        options_dict[k] = json.dumps(v)
+                        options_dict[k] = serialize_json(v)
 
         payload = {}
         if upload_id_used:
@@ -2830,7 +2831,7 @@ class Application:
         """
 
         if isinstance(input, dict):
-            input = json.dumps(input)
+            input = serialize_json(input)
 
         self.client.upload_to_presigned_url(
             url=upload_url.upload_url,

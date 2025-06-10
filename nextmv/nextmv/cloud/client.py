@@ -14,7 +14,6 @@ get_size(obj)
     Finds the size of an object in bytes.
 """
 
-import json
 import os
 from dataclasses import dataclass, field
 from typing import IO, Any, Optional, Union
@@ -23,6 +22,8 @@ from urllib.parse import urljoin
 import requests
 import yaml
 from requests.adapters import HTTPAdapter, Retry
+
+from nextmv.serialization import serialize_json
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -293,7 +294,11 @@ class Client:
         if data is not None:
             kwargs["data"] = data
         if payload is not None:
-            kwargs["json"] = payload
+            if isinstance(payload, dict) or isinstance(payload, list):
+                data = serialize_json(payload)
+                kwargs["data"] = data
+            else:
+                kwargs["json"] = payload
         if query_params is not None:
             kwargs["params"] = query_params
 
@@ -341,7 +346,7 @@ class Client:
 
         upload_data: Optional[str] = None
         if isinstance(data, dict):
-            upload_data = json.dumps(data, separators=(",", ":"))
+            upload_data = serialize_json(data)
         elif isinstance(data, str):
             upload_data = data
         else:
@@ -436,7 +441,7 @@ def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
     """
 
     if isinstance(obj, dict):
-        obj_str = json.dumps(obj, separators=(",", ":"))
+        obj_str = serialize_json(obj)
         return len(obj_str.encode("utf-8"))
 
     elif hasattr(obj, "read"):
