@@ -298,7 +298,7 @@ class Client:
                 data = serialize_json(payload)
                 kwargs["data"] = data
             else:
-                kwargs["json"] = payload
+                raise ValueError("payload must be a dictionary or a list")
         if query_params is not None:
             kwargs["params"] = query_params
 
