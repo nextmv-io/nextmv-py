@@ -184,10 +184,12 @@ class PollingOptions:
     """
     max_delay: float = 20
     """Maximum delay to use between polls, in seconds."""
-    max_duration: float = 300
-    """Maximum duration of the polling strategy, in seconds."""
-    max_tries: int = 100
-    """Maximum number of tries to use."""
+    max_duration: float = -1
+    """
+    Maximum duration of the polling strategy, in seconds. A negative value means no limit.
+    """
+    max_tries: int = -1
+    """Maximum number of tries to use. A negative value means no limit."""
     jitter: float = 1
     """
     Jitter to use for the polling strategy. A uniform distribution is sampled
@@ -3174,7 +3176,11 @@ class Application:
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
 
-def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:
+def poll(  # noqa: C901
+    polling_options: PollingOptions,
+    polling_func: Callable[[], tuple[Any, bool]],
+    __sleep_func: Callable[[float], None] = time.sleep,
+) -> Any:
     """
     Poll a function until it succeeds or the polling strategy is exhausted.
 
@@ -3247,13 +3253,20 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
     if polling_options.verbose:
         log(f"polling | sleeping for initial delay: {polling_options.initial_delay}")
 
-    time.sleep(polling_options.initial_delay)
+    __sleep_func(polling_options.initial_delay)
 
     start_time = time.time()
     stopped = False
 
     # Begin the polling process.
-    for ix in range(polling_options.max_tries):
+    max_reached = False
+    ix = 0
+    while True:
+        # Check if we reached the maximum number of tries. Break if so.
+        if ix >= polling_options.max_tries and polling_options.max_tries >= 0:
+            break
+        ix += 1
+
         # Check is we should stop polling according to the stop callback.
         if polling_options.stop is not None and polling_options.stop():
             stopped = True
@@ -3273,22 +3286,33 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
         if polling_options.verbose:
             log(f"polling | elapsed time: {passed}")
 
-        if passed >= polling_options.max_duration:
+        if passed >= polling_options.max_duration and polling_options.max_duration >= 0:
             raise TimeoutError(
                 f"polling did not succeed after {passed} seconds, exceeds max duration: {polling_options.max_duration}",
             )
 
         # Calculate the delay.
-        delay = polling_options.delay  # Base
-        delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-        delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        if max_reached:
+            # If we already reached the maximum, we don't want to further calculate the
+            # delay to avoid overflows.
+            delay = polling_options.max_delay
+            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        else:
+            delay = polling_options.delay  # Base
+            delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
+            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
 
-        # Sleep for the calculated delay. We cannot exceed the max delay.
-        sleep_duration = min(delay, polling_options.max_delay)
+        # We cannot exceed the max delay.
+        if delay >= polling_options.max_delay:
+            max_reached = True
+            delay = polling_options.max_delay
+
+        # Sleep for the calculated delay.
+        sleep_duration = delay
         if polling_options.verbose:
             log(f"polling | sleeping for duration: {sleep_duration}")
 
-        time.sleep(sleep_duration)
+        __sleep_func(sleep_duration)
 
     if stopped:
         log("polling | stop condition met, stopping polling")
