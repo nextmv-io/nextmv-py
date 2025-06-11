@@ -3284,7 +3284,6 @@ def poll(  # noqa: C901
             )
 
         # Calculate the delay.
-        delay = 0.0
         if max_reached:
             # If we already reached the maximum, we don't want to further calculate the
             # delay to avoid overflows.
