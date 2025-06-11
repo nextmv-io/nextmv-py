@@ -3174,7 +3174,7 @@ class Application:
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
 
-def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:
+def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:  # noqa: C901
     """
     Poll a function until it succeeds or the polling strategy is exhausted.
 
