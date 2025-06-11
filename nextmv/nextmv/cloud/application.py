@@ -3174,7 +3174,11 @@ class Application:
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
 
-def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, bool]]) -> Any:  # noqa: C901
+def poll(  # noqa: C901
+    polling_options: PollingOptions,
+    polling_func: Callable[[], tuple[Any, bool]],
+    __sleep_func: Callable[[float], None] = time.sleep,
+) -> Any:
     """
     Poll a function until it succeeds or the polling strategy is exhausted.
 
@@ -3247,7 +3251,7 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
     if polling_options.verbose:
         log(f"polling | sleeping for initial delay: {polling_options.initial_delay}")
 
-    time.sleep(polling_options.initial_delay)
+    __sleep_func(polling_options.initial_delay)
 
     start_time = time.time()
     stopped = False
@@ -3301,7 +3305,7 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
         if polling_options.verbose:
             log(f"polling | sleeping for duration: {sleep_duration}")
 
-        time.sleep(sleep_duration)
+        __sleep_func(sleep_duration)
 
     if stopped:
         log("polling | stop condition met, stopping polling")

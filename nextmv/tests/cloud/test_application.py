@@ -4,6 +4,11 @@ from typing import Any
 from nextmv.cloud.application import PollingOptions, poll
 
 
+# This is a dummy function to avoid actually sleeping during tests.
+def no_sleep(value: float) -> None:
+    return
+
+
 class TestApplication(unittest.TestCase):
     def test_poll(self):
         counter = 0
@@ -17,9 +22,9 @@ class TestApplication(unittest.TestCase):
 
             return "result", True
 
-        polling_options = PollingOptions(verbose=True)
+        polling_options = PollingOptions()
 
-        result = poll(polling_options, polling_func)
+        result = poll(polling_options, polling_func, no_sleep)
 
         self.assertEqual(result, "result")
 
@@ -42,8 +47,29 @@ class TestApplication(unittest.TestCase):
             if counter == 3:
                 return True
 
-        polling_options = PollingOptions(verbose=True, stop=stop)
+        polling_options = PollingOptions(stop=stop)
 
-        result = poll(polling_options, polling_func)
+        result = poll(polling_options, polling_func, no_sleep)
 
         self.assertIsNone(result)
+
+    def test_poll_long(self):
+        counter = 0
+        max_tries = 1000000
+
+        def polling_func() -> tuple[Any, bool]:
+            nonlocal counter
+            counter += 1
+
+            if counter < max_tries:
+                return "result", False
+
+            return "result", True
+
+        polling_options = PollingOptions(
+            max_tries=max_tries + 1,
+        )
+
+        result = poll(polling_options, polling_func, no_sleep)
+
+        self.assertEqual(result, "result")
