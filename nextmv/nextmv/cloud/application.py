@@ -185,9 +185,11 @@ class PollingOptions:
     max_delay: float = 20
     """Maximum delay to use between polls, in seconds."""
     max_duration: float = -1
-    """Maximum duration of the polling strategy, in seconds."""
+    """
+    Maximum duration of the polling strategy, in seconds. A negative value means no limit.
+    """
     max_tries: int = -1
-    """Maximum number of tries to use."""
+    """Maximum number of tries to use. A negative value means no limit."""
     jitter: float = 1
     """
     Jitter to use for the polling strategy. A uniform distribution is sampled
