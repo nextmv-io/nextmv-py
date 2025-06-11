@@ -3253,6 +3253,7 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
     stopped = False
 
     # Begin the polling process.
+    max_reached = False
     for ix in range(polling_options.max_tries):
         # Check is we should stop polling according to the stop callback.
         if polling_options.stop is not None and polling_options.stop():
@@ -3279,12 +3280,24 @@ def poll(polling_options: PollingOptions, polling_func: Callable[[], tuple[Any, 
             )
 
         # Calculate the delay.
-        delay = polling_options.delay  # Base
-        delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-        delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        delay = 0.0
+        if max_reached:
+            # If we already reached the maximum, we don't want to further calculate the
+            # delay to avoid overflows.
+            delay = polling_options.max_delay
+            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        else:
+            delay = polling_options.delay  # Base
+            delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
+            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
 
-        # Sleep for the calculated delay. We cannot exceed the max delay.
-        sleep_duration = min(delay, polling_options.max_delay)
+        # We cannot exceed the max delay.
+        if delay >= polling_options.max_delay:
+            max_reached = True
+            delay = polling_options.max_delay
+
+        # Sleep for the calculated delay.
+        sleep_duration = delay
         if polling_options.verbose:
             log(f"polling | sleeping for duration: {sleep_duration}")
 
