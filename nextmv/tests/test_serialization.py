@@ -23,6 +23,25 @@ class TestSerialization(unittest.TestCase):
                 "value": 42,
                 "timestamp": "2023-10-01T00:00:00",
             },
+            indent=2,
+        )
+        self.assertEqual(serialized, expected)
+
+    def test_default_deflated_serialization(self):
+        """Test the default serialization"""
+
+        data = {
+            "name": "Test",
+            "value": 42,
+            "timestamp": nextmv._serialization._custom_serial(datetime.datetime(2023, 10, 1)),
+        }
+        serialized = nextmv._serialization.deflated_serialize_json(data)
+        expected = json.dumps(
+            {
+                "name": "Test",
+                "value": 42,
+                "timestamp": "2023-10-01T00:00:00",
+            },
             separators=(",", ":"),
         )
         self.assertEqual(serialized, expected)
