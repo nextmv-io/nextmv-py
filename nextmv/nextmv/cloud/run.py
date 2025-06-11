@@ -46,11 +46,11 @@ from typing import Any, Optional, Union
 
 from pydantic import AliasChoices, Field
 
+from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud.status import Status, StatusV2
 from nextmv.input import Input, InputFormat
 from nextmv.output import Output, OutputFormat
-from nextmv.serialization import _serialize_json
 
 
 def run_duration(start: Union[datetime, float], end: Union[datetime, float]) -> int:
@@ -628,7 +628,7 @@ class TrackedRun:
                 raise ValueError("Input.input_format must be JSON.")
         elif isinstance(self.input, dict):
             try:
-                _ = _serialize_json(self.input)
+                _ = serialize_json(self.input)
             except (TypeError, OverflowError) as e:
                 raise ValueError("Input is dict[str, Any] but it is not JSON serializable") from e
 
@@ -637,7 +637,7 @@ class TrackedRun:
                 raise ValueError("Output.output_format must be JSON.")
         elif isinstance(self.output, dict):
             try:
-                _ = _serialize_json(self.output)
+                _ = serialize_json(self.output)
             except (TypeError, OverflowError) as e:
                 raise ValueError("Output is dict[str, Any] but it is not JSON serializable") from e
 

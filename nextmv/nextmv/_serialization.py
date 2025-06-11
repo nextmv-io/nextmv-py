@@ -3,7 +3,39 @@ import json
 from typing import Any, Union
 
 
-def _serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
+def deflated_serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
+    """
+    Serialize a Python object (dict or list) to a JSON string with default configuration for a deflated format.
+
+    Parameters
+    ----------
+    obj : Union[dict, list]
+        The Python object to serialize.
+    json_configurations : dict, optional
+        Additional configurations for JSON serialization. This allows customization
+        of the Python `json.dumps` function. You can specify parameters like `indent`
+        for pretty printing or `default` for custom serialization functions.
+
+    Returns
+    -------
+    str
+        A JSON string representation of the object.
+    """
+
+    # Apply a default configuration if not provided targeting a deflated format
+    json_configurations = json_configurations or {}
+    if "default" not in json_configurations:
+        json_configurations["default"] = _custom_serial
+    if "separators" not in json_configurations:
+        json_configurations["separators"] = (",", ":")
+
+    return json.dumps(
+        obj,
+        **json_configurations,
+    )
+
+
+def serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
     """
     Serialize a Python object (dict or list) to a JSON string.
 
@@ -26,8 +58,8 @@ def _serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] 
     json_configurations = json_configurations or {}
     if "default" not in json_configurations:
         json_configurations["default"] = _custom_serial
-    if "separators" not in json_configurations:
-        json_configurations["separators"] = (",", ":")
+    if "indent" not in json_configurations:
+        json_configurations["indent"] = 2
 
     return json.dumps(
         obj,
