@@ -14,7 +14,6 @@ get_size(obj)
     Finds the size of an object in bytes.
 """
 
-import json
 import os
 from dataclasses import dataclass, field
 from typing import IO, Any, Optional, Union
@@ -23,6 +22,8 @@ from urllib.parse import urljoin
 import requests
 import yaml
 from requests.adapters import HTTPAdapter, Retry
+
+from nextmv._serialization import deflated_serialize_json
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -199,6 +200,7 @@ class Client:
         headers: Optional[dict[str, str]] = None,
         payload: Optional[dict[str, Any]] = None,
         query_params: Optional[dict[str, Any]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
     ) -> requests.Response:
         """
         Makes a request to the Nextmv Cloud API.
@@ -221,6 +223,11 @@ class Client:
             provided.
         query_params : dict[str, Any], optional
             Query parameters to append to the request URL.
+        json_configurations : dict[str, Any], optional
+            Additional configurations for JSON serialization. This allows
+            customization of the Python `json.dumps` function, such as
+            specifying `indent` for pretty printing or `default` for custom
+            serialization functions.
 
         Returns
         -------
@@ -261,16 +268,19 @@ class Client:
         if payload is not None and data is not None:
             raise ValueError("cannot use both data and payload")
 
-        if payload is not None and get_size(payload) > _MAX_LAMBDA_PAYLOAD_SIZE:
+        if (
+            payload is not None
+            and get_size(payload, json_configurations=json_configurations) > _MAX_LAMBDA_PAYLOAD_SIZE
+        ):
             raise ValueError(
-                f"payload size of {get_size(payload)} bytes exceeds the maximum "
-                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
+                f"payload size of {get_size(payload, json_configurations=json_configurations)} bytes exceeds "
+                + f"the maximum allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
-        if data is not None and get_size(data) > _MAX_LAMBDA_PAYLOAD_SIZE:
+        if data is not None and get_size(data, json_configurations=json_configurations) > _MAX_LAMBDA_PAYLOAD_SIZE:
             raise ValueError(
-                f"data size of {get_size(data)} bytes exceeds the maximum "
-                f"allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
+                f"data size of {get_size(data, json_configurations=json_configurations)} bytes exceeds "
+                + f"the maximum allowed size of {_MAX_LAMBDA_PAYLOAD_SIZE} bytes"
             )
 
         session = requests.Session()
@@ -293,7 +303,11 @@ class Client:
         if data is not None:
             kwargs["data"] = data
         if payload is not None:
-            kwargs["json"] = payload
+            if isinstance(payload, (dict, list)):
+                data = deflated_serialize_json(payload, json_configurations=json_configurations)
+                kwargs["data"] = data
+            else:
+                raise ValueError("payload must be a dictionary or a list")
         if query_params is not None:
             kwargs["params"] = query_params
 
@@ -308,7 +322,9 @@ class Client:
 
         return response
 
-    def upload_to_presigned_url(self, data: Union[dict[str, Any], str], url: str) -> None:
+    def upload_to_presigned_url(
+        self, data: Union[dict[str, Any], str], url: str, json_configurations: Optional[dict[str, Any]] = None
+    ) -> None:
         """
         Uploads data to a presigned URL.
 
@@ -323,6 +339,11 @@ class Client:
             as is.
         url : str
             The presigned URL to which the data will be uploaded.
+        json_configurations : dict[str, Any], optional
+            Additional configurations for JSON serialization. This allows
+            customization of the Python `json.dumps` function, such as
+            specifying `indent` for pretty printing or `default` for custom
+            serialization functions.
 
         Raises
         ------
@@ -341,7 +362,7 @@ class Client:
 
         upload_data: Optional[str] = None
         if isinstance(data, dict):
-            upload_data = json.dumps(data, separators=(",", ":"))
+            upload_data = deflated_serialize_json(data, json_configurations=json_configurations)
         elif isinstance(data, str):
             upload_data = data
         else:
@@ -393,7 +414,7 @@ class Client:
         }
 
 
-def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
+def get_size(obj: Union[dict[str, Any], IO[bytes], str], json_configurations: Optional[dict[str, Any]] = None) -> int:
     """
     Finds the size of an object in bytes.
 
@@ -407,6 +428,11 @@ def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
         - If a dict, it's converted to a JSON string.
         - If a file-like object (e.g., opened file), its size is read.
         - If a string, its UTF-8 encoded byte length is calculated.
+    json_configurations : dict[str, Any], optional
+        Additional configurations for JSON serialization. This allows
+        customization of the Python `json.dumps` function, such as specifying
+        `indent` for pretty printing or `default` for custom serialization
+        functions.
 
     Returns
     -------
@@ -436,7 +462,7 @@ def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
     """
 
     if isinstance(obj, dict):
-        obj_str = json.dumps(obj, separators=(",", ":"))
+        obj_str = deflated_serialize_json(obj, json_configurations=json_configurations)
         return len(obj_str.encode("utf-8"))
 
     elif hasattr(obj, "read"):

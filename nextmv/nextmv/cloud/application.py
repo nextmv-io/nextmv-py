@@ -33,6 +33,7 @@ from typing import Any, Optional, Union
 
 import requests
 
+from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
 from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
@@ -1492,6 +1493,7 @@ class Application:
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -1540,6 +1542,9 @@ class Application:
             configuration. This is used when the run is an external run. We
             suggest that instead of specifying this parameter, you use the
             `track_run` method of the class.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
 
         Returns
         ----------
@@ -1590,7 +1595,7 @@ class Application:
                     if isinstance(v, str):
                         options_dict[k] = v
                     else:
-                        options_dict[k] = json.dumps(v)
+                        options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
 
         payload = {}
         if upload_id_used:
@@ -1628,6 +1633,7 @@ class Application:
             endpoint=f"{self.endpoint}/runs",
             payload=payload,
             query_params=query_params,
+            json_configurations=json_configurations,
         )
 
         return response.json()["run_id"]
@@ -2793,6 +2799,7 @@ class Application:
         self,
         input: Union[dict[str, Any], str],
         upload_url: UploadURL,
+        json_configurations: Optional[dict[str, Any]] = None,
     ) -> None:
         """
         Upload large input data to the provided upload URL.
@@ -2808,6 +2815,9 @@ class Application:
             converted to JSON, or a pre-formatted JSON string.
         upload_url : UploadURL
             Upload URL object containing the pre-signed URL to use for uploading.
+        json_configurations : Optional[dict[str, Any]], default=None
+            Optional configurations for JSON serialization. If provided, these
+            configurations will be used when serializing the data via `json.dumps`.
 
         Returns
         -------
@@ -2832,7 +2842,7 @@ class Application:
         """
 
         if isinstance(input, dict):
-            input = json.dumps(input)
+            input = deflated_serialize_json(input, json_configurations=json_configurations)
 
         self.client.upload_to_presigned_url(
             url=upload_url.upload_url,

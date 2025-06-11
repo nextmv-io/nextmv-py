@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
 
+from nextmv._serialization import serialize_json
 from nextmv.deprecated import deprecated
 from nextmv.options import Options
 
@@ -139,7 +140,7 @@ class Input:
 
         if self.input_format == InputFormat.JSON:
             try:
-                _ = json.dumps(self.data)
+                _ = serialize_json(self.data)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Input has input_format InputFormat.JSON and "

@@ -40,6 +40,22 @@ The `solution` property of the output is a dictionary that represents the
 output data. The `statistics` property can be a `nextmv.Statistics` object, or
 a dictionary.
 
+By default, `nextmv.Output` serializes `JSON` using pretty printing. If you want
+to change the serialization behavior, you can pass the `json_configurations`
+parameter. The provided values are passed to the underlying `json.dumps`
+method. For example, to get compressed output, you can set:
+
+```python
+output = nextmv.Output(
+    # ...
+    json_configurations={
+        "indent": None,  # No indentation for compact output
+        "separators": (",", ":")  # Use compact separators
+    },
+    # ...
+)
+```
+
 ## `CSV` output
 
 Work with one, or multiple, `CSV` files. In the `solution` property of the
@@ -80,6 +96,21 @@ nextmv.write(output, "custom_dir")
 
 Similarly to the `JSON` output, the `statistics` property can be a
 `nextmv.Statistics` object, or a dictionary.
+
+By default, `nextmv.Output` serializes `CSV` using `,` as the separator. If you
+want to change the serialization behavior, you can pass the `csv_configurations`
+parameter. The provided values are passed to the underlying `csv.DictWriter`
+method. For example, to use `;` as the separator, you can set:
+
+```python
+output = nextmv.Output(
+    # ...
+    csv_configurations={
+        "delimiter": ";",  # Use semicolon as the separator
+    },
+    # ...
+)
+```
 
 ## Assets
 
