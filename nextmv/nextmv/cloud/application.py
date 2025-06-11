@@ -184,9 +184,9 @@ class PollingOptions:
     """
     max_delay: float = 20
     """Maximum delay to use between polls, in seconds."""
-    max_duration: float = 300
+    max_duration: float = -1
     """Maximum duration of the polling strategy, in seconds."""
-    max_tries: int = 100
+    max_tries: int = -1
     """Maximum number of tries to use."""
     jitter: float = 1
     """
@@ -3258,7 +3258,13 @@ def poll(  # noqa: C901
 
     # Begin the polling process.
     max_reached = False
-    for ix in range(polling_options.max_tries):
+    ix = 0
+    while True:
+        # Check if we reached the maximum number of tries. Break if so.
+        if ix >= polling_options.max_tries and polling_options.max_tries >= 0:
+            break
+        ix += 1
+
         # Check is we should stop polling according to the stop callback.
         if polling_options.stop is not None and polling_options.stop():
             stopped = True
@@ -3278,7 +3284,7 @@ def poll(  # noqa: C901
         if polling_options.verbose:
             log(f"polling | elapsed time: {passed}")
 
-        if passed >= polling_options.max_duration:
+        if passed >= polling_options.max_duration and polling_options.max_duration >= 0:
             raise TimeoutError(
                 f"polling did not succeed after {passed} seconds, exceeds max duration: {polling_options.max_duration}",
             )
