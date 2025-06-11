@@ -54,7 +54,7 @@ from nextmv.base_model import BaseModel
 from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
-from nextmv.serialization import serialize_json
+from nextmv.serialization import _serialize_json
 
 
 class RunStatistics(BaseModel):
@@ -643,7 +643,7 @@ class Output:
 
         if self.output_format == OutputFormat.JSON:
             try:
-                _ = serialize_json(self.solution)
+                _ = _serialize_json(self.solution)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Output has output_format OutputFormat.JSON and "
@@ -815,7 +815,7 @@ class LocalOutputWriter(OutputWriter):
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
 
-        serialized = serialize_json(
+        serialized = _serialize_json(
             output_dict,
             json_configurations=json_configurations,
         )
@@ -864,7 +864,7 @@ class LocalOutputWriter(OutputWriter):
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
 
-        serialized = serialize_json(
+        serialized = _serialize_json(
             {
                 "options": output_dict.get("options", {}),
                 "statistics": output_dict.get("statistics", {}),

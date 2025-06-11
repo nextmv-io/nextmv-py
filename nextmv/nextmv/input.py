@@ -33,7 +33,7 @@ from typing import Any, Optional, Union
 
 from nextmv.deprecated import deprecated
 from nextmv.options import Options
-from nextmv.serialization import serialize_json
+from nextmv.serialization import _serialize_json
 
 
 class InputFormat(str, Enum):
@@ -140,7 +140,7 @@ class Input:
 
         if self.input_format == InputFormat.JSON:
             try:
-                _ = serialize_json(self.data)
+                _ = _serialize_json(self.data)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
                     f"Input has input_format InputFormat.JSON and "

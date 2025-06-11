@@ -3,7 +3,7 @@ import json
 from typing import Any, Union
 
 
-def serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
+def _serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
     """
     Serialize a Python object (dict or list) to a JSON string.
 

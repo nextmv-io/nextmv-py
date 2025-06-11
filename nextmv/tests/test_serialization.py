@@ -16,7 +16,7 @@ class TestSerialization(unittest.TestCase):
             "value": 42,
             "timestamp": nextmv.serialization._custom_serial(datetime.datetime(2023, 10, 1)),
         }
-        serialized = nextmv.serialization.serialize_json(data)
+        serialized = nextmv.serialization._serialize_json(data)
         expected = json.dumps(
             {
                 "name": "Test",
@@ -40,7 +40,7 @@ class TestSerialization(unittest.TestCase):
             "default": nextmv.serialization._custom_serial,
             "separators": (",", ": "),
         }
-        serialized = nextmv.serialization.serialize_json(data, json_configurations)
+        serialized = nextmv.serialization._serialize_json(data, json_configurations)
         expected = json.dumps(
             {
                 "name": "Test",

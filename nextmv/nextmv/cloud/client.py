@@ -23,7 +23,7 @@ import requests
 import yaml
 from requests.adapters import HTTPAdapter, Retry
 
-from nextmv.serialization import serialize_json
+from nextmv.serialization import _serialize_json
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -295,7 +295,7 @@ class Client:
             kwargs["data"] = data
         if payload is not None:
             if isinstance(payload, (dict, list)):
-                data = serialize_json(payload)
+                data = _serialize_json(payload)
                 kwargs["data"] = data
             else:
                 raise ValueError("payload must be a dictionary or a list")
@@ -346,7 +346,7 @@ class Client:
 
         upload_data: Optional[str] = None
         if isinstance(data, dict):
-            upload_data = serialize_json(data)
+            upload_data = _serialize_json(data)
         elif isinstance(data, str):
             upload_data = data
         else:
@@ -441,7 +441,7 @@ def get_size(obj: Union[dict[str, Any], IO[bytes], str]) -> int:
     """
 
     if isinstance(obj, dict):
-        obj_str = serialize_json(obj)
+        obj_str = _serialize_json(obj)
         return len(obj_str.encode("utf-8"))
 
     elif hasattr(obj, "read"):
