@@ -37,4 +37,4 @@ Install all optional dependencies (recommended):
 pip install "nextmv[all]"
 ```
 
-[docs]: https://nextmv-py.readthedocs.io/en/latest/nextmv/
+[docs]: https://nextmv-py.docs.nextmv.io/en/latest/nextmv/
