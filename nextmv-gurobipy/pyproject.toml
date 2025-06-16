@@ -44,7 +44,7 @@ requires-python = ">=3.9"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
-Documentation = "https://www.nextmv.io/docs/python-sdks/nextmv-gurobipy/installation"
+Documentation = "https://nextmv-py.docs.nextmv.io/en/latest/nextmv-gurobipy/"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [tool.hatch.version]
