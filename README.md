@@ -50,4 +50,4 @@ can find the source for the following packages:
 > [!IMPORTANT]  
 > Please review the LICENSE on each package, as they may not all have the same license.
 
-[docs]: https://nextmv-py.readthedocs.io/en/latest/
+[docs]: https://nextmv-py.docs.nextmv.io/en/latest/

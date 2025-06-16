@@ -37,4 +37,4 @@ Requires Python `>=3.9`. Install using `pip`:
 pip install nextmv-scikit-learn
 ```
 
-[docs]: https://nextmv-py.readthedocs.io/en/latest/nextmv-scikit-learn/
+[docs]: https://nextmv-py.docs.nextmv.io/en/latest/nextmv-scikit-learn/
