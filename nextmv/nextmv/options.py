@@ -1053,7 +1053,7 @@ class Options:
 
 class OptionsEnforcement:
     """
-    OptionsEnforcment is a class that provides rules for how the options
+    OptionsEnforcement is a class that provides rules for how the options
     are enforced on Nextmv Cloud.
 
     This class is used to enforce options in the Nextmv Cloud. It is not used
