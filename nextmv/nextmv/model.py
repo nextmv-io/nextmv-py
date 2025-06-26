@@ -156,7 +156,7 @@ class ModelConfiguration:
     """A list of Python dependencies that the decision model requires."""
     options: Optional[Options] = None
     """Options that the decision model requires."""
-    options_enforcement: OptionsEnforcement = None
+    options_enforcement: Optional[OptionsEnforcement] = None
     """Enforcement of options for the model."""
 
 
