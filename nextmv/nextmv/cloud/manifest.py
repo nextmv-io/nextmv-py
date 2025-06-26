@@ -16,10 +16,14 @@ ManifestPythonModel
     Class for model-specific instructions for Python apps.
 ManifestPython
     Class for Python-specific instructions in the manifest.
+ManifestOptionUI
+    Class for UI attributes of options in the manifest.
 ManifestOption
     Class representing an option for the decision model in the manifest.
 ManifestOptions
     Class containing a list of options for the decision model.
+ManifestValidation
+    Class for validation rules for options in the manifest.
 ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
@@ -40,7 +44,7 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
-from nextmv.options import Option, Options
+from nextmv.options import Option, Options, OptionsEnforcement
 
 MANIFEST_FILE_NAME = "app.yaml"
 """Name of the app manifest file.
@@ -318,6 +322,43 @@ class ManifestPython(BaseModel):
     from the app bundle.
     """
 
+class ManifestOptionUI(BaseModel):
+    """
+    UI attributes for an option in the manifest.
+
+    You can import the `ManifestOptionUI` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestOptionUI
+    ```
+
+    Parameters
+    ----------
+    control_type : str, optional
+        The type of control to use for the option in the Nextmv Cloud UI. This is
+        useful for defining how the option should be presented in the Nextmv
+        Cloud UI. Current control types include "input", "select", "slider", and
+        "toggle". This attribute is not used in the local `Options` class, but '
+        it is used in the Nextmv Cloud UI to define the type of control to use for
+        the option. This will be validated by the Nextmv Cloud, and availability 
+        is based on options_type.
+    hidden_from : list[str], optional
+        A list of team roles to which this option will be hidden in the UI. For
+        example, if you want to hide an option from the "operator" role, you can
+        pass `hidden_from=["operator"]`.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestOptionUI
+    >>> ui_config = ManifestOptionUI(control_type="input")
+    >>> ui_config.control_type
+    'input'
+    """
+
+    control_type: Optional[str] = None
+    """The type of control to use for the option in the Nextmv Cloud UI."""
+    hidden_from: Optional[list[str]] = None
+    """A list of team roles for which this option will be hidden in the UI."""
 
 class ManifestOption(BaseModel):
     """
@@ -349,6 +390,12 @@ class ManifestOption(BaseModel):
         length of a string or the maximum value of an integer. These
         additional attributes will be shown in the help message of the
         `Options`.
+    ui : Optional[ManifestOptionUI], default=None
+        Optional UI attributes for the option. This is a dictionary that can
+        contain additional information about how the option should be displayed
+        in the Nextmv Cloud UI. This is not used in the local `Options` class,
+        but it is used in the Nextmv Cloud UI to define how the option should be
+        presented.
 
     Examples
     --------
@@ -378,12 +425,10 @@ class ManifestOption(BaseModel):
     required: bool = False
     """Whether the option is required or not"""
     additional_attributes: Optional[dict[str, Any]] = None
-    """Optional additional attributes for the option.
-
-    The Nextmv Cloud may perform validation on these attributes. For example,
-    the maximum length of a string or the maximum value of an integer. These
-    additional attributes will be shown in the help message of the `Options`.
-    """
+    """Optional additional attributes for the option."""
+    ui: Optional[ManifestOptionUI] = None
+    """Optional UI attributes for the option."""
+    
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
@@ -435,6 +480,10 @@ class ManifestOption(BaseModel):
             description=option.description,
             required=option.required,
             additional_attributes=option.additional_attributes,
+            ui=ManifestOptionUI(
+                control_type=option.control_type,
+                hidden_from=option.hidden_from,
+            ) if option.control_type or option.hidden_from else None,
         )
 
     def to_option(self) -> Option:
@@ -481,8 +530,44 @@ class ManifestOption(BaseModel):
             description=self.description,
             required=self.required,
             additional_attributes=self.additional_attributes,
+            control_type=self.ui.control_type if self.ui else None,
+            hidden_from=self.ui.hidden_from if self.ui else None,
         )
 
+class ManifestValidation(BaseModel):
+    """
+    Validation rules for options in the manifest.
+
+    You can import the `ManifestValidation` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestValidation
+    ```
+
+    Parameters
+    ----------
+    enforce : str, default="none
+        The enforcement level for the validation rules. This can be set to
+        "none" or "all". If set to "none", no validation will be performed 
+        on the options prior to creating a run. If set to "all", all validation
+        rules will be enforced on the options, and runs will not be created
+        if any of the rules of the options are violated.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestValidation
+    >>> validation = ManifestValidation(enforce="all")
+    >>> validation.enforce
+    'all'
+    """
+
+    enforce: str = "none"
+    """The enforcement level for the validation rules.
+    This can be set to "none" or "all". If set to "none", no validation will
+    be performed on the options prior to creating a run. If set to "all", all
+    validation rules will be enforced on the options, and runs will not be
+    created if any of the rules of the options are violated.
+    """
 
 class ManifestOptions(BaseModel):
     """
@@ -501,12 +586,16 @@ class ManifestOptions(BaseModel):
     items : Optional[list[ManifestOption]], default=None
         The actual list of options for the decision model. An option
         is a parameter that configures the decision model.
+    validation: Optional[ManifestValidation], default=None
+        Optional validation rules for all options. 
+        
 
     Examples
     --------
     >>> from nextmv.cloud import ManifestOptions, ManifestOption
     >>> options_config = ManifestOptions(
     ...     strict=True,
+    ...     validation=ManifestValidation(enforce="all"),
     ...     items=[
     ...         ManifestOption(name="timeout", option_type="int", default=60),
     ...         ManifestOption(name="vehicle_capacity", option_type="float", default=100.0)
@@ -520,12 +609,45 @@ class ManifestOptions(BaseModel):
 
     strict: Optional[bool] = False
     """If strict is set to `True`, only the listed options will be allowed."""
+    validation: Optional[ManifestValidation] = None
+    """Optional validation rules for all options."""
     items: Optional[list[ManifestOption]] = None
-    """The actual list of options for the decision model.
+    """The actual list of options for the decision model."""
 
-    An option is a parameter that configures the decision model.
-    """
+    @classmethod
+    def from_options(cls, options: Options, validation: OptionsEnforcement = None) -> "ManifestOptions":
+        """
+        Create a `ManifestOptions` from a `nextmv.Options`.
 
+        Parameters
+        ----------
+        options : nextmv.options.Options
+            The options to convert.
+        validation : Optional[OptionsEnforcement], default=None
+            Optional validation rules for the options. If provided, it will be
+            used to set the `validation` attribute of the `ManifestOptions`.
+
+        Returns
+        -------
+        ManifestOptions
+            The converted options.
+
+        Examples
+        --------
+        >>> from nextmv.options import Options, Option
+        >>> from nextmv.cloud import ManifestOptions
+        >>> sdk_options = Options(Option("max_vehicles", int, 5))
+        >>> manifest_options = ManifestOptions.from_options(sdk_options)
+        >>> manifest_options.items[0].name
+        'max_vehicles'
+        """
+
+        items = [ManifestOption.from_option(option) for option in options.options]
+        return cls(
+            strict=validation.strict if validation else False,
+            validation=ManifestValidation(enforce="all" if validation and validation.validation_enforce else "none"),
+            items=items
+        ) 
 
 class ManifestConfiguration(BaseModel):
     """
@@ -853,7 +975,8 @@ class Manifest(BaseModel):
         if model_configuration.options is not None:
             manifest.configuration = ManifestConfiguration(
                 options=ManifestOptions(
-                    strict=False,
+                    strict=model_configuration.options_enforcement.strict if model_configuration.options_enforcement else False,
+                    validation=ManifestValidation(enforce="all" if model_configuration.options_enforcement and model_configuration.options_enforcement.validation_enforce else "none"),
                     items=[ManifestOption.from_option(opt) for opt in model_configuration.options.options],
                 ),
             )
@@ -861,7 +984,7 @@ class Manifest(BaseModel):
         return manifest
 
     @classmethod
-    def from_options(cls, options: Options) -> "Manifest":
+    def from_options(cls, options: Options, validation: OptionsEnforcement = None) -> "Manifest":
         """
         Create a basic Python manifest from `nextmv.options.Options`.
 
@@ -882,6 +1005,9 @@ class Manifest(BaseModel):
         ----------
         options : nextmv.options.Options
             The options to include in the manifest.
+        validation : nextmv.options.OptionsEnforcement default=None
+            The validation rules for the options. This is used to set the
+            `validation` attribute of the `ManifestOptions`.
 
         Returns
         -------
@@ -913,11 +1039,11 @@ class Manifest(BaseModel):
             type=ManifestType.PYTHON,
             python=ManifestPython(pip_requirements="requirements.txt"),
             configuration=ManifestConfiguration(
-                options=ManifestOptions(
-                    strict=False,
-                    items=[ManifestOption.from_option(opt) for opt in options.options],
+                options= ManifestOptions.from_options(
+                    options=options,
+                    validation=validation
                 ),
-            ),
+            )
         )
 
         return manifest

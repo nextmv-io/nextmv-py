@@ -22,6 +22,8 @@ build:
 configuration:
   options:
     strict: false
+    validation:
+      enforce: "all"
     items:
       - name: a string parameter
         option_type: string
@@ -43,3 +45,17 @@ configuration:
         default: 3.14
         description: a description
         required: false
+      - name: a list parameter
+        option_type: string
+        default: a
+        description: a description
+        required: false
+        additional_attributes:
+          values:
+            - a
+            - b
+            - c
+        ui:
+          control_type: select
+          hidden_from:
+            - operator

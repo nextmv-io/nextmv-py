@@ -215,7 +215,19 @@ class Option:
         perform validation on these attributes. For example, the maximum length
         of a string or the maximum value of an integer. These additional
         attributes will be shown in the help message of the `Options`.
-
+    control_type : str, optional
+        The type of control to use for the option in the Nextmv Cloud UI. This is
+        useful for defining how the option should be presented in the Nextmv
+        Cloud UI. Current control types include "input", "select", "slider", and
+        "toggle". This attribute is not used in the local `Options` class, but '
+        it is used in the Nextmv Cloud UI to define the type of control to use for
+        the option. This will be validated by the Nextmv Cloud, and availability 
+        is based on options_type.
+    hidden_from : list[str], optional
+        A list of team roles to which this option will be hidden in the UI. For
+        example, if you want to hide an option from the "operator" role, you can
+        pass `hidden_from=["operator"]`.
+    
     Examples
     --------
     ```python
@@ -256,6 +268,22 @@ class Option:
     a string or the maximum value of an integer. These additional attributes
     will be shown in the help message of the `Options`.
     """
+    control_type: Optional[str] = None
+    """
+    The type of control to use for the option in the Nextmv Cloud UI. This is
+    useful for defining how the option should be presented in the Nextmv
+    Cloud UI. Current control types include "input", "select", "slider", and
+    "toggle". This attribute is not used in the local `Options` class, but it
+    is used in the Nextmv Cloud UI to define the type of control to use for
+    the option. This will be validated by the Nextmv Cloud, and availability
+    is based on options_type.
+    """
+    hidden_from: Optional[list[str]] = None
+    """
+    A list of team roles for which this option will be hidden in the UI. For
+    example, if you want to hide an option from the "operator" role, you can
+    pass `hidden_from=["operator"]`.
+    """
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Option":
@@ -294,6 +322,8 @@ class Option:
             required=data.get("required", False),
             choices=data.get("choices"),
             additional_attributes=data.get("additional_attributes"),
+            control_type=data.get("control_type"),
+            hidden_from=data.get("hidden_from"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -323,6 +353,8 @@ class Option:
             "required": self.required,
             "choices": self.choices,
             "additional_attributes": self.additional_attributes,
+            "control_type": self.control_type,
+            "hidden_from": self.hidden_from,
         }
 
 
@@ -942,6 +974,12 @@ class Options:
         if isinstance(option, Option) and option.additional_attributes is not None:
             description += f" (additional attributes: {option.additional_attributes})"
 
+        if isinstance(option, Option) and option.control_type is not None:
+            description += f" (control type: {option.control_type})"
+
+        if isinstance(option, Option) and option.hidden_from is not None:   
+            description += f" (hidden from: {', '.join(option.hidden_from)})"
+
         if option.description is not None and option.description != "":
             description += f": {option.description}"
 
@@ -1012,3 +1050,53 @@ class Options:
             return option.param_type
         else:
             raise TypeError(f"expected an <Option> (or deprecated <Parameter>) object, but got {type(option)}")
+        
+class OptionsEnforcement():
+    """
+    OptionsEnforcment is a class that provides rules for how the options
+    are enforced on Nextmv Cloud.
+
+    This class is used to enforce options in the Nextmv Cloud. It is not used
+    in the local `Options` class, but it is used to control validation when a run 
+    is submitted to the Nextmv Cloud.
+
+    Parameters
+    ----------
+    strict: bool default = False
+        If True, the options additional options that are configured will not
+        pass validation. This means that only the options that are defined in the
+        `Options` class will be allowed. If False, additional options that are
+        not defined in the `Options` class will be allowed.
+    validation_enforce: bool default = False
+        If True, the options will be validated against your option configuration
+        validation rules. If False, the options will not be validated.
+    """
+
+    strict: bool = False
+    """
+    If True, the options additional options that are configured will not
+    pass validation. This means that only the options that are defined in the
+    `Options` class will be allowed. If False, additional options that are
+    not defined in the `Options` class will be allowed.
+    """
+    validation_enforce: bool = False
+    """
+    If True, the options will be validated against your option configuration
+    validation rules. If False, the options will not be validated.
+    """
+
+    def __init__(self, strict: bool = False, validation_enforce: bool = False):
+        """
+        Initialize an OptionsEnforcement instance with the provided rules.
+
+        Parameters
+        ----------
+        strict : bool, optional
+            If True, only options defined in the `Options` class will be allowed.
+            Defaults to False.
+        validation_enforced : bool, optional
+            If True, options will be validated against the configuration rules.
+            Defaults to False.
+        """
+        self.strict = strict
+        self.validation_enforce = validation_enforce  
