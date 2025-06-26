@@ -221,13 +221,13 @@ class Option:
         Cloud UI. Current control types include "input", "select", "slider", and
         "toggle". This attribute is not used in the local `Options` class, but '
         it is used in the Nextmv Cloud UI to define the type of control to use for
-        the option. This will be validated by the Nextmv Cloud, and availability 
+        the option. This will be validated by the Nextmv Cloud, and availability
         is based on options_type.
     hidden_from : list[str], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
         pass `hidden_from=["operator"]`.
-    
+
     Examples
     --------
     ```python
@@ -977,7 +977,7 @@ class Options:
         if isinstance(option, Option) and option.control_type is not None:
             description += f" (control type: {option.control_type})"
 
-        if isinstance(option, Option) and option.hidden_from is not None:   
+        if isinstance(option, Option) and option.hidden_from is not None:
             description += f" (hidden from: {', '.join(option.hidden_from)})"
 
         if option.description is not None and option.description != "":
@@ -1050,14 +1050,14 @@ class Options:
             return option.param_type
         else:
             raise TypeError(f"expected an <Option> (or deprecated <Parameter>) object, but got {type(option)}")
-        
-class OptionsEnforcement():
+
+class OptionsEnforcement:
     """
     OptionsEnforcment is a class that provides rules for how the options
     are enforced on Nextmv Cloud.
 
     This class is used to enforce options in the Nextmv Cloud. It is not used
-    in the local `Options` class, but it is used to control validation when a run 
+    in the local `Options` class, but it is used to control validation when a run
     is submitted to the Nextmv Cloud.
 
     Parameters
@@ -1099,4 +1099,4 @@ class OptionsEnforcement():
             Defaults to False.
         """
         self.strict = strict
-        self.validation_enforce = validation_enforce  
+        self.validation_enforce = validation_enforce

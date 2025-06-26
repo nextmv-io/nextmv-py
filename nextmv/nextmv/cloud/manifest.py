@@ -340,7 +340,7 @@ class ManifestOptionUI(BaseModel):
         Cloud UI. Current control types include "input", "select", "slider", and
         "toggle". This attribute is not used in the local `Options` class, but '
         it is used in the Nextmv Cloud UI to define the type of control to use for
-        the option. This will be validated by the Nextmv Cloud, and availability 
+        the option. This will be validated by the Nextmv Cloud, and availability
         is based on options_type.
     hidden_from : list[str], optional
         A list of team roles to which this option will be hidden in the UI. For
@@ -428,7 +428,7 @@ class ManifestOption(BaseModel):
     """Optional additional attributes for the option."""
     ui: Optional[ManifestOptionUI] = None
     """Optional UI attributes for the option."""
-    
+
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
@@ -548,7 +548,7 @@ class ManifestValidation(BaseModel):
     ----------
     enforce : str, default="none
         The enforcement level for the validation rules. This can be set to
-        "none" or "all". If set to "none", no validation will be performed 
+        "none" or "all". If set to "none", no validation will be performed
         on the options prior to creating a run. If set to "all", all validation
         rules will be enforced on the options, and runs will not be created
         if any of the rules of the options are violated.
@@ -587,8 +587,8 @@ class ManifestOptions(BaseModel):
         The actual list of options for the decision model. An option
         is a parameter that configures the decision model.
     validation: Optional[ManifestValidation], default=None
-        Optional validation rules for all options. 
-        
+        Optional validation rules for all options.
+
 
     Examples
     --------
@@ -647,7 +647,7 @@ class ManifestOptions(BaseModel):
             strict=validation.strict if validation else False,
             validation=ManifestValidation(enforce="all" if validation and validation.validation_enforce else "none"),
             items=items
-        ) 
+        )
 
 class ManifestConfiguration(BaseModel):
     """
@@ -975,8 +975,12 @@ class Manifest(BaseModel):
         if model_configuration.options is not None:
             manifest.configuration = ManifestConfiguration(
                 options=ManifestOptions(
-                    strict=model_configuration.options_enforcement.strict if model_configuration.options_enforcement else False,
-                    validation=ManifestValidation(enforce="all" if model_configuration.options_enforcement and model_configuration.options_enforcement.validation_enforce else "none"),
+                    strict=
+                        model_configuration.
+                        options_enforcement.strict if model_configuration.options_enforcement else False,
+                    validation=ManifestValidation(
+                        enforce="all" if model_configuration.options_enforcement and
+                        model_configuration.options_enforcement.validation_enforce else "none"),
                     items=[ManifestOption.from_option(opt) for opt in model_configuration.options.options],
                 ),
             )

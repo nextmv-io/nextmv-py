@@ -132,7 +132,7 @@ class ModelConfiguration:
         formatted as they would appear in a requirements.txt file.
     options : Options, optional
         Options that the decision model requires.
-    options_enforcement: 
+    options_enforcement:
         Enforcement of options for the model. This controls how options
         are handled when the model is run.
 
@@ -158,7 +158,7 @@ class ModelConfiguration:
     """Options that the decision model requires."""
     options_enforcement: OptionsEnforcement = None
     """Enforcement of options for the model."""
-    
+
 
 
 class Model:
