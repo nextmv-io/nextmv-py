@@ -338,7 +338,7 @@ class ManifestOptionUI(BaseModel):
         The type of control to use for the option in the Nextmv Cloud UI. This is
         useful for defining how the option should be presented in the Nextmv
         Cloud UI. Current control types include "input", "select", "slider", and
-        "toggle". This attribute is not used in the local `Options` class, but '
+        "toggle". This attribute is not used in the local `Options` class, but
         it is used in the Nextmv Cloud UI to define the type of control to use for
         the option. This will be validated by the Nextmv Cloud, and availability
         is based on options_type.
