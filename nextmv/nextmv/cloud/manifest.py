@@ -977,14 +977,9 @@ class Manifest(BaseModel):
 
         if model_configuration.options is not None:
             manifest.configuration = ManifestConfiguration(
-                options=ManifestOptions(
-                    strict=
-                        model_configuration.
-                        options_enforcement.strict if model_configuration.options_enforcement else False,
-                    validation=ManifestValidation(
-                        enforce="all" if model_configuration.options_enforcement and
-                        model_configuration.options_enforcement.validation_enforce else "none"),
-                    items=[ManifestOption.from_option(opt) for opt in model_configuration.options.options],
+                options=ManifestOptions.from_options(
+                    options=model_configuration.options,
+                    validation=model_configuration.options_enforcement,
                 ),
             )
 

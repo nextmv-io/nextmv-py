@@ -977,7 +977,7 @@ class Options:
         if isinstance(option, Option) and option.control_type is not None:
             description += f" (control type: {option.control_type})"
 
-        if isinstance(option, Option) and option.hidden_from is not None:
+        if isinstance(option, Option) and option.hidden_from:
             description += f" (hidden from: {', '.join(option.hidden_from)})"
 
         if option.description is not None and option.description != "":
