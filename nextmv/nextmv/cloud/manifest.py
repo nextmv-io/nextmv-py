@@ -612,7 +612,10 @@ class ManifestOptions(BaseModel):
     validation: Optional[ManifestValidation] = None
     """Optional validation rules for all options."""
     items: Optional[list[ManifestOption]] = None
-    """The actual list of options for the decision model."""
+    """The actual list of options for the decision model.
+
+    An option is a parameter that configures the decision model.
+    """
 
     @classmethod
     def from_options(cls, options: Options, validation: OptionsEnforcement = None) -> "ManifestOptions":
