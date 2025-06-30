@@ -546,7 +546,7 @@ class ManifestValidation(BaseModel):
 
     Parameters
     ----------
-    enforce : str, default="none
+    enforce : str, default="none"
         The enforcement level for the validation rules. This can be set to
         "none" or "all". If set to "none", no validation will be performed
         on the options prior to creating a run. If set to "all", all validation
