@@ -24,7 +24,7 @@ from typing import Any, Optional
 
 from nextmv.input import Input
 from nextmv.logger import log
-from nextmv.options import Options
+from nextmv.options import Options, OptionsEnforcement
 from nextmv.output import Output
 
 # The following block of code is used to suppress warnings from mlflow. We
@@ -132,6 +132,9 @@ class ModelConfiguration:
         formatted as they would appear in a requirements.txt file.
     options : Options, optional
         Options that the decision model requires.
+    options_enforcement:
+        Enforcement of options for the model. This controls how options
+        are handled when the model is run.
 
     Examples
     --------
@@ -139,17 +142,23 @@ class ModelConfiguration:
     >>> config = ModelConfiguration(
     ...     name="my_routing_model",
     ...     requirements=["nextroute>=1.0.0"],
-    ...     options=Options({"max_time": 60})
+    ...     options=Options({"max_time": 60}),
+    ...     options_enforcement=OptionsEnforcement(
+                strict=True,
+                validation_enforce=True
+            )
     ... )
     """
 
     name: str
     """The name of the decision model."""
-
     requirements: Optional[list[str]] = None
     """A list of Python dependencies that the decision model requires."""
     options: Optional[Options] = None
     """Options that the decision model requires."""
+    options_enforcement: Optional[OptionsEnforcement] = None
+    """Enforcement of options for the model."""
+
 
 
 class Model:

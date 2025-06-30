@@ -1,8 +1,17 @@
 import unittest
 
-from nextmv.cloud.manifest import Manifest, ManifestOption, ManifestPython, ManifestRuntime, ManifestType
+from nextmv.cloud.manifest import (
+    Manifest,
+    ManifestOption,
+    ManifestOptions,
+    ManifestOptionUI,
+    ManifestPython,
+    ManifestRuntime,
+    ManifestType,
+    ManifestValidation,
+)
 from nextmv.model import ModelConfiguration
-from nextmv.options import Option, Options
+from nextmv.options import Option, Options, OptionsEnforcement
 
 
 class TestManifest(unittest.TestCase):
@@ -39,6 +48,50 @@ class TestManifest(unittest.TestCase):
         )
         self.assertEqual(manifest.python, manifest_python)
         self.assertEqual(manifest_python.pip_requirements, "model_requirements.txt")
+
+    def test_from_model_configuration_with_validation(self):
+        options = Options(
+            Option("param1", str, "default_value", "A description", True),
+            Option("param2", bool, True, "A description", True),
+        )
+
+        validation_config = OptionsEnforcement(
+            strict=True,
+            validation_enforce=True,
+        )
+
+        model_configuration = ModelConfiguration(
+            name="super_cool_model",
+            requirements=[
+                "one_requirement",
+                "another_requirement",
+            ],
+            options=options,
+            options_enforcement=validation_config,
+        )
+        manifest = Manifest.from_model_configuration(model_configuration)
+
+        self.assertListEqual(
+            manifest.files,
+            ["main.py", f"{model_configuration.name}/**"],
+        )
+        self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON)
+        self.assertEqual(manifest.type, ManifestType.PYTHON)
+
+        manifest_python = ManifestPython.from_dict(
+            {
+                "pip-requirements": "model_requirements.txt",
+                "model": {
+                    "name": model_configuration.name,
+                    "options": model_configuration.options.options_dict(),
+                },
+            }
+        )
+        self.assertEqual(manifest.python, manifest_python)
+        self.assertEqual(manifest_python.pip_requirements, "model_requirements.txt")
+        self.assertEqual(manifest.configuration.options.strict, validation_config.strict)
+        self.assertEqual(manifest.configuration.options.validation.enforce, "all")
+        self.assertEqual(manifest.configuration.options.items, ManifestOptions.from_options(options).items)
 
     def test_manifest_python_from_dict(self):
         manifest_python_dict = {
@@ -103,7 +156,7 @@ class TestManifest(unittest.TestCase):
     def test_extract_options(self):
         manifest = Manifest.from_yaml("tests/cloud")
         options = manifest.extract_options()
-        self.assertEqual(len(options.options), 4)
+        self.assertEqual(len(options.options), 5)
 
         found = {
             "string": False,
@@ -127,6 +180,9 @@ class TestManifest(unittest.TestCase):
         self.assertTrue(found["int"])
         self.assertTrue(found["float"])
 
+        self.assertEqual(options.options[4].control_type, "select")
+        self.assertEqual(options.options[4].hidden_from, ["operator"])
+
         manifest2 = Manifest(
             files=["main.py"],
         )
@@ -146,6 +202,8 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON)
         self.assertEqual(manifest.type, ManifestType.PYTHON)
         self.assertEqual(manifest.python.pip_requirements, "requirements.txt")
+        self.assertEqual(manifest.configuration.options.strict, False)
+        self.assertEqual(manifest.configuration.options.validation, ManifestValidation(enforce="none"))
         self.assertListEqual(
             manifest.configuration.options.items,
             [
@@ -155,6 +213,7 @@ class TestManifest(unittest.TestCase):
                     default="default",
                     description="A description",
                     required=True,
+                    ui=None
                 ),
                 ManifestOption(
                     name="param2",
@@ -162,6 +221,7 @@ class TestManifest(unittest.TestCase):
                     default=True,
                     description="A description",
                     required=True,
+                    ui=None
                 ),
                 ManifestOption(
                     name="param3",
@@ -169,6 +229,7 @@ class TestManifest(unittest.TestCase):
                     default=42,
                     description="A description",
                     required=True,
+                    ui=None
                 ),
                 ManifestOption(
                     name="param4",
@@ -176,10 +237,78 @@ class TestManifest(unittest.TestCase):
                     default=3.14,
                     description="A description",
                     required=True,
+                    ui=None
                 ),
             ],
         )
 
+    def test_from_options_with_validation(self):
+        options = Options(
+            Option("param1", str, "default", "A description",
+                    True, additional_attributes={"max_length": 100}, control_type="input"),
+            Option("param2", bool, True, "A description", True),
+            Option("param3", int, 42, "A description", True, additional_attributes={"min": 0, "max": 100, "step": 1}),
+            Option("param4", float, 3.14, "A description", True),
+            Option("param5", str, "default", "A description",
+                    True, additional_attributes={"values": ["option1", "option2"]},
+                    control_type="select", hidden_from=["operator"]),
+        )
+        manifest = Manifest.from_options(options, OptionsEnforcement(strict=True, validation_enforce=True))
+
+        self.assertListEqual(manifest.files, ["main.py"])
+        self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON)
+        self.assertEqual(manifest.type, ManifestType.PYTHON)
+        self.assertEqual(manifest.python.pip_requirements, "requirements.txt")
+        self.assertEqual(manifest.configuration.options.strict, True)
+        self.assertEqual(manifest.configuration.options.validation, ManifestValidation(enforce="all"))
+        self.assertListEqual(
+            manifest.configuration.options.items,
+            [
+                ManifestOption(
+                    name="param1",
+                    option_type="string",
+                    default="default",
+                    description="A description",
+                    required=True,
+                    additional_attributes={"max_length": 100},
+                    ui=ManifestOptionUI(control_type="input")
+                ),
+                ManifestOption(
+                    name="param2",
+                    option_type="bool",
+                    default=True,
+                    description="A description",
+                    required=True,
+
+                ),
+                ManifestOption(
+                    name="param3",
+                    option_type="int",
+                    default=42,
+                    description="A description",
+                    required=True,
+                    additional_attributes={"min": 0, "max": 100, "step": 1},
+                    ui=None
+                ),
+                ManifestOption(
+                    name="param4",
+                    option_type="float",
+                    default=3.14,
+                    description="A description",
+                    required=True,
+                    ui=None
+                ),
+                ManifestOption(
+                    name="param5",
+                    option_type="string",
+                    default="default",
+                    description="A description",
+                    required=True,
+                    additional_attributes={"values": ["option1", "option2"]},
+                    ui=ManifestOptionUI(control_type="select", hidden_from=["operator"])
+                ),
+            ],
+        )
 
 class TestManifestOption(unittest.TestCase):
     def test_from_option(self):
