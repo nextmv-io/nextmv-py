@@ -23,8 +23,11 @@ poll
 """
 
 import json
+import os
 import random
 import shutil
+import tarfile
+import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -1494,6 +1497,7 @@ class Application:
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
         json_configurations: Optional[dict[str, Any]] = None,
+        dir_path: Optional[str] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -1503,11 +1507,35 @@ class Application:
         ----------
         input: Union[Input, dict[str, Any], BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`. If `nextmv.Input` is used, then the
-            input is extracted from the `.data` property. Note that for now,
-            `InputFormat.CSV_ARCHIVE` is not supported as an
-            `input.input_format`. If an input is too large, it will be uploaded
-            with the `upload_large_input` method.
+            `dict`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is either
+            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
+            input data is extracted from the `.data` property.
+
+            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
+            `nextmv.InputFormat.MULTI_FILE`, you should use the `dir_path`
+            argument instead. This argument takes precedence over the `input`.
+            If `dir_path` is specified, this function looks for files in that
+            directory and tars them, to later be uploaded using the
+            `upload_large_input` method. If both the `dir_path` and `input`
+            arguments are provided, the `input` is ignored.
+
+            When `dir_path` is specified, the `configuration` argument must
+            also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.InputFormat.CSV_ARCHIVE`
+            - `nextmv.InputFormat.MULTI_FILE`
+
+            When working with JSON or text data, use the `input` argument
+            directly.
+
+            In general, if an input is too large, it will be uploaded with the
+            `upload_large_input` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -1560,26 +1588,36 @@ class Application:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
+        self.__validate_dir_path_and_configuration(dir_path, configuration)
+
+        tar_file = ""
+        if dir_path is not None and dir_path != "":
+            if not os.path.exists(dir_path):
+                raise ValueError(f"Directory {dir_path} does not exist.")
+
+            if not os.path.isdir(dir_path):
+                raise ValueError(f"Path {dir_path} is not a directory.")
+
+            tar_file = self.__package_inputs(dir_path)
+
         input_data = None
         if isinstance(input, BaseModel):
             input_data = input.to_dict()
         elif isinstance(input, dict) or isinstance(input, str):
             input_data = input
         elif isinstance(input, Input):
-            if input.input_format == InputFormat.CSV_ARCHIVE:
-                raise ValueError("csv-archive is not supported")
             input_data = input.data
 
         input_size = 0
         if input_data is not None:
             input_size = get_size(input_data)
 
-        upload_url_required = input_size > _MAX_RUN_SIZE
+        upload_url_required = input_size > _MAX_RUN_SIZE or tar_file != ""
         upload_id_used = upload_id is not None
 
         if not upload_id_used and upload_url_required:
             upload_url = self.upload_url()
-            self.upload_large_input(input=input_data, upload_url=upload_url)
+            self.upload_large_input(input=input_data, upload_url=upload_url, tar_file=tar_file)
             upload_id = upload_url.upload_id
             upload_id_used = True
 
@@ -2797,9 +2835,10 @@ class Application:
 
     def upload_large_input(
         self,
-        input: Union[dict[str, Any], str],
+        input: Optional[Union[dict[str, Any], str]],
         upload_url: UploadURL,
         json_configurations: Optional[dict[str, Any]] = None,
+        tar_file: Optional[str] = None,
     ) -> None:
         """
         Upload large input data to the provided upload URL.
@@ -2810,14 +2849,19 @@ class Application:
 
         Parameters
         ----------
-        input : Union[dict[str, Any], str]
+        input : Optional[Union[dict[str, Any], str]]
             Input data to upload. Can be either a dictionary that will be
             converted to JSON, or a pre-formatted JSON string.
         upload_url : UploadURL
             Upload URL object containing the pre-signed URL to use for uploading.
         json_configurations : Optional[dict[str, Any]], default=None
             Optional configurations for JSON serialization. If provided, these
-            configurations will be used when serializing the data via `json.dumps`.
+            configurations will be used when serializing the data via
+            `json.dumps`.
+        tar_file : Optional[str], default=None
+            If provided, this will be used to upload a tar file instead of
+            a JSON string or dictionary. This is useful for uploading large
+            files that are already packaged as a tarball.
 
         Returns
         -------
@@ -2841,12 +2885,13 @@ class Application:
         >>> app.upload_large_input(input=json_str, upload_url=url)
         """
 
-        if isinstance(input, dict):
+        if input is not None and isinstance(input, dict):
             input = deflated_serialize_json(input, json_configurations=json_configurations)
 
         self.client.upload_to_presigned_url(
             url=upload_url.upload_url,
             data=input,
+            tar_file=tar_file,
         )
 
     def upload_url(self) -> UploadURL:
@@ -3184,6 +3229,73 @@ class Application:
             return input_set
 
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
+
+    def __validate_dir_path_and_configuration(
+        self,
+        dir_path: Optional[str],
+        configuration: Optional[RunConfiguration],
+    ) -> None:
+        """
+        Auxiliary function to validate the directory path and configuration.
+        """
+        if dir_path is None or dir_path == "":
+            return
+
+        if configuration is None:
+            raise ValueError(
+                "If dir_path is provided, a RunConfiguration must also be provided.",
+            )
+
+        if configuration.format is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format must also be provided.",
+            )
+
+        if configuration.format.format_input is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
+            )
+
+        input_type = configuration.format.format_input.input_type
+        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type."
+                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+            )
+
+    def __package_inputs(self, dir_path: str) -> str:
+        """
+        This is an auxiliary function for packaging the inputs found in the
+        provided `dir_path`. All the files found in the directory are tarred and
+        g-zipped. This function returns the tar file path that contains the
+        packaged inputs.
+        """
+
+        # Create a temporary directory for the output
+        output_dir = tempfile.mkdtemp(prefix="nextmv-inputs-out-")
+
+        # Define the output tar file name and path
+        tar_filename = "inputs.tar.gz"
+        tar_file_path = os.path.join(output_dir, tar_filename)
+
+        # Create the tar.gz file
+        with tarfile.open(tar_file_path, "w:gz") as tar:
+            for root, _, files in os.walk(dir_path):
+                for file in files:
+                    if file == tar_filename:
+                        continue
+
+                    file_path = os.path.join(root, file)
+
+                    # Skip directories, only process files
+                    if os.path.isdir(file_path):
+                        continue
+
+                    # Create relative path for the archive
+                    arcname = os.path.relpath(file_path, start=dir_path)
+                    tar.add(file_path, arcname=arcname)
+
+        return tar_file_path
 
 
 def poll(  # noqa: C901

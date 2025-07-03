@@ -28,7 +28,7 @@ def _package(
     model_configuration: Optional[ModelConfiguration] = None,
     verbose: bool = False,
 ) -> tuple[str, str]:
-    """Package the app into a tarball.."""
+    """Package the app into a tarball."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
         if manifest.type == ManifestType.PYTHON:
