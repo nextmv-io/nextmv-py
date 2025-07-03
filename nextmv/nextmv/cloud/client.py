@@ -323,7 +323,11 @@ class Client:
         return response
 
     def upload_to_presigned_url(
-        self, data: Union[dict[str, Any], str], url: str, json_configurations: Optional[dict[str, Any]] = None
+        self,
+        data: Optional[Union[dict[str, Any], str]],
+        url: str,
+        json_configurations: Optional[dict[str, Any]] = None,
+        tar_file: Optional[str] = None,
     ) -> None:
         """
         Uploads data to a presigned URL.
@@ -333,7 +337,7 @@ class Client:
 
         Parameters
         ----------
-        data : dict[str, Any] or str
+        data : Union[dict[str, Any], str], optional
             The data to upload. If a dictionary is provided, it will be
             JSON-serialized. If a string is provided, it will be uploaded
             as is.
@@ -344,6 +348,11 @@ class Client:
             customization of the Python `json.dumps` function, such as
             specifying `indent` for pretty printing or `default` for custom
             serialization functions.
+        tar_file : str, optional
+            If provided, this will be used to upload a tar file instead of
+            a JSON string or dictionary. This is useful for uploading large
+            files that are already packaged as a tarball. If this is provided,
+            `data` is expected to be `None`.
 
         Raises
         ------
@@ -361,12 +370,13 @@ class Client:
         """
 
         upload_data: Optional[str] = None
-        if isinstance(data, dict):
-            upload_data = deflated_serialize_json(data, json_configurations=json_configurations)
-        elif isinstance(data, str):
-            upload_data = data
-        else:
-            raise ValueError("data must be a dictionary or a string")
+        if data is not None:
+            if isinstance(data, dict):
+                upload_data = deflated_serialize_json(data, json_configurations=json_configurations)
+            elif isinstance(data, str):
+                upload_data = data
+            else:
+                raise ValueError("data must be a dictionary or a string")
 
         session = requests.Session()
         retries = Retry(
@@ -379,11 +389,20 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
+
         kwargs: dict[str, Any] = {
             "url": url,
             "timeout": self.timeout,
-            "data": upload_data,
         }
+
+        if upload_data is not None:
+            kwargs["data"] = upload_data
+        elif tar_file is not None:
+            if not os.path.exists(tar_file):
+                raise ValueError(f"tar_file {tar_file} does not exist")
+            kwargs["data"] = open(tar_file, "rb")
+        else:
+            raise ValueError("either data or tar_file must be provided")
 
         response = session.put(**kwargs)
 

@@ -52,3 +52,12 @@ path = "nextmv_gurobipy/__about__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["nextmv_gurobipy"]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.0.3",
+    "ruff>=0.1.7",
+    "twine>=4.0.2",
+    "gurobipy>=12.0.1",
+    "nextmv>=0.25.0",
+]

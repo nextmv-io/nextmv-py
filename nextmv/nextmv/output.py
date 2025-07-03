@@ -21,6 +21,8 @@ Statistics
     Complete statistics container for a solution, including run metrics and result data.
 OutputFormat
     Enumeration of supported output formats.
+SolutionFile
+    Represents a solution to be written as a file.
 VisualSchema
     Enumeration of supported visualization schemas.
 Visual
@@ -44,6 +46,7 @@ import copy
 import csv
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
@@ -297,33 +300,6 @@ class Statistics(BaseModel):
     """Schema (version). This class only supports `v1`."""
 
 
-class OutputFormat(str, Enum):
-    """
-    Enumeration of supported output formats.
-
-    You can import the `OutputFormat` class directly from `nextmv`:
-
-    ```python
-    from nextmv import OutputFormat
-    ```
-
-    This enum defines the different formats that can be used for outputting data.
-    Each format has specific requirements and behaviors when writing.
-
-    Attributes
-    ----------
-    JSON : str
-        JSON format, utf-8 encoded.
-    CSV_ARCHIVE : str
-        CSV archive format: multiple CSV files.
-    """
-
-    JSON = "json"
-    """JSON format, utf-8 encoded."""
-    CSV_ARCHIVE = "csv-archive"
-    """CSV archive format: multiple CSV files."""
-
-
 class VisualSchema(str, Enum):
     """
     Enumeration of supported visualization schemas.
@@ -498,6 +474,326 @@ class Asset(BaseModel):
             raise ValueError(f"unsupported content_type: {self.content_type}, supported types are `json`")
 
 
+class OutputFormat(str, Enum):
+    """
+    Enumeration of supported output formats.
+
+    You can import the `OutputFormat` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OutputFormat
+    ```
+
+    This enum defines the different formats that can be used for outputting data.
+    Each format has specific requirements and behaviors when writing.
+
+    Attributes
+    ----------
+    JSON : str
+        JSON format, utf-8 encoded.
+    CSV_ARCHIVE : str
+        CSV archive format: multiple CSV files.
+    MULTI_FILE : str
+        Multi-file format: multiple files in a directory.
+    """
+
+    JSON = "json"
+    """JSON format, utf-8 encoded."""
+    CSV_ARCHIVE = "csv-archive"
+    """CSV archive format: multiple CSV files."""
+    MULTI_FILE = "multi-file"
+    """Multi-file format: multiple files in a directory."""
+
+
+@dataclass
+class SolutionFile:
+    """
+    Represents a solution to be written as a file.
+
+    You can import the `SolutionFile` class directly from `nextmv`:
+
+    ```python
+    from nextmv import SolutionFile
+    ```
+
+    This class is used to define a solution that will be written to a file in
+    the filesystem. It includes the name of the file, the data to be written,
+    and the writer function that will handle the serialization of the data.
+    This `SolutionFile` class is typically used in the `Output`, when the
+    `Output.output_format` is set to `OutputFormat.MULTI_FILE`. Given that it
+    is difficult to handle every edge case of how a solution is serialized, and
+    written to a file, this class exists so that the user can implement the
+    `writer` callable of their choice and provide it with any `writer_args`
+    and `writer_kwargs` they might need.
+
+    Parameters
+    ----------
+    name : str
+        Name of the output file. The file extension should be included in the
+        name.
+    data : Any
+        The actual data that will be written to the file. This can be any type
+        that can be given to the `writer` function. For example, if the `writer`
+        is a `csv.DictWriter`, then the data should be a list of dictionaries,
+        where each dictionary represents a row in the CSV file.
+    writer : Callable
+        Callable that writes the solution data to the file. This should be a
+        function implemented by the user. There are convenience functions that you
+        can use as a writer as well. The `writer` must receive, at the very
+        minimum, the following arguments:
+
+        - `file_path`: a `str` argument which is the location where this solution
+        will be written to. This includes the dir and the name of the file. As
+        such, the `name` parameter of this class is going to be passed to this
+        function joined with the directory where the file will be written.
+        - `data`: the actual data that will be written to the file. This can be any
+        type that can be given to the `writer` function. The `data` parameter of
+        this class is going to be passed to the `writer` function.
+
+        The `writer` can also receive additional arguments, and keyword arguments.
+        The `writer_args` and `writer_kwargs` parameters of this class can be used
+        to provide those additional arguments.
+    writer_args : Optional[list[Any]], optional
+        Positional arguments to pass to the writer function.
+    writer_kwargs : Optional[dict[str, Any]], optional
+        Keyword arguments to pass to the writer function.
+
+    Examples
+    --------
+    >>> from nextmv import SolutionFile
+    >>> solution_file = SolutionFile(
+    ...     name="solution.csv",
+    ...     data=[{"id": 1, "value": 100}, {"id": 2, "value": 200}],
+    ...     writer=csv.DictWriter,
+    ...     writer_kwargs={"fieldnames": ["id", "value"]},
+    ...     writer_args=[open("solution.csv", "w", newline="")],
+    ... )
+    """
+
+    name: str
+    """
+    Name of the solution (output) file. The file extension should be included in the
+    name.
+    """
+    data: Any
+    """
+    The actual data that will be written to the file. This can be any type that
+    can be given to the `writer` function. For example, if the `writer` is a
+    `csv.DictWriter`, then the data should be a list of dictionaries, where
+    each dictionary represents a row in the CSV file.
+    """
+    writer: Callable[[str, str, Any], None]
+    """
+    Callable that writes the solution data to the file. This should be a
+    function implemented by the user. There are convenience functions that you
+    can use as a writer as well. The `writer` must receive, at the very
+    minimum, the following arguments:
+
+    - `file_path`: a `str` argument which is the location where this solution
+      will be written to. This includes the dir and the name of the file. As
+      such, the `name` parameter of this class is going to be passed to this
+      function joined with the directory where the file will be written.
+    - `data`: the actual data that will be written to the file. This can be any
+      type that can be given to the `writer` function. The `data` parameter of
+      this class is going to be passed to the `writer` function.
+
+    The `writer` can also receive additional arguments, and keyword arguments.
+    The `writer_args` and `writer_kwargs` parameters of this class can be used
+    to provide those additional arguments.
+    """
+    writer_args: Optional[list[Any]] = None
+    """
+    Optional positional arguments to pass to the writer function. This can be
+    used to customize the behavior of the writer.
+    """
+    writer_kwargs: Optional[dict[str, Any]] = None
+    """
+    Optional keyword arguments to pass to the writer function. This can be used
+    to customize the behavior of the writer.
+    """
+
+
+def json_solution_file(
+    name: str,
+    data: dict[str, Any],
+    json_configurations: Optional[dict[str, Any]] = None,
+) -> SolutionFile:
+    """
+    This is a convenience function to build a `SolutionFile`. It writes the
+    given `data` to a `.json` file with the provided `name`.
+
+    You can import this function directly from `nextmv`:
+
+    ```python
+    from nextmv import json_solution_file
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the output file. You don't need to include the `.json`
+        extension.
+    data : dict[str, Any]
+        The actual data that will be written to the file. This should be a
+        dictionary that can be serialized to JSON.
+    json_configurations : Optional[dict[str, Any]], optional
+        Optional configuration options for the JSON serialization process. You
+        can use these options to configure parameters such as indentation.
+
+    Returns
+    -------
+    SolutionFile
+        The constructed `SolutionFile` object.
+
+    Examples
+    --------
+    >>> from nextmv import json_solution_file
+    >>> solution_file = json_solution_file(
+    ...     name="solution",
+    ...     data={"id": 1, "value": 100}
+    ... )
+    >>> solution_file.name
+    'solution.json'
+    >>> solution_file.data
+    {'id': 1, 'value': 100}
+    """
+
+    if not name.endswith(".json"):
+        name += ".json"
+
+    json_configurations = json_configurations or {}
+
+    def writer(file_path: str, write_data: dict[str, Any]) -> None:
+        serialized = serialize_json(write_data, json_configurations=json_configurations)
+
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(serialized + "\n")
+
+    return SolutionFile(
+        name=name,
+        data=data,
+        writer=writer,
+    )
+
+
+def csv_solution_file(
+    name: str,
+    data: list[dict[str, Any]],
+    csv_configurations: Optional[dict[str, Any]] = None,
+) -> SolutionFile:
+    """
+    This is a convenience function to build a `SolutionFile`. It writes the
+    given `data` to a `.csv` file with the provided `name`.
+
+    You can import this function directly from `nextmv`:
+
+    ```python
+    from nextmv import csv_solution_file
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the output file. You don't need to include the `.csv`
+        extension.
+    data : list[dict[str, Any]]
+        The actual data that will be written to the file. This should be a list
+        of dictionaries, where each dictionary represents a row in the CSV file.
+        The keys of the dictionaries will be used as the column headers in the
+        CSV file.
+    csv_configurations : Optional[dict[str, Any]], optional
+        Optional configuration options for the CSV serialization process.
+
+    Returns
+    -------
+    SolutionFile
+        The constructed `SolutionFile` object.
+
+    Examples
+    --------
+    >>> from nextmv import csv_solution_file
+    >>> solution_file = csv_solution_file(
+    ...     name="solution",
+    ...     data=[{"id": 1, "value": 100}, {"id": 2, "value": 200}]
+    ... )
+    >>> solution_file.name
+    'solution.csv'
+    >>> solution_file.data
+    [{'id': 1, 'value': 100}, {'id': 2, 'value': 200}]
+    """
+
+    if not name.endswith(".csv"):
+        name += ".csv"
+
+    csv_configurations = csv_configurations or {}
+
+    def writer(file_path: str, write_data: list[dict[str, Any]]) -> None:
+        with open(file_path, "w", encoding="utf-8", newline="") as file:
+            writer = csv.DictWriter(
+                file,
+                fieldnames=write_data[0].keys(),
+                **csv_configurations,
+            )
+            writer.writeheader()
+            writer.writerows(write_data)
+
+    return SolutionFile(
+        name=name,
+        data=data,
+        writer=writer,
+    )
+
+
+def text_solution_file(name: str, data: str) -> SolutionFile:
+    """
+    This is a convenience function to build a `SolutionFile`. It writes the
+    given `data` to a utf-8 encoded file with the provided `name`.
+
+    You can import this function directly from `nextmv`:
+
+    ```python
+    from nextmv import text_solution_file
+    ```
+
+    You must provide the extension as part of the `name` parameter.
+
+    Parameters
+    ----------
+    name : str
+        Name of the output file. The file extension must be provided in the
+        name.
+    data : str
+        The actual data that will be written to the file.
+
+    Returns
+    -------
+    SolutionFile
+        The constructed `SolutionFile` object.
+
+    Examples
+    --------
+    >>> from nextmv import text_solution_file
+    >>> solution_file = text_solution_file(
+    ...     name="solution.txt",
+    ...     data="This is a sample text solution."
+    ... )
+    >>> solution_file.name
+    'solution.txt'
+    >>> solution_file.data
+    'This is a sample text solution.'
+    """
+
+    def writer(file_path: str, write_data: str) -> None:
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(write_data + "\n")
+
+    return SolutionFile(
+        name=name,
+        data=data,
+        writer=writer,
+    )
+
+
 @dataclass
 class Output:
     """
@@ -512,6 +808,34 @@ class Output:
     This class is used to structure the output of a decision problem that
     can later be written to various destinations. It supports different output
     formats and allows for customization of the serialization process.
+
+    The `solution`'s type must match the `output_format`:
+
+    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
+    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
+       Any]]]`. The keys represent the file names where the data should be
+       written. The values are lists of dictionaries, where each dictionary
+       represents a row in the CSV file.
+
+    If you are working with `OutputFormat.MULTI_FILE`, you should use
+    `solution_files` instead of `solution`. When `solution_files` is not
+    `None`, then the `output_format` _must_ be `OutputFormat.MULTI_FILE`.
+    `solution_files` is a list of `SolutionFile` objects, which allows you to
+    define the name of the file, the data to be written, and the writer
+    function that will handle the serialization of the data. This is useful when
+    you need to write the solution to multiple files with different formats or
+    configurations.
+
+    There are convenience functions to create `SolutionFile` objects for
+    common use cases, such as:
+
+    - `json_solution_file`: for writing JSON data to a file.
+    - `csv_solution_file`: for writing CSV data to a file.
+    - `text_solution_file`: for writing utf-8 encoded data to a file.
+
+    For other data types, such as Excel, you can create your own `SolutionFile`
+    objects by providing a `name`, `data`, and a `writer` function that will
+    handle the serialization of the data.
 
     Parameters
     ----------
@@ -538,15 +862,6 @@ class Output:
         If the solution is not compatible with the specified output_format.
     TypeError
         If options, statistics, or assets have unsupported types.
-
-    Notes
-    -----
-    The solution's type must match the `output_format`:
-
-    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
-    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str, Any]]]`.
-      The keys represent the file names where the data should be written. The values
-      are lists of dictionaries, where each dictionary represents a row in the CSV file.
 
     Examples
     --------
@@ -582,14 +897,31 @@ class Output:
     ```
     """
     output_format: Optional[OutputFormat] = OutputFormat.JSON
-    """Format of the output data. Default is `OutputFormat.JSON`."""
+    """
+    Format of the output data. Default is `OutputFormat.JSON`. When set to
+    `OutputFormat.MULTI_FILE`, the `solution_files` field must be specified and
+    cannot be `None`.
+    """
     solution: Optional[
         Union[
             Union[dict[str, Any], Any],  # JSON
             dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
         ]
     ] = None
-    """The solution to the decision problem."""
+    """
+    The solution to the decision problem. Use this filed when working with
+    `output_format` of types:
+
+    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
+    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
+    Any]]]`. The keys represent the file names where the data will be written
+    to. The values are lists of dictionaries, where each dictionary represents
+    a row in the CSV file.
+
+    Note that when the `output_format` is set to `OutputFormat.MULTI_FILE`,
+    this `solution` field is ignored, as you should use the `solution_files`
+    field instead.
+    """
     statistics: Optional[Union[Statistics, dict[str, Any]]] = None
     """
     Statistics of the solution. These statistics can be of type `Statistics` or a
@@ -618,6 +950,28 @@ class Output:
     dictionary, they will be used as is. If the assets are not provided, an
     empty list will be used.
     """
+    solution_files: Optional[list[SolutionFile]] = None
+    """
+    Optional list of solution files to be included in the output. These files
+    are of type `SolutionFile`, which allows for custom serialization and
+    writing of the solution data to files. When this field is specified, then
+    the `output_format` must be set to `OutputFormat.MULTI_FILE`, otherwise an
+    exception will be raised. The `SolutionFile` class allows you to define the
+    name of the file, the data to be written, and the writer function that will
+    handle the serialization of the data. This is useful when you need to write
+    the solution to multiple files with different formats or configurations.
+
+    There are convenience functions to create `SolutionFile` objects for
+    common use cases, such as:
+
+    - `json_solution_file`: for writing JSON data to a file.
+    - `csv_solution_file`: for writing CSV data to a file.
+    - `text_solution_file`: for writing utf-8 encoded data to a file.
+
+    For other data types, such as Excel, you can create your own `SolutionFile`
+    objects by providing a `name`, `data`, and a `writer` function that will
+    handle the serialization of the data.
+    """
 
     def __post_init__(self):
         """
@@ -638,22 +992,31 @@ class Output:
         new_options = copy.deepcopy(init_options)
         self.options = new_options
 
-        if self.solution is None:
-            return
+        if self.solution is not None:
+            if self.output_format == OutputFormat.JSON:
+                try:
+                    _ = serialize_json(self.solution)
+                except (TypeError, OverflowError) as e:
+                    raise ValueError(
+                        f"Output has output_format OutputFormat.JSON and "
+                        f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
+                    ) from e
 
-        if self.output_format == OutputFormat.JSON:
-            try:
-                _ = serialize_json(self.solution)
-            except (TypeError, OverflowError) as e:
+            elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
                 raise ValueError(
-                    f"Output has output_format OutputFormat.JSON and "
-                    f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
-                ) from e
+                    f"unsupported Output.solution type: {type(self.solution)} with "
+                    "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
+                )
 
-        elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
+        if self.solution_files is not None and self.output_format != OutputFormat.MULTI_FILE:
             raise ValueError(
-                f"unsupported Output.solution type: {type(self.solution)} with "
-                "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
+                f"`solution_files` are not `None`, but `output_format` is different from `OutputFormat.MULTI_FILE`: "
+                f"{self.output_format}. If you want to use `solution_files`, set `output_format` "
+                "to `OutputFormat.MULTI_FILE`."
+            )
+        elif self.solution_files is not None and not isinstance(self.solution_files, list):
+            raise TypeError(
+                f"unsupported Output.solution_files type: {type(self.solution_files)}, supported type is `list`"
             )
 
     def to_dict(self) -> dict[str, Any]:  # noqa: C901
@@ -795,6 +1158,7 @@ class LocalOutputWriter(OutputWriter):
     """
 
     def _write_json(
+        self,
         output: Union[Output, dict[str, Any], BaseModel],
         output_dict: dict[str, Any],
         path: Optional[str] = None,
@@ -828,6 +1192,7 @@ class LocalOutputWriter(OutputWriter):
             file.write(serialized + "\n")
 
     def _write_archive(
+        self,
         output: Union[Output, dict[str, Any], BaseModel],
         output_dict: dict[str, Any],
         path: Optional[str] = None,
@@ -892,10 +1257,128 @@ class LocalOutputWriter(OutputWriter):
                 writer.writeheader()
                 writer.writerows(data)
 
+    def _write_multi_file(
+        self,
+        output: Union[Output, dict[str, Any], BaseModel],
+        output_dict: dict[str, Any],
+        path: Optional[str] = None,
+    ) -> None:
+        """
+        Write output to multiple files.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel]
+            The output object containing configuration and solution data.
+        output_dict : dict[str, Any]
+            Dictionary representation of the output to write.
+        path : str, optional
+            Directory path to write the CSV files. If None or empty,
+            writes to a directory named "output" in the current working directory.
+
+        Raises
+        ------
+        ValueError
+            If the path is an existing file instead of a directory.
+        """
+        dir_path = "outputs"
+        if path is not None and path != "":
+            if os.path.isfile(path):
+                raise ValueError(f"The path refers to an existing file: {path}")
+
+            dir_path = path
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        json_configurations = {}
+        if hasattr(output, "json_configurations") and output.json_configurations is not None:
+            json_configurations = output.json_configurations
+
+        self._write_multi_file_element(
+            parent_dir=dir_path,
+            json_configurations=json_configurations,
+            output_dict=output_dict,
+            element_key="statistics",
+        )
+        self._write_multi_file_element(
+            parent_dir=dir_path,
+            json_configurations=json_configurations,
+            output_dict=output_dict,
+            element_key="assets",
+        )
+        self._write_multi_file_solution(dir_path=dir_path, output=output)
+
+    def _write_multi_file_element(
+        self,
+        parent_dir: str,
+        output_dict: dict[str, Any],
+        element_key: str,
+        json_configurations: Optional[dict[str, Any]] = None,
+    ):
+        """
+        Auxiliary function to write a specific element of the output
+        dictionary to a file in the specified parent directory.
+        """
+
+        element = output_dict.get(element_key)
+        if element is None or not element:
+            return
+
+        final_dir = os.path.join(parent_dir, element_key)
+
+        if not os.path.exists(final_dir):
+            os.makedirs(final_dir)
+
+        serialized = serialize_json(element, json_configurations=json_configurations)
+
+        with open(os.path.join(final_dir, f"{element_key}.json"), "w", encoding="utf-8") as file:
+            file.write(serialized + "\n")
+
+    def _write_multi_file_solution(
+        self,
+        dir_path: str,
+        output: Output,
+    ):
+        """
+        Auxiliary function to write the solution files to the specified
+        directory.
+        """
+
+        if output.solution_files is None:
+            return
+
+        solutions_dir = os.path.join(dir_path, "solutions")
+
+        if not os.path.exists(solutions_dir):
+            os.makedirs(solutions_dir)
+
+        for solution_file in output.solution_files:
+            if not isinstance(solution_file, SolutionFile):
+                raise TypeError(
+                    f"unsupported solution_file type: {type(solution_file)}, supported type is `SolutionFile`"
+                )
+
+            file_path = os.path.join(solutions_dir, solution_file.name)
+            if solution_file.writer_args is None:
+                solution_file.writer_args = []
+            if solution_file.writer_kwargs is None:
+                solution_file.writer_kwargs = {}
+
+            # Call the writer function with the final path, and user provided
+            # arguments and keyword arguments.
+            solution_file.writer(
+                file_path,
+                solution_file.data,
+                *solution_file.writer_args,
+                **solution_file.writer_kwargs,
+            )
+
     # Callback functions for writing the output data.
     FILE_WRITERS = {
         OutputFormat.JSON: _write_json,
         OutputFormat.CSV_ARCHIVE: _write_archive,
+        OutputFormat.MULTI_FILE: _write_multi_file,
     }
     """Dictionary mapping output formats to writer functions."""
 
@@ -979,6 +1462,7 @@ class LocalOutputWriter(OutputWriter):
             )
 
         self.FILE_WRITERS[output_format](
+            self,
             output=output,
             output_dict=output_dict,
             path=path,
