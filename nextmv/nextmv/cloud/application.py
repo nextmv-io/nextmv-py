@@ -1573,6 +1573,13 @@ class Application:
         json_configurations: Optional[dict[str, Any]]
             Optional configurations for JSON serialization. This is used to
             customize the serialization before data is sent.
+        dir_path: Optional[str]
+            Path to a directory containing input files. If specified, the
+            function will package the files in the directory into a tar file
+            and upload it as a large input. This is useful for input formats
+            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            If both `input` and `dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
 
         Returns
         ----------
@@ -1688,6 +1695,8 @@ class Application:
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
+        dir_path: Optional[str] = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -1699,11 +1708,35 @@ class Application:
         ----------
         input: Union[Input, dict[str, Any], BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`. If `nextmv.Input` is used, then the
-            input is extracted from the `.data` property. Note that for now,
-            `InputFormat.CSV_ARCHIVE` is not supported as an
-            `input.input_format`. If an input is too large, it will be uploaded
-            with the `upload_large_input` method.
+            `dict`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is either
+            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
+            input data is extracted from the `.data` property.
+
+            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
+            `nextmv.InputFormat.MULTI_FILE`, you should use the `dir_path`
+            argument instead. This argument takes precedence over the `input`.
+            If `dir_path` is specified, this function looks for files in that
+            directory and tars them, to later be uploaded using the
+            `upload_large_input` method. If both the `dir_path` and `input`
+            arguments are provided, the `input` is ignored.
+
+            When `dir_path` is specified, the `configuration` argument must
+            also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.InputFormat.CSV_ARCHIVE`
+            - `nextmv.InputFormat.MULTI_FILE`
+
+            When working with JSON or text data, use the `input` argument
+            directly.
+
+            In general, if an input is too large, it will be uploaded with the
+            `upload_large_input` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -1743,6 +1776,16 @@ class Application:
             configuration. This is used when the run is an external run. We
             suggest that instead of specifying this parameter, you use the
             `track_run_with_result` method of the class.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        dir_path: Optional[str]
+            Path to a directory containing input files. If specified, the
+            function will package the files in the directory into a tar file
+            and upload it as a large input. This is useful for input formats
+            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            If both `input` and `dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
 
         Returns
         ----------
@@ -1774,6 +1817,8 @@ class Application:
             configuration=configuration,
             batch_experiment_id=batch_experiment_id,
             external_result=external_result,
+            json_configurations=json_configurations,
+            dir_path=dir_path,
         )
 
         return self.run_result_with_polling(
