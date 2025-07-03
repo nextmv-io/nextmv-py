@@ -52,3 +52,13 @@ path = "nextmv_sklearn/__about__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["nextmv_sklearn"]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.0.3",
+    "ruff>=0.1.7",
+    "twine>=4.0.2",
+    "scikit-learn>=1.6.1",
+    "nextmv>=0.25.0",
+    "pydantic>=2.5.2",
+]

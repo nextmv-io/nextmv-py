@@ -59,7 +59,6 @@ class TestInput(unittest.TestCase):
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
-
     def test_local_loader_json_stdin(self):
         sample_input = '{"empanadas": "are_life"}\n'
         input_loader = nextmv.LocalInputLoader()
@@ -549,3 +548,180 @@ class TestInput(unittest.TestCase):
         # Verify config parsing worked
         self.assertEqual(input_data.data["config.txt"]["debug"], True)
         self.assertEqual(input_data.data["config.txt"]["verbose"], False)
+
+    # Tests for input_data_key functionality
+    def test_json_data_file_with_input_data_key(self):
+        """Test json_data_file with custom input_data_key."""
+        data_file = nextmv.json_data_file("test_data", input_data_key="custom_json_key")
+
+        # Test that input_data_key is set correctly
+        self.assertEqual(data_file.input_data_key, "custom_json_key")
+
+        # Test in multi-file context
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key instead of filename
+        self.assertIn("custom_json_key", input_data.data)
+        self.assertNotIn("test_data.json", input_data.data)
+        self.assertEqual(input_data.data["custom_json_key"], self.json_data)
+
+    def test_csv_data_file_with_input_data_key(self):
+        """Test csv_data_file with custom input_data_key."""
+        data_file = nextmv.csv_data_file("test_data", input_data_key="custom_csv_key")
+
+        # Test that input_data_key is set correctly
+        self.assertEqual(data_file.input_data_key, "custom_csv_key")
+
+        # Test in multi-file context
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key instead of filename
+        self.assertIn("custom_csv_key", input_data.data)
+        self.assertNotIn("test_data.csv", input_data.data)
+        self.assertEqual(input_data.data["custom_csv_key"], self.csv_data)
+
+    def test_text_data_file_with_input_data_key(self):
+        """Test text_data_file with custom input_data_key."""
+        data_file = nextmv.text_data_file("test_data.txt", input_data_key="custom_text_key")
+
+        # Test that input_data_key is set correctly
+        self.assertEqual(data_file.input_data_key, "custom_text_key")
+
+        # Test in multi-file context
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key instead of filename
+        self.assertIn("custom_text_key", input_data.data)
+        self.assertNotIn("test_data.txt", input_data.data)
+        self.assertEqual(input_data.data["custom_text_key"], self.text_data)
+
+    def test_data_file_with_input_data_key_direct(self):
+        """Test DataFile with custom input_data_key set directly."""
+
+        def custom_loader(file_path):
+            with open(file_path, encoding="utf-8") as f:
+                return f.read().upper()
+
+        data_file = nextmv.DataFile(name="test_data.txt", loader=custom_loader, input_data_key="custom_direct_key")
+
+        # Test that input_data_key is set correctly
+        self.assertEqual(data_file.input_data_key, "custom_direct_key")
+
+        # Test in multi-file context
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key instead of filename
+        self.assertIn("custom_direct_key", input_data.data)
+        self.assertNotIn("test_data.txt", input_data.data)
+        self.assertEqual(input_data.data["custom_direct_key"], self.text_data.upper())
+
+    def test_mixed_files_with_and_without_input_data_key(self):
+        """Test mix of files with and without custom input_data_key."""
+        data_files = [
+            nextmv.json_data_file("test_data", input_data_key="json_config"),
+            nextmv.csv_data_file("test_data"),  # No custom key, should use filename
+            nextmv.text_data_file("test_data.txt", input_data_key="readme_content"),
+        ]
+
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+
+        # Check that custom keys are used where specified
+        self.assertIn("json_config", input_data.data)
+        self.assertIn("readme_content", input_data.data)
+        self.assertNotIn("test_data.json", input_data.data)
+        self.assertNotIn("test_data.txt", input_data.data)
+
+        # Check that filename is used when no custom key is specified
+        self.assertIn("test_data.csv", input_data.data)
+
+        # Verify data content
+        self.assertEqual(input_data.data["json_config"], self.json_data)
+        self.assertEqual(input_data.data["test_data.csv"], self.csv_data)
+        self.assertEqual(input_data.data["readme_content"], self.text_data)
+
+    def test_input_data_key_with_configurations(self):
+        """Test input_data_key works with loader configurations."""
+        # Create a CSV file with quotes for testing
+        quoted_csv = '"name","age","city"\n"Alice","25","New York"\n"Bob","30","London"'
+        with open(f"{self.test_dir}/quoted.csv", "w") as f:
+            f.write(quoted_csv)
+
+        data_file = nextmv.csv_data_file(
+            "quoted", csv_configurations={"quoting": csv.QUOTE_ALL}, input_data_key="users_data"
+        )
+
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key
+        self.assertIn("users_data", input_data.data)
+        self.assertNotIn("quoted.csv", input_data.data)
+
+        # Verify data was loaded with configurations
+        expected = [{"name": "Alice", "age": "25", "city": "New York"}, {"name": "Bob", "age": "30", "city": "London"}]
+        self.assertEqual(input_data.data["users_data"], expected)
+
+    def test_input_data_key_with_json_configurations(self):
+        """Test input_data_key works with JSON loader configurations."""
+        # Create a JSON file with custom format for testing
+        custom_json = '{"key": 1.5, "another": 2.7}'
+        with open(f"{self.test_dir}/custom.json", "w") as f:
+            f.write(custom_json)
+
+        data_file = nextmv.json_data_file(
+            "custom", json_configurations={"parse_float": str}, input_data_key="parsed_floats"
+        )
+
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use custom key
+        self.assertIn("parsed_floats", input_data.data)
+        self.assertNotIn("custom.json", input_data.data)
+
+        # With parse_float=str, float values should be strings
+        self.assertEqual(input_data.data["parsed_floats"]["key"], "1.5")
+        self.assertEqual(input_data.data["parsed_floats"]["another"], "2.7")
+
+    def test_input_data_key_none_uses_filename(self):
+        """Test that when input_data_key is None, filename is used as key."""
+        data_file = nextmv.json_data_file("test_data", input_data_key=None)
+
+        # Test that input_data_key is None
+        self.assertIsNone(data_file.input_data_key)
+
+        # Test in multi-file context
+        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+
+        # Should use filename as key
+        self.assertIn("test_data.json", input_data.data)
+        self.assertEqual(input_data.data["test_data.json"], self.json_data)
+
+    def test_duplicate_input_data_keys_raises_error(self):
+        """Test that ValueError is raised when multiple files have the same input_data_key."""
+        # Create second JSON file
+        second_json_data = {"different": "content", "values": [4, 5, 6]}
+        with open(f"{self.test_dir}/second_data.json", "w", encoding="utf-8") as f:
+            json.dump(second_json_data, f)
+
+        data_files = [
+            nextmv.json_data_file("test_data", input_data_key="shared_key"),
+            nextmv.json_data_file("second_data", input_data_key="shared_key"),
+        ]
+
+        # Should raise ValueError for duplicate keys
+        with self.assertRaises(ValueError) as context:
+            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+
+        self.assertIn("Duplicate input data key found: shared_key", str(context.exception))
+
+    def test_duplicate_key_filename_conflict_raises_error(self):
+        """Test that ValueError is raised when custom input_data_key conflicts with a filename."""
+        data_files = [
+            nextmv.json_data_file("test_data"),  # Uses filename "test_data.json" as key
+            nextmv.csv_data_file("test_data", input_data_key="test_data.json"),  # Custom key conflicts with filename
+        ]
+
+        # Should raise ValueError for duplicate keys
+        with self.assertRaises(ValueError) as context:
+            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+
+        self.assertIn("Duplicate input data key found: test_data.json", str(context.exception))

@@ -155,9 +155,24 @@ class DataFile:
     Optional positional arguments to pass to the loader function. This can be
     used to customize the behavior of the loader.
     """
+    input_data_key: Optional[str] = None
+    """
+    Use this parameter to set a custom key to represent your file.
+
+    When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+    the data from the file is loaded to the `.data` parameter of the `Input`.
+    In that case, the type of `.data` is `dict[str, Any]`, where each key
+    represents the file name (with extension) and the value is the data that is
+    actually loaded from the file using the `loader` function. You can set a
+    custom key to represent your file by using this attribute.
+    """
 
 
-def json_data_file(name: str, json_configurations: Optional[dict[str, Any]] = None) -> DataFile:
+def json_data_file(
+    name: str,
+    json_configurations: Optional[dict[str, Any]] = None,
+    input_data_key: Optional[str] = None,
+) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads JSON data.
 
@@ -173,6 +188,15 @@ def json_data_file(name: str, json_configurations: Optional[dict[str, Any]] = No
         Name of the data file. You don't need to include the `.json` extension.
     json_configurations : dict[str, Any], optional
         JSON-specific configurations for reading the data.
+    input_data_key : str, optional
+        A custom key to represent the data from this file.
+
+        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        the data from the file is loaded to the `.data` parameter of the `Input`.
+        In that case, the type of `.data` is `dict[str, Any]`, where each key
+        represents the file name (with extension) and the value is the data that is
+        actually loaded from the file using the `loader` function. You can set a
+        custom key to represent your file by using this attribute.
 
     Returns
     -------
@@ -204,10 +228,15 @@ def json_data_file(name: str, json_configurations: Optional[dict[str, Any]] = No
     return DataFile(
         name=name,
         loader=loader,
+        input_data_key=input_data_key,
     )
 
 
-def csv_data_file(name: str, csv_configurations: Optional[dict[str, Any]] = None) -> DataFile:
+def csv_data_file(
+    name: str,
+    csv_configurations: Optional[dict[str, Any]] = None,
+    input_data_key: Optional[str] = None,
+) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads CSV data.
 
@@ -223,6 +252,15 @@ def csv_data_file(name: str, csv_configurations: Optional[dict[str, Any]] = None
         Name of the data file. You don't need to include the `.csv` extension.
     csv_configurations : dict[str, Any], optional
         CSV-specific configurations for reading the data.
+    input_data_key : str, optional
+        A custom key to represent the data from this file.
+
+        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        the data from the file is loaded to the `.data` parameter of the `Input`.
+        In that case, the type of `.data` is `dict[str, Any]`, where each key
+        represents the file name (with extension) and the value is the data that is
+        actually loaded from the file using the `loader` function. You can set a
+        custom key to represent your file by using this attribute.
 
     Returns
     -------
@@ -254,10 +292,11 @@ def csv_data_file(name: str, csv_configurations: Optional[dict[str, Any]] = None
     return DataFile(
         name=name,
         loader=loader,
+        input_data_key=input_data_key,
     )
 
 
-def text_data_file(name: str) -> DataFile:
+def text_data_file(name: str, input_data_key: Optional[str] = None) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads utf-8
     encoded text data.
@@ -274,6 +313,15 @@ def text_data_file(name: str) -> DataFile:
     ----------
     name : str
         Name of the data file. The file extension must be provided in the name.
+    input_data_key : str, optional
+        A custom key to represent the data from this file.
+
+        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        the data from the file is loaded to the `.data` parameter of the `Input`.
+        In that case, the type of `.data` is `dict[str, Any]`, where each key
+        represents the file name (with extension) and the value is the data that is
+        actually loaded from the file using the `loader` function. You can set a
+        custom key to represent your file by using this attribute.
 
     Returns
     -------
@@ -297,6 +345,7 @@ def text_data_file(name: str) -> DataFile:
     return DataFile(
         name=name,
         loader=loader,
+        input_data_key=input_data_key,
     )
 
 
@@ -311,18 +360,6 @@ class Input:
     from nextmv import Input
     ```
 
-    Parameters
-    ----------
-    data : Union[Union[dict[str, Any], Any], str, list[dict[str, Any]],
-    dict[str, list[dict[str, Any]]], dict[str, Any]]
-        The actual data.
-    input_format : InputFormat, optional
-        Format of the input data. Default is `InputFormat.JSON`.
-    options : Options, optional
-        Options that the input was created with.
-
-    Notes
-    -----
     The `data`'s type must match the `input_format`:
 
     - `InputFormat.JSON`: the data is `Union[dict[str, Any], Any]`. This just
@@ -340,6 +377,18 @@ class Input:
        from one or more files in a specific directory. Given that each file can
        be of different types (JSON, CSV, Excel, etc...), the data captured from
        each might vary. To reflect this, the data is loaded as a dict of items.
+       You can have a custom key for the data, that is not the file name,  if
+       you use the `input_data_key` parameter of the `DataFile` class.
+
+    Parameters
+    ----------
+    data : Union[Union[dict[str, Any], Any], str, list[dict[str, Any]],
+    dict[str, list[dict[str, Any]]], dict[str, Any]]
+        The actual data.
+    input_format : InputFormat, optional
+        Format of the input data. Default is `InputFormat.JSON`.
+    options : Options, optional
+        Options that the input was created with.
 
     Raises
     ------
@@ -888,7 +937,15 @@ class LocalInputLoader(InputLoader):
                 *data_file.loader_args,
                 **data_file.loader_kwargs,
             )
-            data[name] = d
+
+            key = name
+            if data_file.input_data_key is not None:
+                key = data_file.input_data_key
+
+            if data.get(key) is not None:
+                raise ValueError(f"Duplicate input data key found: {key}")
+
+            data[key] = d
 
         return data
 
