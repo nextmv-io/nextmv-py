@@ -582,7 +582,7 @@ class SolutionFile:
     `csv.DictWriter`, then the data should be a list of dictionaries, where
     each dictionary represents a row in the CSV file.
     """
-    writer: Callable[[str, str, Any], None]
+    writer: Callable[[str, Any], None]
     """
     Callable that writes the solution data to the file. This should be a
     function implemented by the user. There are convenience functions that you

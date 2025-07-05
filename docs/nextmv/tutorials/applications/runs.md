@@ -4,7 +4,25 @@
 
     Find the reference for the `Application` class [here](../../reference/cloud/application.md).
 
-To run an `Application`, you can use of the following methods:
+A run is a single execution of an app against an instance. It is
+the basic functionality encompassed of receiving an input, running the app, and
+returning an output. This tutorial will walk you through running an app
+remotely on Nextmv Cloud. It works the same for both [subscription
+apps][subscription-apps] and [custom apps][custom-apps].
+
+There are two recommended methods for running an app:
+
+1. Using [polling][polling-section].
+2. Using [webhooks][webhooks-section]. Go that section for more information.
+
+The Nextmv Python SDK automatically handles polling, file size limits, retries,
+exponential backoff, jitter, timeouts, and other Nextmv Cloud nuances for you.
+
+## Polling
+
+## Webhooks
+
+To run an [`Application`][application], you can use of the following methods:
 
 * `new_run`: creates (submits) a new run and returns the ID (`run_id`) of the
   run. With the `run_id`, you can perform other operations, such as getting the
@@ -104,3 +122,9 @@ $ python main.py
   }
 }
 ```
+
+[subscription-apps]: /platform/deploy-app/subscription-apps
+[custom-apps]: /platform/deploy-app/custom-apps
+[application]: ../../reference/cloud/application.md#nextmv.cloud.Application
+[polling-section]: #polling
+[webhooks-section]: #webhooks
