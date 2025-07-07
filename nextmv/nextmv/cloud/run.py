@@ -470,6 +470,41 @@ class RunConfiguration(BaseModel):
     queuing: Optional[RunQueuing] = None
     """Queuing configuration for the run."""
 
+    def resolve(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str],
+        dir_path: Optional[str] = None,
+    ) -> None:
+        """
+        Resolves the run configuration by modifying or setting the `format`,
+        based on the type of input that is provided.
+
+        Parameters
+        ----------
+        input : Input or dict[str, Any] or BaseModel or str, optional
+            The input to use for resolving the run configuration.
+        dir_path : str, optional
+            The directory path where inputs can be loaded from.
+        """
+
+        # If the value is set by the user, do not change it.
+        if self.format is not None:
+            return
+
+        if self.format is None:
+            self.format = Format(format_input=FormatInput(input_type=InputFormat.JSON))
+
+        if isinstance(input, dict):
+            self.format.format_input.input_type = InputFormat.JSON
+        elif isinstance(input, str):
+            self.format.format_input.input_type = InputFormat.TEXT
+        elif dir_path is not None and dir_path != "":
+            # Kinda hard to detect if we should be working with CSV_ARCHIVE or
+            # MULTI_FILE, so we default to MULTI_FILE.
+            self.format.format_input.input_type = InputFormat.MULTI_FILE
+        elif isinstance(input, Input):
+            self.format.format_input.input_type = input.input_format
+
 
 class ExternalRunResult(BaseModel):
     """
