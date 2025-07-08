@@ -20,8 +20,14 @@ nav:
               - Run an app: nextmv/tutorials/applications/runs.md
               - Track runs: nextmv/tutorials/applications/external-runs.md
               - Secrets: nextmv/tutorials/applications/secrets.md
+              - Large payloads: nextmv/tutorials/applications/large-payloads.md
+              - Queuing & prioritization: nextmv/tutorials/applications/queuing.md
+              - Execution classes: nextmv/tutorials/applications/execution-classes.md
           - Experiments:
               - Scenario tests: nextmv/tutorials/experiments/scenario-tests.md
+              - Batch experiments: nextmv/tutorials/experiments/batch-experiments.md
+              - Acceptance tests: nextmv/tutorials/experiments/acceptance-tests.md
+              - Input sets: nextmv/tutorials/experiments/input-sets.md
       - Reference:
           - base_model.py: nextmv/reference/base_model.md
           - input.py: nextmv/reference/input.md

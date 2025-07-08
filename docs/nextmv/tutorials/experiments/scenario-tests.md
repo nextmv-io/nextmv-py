@@ -4,6 +4,10 @@
 
     Find the reference for the `scenario` module [here](../../reference/cloud/scenario.md).
 
+!!! tip
+
+    Find more information about scenario tests in this [section of the Nextmv docs](https://docs.nextmv.io/docs/using-nextmv/experiments/scenario).
+
 Scenario tests are **offline** tests used to compare the output from one or
 more scenarios. A scenario is composed of:
 

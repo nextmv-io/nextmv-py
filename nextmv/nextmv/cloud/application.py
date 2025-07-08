@@ -1619,10 +1619,8 @@ class Application:
         if input_data is not None:
             input_size = get_size(input_data)
 
-        upload_url_required = input_size > _MAX_RUN_SIZE or tar_file != ""
         upload_id_used = upload_id is not None
-
-        if not upload_id_used and upload_url_required:
+        if self.__upload_url_required(upload_id_used, input_size, tar_file, input):
             upload_url = self.upload_url()
             self.upload_large_input(input=input_data, upload_url=upload_url, tar_file=tar_file)
             upload_id = upload_url.upload_id
@@ -1657,11 +1655,18 @@ class Application:
                 if not isinstance(v, str):
                     raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
             payload["options"] = options_dict
+
         if configuration is not None:
             configuration_dict = (
                 configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
             )
-            payload["configuration"] = configuration_dict
+        else:
+            configuration = RunConfiguration()
+            configuration.resolve(input=input, dir_path=dir_path)
+            configuration_dict = configuration.to_dict()
+
+        payload["configuration"] = configuration_dict
+
         if batch_experiment_id is not None:
             payload["batch_experiment_id"] = batch_experiment_id
         if external_result is not None:
@@ -3341,6 +3346,33 @@ class Application:
                     tar.add(file_path, arcname=arcname)
 
         return tar_file_path
+
+    def __upload_url_required(
+        self,
+        upload_id_used: bool,
+        input_size: int,
+        tar_file: str,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+    ) -> bool:
+        """
+        Auxiliary function to determine if an upload URL is required
+        based on the input size, type, and configuration.
+        """
+
+        if upload_id_used:
+            return True
+
+        non_json_payload = False
+        if isinstance(input, str):
+            non_json_payload = True
+        elif isinstance(input, Input) and input.input_format != InputFormat.JSON:
+            non_json_payload = True
+        elif tar_file is not None and tar_file != "":
+            non_json_payload = True
+
+        size_exceeds = input_size > _MAX_RUN_SIZE
+
+        return size_exceeds or non_json_payload
 
 
 def poll(  # noqa: C901

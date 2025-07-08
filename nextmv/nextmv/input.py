@@ -108,7 +108,7 @@ class DataFile:
         the following arguments:
 
         - `file_path`: a `str` argument which is the location where this
-          solution will be read from. This includes the dir and name of the
+          data will be read from. This includes the dir and name of the
           file. As such, the `name` parameter of this class is going to be
           passed to the `reader` function, joined with the directory where the
           file will be read from.
@@ -134,7 +134,7 @@ class DataFile:
     following arguments:
 
     - `file_path`: a `str` argument which is the location where this
-       solution will be read from. This includes the dir and name of the
+       data will be read from. This includes the dir and name of the
        file. As such, the `name` parameter of this class is going to be
        passed to the `loader` function, joined with the directory where the
        file will be read from.
