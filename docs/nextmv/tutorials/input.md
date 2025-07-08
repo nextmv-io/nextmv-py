@@ -8,7 +8,7 @@ Capture the input data for the run. The [`Input`][input] class is the main
 holding place for a decision model's input data. An input is built through
 [options][options] and data. An input is loaded from a source, through the
 [`InputLoader`][input-loader] class. You may use the [`load`][load] function to
-build an input from a source, or call the `.load`method on the `InputLoader`
+build an input from a source, or call the `.load` method on the `InputLoader`
 class.
 
 The most common source, and the one used by Nextmv Cloud, is either `stdin` or
@@ -178,6 +178,91 @@ from those files. If you wish to customize the key names, you can use the
 `.input_data_key` parameter in the `DataFile` class. The convenience functions
 also support this argument, allowing you to specify a custom key name
 for the data loaded from the file.
+
+Here is an example of how to use the `.input_data_key` parameter with the
+convenience functions and the `DataFile` class:
+
+```python
+from typing import Any
+
+import nextmv
+
+# Define a data file for a JSON file with a custom key name.
+json_file = nextmv.json_data_file("input.json", input_data_key="custom_json_key")
+
+# Define a data file for a CSV file with a custom key name.
+csv_file = nextmv.csv_data_file("input.csv", input_data_key="custom_csv_key")
+
+# Define a data file for a text file with a custom key name.
+text_file = nextmv.text_data_file("input.txt", input_data_key="custom_text_key")
+
+
+# Define a custom loader for an Excel file that reads the first sheet.
+def excel_loader(file_path: str) -> Any:
+    import pandas as pd
+
+    return pd.read_excel(file_path, sheet_name=0).to_dict()
+
+
+# Define a data file for an Excel file using the custom loader and a custom key
+# name.
+excel_file = nextmv.DataFile(
+    name="input.xlsx",
+    loader=excel_loader,
+    loader_args=[],  # Optional, you don't need to define this if no args are needed.
+    loader_kwargs={},  # Optional, you don't need to define this if no kwargs are needed.
+    input_data_key="custom_excel_key",  # Custom key name for the data loaded from the file.
+)
+
+# Load the multi-file input with the defined data files from a dir named "inputs".
+multi_file_input_5 = nextmv.load(
+    input_format=nextmv.InputFormat.MULTI_FILE,
+    data_files=[json_file, csv_file, text_file, excel_file],
+)
+
+# View the loaded data.
+nextmv.write(multi_file_input_5.data)
+```
+
+```bash
+$ python main.py
+{
+  "custom_json_key": {
+    "message": "Hello from JSON",
+    "numbers": [
+      1,
+      2,
+      3
+    ]
+  },
+  "custom_csv_key": [
+    {
+      "name": "Alice",
+      "age": "25",
+      "city": "New York"
+    },
+    {
+      "name": "Bob",
+      "age": "30",
+      "city": "London"
+    },
+    {
+      "name": "Charlie",
+      "age": "35",
+      "city": "Tokyo"
+    }
+  ],
+  "custom_text_key": "This is a test text file.\nIt contains multiple lines.\nHello from text!",
+  "custom_excel_key": {
+    "a": {
+      "0": 1
+    },
+    "b": {
+      "0": 2
+    }
+  }
+}
+```
 
 [data-file]: ../reference/input.md#nextmv.nextmv.input.DataFile
 [json-data-file]: ../reference/input.md#nextmv.nextmv.input.json_data_file

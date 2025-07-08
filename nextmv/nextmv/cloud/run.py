@@ -491,8 +491,7 @@ class RunConfiguration(BaseModel):
         if self.format is not None:
             return
 
-        if self.format is None:
-            self.format = Format(format_input=FormatInput(input_type=InputFormat.JSON))
+        self.format = Format(format_input=FormatInput(input_type=InputFormat.JSON))
 
         if isinstance(input, dict):
             self.format.format_input.input_type = InputFormat.JSON
