@@ -8,9 +8,9 @@ Define the desired input set ID and name. After, create the input set by:
 * Referencing the run IDs.
 
     ```python
-    import json
     import os
 
+    import nextmv
     from nextmv.cloud import Application, Client
 
     client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -21,7 +21,7 @@ Define the desired input set ID and name. After, create the input set by:
         description="An optional description",
         run_ids=["latest-RNBs7AKSg", "latest-UlulZAKSR", "latest-fK_wZ0FSg"],
     )
-    print(json.dumps(input_set.to_dict(), indent=2))  # Pretty print.
+    nextmv.write(input_set)
     ```  
 
     ```json
@@ -43,10 +43,10 @@ Define the desired input set ID and name. After, create the input set by:
 * Referencing a date range and an instance ID.
 
     ```python
-    import json
     import os
     from datetime import datetime, timezone  
 
+    import nextmv
     from nextmv.cloud import Application, Client
 
     client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -59,7 +59,7 @@ Define the desired input set ID and name. After, create the input set by:
         start_time=datetime(2024, 1, 5, 0, 0, 0, tzinfo=timezone.utc),
         end_time=datetime(2024, 1, 5, 23, 59, 59, tzinfo=timezone.utc),
     )
-    print(json.dumps(input_set.to_dict(), indent=2))  # Pretty print.
+    nextmv.write(input_set)
     ```  
 
     ```json
