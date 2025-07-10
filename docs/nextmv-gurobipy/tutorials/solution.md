@@ -14,14 +14,14 @@ of the model. This convenience functionality is provided out of the box, but we
 recommend that you customize how the model is interpreted to parse the solution.
 
 ```python
-import json
+import nextmv
 
 import nextmv_gurobipy as ngp
 
 # Model code here.
 
 solution = ngp.ModelSolution(model)
-print(json.dumps(solution, indent=2))
+nextmv.write(solution)
 ```
 
 Run the script:

@@ -397,7 +397,7 @@ class Client:
 
         if upload_data is not None:
             kwargs["data"] = upload_data
-        elif tar_file is not None:
+        elif tar_file is not None and tar_file != "":
             if not os.path.exists(tar_file):
                 raise ValueError(f"tar_file {tar_file} does not exist")
             kwargs["data"] = open(tar_file, "rb")

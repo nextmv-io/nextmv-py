@@ -11,7 +11,8 @@ features supported by Nextmv, such as testing, and experimentation. An external
 run behaves just like a [standard run][application-runs], but it is not
 executed on the Nextmv Platform.
 
-You can read more about external runs [here][external-runs].
+You can read more about external runs [in the general
+documentation][external-runs].
 
 Generally speaking, a run can have two final states:
 
@@ -55,7 +56,7 @@ successful_result = app.track_run_with_result(
     )
 )
 
-print(json.dumps(successful_result.to_dict(), indent=2))
+nextmv.write(successful_result)
 ```
 
 The run is tracked by the Nextmv Platform and run results are polled, just as
@@ -138,7 +139,7 @@ failed_result = app.track_run_with_result(
     )
 )
 
-print(json.dumps(failed_result.to_dict(), indent=2))
+nextmv.write(failed_result)
 ```
 
 Three main differences stand out when comparing against the `succeeded`

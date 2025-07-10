@@ -14,14 +14,14 @@ box, but we recommend that you customize how the model is interpreted to
 extract statistics.
 
 ```python
-import json
+import nextmv
 
 import nextmv_gurobipy as ngp
 
 # Model code here.
 
 statistics = ngp.ModelStatistics(model, start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 ```
 
 Run the script:

@@ -16,14 +16,14 @@ interpreted to extract statistics.
     Find the reference for the `dummy.statistics` module [here](../reference/dummy.statistics.md).
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import dummy
 
 # Model code here.
 
 statistics = dummy.DummyRegressorStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 ```
 
 Run the script:
@@ -51,14 +51,14 @@ python main.py
     Find the reference for the `ensemble.statistics` module [here](../reference/ensemble.statistics.md).
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import ensemble
 
 # Model code here.
 
 statistics = ensemble.GradientBoostingRegressorStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 
 ```
 
@@ -94,14 +94,14 @@ python main.py
 ```
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import ensemble
 
 # Model code here.
 
 statistics = ensemble.RandomForestRegressorStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 
 ```
 
@@ -142,14 +142,14 @@ python main.py
     Find the reference for the `linear_model.statistics` module [here](../reference/linear_model.statistics.md).
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import linear_model
 
 # Model code here.
 
 statistics = linear_model.LinearRegressionStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 ```
 
 Run the script:
@@ -177,14 +177,14 @@ python main.py
     Find the reference for the `neural_network.statistics` module [here](../reference/neural_network.statistics.md).
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import neural_network
 
 # Model code here.
 
 statistics = neural_network.MLPRegressorStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 ```
 
 Run the script:
@@ -212,14 +212,14 @@ $ python main.py -max_iter 2500
     Find the reference for the `tree.statistics` module [here](../reference/tree.statistics.md).
 
 ```python
-import json
+import nextmv
 
 from nextmv_sklearn import tree
 
 # Model code here.
 
 statistics = tree.DecisionTreeRegressorStatistics(fit, X, y, run_duration_start=start_time)
-print(json.dumps(statistics.to_dict(), indent=2))
+nextmv.write(statistics)
 ```
 
 Run the script:

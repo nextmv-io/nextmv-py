@@ -144,15 +144,13 @@ class DecisionModel(nextmv.Model):
 To solve the problem, you can run the model with the input and options:
 
 ```python
-import json
-
 import nextmv
 
 
 model = DecisionModel()
 input = nextmv.Input(data=sample_input, options=options)
 output = model.solve(input)
-print(json.dumps(output.solution, indent=2))
+nextmv.write(output)
 ```
 
 ```bash

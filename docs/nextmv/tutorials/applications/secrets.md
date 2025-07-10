@@ -13,7 +13,8 @@ model). Secrets collections can be used at these levels:
 * Run: set secrets at the run level so that only the run can access the
   secrets.
 
-To read more about secrets collections, go [here][secrets-collections].
+To read more about secrets collections, go [to the general
+documentation][secrets-collections].
 
 ## Create a secrets collection
 
@@ -21,9 +22,9 @@ Start by creating a secrets collection in your Nextmv Application. You can do
 this with the `new_secrets_collection` method.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -48,7 +49,7 @@ secrets_collection_summary = app.new_secrets_collection(
 )
 
 
-print(json.dumps(secrets_collection_summary.to_dict(), indent=2))
+nextmv.write(secrets_collection_summary)
 ```
 
 There are several things to note about the code above:
@@ -101,9 +102,9 @@ with the ID `version-1` previously created. You may create a version with the
 `new_version` method.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -118,13 +119,13 @@ instance = app.new_instance(
     ),
 )
 
-print(json.dumps(instance.to_dict(), indent=2))
+nextmv.write(instance)
 ```
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -139,7 +140,7 @@ instance = app.update_instance(
     ),
 )
 
-print(json.dumps(instance.to_dict(), indent=2))
+nextmv.write(instance)
 ```
 
 Running the code will create (or update) an instance with the secrets
@@ -167,9 +168,9 @@ A new run can be executed, either using the `new_run_with_result` or `new_run`
 methods, applying the instance shown above.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -177,7 +178,7 @@ app = cloud.Application(client=client, id="<YOUR_APP_ID>")
 
 result = app.new_run_with_result(input={"foo": "bar"}, instance_id="instance-1")
 
-print(json.dumps(result.to_dict(), indent=2))
+nextmv.write(result)
 ```
 
 The other way to use a secrets collection is to attach it to a run directly, as
@@ -185,9 +186,9 @@ opposed to using an instance. This is done by using the `secrets_collection_id`
 parameter in the `new_run` or `new_run_with_result` methods.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -200,7 +201,7 @@ result = app.new_run_with_result(
     ),
 )
 
-print(json.dumps(result.to_dict(), indent=2))
+nextmv.write(result)
 ```
 
 ```python
@@ -233,9 +234,9 @@ This method returns the secret collection itselg, including the sensitive
 information for each secret.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -243,7 +244,7 @@ app = cloud.Application(client=client, id="<YOUR_APP_ID>")
 
 secrets_collection = app.secrets_collection(secrets_collection_id="my-secrets-collection")
 
-print(json.dumps(secrets_collection.to_dict(), indent=2))
+nextmv.write(secrets_collection)
 ```
 
 ```bash
@@ -312,9 +313,9 @@ and add new ones, you need to first get the existing secrets collection, and
 then add the new secrets to the list.
 
 ```python
-import json
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
@@ -338,7 +339,7 @@ secrets_collection_summary = app.update_secrets_collection(
     ],
 )
 
-print(json.dumps(secrets_collection_summary.to_dict(), indent=2))
+nextmv.write(secrets_collection_summary)
 ```
 
 ```bash
