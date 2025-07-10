@@ -6,7 +6,9 @@
     "description": "Loss function to be optimized.",
     "required": false,
     "choices": ["squared_error", "absolute_error", "huber", "quantile"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "learning_rate",
@@ -15,7 +17,9 @@
     "description": "Learning rate shrinks the contribution of each tree by learning_rate.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "n_estimators",
@@ -24,7 +28,9 @@
     "description": "The number of boosting stages to perform.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "subsample",
@@ -33,7 +39,9 @@
     "description": "The fraction of samples to be used for fitting the individual base learners.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "criterion",
@@ -42,7 +50,9 @@
     "description": "The function to measure the quality of a split.",
     "required": false,
     "choices": ["friedman_mse", "squared_error"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "min_samples_split",
@@ -51,7 +61,9 @@
     "description": "The minimum number of samples required to split an internal node.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "min_samples_leaf",
@@ -60,7 +72,9 @@
     "description": "The minimum number of samples required to be at a leaf node.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "min_weight_fraction_leaf",
@@ -69,7 +83,9 @@
     "description": "The minimum weighted fraction of the sum total of weights required to be at a leaf node.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "max_depth",
@@ -78,7 +94,9 @@
     "description": "Maximum depth of the individual regression estimators.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "min_impurity_decrease",
@@ -87,7 +105,9 @@
     "description": "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "random_state",
@@ -96,7 +116,9 @@
     "description": "Controls the random seed given to each Tree estimator at each boosting iteration.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "max_features",
@@ -105,7 +127,9 @@
     "description": "The number of features to consider when looking for the best split.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "alpha",
@@ -114,7 +138,9 @@
     "description": "The alpha-quantile of the huber loss function and the quantile loss function.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "max_leaf_nodes",
@@ -123,7 +149,9 @@
     "description": "Grow trees with max_leaf_nodes in best-first fashion.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "warm_start",
@@ -132,7 +160,9 @@
     "description": "When set to True, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just erase the previous solution.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "validation_fraction",
@@ -141,7 +171,9 @@
     "description": "The proportion of training data to set aside as validation set for early stopping.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "n_iter_no_change",
@@ -150,7 +182,9 @@
     "description": "n_iter_no_change is used to decide if early stopping will be used to terminate training when validation score is not improving.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "tol",
@@ -159,7 +193,9 @@
     "description": "Tolerance for the early stopping.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ccp_alpha",
@@ -168,6 +204,8 @@
     "description": "Complexity parameter used for Minimal Cost-Complexity Pruning.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   }
 ]

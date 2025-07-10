@@ -24,6 +24,13 @@ jobs:
           pip install .[dev]
         working-directory: ./${{ matrix.package }}
 
+      - name: handle nextmv dependency
+        if: ${{ matrix.package != 'nextmv' }}
+        run: |
+          pip uninstall -y nextmv
+          pip install -e ../nextmv
+        working-directory: ./${{ matrix.package }}
+
       - name: unit tests
         run: python -m unittest
         working-directory: ./${{ matrix.package }}
