@@ -3360,7 +3360,7 @@ class Application:
         """
 
         if upload_id_used:
-            return True
+            return False
 
         non_json_payload = False
         if isinstance(input, str):
