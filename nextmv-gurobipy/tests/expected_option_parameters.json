@@ -6,7 +6,9 @@
     "description": "Controls the amount of fill allowed during presolve aggregation.\nLarger values generally lead to presolved models with fewer rows and\ncolumns, but with more constraint matrix non-zeros.\n\nThe default value chooses automatically, and usually works well.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Aggregate",
@@ -15,7 +17,9 @@
     "description": "Controls the aggregation level in presolve. The options are off (0),\nmoderate (1), or aggressive (2). In rare instances, aggregation can\nlead to an accumulation of numerical errors. Turning it off can\nsometimes improve solution accuracy.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BQPCuts",
@@ -24,7 +28,9 @@
     "description": "Controls Boolean Quadric Polytope (BQP) cut generation. Use 0 to\ndisable these cuts, 1 for moderate cut generation, or 2 for aggressive\ncut generation. The default -1 value chooses automatically. Overrides\nthe Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarConvTol",
@@ -33,7 +39,9 @@
     "description": "The barrier solver terminates when the relative difference between the\nprimal and dual objective values is less than the specified tolerance\n(with a \"GRB_OPTIMAL\" status). Tightening this tolerance often\nproduces a more accurate solution, which can sometimes reduce the time\nspent in crossover.  Be aware that such tightening may result in an\nincrease of barrier iterations and hence computation time spent\ntherein. Loosening it causes the barrier algorithm to terminate with a\nless accurate solution, which can be useful when barrier is making\nvery slow progress in later iterations.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarCorrectors",
@@ -42,7 +50,9 @@
     "description": "Limits the number of central corrections performed in each barrier\niteration. The default value chooses automatically, depending on\nproblem characteristics. The automatic strategy generally works well,\nalthough it is often possible to obtain higher performance on a\nspecific model by selecting a value manually.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarHomogeneous",
@@ -51,7 +61,9 @@
     "description": "Determines whether to use the homogeneous barrier algorithm. At the\ndefault setting (-1), it is only used when barrier solves a node\nrelaxation for a MIP model. Setting the parameter to 0 turns it off,\nand setting it to 1 forces it on. The homogeneous algorithm is useful\nfor recognizing infeasibility or unboundedness. It is a bit slower\nthan the default algorithm.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarIterLimit",
@@ -60,7 +72,9 @@
     "description": "Limits the number of barrier iterations performed. This parameter is\nrarely used. If you would like barrier to terminate early, it is\nalmost always better to use the BarConvTol parameter instead.\n\nOptimization returns with an ITERATION_LIMIT status if the limit is\nexceeded.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarOrder",
@@ -69,7 +83,9 @@
     "description": "Chooses the barrier sparse matrix fill-reducing algorithm. A value of\n0 chooses Approximate Minimum Degree ordering, while a value of 1\nchooses Nested Dissection ordering. The default value of -1 chooses\nautomatically. You should only modify this parameter if you notice\nthat the barrier ordering phase is consuming a significant fraction of\nthe overall barrier runtime.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BarQCPConvTol",
@@ -78,7 +94,9 @@
     "description": "When solving a QCP model, the barrier solver terminates when the\nrelative difference between the primal and dual objective values is\nless than the specified tolerance (with a \"GRB_OPTIMAL\" status).\nTightening this tolerance may lead to a more accurate solution, but it\nmay also lead to a failure to converge.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BestBdStop",
@@ -87,7 +105,9 @@
     "description": "Terminates as soon as the engine determines that the best bound on the\nobjective value is at least as good as the specified value.\nOptimization returns with an USER_OBJ_LIMIT status in this case.\n\nNote that you should always include a small tolerance in this value.\nWithout this, a bound that satisfies the intended termination\ncriterion may not actually lead to termination due to numerical round-\noff in the bound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BestObjStop",
@@ -96,7 +116,9 @@
     "description": "Terminate as soon as the engine finds a feasible solution whose\nobjective value is at least as good as the specified value.\nOptimization returns with an USER_OBJ_LIMIT status in this case.\n\nNote that you should always include a small tolerance in this value.\nWithout this, a solution that satisfies the intended termination\ncriterion may not actually lead to termination due to numerical round-\noff in the objective.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "BranchDir",
@@ -105,7 +127,9 @@
     "description": "Determines which child node is explored first in the branch-and-cut\nsearch. The default value chooses automatically. A value of -1 will\nalways explore the down branch first, while a value of 1 will always\nexplore the up branch first.\n\nChanging the value of this parameter rarely produces a significant\nbenefit.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSAPIAccessID",
@@ -114,7 +138,9 @@
     "description": "A unique identifier used to authenticate an application on a Gurobi\nCluster Manager.\n\nYou can provide either an access ID and a secret key, or a username\nand password, to authenticate your connection to a Cluster Manager.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CSAPIACCESSID=YOUR_API_ID\") or an empty environment. Changing the\nparameter after your environment has been started will result in an\nerror.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSAPISecret",
@@ -123,7 +149,9 @@
     "description": "The secret password associated with an API access ID.\n\nYou can provide either an access ID and a secret key, or a username\nand password, to authenticate your connection to a Cluster Manager.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CSAPISECRET=YOUR_API_SECRET_KEY\") or an empty environment. Changing\nthe parameter after your environment has been started will result in\nan error.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSAppName",
@@ -132,7 +160,9 @@
     "description": "The application name which will be sent to the server to track which\napplication is submitting the batches or jobs.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSAuthToken",
@@ -141,7 +171,9 @@
     "description": "When a client authenticates with a Cluster Manager using a username\nand password, a signed token is returned by the server to be used in\nfurther calls or command-line operations. It is used internally.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSBatchMode",
@@ -150,7 +182,9 @@
     "description": "When set to 1, enable the local creation of models, and later submit\nbatch-optimization jobs to the Cluster Manager. See the Batch\nOptimization section for more details. Note that if CSBatchMode is\nenabled, only batch-optimization calls are allowed.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CSBATCHMODE=1\") or an empty environment. Changing the parameter after\nyour environment has been started will result in an error.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSClientLog",
@@ -159,7 +193,9 @@
     "description": "Turns logging on or off for Compute Server and the Web License Service\n(WLS). Options are off (0), only error messages (1), information and\nerror messages (2), or (3) verbose, information, and error messages.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSGroup",
@@ -168,7 +204,9 @@
     "description": "Specifies one or more groups of cluster nodes to control the placement\nof the job. The list is a comma-separated string of group names, with\noptionally a priority for a group. For example, specifying\n\"group1:10,group2:50\" means that the job will run on machines of\n\"group1\" or \"group2\", and if the job is queued, it will have priority\n10 on group1 and 50 on group2. Note that if the group is not\nspecified, the job may run on any node. If there are no nodes in the\ncluster having the specified groups, the job will be rejected.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs and in particular to\n*Gurobi Remote Services Cluster Grouping* for more information on\ngrouping cluster nodes.\n\nYou must set this parameter through either a license file (using\n\"GROUP=name\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSIdleTimeout",
@@ -177,7 +215,9 @@
     "description": "This parameter allows you to set a limit on how long a Compute Server\njob can sit idle before the server kills the job (in seconds). A job\nis considered idle if the server is not currently performing an\noptimization and the client has not issued any additional commands.\n\nThe default value will allow a job to sit idle indefinitely in all but\none circumstance. Currently the only exception is the Gurobi Instant\nCloud, where the default setting will automatically impose a 30 minute\nidle time limit (1800 seconds). If you are using an Instant Cloud\npool, the actual value will be the maximum between this parameter\nvalue and the idle timeout defined by the pool.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"IDLETIMEOUT=n\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSManager",
@@ -186,7 +226,9 @@
     "description": "URL of the Cluster Manager for the Remote Services cluster.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CSMANAGER=YOUR_MANAGER_URL\") or an empty environment. Changing the\nparameter after your environment has been started will result in an\nerror.\n\nNote:\n\n  Cluster Manager only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSPriority",
@@ -195,7 +237,9 @@
     "description": "The priority of the Compute Server job. Priorities must be between\n-100 and 100, with a default value of 0 (by convention). Higher\npriority jobs are chosen from the server job queue before lower\npriority jobs. A job with priority 100 runs immediately, bypassing the\njob queue and ignoring the job limit on the server. You should\nexercise caution with priority 100 jobs, since they can severely\noverload a server, which can cause jobs to fail, and in extreme cases\ncan cause the server to crash.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"PRIORITY=n\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSQueueTimeout",
@@ -204,7 +248,9 @@
     "description": "This parameter allows you to set a limit (in seconds) on how long a\nnew Compute Server job will wait in queue before it gives up (and\nreports a \"JOB_REJECTED\" error). Note that there might be a delay of\nup to 20 seconds for the actual signaling of the time out.\n\nAny negative value will allow a job to sit in the Compute Server queue\nindefinitely.\n\nYou must set this parameter through a \"gurobi.lic\" file (using\n\"QUEUETIMEOUT=n\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSRouter",
@@ -213,7 +259,9 @@
     "description": "The router node for a Remote Services cluster. A router can be used to\nimprove the robustness of a Compute Server deployment. You can refer\nto the router using either its name or its IP address. A typical\nRemote Services deployment won\u2019t use a router, so you typically won\u2019t\nneed to set this parameter.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"ROUTER=name\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CSTLSInsecure",
@@ -222,7 +270,9 @@
     "description": "Indicates whether the Remote Services cluster is using insecure mode\nin the TLS (Transport Layer Security). Leave this at its default value\nof 0 unless your server administrator tells you otherwise.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CSTLSINSECURE\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CliqueCuts",
@@ -231,7 +281,9 @@
     "description": "Controls clique cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value choose automatically. Overrides the Cuts parameter.\n\nWe have observed that setting this parameter to its aggressive setting\ncan produce a significant benefit for some large set partitioning\nmodels.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CloudAccessID",
@@ -240,7 +292,9 @@
     "description": "Set this parameter to the Access ID for your Instant Cloud license\nwhen launching a new instance. You can retrieve this string from your\naccount on the Gurobi Instant Cloud Manager website.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CLOUDACCESSID=id\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CloudHost",
@@ -249,7 +303,9 @@
     "description": "Set this parameter to the host name of the Gurobi Cloud entry point.\nCurrently \"cloud.gurobi.com\".\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CLOUDHOST=host\") or an empty environment. Changing the parameter\nafter your environment has been started will result in an error.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CloudPool",
@@ -258,7 +314,9 @@
     "description": "Set this parameter to the name of the cloud pool you would like to use\nfor your new Instant Cloud instance. You can browse your existing\ncloud pools or create new ones from your account on the Gurobi Instant\nCloud Manager website.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CLOUDPOOL=pool\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CloudSecretKey",
@@ -267,7 +325,9 @@
     "description": "Set this parameter to the Secret Key for your Instant Cloud license\nwhen launching a new instance. You can retrieve this string from your\naccount on the Gurobi Instant Cloud Manager website.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"CLOUDSECRETKEY=key\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ComputeServer",
@@ -276,7 +336,9 @@
     "description": "Set this parameter to the name of a node in the Remote Services\ncluster where you\u2019d like your Compute Server job to run. You can refer\nto the server using its name or its IP address. If you are using a\nnon-default port, the server name should be followed by the port\nnumber (e.g., \"server1:61000\").\n\nYou will also need to set the ServerPassword parameter to supply the\nclient password for the specified cluster.\n\nYou can provide a comma-separated list of nodes to increase\nrobustness. If the first node in the list doesn\u2019t respond, the second\nwill be tried, etc.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"COMPUTESERVER=server\") or an empty environment. Changing the\nparameter after your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ConcurrentJobs",
@@ -285,7 +347,9 @@
     "description": "Enables distributed concurrent optimization, which can be used to\nsolve LP or MIP models on multiple machines. A value of \"n\" causes the\nsolver to create \"n\" independent models, using different parameter\nsettings for each. Each of these models is sent to a distributed\nworker for processing. Optimization terminates when the first solve\ncompletes. Use the ComputeServer parameter to indicate the name of the\ncluster where you would like your distributed concurrent job to run\n(or use WorkerPool if your client machine will act as manager and you\njust need a pool of workers).\n\nBy default, Gurobi chooses the parameter settings used for each\nindependent solve automatically. You can create concurrent\nenvironments to choose your own parameter settings (refer to the\nconcurrent optimization section for details). The intent of concurrent\nMIP solving is to introduce additional diversity into the MIP search.\nBy bringing the resources of multiple machines to bear on a single\nmodel, this approach can sometimes solve models much faster than a\nsingle machine.\n\nThe distributed concurrent solver produces a slightly different log\nfrom the standard solver, and provides different callbacks as well.\nPlease refer to the \"Distributed Algorithms\" section of the *Gurobi\nRemote Services Reference Manual* for additional details.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ConcurrentMIP",
@@ -294,7 +358,9 @@
     "description": "This parameter enables the concurrent MIP solver. When the parameter\nis set to value \"n\", the MIP solver performs \"n\" independent MIP\nsolves in parallel, with different parameter settings for each.\nOptimization terminates when the first solve completes.\n\nBy default, Gurobi chooses the parameter settings used for each\nindependent solve automatically. You can create concurrent\nenvironments to choose your own parameter settings (refer to the\nconcurrent optimization section for details). The intent of concurrent\nMIP solving is to introduce additional diversity into the MIP search.\nThis approach can sometimes solve models much faster than applying all\navailable threads to a single MIP solve, especially on very large\nparallel machines.\n\nThe concurrent MIP solver divides available threads evenly among the\nindependent solves. For example, if you have 6 threads available and\nyou set ConcurrentMIP to 2, the concurrent MIP solver will allocate 3\nthreads to each independent solve. Note that the number of independent\nsolves launched will not exceed the number of available threads.\n\nThe concurrent MIP solver produces a slightly different log from the\nstandard MIP solver, and provides different callbacks as well. Please\nrefer to the concurrent optimizer discussion for additional details.\n\nConcurrent MIP is not deterministic. If runtimes for different\nindependent solves are very similar, and if the model has multiple\noptimal solutions, you may get slightly different results from\nmultiple runs on the same model.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ConcurrentMethod",
@@ -303,7 +369,9 @@
     "description": "This parameter is only evaluated when solving an LP with a concurrent\nsolver (Method = 3 or 4). It controls which methods are run\nconcurrently by the concurrent solver. Options are:\n\n* -1=automatic,\n\n* 0=barrier, dual, primal simplex,\n\n* 1=barrier and dual simplex,\n\n* 2=barrier and primal simplex, and\n\n* 3=dual and primal simplex.\n\nWhich methods are actually run also depends on the number of threads\navailable.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CoverCuts",
@@ -312,7 +380,9 @@
     "description": "Controls cover cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Crossover",
@@ -321,7 +391,9 @@
     "description": "Determines the crossover strategy used to transform the interior\nsolution produced by barrier into a basic solution (note that\ncrossover is not available for QP or QCP models). Crossover consists\nof three phases: (i) a *primal push* phase, where primal variables are\npushed to bounds, (ii) a *dual push* phase, where dual variables are\npushed to bounds, and (iii) a *cleanup* phase, where simplex is used\nto remove any primal or dual infeasibilities that remain after the\npush phases are complete. The order of the first two phases and the\nalgorithm used for the third phase are both controlled by the\nCrossover parameter:\n\n+---------------------+----------------+-----------------+-------------+\n| **Parameter value** | **First push** | **Second push** | **Cleanup** |\n|=====================|================|=================|=============|\n| 0                   | Disabled       | Disabled        | Disabled    |\n+---------------------+----------------+-----------------+-------------+\n| 1                   | Dual           | Primal          | Primal      |\n+---------------------+----------------+-----------------+-------------+\n| 2                   | Dual           | Primal          | Dual        |\n+---------------------+----------------+-----------------+-------------+\n| 3                   | Primal         | Dual            | Primal      |\n+---------------------+----------------+-----------------+-------------+\n| 4                   | Primal         | Dual            | Dual        |\n+---------------------+----------------+-----------------+-------------+\n\nThe default value of -1 chooses the strategy automatically. Use value\n0 to disable crossover; this setting returns the interior solution\ncomputed by barrier.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CrossoverBasis",
@@ -330,7 +402,9 @@
     "description": "Determines the initial basis construction strategy for crossover. A\nvalue of 0 chooses an initial basis quickly. A value of 1 can take\nmuch longer, but often produces a more numerically stable start basis.\nThe default value of -1 makes an automatic choice.\n\nNote:\n\n  Barrier only",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CutAggPasses",
@@ -339,7 +413,9 @@
     "description": "A non-negative value indicates the maximum number of constraint\naggregation passes performed during cut generation. Overrides the Cuts\nparameter.\n\nChanging the value of this parameter rarely produces a significant\nbenefit.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "CutPasses",
@@ -348,7 +424,9 @@
     "description": "A non-negative value indicates the maximum number of cutting plane\npasses performed during root cut generation. The default value chooses\nthe number of cut passes automatically.\n\nIn addition to cutting plane separation, each cut pass also applies\nheuristics and node probing and also may launch parallel root helper\nthreads. So even when the Cuts parameter is set to 0, the cut loop\nwill apply probing, heuristics and parallel root helpers in a single\ncut loop iteration.\n\nYou should experiment with different values of this parameter if you\nnotice the MIP solver spending significant time on root cut passes\nthat have little impact on the objective bound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Cuts",
@@ -357,7 +435,9 @@
     "description": "Global cut aggressiveness setting. Use value 0 to shut off cuts, 1 for\nmoderate cut generation, 2 for aggressive cut generation, and 3 for\nvery aggressive cut generation. The default -1 value chooses\nautomatically. This parameter is overridden by the parameters that\ncontrol individual cut types (e.g., CliqueCuts).\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "DegenMoves",
@@ -366,7 +446,9 @@
     "description": "Limits degenerate simplex moves. These moves are performed to improve\nthe integrality of the current relaxation solution. By default, the\nalgorithm chooses the number of degenerate move passes to perform\nautomatically.\n\nThe default setting generally works well, but there can be cases where\nan excessive amount of time is spent after the initial root relaxation\nhas been solved but before the cut generation process or the root\nheuristics have started. If you see multiple \u2018Total elapsed time\u2019\nmessages in the log immediately after the root relaxation log, you may\nwant to try setting this parameter to 0.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Disconnected",
@@ -375,7 +457,9 @@
     "description": "A MIP or an LP model can sometimes be made up of multiple, completely\nindependent sub-models. This parameter controls how aggressively we\ntry to exploit this structure. A value of 0 ignores this structure\nentirely, while larger values try more aggressive approaches. The\ndefault value of -1 chooses automatically.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "DisplayInterval",
@@ -384,7 +468,9 @@
     "description": "Determines the frequency at which log lines are printed (in seconds).",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "DistributedMIPJobs",
@@ -393,7 +479,9 @@
     "description": "Enables distributed MIP. A value of \"n\" causes the MIP solver to\ndivide the work of solving a MIP model among \"n\" machines. Use the\nComputeServer parameter to indicate the name of the cluster where you\nwould like your distributed MIP job to run (or use WorkerPool if your\nclient machine will act as manager and you just need a pool of\nworkers).\n\nThe distributed MIP solver produces a slightly different log from the\nstandard MIP solver, and provides different callbacks as well. Please\nrefer to the \"Distributed Algorithms\" section of the *Gurobi Remote\nServices Reference Manual* for additional details.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "DualImpliedCuts",
@@ -402,7 +490,9 @@
     "description": "Controls dual implied bound cut generation. Use 0 to disable these\ncuts, 1 for moderate cut generation, or 2 for aggressive cut\ngeneration. The default -1 value chooses automatically. Overrides the\nCuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "DualReductions",
@@ -411,7 +501,9 @@
     "description": "Determines whether dual reductions are performed during the\noptimization process. You should disable these reductions if you\nreceived an optimization status of INF_OR_UNBD and would like a more\ndefinitive conclusion.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FeasRelaxBigM",
@@ -420,7 +512,9 @@
     "description": "When relaxing a constraint in a feasibility relaxation, it is\nsometimes necessary to introduce a big-M value. This parameter\ndetermines the default magnitude of that value.\n\nFor details about feasibility relaxations, refer to e.g.\n\"GRBfeasrelax\" in the C API.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FeasibilityTol",
@@ -429,7 +523,9 @@
     "description": "All constraints must be satisfied to a tolerance of FeasibilityTol.\nTightening this tolerance can produce smaller constraint violations,\nbut for numerically challenging models it can sometimes lead to much\nlarger iteration counts.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FlowCoverCuts",
@@ -438,7 +534,9 @@
     "description": "Controls flow cover cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FlowPathCuts",
@@ -447,7 +545,9 @@
     "description": "Controls flow path cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncMaxVal",
@@ -456,7 +556,9 @@
     "description": "Very large values in piecewise-linear approximations can cause\nnumerical issues. This parameter limits the bounds on the variables\nthat participate in function constraints approximated by a piecewise-\nlinear function. Specifically, any bound larger than \"FuncMaxVal\" (in\nabsolute value) on the variables participating in such a function\nconstraint will be truncated.\n\nIf the FuncNonlinear attribute of the constraint is set to 1, or if it\nis set to -1 and the global FuncNonlinear parameter is set to 1, the\nfunction constraint is not approximated by a piecewise-linear function\nand the \"FuncMaxVal\" parameter does not apply.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncNonlinear",
@@ -465,7 +567,9 @@
     "description": "This parameter controls whether general function constraints with\ntheir FuncNonlinear attribute set to -1 are replaced with a static\npiecewise-linear approximation (0), or handled inside the branch-and-\nbound tree using a dynamic outer-approximation approach (1).\n\nSee the discussion of function constraints for more information.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncPieceError",
@@ -474,7 +578,9 @@
     "description": "If the FuncPieces parameter is set to value -1 or -2, this attribute\nprovides the maximum allowed error (absolute for -1, relative for -2)\nin the piecewise-linear approximation.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncPieceLength",
@@ -483,7 +589,9 @@
     "description": "If the FuncPieces parameter is set to value 1, this parameter gives\nthe length of each piece of the piecewise-linear approximation.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncPieceRatio",
@@ -492,7 +600,9 @@
     "description": "This parameter controls whether the piecewise-linear approximation of\na function constraint is an underestimate of the function, an\noverestimate, or somewhere in between. A value of 0.0 will always\nunderestimate, while a value of 1.0 will always overestimate. A value\nin between will interpolate between the underestimate and the\noverestimate. A special value of -1 chooses points that are on the\noriginal function. The behaviour is not defined for other negative\nvalues.\n\nSee the discussion of function constraints for more information.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "FuncPieces",
@@ -501,7 +611,9 @@
     "description": "This parameter sets the strategy used for performing a piecewise-\nlinear approximation of a function constraint. There are a few\noptions:\n\n* **FuncPieces >= 2**: Sets the number of pieces; pieces are equal\n  width.\n\n* **FuncPieces = 1**: Uses a fixed width for each piece; the actual\n  width is provided in the FuncPieceLength parameter.\n\n* **FuncPieces = 0**: Default value; chooses automatically. Currently\n  it uses the relative error approach for the approximation, while for\n  version 10.0 or earlier it mainly uses the number of function\n  constraints to set the total number of pieces.\n\n* **FuncPieces = -1**: Bounds the absolute error of the approximation;\n  the error bound is provided in the FuncPieceError parameter.\n\n* **FuncPieces = -2**: Bounds the relative error of the approximation;\n  the error bound is provided in the FuncPieceError parameter.\n\nThis parameter only applies to function constraints whose FuncPieces\nattribute has been set to 0.\n\nSee the discussion of function constraints for more information.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "GUBCoverCuts",
@@ -510,7 +622,9 @@
     "description": "Controls GUB cover cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "GomoryPasses",
@@ -519,7 +633,9 @@
     "description": "A non-negative value indicates the maximum number of Gomory cut passes\nperformed. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Heuristics",
@@ -528,7 +644,9 @@
     "description": "Determines the amount of time spent in MIP heuristics. You can think\nof the value as the desired fraction of total MIP runtime devoted to\nheuristics (so by default, we aim to spend 5%% of runtime on\nheuristics). Larger values produce more and better feasible solutions,\nat a cost of slower progress in the best bound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "IISMethod",
@@ -537,7 +655,9 @@
     "description": "Chooses the IIS method to use. To compute an IIS for an LP, it is\nsufficient to solve an LP with dimensions similar to the dual of the\noriginal model. If the solve time for that LP is excessive, setting\nthe IISMethod parameter to 1 may offer a faster alternative; other\nsettings do not alter the default approach for infeasible LPs. For\nMIPs, filtering of constraints and variables is required, which\ninvolves solving a series of related MIP subproblems. Methods 0-2 all\nuse filtering techniques. Method 0 is often faster than method 1, but\nmay produce a larger IIS. Method 2 ignores the bound constraints. It\ntherefore tends to be faster than methods 0-1, but will fail if these\nbounds are necessary to make the problem infeasible. Method 3 will\nreturn the IIS for the LP relaxation of a MIP model if the relaxation\nis infeasible, even though the result may not be minimal when\nintegrality constraints are included. The default value of -1 chooses\nautomatically.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "IgnoreNames",
@@ -546,7 +666,9 @@
     "description": "This parameter affects how Gurobi deals with names. If set to 1,\nsubsequent calls to add variables or constraints to the model will\nignore the associated names. Names for objectives and the model will\nalso be ignored. In addition, subsequent calls to modify name\nattributes will have no effect. Note that variables or constraints\nthat had names at the point this parameter was changed to 1 will\nretain their names. If you wish to discard all name information, you\nshould set this parameter to 1 before adding variables or constraints\nto the model.\n\nIn addition, the parameter affects the behavior of the write functions\n(e.g. \"GRBwrite\" in C, or \"Model.write\" in Python).  If \"IgnoreNames\"\nis set to 1, Gurobi uses default names when writing the file.  This\ncan be useful if you have a model with names and want to write the\nmodel, the attributes, a MIP start file, or other information to disk\nwithout including variable and constraint names in the files.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ImpliedCuts",
@@ -555,7 +677,9 @@
     "description": "Controls implied bound cut generation. Use 0 to disable these cuts, 1\nfor moderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ImproveStartGap",
@@ -564,7 +688,9 @@
     "description": "The MIP solver can change parameter settings in the middle of the\nsearch in order to adopt a strategy that gives up on moving the best\nbound and instead devotes all of its effort towards finding better\nfeasible solutions. This parameter allows you to specify an optimality\ngap at which the MIP solver switches to a solution improvement\nstrategy. For example, setting this parameter to 0.1 will cause the\nMIP solver to switch strategies once the relative optimality gap is\nsmaller than 0.1.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ImproveStartNodes",
@@ -573,7 +699,9 @@
     "description": "The MIP solver can change parameter settings in the middle of the\nsearch in order to adopt a strategy that gives up on moving the best\nbound and instead devotes all of its effort towards finding better\nfeasible solutions. This parameter allows you to specify the node\ncount at which the MIP solver switches to a solution improvement\nstrategy. For example, setting this parameter to 10 will cause the MIP\nsolver to switch strategies once the node count is larger than 10.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ImproveStartTime",
@@ -582,7 +710,9 @@
     "description": "The MIP solver can change parameter settings in the middle of the\nsearch in order to adopt a strategy that gives up on moving the best\nbound and instead devotes all of its effort towards finding better\nfeasible solutions. This parameter allows you to specify the time when\nthe MIP solver switches to a solution improvement strategy. For\nexample, setting this parameter to 10 will cause the MIP solver to\nswitch strategies 10 seconds after starting the optimization.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "InfProofCuts",
@@ -591,7 +721,9 @@
     "description": "Controls infeasibility proof cut generation. Use 0 to disable these\ncuts, 1 for moderate cut generation, or 2 for aggressive cut\ngeneration. The default -1 value chooses automatically. Overrides the\nCuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "InfUnbdInfo",
@@ -600,7 +732,9 @@
     "description": "Set this parameter if you want to query the unbounded ray for\nunbounded models (through the UnbdRay attribute), or the infeasibility\nproof for infeasible models (through the FarkasDual and FarkasProof\nattributes).\n\nWhen this parameter is set additional information will be computed\nwhen a model is determined to be infeasible or unbounded, and a\nsimplex basis is available (from simplex or crossover). Note that if a\nmodel is determined to be infeasible or unbounded when solving with\nbarrier, prior to crossover, then this additional information will not\nbe available.\n\nNote that if a model is found to be either infeasible or unbounded,\nand you simply want to know which one it is, you should use the\nDualReductions parameter instead. It performs much less additional\ncomputation.\n\nNote:\n\n  Only affects linear programming (LP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "IntFeasTol",
@@ -609,7 +743,9 @@
     "description": "An integrality restriction on a variable is considered satisfied when\nthe variable\u2019s value is less than IntFeasTol from the nearest integer\nvalue. Tightening this tolerance can produce smaller integrality\nviolations, but very tight tolerances may significantly increase\nruntime. Loosening this tolerance rarely reduces runtime.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "IntegralityFocus",
@@ -618,7 +754,9 @@
     "description": "One unfortunate reality in MIP is that integer variables don\u2019t always\ntake exact integral values. While this typically doesn\u2019t create\nsignificant problems, in some situations the side-effects can be quite\nundesirable. The best-known example is probably a *trickle flow*,\nwhere a continuous variable that is meant to be zero when an\nassociated binary variable is zero instead takes a non-trivial value.\nMore precisely, given a constraint y \\leq M b, where y is a non-\nnegative continuous variable, b is a binary variable, and M is a\nconstant that captures the largest possible value of y, the constraint\nis intended to enforce the relationship that y must be zero if b is\nzero. With the default integer feasibility tolerance, the binary\nvariable is allowed to take a value as large as 1e-5 while still being\nconsidered as taking value zero. If the M value is large, then the M b\nupper bound on the y variable can be substantial.\n\nReducing the value of the IntFeasTol parameter can mitigate the\neffects of such trickle flows, but often at a significant cost, and\noften with limited success. The IntegralityFocus parameter provides a\nbetter alternative. Setting this parameter to 1 requests that the\nsolver work harder to try to avoid solutions that exploit integrality\ntolerances. More precisely, the solver tries to find solutions that\nare still (nearly) feasible if all integer variables are rounded to\nexact integral values. We should say that the solver won\u2019t always\nsucceed in finding such solutions, and that this setting introduces a\nmodest performance penalty, but the setting will significantly reduce\nthe frequency and magnitude of such violations.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "IterationLimit",
@@ -627,7 +765,9 @@
     "description": "Limits the number of simplex iterations performed. The limit applies\nto MIP, barrier crossover, and simplex. Optimization returns with an\nITERATION_LIMIT status if the limit is exceeded.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "JSONSolDetail",
@@ -636,7 +776,9 @@
     "description": "This parameter controls the amount of detail included in a JSON\nsolution. For example, when this parameter is set to 1, the JSON\nstring will contain data for all of the variables, even those with\nsolution value 0.\n\nFor a precise description of the contents of the resulting JSON\nstring, please refer to the JSON solution format section.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "JobID",
@@ -645,7 +787,9 @@
     "description": "If you are running on a Compute Server, this parameter provides the\nCompute Server Job ID for the current job. Note that this is a read-\nonly parameter.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LPWarmStart",
@@ -654,7 +798,9 @@
     "description": "Controls whether and how Gurobi uses warm start information for an LP\noptimization. The non default setting of 2 is particularly useful for\ncommunicating advanced start information while retaining the\nperformance benefits of presolve. A warm start can consist of any\ncombination of basis statuses, a primal start vector, or a dual start\nvector. It is specified using the attributes VBasis and CBasis or\nPStart and DStart on the original model.\n\nAs a general rule, setting this parameter to 0 ignores any start\ninformation and solves the model from scratch. Setting it to 1 (the\ndefault) uses the provided warm start information to solve the\noriginal, unpresolved problem, regardless of whether presolve is\nenabled. Setting it to 2 uses the start information to solve the\npresolved problem, assuming that presolve is enabled. This involves\nmapping the solution of the original problem into an equivalent (or\nsometimes nearly equivalent) crushed solution of the presolved\nproblem. If presolve is disabled, then setting 2 still prioritizes\nstart vectors, while setting 1 prioritizes basis statuses. Taken\ntogether, the LPWarmStart parameter setting, the LP algorithm\nspecified by Gurobi\u2019s Method parameter, and the available advanced\nstart information determine whether Gurobi will use basis statuses\nonly, basis statuses augmented with information from start vectors, or\na basis obtained by applying the crossover method to the provided\nprimal and dual start vectors to jump start the optimization.\n\nWhen Gurobi\u2019s Method parameter requests the barrier solver, primal and\ndual start vectors are prioritized over basis statuses (but only if\nyou provide both). These start vectors are fed to the crossover\nprocedure. This is the same crossover that is used to compute a basic\nsolution from the interior solution produced by the core barrier\nalgorithm, but in this case crossover is started from arbitrary start\nvectors. If you set the LPWarmStart parameter to 1, crossover will be\ninvoked on the original model using the provided vectors. Any provided\nbasis information will not be used in this case. If you set\nLPWarmStart to 2, crossover will be invoked on the presolved model\nusing crushed start vectors. If you set the parameter to 2 and provide\na basis but no start vectors, the basis will be used to compute the\ncorresponding primal and dual solutions on the original model. Those\nsolutions will then be crushed and used as primal and dual start\nvectors for the crossover, which will then construct a basis for the\npresolved model. Note that for all of these settings and start\ncombinations, no barrier algorithm iterations are performed.\n\nThe simplex algorithms provide more warm-starting options. With a\nparameter value of 1, simplex will start from a provided basis, if\navailable. Otherwise, it uses a provided start vector to refine the\ncrash basis it computes. Primal simplex will use PStart and dual\nsimplex will use DStart in this refinement process.\n\nWith a value of 2, simplex will use the crushed start vector on the\npresolved model (PStart for primal simplex, DStart for dual) to refine\nthe crash basis. This is true regardless of whether the start is\nderived from start vectors or a starting basis from the original\nmodel.  The difference is that if you provide an advanced basis, the\nbasis will be used to compute the corresponding primal and dual\nsolutions on the original model from which the primal or dual start on\nthe presolved model will be derived.\n\nNote:\n\n  Only affects linear programming (LP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LazyConstraints",
@@ -663,7 +809,9 @@
     "description": "Programs that add lazy constraints through a callback must set this\nparameter to value 1. The parameter tells the Gurobi algorithms to\navoid certain reductions and transformations that are incompatible\nwith lazy constraints.\n\nNote that if you use lazy constraints by setting the Lazy attribute\n(and not through a callback), there\u2019s no need to set this parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LicenseID",
@@ -672,7 +820,9 @@
     "description": "When using a WLS license, set this parameter to the license ID. You\ncan retrieve this value from your account on the Gurobi Web License\nManager site.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LiftProjectCuts",
@@ -681,7 +831,9 @@
     "description": "Controls lift-and-project cut generation. Use 0 to disable these cuts,\n1 for moderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LogFile",
@@ -690,7 +842,9 @@
     "description": "Determines the name of the Gurobi log file. Modifying this parameter\ncloses the current log file and opens the specified file. Use an empty\nstring for no log file. Use OutputFlag to shut off all logging.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "LogToConsole",
@@ -699,7 +853,9 @@
     "description": "Enables or disables console logging. Note that this refers to the\noutput of Gurobi to the console. This includes the various display and\nprint functions provided by the API in interactive environments.\n\nUse OutputFlag to shut off all logging.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIPFocus",
@@ -708,7 +864,9 @@
     "description": "The MIPFocus parameter allows you to modify your high-level solution\nstrategy, depending on your goals. By default, the Gurobi MIP solver\nstrikes a balance between finding new feasible solutions and proving\nthat the current solution is optimal. If you are more interested in\nfinding feasible solutions quickly, you can select \"MIPFocus=1\". If\nyou believe the solver is having no trouble finding good quality\nsolutions, and wish to focus more attention on proving optimality,\nselect \"MIPFocus=2\". If the best objective bound is moving very slowly\n(or not at all), you may want to try \"MIPFocus=3\" to focus on the\nbound.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIPGap",
@@ -717,7 +875,9 @@
     "description": "The MIP solver will terminate (with an optimal result) when the gap\nbetween the lower and upper objective bound is less than MIPGap times\nthe absolute value of the incumbent objective value. More precisely,\nif z_P is the primal objective bound (i.e., the incumbent objective\nvalue, which is the upper bound for minimization problems), and z_D is\nthe dual objective bound (i.e., the lower bound for minimization\nproblems), then the MIP gap is defined as\n\ngap = \\vert z_P - z_D\\vert / \\vert z_P\\vert.\n\nNote that if z_P = z_D = 0, then the gap is defined to be zero. If z_P\n= 0 and z_D \\neq 0, the gap is defined to be infinity.\n\nFor most models, z_P and z_D will have the same sign throughout the\noptimization process, and then the gap is monotonically decreasing.\nBut if z_P and z_D have opposite signs, the relative gap may increase\nafter finding a new incumbent solution, even though the absolute gap\n\\vert z_P - z_D\\vert has decreased.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIPGapAbs",
@@ -726,7 +886,9 @@
     "description": "The MIP solver will terminate (with an optimal result) when the gap\nbetween the lower and upper objective bound is less than MIPGapAbs.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIPSepCuts",
@@ -735,7 +897,9 @@
     "description": "Controls MIP separation cut generation. Use 0 to disable these cuts, 1\nfor moderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIQCPMethod",
@@ -744,7 +908,9 @@
     "description": "Controls the method used to solve MIQCP models. Value 1 uses a\nlinearized, outer-approximation approach, while value 0 solves\ncontinuous QCP relaxations at each node. The default setting (-1)\nchooses automatically.\n\nNote:\n\n  Only affects MIQCP models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MIRCuts",
@@ -753,7 +919,9 @@
     "description": "Controls Mixed Integer Rounding (MIR) cut generation. Use 0 to disable\nthese cuts, 1 for moderate cut generation, or 2 for aggressive cut\ngeneration. The default -1 value chooses automatically. Overrides the\nCuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MarkowitzTol",
@@ -762,7 +930,9 @@
     "description": "The Markowitz tolerance is used to limit numerical error in the\nsimplex algorithm. Specifically, larger values reduce the error\nintroduced in the simplex basis factorization. A larger value may\navoid numerical problems in rare situations, but it will also harm\nperformance.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MemLimit",
@@ -771,7 +941,9 @@
     "description": "Limits the total amount of memory (in GB, i.e., 10^9 bytes) available\nto Gurobi. If more is needed, Gurobi will fail with an OUT_OF_MEMORY\nerror.\n\nNote that it is not possible to retrieve solution information after an\nerror termination. Thus, the behavior of this parameter is different\nfrom that of other termination criteria like SoftMemLimit, TimeLimit,\nor NodeLimit, where the solver will terminate with a Status Code and\nsolution information will still be available.\n\nOne advantage of using this parameter rather than the similar\nSoftMemLimit is that MemLimit is checked after every memory\nallocation, so Gurobi will terminate at precisely the point where the\nlimit is exceeded.\n\nNote that allocated memory is tracked across all models within a\nGurobi environment. If you create multiple models in one environment,\nthese additional models will count towards overall memory consumption.\n\nMemory usage is also tracked across all threads. One consequence of\nthis is that termination may be non-deterministic for multi-threaded\nruns.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Method",
@@ -780,7 +952,9 @@
     "description": "Algorithm used to solve continuous models or the initial root\nrelaxation of a MIP model. Options are:\n\n* -1=automatic,\n\n* 0=primal simplex,\n\n* 1=dual simplex,\n\n* 2=barrier,\n\n* 3=concurrent,\n\n* 4=deterministic concurrent, and\n\n* 5=deterministic concurrent simplex (deprecated; see\n  ConcurrentMethod).\n\nAvailable settings and default behaviour depend on the model type or\nthe type of the initial root relaxation. In the current release, the\ndefault Automatic (\"Method=-1\") setting will typically choose non-\ndeterministic concurrent (\"Method=3\") for an LP, barrier (\"Method=2\")\nfor a QP or QCP, and dual (\"Method=1\") for the MIP root relaxation. If\nthe size of the MIP root relaxation is large, then it will often\nselect deterministic concurrent (\"Method=4\") or deterministic\nconcurrent simplex (\"Method=5\").\n\nConcurrent methods aren\u2019t available for QP and QCP. Only the simplex\nand barrier algorithms are available for continuous QP models. If you\nselect barrier (\"Method=2\") to solve the root of an MIQP model, then\nyou need to also select barrier for the node relaxations (i.e. set\nNodeMethod=2).  Only barrier is available for continuous QCP models.\nHowever if you choose LP relaxations for solving MIQCP, you can also\nselect the simplex algorithms (\"Method=0\" or \"Method=1\").\n\nConcurrent optimizers run multiple solvers on multiple threads\nsimultaneously and choose the one that finishes first. The solvers\nthat are run concurrently can be controlled with the ConcurrentMethod\nparameter. The deterministic options (\"Method=4\" and \"Method=5\") give\nthe exact same result each time, while the non-deterministic option\n(\"Method=3\") is often faster but can produce different optimal bases\nwhen run multiple times.\n\nThe default setting is rarely significantly slower than the best\npossible setting, so you generally won\u2019t see a big gain from changing\nthis parameter. There are classes of models where one particular\nalgorithm is consistently fastest, though, so you may want to\nexperiment with different options when confronted with a particularly\ndifficult model.\n\nNote that if memory is tight on an LP model, you should consider using\nthe dual simplex method (\"Method=1\"). The concurrent optimizer, which\nis typically chosen when using the default setting, consumes a lot\nmore memory than dual simplex alone.\n\nIn multiobjective LP optimization:\n\n* The first objective is solved using LP defaults. It can be set by\n  the user using the \"Method\" parameter.\n\n* Subsequent objectives are solved by default using primal simplex to\n  allow for warm starting. The algorithm used here can be controlled\n  using MultiObjMethod.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MinRelNodes",
@@ -789,7 +963,9 @@
     "description": "Number of nodes to explore in the minimum relaxation heuristic.\n\nThis heuristic is quite expensive, and generally produces poor quality\nsolutions. You should generally only use it if other means, including\nexploration of the tree with default settings, fail to produce a\nfeasible solution.\n\nThe default value automatically chooses whether to apply the\nheuristic. It will only rarely choose to do so.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MixingCuts",
@@ -798,7 +974,9 @@
     "description": "Controls Mixing cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ModKCuts",
@@ -807,7 +985,9 @@
     "description": "Controls mod-k cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MultiObjMethod",
@@ -816,7 +996,9 @@
     "description": "When solving a continuous multi-objective model using a hierarchical\napproach, the model is solved once for each objective. The algorithm\nused to solve for the highest priority objective is controlled by the\nMethod parameter. This parameter determines the algorithm used to\nsolve for subsequent objectives. As with the Method parameters, values\nof 0 and 1 use primal and dual simplex, respectively. A value of 2\nindicates that warm-start information from previous solves should be\ndiscarded, and the model should be solved from scratch (using the\nalgorithm indicated by the Method parameter). The default setting of\n-1 usually chooses primal simplex.\n\nNote:\n\n  Only affects continuous multi-objective models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "MultiObjPre",
@@ -825,7 +1007,9 @@
     "description": "Controls the initial presolve level used for multi-objective models.\nValue 0 disables the initial presolve, value 1 applies presolve\nconservatively, and value 2 applies presolve aggressively. The default\n-1 value usually applies presolve conservatively. Aggressive presolve\nmay increase the chance of the objective values being slightly\ndifferent than those for other options.\n\nNote:\n\n  Only affects multi-objective models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NLPHeur",
@@ -834,7 +1018,9 @@
     "description": "The NLP heuristic uses a non-linear barrier solver to find feasible\nsolutions to non-convex quadratic models. It can often find solutions\nmuch more quickly than the alternative, but in some cases it can\nconsume significant runtime without producing a solution. By default,\nthe heuristic is enabled (1). Use 0 to disable the heuristic.\n\nNote:\n\n  Only affects models with nonconvex quadratic expressions in the\n  objective or constraints",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NetworkAlg",
@@ -843,7 +1029,9 @@
     "description": "Controls whether to use network simplex. Value 0 doesn\u2019t use network\nsimplex. Value 1 indicates to use network simplex, if an LP is a\nnetwork problem. The default -1 value chooses automatically.\n\nNote:\n\n  Only affects linear programming (LP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NetworkCuts",
@@ -852,7 +1040,9 @@
     "description": "Controls network cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NoRelHeurTime",
@@ -861,7 +1051,9 @@
     "description": "Limits the amount of time (in seconds) spent in the NoRel heuristic.\nThis heuristic searches for high-quality feasible solutions before\nsolving the root relaxation. It can be quite useful on models where\nthe root relaxation is particularly expensive.\n\nNote that this parameter will introduce non-determinism - different\nruns may take different paths. Use the NoRelHeurWork parameter for\ndeterministic results.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NoRelHeurWork",
@@ -870,7 +1062,9 @@
     "description": "Limits the amount of work spent in the NoRel heuristic. This heuristic\nsearches for high-quality feasible solutions before solving the root\nrelaxation. It can be quite useful on models where the root relaxation\nis particularly expensive.\n\nThe work metric used in this parameter is tough to define precisely. A\nsingle unit corresponds to roughly a second, but this will depend on\nthe machine, the core count, and in some cases the model. You may need\nto experiment to find a good setting for your model.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NodeLimit",
@@ -879,7 +1073,9 @@
     "description": "Limits the number of MIP nodes explored. Optimization returns with an\nNODE_LIMIT status if the limit is exceeded. Note that if multiple\nthreads are used for the optimization, the actual number of explored\nnodes may be slightly larger than the set limit.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NodeMethod",
@@ -888,7 +1084,9 @@
     "description": "Algorithm used for MIP node relaxations (except for the initial root\nnode relaxation, see Method). Options are: -1=automatic, 0=primal\nsimplex, 1=dual simplex, and 2=barrier. Note that barrier is not an\noption for MIQP node relaxations.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NodefileDir",
@@ -897,7 +1095,9 @@
     "description": "Determines the directory into which nodes are written when node memory\nusage exceeds the specified NodefileStart value.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NodefileStart",
@@ -906,7 +1106,9 @@
     "description": "If you find that the Gurobi Optimizer exhausts memory when solving a\nMIP, you should modify the \"NodefileStart\" parameter. When the amount\nof memory used to store nodes (measured in GB, i.e., 10^9 bytes)\nexceeds the specified parameter value, nodes are compressed and\nwritten to disk. We recommend a setting of \"0.5\", but you may wish to\nchoose a different value, depending on the memory available in your\nmachine. By default, nodes are written to the current working\ndirectory. The NodefileDir parameter can be used to choose a different\nlocation.\n\nIf you still exhaust memory after setting the \"NodefileStart\"\nparameter to a small value, you should try limiting the thread count.\nEach thread in parallel MIP requires a copy of the model, as well as\nseveral other large data structures. Reducing the Threads parameter\ncan sometimes significantly reduce memory usage.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NonConvex",
@@ -915,7 +1117,9 @@
     "description": "Sets the strategy for handling non-convex quadratic objectives or non-\nconvex quadratic constraints. With setting 0, an error is reported if\nthe original user model contains non-convex quadratic constructs\n(unless Q matrix linearization, as controlled by the PreQLinearize\nparameter, removes the non-convexity). With setting 1, an error is\nreported if non-convex quadratic constructs could not be discarded or\nlinearized during presolve. With setting 2, non-convex quadratic\nproblems are solved by translating them into bilinear form and\napplying spatial branching. The default -1 setting is currently almost\nequivalent to 2, except that it takes less care to avoid presolve\nreductions that might transform a convex constraint into one that can\nno longer be detected to be convex, and thus can sometimes perform\nmore presolve reductions.\n\nNote:\n\n  Only affects QP, QCP, MIQP, and MIQCP models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NormAdjust",
@@ -924,7 +1128,9 @@
     "description": "Chooses from among multiple pricing norm variants. The details of how\nthis parameter affects the simplex pricing algorithm are subtle and\ndifficult to describe, so we\u2019ve simply labeled the options 0 through\n3. The default value of -1 chooses automatically.\n\nChanging the value of this parameter rarely produces a significant\nbenefit.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "NumericFocus",
@@ -933,7 +1139,9 @@
     "description": "The NumericFocus parameter controls the degree to which the code\nattempts to detect and manage numerical issues. The default setting\n(0) makes an automatic choice, with a slight preference for speed.\nSettings 1-3 increasingly shift the focus towards being more careful\nin numerical computations. With higher values, the code will spend\nmore time checking the numerical accuracy of intermediate results, and\nit will employ more expensive techniques in order to avoid potential\nnumerical issues.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "OBBT",
@@ -942,7 +1150,9 @@
     "description": "Value 0 disables optimality-based bound tightening (OBBT). Levels 1-3\ndescribe the amount of work allowed for OBBT ranging from moderate to\naggressive. The default -1 value is an automatic setting which chooses\na rather moderate setting.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ObjNumber",
@@ -951,7 +1161,9 @@
     "description": "When working with multiple objectives, this parameter selects the\nindex of the objective you want to work with. When you query or modify\nan attribute associated with multiple objectives (ObjN, ObjNVal,\netc.), the ObjNumber parameter will determine which objective is\nactually affected. The value of this parameter should be less than the\nvalue of the NumObj attribute (which captures the number of objectives\nin the model).\n\nPlease refer to the discussion of Multiple Objectives for more\ninformation on the use of alternative objectives.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ObjScale",
@@ -960,7 +1172,9 @@
     "description": "When positive, divides the model objective by the specified value to\navoid numerical issues that may result from very large or very small\nobjective coefficients. The default value of 0 decides on the scaling\nautomatically. A value less than zero uses the maximum coefficient to\nthe specified power as the scaling (so \"ObjScale=-0.5\" would scale by\nthe square root of the largest objective coefficient).\n\nNote that objective scaling can lead to large dual violations on the\noriginal, unscaled objective when the optimality tolerance with the\nscaled objective is barely satisfied, so it should be used sparingly.\nNote also that scaling will be more effective when all objective\ncoefficients are of similar orders of magnitude, as opposed to\nobjectives with a wide range of coefficients. In the latter case,\nconsider using the Multiple Objectives feature instead.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "OptimalityTol",
@@ -969,7 +1183,9 @@
     "description": "For the simplex algorithm and crossover, reduced costs must all be\nsmaller than OptimalityTol in the improving direction in order for a\nmodel to be declared optimal.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "OutputFlag",
@@ -978,7 +1194,9 @@
     "description": "Enables or disables solver output. Use LogFile and LogToConsole for\nfiner-grain control. Setting OutputFlag to 0 is equivalent to setting\nLogFile to \"\"\"\" and LogToConsole to 0.\n\nNote that server-side logging is always active for remote jobs run on\nGurobi Instant Cloud, Compute Server, or Cluster Manager. This is not\nimpacted by any user parameter settings.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PSDCuts",
@@ -987,7 +1205,9 @@
     "description": "Controls PSD cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects models with nonconvex quadratic expressions in the\n  objective or constraints",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PSDTol",
@@ -996,7 +1216,9 @@
     "description": "Sets a limit on the amount of diagonal perturbation that the optimizer\nis allowed to perform on a Q matrix in order to correct minor PSD\nviolations. If a larger perturbation is required, the optimizer will\nterminate with a Q_NOT_PSD error.\n\nNote:\n\n  Only affects QP, QCP, MIQP, and MIQCP models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PartitionPlace",
@@ -1005,7 +1227,9 @@
     "description": "Setting the Partition attribute on at least one variable in a model\nenables the partitioning heuristic, which uses large-neighborhood\nsearch to try to improve the current incumbent solution.\n\nThis parameter determines where that heuristic runs. Options are:\n\n* Before the root relaxation is solved (16)\n\n* At the start of the root cut loop (8)\n\n* At the end of the root cut loop (4)\n\n* At the nodes of the branch-and-cut search (2)\n\n* When the branch-and-cut search terminates (1)\n\nThe parameter value is a bit vector, where each bit turns the\nheuristic on or off at that place. The numerical values next to the\noptions listed above indicate which bit controls the corresponding\noption. Thus, for example, to enable the heuristic at the beginning\nand end of the root cut loop (and nowhere else), you would set the 8\nbit and the 4 bit to 1, which would correspond to a parameter value of\n12.\n\nThe default value of 15 indicates that we enable every option except\nthe first one listed above.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PerturbValue",
@@ -1014,7 +1238,9 @@
     "description": "Magnitude of the simplex perturbation. Note that perturbation is only\napplied when progress has stalled, so the parameter will often have no\neffect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PoolGap",
@@ -1023,7 +1249,9 @@
     "description": "Determines how large a (relative) gap to tolerate in stored solutions.\nWhen this parameter is set to a non-default value, solutions whose\nobjective values exceed that of the best known solution by more than\nthe specified (relative) gap are discarded. For example, if the MIP\nsolver has found a solution at objective 100, then a setting of\n\"PoolGap=0.2\" would discard solutions with objective worse than 120\n(assuming a minimization objective).\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PoolGapAbs",
@@ -1032,7 +1260,9 @@
     "description": "Determines how large a (absolute) gap to tolerate in stored solutions.\nWhen this parameter is set to a non-default value, solutions whose\nobjective values exceed that of the best known solution by more than\nthe specified (absolute) gap are discarded. For example, if the MIP\nsolver has found a solution at objective 100, then a setting of\n\"PoolGapAbs=20\" would discard solutions with objective worse than 120\n(assuming a minimization objective).\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PoolSearchMode",
@@ -1041,7 +1271,9 @@
     "description": "Selects different modes for exploring the MIP search tree. With the\ndefault setting (\"PoolSearchMode=0\"), the MIP solver tries to find an\noptimal solution to the model. It keeps other solutions found along\nthe way, but those are incidental. By setting this parameter to a non-\ndefault value, the MIP search will continue after the optimal solution\nhas been found in order to find additional, high-quality solutions.\nWith a non-default value (\"PoolSearchMode=1\" or \"PoolSearchMode=2\"),\nthe MIP solver will try to find \"n\" solutions, where \"n\" is determined\nby the value of the PoolSolutions parameter. With a setting of 1,\nthere are no guarantees about the quality of the extra solutions,\nwhile with a setting of 2, the solver will find the \"n\" best\nsolutions. The cost of the solve will increase with increasing values\nof this parameter.\n\nOnce optimization is complete, the PoolObjBound attribute can be used\nto evaluate the quality of the solutions that were found. For example,\na value of \"PoolObjBound=100\" indicates that there are no other\nsolutions with objective better 100, and thus that any known solutions\nwith objective better than 100 are better than any as-yet undiscovered\nsolutions.\n\nSee Solution Pool for more information about solution pools, including\nsubtleties and limitations.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PoolSolutions",
@@ -1050,7 +1282,9 @@
     "description": "Determines how many MIP solutions are stored. For the default value of\nPoolSearchMode, these are just the solutions that are found along the\nway in the process of exploring the MIP search tree. For other values\nof PoolSearchMode, this parameter sets a target for how many solutions\nto find, so larger values will impact performance.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreCrush",
@@ -1059,7 +1293,9 @@
     "description": "Shuts off a few reductions in order to allow presolve to transform any\nconstraint on the original model into an equivalent constraint on the\npresolved model. You should consider setting this parameter to 1 if\nyou are using callbacks to add your own cuts. A cut that cannot be\napplied to the presolved model will be silently ignored. The impact on\nthe size of the presolved problem is usually small.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreDepRow",
@@ -1068,7 +1304,9 @@
     "description": "Controls the presolve dependent row reduction, which eliminates\nlinearly dependent constraints from the constraint matrix. The default\nsetting (-1) applies the reduction to continuous models but not to MIP\nmodels. Setting 0 turns the reduction off for all models. Setting 1\nturns it on for all models.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreDual",
@@ -1077,7 +1315,9 @@
     "description": "Controls whether presolve forms the dual of a continuous model.\nDepending on the structure of the model, solving the dual can reduce\noverall solution time. The default setting uses a heuristic to decide.\nSetting 0 forbids presolve from forming the dual, while setting 1\nforces it to take the dual. Setting 2 employs a more expensive\nheuristic that forms both the presolved primal and dual models (on two\nthreads), and heuristically chooses one of them.\n\nNote:\n\n  Mainly affects LP, QP, and QCP models, but it is also used for the\n  initial root relaxation of mixed integer programs.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreMIQCPForm",
@@ -1086,7 +1326,9 @@
     "description": "Determines the format of the presolved version of an MIQCP model.\nOption 0 leaves the model in MIQCP form, so the branch-and-cut\nalgorithm will operate on a model with arbitrary quadratic\nconstraints. Option 1 always transforms the model into MISOCP form;\nquadratic constraints are transformed into second-order cone\nconstraints. Option 2 always transforms the model into disaggregated\nMISOCP form; quadratic constraints are transformed into rotated cone\nconstraints, where each rotated cone contains two terms and involves\nonly three variables.\n\nThe default setting (-1) choose automatically. The automatic setting\nworks well, but there are cases where forcing a different form can be\nbeneficial.\n\nNote:\n\n  Only affects MIQCP models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PrePasses",
@@ -1095,7 +1337,9 @@
     "description": "Limits the number of passes performed by presolve. The default setting\n(-1) chooses the number of passes automatically. You should experiment\nwith this parameter when you find that presolve is consuming a large\nfraction of total solve time.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreQLinearize",
@@ -1104,7 +1348,9 @@
     "description": "Controls presolve Q matrix linearization. Binary variables in\nquadratic expressions provide some freedom to state the same\nexpression in multiple different ways. Options 1 and 2 of this\nparameter attempt to linearize quadratic constraints or a quadratic\nobjective, replacing quadratic terms with linear terms, using\nadditional variables and linear constraints. This can potentially\ntransform an MIQP or MIQCP model into an MILP. Option 1 focuses on\nproducing an MILP reformulation with a strong LP relaxation, with a\ngoal of limiting the size of the MIP search tree. Option 2 aims for a\ncompact reformulation, with a goal of reducing the cost of each node.\nOption 0 attempts to leave Q matrices unmodified; it won\u2019t add\nvariables or constraints, but it may still perform adjustments on\nquadratic objective functions to make them positive semi-definite\n(PSD). The default setting (-1) chooses automatically.\n\nNote:\n\n  Only affects MIQP and MIQCP models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreSOS1BigM",
@@ -1113,7 +1359,9 @@
     "description": "Controls the automatic reformulation of SOS1 constraints into binary\nform. SOS1 constraints are often handled more efficiently using a\nbinary representation. The reformulation often requires \"big-M\" values\nto be introduced as coefficients. This parameter specifies the largest\n\"big-M\" that can be introduced by presolve when performing this\nreformulation. Larger values increase the chances that an SOS1\nconstraint will be reformulated, but very large values (e.g., 1e8) can\nlead to numerical issues.\n\nThe default value of -1 chooses a threshold automatically. You should\nset the parameter to 0 to shut off SOS1 reformulation entirely, or a\nlarge value to force reformulation.\n\nPlease refer to this section for more information on SOS constraints.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreSOS1Encoding",
@@ -1122,7 +1370,9 @@
     "description": "Controls the automatic reformulation of SOS1 constraints. Such\nconstraints can be handled directly by the MIP branch-and-cut\nalgorithm, but they are often handled more efficiently by\nreformulating them using binary or integer variables. There are\nseveral diffent ways to perform this reformulation; they differ in\ntheir size and strength. Smaller reformulations add fewer variables\nand constraints to the model. Stronger reformulations reduce the\nnumber of branch-and-cut nodes required to solve the resulting model.\n\nOptions 0 and 1 of this parameter encode an SOS1 constraint using a\nformulation whose size is linear in the number of SOS members. Option\n0 uses a so-called multiple choice model. It usually produces an LP\nrelaxation that is easier to solve. Option 1 uses an incremental\nmodel. It often gives a stronger representation, reducing the amount\nof branching required to solve harder problems.\n\nOptions 2 and 3 of this parameter encode the SOS1 using a formulation\nof logarithmic size. They both only apply when all the variables in\nthe SOS1 are non-negative. Option 3 additionally requires that the sum\nof the variables in the SOS1 is equal to 1. Logarithmic formulations\nare often advantageous when the SOS1 constraint has a large number of\nmembers. Option 2 focuses on a formulation whose LP relaxation is\neasier to solve, while option 3 has better branching behavior.\n\nThe default value of -1 chooses a reformulation for each SOS1\nconstraint automatically.\n\nNote that the reformulation of SOS1 constraints is also influenced by\nthe PreSOS1BigM parameter. To shut off the reformulation entirely you\nshould set that parameter to 0.\n\nPlease refer to this section for more information on SOS constraints.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreSOS2BigM",
@@ -1131,7 +1381,9 @@
     "description": "Controls the automatic reformulation of SOS2 constraints into binary\nform. SOS2 constraints are often handled more efficiently using a\nbinary representation. The reformulation often requires \"big-M\" values\nto be introduced as coefficients. This parameter specifies the largest\n\"big-M\" that can be introduced by presolve when performing this\nreformulation. Larger values increase the chances that an SOS2\nconstraint will be reformulated, but very large values (e.g., 1e8) can\nlead to numerical issues.\n\nThe default value of -1 chooses a threshold automatically. You should\nset the parameter to 0 to shut off SOS2 reformulation entirely, or a\nlarge value to force reformulation.\n\nPlease refer to this section for more information on SOS constraints.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreSOS2Encoding",
@@ -1140,7 +1392,9 @@
     "description": "Controls the automatic reformulation of SOS2 constraints. Such\nconstraints can be handled directly by the MIP branch-and-cut\nalgorithm, but they are often handled more efficiently by\nreformulating them using binary or integer variables. There are\nseveral diffent ways to perform this reformulation; they differ in\ntheir size and strength. Smaller reformulations add fewer variables\nand constraints to the model. Stronger reformulations reduce the\nnumber of branch-and-cut nodes required to solve the resulting model.\n\nOptions 0 and 1 of this parameter encode an SOS2 constraint using a\nformulation whose size is linear in the number of SOS members. Option\n0 uses a so-called multiple choice model. It usually produces an LP\nrelaxation that is easier to solve. Option 1 uses an incremental\nmodel. It often gives a stronger representation, reducing the amount\nof branching required to solve harder problems.\n\nOptions 2 and 3 of this parameter encode the SOS2 using a formulation\nof logarithmic size. They both only apply when all the variables in\nthe SOS2 are non-negative. Option 3 additionally requires that the sum\nof the variables in the SOS2 is equal to 1. Logarithmic formulations\nare often advantageous when the SOS2 constraint has a large number of\nmembers. Option 2 focuses on a formulation whose LP relaxation is\neasier to solve, while option 3 has better branching behavior.\n\nThe default value of -1 chooses a reformulation for each SOS2\nconstraint automatically.\n\nNote that the reformulation of SOS2 constraints is also influenced by\nthe PreSOS2BigM parameter. To shut off the reformulation entirely you\nshould set that parameter to 0.\n\nPlease refer to this section for more information on SOS constraints.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PreSparsify",
@@ -1149,7 +1403,9 @@
     "description": "Controls the presolve sparsify reduction. This reduction can sometimes\nsignificantly reduce the number of non-zero values in the presolved\nmodel. Value 0 shuts off the reduction, while value 1 forces it on for\nmixed integer programming (MIP) models and value 2 forces it on for\nall types of models, including linear programming (LP) models, and MIP\nrelaxations. The default value of -1 chooses automatically.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Presolve",
@@ -1158,7 +1414,9 @@
     "description": "Controls the presolve level. A value of -1 corresponds to an automatic\nsetting. Other options are off (0), conservative (1), or aggressive\n(2). More aggressive application of presolve takes more time, but can\nsometimes lead to a significantly tighter model.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ProjImpliedCuts",
@@ -1167,7 +1425,9 @@
     "description": "Controls projected implied bound cut generation. Use 0 to disable\nthese cuts, 1 for moderate cut generation, or 2 for aggressive cut\ngeneration. The default -1 value chooses automatically. Overrides the\nCuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "PumpPasses",
@@ -1176,7 +1436,9 @@
     "description": "Number of passes of the feasibility pump heuristic.\n\nThis heuristic is quite expensive, and generally produces poor quality\nsolutions. You should generally only use it if other means, including\nexploration of the tree with default settings, fail to produce a\nfeasible solution.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "QCPDual",
@@ -1185,7 +1447,9 @@
     "description": "Determines whether dual variable values are computed for QCP models.\nComputing them can add significant time to the optimization, so you\nshould only set this parameter to 1 if you need them.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Quad",
@@ -1194,7 +1458,9 @@
     "description": "Enables or disables quad precision computation in simplex. The -1\ndefault setting allows the algorithm to decide. Quad precision can\nsometimes help solve numerically challenging models, but it can also\nsignificantly increase runtime. Quad precision is only available on\nprocessors that support quadruple precision, e.g., common Intel\nprocessors. On other processors, the parameter has no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "RINS",
@@ -1203,7 +1469,9 @@
     "description": "Frequency of the RINS heuristic. Default value (-1) chooses\nautomatically. A value of 0 shuts off RINS. A positive value \"n\"\napplies RINS at every \"n-th\" node of the MIP search tree.\n\nIncreasing the frequency of the RINS heuristic shifts the focus of the\nMIP search away from proving optimality, and towards finding good\nfeasible solutions. We recommend that you try MIPFocus,\nImproveStartGap, or ImproveStartTime before experimenting with this\nparameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "RLTCuts",
@@ -1212,7 +1480,9 @@
     "description": "Controls Relaxation Linearization Technique (RLT) cut generation. Use\n0 to disable these cuts, 1 for moderate cut generation, or 2 for\naggressive cut generation. The default -1 value chooses automatically.\nOverrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Record",
@@ -1221,7 +1491,9 @@
     "description": "Enables API call recording. When enabled, Gurobi will write one or\nmore files (named \"gurobi000.grbr\" or similar) that capture the\nsequence of Gurobi commands that your program issued. This file can\nsubsequently be replayed using the Gurobi command-line tool. Replaying\nthe file will repeat the exact same sequence of commands, and when\ncompleted will show the time spent in Gurobi API routines, the time\nspent in Gurobi algorithms, and will indicate whether any Gurobi\nenvironments or models were leaked by your program. Replay files are\nparticularly useful in tech support situations. They provide an easy\nway to relay to Gurobi tech support the exact sequence of Gurobi\ncommands that led to a question or issue.\n\nThis parameter must be set before starting an empty environment (or in\na \"gurobi.env\" file). All Gurobi commands will be recorded until the\nenvironment is freed or the program ends.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "RelaxLiftCuts",
@@ -1230,7 +1502,9 @@
     "description": "Controls relax-and-lift cut generation. Use 0 to disable these cuts, 1\nfor moderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ResultFile",
@@ -1239,7 +1513,9 @@
     "description": "Specifies the name of the result file to be written upon completion of\noptimization. The type of the result file is determined by the file\nsuffix. The most commonly used suffixes are \".sol\" (to capture the\nsolution vector), \".bas\" (to capture the simplex basis), and \".mst\"\n(to capture the solution vector on the integer variables). You can\nalso write a \".ilp\" file (to capture the IIS for an infeasible model),\nor a \".mps\", \".rew\", \".lp\", or \".rlp\" file (to capture the original\nmodel), or a \".dua\" or \".dlp\" file (to capture the dual of a pure LP\nmodel). The file suffix may optionally be followed by \".zip\", \".gz\",\n\".bz2\", \".7z\" or \".xz\", which produces a compressed result.\n\nMore information on the file formats can be found in the File Format\nsection.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ScaleFlag",
@@ -1248,7 +1524,9 @@
     "description": "Controls model scaling. By default, the rows and columns of the model\nare scaled in order to improve the numerical properties of the\nconstraint matrix. The scaling is removed before the final solution is\nreturned. Scaling typically reduces solution times, but it may lead to\nlarger constraint violations in the original, unscaled model. Turning\noff scaling (\"ScaleFlag=0\") can sometimes produce smaller constraint\nviolations. Choosing a different scaling option can sometimes improve\nperformance for particularly numerically difficult models. Using\ngeometric mean scaling (\"ScaleFlag=2\") is especially well suited for\nmodels with a wide range of coefficients in the constraint matrix rows\nor columns. Settings 1 and 3 are not as directly connected to any\nspecific model characteristics, so experimentation with both settings\nmay be needed to assess performance impact.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ScenarioNumber",
@@ -1257,7 +1535,9 @@
     "description": "When working with multiple scenarios, this parameter selects the index\nof the scenario you want to work with. When you query or modify an\nattribute associated with multiple scenarios (ScenNLB, ScenNUB,\nScenNObj, ScenNRHS, etc.), the ScenarioNumber parameter will determine\nwhich scenario is actually affected. The value of this parameter\nshould be less than the value of the NumScenarios attribute (which\ncaptures the number of scenarios in the model).\n\nPlease refer to the discussion of Multiple Scenarios for more\ninformation on the use of alternative scenarios.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Seed",
@@ -1266,7 +1546,9 @@
     "description": "Modifies the random number seed. This acts as a small perturbation to\nthe solver, and typically leads to different solution paths.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ServerPassword",
@@ -1275,7 +1557,9 @@
     "description": "The password for connecting to the server (either a Compute Server or\na token server).\n\nFor connecting to the Remote Services cluster referred to by the\nComputeServer parameter, you\u2019ll need to supply the client password.\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nSupply the token server password (if needed) when connecting to the\nserver referred to by the TokenServer parameter,\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"PASSWORD=pwd\") or an empty environment. Changing the parameter after\nyour environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ServerTimeout",
@@ -1284,7 +1568,9 @@
     "description": "Network time-out for Compute Server and token server (in seconds). If\nthe client program is unable to contact the server for more than the\nspecified amount of time, the client will quit with a network error.\n\nRefer to the *Gurobi Remote Services Reference Manual* for more\ninformation on starting Compute Server jobs.\n\nYou must set this parameter using an empty environment. Changing the\nparameter after your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SiftMethod",
@@ -1293,7 +1579,9 @@
     "description": "LP method used to solve sifting sub-problems. Options are Automatic\n(-1), Primal Simplex (0), Dual Simplex (1), and Barrier (2). Note that\nthis parameter only has an effect when you are using dual simplex and\nsifting has been selected (either automatically by dual simplex, or\nthrough the Sifting parameter).\n\nChanging the value of this parameter rarely produces a significant\nbenefit.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Sifting",
@@ -1302,7 +1590,9 @@
     "description": "Enables or disables sifting within dual simplex. Sifting can be useful\nfor LP models where the number of variables is many times larger than\nthe number of constraints (we typically only see significant benefits\nwhen the ratio is 100 or more). Options are Automatic (-1), Off (0),\nModerate (1), and Aggressive (2). With a Moderate setting, sifting\nwill be applied to LP models and to the initial root relaxation for\nMIP models. With an Aggressive setting, sifting will be applied any\ntime dual simplex is used, including at the nodes of a MIP. Note that\nthis parameter has no effect if you aren\u2019t using dual simplex. Note\nalso that Gurobi will ignore this parameter in cases where sifting is\nobviously a worse choice than dual simplex.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SimplexPricing",
@@ -1311,7 +1601,9 @@
     "description": "Determines the simplex variable pricing strategy. Available options\nare Automatic (-1), Partial Pricing (0), Steepest Edge (1), Devex (2),\nand Quick-Start Steepest Edge (3).\n\nChanging the value of this parameter rarely produces a significant\nbenefit.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SoftMemLimit",
@@ -1320,7 +1612,9 @@
     "description": "Limits the total amount of memory (in GB, i.e., 10^9 bytes) available\nto Gurobi. If more is needed, Gurobi will terminate with a MEM_LIMIT\nstatus code.\n\nIn contrast to the MemLimit parameter, the SoftMemLimit parameter\nleads to a graceful exit of the optimization, such that it is possible\nto retrieve solution information afterwards or (in the case of a MIP\nsolve) resume the optimization.\n\nA disadvantage compared to MemLimit is that the SoftMemLimit is only\nchecked at places where optimization can be terminated gracefully, so\nmemory use may exceed the limit between these checks.\n\nNote that allocated memory is tracked across all models within a\nGurobi environment. If you create multiple models in one environment,\nthese additional models will count towards overall memory consumption.\n\nMemory usage is also tracked across all threads. One consequence of\nthis is that termination may be non-deterministic for multi-threaded\nruns.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SolFiles",
@@ -1329,7 +1623,9 @@
     "description": "During the MIP solution process, multiple incumbent solutions are\ntypically found on the path to finding a proven optimal solution.\nSetting this parameter to a non-empty string causes these solutions to\nbe written to files (in .sol format) as they are found. The MIP solver\nwill append \"_n.sol\" to the value of the parameter to form the name of\nthe file that contains solution number n. For example, setting the\nparameter to value \"solutions/mymodel\" will create files\n\"mymodel_0.sol\", \"mymodel_1.sol\", etc., in directory \"solutions\".\n\nNote that intermediate solutions can be retrieved as they are\ngenerated through a callback (by requesting the \"MIPSOL_SOL\" in a\n\"MIPSOL\" callback). This parameter makes the process simpler.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SolutionLimit",
@@ -1338,7 +1634,9 @@
     "description": "Limits the number of feasible MIP solutions found. Optimization\nreturns with a SOLUTION_LIMIT status once the limit has been reached.\nTo find a feasible solution quickly, Gurobi executes additional\nfeasible point heuristics when the solution limit is set to exactly 1.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SolutionNumber",
@@ -1347,7 +1645,9 @@
     "description": "When querying attribute Xn, ObjNVal, or PoolObjVal to retrieve an\nalternate MIP solution, this parameter determines which alternate\nsolution is retrieved. The value of this parameter should be less than\nthe value of the SolCount attribute.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SolutionTarget",
@@ -1356,7 +1656,9 @@
     "description": "Specifies the solution target for linear programs (LP). Options are\nAutomatic (-1), primal and dual optimal, and basic (0), primal and\ndual optimal (1).",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "StartNodeLimit",
@@ -1365,7 +1667,9 @@
     "description": "This parameter limits the number of branch-and-bound nodes explored\nwhen completing a partial MIP start. The default value of -1 uses the\nvalue of the SubMIPNodes parameter. A value of -2 means to only check\nfull MIP starts for feasibility and to ignore partial MIP starts. A\nvalue of -3 shuts off MIP start processing entirely. Non-negative\nvalues are node limits.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "StartNumber",
@@ -1374,7 +1678,9 @@
     "description": "This parameter selects the index of the MIP start you want to work\nwith.  When you modify a MIP start value (using the Start attribute)\nthe StartNumber parameter will determine which MIP start is actually\naffected. The value of this parameter should be less than the value of\nthe NumStart attribute (which captures the number of MIP starts in the\nmodel).\n\nThe special value -1 is meant to append new MIP start to a model, but\nquerying a MIP start when StartNumber is -1 will result in an error.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "StrongCGCuts",
@@ -1383,7 +1689,9 @@
     "description": "Controls Strong Chv\u00e1tal-Gomory (Strong-CG) cut generation. Use 0 to\ndisable these cuts, 1 for moderate cut generation, or 2 for aggressive\ncut generation. The default -1 value chooses automatically. Overrides\nthe Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SubMIPCuts",
@@ -1392,7 +1700,9 @@
     "description": "Controls sub-MIP cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "SubMIPNodes",
@@ -1401,7 +1711,9 @@
     "description": "Limits the number of nodes explored by MIP-based heuristics (such as\nRINS). Exploring more nodes can produce better solutions, but it\ngenerally takes longer.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Symmetry",
@@ -1410,7 +1722,9 @@
     "description": "Controls symmetry detection. A value of -1 corresponds to an automatic\nsetting. Other options are off (0), conservative (1), or aggressive\n(2).\n\nSymmetry can impact a number of different parts of the algorithm,\nincluding presolve, the MIP tree search, and the LP solution process.\nDefault settings are quite effective, so changing the value of this\nparameter rarely produces a significant benefit.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TSPort",
@@ -1419,7 +1733,9 @@
     "description": "Port to use when connecting to the Gurobi token server. You should\nonly change this if your network administrator tells you to.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ThreadLimit",
@@ -1428,7 +1744,9 @@
     "description": "The ThreadLimit parameter is a configuration parameter for an\nenvironment which can be used to limit the number of threads used.\nThis limit is enforced for all optimization calls based on this\nenvironment. The default value of 0 implies no limit.\n\nIf a thread limit is set, trying to set the Threads parameter above\nthis limit will display a warning and not change the value of the\nparameter.\n\nYou must set the ThreadLimit parameter through either a \"gurobi.env\"\nfile (using \"ThreadLimit=limit\") or an empty environment. Changing the\nparameter after the environment has been created will result in an\nerror.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "Threads",
@@ -1437,7 +1755,9 @@
     "description": "Controls the number of threads to apply to parallel algorithms\n(concurrent LP, parallel barrier, parallel MIP, etc.). The default\nvalue of 0 is an automatic setting. It will generally use as many\nthreads as there are virtual processors. The number of virtual\nprocessors may exceed the number of cores due to hyperthreading or\nother similar hardware features.\n\nWhile you will generally get the best performance by using all\navailable cores in your machine, there are a few exceptions. One is of\ncourse when you are sharing a machine with other jobs. In this case,\nyou should select a thread count that doesn\u2019t oversubscribe the\nmachine.\n\nWe have also found that certain classes of MIP models benefit from\nreducing the thread count, often all the way down to one thread.\nStarting multiple threads introduces contention for machine resources.\nFor classes of models where the first solution found by the MIP solver\nis almost always optimal, and that solution isn\u2019t found at the root,\nit is often better to allow a single thread to explore the search tree\nuncontested.\n\nAnother situation where reducing the thread count can be helpful is\nwhen memory is tight. Each thread can consume a significant amount of\nmemory.\n\nWe\u2019ve made the pragmatic choice to impose a soft limit of 32 threads\nfor the automatic setting (0). If your machine has more, and you find\nthat using more increases performance, you should feel free to set the\nparameter to a larger value.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TimeLimit",
@@ -1446,7 +1766,9 @@
     "description": "Limits the total time expended (in seconds). Optimization returns with\na TIME_LIMIT status if the limit is exceeded.\n\nNote that optimization may not stop immediately upon hitting the time\nlimit. It will stop after performing the required additional\ncomputations of the attributes associated with the terminated\noptimization. As a result, the Runtime attribute may be larger than\nthe specified TimeLimit upon completion, and repeating the\noptimization with a TimeLimit set to the Runtime attribute of the\nstopped optimization may result in additional computations and a\nlarger attribute value.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TokenServer",
@@ -1455,7 +1777,9 @@
     "description": "When using a token license, set this parameter to the name of the\ntoken server. You can refer to the server using its name or its IP\naddress.\n\nYou can provide a comma-separated list of token servers to increase\nrobustness. If the first server in the list doesn\u2019t respond, the\nsecond will be tried, etc.\n\nYou must set this parameter through either a \"gurobi.lic\" file (using\n\"TOKENSERVER=server\") or an empty environment. Changing the parameter\nafter your environment has been created will have no effect.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneCleanup",
@@ -1464,7 +1788,9 @@
     "description": "Enables a cleanup phase at the end of tuning. The parameter indicates\nthe percentage of total tuning time to devote to this phase, with a\ngoal of reducing the number of parameter changes required to achieve\nthe best tuning result.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneCriterion",
@@ -1473,7 +1799,9 @@
     "description": "Modifies the tuning criterion for the tuning tool. The primary tuning\ncriterion is always to minimize the runtime required to find a proven\noptimal solution. However, for MIP models that don\u2019t solve to\noptimality within the specified time limit, a secondary criterion is\nneeded. Set this parameter to 1 to use the optimality gap as the\nsecondary criterion. Choose a value of 2 to use the objective of the\nbest feasible solution found. Choose a value of 3 to use the best\nobjective bound. Choose 0 to ignore the secondary criterion and focus\nentirely on minimizing the time to find a proven optimal solution. The\ndefault value of -1 chooses automatically.\n\nNote that values 1 and 3 are unsupported for multi-objective problems.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneDynamicJobs",
@@ -1482,7 +1810,9 @@
     "description": "Enables distributed parallel tuning, which can significantly increase\nthe performance of the tuning tool. A value of \"n\" causes the tuning\ntool to use a dynamic set of up to \"n\" workers in parallel. These\nworkers are used for a limited amount of time and afterwards\npotentially released so that they are available for other remote jobs.\nA value of \"-1\" allows the solver to use an unlimited number of\nworkers. Note that this parameter can be combined with TuneJobs to get\na static set of workers and a dynamic set of workers for distributed\ntuning. You can use the WorkerPool parameter to provide a distributed\nworker cluster.\n\nNote that distributed tuning is most effective when the worker\nmachines have similar performance. Distributed tuning doesn\u2019t attempt\nto normalize performance by server, so it can incorrectly attribute a\nboost in performance to a parameter change when the associated setting\nis tried on a worker that is significantly faster than the others.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneJobs",
@@ -1491,7 +1821,9 @@
     "description": "Enables distributed parallel tuning, which can significantly increase\nthe performance of the tuning tool. A value of \"n\" causes the tuning\ntool to use a static set of up to \"n\" workers in parallel. Such\nworkers are kept for the whole tuning run. Note that this parameter\ncan be combined with TuneDynamicJobs to get a static set of workers\nand a dynamic set of workers for distributed tuning. You can use the\nWorkerPool parameter to provide a distributed worker cluster.\n\nNote that distributed tuning is most effective when the worker\nmachines have similar performance. Distributed tuning doesn\u2019t attempt\nto normalize performance by server, so it can incorrectly attribute a\nboost in performance to a parameter change when the associated setting\nis tried on a worker that is significantly faster than the others.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneMetric",
@@ -1500,7 +1832,9 @@
     "description": "A single tuning run typically produces multiple timing results for\neach candidate parameter set, either as a result of performing\nmultiple trials, or tuning multiple models, or both. This parameter\ncontrols how these results are aggregated into a single measure. The\ndefault setting (-1) chooses the aggregation automatically; setting 0\ncomputes the average of all individual results; setting 1 takes the\nmaximum.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneOutput",
@@ -1509,7 +1843,9 @@
     "description": "Controls the amount of output produced by the tuning tool. Level 0\nproduces no output; level 1 produces tuning summary output only when a\nnew best parameter set is found; level 2 produces tuning summary\noutput for each parameter set that is tried; level 3 produces tuning\nsummary output, plus detailed solver output, for each parameter set\ntried.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneResults",
@@ -1518,7 +1854,9 @@
     "description": "The tuning tool often finds multiple parameter sets that improve over\nthe baseline settings. This parameter controls how many of these sets\nshould be retained when tuning is complete. A non-negative value\nindicates how many sets should be retained. The default value (-1)\nretains the efficient frontier of parameter sets. That is, it retains\nthe best set for one changed parameter, the best for two changed\nparameters, etc. Sets that aren\u2019t on the efficient frontier are\ndiscarded. If you interested in all the sets, use value -2 for the\nparameter.\n\nNote that the first set in the results is always the set of parameters\nwhich was used for the first solve, the baseline settings. This set\nserves as the base for any improvement. So if you are interested in\nthe best tuned set of parameters you need to request at least 2 tune\nresults. The first one (with index 0) will be the baseline setting and\nthe second one (with index 1) will be the best set found during\ntuning.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneTargetMIPGap",
@@ -1527,7 +1865,9 @@
     "description": "A target gap to be reached. As soon as the tuner has found parameter\nsettings that allow Gurobi to reach the target gap for the given\nmodel(s), it stops trying to improve parameter settings further.\nInstead, the tuner switches into the cleanup phase (see TuneCleanup\nparameter).",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneTargetTime",
@@ -1536,7 +1876,9 @@
     "description": "A target runtime in seconds to be reached. As soon as the tuner has\nfound parameter settings that allow Gurobi to solve the model(s)\nwithin the target runtime, it stops trying to improve parameter\nsettings further. Instead, the tuner switches into the cleanup phase\n(see TuneCleanup parameter).",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneTimeLimit",
@@ -1545,7 +1887,9 @@
     "description": "Limits total tuning runtime (in seconds). The default setting chooses\na time limit automatically.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "TuneTrials",
@@ -1554,7 +1898,9 @@
     "description": "Performance on a MIP model can sometimes experience significant\nvariations due to random effects. As a result, the tuning tool may\nreturn parameter sets that improve on the baseline only due to\nrandomness. This parameter allows you to perform multiple solves for\neach parameter set, using different Seed values for each, in order to\nreduce the influence of randomness on the results. The default value\nof 0 indicates an automatic choice that depends on model\ncharacteristics.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "UpdateMode",
@@ -1563,7 +1909,9 @@
     "description": "Determines how newly added variables and linear constraints are\nhandled. The default setting (1) allows you to use new variables and\nconstraints immediately for building or modifying the model. A setting\nof 0 requires you to call \"update\" before these can be used.\n\nSince the vast majority of programs never query Gurobi for details\nabout the optimization models they build, the default setting\ntypically removes the need to call \"update\", or even be aware of the\ndetails of our *lazy update* approach for handling model\nmodifications. However, these details will show through when you try\nto query modified model information.\n\nIn the Gurobi interface, model modifications (bound changes, right-\nhand side changes, objective changes, etc.) are placed in a queue.\nThese queued modifications are applied to the model at three times:\nwhen you call \"update\", when you call \"optimize\", or when you call\n\"write\" to write the model to disk. When you query information about\nthe model, the result will depend on both *whether* that information\nwas modified and *when* it was modified. In particular, no matter what\nsetting of UpdateMode you use, if the modification is sitting in the\nqueue, you\u2019ll get the result from before the modification.\n\nTo expand on this a bit, all attribute modifications are actually\nplaced in a queue. This includes attributes that may not traditionally\nbe viewed as being part of the model, including things like variable\nbranching priorities, constraint basis statuses, etc. Querying the\nvalues of these attributes will return their previous values if\nsubsequent modifications are still in the queue.\n\nThe only potential benefit to changing the parameter to 0 is that in\nunusual cases this setting may allow simplex to make more aggressive\nuse of warm-start information after a model modification.\n\nIf you want to change this parameter, you need to set it as soon as\nyou create your Gurobi environment.\n\nNote that you still need to call \"update\" to modify an attribute on an\nSOS constraint, quadratic constraint, or general constraint.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "VarBranch",
@@ -1572,7 +1920,9 @@
     "description": "Controls the branch variable selection strategy. The default -1\nsetting makes an automatic choice, depending on problem\ncharacteristics. Available alternatives are Pseudo Reduced Cost\nBranching (0), Pseudo Shadow Price Branching (1), Maximum\nInfeasibility Branching (2), and Strong Branching (3).\n\nChanging the value of this parameter rarely produces a significant\nbenefit.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSAccessID",
@@ -1581,7 +1931,9 @@
     "description": "When using a WLS license, set this parameter to the access ID for your\nlicense. You can retrieve this string from your account on the Gurobi\nWeb License Manager site.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSConfig",
@@ -1590,7 +1942,9 @@
     "description": "When using a WLS On Demand license, this parameter can be used to\nspecify which configuration to use.  If not specified, the\nconfiguration used will be the default configuration specified for\nthat license.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSProxy",
@@ -1599,7 +1953,9 @@
     "description": "Comma separated list of addresses of the WLS proxies to connect to.\nWhen using a WLS On Demand license, this parameter can be used to\nspecify the URLs to which Gurobi will connect to report usage. The\ndefault value (an empty string) is equivalent to\n\"http://localhost:61099\".",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSSecret",
@@ -1608,7 +1964,9 @@
     "description": "When using a WLS license, set this parameter to the secret key for\nyour license. You can retrieve this string from your account on the\nGurobi Web License Manager site.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSToken",
@@ -1617,7 +1975,9 @@
     "description": "If you are using a WLS license and have retrieved your own token\nthrough the WLS REST API, use this parameter to pass that token to the\nlibrary. If you do this, you don\u2019t need to set any other WLS-related\nparameters.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSTokenDuration",
@@ -1626,7 +1986,9 @@
     "description": "When using a WLS license, this parameter can be used to adjust the\nlifespan (in minutes) of a token. A token enables Gurobi to run on\nthat client for the life of the token. Gurobi will automatically\nrequest a new token if the current one expires, but it won\u2019t notify\nthe WLS server if it completes its work before the current token\nexpires. A shorter lifespan is better for short-lived usage. A longer\nlifespan is better for environments where the network connection to\nthe WLS server is unreliable.\n\nThe default value of 0 means \u2018automatic\u2019, and is currently equal to 5\nminutes. This value may change in the future. The WLS server will cap\nthe chosen value automatically to be at least 5 minutes and no more\nthan 60 minutes. This behavior may change in the future as well.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WLSTokenRefresh",
@@ -1635,7 +1997,9 @@
     "description": "The value specifies the fraction of the token duration after which a\ntoken refresh is triggered. So, for example, if the token duration is\n30 minutes and WLSTokenRefresh is set to 0.6, the token will be\nrefreshed every 18 minutes. The minimum refresh interval is 4 minutes.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WorkLimit",
@@ -1644,7 +2008,9 @@
     "description": "Limits the total work expended (in work units). Optimization returns\nwith a WORK_LIMIT status if the limit is exceeded.\n\nIn contrast to the TimeLimit, work limits are deterministic. This\nmeans that on the same hardware and with the same parameter and\nattribute settings, a work limit will stop the optimization of a given\nmodel at the exact same point every time. One work unit corresponds\nvery roughly to one second on a single thread, but this greatly\ndepends on the hardware on which Gurobi is running and the model that\nis being solved.\n\nNote that optimization may not stop immediately upon hitting the work\nlimit. It will stop when the optimization is next in a deterministic\nstate, and it will then perform the required additional computations\nof the attributes associated with the terminated optimization. As a\nresult, the Work attribute may be larger than the specified WorkLimit\nupon completion, and repeating the optimization with a WorkLimit set\nto the Work attribute of the stopped optimization may result in\nadditional computations and a larger attribute value.\n\nThis parameter is callback settable. It can be changed from within a\ncallback when the \"where\" value is \"PRESOLVED\", \"SIMPLEX\", \"MIP\",\n\"MIPSOL\", \"MIPNODE\", \"BARRIER\", or \"MULTIOBJ\" (see the Callback Codes\nsection for more information). How to do that for the different APIs\nis illustrated here. In case of a remote server, the change of a\nparameter from within a callback may not be taken into account\nimmediately.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WorkerPassword",
@@ -1653,7 +2019,9 @@
     "description": "When using a distributed algorithm (distributed MIP, distributed\nconcurrent, or distributed tuning), this parameter allows you to\nspecify the password for the distributed worker cluster provided in\nthe WorkerPool parameter.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "WorkerPool",
@@ -1662,7 +2030,9 @@
     "description": "When using a distributed algorithm (distributed MIP, distributed\nconcurrent, or distributed tuning), this parameter allows you to\nspecify a Remote Services cluster that will provide distributed\nworkers. You should also specify the access password for that cluster,\nif there is one, in the WorkerPassword parameter. Note that you don\u2019t\nneed to set either of these parameters if your job is running on a\nCompute Server node and you want to use the same cluster for the\ndistributed workers.\n\nYou can provide a comma-separated list of machines for added\nrobustness. If the first node in the list is unavailable, the client\nwill attempt to contact the second node, etc.\n\nTo give an example, if you have a Remote Services cluster that uses\nport 61000 on a pair of machines named \"server1\" and \"server2\", you\ncould set WorkerPool to \"\"server1:61000\"\" or\n\"\"server1:61000,server2:61000\"\".",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ZeroHalfCuts",
@@ -1671,7 +2041,9 @@
     "description": "Controls zero-half cut generation. Use 0 to disable these cuts, 1 for\nmoderate cut generation, or 2 for aggressive cut generation. The\ndefault -1 value chooses automatically. Overrides the Cuts parameter.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "ZeroObjNodes",
@@ -1680,6 +2052,8 @@
     "description": "Number of nodes to explore in the zero objective heuristic.\n\nThis heuristic is quite expensive, and generally produces poor quality\nsolutions. You should generally only use it if other means, including\nexploration of the tree with default settings, fail to produce a\nfeasible solution.\n\nNote:\n\n  Only affects mixed integer programming (MIP) models",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   }
 ]
