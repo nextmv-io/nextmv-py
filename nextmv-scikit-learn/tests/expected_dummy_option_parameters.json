@@ -6,7 +6,9 @@
     "description": "Strategy to use to generate predictions.",
     "required": false,
     "choices": ["mean", "median", "quantile", "constant"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "constant",
@@ -15,7 +17,9 @@
     "description": "The explicit constant as predicted by the \"constant\" strategy.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "quantile",
@@ -24,6 +28,8 @@
     "description": "The quantile to predict using the \"quantile\" strategy.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   }
 ]
