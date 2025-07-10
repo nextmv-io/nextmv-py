@@ -6,7 +6,9 @@
     "description": "The ith element represents the number of neurons in the ith hidden layer. (e.g. \"1,2,3\")",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "activation",
@@ -15,7 +17,9 @@
     "description": "Activation function for the hidden layer.",
     "required": false,
     "choices": ["identity", "logistic", "tanh", "relu"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "solver",
@@ -24,7 +28,9 @@
     "description": "The solver for weight optimization.",
     "required": false,
     "choices": ["lbfgs", "sgd", "adam"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "alpha",
@@ -33,7 +39,9 @@
     "description": "Strength of the L2 regularization term.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "batch_size",
@@ -42,7 +50,9 @@
     "description": "Size of minibatches for stochastic optimizers.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "learning_rate",
@@ -51,7 +61,9 @@
     "description": "Learning rate schedule for weight updates.",
     "required": false,
     "choices": ["constant", "invscaling", "adaptive"],
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "learning_rate_init",
@@ -60,7 +72,9 @@
     "description": "The initial learning rate used.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "power_t",
@@ -69,7 +83,9 @@
     "description": "The exponent for inverse scaling learning rate.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "max_iter",
@@ -78,7 +94,9 @@
     "description": "Maximum number of iterations.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "shuffle",
@@ -87,7 +105,9 @@
     "description": "Whether to shuffle samples in each iteration.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "random_state",
@@ -96,7 +116,9 @@
     "description": "Determines random number generation for weights and bias initialization, train-test split if early stopping is used, and batch sampling when solver='sgd' or 'adam'.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "tol",
@@ -105,7 +127,9 @@
     "description": "Tolerance for the optimization.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "verbose",
@@ -114,7 +138,9 @@
     "description": "Whether to print progress messages to stdout.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "warm_start",
@@ -123,7 +149,9 @@
     "description": "When set to True, reuse the solution of the previous call to fit as initialization.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "momentum",
@@ -132,7 +160,9 @@
     "description": "Momentum for gradient descent update.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "nesterovs_momentum",
@@ -141,7 +171,9 @@
     "description": "Whether to use Nesterov's momentum.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "early_stopping",
@@ -150,7 +182,9 @@
     "description": "Whether to use early stopping to terminate training when validation score is not improving.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "validation_fraction",
@@ -159,7 +193,9 @@
     "description": "The proportion of training data to set aside as validation set for early stopping.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "beta_1",
@@ -168,7 +204,9 @@
     "description": "Exponential decay rate for estimates of first moment vector in adam.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "beta_2",
@@ -177,7 +215,9 @@
     "description": "Exponential decay rate for estimates of second moment vector in adam.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "epsilon",
@@ -186,7 +226,9 @@
     "description": "Value for numerical stability in adam.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "n_iter_no_change",
@@ -195,7 +237,9 @@
     "description": "Maximum number of epochs to not meet tol improvement.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   },
   {
     "name": "max_fun",
@@ -204,6 +248,8 @@
     "description": "Only used when solver='lbfgs'.",
     "required": false,
     "choices": null,
-    "additional_attributes": null
+    "additional_attributes": null,
+    "control_type": null,
+    "hidden_from": null
   }
 ]
