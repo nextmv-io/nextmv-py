@@ -145,7 +145,6 @@ jobs:
           - target-env: testpypi
             target-url: https://test.pypi.org/p/nextmv
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
-        is_automated: ${{needs.set-packages.outputs.is_automated}}
 
     environment:
       name: ${{ matrix.target-env }}
@@ -156,6 +155,7 @@ jobs:
     env:
       VERSION: ""
       PACKAGE_VERSION: ""
+      IS_AUTOMATED: ${{needs.set-packages.outputs.is_automated}}
     steps:
       - name: configure git with the bot credentials
         run: |
@@ -204,7 +204,7 @@ jobs:
       - name: create release
         run: |
           PRERELEASE_FLAG=""
-          if [ ${{ matrix.is_automated }} = false ]; then
+          if [ ${{ env.IS_AUTOMATED }} = false ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
 
