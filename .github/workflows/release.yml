@@ -109,7 +109,7 @@ jobs:
         run: |
           PACKAGES=""
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
-          echo "These are the outputs"
+          echo "These are the outputs..." 
           echo $OUTPUTS
           JSON_PACKAGES=$( echo $OUTPUTS | jq .changes | jq -c)
           echo "JSON packages for matrix"
