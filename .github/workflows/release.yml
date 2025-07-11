@@ -203,10 +203,14 @@ jobs:
           fi
 
           export VERSION=$(cat ./$PACKAGE_DIR/__about__.py)
-          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_ENV
+          echo "This is the version"
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
           export PACKAGE_VERSION="${{ matrix.package }}-$VERSION"
-          echo "PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}" >> $GITHUB_ENV
+          echo "This is the package version"
+          echo $PACKAGE_VERSION
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: tag new version
