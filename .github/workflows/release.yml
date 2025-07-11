@@ -121,7 +121,7 @@ jobs:
       - name: create JSON array of changed packages - manual mode
         if: ${{ env.IS_AUTOMATED == 'false' }}
         run: |
-          JSON_PACKAGES="[\"${{ inputs.PACKAGE }}\"]"
+          JSON_PACKAGES='"[\"${{ inputs.PACKAGE }}\"]"'
           echo "JSON packages for matrix"
           echo $JSON_PACKAGES
 
