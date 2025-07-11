@@ -169,6 +169,12 @@ jobs:
           cd nextmv-py
           git switch ${{ github.ref_name }}
 
+      - name: check that a manual release cannot be done on develop
+        if: ${{ env.IS_AUTOMATED == 'false' && github.ref_name == 'develop' }}
+        run: |
+          echo "Manual release cannot be done on develop"
+          exit 1
+
       - name: set up Python
         uses: actions/setup-python@v5
         with:
@@ -206,6 +212,12 @@ jobs:
           fi
 
         working-directory: ./nextmv-py/${{ matrix.package }}
+
+      - name: check that a manual release cannot be a stable release
+        if: ${{ env.IS_AUTOMATED == 'false' && env.IS_PRE_RELEASE == 'false' }}
+        run: |
+          echo "Manual release cannot be a stable release"
+          exit 1
 
       - name: commit new version - manual mode
         if: ${{ env.IS_AUTOMATED == 'false' }}
