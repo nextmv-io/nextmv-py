@@ -126,7 +126,7 @@ jobs:
 
           # Convert comma-separated string to JSON array for matrix strategy
           if [ -n "$PACKAGES" ]; then
-            JSON_PACKAGES=$(echo "$PACKAGES" | jq -R 'split(",") | map(select(length > 0))')
+            JSON_PACKAGES=$(echo "$PACKAGES" | jq -Rc 'split(",") | map(select(length > 0))')
           else
             JSON_PACKAGES="[]"
           fi
@@ -140,7 +140,7 @@ jobs:
           echo "These are the packages to release => $PACKAGES"
 
           # Convert to JSON array for matrix strategy
-          JSON_PACKAGES=$(echo "$PACKAGES" | jq -R '[.]')
+          JSON_PACKAGES=$(echo "$PACKAGES" | jq -Rc '[.]')
           echo "JSON packages for matrix => $JSON_PACKAGES"
           echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
