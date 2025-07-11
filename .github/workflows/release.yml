@@ -31,12 +31,12 @@ jobs:
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       PACKAGE_NAMES: "nextmv,nextmv-gurobipy,nextmv-scikit-learn"
       PACKAGES: ""
-      IS_PRE_RELEASE: true
+      IS_AUTOMATED: true
     permissions:
       contents: write
     outputs:
       packages: ${{ steps.outputs.outputs.packages }}
-      is_pre_release: ${{ steps.outputs.outputs.is_pre_release }}
+      is_automated: ${{ steps.outputs.outputs.is_automated }}
     steps:
       - name: set up Python
         uses: actions/setup-python@v5
@@ -67,22 +67,22 @@ jobs:
           cd nextmv-py
           git switch ${{ github.ref_name }}
 
-      - name: set the pre_release flag based on manual inputs being empty
+      - name: set the automated flag based on workflow trigger
         run: |
-          if [ -z ${{ inputs.PACKAGE }} ]; then
-            echo "IS_PRE_RELEASE=false" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "IS_AUTOMATED=false" >> $GITHUB_ENV
             exit 0
           fi
 
-          echo "IS_PRE_RELEASE=true" >> $GITHUB_ENV
+          echo "IS_AUTOMATED=true" >> $GITHUB_ENV
 
-      - name: upgrade version with hatch
-        if: ${{ env.IS_PRE_RELEASE == true }}
+      - name: upgrade version with hatch - manual mode
+        if: ${{ env.IS_AUTOMATED == 'false' }}
         run: hatch version ${{ env.VERSION }}
         working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
 
-      - name: set filters file for changed paths
-        if: ${{ env.IS_PRE_RELEASE == false }}
+      - name: set filters file for changed paths - automated mode
+        if: ${{ env.IS_AUTOMATED == 'true' }}
         run: |
           FILTERS_FILE="./.github/filters.yml"
           touch $FILTERS_FILE
@@ -95,16 +95,16 @@ jobs:
           cat $FILTERS_FILE
         working-directory: ./nextmv-py
 
-      - name: filter changed directories
-        if: ${{ env.IS_PRE_RELEASE == false }}
+      - name: filter changed directories - automated mode
+        if: ${{ env.IS_AUTOMATED == 'true' }}
         id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: .github/filters.yml
           working-directory: ./nextmv-py
 
-      - name: create comma-separated string of changed packages - automated
-        if: ${{ env.IS_PRE_RELEASE == false }}
+      - name: create comma-separated string of changed packages - automated mode
+        if: ${{ env.IS_AUTOMATED == 'true' }}
         run: |
           export PACKAGES=""
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
@@ -119,8 +119,8 @@ jobs:
           echo "These are the packages to release => $PACKAGES"
           echo "PACKAGES=${PACKAGES}" >> $GITHUB_ENV
 
-      - name: create comma-separated string of changed packages - manual
-        if: ${{ env.IS_PRE_RELEASE == true }}
+      - name: create comma-separated string of changed packages - manual mode
+        if: ${{ env.IS_AUTOMATED == 'false' }}
         run: |
           export PACKAGES="${{ inputs.PACKAGE }}"
           echo "These are the packages to release => $PACKAGES"
@@ -130,7 +130,7 @@ jobs:
         id: outputs
         run: |
           echo "packages=${{ env.PACKAGES }}" >> $GITHUB_OUTPUT
-          echo "is_pre_release=${{ env.IS_PRE_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "is_automated=${{ env.IS_AUTOMATED }}" >> $GITHUB_OUTPUT
 
   release: # This job is used for the actual release process
     runs-on: ubuntu-latest
@@ -144,7 +144,7 @@ jobs:
           - target-env: testpypi
             target-url: https://test.pypi.org/p/nextmv
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
-        is_pre_release: ${{fromJson(needs.set-packages.outputs.is_pre_release)}}
+        is_automated: ${{fromJson(needs.set-packages.outputs.is_automated)}}
 
     environment:
       name: ${{ matrix.target-env }}
@@ -203,7 +203,7 @@ jobs:
       - name: create release
         run: |
           PRERELEASE_FLAG=""
-          if [ ${{ matrix.is_pre_release }} = true ]; then
+          if [ ${{ matrix.is_automated }} = false ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
 
@@ -225,14 +225,14 @@ jobs:
         if: ${{ matrix.target-env == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ./${{ matrix.package }}/dist
+          packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
       - name: Publish package distributions to TestPyPI
         if: ${{ matrix.target-env == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-          packages-dir: ./${{ matrix.package }}/dist
+          packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
       - name: notify slack
         run: |
