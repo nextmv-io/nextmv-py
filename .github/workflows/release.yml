@@ -160,7 +160,7 @@ jobs:
           - target-env: testpypi
             target-url: https://test.pypi.org/p/nextmv
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
-        is_automated: ${{fromJson(needs.set-packages.outputs.is_automated)}}
+        is_automated: ${{needs.set-packages.outputs.is_automated}}
 
     environment:
       name: ${{ matrix.target-env }}
