@@ -139,16 +139,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - target-env: pypi
-            target-url: https://pypi.org/p/nextmv
-          - target-env: testpypi
-            target-url: https://test.pypi.org/p/nextmv
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
-
-    environment:
-      name: ${{ matrix.target-env }}
-      url: ${{ matrix.target-url }}
     permissions:
       contents: write # Required for creating releases and tags
       id-token: write # This is required for trusted publishing to PyPI
@@ -158,6 +149,7 @@ jobs:
       VERSION: ""
       PACKAGE_VERSION: ""
       IS_AUTOMATED: ${{needs.set-packages.outputs.is_automated}}
+      IS_PRE_RELEASE: true
     steps:
       - name: configure git with the bot credentials
         run: |
@@ -199,6 +191,36 @@ jobs:
           echo "This is the package version"
           echo $PACKAGE_VERSION
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+
+          # Check if version is a pre-release
+          if [[ "$VERSION" =~ (alpha|beta|rc|dev|pre|a|b) ]]; then
+            echo "IS_PRE_RELEASE=true" >> $GITHUB_ENV
+            echo "Detected pre-release version: $VERSION"
+          else
+            echo "IS_PRE_RELEASE=false" >> $GITHUB_ENV
+            echo "Detected stable release version: $VERSION"
+          fi
+
+        working-directory: ./nextmv-py/${{ matrix.package }}
+
+      - name: commit new version - manual mode
+        if: ${{ env.IS_AUTOMATED == 'false' }}
+        run: |
+          MODULE=""
+          if [ "${{ matrix.package }}" = "nextmv" ]; then
+            MODULE="nextmv"
+          elif [ "${{ matrix.package }}" = "nextmv-gurobipy" ]; then
+            MODULE="nextmv-gurobipy"
+          elif [ "${{ matrix.package }}" = "nextmv-scikit-learn" ]; then
+            MODULE="nextmv-sklearn"
+          else
+            echo "Invalid module"
+            exit 1
+          fi
+
+          git add $MODULE/__about__.py
+          git commit -S -m "Bump ${{ matrix.package }} version to ${{ env.VERSION }}"
+          git push
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: tag new version
@@ -210,7 +232,7 @@ jobs:
       - name: create release
         run: |
           PRERELEASE_FLAG=""
-          if [ ${{ env.IS_AUTOMATED }} = false ]; then
+          if [ "${{ env.IS_PRE_RELEASE }}" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
 
@@ -229,19 +251,18 @@ jobs:
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: Publish package distributions to PyPI
-        if: ${{ matrix.target-env == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
       - name: Publish package distributions to TestPyPI
-        if: ${{ matrix.target-env == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
-      - name: notify slack
+      - name: notify slack - official release
+        if: ${{ env.IS_PRE_RELEASE == 'false' }}
         run: |
           export DATA="{\"text\":\"Release notification - from `nextmv-py`: ${{ matrix.package }} ${{ env.VERSION }} (see <https://github.com/nextmv-io/nextmv-py/releases/${{ env.PACKAGE_VERSION }}|release notes> / <https://pypi.org/project/${{ matrix.package }}|PyPI>)\"}"
           curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
