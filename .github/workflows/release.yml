@@ -140,6 +140,14 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
+        target-env:
+          - target-env: pypi
+            target-url: https://pypi.org/p/nextmv
+          - target-env: testpypi
+            target-url: https://test.pypi.org/p/nextmv
+    environment:
+      name: ${{ matrix.target-env.target-env }}
+      url: ${{ matrix.target-env.target-url }}
     permissions:
       contents: write # Required for creating releases and tags
       id-token: write # This is required for trusted publishing to PyPI
@@ -251,11 +259,13 @@ jobs:
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: Publish package distributions to PyPI
+        if: ${{ matrix.target-env.target-env == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
       - name: Publish package distributions to TestPyPI
+        if: ${{ matrix.target-env.target-env == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
