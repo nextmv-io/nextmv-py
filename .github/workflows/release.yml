@@ -67,13 +67,14 @@ jobs:
           cd nextmv-py
           git switch ${{ github.ref_name }}
 
-      - name: set the pre_release flag based on workflow dispatch
+      - name: set the pre_release flag based on manual inputs being empty
         run: |
-          if [ ${{ github.event_name }} == "workflow_dispatch" ]; then
-            echo "IS_PRE_RELEASE=true" >> $GITHUB_ENV
-          else
+          if [ -z ${{ inputs.PACKAGE }} ]; then
             echo "IS_PRE_RELEASE=false" >> $GITHUB_ENV
+            exit 0
           fi
+
+          echo "IS_PRE_RELEASE=true" >> $GITHUB_ENV
 
       - name: upgrade version with hatch
         if: ${{ env.IS_PRE_RELEASE == true }}
