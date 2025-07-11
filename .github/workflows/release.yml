@@ -191,11 +191,11 @@ jobs:
       - name: set the package version
         run: |
           PACKAGE_DIR=""
-          if [ ${{ matrix.package }} = "nextmv" ]; then
+          if [ "${{ matrix.package }}" = "nextmv" ]; then
             PACKAGE_DIR="nextmv"
-          elif [ ${{ matrix.package }} = "nextmv-gurobipy" ]; then
+          elif [ "${{ matrix.package }}" = "nextmv-gurobipy" ]; then
             PACKAGE_DIR="nextmv-gurobipy"
-          elif [ ${{ matrix.package }} = "nextmv-scikit-learn" ]; then
+          elif [ "${{ matrix.package }}" = "nextmv-scikit-learn" ]; then
             PACKAGE_DIR="nextmv-sklearn"
           else
             echo "Invalid package"
