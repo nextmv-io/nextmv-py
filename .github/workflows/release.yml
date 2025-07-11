@@ -86,7 +86,8 @@ jobs:
         run: |
           FILTERS_FILE="./.github/filters.yml"
           touch $FILTERS_FILE
-          for package_name in ${{ env.PACKAGE_NAMES }}; do
+          IFS=',' read -ra PACKAGE_ARRAY <<< "${{ env.PACKAGE_NAMES }}"
+          for package_name in "${PACKAGE_ARRAY[@]}"; do
             echo "${package_name}:" >> $FILTERS_FILE
             echo "  - '${package_name}/**/__about__.py'" >> $FILTERS_FILE
           done
