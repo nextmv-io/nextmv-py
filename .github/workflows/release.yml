@@ -104,27 +104,27 @@ jobs:
           filters: .github/filters.yml
           working-directory: ./nextmv-py
 
-      - name: create comma-separated string of changed packages - automated mode
+      - name: create JSON array of changed packages - automated mode
         if: ${{ env.IS_AUTOMATED == 'true' }}
         run: |
           PACKAGES=""
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
-          echo "These are the outputs..." 
+          echo "These are the outputs" 
           echo $OUTPUTS
+
           JSON_PACKAGES=$( echo $OUTPUTS | jq .changes | jq -c)
           echo "JSON packages for matrix"
           echo $JSON_PACKAGES
+
           echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
-      - name: create comma-separated string of changed packages - manual mode
+      - name: create JSON array of changed packages - manual mode
         if: ${{ env.IS_AUTOMATED == 'false' }}
         run: |
-          PACKAGES="${{ inputs.PACKAGE }}"
-          echo "These are the packages to release => $PACKAGES"
+          JSON_PACKAGES="[\"${{ inputs.PACKAGE }}\"]"
+          echo "JSON packages for matrix"
+          echo $JSON_PACKAGES
 
-          # Convert to JSON array for matrix strategy
-          JSON_PACKAGES=$(echo "$PACKAGES" | jq -Rc '[.]')
-          echo "JSON packages for matrix => $JSON_PACKAGES"
           echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
       - name: set the outputs
@@ -140,14 +140,9 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{fromJson(needs.set-packages.outputs.packages)}}
-        target-env:
-          - target-env: pypi
-            target-url: https://pypi.org/p/nextmv
-          - target-env: testpypi
-            target-url: https://test.pypi.org/p/nextmv
     environment:
-      name: ${{ matrix.target-env.target-env }}
-      url: ${{ matrix.target-env.target-url }}
+      name: pypi
+      url: https://pypi.org/p/nextmv
     permissions:
       contents: write # Required for creating releases and tags
       id-token: write # This is required for trusted publishing to PyPI
@@ -259,16 +254,8 @@ jobs:
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: Publish package distributions to PyPI
-        if: ${{ matrix.target-env.target-env == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ./nextmv-py/${{ matrix.package }}/dist
-
-      - name: Publish package distributions to TestPyPI
-        if: ${{ matrix.target-env.target-env == 'testpypi' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
           packages-dir: ./nextmv-py/${{ matrix.package }}/dist
 
       - name: notify slack - official release
