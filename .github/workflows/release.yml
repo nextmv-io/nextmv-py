@@ -111,26 +111,9 @@ jobs:
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
           echo "These are the outputs"
           echo $OUTPUTS
-          IFS=',' read -ra PACKAGE_ARRAY <<< "${{ env.PACKAGE_NAMES }}"
-          for package_name in "${PACKAGE_ARRAY[@]}"; do
-            if [ $(echo $OUTPUTS | jq -r --arg package_name "$package_name" '.[$package_name]') == "true" ]; then
-              if [ -n "$PACKAGES" ]; then
-                PACKAGES="${PACKAGES},${package_name}"
-              else
-                PACKAGES="${package_name}"
-              fi
-            fi
-          done
-
-          echo "These are the packages to release => $PACKAGES"
-
-          # Convert comma-separated string to JSON array for matrix strategy
-          if [ -n "$PACKAGES" ]; then
-            JSON_PACKAGES=$(echo "$PACKAGES" | jq -Rc 'split(",") | map(select(length > 0))')
-          else
-            JSON_PACKAGES="[]"
-          fi
-          echo "JSON packages for matrix => $JSON_PACKAGES"
+          JSON_PACKAGES=$( echo $OUTPUTS | jq .changes | jq -c)
+          echo "JSON packages for matrix"
+          echo $JSON_PACKAGES
           echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
       - name: create comma-separated string of changed packages - manual mode
