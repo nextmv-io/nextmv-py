@@ -109,7 +109,10 @@ jobs:
         run: |
           export PACKAGES=""
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
-          for package_name in ${{ env.PACKAGE_NAMES }}; do
+          echo "These are the outputs"
+          echo $OUTPUTS
+          IFS=',' read -ra PACKAGE_ARRAY <<< "${{ env.PACKAGE_NAMES }}"
+          for package_name in "${PACKAGE_ARRAY[@]}"; do
               if [ $(echo $OUTPUTS | jq -r --arg package_name "$package_name" '.[$package_name]') == "true" ]; then
               PACKAGES="${PACKAGES}${package_name},"
             fi
