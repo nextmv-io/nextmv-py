@@ -180,7 +180,7 @@ jobs:
 
       - name: upgrade version with hatch - manual mode
         if: ${{ env.IS_AUTOMATED == 'false' }}
-        run: hatch version ${{ env.VERSION }}
+        run: hatch version ${{ inputs.VERSION }}
         working-directory: ./nextmv-py/${{ matrix.package }}
 
       - name: set the package version
