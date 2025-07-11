@@ -121,14 +121,26 @@ jobs:
           # Remove the trailing comma.
           PACKAGES="${PACKAGES%,}"
           echo "These are the packages to release => $PACKAGES"
-          echo "PACKAGES=${PACKAGES}" >> $GITHUB_ENV
+
+          # Convert comma-separated string to JSON array for matrix strategy
+          if [ -n "$PACKAGES" ]; then
+            JSON_PACKAGES=$(echo "$PACKAGES" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+          else
+            JSON_PACKAGES="[]"
+          fi
+          echo "JSON packages for matrix => $JSON_PACKAGES"
+          echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
       - name: create comma-separated string of changed packages - manual mode
         if: ${{ env.IS_AUTOMATED == 'false' }}
         run: |
-          export PACKAGES="${{ inputs.PACKAGE }}"
+          PACKAGES="${{ inputs.PACKAGE }}"
           echo "These are the packages to release => $PACKAGES"
-          echo "PACKAGES=${PACKAGES}" >> $GITHUB_ENV
+
+          # Convert to JSON array for matrix strategy
+          JSON_PACKAGES="[\"$PACKAGES\"]"
+          echo "JSON packages for matrix => $JSON_PACKAGES"
+          echo "PACKAGES=${JSON_PACKAGES}" >> $GITHUB_ENV
 
       - name: set the outputs
         id: outputs
