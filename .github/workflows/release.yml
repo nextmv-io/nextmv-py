@@ -107,19 +107,21 @@ jobs:
       - name: create comma-separated string of changed packages - automated mode
         if: ${{ env.IS_AUTOMATED == 'true' }}
         run: |
-          export PACKAGES=""
+          PACKAGES=""
           OUTPUTS=$(echo '${{ toJson(steps.filter.outputs) }}' | jq .)
           echo "These are the outputs"
           echo $OUTPUTS
           IFS=',' read -ra PACKAGE_ARRAY <<< "${{ env.PACKAGE_NAMES }}"
           for package_name in "${PACKAGE_ARRAY[@]}"; do
-              if [ $(echo $OUTPUTS | jq -r --arg package_name "$package_name" '.[$package_name]') == "true" ]; then
-              PACKAGES="${PACKAGES}${package_name},"
+            if [ $(echo $OUTPUTS | jq -r --arg package_name "$package_name" '.[$package_name]') == "true" ]; then
+              if [ -n "$PACKAGES" ]; then
+                PACKAGES="${PACKAGES},${package_name}"
+              else
+                PACKAGES="${package_name}"
+              fi
             fi
           done
 
-          # Remove the trailing comma.
-          PACKAGES="${PACKAGES%,}"
           echo "These are the packages to release => $PACKAGES"
 
           # Convert comma-separated string to JSON array for matrix strategy
