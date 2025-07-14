@@ -130,6 +130,7 @@ jobs:
   release: # This job is used for the actual release process
     runs-on: ubuntu-latest
     needs: set-packages
+    if: ${{ needs.set-packages.outputs.packages != '[]' && needs.set-packages.outputs.packages != '' }}
     strategy:
       fail-fast: false
       matrix:
