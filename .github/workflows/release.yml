@@ -16,6 +16,8 @@ on:
           - nextmv-gurobipy
           - nextmv-scikit-learn
   push:
+    branches:
+      - develop
 
 env:
   PYTHON_VERSION: "3.13"
