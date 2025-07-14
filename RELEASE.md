@@ -21,7 +21,7 @@ Specify the following inputs:
 * `PACKAGE`: The package to release.
 
 The action will trigger the release workflow for the pre-release. When you are
-aready to release, please follow the instructions in the [stable
+ready to release, please follow the instructions in the [stable
 release](#stable-release) section.
 
 Please note the following:

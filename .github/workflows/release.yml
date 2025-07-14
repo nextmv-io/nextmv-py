@@ -258,15 +258,11 @@ jobs:
           --title "${{ matrix.package }} ${{ env.VERSION }}" $PRERELEASE_FLAG
         working-directory: ./nextmv-py/${{ matrix.package }}
 
-      - name: ensure passing build
-        run: python -m build
-        working-directory: ./nextmv-py/${{ matrix.package }}
-
       - name: build binary wheel and source tarball
         run: python -m build
         working-directory: ./nextmv-py/${{ matrix.package }}
 
-      - name: Publish package distributions to PyPI
+      - name: publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./nextmv-py/${{ matrix.package }}/dist
