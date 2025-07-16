@@ -1,6 +1,9 @@
 name: release
 run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 
+permissions:
+  contents: read
+
 on:
   push:
 

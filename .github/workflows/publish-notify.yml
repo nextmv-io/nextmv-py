@@ -57,6 +57,8 @@ jobs:
   notify:
     needs: [publish]
     if: ${{ inputs.RELEASE_NEEDED == 'true' && inputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    permissions:
+      contents: read
     uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
     with:
       PACKAGE_NAME: ${{ inputs.PACKAGE_NAME }}
