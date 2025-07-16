@@ -3,8 +3,6 @@ run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 
 on:
   push:
-    branches:
-      - "*"
 
 jobs:
   release-nextmv:
