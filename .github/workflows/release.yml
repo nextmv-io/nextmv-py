@@ -8,7 +8,7 @@ on:
 
 jobs:
   release-nextmv:
-    uses: nextmv-io/release/.github/workflows/release.yml@fix/package-location
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -64,7 +64,7 @@ jobs:
     secrets: inherit
 
   release-nextmv-gurobipy:
-    uses: nextmv-io/release/.github/workflows/release.yml@fix/package-location
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -118,7 +118,7 @@ jobs:
     secrets: inherit
 
   release-nextmv-scikit-learn:
-    uses: nextmv-io/release/.github/workflows/release.yml@fix/package-location
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
