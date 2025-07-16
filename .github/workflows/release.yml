@@ -17,16 +17,48 @@ jobs:
       VERSION_PREFIX: nextmv-
     secrets: inherit
 
-  publish-notify-nextmv:
+  # Unfortunately, PyPI publishing does not support reusable workflows, so we
+  # must publish here and do copy-pasting below as well. Sorry.
+  publish-nextmv:
     needs: [release-nextmv]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
-    uses: ./.github/workflows/publish-notify.yml
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nextmv
+    permissions:
+      id-token: write # This is required for trusted publishing to PyPI
+    steps:
+      - name: git clone ${{ github.ref_name }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: set up Python
+        uses: actions/setup-python@v5
+
+      - name: install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: python - build binary wheel and source tarball
+        run: python -m build
+        working-directory: ./nextmv
+
+      - name: python - publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./nextmv/dist
+
+  notify-nextmv:
+    needs: [release-nextmv, publish-nextmv]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
     with:
-      RELEASE_NEEDED: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
-      SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK }}
-      VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
       PACKAGE_NAME: nextmv
-      PACKAGE_LOCATION: ./nextmv
+      VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
+      REPOSITORY: nextmv-py
     secrets: inherit
 
   release-nextmv-gurobipy:
@@ -41,16 +73,46 @@ jobs:
       VERSION_PREFIX: nextmv-gurobipy-
     secrets: inherit
 
-  publish-notify-nextmv-gurobipy:
+  publish-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy]
     if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' }}
-    uses: ./.github/workflows/publish-notify.yml
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nextmv-gurobipy
+    permissions:
+      id-token: write # This is required for trusted publishing to PyPI
+    steps:
+      - name: git clone ${{ github.ref_name }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: set up Python
+        uses: actions/setup-python@v5
+
+      - name: install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: python - build binary wheel and source tarball
+        run: python -m build
+        working-directory: ./nextmv-gurobipy
+
+      - name: python - publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./nextmv-gurobipy/dist
+
+  notify-nextmv-gurobipy:
+    needs: [release-nextmv-gurobipy, publish-nextmv-gurobipy]
+    if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
     with:
-      RELEASE_NEEDED: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' }}
-      SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK }}
-      VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
       PACKAGE_NAME: nextmv_gurobipy
-      PACKAGE_LOCATION: ./nextmv-gurobipy
+      VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
+      REPOSITORY: nextmv-py
     secrets: inherit
 
   release-nextmv-scikit-learn:
@@ -65,14 +127,42 @@ jobs:
       VERSION_PREFIX: nextmv-scikit-learn-
     secrets: inherit
 
-  publish-notify-nextmv-scikit-learn:
+  publish-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn]
     if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' }}
-    uses: ./.github/workflows/publish-notify.yml
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nextmv-scikit-learn
+    permissions:
+      id-token: write # This is required for trusted publishing to PyPI
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: Build package
+        run: python -m build
+        working-directory: ./nextmv-scikit-learn
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./nextmv-scikit-learn/dist
+
+  notify-nextmv-scikit-learn:
+    needs: [release-nextmv-scikit-learn, publish-nextmv-scikit-learn]
+    if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
     with:
-      RELEASE_NEEDED: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' }}
-      SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK }}
-      VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
       PACKAGE_NAME: nextmv_sklearn
-      PACKAGE_LOCATION: ./nextmv-scikit-learn
+      VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
+      REPOSITORY: nextmv-py
     secrets: inherit
