@@ -20,6 +20,10 @@ on:
         description: "The package name for notifications"
         required: true
         type: string
+      PACKAGE_LOCATION:
+        description: "The package location"
+        required: true
+        type: string
 
 jobs:
   # Unfortunately, PyPI publishing does not support reusable workflows from
@@ -48,11 +52,12 @@ jobs:
 
       - name: python - build binary wheel and source tarball
         run: python -m build
+        working-directory: ./${{ inputs.PACKAGE_LOCATION }}
 
       - name: python - publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ./dist
+          packages-dir: ./${{ inputs.PACKAGE_LOCATION }}/dist
 
   notify:
     needs: [publish]

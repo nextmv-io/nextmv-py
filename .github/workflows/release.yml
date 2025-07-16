@@ -14,6 +14,7 @@ jobs:
       PACKAGE_NAME: nextmv
       PACKAGE_LOCATION: ./nextmv
       VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-
     secrets: inherit
 
   publish-notify-nextmv:
@@ -25,6 +26,7 @@ jobs:
       SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK }}
       VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
       PACKAGE_NAME: nextmv
+      PACKAGE_LOCATION: ./nextmv
     secrets: inherit
 
   release-nextmv-gurobipy:
@@ -36,6 +38,7 @@ jobs:
       PACKAGE_NAME: nextmv_gurobipy
       PACKAGE_LOCATION: ./nextmv-gurobipy
       VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-gurobipy-
     secrets: inherit
 
   publish-notify-nextmv-gurobipy:
@@ -47,6 +50,7 @@ jobs:
       SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK }}
       VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
       PACKAGE_NAME: nextmv_gurobipy
+      PACKAGE_LOCATION: ./nextmv-gurobipy
     secrets: inherit
 
   release-nextmv-scikit-learn:
@@ -58,6 +62,7 @@ jobs:
       PACKAGE_NAME: nextmv_sklearn
       PACKAGE_LOCATION: ./nextmv-scikit-learn
       VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-scikit-learn-
     secrets: inherit
 
   publish-notify-nextmv-scikit-learn:
@@ -69,4 +74,5 @@ jobs:
       SHOULD_NOTIFY_SLACK: ${{ needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK }}
       VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
       PACKAGE_NAME: nextmv_sklearn
+      PACKAGE_LOCATION: ./nextmv-scikit-learn
     secrets: inherit
