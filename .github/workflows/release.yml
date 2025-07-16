@@ -1,129 +1,34 @@
 name: release
-run-name: Release ${{ inputs.PACKAGE }} ${{ inputs.VERSION }} (pre-release=${{ inputs.IS_PRE_RELEASE }}) by @${{ github.actor }} from ${{ github.ref_name }}
+run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 
 on:
-  workflow_dispatch:
-    inputs:
-      VERSION:
-        description: "The version to release"
-        required: true
-      IS_PRE_RELEASE:
-        description: "It IS a pre-release"
-        required: true
-        default: true
-        type: boolean
-      PACKAGE:
-        description: "The package to release"
-        required: true
-        type: choice
-        options:
-          - nextmv
-          - nextmv-gurobipy
-          - nextmv-scikit-learn
-
-env:
-  PYTHON_VERSION: "3.13"
+  push:
+    branches:
+      - "*"
 
 jobs:
-  bump: # This job is used to bump the version and create a release
+  release-nextmv:
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    with:
+      BRANCH: ${{ github.ref_name }}
+      REPOSITORY: nextmv-py
+      LANGUAGE: python
+      PACKAGE_NAME: nextmv
+      PACKAGE_LOCATION: ./nextmv
+      VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-
+    secrets: inherit
+
+  # Unfortunately, PyPI publishing does not support reusable workflows, so we
+  # must publish here and do copy-pasting below as well. Sorry.
+  publish-nextmv:
+    needs: [release-nextmv]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ inputs.VERSION }}
-      PACKAGE_VERSION: "${{ inputs.PACKAGE }}-${{ inputs.VERSION }}"
-      GH_TOKEN: ${{ github.token }}
-      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-    permissions:
-      contents: write
-    steps:
-      - name: set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install build hatch
-
-      - name: configure git with the bot credentials
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add - <<< "${{ secrets.NEXTMVBOT_SSH_KEY }}"
-
-          echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
-          chmod 600 ~/.ssh/signing.key
-
-          git config --global user.name "nextmv-bot"
-          git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
-          git config --global gpg.format ssh
-          git config --global user.signingkey ~/.ssh/signing.key
-
-          git clone git@github.com:nextmv-io/nextmv-py.git
-          cd nextmv-py
-          git switch ${{ github.ref_name }}
-
-      - name: upgrade version with hatch
-        run: hatch version ${{ env.VERSION }}
-        working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
-
-      - name: set the module name
-        id: set_module
-        run: |
-          if [ "${{ inputs.PACKAGE }}" == "nextmv-scikit-learn" ]; then
-            echo "MODULE=nextmv_sklearn" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          if [ "${{ inputs.PACKAGE }}" == "nextmv-gurobipy" ]; then
-            echo "MODULE=nextmv_gurobipy" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "MODULE=${{ inputs.PACKAGE }}" >> $GITHUB_OUTPUT
-
-      - name: commit new version
-        run: |
-          git add ${{ steps.set_module.outputs.MODULE }}/__about__.py
-          git commit -S -m "Bump ${{ inputs.PACKAGE }} version to ${{ env.VERSION }}"
-          git push
-          git tag ${{ env.PACKAGE_VERSION }}
-          git push origin ${{ env.PACKAGE_VERSION }}
-        working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
-
-      - name: create release
-        run: |
-          PRERELEASE_FLAG=""
-          if [ ${{ inputs.IS_PRE_RELEASE }} = true ]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-
-          gh release create ${{ env.PACKAGE_VERSION }} \
-          --verify-tag \
-          --generate-notes \
-          --title "${{ inputs.PACKAGE }} ${{ env.VERSION }}" $PRERELEASE_FLAG
-        working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
-
-      - name: ensure passing build
-        run: python -m build
-        working-directory: ./nextmv-py/${{ inputs.PACKAGE }}
-
-  release: # This job is used to publish the release to PyPI/TestPyPI
-    runs-on: ubuntu-latest
-    needs: bump
-    strategy:
-      matrix:
-        include:
-          - target-env: pypi
-            target-url: https://pypi.org/p/nextmv
-          - target-env: testpypi
-            target-url: https://test.pypi.org/p/nextmv
     environment:
-      name: ${{ matrix.target-env }}
-      url: ${{ matrix.target-url }}
+      name: pypi
+      url: https://pypi.org/p/nextmv
     permissions:
-      contents: read
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
@@ -133,39 +38,133 @@ jobs:
 
       - name: set up Python
         uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: install dependencies
         run: |
           pip install --upgrade pip
           pip install build hatch
 
-      - name: build binary wheel and source tarball
+      - name: python - build binary wheel and source tarball
         run: python -m build
-        working-directory: ${{ inputs.PACKAGE }}
+        working-directory: ./nextmv
 
-      - name: Publish package distributions to PyPI
-        if: ${{ matrix.target-env == 'pypi' }}
+      - name: python - publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ./${{ inputs.PACKAGE }}/dist
+          packages-dir: ./nextmv/dist
 
-      - name: Publish package distributions to TestPyPI
-        if: ${{ matrix.target-env == 'testpypi' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          packages-dir: ./${{ inputs.PACKAGE }}/dist
+  notify-nextmv:
+    needs: [release-nextmv, publish-nextmv]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    with:
+      PACKAGE_NAME: nextmv
+      VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
+      REPOSITORY: nextmv-py
+    secrets: inherit
 
-  notify:
+  release-nextmv-gurobipy:
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    with:
+      BRANCH: ${{ github.ref_name }}
+      REPOSITORY: nextmv-py
+      LANGUAGE: python
+      PACKAGE_NAME: nextmv_gurobipy
+      PACKAGE_LOCATION: ./nextmv-gurobipy
+      VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-gurobipy-
+    secrets: inherit
+
+  publish-nextmv-gurobipy:
+    needs: [release-nextmv-gurobipy]
+    if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' }}
     runs-on: ubuntu-latest
-    needs: release
-    if: ${{ needs.release.result == 'success' && inputs.IS_PRE_RELEASE == false }}
-    env:
-      PACKAGE_VERSION: "${{ inputs.PACKAGE }}-${{ inputs.VERSION }}"
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nextmv-gurobipy
+    permissions:
+      id-token: write # This is required for trusted publishing to PyPI
     steps:
-      - name: notify slack
+      - name: git clone ${{ github.ref_name }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: set up Python
+        uses: actions/setup-python@v5
+
+      - name: install dependencies
         run: |
-          export DATA="{\"text\":\"Release notification - from `nextmv-py`: ${{ inputs.PACKAGE }} ${{ inputs.VERSION }} (see <https://github.com/nextmv-io/nextmv-py/releases/${{ env.PACKAGE_VERSION }}|release notes> / <https://pypi.org/project/${{ inputs.PACKAGE }}|PyPI>)\"}"
-          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: python - build binary wheel and source tarball
+        run: python -m build
+        working-directory: ./nextmv-gurobipy
+
+      - name: python - publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./nextmv-gurobipy/dist
+
+  notify-nextmv-gurobipy:
+    needs: [release-nextmv-gurobipy, publish-nextmv-gurobipy]
+    if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    with:
+      PACKAGE_NAME: nextmv_gurobipy
+      VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
+      REPOSITORY: nextmv-py
+    secrets: inherit
+
+  release-nextmv-scikit-learn:
+    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    with:
+      BRANCH: ${{ github.ref_name }}
+      REPOSITORY: nextmv-py
+      LANGUAGE: python
+      PACKAGE_NAME: nextmv_sklearn
+      PACKAGE_LOCATION: ./nextmv-scikit-learn
+      VERSION_FILE: __about__.py
+      VERSION_PREFIX: nextmv-scikit-learn-
+    secrets: inherit
+
+  publish-nextmv-scikit-learn:
+    needs: [release-nextmv-scikit-learn]
+    if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nextmv-scikit-learn
+    permissions:
+      id-token: write # This is required for trusted publishing to PyPI
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: Build package
+        run: python -m build
+        working-directory: ./nextmv-scikit-learn
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./nextmv-scikit-learn/dist
+
+  notify-nextmv-scikit-learn:
+    needs: [release-nextmv-scikit-learn, publish-nextmv-scikit-learn]
+    if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    with:
+      PACKAGE_NAME: nextmv_sklearn
+      VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
+      REPOSITORY: nextmv-py
+    secrets: inherit
