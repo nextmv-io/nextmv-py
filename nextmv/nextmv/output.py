@@ -1330,9 +1330,9 @@ class LocalOutputWriter(OutputWriter):
         if not os.path.exists(final_dir):
             os.makedirs(final_dir)
 
-        nested_element = {element_key: element}  # The element is expected behind its key.
+        keyed_element = {element_key: element}  # The element is expected behind its key.
 
-        serialized = serialize_json(nested_element, json_configurations=json_configurations)
+        serialized = serialize_json(keyed_element, json_configurations=json_configurations)
 
         with open(os.path.join(final_dir, f"{element_key}.json"), "w", encoding="utf-8") as file:
             file.write(serialized + "\n")
