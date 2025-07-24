@@ -1058,9 +1058,9 @@ class TestOutput(unittest.TestCase):
             # Verify statistics content
             with open(stats_path) as f:
                 stats_content = json.loads(f.read())
-                self.assertEqual(stats_content["run"]["duration"], 15.5)
-                self.assertEqual(stats_content["run"]["iterations"], 100)
-                self.assertEqual(stats_content["result"]["value"], 42.0)
+                self.assertEqual(stats_content["statistics"]["run"]["duration"], 15.5)
+                self.assertEqual(stats_content["statistics"]["run"]["iterations"], 100)
+                self.assertEqual(stats_content["statistics"]["result"]["value"], 42.0)
 
         finally:
             if os.path.exists(test_dir):
@@ -1095,9 +1095,9 @@ class TestOutput(unittest.TestCase):
             # Verify statistics content
             with open(stats_path) as f:
                 stats_content = json.loads(f.read())
-                self.assertEqual(stats_content["custom_metric"], 123.45)
-                self.assertEqual(stats_content["total_processed"], 1000)
-                self.assertEqual(stats_content["success_rate"], 0.95)
+                self.assertEqual(stats_content["statistics"]["custom_metric"], 123.45)
+                self.assertEqual(stats_content["statistics"]["total_processed"], 1000)
+                self.assertEqual(stats_content["statistics"]["success_rate"], 0.95)
 
         finally:
             if os.path.exists(test_dir):
@@ -1148,10 +1148,10 @@ class TestOutput(unittest.TestCase):
             # Verify assets content
             with open(assets_path) as f:
                 assets_content = json.loads(f.read())
-                self.assertEqual(len(assets_content), 2)
+                self.assertEqual(len(assets_content["assets"]), 2)
 
                 # Check first asset
-                asset1 = assets_content[0]
+                asset1 = assets_content["assets"][0]
                 self.assertEqual(asset1["name"], "chart_data")
                 self.assertEqual(asset1["content"]["type"], "bar")
                 self.assertEqual(asset1["description"], "Chart visualization data")
@@ -1159,7 +1159,7 @@ class TestOutput(unittest.TestCase):
                 self.assertEqual(asset1["visual"]["label"], "Performance Chart")
 
                 # Check second asset
-                asset2 = assets_content[1]
+                asset2 = assets_content["assets"][1]
                 self.assertEqual(asset2["name"], "summary_table")
                 self.assertEqual(asset2["content"]["headers"], ["Metric", "Value"])
                 self.assertNotIn("visual", asset2)
@@ -1211,16 +1211,16 @@ class TestOutput(unittest.TestCase):
             # Verify assets content
             with open(assets_path) as f:
                 assets_content = json.loads(f.read())
-                self.assertEqual(len(assets_content), 2)
+                self.assertEqual(len(assets_content["assets"]), 2)
 
                 # Check first asset
-                asset1 = assets_content[0]
+                asset1 = assets_content["assets"][0]
                 self.assertEqual(asset1["name"], "performance_metrics")
                 self.assertEqual(asset1["content"]["cpu_usage"], 45.2)
                 self.assertEqual(asset1["description"], "System performance metrics")
 
                 # Check second asset with visual
-                asset2 = assets_content[1]
+                asset2 = assets_content["assets"][1]
                 self.assertEqual(asset2["name"], "optimization_trace")
                 self.assertEqual(asset2["visual"]["schema"], "chartjs")
                 self.assertEqual(asset2["visual"]["label"], "Convergence Plot")
@@ -1309,19 +1309,19 @@ class TestOutput(unittest.TestCase):
             self.assertTrue(os.path.exists(stats_path))
             with open(stats_path) as f:
                 stats_content = json.loads(f.read())
-                self.assertEqual(stats_content["run"]["duration"], 120.0)
-                self.assertEqual(stats_content["run"]["iterations"], 500)
-                self.assertEqual(stats_content["result"]["value"], 150.5)
+                self.assertEqual(stats_content["statistics"]["run"]["duration"], 120.0)
+                self.assertEqual(stats_content["statistics"]["run"]["iterations"], 500)
+                self.assertEqual(stats_content["statistics"]["result"]["value"], 150.5)
 
             # Verify assets file
             assets_path = os.path.join(test_dir, "assets", "assets.json")
             self.assertTrue(os.path.exists(assets_path))
             with open(assets_path) as f:
                 assets_content = json.loads(f.read())
-                self.assertEqual(len(assets_content), 2)
-                self.assertEqual(assets_content[0]["name"], "route_visualization")
-                self.assertEqual(assets_content[0]["visual"]["schema"], "chartjs")
-                self.assertEqual(assets_content[1]["name"], "convergence_data")
+                self.assertEqual(len(assets_content["assets"]), 2)
+                self.assertEqual(assets_content["assets"][0]["name"], "route_visualization")
+                self.assertEqual(assets_content["assets"][0]["visual"]["schema"], "chartjs")
+                self.assertEqual(assets_content["assets"][1]["name"], "convergence_data")
 
             # Verify solution file contents
             with open(os.path.join(test_dir, "solutions", "optimization_result.json")) as f:
