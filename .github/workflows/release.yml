@@ -1,13 +1,11 @@
 name: release
 run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 
-on:
-  push:
-    branches:
-      - "*"
+on: [push]
 
 jobs:
   release-nextmv:
+    if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
@@ -64,6 +62,7 @@ jobs:
     secrets: inherit
 
   release-nextmv-gurobipy:
+    if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
@@ -118,6 +117,7 @@ jobs:
     secrets: inherit
 
   release-nextmv-scikit-learn:
+    if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     with:
       BRANCH: ${{ github.ref_name }}
