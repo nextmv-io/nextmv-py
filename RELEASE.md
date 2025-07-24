@@ -19,3 +19,5 @@ Update the version in the `__about__.py` file of the packages you want to
 release to a dev tag. When a commit is pushed, the `release.yml` workflow will
 be triggered and it will automatically create a release and publish the packages
 to PyPI.
+
+Delete this.
