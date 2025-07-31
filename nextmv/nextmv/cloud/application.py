@@ -45,6 +45,7 @@ from nextmv.cloud.batch_experiment import (
     BatchExperimentInformation,
     BatchExperimentMetadata,
     BatchExperimentRun,
+    to_runs,
 )
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet, ManagedInput
@@ -65,6 +66,7 @@ from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _sc
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
+from nextmv.deprecated import deprecated
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
@@ -1027,12 +1029,21 @@ class Application:
                     f"batch experiment {id} does not exist, input_set_id must be defined to create a new one"
                 ) from e
         else:
+            runs = [
+                BatchExperimentRun(
+                    instance_id=candidate_instance_id,
+                    input_set_id=input_set_id,
+                ),
+                BatchExperimentRun(
+                    instance_id=baseline_instance_id,
+                    input_set_id=input_set_id,
+                ),
+            ]
             batch_experiment_id = self.new_batch_experiment(
                 name=name,
-                input_set_id=input_set_id,
-                instance_ids=[candidate_instance_id, baseline_instance_id],
                 description=description,
                 id=id,
+                runs=runs,
             )
 
         if batch_experiment_id != id:
@@ -1174,7 +1185,8 @@ class Application:
         input_set_id: str
             ID of the input set to use for the batch experiment.
         instance_ids: list[str]
-            List of instance IDs to use for the batch experiment.
+            DEPRECATED. List of instance IDs to use for the batch experiment.
+            This argument is deprecated, use `runs` instead.
         description: Optional[str]
             Optional description of the batch experiment.
         id: Optional[str]
@@ -1207,7 +1219,14 @@ class Application:
         if input_set_id is not None:
             payload["input_set_id"] = input_set_id
         if instance_ids is not None:
-            payload["instance_ids"] = instance_ids
+            deprecated(
+                name="new_batch_experiment.instance_ids",
+                reason="using argument `instance_ids` is deprecated, use `runs` instead",
+            )
+            input_set = self.input_set(input_set_id)
+            runs = to_runs(instance_ids, input_set)
+            payload_runs = [run.to_dict() for run in runs]
+            payload["runs"] = payload_runs
         if description is not None:
             payload["description"] = description
         if id is not None:
