@@ -1996,8 +1996,16 @@ class Application:
         >>> # Create a new secrets collection with API keys
         >>> from nextmv.cloud import Secret
         >>> secrets = [
-        ...     Secret(key="API_KEY", value="your-api-key"),
-        ...     Secret(key="DATABASE_URL", value="your-database-url")
+        ...     Secret(
+        ...          location="API_KEY",
+        ...          value="your-api-key",
+        ...          secret_type=SecretType.ENV,
+        ...     ),
+        ...     Secret(
+        ...          location="DATABASE_URL",
+        ...          value="your-database-url",
+        ...          secret_type=SecretType.ENV,
+        ...     ),
         ... ]
         >>> collection = app.new_secrets_collection(
         ...     secrets=secrets,
