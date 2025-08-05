@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from nextmv.base_model import BaseModel
+from nextmv.cloud.input_set import InputSet
 
 
 class BatchExperimentInformation(BaseModel):
@@ -143,10 +144,10 @@ class BatchExperimentRun(BaseModel):
 
     Parameters
     ----------
-    option_set : str
-        Option set used for the experiment.
     input_id : str
         ID of the input used for the experiment.
+    option_set : str
+        Option set used for the experiment. Defaults to None.
     instance_id : str, optional
         ID of the instance used for the experiment. Defaults to None.
     version_id : str, optional
@@ -162,11 +163,11 @@ class BatchExperimentRun(BaseModel):
         Run number of the experiment. Defaults to None.
     """
 
-    option_set: str
-    """Option set used for the experiment."""
     input_id: str
     """ID of the input used for the experiment."""
 
+    option_set: Optional[str] = None
+    """Option set used for the experiment."""
     instance_id: Optional[str] = None
     """ID of the instance used for the experiment."""
     version_id: Optional[str] = None
@@ -177,8 +178,6 @@ class BatchExperimentRun(BaseModel):
     """If the batch experiment is a scenario test, this is the ID of that test."""
     repetition: Optional[int] = None
     """Repetition number of the experiment."""
-    run_number: Optional[str] = None
-    """Run number of the experiment."""
 
     def __post_init_post_parse__(self):
         """
@@ -215,3 +214,37 @@ class BatchExperimentMetadata(BatchExperimentInformation):
 
     app_id: Optional[str] = None
     """ID of the application used for the batch experiment."""
+
+
+def to_runs(instance_ids: list[str], input_set: InputSet) -> list[BatchExperimentRun]:
+    """
+    Translate a legacy batch experiment list of instance ids to runs.
+
+    Parameters
+    ----------
+    instance_ids : list[str]
+        List of instance IDs to be converted into runs.
+    input_set : InputSet
+        Input set associated with the runs.
+
+    Returns
+    -------
+    list[BatchExperimentRun]
+        A list of `BatchExperimentRun` objects created from the instance IDs.
+    """
+
+    input_ids = input_set.input_ids
+    if len(input_set.input_ids) == 0:
+        input_ids = [i.id for i in input_set.inputs]
+
+    runs = []
+    for instance_id in instance_ids:
+        for input_id in input_ids:
+            run = BatchExperimentRun(
+                input_id=input_id,
+                instance_id=instance_id,
+                input_set_id=input_set.id,
+            )
+            runs.append(run)
+
+    return runs
