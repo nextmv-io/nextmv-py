@@ -66,7 +66,6 @@ from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _sc
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
 from nextmv.cloud.version import Version
-from nextmv.deprecated import deprecated
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
@@ -1185,7 +1184,7 @@ class Application:
         input_set_id: str
             ID of the input set to use for the batch experiment.
         instance_ids: list[str]
-            DEPRECATED. List of instance IDs to use for the batch experiment.
+            List of instance IDs to use for the batch experiment.
             This argument is deprecated, use `runs` instead.
         description: Optional[str]
             Optional description of the batch experiment.
@@ -1219,10 +1218,6 @@ class Application:
         if input_set_id is not None:
             payload["input_set_id"] = input_set_id
         if instance_ids is not None:
-            deprecated(
-                name="new_batch_experiment.instance_ids",
-                reason="using argument `instance_ids` is deprecated, use `runs` instead",
-            )
             input_set = self.input_set(input_set_id)
             runs = to_runs(instance_ids, input_set)
             payload_runs = [run.to_dict() for run in runs]
