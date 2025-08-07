@@ -322,6 +322,7 @@ class ManifestPython(BaseModel):
     from the app bundle.
     """
 
+
 class ManifestOptionUI(BaseModel):
     """
     UI attributes for an option in the manifest.
@@ -359,6 +360,7 @@ class ManifestOptionUI(BaseModel):
     """The type of control to use for the option in the Nextmv Cloud UI."""
     hidden_from: Optional[list[str]] = None
     """A list of team roles for which this option will be hidden in the UI."""
+
 
 class ManifestOption(BaseModel):
     """
@@ -429,7 +431,6 @@ class ManifestOption(BaseModel):
     ui: Optional[ManifestOptionUI] = None
     """Optional UI attributes for the option."""
 
-
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
         """
@@ -483,7 +484,9 @@ class ManifestOption(BaseModel):
             ui=ManifestOptionUI(
                 control_type=option.control_type,
                 hidden_from=option.hidden_from,
-            ) if option.control_type or option.hidden_from else None,
+            )
+            if option.control_type or option.hidden_from
+            else None,
         )
 
     def to_option(self) -> Option:
@@ -534,6 +537,7 @@ class ManifestOption(BaseModel):
             hidden_from=self.ui.hidden_from if self.ui else None,
         )
 
+
 class ManifestValidation(BaseModel):
     """
     Validation rules for options in the manifest.
@@ -568,6 +572,7 @@ class ManifestValidation(BaseModel):
     validation rules will be enforced on the options, and runs will not be
     created if any of the rules of the options are violated.
     """
+
 
 class ManifestOptions(BaseModel):
     """
@@ -649,8 +654,9 @@ class ManifestOptions(BaseModel):
         return cls(
             strict=validation.strict if validation else False,
             validation=ManifestValidation(enforce="all" if validation and validation.validation_enforce else "none"),
-            items=items
+            items=items,
         )
+
 
 class ManifestConfiguration(BaseModel):
     """
@@ -749,14 +755,17 @@ class Manifest(BaseModel):
     """The files to include (or exclude) in the app. This is mandatory."""
 
     runtime: ManifestRuntime = ManifestRuntime.PYTHON
-    """The runtime to use for the app.
-
-    It provides the environment in which the app runs. This is mandatory.
+    """
+    The runtime to use for the app. It provides the environment in which the
+    app runs. This is mandatory.
     """
     type: ManifestType = ManifestType.PYTHON
-    """Type of application, based on the programming language. This is mandatory."""
+    """
+    Type of application, based on the programming language. This is mandatory.
+    """
     build: Optional[ManifestBuild] = None
-    """Build-specific attributes.
+    """
+    Build-specific attributes.
 
     The `build.command` to run to build the app. This command will be executed
     without a shell, i.e., directly. The command must exit with a status of 0
@@ -770,7 +779,8 @@ class Manifest(BaseModel):
         validation_alias=AliasChoices("pre-push", "pre_push"),
         default=None,
     )
-    """A command to run before the app is pushed to the Nextmv Cloud.
+    """
+    A command to run before the app is pushed to the Nextmv Cloud.
 
     This command can be used to compile a binary, run tests or similar tasks.
     One difference with what is specified under build, is that the command will
@@ -780,15 +790,14 @@ class Manifest(BaseModel):
     pushed (after the build command).
     """
     python: Optional[ManifestPython] = None
-    """Python-specific attributes.
-
-    Only for Python apps. Contains further Python-specific attributes.
+    """
+    Python-specific attributes. Only for Python apps. Contains further
+    Python-specific attributes.
     """
     configuration: Optional[ManifestConfiguration] = None
-    """Configuration for the decision model.
-
-    A list of options for the decision model. An option is a parameter that
-    configures the decision model.
+    """
+    Configuration for the decision model. A list of options for the decision
+    model. An option is a parameter that configures the decision model.
     """
 
     @classmethod
@@ -1041,11 +1050,8 @@ class Manifest(BaseModel):
             type=ManifestType.PYTHON,
             python=ManifestPython(pip_requirements="requirements.txt"),
             configuration=ManifestConfiguration(
-                options= ManifestOptions.from_options(
-                    options=options,
-                    validation=validation
-                ),
-            )
+                options=ManifestOptions.from_options(options=options, validation=validation),
+            ),
         )
 
         return manifest
