@@ -65,6 +65,20 @@ experiment-1
 
 Defining `option_sets` is supported as well.
 
+Alternatively, you may use the `instance_ids` argument to specify which
+instances to use for the batch experiment.
+
+```python
+batch_exp_id = app.new_batch_experiment(
+    id="<YOUR_BATCH_EXPERIMENT_ID>",
+    name="<YOUR_BATCH_EXPERIMENT_ID>",
+    input_set_id="<YOUR_INPUT_SET_ID>",
+    instance_ids=["<SAMPLE_INSTANCE_ID_1>", "<SAMPLE_INSTANCE_ID_2>"],
+    description="An optional description",
+)
+print(batch_exp_id)
+```
+
 ## Delete a batch experiment
 
 Deleting a batch experiment will also delete all of the associated information
