@@ -29,6 +29,7 @@ import shutil
 import tarfile
 import tempfile
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -302,6 +303,15 @@ class Application:
     experiments_endpoint: str = "{base}/experiments"
     """Base endpoint for the experiments in the application."""
 
+    # Local experience parameters.
+    src: Optional[str] = None
+    """
+    Source of the application, if initialized locally. This is the path
+    to the application's source code.
+    """
+    description: Optional[str] = None
+    """Description of the application."""
+
     def __post_init__(self):
         """Initialize the endpoint and experiments_endpoint attributes.
 
@@ -310,6 +320,158 @@ class Application:
         """
         self.endpoint = self.endpoint.format(id=self.id)
         self.experiments_endpoint = self.experiments_endpoint.format(base=self.endpoint)
+
+    @classmethod
+    def initialize(
+        cls,
+        name: str,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+        destination: Optional[str] = None,
+        client: Optional[Client] = None,
+    ) -> "Application":
+        """
+        Initialize a Nextmv application, locally.
+
+        This method will create a new application in the local file system. The
+        application is a folder with the name given by `name`, under the
+        location given by `destination`. If the `destination` parameter is not
+        specified, the current working directory is used as default. This
+        method will scaffold the application with the necessary files and
+        directories to have an opinionated structure for your decision model.
+        Once the application is initialized, you are encouraged to complete it
+        with the decision model itself, so that the application can be run,
+        locally or remotely.
+
+        This method differs from the `Application.new` method in that it
+        creates the application locally rather than in the Cloud.
+
+        Although not required, you are encouraged to specify the `client`
+        parameter, so that the application can be pushed and synced remotely,
+        with the Nextmv Cloud. If you don't specify the `client`, and intend to
+        interact with the Nextmv Cloud, you will encounter an error. Make sure
+        you set the `client` parameter on the `Application` instance after
+        initialization, if you don't provide it here.
+
+        Use the `destination` parameter to specify where you want the app to be
+        initialized, using the current working directory by default.
+
+        Parameters
+        ----------
+        name : str
+            Name of the application.
+        id : str, optional
+            ID of the application. Will be generated if not provided.
+        description : str, optional
+            Description of the application.
+        destination : str, optional
+            Destination directory where the application will be initialized. If
+            not provided, the current working directory will be used.
+        client : Client, optional
+            Client to use for interacting with the Nextmv Cloud API.
+
+        Returns
+        -------
+        Application
+            The initialized application instance.
+        """
+
+        destination_dir = os.getcwd() if destination is None else destination
+        app_id = id if id is not None else str(uuid.uuid4())
+
+        # Create the new directory with the given name.
+        src = os.path.join(destination_dir, name)
+        os.makedirs(src, exist_ok=True)
+
+        # Get the path to the initial app structure template.
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        initial_app_structure_path = os.path.join(current_file_dir, "..", "default_app")
+        initial_app_structure_path = os.path.normpath(initial_app_structure_path)
+
+        # Copy everything from initial_app_structure to the new directory.
+        if os.path.exists(initial_app_structure_path):
+            for item in os.listdir(initial_app_structure_path):
+                source_path = os.path.join(initial_app_structure_path, item)
+                dest_path = os.path.join(src, item)
+
+                if os.path.isdir(source_path):
+                    shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
+                    continue
+
+                shutil.copy2(source_path, dest_path)
+
+        return cls(
+            id=app_id,
+            client=client,
+            src=src,
+            description=description,
+        )
+
+    @classmethod
+    def new(
+        cls,
+        client: Client,
+        name: str,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+        is_workflow: Optional[bool] = None,
+        exist_ok: bool = False,
+    ) -> "Application":
+        """
+        Create a new application directly in Nextmv Cloud.
+
+        The application is created as an empty shell, and executable code must
+        be pushed to the app before running it remotely.
+
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        name : str
+            Name of the application.
+        id : str, optional
+            ID of the application. Will be generated if not provided.
+        description : str, optional
+            Description of the application.
+        is_workflow : bool, optional
+            Whether the application is a Decision Workflow.
+        exist_ok : bool, default=False
+            If True and an application with the same ID already exists,
+            return the existing application instead of creating a new one.
+
+        Returns
+        -------
+        Application
+            The newly created (or existing) application.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client
+        >>> client = Client(api_key="your-api-key")
+        >>> app = Application.new(client=client, name="My New App", id="my-app")
+        """
+
+        if exist_ok and cls.exists(client=client, id=id):
+            return Application(client=client, id=id)
+
+        payload = {
+            "name": name,
+        }
+
+        if description is not None:
+            payload["description"] = description
+        if id is not None:
+            payload["id"] = id
+        if is_workflow is not None:
+            payload["is_pipeline"] = is_workflow
+
+        response = client.request(
+            method="POST",
+            endpoint="v1/applications",
+            payload=payload,
+        )
+
+        return cls(client=client, id=response.json()["id"])
 
     def acceptance_test(self, acceptance_test_id: str) -> AcceptanceTest:
         """
@@ -901,69 +1063,6 @@ class Application:
         )
 
         return ManagedInput.from_dict(response.json())
-
-    @classmethod
-    def new(
-        cls,
-        client: Client,
-        name: str,
-        id: Optional[str] = None,
-        description: Optional[str] = None,
-        is_workflow: Optional[bool] = None,
-        exist_ok: bool = False,
-    ) -> "Application":
-        """
-        Create a new application.
-
-        Parameters
-        ----------
-        client : Client
-            Client to use for interacting with the Nextmv Cloud API.
-        name : str
-            Name of the application.
-        id : str, optional
-            ID of the application. Will be generated if not provided.
-        description : str, optional
-            Description of the application.
-        is_workflow : bool, optional
-            Whether the application is a Decision Workflow.
-        exist_ok : bool, default=False
-            If True and an application with the same ID already exists,
-            return the existing application instead of creating a new one.
-
-        Returns
-        -------
-        Application
-            The newly created (or existing) application.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import Client
-        >>> client = Client(api_key="your-api-key")
-        >>> app = Application.new(client=client, name="My New App", id="my-app")
-        """
-
-        if exist_ok and cls.exists(client=client, id=id):
-            return Application(client=client, id=id)
-
-        payload = {
-            "name": name,
-        }
-
-        if description is not None:
-            payload["description"] = description
-        if id is not None:
-            payload["id"] = id
-        if is_workflow is not None:
-            payload["is_pipeline"] = is_workflow
-
-        response = client.request(
-            method="POST",
-            endpoint="v1/applications",
-            payload=payload,
-        )
-
-        return cls(client=client, id=response.json()["id"])
 
     def new_acceptance_test(
         self,
