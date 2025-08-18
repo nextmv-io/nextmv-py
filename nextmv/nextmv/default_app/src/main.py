@@ -17,7 +17,7 @@ message = f"Hello, {name}"
 nextmv.log(message)
 
 if options.details:
-    detail = "You are", {input.data["distance"]}, " million km from the sun"
+    detail = f"You are {input.data['distance']} million km from the sun"
     nextmv.log(detail)
 
 assets = create_visuals(name, input.data["radius"], input.data["distance"])
