@@ -495,6 +495,8 @@ class OutputFormat(str, Enum):
         CSV archive format: multiple CSV files.
     MULTI_FILE : str
         Multi-file format: multiple files in a directory.
+    TEXT : str
+        Text format, utf-8 encoded.
     """
 
     JSON = "json"
@@ -503,6 +505,8 @@ class OutputFormat(str, Enum):
     """CSV archive format: multiple CSV files."""
     MULTI_FILE = "multi-file"
     """Multi-file format: multiple files in a directory."""
+    TEXT = "text"
+    """Text format, utf-8 encoded."""
 
 
 @dataclass
@@ -1381,6 +1385,7 @@ class LocalOutputWriter(OutputWriter):
         OutputFormat.JSON: _write_json,
         OutputFormat.CSV_ARCHIVE: _write_archive,
         OutputFormat.MULTI_FILE: _write_multi_file,
+        OutputFormat.TEXT: _write_json,
     }
     """Dictionary mapping output formats to writer functions."""
 

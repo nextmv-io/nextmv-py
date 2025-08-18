@@ -29,7 +29,6 @@ import shutil
 import tarfile
 import tempfile
 import time
-import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -51,6 +50,7 @@ from nextmv.cloud.batch_experiment import (
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
+from nextmv.cloud.local.runner import run
 from nextmv.cloud.manifest import Manifest
 from nextmv.cloud.run import (
     ExternalRunResult,
@@ -63,7 +63,7 @@ from nextmv.cloud.run import (
     RunResult,
     TrackedRun,
 )
-from nextmv.cloud.safe import _name_and_id, _safe_id
+from nextmv.cloud.safe import safe_id, safe_name_and_id
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
@@ -292,11 +292,11 @@ class Application:
     >>> instances = app.list_instances()
     """
 
-    client: Client
-    """Client to use for interacting with the Nextmv Cloud API."""
     id: str
     """ID of the application."""
 
+    client: Optional[Client] = None
+    """Client to use for interacting with the Nextmv Cloud API."""
     default_instance_id: str = None
     """Default instance ID to use for submitting runs."""
     endpoint: str = "v1/applications/{id}"
@@ -378,7 +378,7 @@ class Application:
         """
 
         destination_dir = os.getcwd() if destination is None else destination
-        app_id = id if id is not None else str(uuid.uuid4())
+        app_id = id if id is not None else safe_id("app")
 
         # Create the new directory with the given name.
         src = os.path.join(destination_dir, name)
@@ -1724,13 +1724,7 @@ class Application:
 
             tar_file = self.__package_inputs(input_dir_path)
 
-        input_data = None
-        if isinstance(input, BaseModel):
-            input_data = input.to_dict()
-        elif isinstance(input, dict) or isinstance(input, str):
-            input_data = input
-        elif isinstance(input, Input):
-            input_data = input.data
+        input_data = self.__extract_input_data(input)
 
         input_size = 0
         if input_data is not None:
@@ -1743,20 +1737,10 @@ class Application:
             upload_id = upload_url.upload_id
             upload_id_used = True
 
-        options_dict = {}
-        if isinstance(input, Input) and input.options is not None:
-            options_dict = input.options.to_dict_cloud()
+        options_dict = self.__extract_options_dict(options, json_configurations)
 
-        if options is not None:
-            if isinstance(options, Options):
-                options_dict = options.to_dict_cloud()
-            elif isinstance(options, dict):
-                for k, v in options.items():
-                    if isinstance(v, str):
-                        options_dict[k] = v
-                    else:
-                        options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
-
+        # Builds the payload progressively based on the different arguments
+        # that must be provided.
         payload = {}
         if upload_id_used:
             payload["upload_id"] = upload_id
@@ -1773,15 +1757,7 @@ class Application:
                     raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
             payload["options"] = options_dict
 
-        if configuration is not None:
-            configuration_dict = (
-                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
-            )
-        else:
-            configuration = RunConfiguration()
-            configuration.resolve(input=input, dir_path=input_dir_path)
-            configuration_dict = configuration.to_dict()
-
+        configuration_dict = self.__extract_run_config(input, configuration, input_dir_path)
         payload["configuration"] = configuration_dict
 
         if batch_experiment_id is not None:
@@ -1804,6 +1780,106 @@ class Application:
         )
 
         return response.json()["run_id"]
+
+    def new_local_run(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+        options: Optional[Union[Options, dict[str, str]]] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
+        inputs_dir_path: Optional[str] = None,
+    ) -> str:
+        """
+        Run the application locally with the provided input.
+
+        Make sure that the `src` attribute is set on the `Application` class
+        before running locally, as it is required by the method.
+
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            `dict`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is either
+            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
+            input data is extracted from the `.data` property.
+
+            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
+            `nextmv.InputFormat.MULTI_FILE`, you should use the
+            `inputs_dir_path` argument instead. This argument takes precedence
+            over the `input`. If `inputs_dir_path` is specified, this function
+            looks for files in that directory and tars them, to later be
+            uploaded using the `upload_large_input` method. If both the
+            `inputs_dir_path` and `input` arguments are provided, the `input`
+            is ignored.
+
+            When `inputs_dir_path` is specified, the `configuration` argument
+            must also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.InputFormat.CSV_ARCHIVE`
+            - `nextmv.InputFormat.MULTI_FILE`
+
+            When working with JSON or text data, use the `input` argument
+            directly.
+
+            In general, if an input is too large, it will be uploaded with the
+            `upload_large_input` method.
+        options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        inputs_dir_path: Optional[str]
+            Path to a directory containing input files. This is useful for
+            input formats like `nextmv.InputFormat.CSV_ARCHIVE` or
+            `nextmv.InputFormat.MULTI_FILE`. If both `input` and
+            `inputs_dir_path` are specified, the `input` is ignored, and the
+            files in the directory are used instead.
+        """
+
+        self.__validate_dir_path_and_configuration(inputs_dir_path, configuration)
+
+        if self.src is None:
+            raise ValueError("`src` property for the `Application` must be specified to run the application locally.")
+
+        if input is None and inputs_dir_path is None:
+            raise ValueError("Either `input` or `input_directory` must be specified.")
+
+        try:
+            manifest = Manifest.from_yaml(self.src)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Could not find manifest.yaml in {self.src}. Maybe specify a different `src` dir?"
+            ) from e
+
+        input_data = None if inputs_dir_path else self.__extract_input_data(input)
+        options_dict = self.__extract_options_dict(options, json_configurations)
+        run_config_dict = self.__extract_run_config(input, configuration, inputs_dir_path)
+        run_id = run(
+            src=self.src,
+            manifest=manifest,
+            run_config=run_config_dict,
+            input_data=input_data,
+            inputs_dir_path=inputs_dir_path,
+            options=options_dict,
+        )
+
+        return run_id
 
     def new_run_with_result(
         self,
@@ -2226,7 +2302,7 @@ class Application:
             return self.version(version_id=id)
 
         if id is None:
-            id = _safe_id(prefix="version")
+            id = safe_id(prefix="version")
 
         payload = {
             "id": id,
@@ -3459,7 +3535,7 @@ class Application:
         # If working with a list of managed inputs, we need to create an
         # input set.
         if scenario.scenario_input.scenario_input_type == ScenarioInputType.INPUT:
-            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = safe_name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -3479,7 +3555,7 @@ class Application:
             for data in scenario.scenario_input.scenario_input_data:
                 upload_url = self.upload_url()
                 self.upload_large_input(input=data, upload_url=upload_url)
-                name, id = _name_and_id(prefix="man-input", entity_id=scenario_id)
+                name, id = safe_name_and_id(prefix="man-input", entity_id=scenario_id)
                 managed_input = self.new_managed_input(
                     id=id,
                     name=name,
@@ -3488,7 +3564,7 @@ class Application:
                 )
                 managed_inputs.append(managed_input)
 
-            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = safe_name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -3503,11 +3579,12 @@ class Application:
     def __validate_dir_path_and_configuration(
         self,
         dir_path: Optional[str],
-        configuration: Optional[RunConfiguration],
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
+
         if dir_path is None or dir_path == "":
             return
 
@@ -3516,22 +3593,56 @@ class Application:
                 "If dir_path is provided, a RunConfiguration must also be provided.",
             )
 
-        if configuration.format is None:
+        config_format = self.__extract_config_format(configuration)
+
+        if config_format is None:
             raise ValueError(
                 "If dir_path is provided, RunConfiguration.format must also be provided.",
             )
 
-        if configuration.format.format_input is None:
+        input_type = self.__extract_input_type(config_format)
+
+        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
+                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+            )
+
+    def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:
+        """Extract format from configuration, handling both RunConfiguration objects and dicts."""
+        if isinstance(configuration, RunConfiguration):
+            return configuration.format
+
+        if isinstance(configuration, dict):
+            config_format = configuration.get("format")
+            if config_format is not None and isinstance(config_format, dict):
+                return Format.from_dict(config_format) if hasattr(Format, "from_dict") else config_format
+
+            return config_format
+
+        raise ValueError("Configuration must be a RunConfiguration object or a dict.")
+
+    def __extract_input_type(self, config_format: Any) -> Any:
+        """Extract input type from config format."""
+        if isinstance(config_format, dict):
+            format_input = config_format.get("format_input") or config_format.get("input")
+            if format_input is None:
+                raise ValueError(
+                    "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
+                )
+
+            if isinstance(format_input, dict):
+                return format_input.get("input_type") or format_input.get("type")
+
+            return getattr(format_input, "input_type", None)
+
+        # Handle Format object
+        if config_format.format_input is None:
             raise ValueError(
                 "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
             )
 
-        input_type = configuration.format.format_input.input_type
-        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type."
-                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
-            )
+        return config_format.format_input.input_type
 
     def __package_inputs(self, dir_path: str) -> str:
         """
@@ -3593,6 +3704,74 @@ class Application:
         size_exceeds = input_size > _MAX_RUN_SIZE
 
         return size_exceeds or non_json_payload
+
+    def __extract_input_data(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+    ) -> Optional[Union[dict[str, Any], str]]:
+        """
+        Auxiliary function to extract the input data from the input, based on
+        its type.
+        """
+
+        input_data = None
+        if isinstance(input, BaseModel):
+            input_data = input.to_dict()
+        elif isinstance(input, dict) or isinstance(input, str):
+            input_data = input
+        elif isinstance(input, Input):
+            input_data = input.data
+
+        return input_data
+
+    def __extract_options_dict(
+        self,
+        options: Optional[Union[Options, dict[str, str]]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
+    ) -> dict[str, str]:
+        """
+        Auxiliary function to extract the options that will be sent to the
+        application for execution.
+        """
+
+        options_dict = {}
+        if isinstance(input, Input) and input.options is not None:
+            options_dict = input.options.to_dict_cloud()
+
+        if options is not None:
+            if isinstance(options, Options):
+                options_dict = options.to_dict_cloud()
+            elif isinstance(options, dict):
+                for k, v in options.items():
+                    if isinstance(v, str):
+                        options_dict[k] = v
+                    else:
+                        options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
+
+        return options_dict
+
+    def __extract_run_config(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+        dir_path: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        Auxiliary function to extract the run configuration that will be sent
+        to the application for execution.
+        """
+
+        if configuration is not None:
+            configuration_dict = (
+                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
+            )
+            return configuration_dict
+
+        configuration = RunConfiguration()
+        configuration.resolve(input=input, dir_path=dir_path)
+        configuration_dict = configuration.to_dict()
+
+        return configuration_dict
 
 
 def poll(  # noqa: C901

@@ -31,13 +31,10 @@ nav:
               - Acceptance tests: nextmv/tutorials/experiments/acceptance-tests.md
               - Input sets: nextmv/tutorials/experiments/input-sets.md
       - Reference:
-          - base_model.py: nextmv/reference/base_model.md
-          - input.py: nextmv/reference/input.md
-          - logger.py: nextmv/reference/logger.md
-          - model.py: nextmv/reference/model.md
-          - options.py: nextmv/reference/options.md
-          - output.py: nextmv/reference/output.md
           - cloud:
+              - local:
+                  - executor.py: nextmv/reference/cloud/local/executor.md
+                  - runner.py: nextmv/reference/cloud/local/runner.md
               - acceptance_test.py: nextmv/reference/cloud/acceptance_test.md
               - account.py: nextmv/reference/cloud/account.md
               - application.py: nextmv/reference/cloud/application.md
@@ -47,10 +44,17 @@ nav:
               - instance.py: nextmv/reference/cloud/instance.md
               - manifest.py: nextmv/reference/cloud/manifest.md
               - run.py: nextmv/reference/cloud/run.md
+              - safe.py: nextmv/reference/cloud/safe.md
               - scenario.py: nextmv/reference/cloud/scenario.md
               - secrets.py: nextmv/reference/cloud/secrets.md
               - status.py: nextmv/reference/cloud/status.md
               - version.py: nextmv/reference/cloud/version.md
+          - base_model.py: nextmv/reference/base_model.md
+          - input.py: nextmv/reference/input.md
+          - logger.py: nextmv/reference/logger.md
+          - model.py: nextmv/reference/model.md
+          - options.py: nextmv/reference/options.md
+          - output.py: nextmv/reference/output.md
   - nextmv-gurobipy:
       - Overview & installation: nextmv-gurobipy/index.md
       - Tutorials:
