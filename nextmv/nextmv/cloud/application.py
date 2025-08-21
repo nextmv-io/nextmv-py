@@ -2214,7 +2214,7 @@ class Application:
 
         if exist_ok and self.version_exists(version_id=id):
             return self.version(version_id=id)
-        
+
         if id is None:
             id = _safe_id(prefix="version")
 
