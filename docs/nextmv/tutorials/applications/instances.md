@@ -24,20 +24,13 @@ If you want to create a new instance after using `app.push()`, your script might
 
 ```python
 latest_version = app.new_version(
-    name="v1.2.0",
-    id="v1.2.0"
+    name="v1.2.1",
+    id="v1.2.1",
     description="Added new optimization features"
 )
 
-# Create a new instance from the latest version
-instance = app.new_instance(
-    name="Staging Instance",
-    version_id=latest_version.id
-)
-
-# Or create with custom configuration
+# Optional Configuration
 config = cloud.InstanceConfiguration(
-    secrets_collection_id="staging_secrets",
     options={
         "duration": "60s",
     },
