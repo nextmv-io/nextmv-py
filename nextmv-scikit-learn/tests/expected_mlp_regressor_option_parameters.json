@@ -8,7 +8,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "activation",
@@ -19,7 +20,8 @@
     "choices": ["identity", "logistic", "tanh", "relu"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "solver",
@@ -30,7 +32,8 @@
     "choices": ["lbfgs", "sgd", "adam"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "alpha",
@@ -41,7 +44,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "batch_size",
@@ -52,7 +56,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "learning_rate",
@@ -63,7 +68,8 @@
     "choices": ["constant", "invscaling", "adaptive"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "learning_rate_init",
@@ -74,7 +80,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "power_t",
@@ -85,7 +92,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_iter",
@@ -96,7 +104,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "shuffle",
@@ -107,7 +116,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "random_state",
@@ -118,7 +128,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "tol",
@@ -129,7 +140,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "verbose",
@@ -140,7 +152,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "warm_start",
@@ -151,7 +164,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "momentum",
@@ -162,7 +176,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "nesterovs_momentum",
@@ -173,7 +188,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "early_stopping",
@@ -184,7 +200,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "validation_fraction",
@@ -195,7 +212,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "beta_1",
@@ -206,7 +224,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "beta_2",
@@ -217,7 +236,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "epsilon",
@@ -228,7 +248,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "n_iter_no_change",
@@ -239,7 +260,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_fun",
@@ -250,6 +272,7 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   }
 ]

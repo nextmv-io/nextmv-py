@@ -8,7 +8,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "criterion",
@@ -19,7 +20,8 @@
     "choices": ["squared_error", "absolute_error", "friedman_mse", "poisson"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_depth",
@@ -30,7 +32,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_samples_split",
@@ -41,7 +44,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_samples_leaf",
@@ -52,7 +56,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_weight_fraction_leaf",
@@ -63,7 +68,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_features",
@@ -74,7 +80,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_leaf_nodes",
@@ -85,7 +92,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_impurity_decrease",
@@ -96,7 +104,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "bootstrap",
@@ -107,7 +116,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "oob_score",
@@ -118,7 +128,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "n_jobs",
@@ -129,7 +140,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "random_state",
@@ -140,7 +152,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "verbose",
@@ -151,7 +164,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "warm_start",
@@ -162,7 +176,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "ccp_alpha",
@@ -173,7 +188,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_samples",
@@ -184,7 +200,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "monotonic_cst",
@@ -195,6 +212,7 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   }
 ]
