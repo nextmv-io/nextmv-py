@@ -19,9 +19,16 @@ executable, allowing you to maintain multiple stable versions.
 
 ## Creating Versions
 
-In your `push.py` script, you can automatically create a version after pushing:
+You can automatically create a version after pushing:
 
 ```python
+import os
+
+from nextmv import cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
 # Push the application
 app.push()
 

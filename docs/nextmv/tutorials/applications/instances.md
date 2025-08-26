@@ -15,7 +15,7 @@ Each instance can run a specific version of your application with its own config
 
 When you create an instance, you specify which version of your application run.
 
-In your `push.py`, after creating a [version][version] from the latest push, you can either create a
+After creating a [version][version] from the latest push, you can either create a
 new instance or update an instance with the latest version.
 
 ## Creating Instances
@@ -23,6 +23,13 @@ new instance or update an instance with the latest version.
 If you want to create a new instance after using `app.push()`, your script might include the following.
 
 ```python
+import os
+from nextmv import cloud
+
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
 latest_version = app.new_version(
     name="v1.2.1",
     id="v1.2.1",
