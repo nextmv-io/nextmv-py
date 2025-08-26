@@ -275,7 +275,7 @@ class Application:
         Client to use for interacting with the Nextmv Cloud API.
     id : str
         ID of the application.
-    default_instance_id : str, default="devint"
+    default_instance_id : str, default=None
         Default instance ID to use for submitting runs.
     endpoint : str, default="v1/applications/{id}"
         Base endpoint for the application.
@@ -296,7 +296,7 @@ class Application:
     id: str
     """ID of the application."""
 
-    default_instance_id: str = "devint"
+    default_instance_id: str = None
     """Default instance ID to use for submitting runs."""
     endpoint: str = "v1/applications/{id}"
     """Base endpoint for the application."""
@@ -1788,9 +1788,9 @@ class Application:
             )
             payload["result"] = external_dict
 
-        query_params = {
-            "instance_id": instance_id if instance_id is not None else self.default_instance_id,
-        }
+        query_params = {}
+        if instance_id is not None or self.default_instance_id is not None:
+            query_params["instance_id"] = instance_id if instance_id is not None else self.default_instance_id
         response = self.client.request(
             method="POST",
             endpoint=f"{self.endpoint}/runs",
@@ -3343,7 +3343,7 @@ class Application:
                     {
                         "app_id": self.id,
                         "endpoint": self.client.url,
-                        "instance_url": f"{self.endpoint}/runs?instance_id=devint",
+                        "instance_url": f"{self.endpoint}/runs?instance_id=latest",
                     },
                     indent=2,
                 )
