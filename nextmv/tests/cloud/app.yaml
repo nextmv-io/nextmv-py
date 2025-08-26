@@ -45,6 +45,8 @@ configuration:
         default: 3.14
         description: a description
         required: false
+        ui:
+          display_name: a float parameter
       - name: a list parameter
         option_type: string
         default: a

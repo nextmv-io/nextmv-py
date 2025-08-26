@@ -347,6 +347,9 @@ class ManifestOptionUI(BaseModel):
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
         pass `hidden_from=["operator"]`.
+    display_name : str, optional
+        An optional display name for the option. This is useful for making
+        the option more user-friendly in the UI.
 
     Examples
     --------
@@ -360,7 +363,10 @@ class ManifestOptionUI(BaseModel):
     """The type of control to use for the option in the Nextmv Cloud UI."""
     hidden_from: Optional[list[str]] = None
     """A list of team roles for which this option will be hidden in the UI."""
-
+    display_name: Optional[str] = None
+    """An optional display name for the option. This is useful for making
+    the option more user-friendly in the UI.
+    """
 
 class ManifestOption(BaseModel):
     """
@@ -484,8 +490,9 @@ class ManifestOption(BaseModel):
             ui=ManifestOptionUI(
                 control_type=option.control_type,
                 hidden_from=option.hidden_from,
+                display_name=option.display_name,
             )
-            if option.control_type or option.hidden_from
+            if option.control_type or option.hidden_from or option.display_name
             else None,
         )
 
@@ -535,6 +542,7 @@ class ManifestOption(BaseModel):
             additional_attributes=self.additional_attributes,
             control_type=self.ui.control_type if self.ui else None,
             hidden_from=self.ui.hidden_from if self.ui else None,
+            display_name=self.ui.display_name if self.ui else None,
         )
 
 
