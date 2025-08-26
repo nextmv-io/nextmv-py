@@ -17,6 +17,8 @@ nav:
           - Applications:
               - Managing an app: nextmv/tutorials/applications/manage.md
               - Push to an app: nextmv/tutorials/applications/push.md
+              - Versions: nextmv/tutorials/applications/versions.md
+              - Instances: nextmv/tutorials/applications/instances.md
               - Run an app: nextmv/tutorials/applications/runs.md
               - Track runs: nextmv/tutorials/applications/external-runs.md
               - Secrets: nextmv/tutorials/applications/secrets.md

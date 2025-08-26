@@ -62,7 +62,7 @@ from nextmv.cloud.run import (
     RunResult,
     TrackedRun,
 )
-from nextmv.cloud.safe import _name_and_id
+from nextmv.cloud.safe import _name_and_id, _safe_id
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.cloud.status import StatusV2
@@ -2215,10 +2215,13 @@ class Application:
         if exist_ok and self.version_exists(version_id=id):
             return self.version(version_id=id)
 
-        payload = {}
+        if id is None:
+            id = _safe_id(prefix="version")
 
-        if id is not None:
-            payload["id"] = id
+        payload = {
+            "id": id,
+        }
+
         if name is not None:
             payload["name"] = name
         if description is not None:
