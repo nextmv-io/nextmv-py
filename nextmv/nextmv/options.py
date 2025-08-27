@@ -227,6 +227,9 @@ class Option:
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
         pass `hidden_from=["operator"]`.
+    display_name : str, optional
+        An optional display name for the option. This is useful for making
+        the option more user-friendly in the UI.
 
     Examples
     --------
@@ -284,6 +287,11 @@ class Option:
     example, if you want to hide an option from the "operator" role, you can
     pass `hidden_from=["operator"]`.
     """
+    display_name: Optional[str] = None
+    """
+    An optional display name for the option. This is useful for making
+    the option more user-friendly in the UI.
+    """
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Option":
@@ -324,6 +332,7 @@ class Option:
             additional_attributes=data.get("additional_attributes"),
             control_type=data.get("control_type"),
             hidden_from=data.get("hidden_from"),
+            display_name=data.get("display_name"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -355,6 +364,7 @@ class Option:
             "additional_attributes": self.additional_attributes,
             "control_type": self.control_type,
             "hidden_from": self.hidden_from,
+            "display_name": self.display_name,
         }
 
 
@@ -979,6 +989,9 @@ class Options:
 
         if isinstance(option, Option) and option.hidden_from:
             description += f" (hidden from: {', '.join(option.hidden_from)})"
+
+        if isinstance(option, Option) and option.display_name is not None:
+            description += f" (display name: {option.display_name})"
 
         if option.description is not None and option.description != "":
             description += f": {option.description}"

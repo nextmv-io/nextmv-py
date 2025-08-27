@@ -8,7 +8,8 @@
     "choices": ["mean", "median", "quantile", "constant"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "constant",
@@ -19,7 +20,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "quantile",
@@ -30,6 +32,7 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   }
 ]

@@ -8,7 +8,8 @@
     "choices": ["squared_error", "absolute_error", "huber", "quantile"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "learning_rate",
@@ -19,7 +20,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "n_estimators",
@@ -30,7 +32,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "subsample",
@@ -41,7 +44,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "criterion",
@@ -52,7 +56,8 @@
     "choices": ["friedman_mse", "squared_error"],
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_samples_split",
@@ -63,7 +68,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_samples_leaf",
@@ -74,7 +80,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_weight_fraction_leaf",
@@ -85,7 +92,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_depth",
@@ -96,7 +104,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "min_impurity_decrease",
@@ -107,7 +116,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "random_state",
@@ -118,7 +128,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_features",
@@ -129,7 +140,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "alpha",
@@ -140,7 +152,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "max_leaf_nodes",
@@ -151,7 +164,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "warm_start",
@@ -162,7 +176,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "validation_fraction",
@@ -173,7 +188,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "n_iter_no_change",
@@ -184,7 +200,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "tol",
@@ -195,7 +212,8 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   },
   {
     "name": "ccp_alpha",
@@ -206,6 +224,7 @@
     "choices": null,
     "additional_attributes": null,
     "control_type": null,
-    "hidden_from": null
+    "hidden_from": null,
+    "display_name": null
   }
 ]
