@@ -2755,7 +2755,7 @@ class Application:
     def update_instance(
         self,
         id: str,
-        name: str,
+        name: Optional[str] = None,
         version_id: Optional[str] = None,
         description: Optional[str] = None,
         configuration: Optional[InstanceConfiguration] = None,
@@ -2767,14 +2767,14 @@ class Application:
         ----------
         id : str
             ID of the instance to update.
-        name : str
-            Name of the instance.
+        name : Optional[str], default=None
+            Optional name of the instance.
         version_id : Optional[str], default=None
-            ID of the version to associate the instance with.
+            Optional ID of the version to associate the instance with.
         description : Optional[str], default=None
-            Description of the instance.
+            Optional description of the instance.
         configuration : Optional[InstanceConfiguration], default=None
-            Configuration to use for the instance.
+            Optional configuration to use for the instance.
 
         Returns
         -------
@@ -2787,12 +2787,21 @@ class Application:
             If the response status code is not 2xx.
         """
 
-        payload = {}
+        # Get the instance as it currently exsits.
+        instance = self.instance(id)
+        instance_dict = instance.to_dict()
 
-        if version_id is not None:
-            payload["version_id"] = version_id
+        payload = {
+            "name": instance_dict["name"],
+            "version_id": instance_dict["version_id"],
+            "description": instance_dict["description"],
+            "configuration": instance_dict["configuration"],
+        }
+
         if name is not None:
             payload["name"] = name
+        if version_id is not None:
+            payload["version_id"] = version_id
         if description is not None:
             payload["description"] = description
         if configuration is not None:
@@ -2809,8 +2818,8 @@ class Application:
     def update_batch_experiment(
         self,
         batch_experiment_id: str,
-        name: str,
-        description: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> BatchExperimentInformation:
         """
         Update a batch experiment.
@@ -2819,10 +2828,10 @@ class Application:
         ----------
         batch_experiment_id : str
             ID of the batch experiment to update.
-        name : str
-            Name of the batch experiment.
-        description : str
-            Description of the batch experiment.
+        name : Optional[str], default=None
+            Optional name of the batch experiment.
+        description : Optional[str], default=None
+            Optional description of the batch experiment.
 
         Returns
         -------
@@ -2835,10 +2844,13 @@ class Application:
             If the response status code is not 2xx.
         """
 
-        payload = {
-            "name": name,
-            "description": description,
-        }
+        payload = {}
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
         response = self.client.request(
             method="PATCH",
             endpoint=f"{self.experiments_endpoint}/batch/{batch_experiment_id}",
@@ -2850,9 +2862,9 @@ class Application:
     def update_managed_input(
         self,
         managed_input_id: str,
-        name: str,
-        description: str,
-    ) -> None:
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> ManagedInput:
         """
         Update a managed input.
 
@@ -2860,15 +2872,15 @@ class Application:
         ----------
         managed_input_id : str
             ID of the managed input to update.
-        name : str
-            Name of the managed input.
-        description : str
-            Description of the managed input.
+        name : Optional[str], default=None
+            Optional new name for the managed input.
+        description : Optional[str], default=None
+            Optional new description for the managed input.
 
         Returns
         -------
-        None
-            No return value.
+        ManagedInput
+            The updated managed input.
 
         Raises
         ------
@@ -2876,21 +2888,32 @@ class Application:
             If the response status code is not 2xx.
         """
 
+        managed_input = self.managed_input(managed_input_id)
+        managed_input_dict = managed_input.to_dict()
+
         payload = {
-            "name": name,
-            "description": description,
+            "name": managed_input_dict["name"],
+            "description": managed_input_dict["description"],
         }
-        _ = self.client.request(
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
             method="PUT",
             endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
             payload=payload,
         )
 
+        return ManagedInput.from_dict(response.json())
+
     def update_scenario_test(
         self,
         scenario_test_id: str,
-        name: str,
-        description: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> BatchExperimentInformation:
         """
         Update a scenario test.
@@ -2903,10 +2926,10 @@ class Application:
         ----------
         scenario_test_id : str
             ID of the scenario test to update.
-        name : str
-            New name for the scenario test.
-        description : str
-            New description for the scenario test.
+        name : Optional[str], default=None
+            Optional new name for the scenario test.
+        description : Optional[str], default=None
+            Optional new description for the scenario test.
 
         Returns
         -------
@@ -2938,9 +2961,9 @@ class Application:
     def update_secrets_collection(
         self,
         secrets_collection_id: str,
-        name: str,
-        description: str,
-        secrets: list[Secret],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        secrets: Optional[list[Secret]] = None,
     ) -> SecretsCollectionSummary:
         """
         Update a secrets collection.
@@ -2953,13 +2976,13 @@ class Application:
         ----------
         secrets_collection_id : str
             ID of the secrets collection to update.
-        name : str
-            New name for the secrets collection.
-        description : str
-            New description for the secrets collection.
-        secrets : list[Secret]
-            List of secrets to update. Each secret should be an instance of the
-            Secret class containing a key and value.
+        name : Optional[str], default=None
+            Optional new name for the secrets collection.
+        description : Optional[str], default=None
+            Optional new description for the secrets collection.
+        secrets : Optional[list[Secret]], default=None
+            Optional list of secrets to update. Each secret should be an
+            instance of the Secret class containing a key and value.
 
         Returns
         -------
@@ -2991,14 +3014,22 @@ class Application:
         'api-secrets'
         """
 
-        if len(secrets) == 0:
-            raise ValueError("secrets must be provided")
+        collection = self.secrets_collection(secrets_collection_id)
+        collection_dict = collection.to_dict()
 
         payload = {
-            "name": name,
-            "description": description,
-            "secrets": [secret.to_dict() for secret in secrets],
+            "name": collection_dict["name"],
+            "description": collection_dict["description"],
+            "secrets": collection_dict["secrets"],
         }
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if secrets is not None and len(secrets) > 0:
+            payload["secrets"] = [secret.to_dict() for secret in secrets]
+
         response = self.client.request(
             method="PUT",
             endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
