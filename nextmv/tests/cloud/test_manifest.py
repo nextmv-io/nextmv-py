@@ -152,6 +152,7 @@ class TestManifest(unittest.TestCase):
                 "EXTRA": "AWESOME",
             },
         )
+        self.assertEqual(manifest.configuration.options.format, ["-{{name}}", "{{value}}"])
 
     def test_extract_options(self):
         manifest = Manifest.from_yaml("tests/cloud")
@@ -243,6 +244,14 @@ class TestManifest(unittest.TestCase):
                 ),
             ],
         )
+
+    def test_manifest_options_from_options(self):
+        options = Options(
+            Option("param1", str, "default", "A description", True),
+        )
+        manifest_options = ManifestOptions.from_options(options, format=["-{{name}}", "{{value}}"])
+        self.assertEqual(manifest_options.format, ["-{{name}}", "{{value}}"])
+        self.assertEqual(manifest_options.strict, False)
 
     def test_from_options_with_validation(self):
         options = Options(

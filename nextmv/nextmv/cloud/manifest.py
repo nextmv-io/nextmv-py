@@ -601,6 +601,10 @@ class ManifestOptions(BaseModel):
         is a parameter that configures the decision model.
     validation: Optional[ManifestValidation], default=None
         Optional validation rules for all options.
+    format: Optional[list[str]], default=None
+        A list of strings that define how options are transformed into command
+        line arguments. Use `{{name}}` to refer to the option name and
+        `{{value}}` to refer to the option value.
 
 
     Examples
@@ -629,9 +633,21 @@ class ManifestOptions(BaseModel):
 
     An option is a parameter that configures the decision model.
     """
+    format: Optional[list[str]] = None
+    """A list of strings that define how options are transformed into command line arguments.
+
+    Use `{{name}}` to refer to the option name and `{{value}}` to refer to the option value.
+    For example, `["-{{name}}", "{{value}}"]` will transform an option named `max_vehicles`
+    with a value of `10` into the command line argument `-max_vehicles 10`.
+    """
 
     @classmethod
-    def from_options(cls, options: Options, validation: OptionsEnforcement = None) -> "ManifestOptions":
+    def from_options(
+        cls,
+        options: Options,
+        validation: OptionsEnforcement = None,
+        format: Optional[list[str]] = None,
+        ) -> "ManifestOptions":
         """
         Create a `ManifestOptions` from a `nextmv.Options`.
 
@@ -642,6 +658,14 @@ class ManifestOptions(BaseModel):
         validation : Optional[OptionsEnforcement], default=None
             Optional validation rules for the options. If provided, it will be
             used to set the `validation` attribute of the `ManifestOptions`.
+        format : Optional[list[str]], default=None
+            A list of strings that define how options are transformed into
+            command line arguments. Use `{{name}}` to refer to the option name
+            and `{{value}}` to refer to the option value.
+
+            For example, `["-{{name}}", "{{value}}"]` will transform an option
+            named `max_vehicles` with a value of `10` into the command line
+            argument `-max_vehicles 10`.
 
         Returns
         -------
@@ -663,6 +687,7 @@ class ManifestOptions(BaseModel):
             strict=validation.strict if validation else False,
             validation=ManifestValidation(enforce="all" if validation and validation.validation_enforce else "none"),
             items=items,
+            format=format,
         )
 
 

@@ -3328,7 +3328,14 @@ class Application:
         }
 
         if manifest.configuration is not None and manifest.configuration.options is not None:
-            activation_request["requirements"]["options"] = manifest.configuration.options.to_dict()
+            options = manifest.configuration.options.to_dict()
+            if "format" in options and isinstance(options["format"], list):
+                # the endpoint expects a dictionary with a template key having a list of strings
+                # the app.yaml however defines format as a list of strings, so we need to convert it here
+                options["format"] = {
+                    "template": options["format"],
+                }
+            activation_request["requirements"]["options"] = options
 
         response = self.client.request(
             method="PUT",
