@@ -24,6 +24,9 @@ configuration:
     strict: false
     validation:
       enforce: "all"
+    format:
+      - "-{{name}}"
+      - "{{value}}"
     items:
       - name: a string parameter
         option_type: string

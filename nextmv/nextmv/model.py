@@ -160,7 +160,6 @@ class ModelConfiguration:
     """Enforcement of options for the model."""
 
 
-
 class Model:
     """
     Base class for defining decision models that run in Nextmv Cloud.

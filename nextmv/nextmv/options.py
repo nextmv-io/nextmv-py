@@ -1064,6 +1064,7 @@ class Options:
         else:
             raise TypeError(f"expected an <Option> (or deprecated <Parameter>) object, but got {type(option)}")
 
+
 class OptionsEnforcement:
     """
     OptionsEnforcement is a class that provides rules for how the options
