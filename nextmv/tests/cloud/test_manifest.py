@@ -216,23 +216,13 @@ class TestManifest(unittest.TestCase):
                     default="default",
                     description="A description",
                     required=True,
-                    ui=None
+                    ui=None,
                 ),
                 ManifestOption(
-                    name="param2",
-                    option_type="bool",
-                    default=True,
-                    description="A description",
-                    required=True,
-                    ui=None
+                    name="param2", option_type="bool", default=True, description="A description", required=True, ui=None
                 ),
                 ManifestOption(
-                    name="param3",
-                    option_type="int",
-                    default=42,
-                    description="A description",
-                    required=True,
-                    ui=None
+                    name="param3", option_type="int", default=42, description="A description", required=True, ui=None
                 ),
                 ManifestOption(
                     name="param4",
@@ -240,7 +230,7 @@ class TestManifest(unittest.TestCase):
                     default=3.14,
                     description="A description",
                     required=True,
-                    ui=None
+                    ui=None,
                 ),
             ],
         )
@@ -255,14 +245,28 @@ class TestManifest(unittest.TestCase):
 
     def test_from_options_with_validation(self):
         options = Options(
-            Option("param1", str, "default", "A description",
-                    True, additional_attributes={"max_length": 100}, control_type="input"),
+            Option(
+                "param1",
+                str,
+                "default",
+                "A description",
+                True,
+                additional_attributes={"max_length": 100},
+                control_type="input",
+            ),
             Option("param2", bool, True, "A description", True),
             Option("param3", int, 42, "A description", True, additional_attributes={"min": 0, "max": 100, "step": 1}),
             Option("param4", float, 3.14, "A description", True, display_name="a float parameter"),
-            Option("param5", str, "default", "A description",
-                    True, additional_attributes={"values": ["option1", "option2"]},
-                    control_type="select", hidden_from=["operator"]),
+            Option(
+                "param5",
+                str,
+                "default",
+                "A description",
+                True,
+                additional_attributes={"values": ["option1", "option2"]},
+                control_type="select",
+                hidden_from=["operator"],
+            ),
         )
         manifest = Manifest.from_options(options, OptionsEnforcement(strict=True, validation_enforce=True))
 
@@ -282,7 +286,7 @@ class TestManifest(unittest.TestCase):
                     description="A description",
                     required=True,
                     additional_attributes={"max_length": 100},
-                    ui=ManifestOptionUI(control_type="input")
+                    ui=ManifestOptionUI(control_type="input"),
                 ),
                 ManifestOption(
                     name="param2",
@@ -290,7 +294,6 @@ class TestManifest(unittest.TestCase):
                     default=True,
                     description="A description",
                     required=True,
-
                 ),
                 ManifestOption(
                     name="param3",
@@ -299,7 +302,7 @@ class TestManifest(unittest.TestCase):
                     description="A description",
                     required=True,
                     additional_attributes={"min": 0, "max": 100, "step": 1},
-                    ui=None
+                    ui=None,
                 ),
                 ManifestOption(
                     name="param4",
@@ -307,7 +310,7 @@ class TestManifest(unittest.TestCase):
                     default=3.14,
                     description="A description",
                     required=True,
-                    ui=ManifestOptionUI(display_name="a float parameter")
+                    ui=ManifestOptionUI(display_name="a float parameter"),
                 ),
                 ManifestOption(
                     name="param5",
@@ -316,10 +319,11 @@ class TestManifest(unittest.TestCase):
                     description="A description",
                     required=True,
                     additional_attributes={"values": ["option1", "option2"]},
-                    ui=ManifestOptionUI(control_type="select", hidden_from=["operator"])
+                    ui=ManifestOptionUI(control_type="select", hidden_from=["operator"]),
                 ),
             ],
         )
+
 
 class TestManifestOption(unittest.TestCase):
     def test_from_option(self):

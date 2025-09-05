@@ -82,6 +82,7 @@ def _name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
 
     return safe_name, safe_id
 
+
 def _safe_id(prefix: str) -> str:
     """
     Generate a safe ID from a prefix.
@@ -101,13 +102,11 @@ def _safe_id(prefix: str) -> str:
     # Space available for user text once prefix, random slug and separator "-"
     # are accounted for
     safe_id_max = (
-        ENTITY_ID_CHAR_COUNT_MAX
-        - INDEX_TAG_CHAR_COUNT
-        - (len(random_slug) + 1)  # +1 for the hyphen before the slug
+        ENTITY_ID_CHAR_COUNT_MAX - INDEX_TAG_CHAR_COUNT - (len(random_slug) + 1)  # +1 for the hyphen before the slug
     )
 
     if len(prefix) > safe_id_max:
-        return prefix[:safe_id_max - 1] + f"-{random_slug}"
+        return prefix[: safe_id_max - 1] + f"-{random_slug}"
 
     safe_id = f"{prefix}-{random_slug}"
 

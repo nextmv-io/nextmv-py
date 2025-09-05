@@ -368,6 +368,7 @@ class ManifestOptionUI(BaseModel):
     the option more user-friendly in the UI.
     """
 
+
 class ManifestOption(BaseModel):
     """
     An option for the decision model that is recorded in the manifest.
@@ -647,7 +648,7 @@ class ManifestOptions(BaseModel):
         options: Options,
         validation: OptionsEnforcement = None,
         format: Optional[list[str]] = None,
-        ) -> "ManifestOptions":
+    ) -> "ManifestOptions":
         """
         Create a `ManifestOptions` from a `nextmv.Options`.
 
