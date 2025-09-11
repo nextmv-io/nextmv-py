@@ -1614,7 +1614,7 @@ class Application:
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
         json_configurations: Optional[dict[str, Any]] = None,
-        dir_path: Optional[str] = None,
+        input_dir_path: Optional[str] = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -1712,17 +1712,17 @@ class Application:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
-        self.__validate_dir_path_and_configuration(dir_path, configuration)
+        self.__validate_dir_path_and_configuration(input_dir_path, configuration)
 
         tar_file = ""
-        if dir_path is not None and dir_path != "":
-            if not os.path.exists(dir_path):
-                raise ValueError(f"Directory {dir_path} does not exist.")
+        if input_dir_path is not None and input_dir_path != "":
+            if not os.path.exists(input_dir_path):
+                raise ValueError(f"Directory {input_dir_path} does not exist.")
 
-            if not os.path.isdir(dir_path):
-                raise ValueError(f"Path {dir_path} is not a directory.")
+            if not os.path.isdir(input_dir_path):
+                raise ValueError(f"Path {input_dir_path} is not a directory.")
 
-            tar_file = self.__package_inputs(dir_path)
+            tar_file = self.__package_inputs(input_dir_path)
 
         input_data = None
         if isinstance(input, BaseModel):
@@ -1779,7 +1779,7 @@ class Application:
             )
         else:
             configuration = RunConfiguration()
-            configuration.resolve(input=input, dir_path=dir_path)
+            configuration.resolve(input=input, dir_path=input_dir_path)
             configuration_dict = configuration.to_dict()
 
         payload["configuration"] = configuration_dict
@@ -1819,6 +1819,7 @@ class Application:
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
         json_configurations: Optional[dict[str, Any]] = None,
         dir_path: Optional[str] = None,
+        output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -1940,12 +1941,13 @@ class Application:
             batch_experiment_id=batch_experiment_id,
             external_result=external_result,
             json_configurations=json_configurations,
-            dir_path=dir_path,
+            input_dir_path=dir_path,
         )
 
         return self.run_result_with_polling(
             run_id=run_id,
             polling_options=polling_options,
+            output_dir_path=output_dir_path,
         )
 
     def new_scenario_test(
@@ -2508,7 +2510,7 @@ class Application:
         )
         return RunLog.from_dict(response.json())
 
-    def run_result(self, run_id: str) -> RunResult:
+    def run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
         """
         Get the result of a run.
 
@@ -2518,6 +2520,10 @@ class Application:
         ----------
         run_id : str
             ID of the run to get results for.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
 
         Returns
         -------
@@ -2538,12 +2544,17 @@ class Application:
 
         run_information = self.run_metadata(run_id=run_id)
 
-        return self.__run_result(run_id=run_id, run_information=run_information)
+        return self.__run_result(
+            run_id=run_id,
+            run_information=run_information,
+            output_dir_path=output_dir_path,
+        )
 
     def run_result_with_polling(
         self,
         run_id: str,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
         Get the result of a run with polling.
@@ -2558,6 +2569,10 @@ class Application:
             ID of the run to retrieve the result for.
         polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
             Options to use when polling for the run result.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
 
         Returns
         -------
@@ -2599,7 +2614,11 @@ class Application:
 
         run_information = poll(polling_options=polling_options, polling_func=polling_func)
 
-        return self.__run_result(run_id=run_id, run_information=run_information)
+        return self.__run_result(
+            run_id=run_id,
+            run_information=run_information,
+            output_dir_path=output_dir_path,
+        )
 
     def scenario_test(self, scenario_test_id: str) -> BatchExperiment:
         """
@@ -2714,6 +2733,7 @@ class Application:
         tracked_run: TrackedRun,
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         instance_id: Optional[str] = None,
+        output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
         Track an external run and poll for the result. This is a convenience
@@ -2730,6 +2750,10 @@ class Application:
         instance_id: Optional[str]
             Optional instance ID if you want to associate your tracked run with
             an instance.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
 
         Returns
         -------
@@ -2754,6 +2778,7 @@ class Application:
         return self.run_result_with_polling(
             run_id=run_id,
             polling_options=polling_options,
+            output_dir_path=output_dir_path,
         )
 
     def update_instance(
@@ -3267,6 +3292,7 @@ class Application:
         self,
         run_id: str,
         run_information: RunInformation,
+        output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
         Get the result of a run.
@@ -3283,6 +3309,10 @@ class Application:
             ID of the run to retrieve the result for.
         run_information : RunInformation
             Information about the run, including metadata such as output size.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
 
         Returns
         -------
@@ -3303,13 +3333,13 @@ class Application:
         a download URL and fetch the output data separately.
         """
         query_params = None
-        large_output = False
+        use_presigned_url = False
         if (
             run_information.metadata.format.format_output.output_type != OutputFormat.JSON
             or run_information.metadata.output_size > _MAX_RUN_SIZE
         ):
             query_params = {"format": "url"}
-            large_output = True
+            use_presigned_url = True
 
         response = self.client.request(
             method="GET",
@@ -3319,7 +3349,7 @@ class Application:
         result = RunResult.from_dict(response.json())
         result.console_url = self.__console_url(result.id)
 
-        if not large_output:
+        if not use_presigned_url or result.metadata.status_v2 != StatusV2.succeeded:
             return result
 
         download_url = DownloadURL.from_dict(response.json()["output"])
@@ -3328,7 +3358,24 @@ class Application:
             endpoint=download_url.url,
             headers={"Content-Type": "application/json"},
         )
-        result.output = download_response.json()
+
+        # See whether we can attach the output directly or need to save to the given
+        # directory
+        if run_information.metadata.format.format_output.output_type != OutputFormat.JSON:
+            if not output_dir_path or output_dir_path == "":
+                raise ValueError(
+                    "If the output format is not JSON, an output_dir_path must be provided.",
+                )
+            if not os.path.exists(output_dir_path):
+                os.makedirs(output_dir_path, exist_ok=True)
+            # Save .tar.gz file to a temp directory and extract contents to output_dir_path
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
+                with open(temp_tar_path, "wb") as f:
+                    f.write(download_response.content)
+                shutil.unpack_archive(temp_tar_path, output_dir_path)
+        else:
+            result.output = download_response.json()
 
         return result
 
@@ -3480,18 +3527,6 @@ class Application:
             raise ValueError(
                 "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type."
                 f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
-            )
-
-        if configuration.format.format_output is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_output must also be provided.",
-            )
-
-        output_type = configuration.format.format_output.output_type
-        if output_type is None or output_type in (OutputFormat.JSON):
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_output must be set to a valid type."
-                f"Valid types are: {[OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE]}",
             )
 
     def __package_inputs(self, dir_path: str) -> str:
