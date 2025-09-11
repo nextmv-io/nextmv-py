@@ -46,6 +46,7 @@ from .run import ErrorLog as ErrorLog
 from .run import ExternalRunResult as ExternalRunResult
 from .run import Format as Format
 from .run import FormatInput as FormatInput
+from .run import FormatOutput as FormatOutput
 from .run import Metadata as Metadata
 from .run import RunConfiguration as RunConfiguration
 from .run import RunInformation as RunInformation

@@ -56,6 +56,7 @@ from nextmv.cloud.run import (
     ExternalRunResult,
     Format,
     FormatInput,
+    FormatOutput,
     RunConfiguration,
     RunInformation,
     RunLog,
@@ -71,7 +72,7 @@ from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.model import Model, ModelConfiguration
 from nextmv.options import Options
-from nextmv.output import Output
+from nextmv.output import Output, OutputFormat
 
 # Maximum size of the run input/output in bytes. This constant defines the
 # maximum allowed size for run inputs and outputs. When the size exceeds this
@@ -1588,7 +1589,10 @@ class Application:
         if format is not None:
             payload["format"] = format.to_dict() if isinstance(format, Format) else format
         else:
-            payload["format"] = Format(format_input=FormatInput(input_type=InputFormat.JSON)).to_dict()
+            payload["format"] = Format(
+                format_input=FormatInput(input_type=InputFormat.JSON),
+                format_output=FormatOutput(output_type=OutputFormat.JSON),
+            ).to_dict()
 
         response = self.client.request(
             method="POST",
@@ -3300,7 +3304,10 @@ class Application:
         """
         query_params = None
         large_output = False
-        if run_information.metadata.output_size > _MAX_RUN_SIZE:
+        if (
+            run_information.metadata.format.format_output.output_type != OutputFormat.JSON
+            or run_information.metadata.output_size > _MAX_RUN_SIZE
+        ):
             query_params = {"format": "url"}
             large_output = True
 
@@ -3473,6 +3480,18 @@ class Application:
             raise ValueError(
                 "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type."
                 f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+            )
+
+        if configuration.format.format_output is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_output must also be provided.",
+            )
+
+        output_type = configuration.format.format_output.output_type
+        if output_type is None or output_type in (OutputFormat.JSON):
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_output must be set to a valid type."
+                f"Valid types are: {[OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE]}",
             )
 
     def __package_inputs(self, dir_path: str) -> str:

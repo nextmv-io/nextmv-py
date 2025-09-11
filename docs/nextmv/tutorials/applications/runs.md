@@ -277,6 +277,9 @@ Please note the following:
 
   In both cases, the input files are read from the directory specified by
   `dir_path`, tarred, and uploaded to Nextmv Cloud.
+* The output format is also specified in the configuration. It can be set to
+  either `csv-archive` or `multi-file` (see
+  [`.output_type`][output-type-param]), depending on the input format.
 
 Here is an example of how to run an app with a directory of input files:
 
@@ -297,6 +300,9 @@ csv_run_id = app.new_run(
             format_input=cloud.FormatInput(
                 input_type=nextmv.InputFormat.CSV_ARCHIVE,
             ),
+            format_output=cloud.FormatOutput(
+                output_type=nextmv.OutputFormat.CSV_ARCHIVE,
+            ),
         )
     ),
     dir_path="input", # Files are in the "input" directory.
@@ -309,6 +315,9 @@ multi_file_run_id = app.new_run(
         format=cloud.Format(
             format_input=cloud.FormatInput(
                 input_type=nextmv.InputFormat.MULTI_FILE,
+            ),
+            format_output=cloud.FormatOutput(
+                output_type=nextmv.OutputFormat.MULTI_FILE,
             ),
         )
     ),
@@ -353,4 +362,5 @@ app.cancel_run(run_id="<YOUR_RUN_ID>")
 [input]: ../../reference/input.md#nextmv.nextmv.input.Input
 [inputformat]: ../../reference/input.md#nextmv.nextmv.input.InputFormat
 [input-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatInput
+[output-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatOutput
 [queued-runs]: ./queuing.md
