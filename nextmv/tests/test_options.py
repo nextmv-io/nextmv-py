@@ -3,8 +3,9 @@ import shutil
 import subprocess
 import unittest
 
-import nextmv
 import nextmv.options
+
+import nextmv
 
 
 class TestOptions(unittest.TestCase):
