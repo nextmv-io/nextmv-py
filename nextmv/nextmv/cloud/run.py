@@ -14,6 +14,8 @@ RunLog
     Log of a run.
 FormatInput
     Input format for a run configuration.
+FormatOutput
+    Output format for a run configuration.
 Format
     Format for a run configuration.
 RunType
@@ -110,6 +112,83 @@ def run_duration(start: Union[datetime, float], end: Union[datetime, float]) -> 
     raise TypeError("Start and end must be either datetime or float.")
 
 
+class FormatInput(BaseModel):
+    """
+    Input format for a run configuration.
+
+    You can import the `FormatInput` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import FormatInput
+    ```
+
+    Parameters
+    ----------
+    input_type : InputFormat, optional
+        Type of the input format. Defaults to `InputFormat.JSON`.
+    """
+
+    input_type: InputFormat = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "input_type"),
+        default=InputFormat.JSON,
+    )
+    """Type of the input format."""
+
+
+class FormatOutput(BaseModel):
+    """
+    Output format for a run configuration.
+
+    You can import the `FormatOutput` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import FormatOutput
+    ```
+
+    Parameters
+    ----------
+    output_type : OutputFormat, optional
+        Type of the output format. Defaults to `OutputFormat.JSON`.
+    """
+
+    output_type: OutputFormat = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "output_type"),
+        default=OutputFormat.JSON,
+    )
+    """Type of the output format."""
+
+
+class Format(BaseModel):
+    """
+    Format for a run configuration.
+
+    You can import the `Format` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import Format
+    ```
+
+    Parameters
+    ----------
+    format_input : FormatInput
+        Input format for the run configuration.
+    """
+
+    format_input: FormatInput = Field(
+        serialization_alias="input",
+        validation_alias=AliasChoices("input", "format_input"),
+    )
+    """Input format for the run configuration."""
+    format_output: Optional[FormatOutput] = Field(
+        serialization_alias="output",
+        validation_alias=AliasChoices("output", "format_output"),
+        default=None,
+    )
+    """Output format for the run configuration."""
+
+
 class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
@@ -160,6 +239,8 @@ class Metadata(BaseModel):
     """Size of the input in bytes."""
     output_size: float
     """Size of the output in bytes."""
+    format: Format
+    """Format of the input and output of the run."""
     status: Status
     """Deprecated: use status_v2."""
     status_v2: StatusV2
@@ -277,53 +358,6 @@ class RunLog(BaseModel):
 
     log: str
     """Log of the run."""
-
-
-class FormatInput(BaseModel):
-    """
-    Input format for a run configuration.
-
-    You can import the `FormatInput` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import FormatInput
-    ```
-
-    Parameters
-    ----------
-    input_type : InputFormat, optional
-        Type of the input format. Defaults to `InputFormat.JSON`.
-    """
-
-    input_type: InputFormat = Field(
-        serialization_alias="type",
-        validation_alias=AliasChoices("type", "input_type"),
-        default=InputFormat.JSON,
-    )
-    """Type of the input format."""
-
-
-class Format(BaseModel):
-    """
-    Format for a run configuration.
-
-    You can import the `Format` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import Format
-    ```
-
-    Parameters
-    ----------
-    format_input : FormatInput
-        Input format for the run configuration.
-    """
-
-    format_input: FormatInput = Field(
-        serialization_alias="input",
-        validation_alias=AliasChoices("input", "format_input"),
-    )
-    """Input format for the run configuration."""
 
 
 class RunType(str, Enum):
@@ -491,7 +525,10 @@ class RunConfiguration(BaseModel):
         if self.format is not None:
             return
 
-        self.format = Format(format_input=FormatInput(input_type=InputFormat.JSON))
+        self.format = Format(
+            format_input=FormatInput(input_type=InputFormat.JSON),
+            format_output=FormatOutput(output_type=OutputFormat.JSON),
+        )
 
         if isinstance(input, dict):
             self.format.format_input.input_type = InputFormat.JSON
@@ -503,6 +540,19 @@ class RunConfiguration(BaseModel):
             self.format.format_input.input_type = InputFormat.MULTI_FILE
         elif isinstance(input, Input):
             self.format.format_input.input_type = input.input_format
+
+        # As input and output are symmetric, we set the output according to the input
+        # format.
+        if self.format.format_input.input_type == InputFormat.JSON:
+            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
+        elif self.format.format_input.input_type == InputFormat.TEXT:  # Text still maps to json
+            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
+        elif self.format.format_input.input_type == InputFormat.CSV_ARCHIVE:
+            self.format.format_output = FormatOutput(output_type=OutputFormat.CSV_ARCHIVE)
+        elif self.format.format_input.input_type == InputFormat.MULTI_FILE:
+            self.format.format_output = FormatOutput(output_type=OutputFormat.MULTI_FILE)
+        else:
+            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
 
 
 class ExternalRunResult(BaseModel):

@@ -250,7 +250,7 @@ the method directly.
 
 ---
 
-You can use the `dir_path` argument to read inputs from the local filesystem.
+You can use the `input_dir_path` argument to read inputs from the local filesystem.
 The following input format are supported:
 
 * [`InputFormat.CSV_ARCHIVE`][inputformat]: one, or more, CSV files.
@@ -261,12 +261,12 @@ The following input format are supported:
 
 Please note the following:
 
-* The `dir_path` is the path to a directory containing input files. If
+* The `input_dir_path` is the path to a directory containing input files. If
   specified, the function will package the files in the directory into a tar
   file and upload it as a large input.
-* If both `input` and `dir_path` are specified, `input` is ignored, and the
-  files in the directory are used instead.
-* When `dir_path` is specified, the `configuration` argument _must_ be
+* If both `input` and `input_dir_path` are specified, `input` is ignored, and
+  the files in the directory are used instead.
+* When `input_dir_path` is specified, the `configuration` argument _must_ be
   provided. More specifically, the [`.input_type`][input-type-param] parameter
   dictates what kind of input is being submitted to the Nextmv Cloud.
 
@@ -276,7 +276,10 @@ Please note the following:
         `multi-file`.
 
   In both cases, the input files are read from the directory specified by
-  `dir_path`, tarred, and uploaded to Nextmv Cloud.
+  `input_dir_path`, tarred, and uploaded to Nextmv Cloud.
+* The output format is also specified in the configuration. It can be set to
+  either `csv-archive` or `multi-file` (see
+  [`.output_type`][output-type-param]), depending on the input format.
 
 Here is an example of how to run an app with a directory of input files:
 
@@ -297,9 +300,12 @@ csv_run_id = app.new_run(
             format_input=cloud.FormatInput(
                 input_type=nextmv.InputFormat.CSV_ARCHIVE,
             ),
+            format_output=cloud.FormatOutput(
+                output_type=nextmv.OutputFormat.CSV_ARCHIVE,
+            ),
         )
     ),
-    dir_path="input", # Files are in the "input" directory.
+    input_dir_path="input", # Files are in the "input" directory.
 )
 print(f"CSV run ID: {csv_run_id}")
 
@@ -310,9 +316,12 @@ multi_file_run_id = app.new_run(
             format_input=cloud.FormatInput(
                 input_type=nextmv.InputFormat.MULTI_FILE,
             ),
+            format_output=cloud.FormatOutput(
+                output_type=nextmv.OutputFormat.MULTI_FILE,
+            ),
         )
     ),
-    dir_path="inputs", # Files are in the "inputs" directory.
+    input_dir_path="inputs", # Files are in the "inputs" directory.
 )
 print(f"MULTI_FILE run ID: {multi_file_run_id}")
 ```
@@ -353,4 +362,5 @@ app.cancel_run(run_id="<YOUR_RUN_ID>")
 [input]: ../../reference/input.md#nextmv.nextmv.input.Input
 [inputformat]: ../../reference/input.md#nextmv.nextmv.input.InputFormat
 [input-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatInput
+[output-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatOutput
 [queued-runs]: ./queuing.md
