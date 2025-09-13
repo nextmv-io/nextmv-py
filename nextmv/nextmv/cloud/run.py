@@ -241,10 +241,11 @@ class Metadata(BaseModel):
     """Size of the output in bytes."""
     format: Format
     """Format of the input and output of the run."""
-    status: Status
-    """Deprecated: use status_v2."""
     status_v2: StatusV2
     """Status of the run."""
+
+    status: Optional[Status] = None
+    """Deprecated: use status_v2."""
 
 
 class RunInformation(BaseModel):

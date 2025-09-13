@@ -17,16 +17,21 @@ import json
 import os
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
 from nextmv.cloud.manifest import Manifest
+from nextmv.cloud.run import Format, FormatInput, Metadata, RunInformation, StatusV2
 from nextmv.cloud.safe import safe_id
 
 
 def run(
+    app_id: str,
     src: str,
     manifest: Manifest,
     run_config: dict[str, Any],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
     input_data: Optional[Union[dict[str, Any], str]] = None,
     inputs_dir_path: Optional[str] = None,
     options: Optional[dict[str, Any]] = None,
@@ -48,12 +53,18 @@ def run(
 
     Parameters
     ----------
+    app_id : str
+        The ID of the application.
     src : str
         The path to the application source code.
     manifest : Manifest
         The application manifest.
     run_config : dict[str, Any]
         The run configuration.
+    name : Optional[str], optional
+        The name for the run, by default None.
+    description : Optional[str], optional
+        The description for the run, by default None.
     input_data : Optional[Union[dict[str, Any], str]], optional
         The input data for the run, by default None. If `inputs_dir_path` is
         provided, this parameter is ignored.
@@ -70,8 +81,20 @@ def run(
     """
 
     run_id = safe_id("local")
-    run_dir = new_run(src, run_id)
-    record_input(run_dir, input_data, inputs_dir_path)
+    run_dir = new_run(
+        app_id=app_id,
+        src=src,
+        run_id=run_id,
+        run_config=run_config,
+        name=name,
+        description=description,
+    )
+    record_input(
+        run_dir=run_dir,
+        run_id=run_id,
+        input_data=input_data,
+        inputs_dir_path=inputs_dir_path,
+    )
 
     # Start the process as a daemon (detached) so we don't wait for it to finish
     args = ["python", "executor.py"]
@@ -89,6 +112,7 @@ def run(
     # Send input and close stdin immediately without waiting
     stdin_input = json.dumps(
         {
+            "run_id": run_id,
             "src": os.path.abspath(src),
             "manifest_entrypoint": manifest.entrypoint,
             "run_dir": os.path.abspath(run_dir),
@@ -104,7 +128,14 @@ def run(
     return run_id
 
 
-def new_run(src: str, run_id: str) -> str:
+def new_run(
+    app_id: str,
+    src: str,
+    run_id: str,
+    run_config: dict[str, Any],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> str:
     """
     Initializes a new run.
 
@@ -114,12 +145,22 @@ def new_run(src: str, run_id: str) -> str:
     from nextmv.cloud.local import new_run
     ```
 
+    The run information is recorded in a JSON file within the run directory.
+
     Parameters
     ----------
+    app_id : str
+        The ID of the application.
     src : str
         The path to the application source code.
     run_id : str
         The ID of the run.
+    run_config : dict[str, Any]
+        The run configuration.
+    name : Optional[str], optional
+        The name for the run, by default None.
+    description : Optional[str], optional
+        The description for the run, by default None.
 
     Returns
     -------
@@ -135,11 +176,39 @@ def new_run(src: str, run_id: str) -> str:
     run_dir = os.path.join(runs_dir, run_id)
     os.makedirs(run_dir, exist_ok=True)
 
+    # Create the run information file.
+    metadata = Metadata(
+        application_id=app_id,
+        application_instance_id="",
+        application_version_id="",
+        created_at=datetime.now(timezone.utc),
+        duration=0.0,
+        error="",
+        input_size=0.0,
+        output_size=0.0,
+        format=Format(
+            format_input=FormatInput(
+                input_type=run_config["format"]["input"]["type"],
+            ),
+        ),
+        status_v2=StatusV2.queued,
+    )
+    information = RunInformation(
+        description=description if description is not None else "",
+        id=run_id,
+        metadata=metadata,
+        name=name if name is not None else f"local run {run_id}",
+        user_email="",
+    )
+    with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
+        json.dump(information.to_dict(), f, indent=2)
+
     return run_dir
 
 
 def record_input(
     run_dir: str,
+    run_id: str,
     input_data: Optional[Union[dict[str, Any], str]] = None,
     inputs_dir_path: Optional[str] = None,
 ) -> None:
@@ -152,10 +221,14 @@ def record_input(
     from nextmv.cloud.local import record_input
     ```
 
+    The size of the input is calculated and recorded in the run information.
+
     Parameters
     ----------
     run_dir : str
         The path to the run directory.
+    run_id : str
+        The ID of the run.
     input_data : Optional[Union[dict[str, Any], str]], optional
         The input data for the run, by default None. If `inputs_dir_path` is
         provided, this parameter is ignored.
@@ -168,24 +241,68 @@ def record_input(
     run_inputs_dir = os.path.join(run_dir, "inputs")
     os.makedirs(run_inputs_dir, exist_ok=True)
 
-    # If we specify an inputs directory, we ignore the input_data.
     if inputs_dir_path is not None and inputs_dir_path != "":
+        # If we specify an inputs directory, we ignore the input_data.
         # Copy all files from inputs_dir_path to run_inputs_dir
         if os.path.exists(inputs_dir_path) and os.path.isdir(inputs_dir_path):
             shutil.copytree(inputs_dir_path, run_inputs_dir, dirs_exist_ok=True)
 
-        return
-
-    # If no inputs_dir_path is provided, input_data should be available, so we
-    # write input_data to a default input file.
-    if isinstance(input_data, dict):
+    elif isinstance(input_data, dict):
+        # If no inputs_dir_path is provided, try a single JSON input.
         with open(os.path.join(run_inputs_dir, "input.json"), "w") as f:
             json.dump(input_data, f, indent=2)
 
-        return
-
-    if isinstance(input_data, str):
+    elif isinstance(input_data, str):
+        # If no inputs_dir_path is provided, try a single TEXT input.
         with open(os.path.join(run_inputs_dir, "input"), "w") as f:
             f.write(input_data)
 
-    return
+    else:
+        raise ValueError("Invalid input data type")
+
+    # Update the input size in the run information file.
+    calculate_files_size(run_dir, run_id, run_inputs_dir, metadata_key="input_size")
+
+
+def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key: str) -> None:
+    """
+    Calculates the total size of the files in a directory, in bytes.
+
+    You can import the `calculate_files_size` method directly from
+    `local`:
+
+    ```python
+    from nextmv.cloud.local import calculate_files_size
+    ```
+
+    The calculated size is stored in the run information metadata under the
+    specified key.
+
+    Parameters
+    ----------
+    run_dir : str
+        The path to the run directory.
+    run_id : str
+        The ID of the run.
+    dir_path : str
+        The path to the directory whose size is to be calculated.
+    metadata_key : str
+        The key under which to store the calculated size in the run information
+        metadata.
+    """
+
+    total_size = 0
+    for dirpath, _, filenames in os.walk(dir_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # Skip if it is a symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+
+    info_file = os.path.join(run_dir, f"{run_id}.json")
+    with open(info_file, "r+") as f:
+        info = json.load(f)
+        info["metadata"][metadata_key] = total_size
+        f.seek(0)
+        json.dump(info, f, indent=2)
+        f.truncate()

@@ -31,8 +31,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
+from nextmv.cloud.local.runner import calculate_files_size
 from nextmv.input import load
 
 ASSETS_KEY = "assets"
@@ -62,6 +64,7 @@ def main() -> None:
 
     input = load()
     execute_run(
+        run_id=input.data["run_id"],
         src=input.data["src"],
         manifest_entrypoint=input.data["manifest_entrypoint"],
         run_dir=input.data["run_dir"],
@@ -73,6 +76,7 @@ def main() -> None:
 
 
 def execute_run(
+    run_id: str,
     src: str,
     manifest_entrypoint: str,
     run_dir: str,
@@ -119,11 +123,19 @@ def execute_run(
             inputs_dir_path=inputs_dir_path,
         )
 
-        entrypoint = os.path.join(temp_src, manifest_entrypoint)
+        # Set the run status to running.
+        info_file = os.path.join(run_dir, f"{run_id}.json")
+        with open(info_file, "r+") as f:
+            info = json.load(f)
+            info["metadata"]["status_v2"] = "running"
+            f.seek(0)
+            json.dump(info, f, indent=2)
+            f.truncate()
 
         # Start a Python subprocess to execute the entrypoint. For now, we are
         # supporting a Python-first experience, so we are not summoning
         # applications that are not Python-based.
+        entrypoint = os.path.join(temp_src, manifest_entrypoint)
         args = ["python", entrypoint] + options_args(options)
 
         result = subprocess.run(
@@ -137,6 +149,7 @@ def execute_run(
         )
 
         process_run_output(
+            run_id=run_id,
             temp_src=temp_src,
             result=result,
             run_dir=run_dir,
@@ -235,7 +248,7 @@ def process_run_input(
         return ""
 
 
-def process_run_output(temp_src: str, result: subprocess.CompletedProcess[str], run_dir: str) -> None:
+def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedProcess[str], run_dir: str) -> None:
     """
     Processes the result of the subprocess run. This function is in charge of
     handling the run results, including solutions, statistics, logs, assets,
@@ -251,23 +264,89 @@ def process_run_output(temp_src: str, result: subprocess.CompletedProcess[str], 
         The path to the run directory.
     """
 
+    # Parse stdout as JSON, if possible.
     stdout_output = ""
     raw_output = result.stdout
     if raw_output.strip() != "":
         stdout_output = json.loads(raw_output)
 
+    # Create outputs directory.
     outputs_dir = os.path.join(run_dir, OUTPUTS_KEY)
     os.makedirs(outputs_dir, exist_ok=True)
-
     temp_run_outputs_dir = os.path.join(temp_src, OUTPUTS_KEY)
 
-    process_run_logs(run_dir, result)
-    process_run_statistics(temp_run_outputs_dir, outputs_dir, stdout_output)
-    process_run_assets(temp_run_outputs_dir, outputs_dir, stdout_output)
-    process_run_solutions(temp_run_outputs_dir, temp_src, outputs_dir, stdout_output)
+    process_run_information(
+        run_id=run_id,
+        run_dir=run_dir,
+        result=result,
+    )
+    process_run_logs(
+        run_dir=run_dir,
+        result=result,
+    )
+    process_run_statistics(
+        temp_run_outputs_dir=temp_run_outputs_dir,
+        outputs_dir=outputs_dir,
+        stdout_output=stdout_output,
+    )
+    process_run_assets(
+        temp_run_outputs_dir=temp_run_outputs_dir,
+        outputs_dir=outputs_dir,
+        stdout_output=stdout_output,
+    )
+    process_run_solutions(
+        run_id=run_id,
+        run_dir=run_dir,
+        temp_run_outputs_dir=temp_run_outputs_dir,
+        temp_src=temp_src,
+        outputs_dir=outputs_dir,
+        stdout_output=stdout_output,
+    )
 
 
-def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]):
+def process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
+    """
+    Processes the run information, updating properties such as duration and
+    status.
+
+    Parameters
+    ----------
+    run_id : str
+        The ID of the run.
+    run_dir : str
+        The path to the run directory.
+    result : subprocess.CompletedProcess[str]
+        The result of the subprocess run.
+    """
+
+    info_file = os.path.join(run_dir, f"{run_id}.json")
+
+    with open(info_file) as f:
+        info = json.load(f)
+
+    # Calculate duration.
+    created_at_str = info["metadata"]["created_at"]
+    created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    duration = round((now - created_at).total_seconds() * 1000, 1)
+
+    # Update the status
+    status = "succeeded"
+    error = ""
+    if result.returncode != 0:
+        status = "failed"
+        error = result.stderr if result.stderr else "unknown error"
+
+    # Update the run info file.
+    info["metadata"]["duration"] = duration
+    info["metadata"]["status_v2"] = status
+    info["metadata"]["error"] = error
+
+    with open(info_file, "w") as f:
+        json.dump(info, f, indent=2)
+
+
+def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
     """
     Processes the logs of the run. Writes the logs to a logs directory.
 
@@ -285,7 +364,7 @@ def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]):
         f.write(result.stderr)
 
 
-def process_run_statistics(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]):
+def process_run_statistics(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]) -> None:
     """
     Processes the statistics of the run. Check for an outputs/statistics folder
     being created by the run. If it exists, copy it to the run directory. If it
@@ -316,7 +395,7 @@ def process_run_statistics(temp_run_outputs_dir: str, outputs_dir: str, stdout_o
         json.dump(statistics, f, indent=2)
 
 
-def process_run_assets(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]):
+def process_run_assets(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]) -> None:
     """
     Processes the assets of the run. Check for an outputs/assets folder being
     created by the run. If it exists, copy it to the run directory. If it
@@ -347,7 +426,14 @@ def process_run_assets(temp_run_outputs_dir: str, outputs_dir: str, stdout_outpu
         json.dump(assets, f, indent=2)
 
 
-def process_run_solutions(temp_run_outputs_dir: str, temp_src: str, outputs_dir: str, stdout_output: dict[str, Any]):
+def process_run_solutions(
+    run_id: str,
+    run_dir: str,
+    temp_run_outputs_dir: str,
+    temp_src: str,
+    outputs_dir: str,
+    stdout_output: dict[str, Any],
+) -> None:
     """
     Processes the solutions (output) of the run. This method has the handle all
     the different formats for processing solutions. This includes looking for
@@ -369,32 +455,40 @@ def process_run_solutions(temp_run_outputs_dir: str, temp_src: str, outputs_dir:
         The stdout output of the run, parsed as a dictionary.
     """
 
+    info_file = os.path.join(run_dir, f"{run_id}.json")
+
+    with open(info_file) as f:
+        info = json.load(f)
+
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
     os.makedirs(solutions_dst, exist_ok=True)
 
-    found_in_dirs = False
-
-    # For csv-archive, copy everything from output to solutions.
     output_src = os.path.join(temp_src, "output")
-    if os.path.exists(output_src) and os.path.isdir(output_src):
-        shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
-        found_in_dirs = True
-
-    # For multi-file, copy everything from outputs/solutions to solutions.
     solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
-    if os.path.exists(solutions_src) and os.path.isdir(solutions_src):
+    if os.path.exists(output_src) and os.path.isdir(output_src):
+        # For csv-archive, copy everything from output to solutions.
+        shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
+        output_type = "csv-archive"
+
+    elif os.path.exists(solutions_src) and os.path.isdir(solutions_src):
+        # For multi-file, copy everything from outputs/solutions to solutions.
         shutil.copytree(solutions_src, solutions_dst, dirs_exist_ok=True)
-        found_in_dirs = True
+        output_type = "multi-file"
 
-    # If we found any solutions in the directories, we can return early.
-    if found_in_dirs:
-        return
+    else:
+        # If we reach here, it means neither output nor outputs/solutions
+        # exist, so we simply dump whatever is in stdout as solution.json.
+        if stdout_output:
+            with open(os.path.join(solutions_dst, "solution.json"), "w") as f:
+                json.dump(stdout_output, f, indent=2)
 
-    # If we reach here, it means neither output nor outputs/solutions exist, so
-    # we simply dump whatever is in stdout as solution.json.
-    if stdout_output:
-        with open(os.path.join(solutions_dst, "solution.json"), "w") as f:
-            json.dump(stdout_output, f, indent=2)
+        output_type = "json"
+
+    # Update the run information file with the output size and type.
+    calculate_files_size(run_dir, run_id, solutions_dst, metadata_key="output_size")
+    info["metadata"]["format"]["output"] = {"type": output_type}
+    with open(info_file, "w") as f:
+        json.dump(info, f, indent=2)
 
 
 if __name__ == "__main__":

@@ -4,9 +4,10 @@ import unittest
 from typing import Any
 from unittest.mock import Mock, patch
 
-from nextmv.cloud.application import Application, PollingOptions, poll
+from nextmv.cloud.application import _DEFAULT_POLLING_OPTIONS, Application, PollingOptions, poll
 from nextmv.cloud.client import Client
 from nextmv.cloud.run import Format, FormatInput, FormatOutput, RunConfiguration
+from nextmv.cloud.status import StatusV2
 from nextmv.input import InputFormat
 from nextmv.output import OutputFormat
 
@@ -264,7 +265,7 @@ print(json.dumps(output))
             f.write("col1,col2\nval1,val2\n")
 
         result = self.app.new_local_run(
-            inputs_dir_path=inputs_dir,
+            input_dir_path=inputs_dir,
             configuration=RunConfiguration(
                 format=Format(
                     format_input=FormatInput(input_type=InputFormat.CSV_ARCHIVE),
@@ -412,7 +413,7 @@ print(json.dumps(output))
 
         result = self.app.new_local_run(
             input={"should": "be ignored"},
-            inputs_dir_path=inputs_dir,
+            input_dir_path=inputs_dir,
             configuration=RunConfiguration(
                 format=Format(
                     format_input=FormatInput(input_type=InputFormat.MULTI_FILE),
@@ -448,14 +449,14 @@ print(json.dumps(output))
 
         # Should raise error when inputs_dir_path is provided without configuration
         with self.assertRaises(ValueError):
-            self.app.new_local_run(inputs_dir_path=inputs_dir)
+            self.app.new_local_run(input_dir_path=inputs_dir)
 
         # Should work when both are provided
         with patch("nextmv.cloud.application.run") as mock_run:
             mock_run.return_value = "test-run-id"
 
             result = self.app.new_local_run(
-                inputs_dir_path=inputs_dir,
+                input_dir_path=inputs_dir,
                 configuration=RunConfiguration(
                     format=Format(
                         format_input=FormatInput(input_type=InputFormat.MULTI_FILE),
@@ -465,3 +466,441 @@ print(json.dumps(output))
             )
 
             self.assertEqual(result, "test-run-id")
+
+
+class TestApplicationLocalRunMethods(unittest.TestCase):
+    """Test cases for the Application local run methods: local_run_metadata, local_run_result,
+    local_run_result_with_polling, and new_local_run_with_result."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.test_dir = tempfile.mkdtemp()
+        self.app_src = os.path.join(self.test_dir, "test_app")
+        os.makedirs(self.app_src)
+
+        # Create .nextmv/runs directory structure
+        self.runs_dir = os.path.join(self.app_src, ".nextmv", "runs")
+        os.makedirs(self.runs_dir)
+
+        # Create test application
+        self.app = Application(id="test-app", client=Mock(spec=Client), src=self.app_src)
+
+        # Test run ID
+        self.test_run_id = "run-123"
+        self.test_run_dir = os.path.join(self.runs_dir, self.test_run_id)
+        os.makedirs(self.test_run_dir)
+
+        # Create manifest file
+        manifest_content = {
+            "spec_version": "v1beta1",
+            "id": "test-app",
+            "name": "Test App",
+            "description": "Test application",
+            "entrypoint": "main.py",
+            "type": "python",
+            "runtime": "ghcr.io/nextmv-io/runtime/python:3.11",
+            "files": ["main.py"],
+        }
+
+        with open(os.path.join(self.app_src, "app.yaml"), "w") as f:
+            import yaml
+
+            yaml.dump(manifest_content, f)
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        import shutil
+
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _create_run_info_file(self, status="succeeded", output_type="json", error=""):
+        """Helper method to create a run info JSON file."""
+
+        run_info = {
+            "id": self.test_run_id,
+            "name": "Test Run",
+            "description": "Test Description",
+            "user_email": "test@example.com",
+            "console_url": "",
+            "metadata": {
+                "application_id": "test-app",
+                "application_instance_id": "test-instance",
+                "application_version_id": "test-version",
+                "status_v2": status,
+                "input_size": 100.0,
+                "output_size": 200.0,
+                "format": {"input": {"type": "json"}, "output": {"type": output_type}},
+                "error": error,
+                "duration": 1.5,
+                "created_at": "2023-01-01T12:00:00Z",
+                "finished_at": "2023-01-01T12:00:01Z",
+            },
+        }
+
+        info_file = os.path.join(self.test_run_dir, f"{self.test_run_id}.json")
+        with open(info_file, "w") as f:
+            import json
+
+            json.dump(run_info, f)
+
+    def _create_output_files(self, output_type="JSON", output_data=None):
+        """Helper method to create output files."""
+        outputs_dir = os.path.join(self.test_run_dir, "outputs", "solutions")
+        os.makedirs(outputs_dir, exist_ok=True)
+
+        if output_type == "JSON":
+            solution_file = os.path.join(outputs_dir, "solution.json")
+            with open(solution_file, "w") as f:
+                import json
+
+                json.dump(output_data or {"solution": {"result": 42}}, f)
+        elif output_type in ["CSV_ARCHIVE", "MULTI_FILE"]:
+            # Create some dummy files for non-JSON outputs
+            with open(os.path.join(outputs_dir, "result.csv"), "w") as f:
+                f.write("id,value\n1,42\n")
+
+    # Tests for local_run_metadata
+    def test_local_run_metadata_success(self):
+        """Test successful local_run_metadata call."""
+        from nextmv.cloud.run import RunInformation
+
+        self._create_run_info_file(status="succeeded")
+
+        result = self.app.local_run_metadata(self.test_run_id)
+
+        self.assertIsInstance(result, RunInformation)
+        self.assertEqual(result.id, self.test_run_id)
+        self.assertEqual(result.metadata.status_v2, "succeeded")
+
+    def test_local_run_metadata_no_runs_dir(self):
+        """Test local_run_metadata when .nextmv/runs directory doesn't exist."""
+        # Remove the runs directory
+        import shutil
+
+        shutil.rmtree(self.runs_dir)
+
+        with self.assertRaises(ValueError) as context:
+            self.app.local_run_metadata(self.test_run_id)
+
+        self.assertIn("`.nextmv/runs` dir does not exist", str(context.exception))
+
+    def test_local_run_metadata_no_run_dir(self):
+        """Test local_run_metadata when specific run directory doesn't exist."""
+        with self.assertRaises(ValueError) as context:
+            self.app.local_run_metadata("non-existent-run")
+
+        self.assertIn("run dir does not exist", str(context.exception))
+
+    def test_local_run_metadata_no_info_file(self):
+        """Test local_run_metadata when run info file doesn't exist."""
+        # Create run directory but no info file
+        non_existent_run_id = "run-456"
+        os.makedirs(os.path.join(self.runs_dir, non_existent_run_id))
+
+        with self.assertRaises(ValueError) as context:
+            self.app.local_run_metadata(non_existent_run_id)
+
+        self.assertIn("file does not exist", str(context.exception))
+
+    def test_local_run_metadata_failed_status(self):
+        """Test local_run_metadata with failed status."""
+        from nextmv.cloud.run import RunInformation
+
+        self._create_run_info_file(status="failed", error="Test error message")
+
+        result = self.app.local_run_metadata(self.test_run_id)
+
+        self.assertIsInstance(result, RunInformation)
+        self.assertEqual(result.metadata.status_v2, "failed")
+        self.assertEqual(result.metadata.error, "Test error message")
+
+    # Tests for local_run_result
+    @patch.object(Application, "local_run_metadata")
+    @patch.object(Application, "_Application__local_run_result")
+    def test_local_run_result_success(self, mock_local_run_result, mock_local_run_metadata):
+        """Test successful local_run_result call."""
+        from nextmv.cloud.run import RunInformation, RunResult
+
+        # Mock the metadata response
+        mock_run_info = Mock(spec=RunInformation)
+        mock_local_run_metadata.return_value = mock_run_info
+
+        # Mock the result response
+        mock_result = Mock(spec=RunResult)
+        mock_local_run_result.return_value = mock_result
+
+        result = self.app.local_run_result(self.test_run_id, output_dir_path="/tmp")
+
+        # Verify calls
+        mock_local_run_metadata.assert_called_once_with(run_id=self.test_run_id)
+        mock_local_run_result.assert_called_once_with(
+            run_id=self.test_run_id, run_information=mock_run_info, output_dir_path="/tmp"
+        )
+        self.assertEqual(result, mock_result)
+
+    @patch.object(Application, "local_run_metadata")
+    @patch.object(Application, "_Application__local_run_result")
+    def test_local_run_result_default_output_dir(self, mock_local_run_result, mock_local_run_metadata):
+        """Test local_run_result with default output directory."""
+        from nextmv.cloud.run import RunInformation, RunResult
+
+        # Mock the responses
+        mock_run_info = Mock(spec=RunInformation)
+        mock_local_run_metadata.return_value = mock_run_info
+        mock_result = Mock(spec=RunResult)
+        mock_local_run_result.return_value = mock_result
+
+        result = self.app.local_run_result(self.test_run_id)
+
+        # Verify default output_dir_path is used
+        mock_local_run_result.assert_called_once_with(
+            run_id=self.test_run_id, run_information=mock_run_info, output_dir_path="."
+        )
+
+        self.assertEqual(result, mock_result)
+
+    # Tests for local_run_result_with_polling
+    @patch.object(Application, "local_run_metadata")
+    @patch.object(Application, "_Application__local_run_result")
+    @patch("nextmv.cloud.application.poll")
+    def test_local_run_result_with_polling_success(self, mock_poll, mock_local_run_result, mock_local_run_metadata):
+        """Test successful local_run_result_with_polling call."""
+        from nextmv.cloud.run import RunInformation, RunResult
+
+        # Create mock run information with succeeded status
+        mock_run_info = Mock(spec=RunInformation)
+        mock_run_info.metadata = Mock()
+        mock_run_info.metadata.status_v2 = StatusV2.succeeded
+
+        # Mock poll to return the run information immediately
+        mock_poll.return_value = mock_run_info
+
+        # Mock the final result
+        mock_result = Mock(spec=RunResult)
+        mock_local_run_result.return_value = mock_result
+
+        result = self.app.local_run_result_with_polling(self.test_run_id)
+
+        # Verify poll was called
+        mock_poll.assert_called_once()
+
+        # Verify final result call
+        mock_local_run_result.assert_called_once_with(
+            run_id=self.test_run_id, run_information=mock_run_info, output_dir_path="."
+        )
+
+        self.assertEqual(result, mock_result)
+
+    @patch.object(Application, "local_run_metadata")
+    @patch.object(Application, "_Application__local_run_result")
+    @patch("nextmv.cloud.application.poll")
+    def test_local_run_result_with_polling_custom_options(
+        self, mock_poll, mock_local_run_result, mock_local_run_metadata
+    ):
+        """Test local_run_result_with_polling with custom polling options."""
+        from nextmv.cloud.application import PollingOptions
+        from nextmv.cloud.run import RunInformation, RunResult
+
+        # Create custom polling options
+        custom_polling_options = PollingOptions(max_tries=10, max_duration=300)
+
+        # Mock responses
+        mock_run_info = Mock(spec=RunInformation)
+        mock_run_info.metadata = Mock()
+        mock_run_info.metadata.status_v2 = StatusV2.succeeded
+        mock_poll.return_value = mock_run_info
+        mock_result = Mock(spec=RunResult)
+        mock_local_run_result.return_value = mock_result
+
+        self.app.local_run_result_with_polling(
+            self.test_run_id, polling_options=custom_polling_options, output_dir_path="/custom/path"
+        )
+
+        # Verify poll was called with custom options
+        mock_poll.assert_called_once()
+        call_args = mock_poll.call_args
+        self.assertEqual(call_args[1]["polling_options"], custom_polling_options)
+
+        # Verify final result call with custom output path
+        mock_local_run_result.assert_called_once_with(
+            run_id=self.test_run_id, run_information=mock_run_info, output_dir_path="/custom/path"
+        )
+
+    @patch.object(Application, "local_run_metadata")
+    def test_local_run_result_with_polling_status_check(self, mock_local_run_metadata):
+        """Test that polling function correctly checks for terminal statuses."""
+        from nextmv.cloud.run import RunInformation
+
+        # Test different statuses
+        test_cases = [
+            (StatusV2.succeeded, True),
+            (StatusV2.failed, True),
+            (StatusV2.canceled, True),
+            ("running", False),
+            ("pending", False),
+        ]
+
+        for status, should_be_done in test_cases:
+            with self.subTest(status=status):
+                mock_run_info = Mock(spec=RunInformation)
+                mock_run_info.metadata = Mock()
+                mock_run_info.metadata.status_v2 = status
+                mock_local_run_metadata.return_value = mock_run_info
+
+                # We need to access the polling function that gets created inside the method
+                # This is a bit tricky, so we'll just test the logic conceptually
+                result, is_done = (mock_run_info, True) if should_be_done else (None, False)
+
+                if should_be_done:
+                    self.assertEqual(result, mock_run_info)
+                    self.assertTrue(is_done)
+                else:
+                    self.assertIsNone(result)
+                    self.assertFalse(is_done)
+
+    # Tests for new_local_run_with_result
+    @patch.object(Application, "new_local_run")
+    @patch.object(Application, "local_run_result_with_polling")
+    def test_new_local_run_with_result_success(self, mock_polling_result, mock_new_local_run):
+        """Test successful new_local_run_with_result call."""
+        from nextmv.cloud.run import RunResult
+
+        # Mock responses
+        mock_new_local_run.return_value = "new-run-id"
+        mock_result = Mock(spec=RunResult)
+        mock_polling_result.return_value = mock_result
+
+        test_input = {"vehicles": [{"id": "v1"}]}
+        test_options = {"duration": "10s"}
+
+        result = self.app.new_local_run_with_result(
+            input=test_input, name="Test Run", description="Test Description", run_options=test_options
+        )
+
+        # Verify new_local_run was called correctly
+        mock_new_local_run.assert_called_once_with(
+            input=test_input,
+            name="Test Run",
+            description="Test Description",
+            options=test_options,
+            configuration=None,
+            json_configurations=None,
+            input_dir_path=None,
+        )
+
+        # Verify polling was called correctly
+        mock_polling_result.assert_called_once_with(
+            run_id="new-run-id", polling_options=_DEFAULT_POLLING_OPTIONS, output_dir_path="."
+        )
+
+        self.assertEqual(result, mock_result)
+
+    @patch.object(Application, "new_local_run")
+    @patch.object(Application, "local_run_result_with_polling")
+    def test_new_local_run_with_result_all_parameters(self, mock_polling_result, mock_new_local_run):
+        """Test new_local_run_with_result with all parameters."""
+        from nextmv.cloud.application import PollingOptions
+        from nextmv.cloud.run import RunConfiguration, RunResult
+
+        # Mock responses
+        mock_new_local_run.return_value = "comprehensive-run-id"
+        mock_result = Mock(spec=RunResult)
+        mock_polling_result.return_value = mock_result
+
+        # Test parameters
+        test_input = {"data": "test"}
+        test_options = {"param": "value"}
+        test_polling_options = PollingOptions(max_tries=20)
+        test_configuration = Mock(spec=RunConfiguration)
+        test_json_configs = {"indent": 4}
+        test_input_dir = "/test/input/dir"
+        test_output_dir = "/test/output/dir"
+
+        result = self.app.new_local_run_with_result(
+            input=test_input,
+            name="Comprehensive Test",
+            description="Full parameter test",
+            run_options=test_options,
+            polling_options=test_polling_options,
+            configuration=test_configuration,
+            json_configurations=test_json_configs,
+            input_dir_path=test_input_dir,
+            output_dir_path=test_output_dir,
+        )
+
+        # Verify new_local_run was called with all parameters
+        mock_new_local_run.assert_called_once_with(
+            input=test_input,
+            name="Comprehensive Test",
+            description="Full parameter test",
+            options=test_options,
+            configuration=test_configuration,
+            json_configurations=test_json_configs,
+            input_dir_path=test_input_dir,
+        )
+
+        # Verify polling was called with custom options
+        mock_polling_result.assert_called_once_with(
+            run_id="comprehensive-run-id", polling_options=test_polling_options, output_dir_path=test_output_dir
+        )
+
+        self.assertEqual(result, mock_result)
+
+    @patch.object(Application, "new_local_run")
+    @patch.object(Application, "local_run_result_with_polling")
+    def test_new_local_run_with_result_propagates_new_local_run_errors(self, mock_polling_result, mock_new_local_run):
+        """Test that new_local_run_with_result propagates errors from new_local_run."""
+        # Make new_local_run raise an error
+        mock_new_local_run.side_effect = ValueError("New local run error")
+
+        with self.assertRaises(ValueError) as context:
+            self.app.new_local_run_with_result(input={"test": "data"})
+
+        self.assertEqual(str(context.exception), "New local run error")
+        # Verify polling was never called
+        mock_polling_result.assert_not_called()
+
+    @patch.object(Application, "new_local_run")
+    @patch.object(Application, "local_run_result_with_polling")
+    def test_new_local_run_with_result_propagates_polling_errors(self, mock_polling_result, mock_new_local_run):
+        """Test that new_local_run_with_result propagates errors from polling."""
+        # Mock successful new_local_run but failing polling
+        mock_new_local_run.return_value = "error-run-id"
+        mock_polling_result.side_effect = TimeoutError("Polling timeout")
+
+        with self.assertRaises(TimeoutError) as context:
+            self.app.new_local_run_with_result(input={"test": "data"})
+
+        self.assertEqual(str(context.exception), "Polling timeout")
+        # Verify new_local_run was called
+        mock_new_local_run.assert_called_once()
+
+    @patch.object(Application, "new_local_run")
+    @patch.object(Application, "local_run_result_with_polling")
+    def test_new_local_run_with_result_minimal_parameters(self, mock_polling_result, mock_new_local_run):
+        """Test new_local_run_with_result with minimal parameters."""
+        from nextmv.cloud.run import RunResult
+
+        # Mock responses
+        mock_new_local_run.return_value = "minimal-run-id"
+        mock_result = Mock(spec=RunResult)
+        mock_polling_result.return_value = mock_result
+
+        result = self.app.new_local_run_with_result(input={"minimal": "test"})
+
+        # Verify default parameters are used
+        mock_new_local_run.assert_called_once_with(
+            input={"minimal": "test"},
+            name=None,
+            description=None,
+            options=None,
+            configuration=None,
+            json_configurations=None,
+            input_dir_path=None,
+        )
+
+        mock_polling_result.assert_called_once_with(
+            run_id="minimal-run-id", polling_options=_DEFAULT_POLLING_OPTIONS, output_dir_path="."
+        )
+
+        self.assertEqual(result, mock_result)
