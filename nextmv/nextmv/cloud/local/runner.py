@@ -18,7 +18,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
@@ -106,7 +105,7 @@ def run(
     )
 
     # Start the process as a daemon (detached) so we don't wait for it to finish.
-    args = [sys.executable, "executor.py"]
+    args = ["python", "executor.py"]
     process = subprocess.Popen(
         args,
         env=os.environ,
