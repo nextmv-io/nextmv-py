@@ -285,6 +285,23 @@ class RunInformation(BaseModel):
     user_email: str
     """Email of the user who submitted the run."""
     console_url: str = Field(default="")
+    """
+    URL to the run in the Nextmv console.
+    """
+    synced_run_id: Optional[str] = None
+    """
+    ID of the synced remote run, if applicable. When the `Application.sync`
+    method is used, this field marks the association between the local run
+    (`id`) and the remote run (`synced_run_id`). This field is None if the run
+    was not created using `Application.sync` or if the run has not been synced
+    yet.
+    """
+    synced_at: Optional[datetime] = None
+    """
+    Timestamp when the run was synced with the remote run. This field is
+    None if the run was not created using `Application.sync` or if the run
+    has not been synced yet.
+    """
 
 
 class ErrorLog(BaseModel):
@@ -673,13 +690,23 @@ class TrackedRun:
         input/output dicts are not JSON serializable.
     """
 
-    input: Union[Input, dict[str, Any], str]
-    """The input of the run being tracked."""
-    output: Union[Output, dict[str, Any], str]
-    """The output of the run being tracked. Only JSON output_format is supported."""
     status: TrackedRunStatus
     """The status of the run being tracked"""
 
+    input: Optional[Union[Input, dict[str, Any], str]] = None
+    """
+    The input of the run being tracked. Please note that if the input
+    format is JSON, then the input data must be JSON serializable. If both
+    `input` and `input_dir_path` are specified, the `input` is ignored, and
+    the files in the directory are used instead.
+    """
+    output: Optional[Union[Output, dict[str, Any], str]] = None
+    """
+    The output of the run being tracked. Please note that if the output
+    format is JSON, then the output data must be JSON serializable. If both
+    `output` and `output_dir_path` are specified, the `output` is ignored, and
+    the files in the directory are used instead.
+    """
     duration: Optional[int] = None
     """The duration of the run being tracked, in milliseconds."""
     error: Optional[str] = None
@@ -688,6 +715,32 @@ class TrackedRun:
     logs: Optional[list[str]] = None
     """The logs of the run being tracked. Each element of the list is a line in
     the log."""
+    name: str | None = None
+    """
+    Optional name for the run being tracked.
+    """
+    description: str | None = None
+    """
+    Optional description for the run being tracked.
+    """
+    input_dir_path: Optional[str] = None
+    """
+    Path to a directory containing input files. If specified, the calling
+    function will package the files in the directory into a tar file and upload
+    it as a large input. This is useful for non-JSON input formats, such as
+    when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `input` and
+    `input_dir_path` are specified, the `input` is ignored, and the files in
+    the directory are used instead.
+    """
+    output_dir_path: Optional[str] = None
+    """
+    Path to a directory containing output files. If specified, the calling
+    function will package the files in the directory into a tar file and upload
+    it as a large output. This is useful for non-JSON output formats, such as
+    when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `output` and
+    `output_dir_path` are specified, the `output` is ignored, and the files
+    are saved in the directory instead.
+    """
 
     def __post_init__(self):  # noqa: C901
         """
@@ -709,8 +762,10 @@ class TrackedRun:
             raise ValueError("Error message must be empty if the run succeeded.")
 
         if isinstance(self.input, Input):
-            if self.input.input_format != InputFormat.JSON:
-                raise ValueError("Input.input_format must be JSON.")
+            try:
+                _ = serialize_json(self.input.data)
+            except (TypeError, OverflowError) as e:
+                raise ValueError("Input.data is not JSON serializable") from e
         elif isinstance(self.input, dict):
             try:
                 _ = serialize_json(self.input)
@@ -718,8 +773,10 @@ class TrackedRun:
                 raise ValueError("Input is dict[str, Any] but it is not JSON serializable") from e
 
         if isinstance(self.output, Output):
-            if self.output.output_format != OutputFormat.JSON:
-                raise ValueError("Output.output_format must be JSON.")
+            try:
+                _ = serialize_json(self.output.data)
+            except (TypeError, OverflowError) as e:
+                raise ValueError("Output.data is not JSON serializable") from e
         elif isinstance(self.output, dict):
             try:
                 _ = serialize_json(self.output)

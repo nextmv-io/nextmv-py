@@ -31,7 +31,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
 import requests
@@ -62,6 +62,7 @@ from nextmv.cloud.run import (
     RunLog,
     RunResult,
     TrackedRun,
+    TrackedRunStatus,
 )
 from nextmv.cloud.safe import safe_id, safe_name_and_id
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
@@ -1800,10 +1801,10 @@ class Application:
         self.__validate_dir_path_and_configuration(input_dir_path, configuration)
 
         if self.src is None:
-            raise ValueError("`src` property for the `Application` must be specified to run the application locally.")
+            raise ValueError("`src` property for the `Application` must be specified to run the application locally")
 
         if input is None and input_dir_path is None:
-            raise ValueError("Either `input` or `input_directory` must be specified.")
+            raise ValueError("Either `input` or `input_directory` must be specified")
 
         try:
             manifest = Manifest.from_yaml(self.src)
@@ -3091,7 +3092,112 @@ class Application:
 
         return self.batch_experiment(batch_id=scenario_test_id)
 
-    def track_run(self, tracked_run: TrackedRun, instance_id: Optional[str] = None) -> str:
+    def sync(  # noqa: C901
+        self,
+        run_ids: Optional[list[str]] = None,
+        instance_id: Optional[str] = None,
+        verbose: Optional[bool] = False,
+    ) -> None:
+        """
+        Sync the local application to the Nextmv Cloud.
+
+        The `Application` class allows you to perform and handle local
+        application runs with methods such as:
+
+        - `new_local_run`
+        - `new_local_run_with_result`
+        - `local_run_metadata`
+        - `local_run_result`
+        - `local_run_result_with_polling`
+
+        The runs produced locally live under `self.src/.nextmv/runs`. This
+        method syncs those runs to Nextmv Cloud, making them available for
+        remote execution and management.
+
+        Parameters
+        ----------
+        run_ids : Optional[list[str]], default=None
+            List of run IDs to sync. If None, all local runs found under
+            `self.src/.nextmv/runs` will be synced.
+        instance_id : Optional[str], default=None
+            Optional instance ID if you want to associate your runs with an
+            instance.
+        verbose : Optional[bool], default=False
+            Whether to print verbose output during the sync process. Useful for
+            debugging a large number of runs being synced.
+
+        Raises
+        ------
+        ValueError
+            If the `src` property is not specified.
+        ValueError
+            If the `client` property is not specified.
+        ValueError
+            If the application does not exist in Nextmv Cloud.
+        ValueError
+            If a run does not exist locally.
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+        if self.src is None:
+            raise ValueError(
+                "`src` property for the `Application` must be specified to sync the application to Nextmv Cloud"
+            )
+
+        if self.client is None:
+            raise ValueError(
+                "`client` property for the `Application` must be specified to sync the application to Nextmv Cloud"
+            )
+
+        if not self.exists(self.client, self.id):
+            raise ValueError(
+                f"Application with ID {self.id} does not exist in Nextmv Cloud, create with `Application.new`"
+            )
+
+        # Create a temp dir to store the outputs that are written by default to
+        # ".". During the sync process, we don't need to keep these outputs, so
+        # we can use a temp dir that will be deleted after the sync is done.
+        temp_results_dir = tempfile.mkdtemp(prefix="nextmv-sync-run-")
+
+        runs_dir = os.path.join(self.src, ".nextmv", "runs")
+        if run_ids is None:
+            # If runs are not specified, by default we sync all local runs that
+            # can be found.
+            dirs = os.listdir(runs_dir)
+            run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
+
+            if verbose:
+                log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
+        else:
+            if verbose:
+                log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
+
+        total = 0
+        for run_id in run_ids:
+            synced = self.__sync_run(
+                run_id=run_id,
+                runs_dir=runs_dir,
+                temp_dir=temp_results_dir,
+                instance_id=instance_id,
+                verbose=verbose,
+            )
+            if synced:
+                total += 1
+
+        if verbose:
+            log(f"🚀 Process completed, synced {total}/{len(run_ids)} runs found in {runs_dir}.")
+
+        try:
+            shutil.rmtree(temp_results_dir)
+        except OSError as e:
+            raise Exception(f"error deleting temp output directory: {e}") from e
+
+    def track_run(  # noqa: C901
+        self,
+        tracked_run: TrackedRun,
+        instance_id: Optional[str] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+    ) -> str:
         """
         Track an external run.
 
@@ -3100,6 +3206,14 @@ class Application:
         information about a run in Nextmv is useful for things like
         experimenting and testing.
 
+        Please read the documentation on the `TrackedRun` class carefully, as
+        there are important considerations to take into account when using this
+        method. For example, if you intend to upload JSON input/output, use the
+        `input`/`output` attributes of the `TrackedRun` class. On the other
+        hand, if you intend to track files-based input/output, use the
+        `input_dir_path`/`output_dir_path` attributes of the `TrackedRun`
+        class.
+
         Parameters
         ----------
         tracked_run : TrackedRun
@@ -3107,6 +3221,11 @@ class Application:
         instance_id : Optional[str], default=None
             Optional instance ID if you want to associate your tracked run with
             an instance.
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
 
         Returns
         -------
@@ -3129,22 +3248,55 @@ class Application:
         >>> run_id = app.track_run(tracked_run)
         """
 
+        # Get the URL to upload the input to.
         url_input = self.upload_url()
 
+        # Handle the case where the input is being uploaded as files. We need
+        # to tar them.
+        input_tar_file = ""
+        input_dir_path = tracked_run.input_dir_path
+        if input_dir_path is not None and input_dir_path != "":
+            if not os.path.exists(input_dir_path):
+                raise ValueError(f"Directory {input_dir_path} does not exist.")
+
+            if not os.path.isdir(input_dir_path):
+                raise ValueError(f"Path {input_dir_path} is not a directory.")
+
+            input_tar_file = self.__package_inputs(input_dir_path)
+
+        # Handle the case where the input is uploaded as Input or a dict.
         upload_input = tracked_run.input
-        if isinstance(tracked_run.input, Input):
+        if upload_input is not None and isinstance(tracked_run.input, Input):
             upload_input = tracked_run.input.data
 
-        self.upload_large_input(input=upload_input, upload_url=url_input)
+        # Actually uploads de input.
+        self.upload_large_input(input=upload_input, upload_url=url_input, tar_file=input_tar_file)
 
+        # Get the URL to upload the output to.
         url_output = self.upload_url()
 
+        # Handle the case where the output is being uploaded as files. We need
+        # to tar them.
+        output_tar_file = ""
+        output_dir_path = tracked_run.output_dir_path
+        if output_dir_path is not None and output_dir_path != "":
+            if not os.path.exists(output_dir_path):
+                raise ValueError(f"Directory {output_dir_path} does not exist.")
+
+            if not os.path.isdir(output_dir_path):
+                raise ValueError(f"Path {output_dir_path} is not a directory.")
+
+            output_tar_file = self.__package_inputs(output_dir_path)
+
+        # Handle the case where the output is uploaded as Output or a dict.
         upload_output = tracked_run.output
-        if isinstance(tracked_run.output, Output):
+        if upload_output is not None and isinstance(tracked_run.output, Output):
             upload_output = tracked_run.output.to_dict()
 
-        self.upload_large_input(input=upload_output, upload_url=url_output)
+        # Actually uploads the output.
+        self.upload_large_input(input=upload_output, upload_url=url_output, tar_file=output_tar_file)
 
+        # Create the external run result and appends logs if required.
         external_result = ExternalRunResult(
             output_upload_id=url_output.upload_id,
             status=tracked_run.status.value,
@@ -3163,6 +3315,9 @@ class Application:
             upload_id=url_input.upload_id,
             external_result=external_result,
             instance_id=instance_id,
+            name=tracked_run.name,
+            description=tracked_run.description,
+            configuration=configuration,
         )
 
     def track_run_with_result(
@@ -3171,6 +3326,7 @@ class Application:
         polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
         instance_id: Optional[str] = None,
         output_dir_path: Optional[str] = ".",
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
     ) -> RunResult:
         """
         Track an external run and poll for the result. This is a convenience
@@ -3191,6 +3347,11 @@ class Application:
             Path to a directory where non-JSON output files will be saved. This is
             required if the output is non-JSON. If the directory does not exist, it
             will be created. Uses the current directory by default.
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
 
         Returns
         -------
@@ -3210,7 +3371,11 @@ class Application:
             If the run does not succeed after the polling strategy is
             exhausted based on number of tries.
         """
-        run_id = self.track_run(tracked_run=tracked_run, instance_id=instance_id)
+        run_id = self.track_run(
+            tracked_run=tracked_run,
+            instance_id=instance_id,
+            configuration=configuration,
+        )
 
         return self.run_result_with_polling(
             run_id=run_id,
@@ -4192,6 +4357,108 @@ class Application:
         configuration_dict = configuration.to_dict()
 
         return configuration_dict
+
+    def __sync_run(  # noqa: C901
+        self,
+        run_id: str,
+        runs_dir: str,
+        temp_dir: str,
+        instance_id: Optional[str] = None,
+        verbose: Optional[bool] = False,
+    ) -> bool:
+        """
+        Syncs a local run to Nextmv Cloud. Returns True if the run was synced,
+        False if it was skipped (already synced).
+        """
+
+        if verbose:
+            log(f"🔄 Syncing local run {run_id}... ")
+
+        # For files-based runs, the result files are written by default to ".".
+        # Avoid this using a dedicated temp dir.
+        run_result = self.local_run_result(run_id, output_dir_path=temp_dir)
+        input_type = run_result.metadata.format.format_input.input_type
+
+        # Skip runs that have already been synced.
+        already_synced = run_result.synced_run_id is not None and run_result.synced_at is not None
+        if already_synced:
+            if verbose:
+                log(f"   ⏭️  Skipping local run {run_id}, already synced at {run_result.synced_at.isoformat()}.")
+
+            return False
+
+        # Skip runs that don't have the supported type. TODO: delete this when
+        # external runs support CSV_ARCHIVE and MULTI_FILE. Right now,
+        # submitting an external result with a new run is limited to JSON and
+        # TEXT. After this if statement is removed, the rest of the code should
+        # work with CSV_ARCHIVE and MULTI_FILE as well, as using the input dir
+        # path is already considered.
+        if input_type not in {InputFormat.JSON, InputFormat.TEXT}:
+            if verbose:
+                log(
+                    f"   ⏭️  Skipping local run {run_id}, unsupported input type: {input_type.value}. "
+                    f"Supported types are: {[InputFormat.JSON.value, InputFormat.TEXT.value]}",
+                )
+
+            return False
+
+        status = TrackedRunStatus.SUCCEEDED
+        if run_result.metadata.status_v2 != StatusV2.succeeded:
+            status = TrackedRunStatus.FAILED
+
+        # Read the logs of the run and place each line as an element in a list
+        run_dir = os.path.join(runs_dir, run_id)
+        with open(os.path.join(run_dir, "logs", "stderr.log")) as f:
+            stderr_logs = f.readlines()
+
+        # Create the tracked run object and start configuring it.
+        tracked_run = TrackedRun(
+            status=status,
+            duration=int(run_result.metadata.duration),
+            error=run_result.metadata.error,
+            logs=stderr_logs,
+            name=run_result.name,
+            description=run_result.description,
+        )
+
+        # Resolve the input according to its type.
+        inputs_path = os.path.join(run_dir, "inputs")
+        if input_type == InputFormat.JSON:
+            tracked_run.input = json.load(open(os.path.join(inputs_path, "input.json")))
+        elif input_type == InputFormat.TEXT:
+            tracked_run.input = open(os.path.join(inputs_path, "input")).read()
+        else:
+            tracked_run.input_dir_path = inputs_path
+
+        # Resolve the output according to its type.
+        if run_result.metadata.format.format_output.output_type == OutputFormat.JSON:
+            tracked_run.output = run_result.output
+        else:
+            tracked_run.output_dir_path = os.path.join(run_dir, "outputs", "solutions")
+
+        # Actually sync the run by tracking it remotely on Nextmv Cloud.
+        configuration = RunConfiguration(
+            format=Format(
+                format_input=run_result.metadata.format.format_input,
+                format_output=run_result.metadata.format.format_output,
+            ),
+        )
+        tracked_id = self.track_run(
+            tracked_run=tracked_run,
+            instance_id=instance_id,
+            configuration=configuration,
+        )
+
+        # Mark the local run as synced by updating the local run info.
+        run_result.synced_run_id = tracked_id
+        run_result.synced_at = datetime.now(timezone.utc)
+        with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
+            json.dump(run_result.to_dict(), f, indent=2)
+
+        if verbose:
+            log(f"✅ Synced local run {run_id} as remote run {tracked_id}.")
+
+        return True
 
 
 def poll(  # noqa: C901

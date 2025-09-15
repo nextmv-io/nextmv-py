@@ -177,11 +177,12 @@ def new_run(
     os.makedirs(run_dir, exist_ok=True)
 
     # Create the run information file.
+    created_at = datetime.now(timezone.utc)
     metadata = Metadata(
         application_id=app_id,
         application_instance_id="",
         application_version_id="",
-        created_at=datetime.now(timezone.utc),
+        created_at=created_at,
         duration=0.0,
         error="",
         input_size=0.0,
@@ -193,11 +194,18 @@ def new_run(
         ),
         status_v2=StatusV2.queued,
     )
+
+    if description is None:
+        description = f"Local run created at {created_at.isoformat().replace('+00:00', 'Z')}"
+
+    if name is None:
+        name = f"local run {run_id}"
+
     information = RunInformation(
-        description=description if description is not None else "",
+        description=description,
         id=run_id,
         metadata=metadata,
-        name=name if name is not None else f"local run {run_id}",
+        name=name,
         user_email="",
     )
     with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
