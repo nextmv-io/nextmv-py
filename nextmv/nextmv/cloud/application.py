@@ -29,6 +29,7 @@ import shutil
 import tarfile
 import tempfile
 import time
+import webbrowser
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -1213,6 +1214,48 @@ class Application:
             run_information=run_information,
             output_dir_path=output_dir_path,
         )
+
+    def local_run_visuals(self, run_id: str) -> None:
+        """
+        Open the local run visuals in a web browser.
+
+        This method opens the visual representation of a locally executed run
+        in the default web browser. It assumes that the run was executed locally
+        using the `new_local_run` or `new_local_run_with_result` method and that
+        the necessary visualization files are present.
+
+        If the run was correctly configured to produce visual assets, then the
+        run will contain a `visuals` directory with one or more HTML files.
+        Each file is opened in a new tab in the default web browser.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the local run to visualize.
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+        """
+
+        runs_dir = os.path.join(self.src, ".nextmv", "runs")
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        visuals_dir = os.path.join(run_dir, "visuals")
+        if not os.path.exists(visuals_dir):
+            raise ValueError(f"`visuals` dir does not exist at: {run_dir}")
+
+        for file in os.listdir(visuals_dir):
+            if file.endswith(".html"):
+                file_path = os.path.join(visuals_dir, file)
+                webbrowser.open_new_tab(f"file://{os.path.realpath(file_path)}")
 
     def managed_input(self, managed_input_id: str) -> ManagedInput:
         """

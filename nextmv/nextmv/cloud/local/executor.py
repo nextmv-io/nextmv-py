@@ -24,6 +24,8 @@ process_run_assets
     Function to process and save run assets.
 process_run_solutions
     Function to process and save run solutions.
+process_run_visuals
+    Function to process and save run visuals.
 """
 
 import json
@@ -34,8 +36,11 @@ import tempfile
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
+from nextmv.cloud.local.geojson_handler import handle_geojson_visual
+from nextmv.cloud.local.plotly_handler import handle_plotly_visual
 from nextmv.cloud.local.runner import calculate_files_size
 from nextmv.input import load
+from nextmv.output import Asset, VisualSchema
 
 ASSETS_KEY = "assets"
 """
@@ -302,6 +307,10 @@ def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedP
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
     )
+    process_run_visuals(
+        run_dir=run_dir,
+        outputs_dir=outputs_dir,
+    )
 
 
 def process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
@@ -489,6 +498,50 @@ def process_run_solutions(
     info["metadata"]["format"]["output"] = {"type": output_type}
     with open(info_file, "w") as f:
         json.dump(info, f, indent=2)
+
+
+def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
+    """
+    Processes the visuals from the assets in the run output. This function looks
+    for Plotly assets and generates HTML files for each visual.
+
+    Parameters
+    ----------
+    run_dir : str
+        The path to the run directory.
+    outputs_dir : str
+        The path to the outputs directory in the run directory.
+    """
+
+    # Get the assets.
+    assets_dir = os.path.join(outputs_dir, ASSETS_KEY)
+    if not os.path.exists(assets_dir):
+        return
+
+    assets_file = os.path.join(assets_dir, f"{ASSETS_KEY}.json")
+    if not os.path.exists(assets_file):
+        return
+
+    with open(assets_file) as f:
+        assets = json.load(f)
+
+    # Create visuals directory.
+    visuals_dir = os.path.join(run_dir, "visuals")
+    os.makedirs(visuals_dir, exist_ok=True)
+
+    # Loop over all the assets to find visual assets.
+    for asset_dict in assets.get(ASSETS_KEY, []):
+        asset = Asset.from_dict(asset_dict)
+        if asset.visual is None:
+            continue
+
+        if asset.visual.visual_schema == VisualSchema.PLOTLY:
+            handle_plotly_visual(asset, visuals_dir)
+        elif asset.visual.visual_schema == VisualSchema.GEOJSON:
+            handle_geojson_visual(asset, visuals_dir)
+
+        # ChartJS is not easily supported directly from Python in local runs,
+        # so we ignore it for now.
 
 
 if __name__ == "__main__":

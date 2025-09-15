@@ -13,10 +13,12 @@ record_input
     Function to write the input to the appropriate location.
 """
 
+import importlib.util
 import json
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
@@ -38,12 +40,6 @@ def run(
 ) -> str:
     """
     Execute a local run.
-
-    You can import the `run` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import run
-    ```
 
     This method recreates, partially, what the Nextmv Cloud does in the backend
     when running an application. A run ID is generated, a run directory is
@@ -80,6 +76,19 @@ def run(
         The ID of the created run.
     """
 
+    # Check for required optional dependencies
+    missing_deps = []
+    if importlib.util.find_spec("folium") is None:
+        missing_deps.append("folium")
+    if importlib.util.find_spec("plotly") is None:
+        missing_deps.append("plotly")
+
+    if missing_deps:
+        raise ImportError(
+            f"{' and '.join(missing_deps)} {'is' if len(missing_deps) == 1 else 'are'} not installed. "
+            "Please install optional dependencies with `pip install nextmv[all]`"
+        )
+
     run_id = safe_id("local")
     run_dir = new_run(
         app_id=app_id,
@@ -96,8 +105,8 @@ def run(
         inputs_dir_path=inputs_dir_path,
     )
 
-    # Start the process as a daemon (detached) so we don't wait for it to finish
-    args = ["python", "executor.py"]
+    # Start the process as a daemon (detached) so we don't wait for it to finish.
+    args = [sys.executable, "executor.py"]
     process = subprocess.Popen(
         args,
         env=os.environ,
@@ -138,12 +147,6 @@ def new_run(
 ) -> str:
     """
     Initializes a new run.
-
-    You can import the `new_run` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import new_run
-    ```
 
     The run information is recorded in a JSON file within the run directory.
 
@@ -223,12 +226,6 @@ def record_input(
     """
     Writes the input to the appropriate location.
 
-    You can import the `record_input` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import record_input
-    ```
-
     The size of the input is calculated and recorded in the run information.
 
     Parameters
@@ -275,13 +272,6 @@ def record_input(
 def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key: str) -> None:
     """
     Calculates the total size of the files in a directory, in bytes.
-
-    You can import the `calculate_files_size` method directly from
-    `local`:
-
-    ```python
-    from nextmv.cloud.local import calculate_files_size
-    ```
 
     The calculated size is stored in the run information metadata under the
     specified key.
