@@ -715,11 +715,11 @@ class TrackedRun:
     logs: Optional[list[str]] = None
     """The logs of the run being tracked. Each element of the list is a line in
     the log."""
-    name: str | None = None
+    name: Optional[str] = None
     """
     Optional name for the run being tracked.
     """
-    description: str | None = None
+    description: Optional[str] = None
     """
     Optional description for the run being tracked.
     """
