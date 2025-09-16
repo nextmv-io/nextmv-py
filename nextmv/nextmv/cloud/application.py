@@ -1130,7 +1130,7 @@ class Application:
         else:
             # Get all input IDs from the input set.
             input_set = self.input_set(input_set_id=input_set_id)
-            if len(input_set.input_ids) == 0:
+            if not input_set.input_ids:
                 raise ValueError(f"input set {input_set_id} does not contain any inputs")
             runs = []
             for input_id in input_set.input_ids:
