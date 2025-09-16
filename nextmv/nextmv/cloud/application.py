@@ -1128,16 +1128,26 @@ class Application:
                     f"batch experiment {id} does not exist, input_set_id must be defined to create a new one"
                 ) from e
         else:
-            runs = [
-                BatchExperimentRun(
-                    instance_id=candidate_instance_id,
-                    input_set_id=input_set_id,
-                ),
-                BatchExperimentRun(
-                    instance_id=baseline_instance_id,
-                    input_set_id=input_set_id,
-                ),
-            ]
+            # Get all input IDs from the input set.
+            input_set = self.input_set(input_set_id=input_set_id)
+            if len(input_set.input_ids) == 0:
+                raise ValueError(f"input set {input_set_id} does not contain any inputs")
+            runs = []
+            for input_id in input_set.input_ids:
+                runs.append(
+                    BatchExperimentRun(
+                        instance_id=candidate_instance_id,
+                        input_set_id=input_set_id,
+                        input_id=input_id,
+                    )
+                )
+                runs.append(
+                    BatchExperimentRun(
+                        instance_id=baseline_instance_id,
+                        input_set_id=input_set_id,
+                        input_id=input_id,
+                    )
+                )
             batch_experiment_id = self.new_batch_experiment(
                 name=name,
                 description=description,
