@@ -145,7 +145,7 @@ class BatchExperimentRun(BaseModel):
     Parameters
     ----------
     input_id : str
-        ID of the input used for the experiment.
+        ID of the input used for the experiment. Defaults to None.
     option_set : str
         Option set used for the experiment. Defaults to None.
     instance_id : str, optional
@@ -163,9 +163,8 @@ class BatchExperimentRun(BaseModel):
         Run number of the experiment. Defaults to None.
     """
 
-    input_id: str
+    input_id: Optional[str] = None
     """ID of the input used for the experiment."""
-
     option_set: Optional[str] = None
     """Option set used for the experiment."""
     instance_id: Optional[str] = None
@@ -192,6 +191,8 @@ class BatchExperimentRun(BaseModel):
         """
         if self.instance_id is None and self.version_id is None:
             raise ValueError("either instance_id or version_id must be set")
+        if self.input_id is None and self.input_set_id is None:
+            raise ValueError("either input_id or input_set_id must be set")
 
 
 class BatchExperimentMetadata(BatchExperimentInformation):
