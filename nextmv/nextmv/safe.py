@@ -36,10 +36,10 @@ def safe_name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
     Generate a safe ID and human-readable name from a prefix and user-supplied
     identifier.
 
-    You can import the `safe_name_and_id` function directly from `cloud`:
+    You can import the `safe_name_and_id` function directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import safe_name_and_id
+    from nextmv import safe_name_and_id
     ```
 
     Parameters
@@ -98,10 +98,10 @@ def safe_id(prefix: str) -> str:
     """
     Generate a safe ID from a prefix.
 
-    You can import the `safe_id` function directly from `cloud`:
+    You can import the `safe_id` function directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import safe_id
+    from nextmv import safe_id
     ```
 
     Parameters

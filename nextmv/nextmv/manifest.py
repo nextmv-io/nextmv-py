@@ -1,15 +1,16 @@
-"""Module with the logic for handling an app manifest.
+"""
+Module with the logic for handling an app manifest.
 
 This module provides classes and functions for managing Nextmv app manifests.
 Manifest files (app.yaml) define how an application is built, run, and deployed
-on the Nextmv Cloud platform.
+on the Nextmv platform.
 
 Classes
 -------
 ManifestType
     Enum for application types based on programming language.
 ManifestRuntime
-    Enum for runtime environments where apps run on Nextmv Cloud.
+    Enum for runtime environments where apps run on Nextmv.
 ManifestBuild
     Class for build-specific attributes in the manifest.
 ManifestPythonModel
@@ -27,7 +28,7 @@ ManifestValidation
 ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
-    Main class representing an app manifest for Nextmv Cloud.
+    Main class representing an app manifest for Nextmv.
 
 Constants
 --------
@@ -51,10 +52,10 @@ MANIFEST_FILE_NAME = "app.yaml"
 
 This constant defines the standard filename for Nextmv app manifest files.
 
-You can import the `FILE_NAME` constant directly from `cloud`:
+You can import the `FILE_NAME` constant directly from `nextmv`:
 
 ```python
-from nextmv.cloud import FILE_NAME
+from nextmv import FILE_NAME
 ```
 
 Notes
@@ -67,10 +68,10 @@ class ManifestType(str, Enum):
     """
     Type of application in the manifest, based on the programming language.
 
-    You can import the `ManifestType` class directly from `cloud`:
+    You can import the `ManifestType` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestType
+    from nextmv import ManifestType
     ```
 
     This enum defines the supported programming languages for applications
@@ -87,7 +88,7 @@ class ManifestType(str, Enum):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestType
+    >>> from nextmv import ManifestType
     >>> manifest_type = ManifestType.PYTHON
     >>> manifest_type
     <ManifestType.PYTHON: 'python'>
@@ -107,10 +108,10 @@ class ManifestRuntime(str, Enum):
     """
     Runtime (environment) where the app will be run on Nextmv Cloud.
 
-    You can import the `ManifestRuntime` class directly from `cloud`:
+    You can import the `ManifestRuntime` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestRuntime
+    from nextmv import ManifestRuntime
     ```
 
     This enum defines the supported runtime environments for applications
@@ -132,7 +133,7 @@ class ManifestRuntime(str, Enum):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestRuntime
+    >>> from nextmv import ManifestRuntime
     >>> runtime = ManifestRuntime.PYTHON
     >>> runtime
     <ManifestRuntime.PYTHON: 'ghcr.io/nextmv-io/runtime/python:3.11'>
@@ -162,10 +163,10 @@ class ManifestBuild(BaseModel):
     """
     Build-specific attributes.
 
-    You can import the `ManifestBuild` class directly from `cloud`:
+    You can import the `ManifestBuild` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestBuild
+    from nextmv import ManifestBuild
     ```
 
     Parameters
@@ -181,7 +182,7 @@ class ManifestBuild(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestBuild
+    >>> from nextmv import ManifestBuild
     >>> build_config = ManifestBuild(
     ...     command="make build",
     ...     environment={"DEBUG": "true"}
@@ -215,7 +216,7 @@ class ManifestBuild(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import ManifestBuild
+        >>> from nextmv import ManifestBuild
         >>> build_config = ManifestBuild(environment={"COUNT": 1, "NAME": "test"})
         >>> build_config.environment_to_dict()
         {'COUNT': '1', 'NAME': 'test'}
@@ -234,10 +235,10 @@ class ManifestPythonModel(BaseModel):
     """
     Model-specific instructions for a Python app.
 
-    You can import the `ManifestPythonModel` class directly from `cloud`:
+    You can import the `ManifestPythonModel` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestPythonModel
+    from nextmv import ManifestPythonModel
     ```
 
     Parameters
@@ -252,7 +253,7 @@ class ManifestPythonModel(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestPythonModel
+    >>> from nextmv import ManifestPythonModel
     >>> python_model_config = ManifestPythonModel(
     ...     name="routing_model",
     ...     options=[{"name": "max_vehicles", "type": "int", "default": 10}]
@@ -276,10 +277,10 @@ class ManifestPython(BaseModel):
     """
     Python-specific instructions.
 
-    You can import the `ManifestPython` class directly from `cloud`:
+    You can import the `ManifestPython` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestPython
+    from nextmv import ManifestPython
     ```
 
     Parameters
@@ -296,7 +297,7 @@ class ManifestPython(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestPython, ManifestPythonModel
+    >>> from nextmv import ManifestPython, ManifestPythonModel
     >>> python_config = ManifestPython(
     ...     pip_requirements="requirements.txt",
     ...     model=ManifestPythonModel(name="my_model")
@@ -327,10 +328,10 @@ class ManifestOptionUI(BaseModel):
     """
     UI attributes for an option in the manifest.
 
-    You can import the `ManifestOptionUI` class directly from `cloud`:
+    You can import the `ManifestOptionUI` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOptionUI
+    from nextmv import ManifestOptionUI
     ```
 
     Parameters
@@ -353,7 +354,7 @@ class ManifestOptionUI(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOptionUI
+    >>> from nextmv import ManifestOptionUI
     >>> ui_config = ManifestOptionUI(control_type="input")
     >>> ui_config.control_type
     'input'
@@ -373,10 +374,10 @@ class ManifestOption(BaseModel):
     """
     An option for the decision model that is recorded in the manifest.
 
-    You can import the `ManifestOption` class directly from `cloud`:
+    You can import the `ManifestOption` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOption
+    from nextmv import ManifestOption
     ```
 
     Parameters
@@ -408,7 +409,7 @@ class ManifestOption(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOption
+    >>> from nextmv import ManifestOption
     >>> option = ManifestOption(
     ...     name="solve.duration",
     ...     option_type="string",
@@ -461,7 +462,7 @@ class ManifestOption(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Option
-        >>> from nextmv.cloud import ManifestOption
+        >>> from nextmv import ManifestOption
         >>> sdk_option = Option(name="max_stops", option_type=int, default=100)
         >>> manifest_opt = ManifestOption.from_option(sdk_option)
         >>> manifest_opt.name
@@ -513,7 +514,7 @@ class ManifestOption(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import ManifestOption
+        >>> from nextmv import ManifestOption
         >>> manifest_opt = ManifestOption(name="max_stops", option_type="int", default=100)
         >>> sdk_option = manifest_opt.to_option()
         >>> sdk_option.name
@@ -551,10 +552,10 @@ class ManifestValidation(BaseModel):
     """
     Validation rules for options in the manifest.
 
-    You can import the `ManifestValidation` class directly from `cloud`:
+    You can import the `ManifestValidation` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestValidation
+    from nextmv import ManifestValidation
     ```
 
     Parameters
@@ -568,7 +569,7 @@ class ManifestValidation(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestValidation
+    >>> from nextmv import ManifestValidation
     >>> validation = ManifestValidation(enforce="all")
     >>> validation.enforce
     'all'
@@ -587,10 +588,10 @@ class ManifestOptions(BaseModel):
     """
     Options for the decision model.
 
-    You can import the `ManifestOptions` class directly from `cloud`:
+    You can import the `ManifestOptions` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOptions
+    from nextmv import ManifestOptions
     ```
 
     Parameters
@@ -610,7 +611,7 @@ class ManifestOptions(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOptions, ManifestOption
+    >>> from nextmv import ManifestOptions, ManifestOption
     >>> options_config = ManifestOptions(
     ...     strict=True,
     ...     validation=ManifestValidation(enforce="all"),
@@ -676,7 +677,7 @@ class ManifestOptions(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Options, Option
-        >>> from nextmv.cloud import ManifestOptions
+        >>> from nextmv import ManifestOptions
         >>> sdk_options = Options(Option("max_vehicles", int, 5))
         >>> manifest_options = ManifestOptions.from_options(sdk_options)
         >>> manifest_options.items[0].name
@@ -696,10 +697,10 @@ class ManifestConfiguration(BaseModel):
     """
     Configuration for the decision model.
 
-    You can import the `ManifestConfiguration` class directly from `cloud`:
+    You can import the `ManifestConfiguration` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestConfiguration
+    from nextmv import ManifestConfiguration
     ```
 
     Parameters
@@ -709,7 +710,7 @@ class ManifestConfiguration(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestConfiguration, ManifestOptions, ManifestOption
+    >>> from nextmv import ManifestConfiguration, ManifestOptions, ManifestOption
     >>> model_config = ManifestConfiguration(
     ...     options=ManifestOptions(
     ...         items=[ManifestOption(name="debug_mode", option_type="bool", default=False)]
@@ -727,10 +728,10 @@ class Manifest(BaseModel):
     """
     Represents an app manifest (`app.yaml`) for Nextmv Cloud.
 
-    You can import the `Manifest` class directly from `cloud`:
+    You can import the `Manifest` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import Manifest
+    from nextmv import Manifest
     ```
 
     An application that runs on the Nextmv Platform must contain a file named
@@ -775,7 +776,7 @@ class Manifest(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import Manifest, ManifestRuntime, ManifestType
+    >>> from nextmv import Manifest, ManifestRuntime, ManifestType
     >>> manifest = Manifest(
     ...     files=["main.py", "model_logic/"],
     ...     runtime=ManifestRuntime.PYTHON,
@@ -894,7 +895,7 @@ class Manifest(BaseModel):
         type: python
         ```
 
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
         """
@@ -925,7 +926,7 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> manifest = Manifest(files=["solver.py"], type="python")
         >>> # manifest.to_yaml("./output_dir") # This would create ./output_dir/app.yaml
         """
@@ -948,7 +949,7 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import Manifest, ManifestConfiguration, ManifestOptions, ManifestOption
+        >>> from nextmv import Manifest, ManifestConfiguration, ManifestOptions, ManifestOption
         >>> manifest = Manifest(
         ...     files=["main.py"],
         ...     configuration=ManifestConfiguration(
@@ -1011,7 +1012,7 @@ class Manifest(BaseModel):
         Examples
         --------
         >>> from nextmv.model import ModelConfiguration, Options, Option
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> opts = Options(Option(name="vehicle_count", option_type=int, default=5))
         >>> mc = ModelConfiguration(name="vehicle_router", options=opts)
         >>> manifest = Manifest.from_model_configuration(mc)
@@ -1085,7 +1086,7 @@ class Manifest(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Options, Option
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> opts = Options(
         ...     Option(name="max_runtime", option_type=str, default="60s"),
         ...     Option(name="use_heuristic", option_type=bool, default=True)

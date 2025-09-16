@@ -36,10 +36,10 @@ import tempfile
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
-from nextmv.cloud.local.geojson_handler import handle_geojson_visual
-from nextmv.cloud.local.plotly_handler import handle_plotly_visual
-from nextmv.cloud.local.runner import calculate_files_size
 from nextmv.input import load
+from nextmv.local.geojson_handler import handle_geojson_visual
+from nextmv.local.plotly_handler import handle_plotly_visual
+from nextmv.local.runner import calculate_files_size
 from nextmv.output import Asset, VisualSchema
 
 ASSETS_KEY = "assets"

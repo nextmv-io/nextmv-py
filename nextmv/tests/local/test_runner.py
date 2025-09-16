@@ -1,5 +1,5 @@
 """
-Unit tests for the nextmv.cloud.local.runner module.
+Unit tests for the nextmv.local.runner module.
 """
 
 import json
@@ -9,8 +9,8 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from nextmv.cloud.local.runner import new_run, record_input, run
-from nextmv.cloud.manifest import Manifest, ManifestRuntime
+from nextmv.local.runner import new_run, record_input, run
+from nextmv.manifest import Manifest, ManifestRuntime
 
 
 class TestLocalRunner(unittest.TestCase):
@@ -228,8 +228,8 @@ print(json.dumps(output))
         inputs_dir = os.path.join(run_dir, "inputs")
         self.assertTrue(os.path.exists(inputs_dir))
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_function_execution(self, mock_safe_id, mock_popen):
         """Test the main run function execution flow."""
         # Setup mocks
@@ -294,8 +294,8 @@ print(json.dumps(output))
         self.assertEqual(stdin_json["options"], options)
         self.assertEqual(stdin_json["run_config"], run_config)
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_with_inputs_dir_path(self, mock_safe_id, mock_popen):
         """Test run function with inputs directory path."""
         mock_safe_id.return_value = "test-run-id-2"
@@ -327,8 +327,8 @@ print(json.dumps(output))
 
         self.assertEqual(stdin_json["inputs_dir_path"], os.path.abspath(test_inputs_dir))
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_with_no_inputs_dir_path(self, mock_safe_id, mock_popen):
         """Test run function when inputs_dir_path is None."""
         mock_safe_id.return_value = "test-run-id-3"
@@ -356,8 +356,8 @@ print(json.dumps(output))
 
         self.assertIsNone(stdin_json["inputs_dir_path"])
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_subprocess_configuration(self, mock_safe_id, mock_popen):
         """Test that subprocess is configured correctly for detached execution."""
         mock_safe_id.return_value = "test-run-id-4"

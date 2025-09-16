@@ -1,4 +1,5 @@
-"""This module contains definitions for an app run.
+"""
+This module contains definitions for an app run.
 
 Classes
 -------
@@ -50,19 +51,19 @@ from pydantic import AliasChoices, Field
 
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
-from nextmv.cloud.status import Status, StatusV2
 from nextmv.input import Input, InputFormat
 from nextmv.output import Output, OutputFormat
+from nextmv.status import Status, StatusV2
 
 
 def run_duration(start: Union[datetime, float], end: Union[datetime, float]) -> int:
     """
     Calculate the duration of a run in milliseconds.
 
-    You can import the `run_duration` function directly from `cloud`:
+    You can import the `run_duration` function directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import run_duration
+    from nextmv import run_duration
     ```
 
     Parameters
@@ -119,7 +120,7 @@ class FormatInput(BaseModel):
     You can import the `FormatInput` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import FormatInput
+    from nextmv import FormatInput
     ```
 
     Parameters
@@ -143,7 +144,7 @@ class FormatOutput(BaseModel):
     You can import the `FormatOutput` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import FormatOutput
+    from nextmv import FormatOutput
     ```
 
     Parameters
@@ -167,7 +168,7 @@ class Format(BaseModel):
     You can import the `Format` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import Format
+    from nextmv import Format
     ```
 
     Parameters
@@ -196,7 +197,7 @@ class Metadata(BaseModel):
     You can import the `Metadata` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import Metadata
+    from nextmv import Metadata
     ```
 
     Parameters
@@ -255,7 +256,7 @@ class RunInformation(BaseModel):
     You can import the `RunInformation` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunInformation
+    from nextmv import RunInformation
     ```
 
     Parameters
@@ -311,7 +312,7 @@ class ErrorLog(BaseModel):
     You can import the `ErrorLog` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import ErrorLog
+    from nextmv import ErrorLog
     ```
 
     Parameters
@@ -339,7 +340,7 @@ class RunResult(RunInformation):
     You can import the `RunResult` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunResult
+    from nextmv import RunResult
     ```
 
     Parameters
@@ -365,7 +366,7 @@ class RunLog(BaseModel):
     You can import the `RunLog` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunLog
+    from nextmv import RunLog
     ```
 
     Parameters
@@ -385,7 +386,7 @@ class RunType(str, Enum):
     You can import the `RunType` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunType
+    from nextmv import RunType
     ```
 
     Parameters
@@ -414,7 +415,7 @@ class RunTypeConfiguration(BaseModel):
     You can import the `RunTypeConfiguration` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunTypeConfiguration
+    from nextmv import RunTypeConfiguration
     ```
 
     Parameters
@@ -445,7 +446,7 @@ class RunQueuing(BaseModel):
     You can import the `RunQueuing` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunQueuing
+    from nextmv import RunQueuing
     ```
 
     Parameters
@@ -494,7 +495,7 @@ class RunConfiguration(BaseModel):
     You can import the `RunConfiguration` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import RunConfiguration
+    from nextmv import RunConfiguration
     ```
 
     Parameters
@@ -581,7 +582,7 @@ class ExternalRunResult(BaseModel):
     You can import the `ExternalRunResult` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import ExternalRunResult
+    from nextmv import ExternalRunResult
     ```
 
     Parameters
@@ -631,7 +632,7 @@ class TrackedRunStatus(str, Enum):
     You can import the `TrackedRunStatus` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import TrackedRunStatus
+    from nextmv import TrackedRunStatus
     ```
 
     Parameters
@@ -656,7 +657,7 @@ class TrackedRun:
     You can import the `TrackedRun` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import TrackedRun
+    from nextmv import TrackedRun
     ```
 
     Parameters
