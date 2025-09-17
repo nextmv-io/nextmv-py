@@ -11,6 +11,8 @@ new_run
     Function to initialize a new run.
 record_input
     Function to write the input to the appropriate location.
+calculate_files_size
+    Function to calculate the total size of files in a directory.
 """
 
 import importlib.util
@@ -22,6 +24,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
+from nextmv.input import DEFAULT_INPUT_JSON_FILE, INPUTS_KEY
 from nextmv.manifest import Manifest
 from nextmv.run import Format, FormatInput, Metadata, RunInformation, StatusV2
 from nextmv.safe import safe_id
@@ -244,7 +247,7 @@ def record_input(
     """
 
     # Create the inputs directory.
-    run_inputs_dir = os.path.join(run_dir, "inputs")
+    run_inputs_dir = os.path.join(run_dir, INPUTS_KEY)
     os.makedirs(run_inputs_dir, exist_ok=True)
 
     if inputs_dir_path is not None and inputs_dir_path != "":
@@ -255,7 +258,7 @@ def record_input(
 
     elif isinstance(input_data, dict):
         # If no inputs_dir_path is provided, try a single JSON input.
-        with open(os.path.join(run_inputs_dir, "input.json"), "w") as f:
+        with open(os.path.join(run_inputs_dir, DEFAULT_INPUT_JSON_FILE), "w") as f:
             json.dump(input_data, f, indent=2)
 
     elif isinstance(input_data, str):

@@ -36,33 +36,23 @@ import tempfile
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
-from nextmv.input import InputFormat, load
+from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.local.runner import calculate_files_size
-from nextmv.output import Asset, OutputFormat, VisualSchema
+from nextmv.output import (
+    ASSETS_KEY,
+    DEFAULT_OUTPUT_JSON_FILE,
+    LOGS_FILE,
+    LOGS_KEY,
+    OUTPUTS_KEY,
+    SOLUTIONS_KEY,
+    STATISTICS_KEY,
+    Asset,
+    OutputFormat,
+    VisualSchema,
+)
 from nextmv.status import StatusV2
-
-ASSETS_KEY = "assets"
-"""
-Assets key constant used for identifying assets in the run output.
-"""
-STATISTICS_KEY = "statistics"
-"""
-Statistics key constant used for identifying statistics in the run output.
-"""
-SOLUTIONS_KEY = "solutions"
-"""
-Solutions key constant used for identifying solutions in the run output.
-"""
-OUTPUTS_KEY = "outputs"
-"""
-Outputs key constant used for identifying outputs in the run output.
-"""
-LOGS_FILE = "stderr.log"
-"""
-Constant used for identifying the file used for logging.
-"""
 
 
 def main() -> None:
@@ -122,7 +112,7 @@ def execute_run(
 
     # Create the logs dir to register whatever failure might happen during the
     # execution process.
-    logs_dir = os.path.join(run_dir, "logs")
+    logs_dir = os.path.join(run_dir, LOGS_KEY)
     os.makedirs(logs_dir, exist_ok=True)
 
     # The complete execution is wrapped to capture any errors.
@@ -271,7 +261,7 @@ def process_run_input(
         if input_data is not None:
             raise ValueError("input data must be None for multi-file format")
 
-        inputs_dir = os.path.join(temp_src, "inputs")
+        inputs_dir = os.path.join(temp_src, INPUTS_KEY)
         os.makedirs(inputs_dir, exist_ok=True)
 
         if inputs_dir_path is not None and inputs_dir_path != "":
@@ -394,7 +384,7 @@ def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]) -> 
         The result of the subprocess run.
     """
 
-    logs_dir = os.path.join(run_dir, "logs")
+    logs_dir = os.path.join(run_dir, LOGS_KEY)
     os.makedirs(logs_dir, exist_ok=True)
     with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
         f.write(result.stderr)
@@ -515,7 +505,7 @@ def process_run_solutions(
         # If we reach here, it means neither output nor outputs/solutions
         # exist, so we simply dump whatever is in stdout as solution.json.
         if stdout_output:
-            with open(os.path.join(solutions_dst, "solution.json"), "w") as f:
+            with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w") as f:
                 json.dump(stdout_output, f, indent=2)
 
         output_type = OutputFormat.JSON.value

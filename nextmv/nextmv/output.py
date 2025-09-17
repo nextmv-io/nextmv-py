@@ -40,6 +40,21 @@ Functions
 ---------
 write
     Write the output to the specified destination.
+
+Constants
+---------
+ASSETS_KEY
+    Assets key constant used for identifying assets in the run output.
+STATISTICS_KEY
+    Statistics key constant used for identifying statistics in the run output.
+SOLUTIONS_KEY
+    Solutions key constant used for identifying solutions in the run output.
+OUTPUTS_KEY
+    Outputs key constant used for identifying outputs in the run output.
+LOGS_FILE
+    Constant used for identifying the file used for logging.
+DEFAULT_OUTPUT_JSON_FILE
+    Constant for the default output JSON file name.
 """
 
 import copy
@@ -58,6 +73,35 @@ from nextmv.base_model import BaseModel
 from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
+
+ASSETS_KEY = "assets"
+"""
+Assets key constant used for identifying assets in the run output.
+"""
+STATISTICS_KEY = "statistics"
+"""
+Statistics key constant used for identifying statistics in the run output.
+"""
+SOLUTIONS_KEY = "solutions"
+"""
+Solutions key constant used for identifying solutions in the run output.
+"""
+OUTPUTS_KEY = "outputs"
+"""
+Outputs key constant used for identifying outputs in the run output.
+"""
+LOGS_KEY = "logs"
+"""
+Logs key constant used for identifying logs in the run output.
+"""
+LOGS_FILE = "stderr.log"
+"""
+Constant used for identifying the file used for logging.
+"""
+DEFAULT_OUTPUT_JSON_FILE = "solution.json"
+"""
+Constant for the default output JSON file name.
+"""
 
 
 class RunStatistics(BaseModel):
@@ -1076,8 +1120,8 @@ class Output:
         output_dict = {
             "options": options,
             "solution": self.solution if self.solution is not None else {},
-            "statistics": statistics,
-            "assets": assets,
+            STATISTICS_KEY: statistics,
+            ASSETS_KEY: assets,
         }
 
         # Add the auxiliary configurations to the output dictionary if they are
@@ -1236,8 +1280,8 @@ class LocalOutputWriter(OutputWriter):
         serialized = serialize_json(
             {
                 "options": output_dict.get("options", {}),
-                "statistics": output_dict.get("statistics", {}),
-                "assets": output_dict.get("assets", []),
+                STATISTICS_KEY: output_dict.get(STATISTICS_KEY, {}),
+                ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
             },
             json_configurations=json_configurations,
         )
@@ -1285,7 +1329,7 @@ class LocalOutputWriter(OutputWriter):
         ValueError
             If the path is an existing file instead of a directory.
         """
-        dir_path = "outputs"
+        dir_path = OUTPUTS_KEY
         if path is not None and path != "":
             if os.path.isfile(path):
                 raise ValueError(f"The path refers to an existing file: {path}")
@@ -1303,13 +1347,13 @@ class LocalOutputWriter(OutputWriter):
             parent_dir=dir_path,
             json_configurations=json_configurations,
             output_dict=output_dict,
-            element_key="statistics",
+            element_key=STATISTICS_KEY,
         )
         self._write_multi_file_element(
             parent_dir=dir_path,
             json_configurations=json_configurations,
             output_dict=output_dict,
-            element_key="assets",
+            element_key=ASSETS_KEY,
         )
         self._write_multi_file_solution(dir_path=dir_path, output=output)
 
@@ -1354,7 +1398,7 @@ class LocalOutputWriter(OutputWriter):
         if output.solution_files is None:
             return
 
-        solutions_dir = os.path.join(dir_path, "solutions")
+        solutions_dir = os.path.join(dir_path, SOLUTIONS_KEY)
 
         if not os.path.exists(solutions_dir):
             os.makedirs(solutions_dir)

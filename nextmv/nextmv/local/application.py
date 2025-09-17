@@ -33,13 +33,13 @@ from typing import Any, Optional, Union
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
-from nextmv.input import Input, InputFormat
+from nextmv.input import DEFAULT_INPUT_JSON_FILE, INPUTS_KEY, Input, InputFormat
 from nextmv.local.executor import LOGS_FILE
 from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.options import Options
-from nextmv.output import OutputFormat
+from nextmv.output import DEFAULT_OUTPUT_JSON_FILE, LOGS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import Format, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
 from nextmv.safe import safe_id
@@ -794,7 +794,7 @@ class Application:
             )
 
         runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        solutions_dir = os.path.join(runs_dir, run_id, "outputs", "solutions")
+        solutions_dir = os.path.join(runs_dir, run_id, OUTPUTS_KEY, SOLUTIONS_KEY)
 
         result = RunResult.from_dict(run_information.to_dict())
 
@@ -802,7 +802,7 @@ class Application:
             result.error_log = result.metadata.error
 
         if output_type == OutputFormat.JSON:
-            with open(os.path.join(solutions_dir, "solution.json")) as f:
+            with open(os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)) as f:
                 result.output = json.load(f)
         elif output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
             shutil.copytree(solutions_dir, output_dir_path, dirs_exist_ok=True)
@@ -1002,7 +1002,7 @@ class Application:
 
         # Read the logs of the run and place each line as an element in a list
         run_dir = os.path.join(runs_dir, run_id)
-        with open(os.path.join(run_dir, "logs", LOGS_FILE)) as f:
+        with open(os.path.join(run_dir, LOGS_KEY, LOGS_FILE)) as f:
             stderr_logs = f.readlines()
 
         # Create the tracked run object and start configuring it.
@@ -1016,9 +1016,9 @@ class Application:
         )
 
         # Resolve the input according to its type.
-        inputs_path = os.path.join(run_dir, "inputs")
+        inputs_path = os.path.join(run_dir, INPUTS_KEY)
         if input_type == InputFormat.JSON:
-            with open(os.path.join(inputs_path, "input.json")) as f:
+            with open(os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)) as f:
                 tracked_run.input = json.load(f)
         elif input_type == InputFormat.TEXT:
             with open(os.path.join(inputs_path, "input")) as f:
@@ -1030,7 +1030,7 @@ class Application:
         if run_result.metadata.format.format_output.output_type == OutputFormat.JSON:
             tracked_run.output = run_result.output
         else:
-            tracked_run.output_dir_path = os.path.join(run_dir, "outputs", "solutions")
+            tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
 
         # Actually sync the run by tracking it remotely on Nextmv Cloud.
         configuration = RunConfiguration(
@@ -1099,12 +1099,12 @@ class Application:
 
     def __validate_inputs(self, run_dir: str, input_type: InputFormat) -> bool:
         """Validate that the inputs directory and files exist for the given input type."""
-        inputs_path = os.path.join(run_dir, "inputs")
+        inputs_path = os.path.join(run_dir, INPUTS_KEY)
         if not os.path.exists(inputs_path):
             return False
 
         if input_type == InputFormat.JSON:
-            input_file = os.path.join(inputs_path, "input.json")
+            input_file = os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)
 
             return os.path.isfile(input_file)
 
@@ -1118,16 +1118,16 @@ class Application:
 
     def __validate_outputs(self, run_dir: str, output_type: OutputFormat) -> bool:
         """Validate that the outputs directory and files exist for the given output type."""
-        outputs_dir = os.path.join(run_dir, "outputs")
+        outputs_dir = os.path.join(run_dir, OUTPUTS_KEY)
         if not os.path.exists(outputs_dir):
             return False
 
-        solutions_dir = os.path.join(outputs_dir, "solutions")
+        solutions_dir = os.path.join(outputs_dir, SOLUTIONS_KEY)
         if not os.path.exists(solutions_dir):
             return False
 
         if output_type == OutputFormat.JSON:
-            solution_file = os.path.join(solutions_dir, "solution.json")
+            solution_file = os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)
 
             return os.path.isfile(solution_file)
 
@@ -1136,7 +1136,7 @@ class Application:
 
     def __validate_logs(self, run_dir: str) -> bool:
         """Validate that the logs directory and file exist."""
-        logs_dir = os.path.join(run_dir, "logs")
+        logs_dir = os.path.join(run_dir, LOGS_KEY)
         if not os.path.exists(logs_dir):
             return False
 
