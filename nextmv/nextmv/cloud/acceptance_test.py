@@ -46,6 +46,7 @@ from enum import Enum
 from typing import Optional
 
 from nextmv.base_model import BaseModel
+from nextmv.cloud.batch_experiment import ExperimentStatus
 
 
 class MetricType(str, Enum):
@@ -247,56 +248,6 @@ class ToleranceType(str, Enum):
     """Absolute tolerance type."""
     relative = "relative"
     """Relative tolerance type."""
-
-
-class ExperimentStatus(str, Enum):
-    """
-    Status of an acceptance test experiment.
-
-    You can import the `ExperimentStatus` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import ExperimentStatus
-    ```
-
-    This enumeration defines the different possible statuses of an experiment
-    underlying an acceptance test.
-
-    Attributes
-    ----------
-    started : str
-        The experiment has started.
-    completed : str
-        The experiment was completed successfully.
-    failed : str
-        The experiment failed.
-    draft : str
-        The experiment is a draft.
-    canceled : str
-        The experiment was canceled.
-    unknown : str
-        The experiment status is unknown.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import ExperimentStatus
-    >>> status = ExperimentStatus.completed
-    >>> status
-    <ExperimentStatus.completed: 'completed'>
-    """
-
-    started = "started"
-    """The experiment has started."""
-    completed = "completed"
-    """The experiment was completed."""
-    failed = "failed"
-    """The experiment failed."""
-    draft = "draft"
-    """The experiment is a draft."""
-    canceled = "canceled"
-    """The experiment was canceled."""
-    unknown = "unknown"
-    """The experiment status is unknown."""
 
 
 class MetricTolerance(BaseModel):

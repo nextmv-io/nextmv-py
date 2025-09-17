@@ -3,6 +3,8 @@ This module contains definitions for batch experiments.
 
 Classes
 -------
+ExperimentStatus
+    Enum representing the status of an experiment.
 BatchExperimentInformation
     Base class for all batch experiment models containing common information.
 BatchExperiment
@@ -14,10 +16,76 @@ BatchExperimentMetadata
 """
 
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.input_set import InputSet
+
+
+class ExperimentStatus(str, Enum):
+    """
+    Status of an experiment.
+
+    You can import the `ExperimentStatus` class directly from `cloud`:
+
+    ```python from nextmv.cloud import ExperimentStatus ```
+
+    This enum represents the comprehensive set of possible states for an
+    experiment in Nextmv Cloud.
+
+    Attributes
+    ----------
+    STARTED : str
+        Experiment started.
+    COMPLETED : str
+        Experiment completed.
+    FAILED : str
+        Experiment failed.
+    DRAFT : str
+        Experiment is a draft.
+    CANCELED : str
+        Experiment was canceled.
+    STOPPING : str
+        Experiment is stopping.
+    DELETING : str
+        Experiment is being deleted.
+    DELETE_FAILED : str
+        Experiment deletion failed.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ExperimentStatus
+    >>> status = ExperimentStatus.STARTED
+    >>> print(f"The status is: {status.value}")
+    The status is: started
+
+    >>> if status == ExperimentStatus.COMPLETED:
+    ...     print("Processing complete.")
+    ... elif status in [ExperimentStatus.STARTED, ExperimentStatus.STOPPING]:
+    ...     print("Processing in progress.")
+    ... else:
+    ...     print("Processing has not started or has ended with issues.")
+    Processing in progress.
+
+    """
+
+    STARTED = "started"
+    """Batch experiment started."""
+    COMPLETED = "completed"
+    """Batch experiment completed."""
+    FAILED = "failed"
+    """Batch experiment failed."""
+    DRAFT = "draft"
+    """Batch experiment is a draft"""
+    CANCELED = "canceled"
+    """Batch experiment was canceled."""
+    STOPPING = "stopping"
+    """Batch experiment is stopping."""
+    DELETING = "deleting"
+    """Batch experiment is being deleted."""
+    DELETE_FAILED = "delete-failed"
+    """Batch experiment deletion failed."""
 
 
 class BatchExperimentInformation(BaseModel):
@@ -83,7 +151,7 @@ class BatchExperimentInformation(BaseModel):
     updated_at: datetime
     """Last update date of the batch experiment."""
 
-    status: Optional[str] = None
+    status: Optional[ExperimentStatus] = None
     """Status of the batch experiment."""
     description: Optional[str] = None
     """Description of the batch experiment."""
