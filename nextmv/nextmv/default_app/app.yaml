@@ -9,3 +9,5 @@ python:
 # (e.g.: configs/*.json) is supported.
 files:
   - src/
+
+entrypoint: src/main.py
