@@ -1,5 +1,5 @@
 """
-Unit tests for the nextmv.cloud.local.executor module.
+Unit tests for the nextmv.local.executor module.
 """
 
 import json
@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from nextmv.cloud.local.executor import (
+from nextmv.local.executor import (
     ASSETS_KEY,
     OUTPUTS_KEY,
     SOLUTIONS_KEY,
@@ -39,15 +39,23 @@ class TestLocalExecutor(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        shutil.rmtree(self.test_dir)
 
-    @patch("nextmv.cloud.local.executor.load")
-    @patch("nextmv.cloud.local.executor.execute_run")
+    def _create_metadata_file(self, run_id="test_run_id"):
+        """Helper method to create a metadata file with proper structure."""
+        metadata_file = os.path.join(self.run_dir, f"{run_id}.json")
+        with open(metadata_file, "w") as f:
+            metadata = {"metadata": {"created_at": "2023-01-01T00:00:00Z", "format": {"output": {"type": "json"}}}}
+            json.dump(metadata, f)
+
+    @patch("nextmv.local.executor.load")
+    @patch("nextmv.local.executor.execute_run")
     def test_main_function(self, mock_execute_run, mock_load):
         """Test the main function loads input and calls execute_run."""
         # Setup mock input
         mock_input = Mock()
         mock_input.data = {
+            "run_id": "test_run_id",
             "src": "/test/src",
             "manifest_entrypoint": "main.py",
             "run_dir": "/test/run_dir",
@@ -66,6 +74,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Verify execute_run was called with correct parameters
         mock_execute_run.assert_called_once_with(
+            run_id="test_run_id",
             src="/test/src",
             manifest_entrypoint="main.py",
             run_dir="/test/run_dir",
@@ -344,7 +353,10 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {"solution": {"value": 300}}
 
-        process_run_solutions(temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        # Create metadata file that process_run_solutions expects
+        self._create_metadata_file()
+
+        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
 
         # Check that solutions directory was created and files copied
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -366,7 +378,10 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {"solution": {"value": 300}}
 
-        process_run_solutions(temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        # Create metadata file that process_run_solutions expects
+        self._create_metadata_file()
+
+        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
 
         # Check that solutions directory was created and files copied
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -381,7 +396,10 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {"solution": {"optimal_value": 42}, "statistics": {"duration": 1.5}}
 
-        process_run_solutions(temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        # Create metadata file that process_run_solutions expects
+        self._create_metadata_file()
+
+        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
 
         # Check that solution.json was created
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -403,7 +421,10 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {}
 
-        process_run_solutions(temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        # Create metadata file that process_run_solutions expects
+        self._create_metadata_file()
+
+        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
 
         # Check that solutions directory was created
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -413,13 +434,22 @@ class TestLocalExecutor(unittest.TestCase):
         solution_file = os.path.join(solutions_dst, "solution.json")
         self.assertFalse(os.path.exists(solution_file))
 
-    @patch("nextmv.cloud.local.executor.process_run_output")
-    @patch("nextmv.cloud.local.executor.process_run_input")
-    @patch("nextmv.cloud.local.executor.subprocess.run")
-    @patch("nextmv.cloud.local.executor.shutil.copytree")
-    @patch("nextmv.cloud.local.executor.tempfile.TemporaryDirectory")
+    @patch("nextmv.local.executor.process_run_output")
+    @patch("nextmv.local.executor.process_run_input")
+    @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data='{"metadata": {}}')
+    @patch("nextmv.local.executor.subprocess.run")
+    @patch("nextmv.local.executor.shutil.copytree")
+    @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
+    @patch("nextmv.local.executor.os.makedirs")
     def test_execute_run_full_flow(
-        self, mock_temp_dir, mock_copytree, mock_subprocess_run, mock_process_input, mock_process_output
+        self,
+        mock_makedirs,
+        mock_temp_dir,
+        mock_copytree,
+        mock_subprocess_run,
+        mock_open,
+        mock_process_input,
+        mock_process_output,
     ):
         """Test the complete execute_run function flow."""
         # Setup mocks
@@ -438,6 +468,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Call execute_run
         execute_run(
+            run_id="test_run_id",
             src="/test/src",
             manifest_entrypoint="main.py",
             run_dir="/test/run_dir",
@@ -462,7 +493,9 @@ class TestLocalExecutor(unittest.TestCase):
         self.assertIn("10s", call_args[0][0])
 
         # Verify process_run_output was called
-        mock_process_output.assert_called_once_with(temp_src=temp_src, result=mock_result, run_dir="/test/run_dir")
+        mock_process_output.assert_called_once_with(
+            run_id="test_run_id", temp_src=temp_src, result=mock_result, run_dir="/test/run_dir"
+        )
 
     def test_process_run_output_with_valid_json(self):
         """Test process_run_output with valid JSON stdout."""
@@ -474,16 +507,19 @@ class TestLocalExecutor(unittest.TestCase):
         mock_result.stdout = '{"solution": {"value": 42}, "statistics": {"duration": 1.5}}'
         mock_result.stderr = "Processing completed"
 
+        # Create metadata file that process_run_output expects
+        self._create_metadata_file()
+
         with (
-            patch("nextmv.cloud.local.executor.process_run_logs") as mock_logs,
-            patch("nextmv.cloud.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.cloud.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.cloud.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor.process_run_logs") as mock_logs,
+            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor.process_run_assets") as mock_assets,
+            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
-            process_run_output(self.temp_src, mock_result, self.run_dir)
+            process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
 
             # Verify all processing functions were called
-            mock_logs.assert_called_once_with(self.run_dir, mock_result)
+            mock_logs.assert_called_once_with(run_dir=self.run_dir, result=mock_result)
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
@@ -498,22 +534,25 @@ class TestLocalExecutor(unittest.TestCase):
         mock_result.stdout = ""
         mock_result.stderr = "No output"
 
+        # Create metadata file that process_run_output expects
+        self._create_metadata_file()
+
         with (
-            patch("nextmv.cloud.local.executor.process_run_logs") as mock_logs,
-            patch("nextmv.cloud.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.cloud.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.cloud.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor.process_run_logs") as mock_logs,
+            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor.process_run_assets") as mock_assets,
+            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
-            process_run_output(self.temp_src, mock_result, self.run_dir)
+            process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
 
             # Verify all processing functions were called with empty dict
-            mock_logs.assert_called_once_with(self.run_dir, mock_result)
+            mock_logs.assert_called_once_with(run_dir=self.run_dir, result=mock_result)
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
 
             # Get the stdout_output that was passed to the functions
-            stdout_output = mock_stats.call_args[0][2]  # Third argument
+            stdout_output = mock_stats.call_args.kwargs["stdout_output"]
             self.assertEqual(stdout_output, "")
 
 

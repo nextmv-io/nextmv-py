@@ -1,6 +1,6 @@
 import unittest
 
-from nextmv.cloud.manifest import (
+from nextmv.manifest import (
     Manifest,
     ManifestOption,
     ManifestOptions,

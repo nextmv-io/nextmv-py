@@ -1,16 +1,17 @@
 """
-Unit tests for the nextmv.cloud.local.runner module.
+Unit tests for the nextmv.local.runner module.
 """
 
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from nextmv.cloud.local.runner import new_run, record_input, run
-from nextmv.cloud.manifest import Manifest, ManifestRuntime
+from nextmv.local.runner import new_run, record_input, run
+from nextmv.manifest import Manifest, ManifestRuntime
 
 
 class TestLocalRunner(unittest.TestCase):
@@ -65,8 +66,9 @@ print(json.dumps(output))
     def test_new_run_creates_directory_structure(self):
         """Test that new_run creates the proper directory structure."""
         run_id = "test-run-123"
+        run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
 
-        result_dir = new_run(self.test_src, run_id)
+        result_dir = new_run(app_id="sample-app", src=self.test_src, run_id=run_id, run_config=run_config)
 
         expected_dir = os.path.join(self.test_src, ".nextmv", "runs", run_id)
         self.assertEqual(result_dir, expected_dir)
@@ -76,12 +78,13 @@ print(json.dumps(output))
     def test_new_run_creates_runs_dir_if_not_exists(self):
         """Test that new_run creates the runs directory if it doesn't exist."""
         run_id = "test-run-456"
+        run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
 
         # Ensure .nextmv/runs doesn't exist
         runs_dir = os.path.join(self.test_src, ".nextmv", "runs")
         self.assertFalse(os.path.exists(runs_dir))
 
-        result_dir = new_run(self.test_src, run_id)
+        result_dir = new_run(app_id="sample-app", src=self.test_src, run_id=run_id, run_config=run_config)
 
         self.assertTrue(os.path.exists(runs_dir))
         self.assertTrue(os.path.exists(result_dir))
@@ -93,7 +96,12 @@ print(json.dumps(output))
 
         input_data = {"test": "data", "value": 42}
 
-        record_input(run_dir, input_data=input_data)
+        # Create minimal metadata file that calculate_files_size expects
+        metadata_file = os.path.join(run_dir, "test_run.json")
+        with open(metadata_file, "w") as f:
+            json.dump({"metadata": {}}, f)
+
+        record_input(run_dir, run_id="test_run", input_data=input_data)
 
         # Check that inputs directory was created
         inputs_dir = os.path.join(run_dir, "inputs")
@@ -115,7 +123,12 @@ print(json.dumps(output))
 
         input_data = "test string input"
 
-        record_input(run_dir, input_data=input_data)
+        # Create minimal metadata file that calculate_files_size expects
+        metadata_file = os.path.join(run_dir, "test_run.json")
+        with open(metadata_file, "w") as f:
+            json.dump({"metadata": {}}, f)
+
+        record_input(run_dir, run_id="test_run", input_data=input_data)
 
         # Check that inputs directory was created
         inputs_dir = os.path.join(run_dir, "inputs")
@@ -151,7 +164,12 @@ print(json.dumps(output))
         with open(os.path.join(subdir, "file3.json"), "w") as f:
             json.dump({"test": "data"}, f)
 
-        record_input(run_dir, inputs_dir_path=test_inputs_dir)
+        # Create minimal metadata file that calculate_files_size expects
+        metadata_file = os.path.join(run_dir, "test_run.json")
+        with open(metadata_file, "w") as f:
+            json.dump({"metadata": {}}, f)
+
+        record_input(run_dir, run_id="test_run", inputs_dir_path=test_inputs_dir)
 
         # Check that inputs directory was created
         inputs_dir = os.path.join(run_dir, "inputs")
@@ -179,7 +197,12 @@ print(json.dumps(output))
 
         input_data = {"should": "be ignored"}
 
-        record_input(run_dir, input_data=input_data, inputs_dir_path=test_inputs_dir)
+        # Create minimal metadata file that calculate_files_size expects
+        metadata_file = os.path.join(run_dir, "test_run.json")
+        with open(metadata_file, "w") as f:
+            json.dump({"metadata": {}}, f)
+
+        record_input(run_dir, run_id="test_run", input_data=input_data, inputs_dir_path=test_inputs_dir)
 
         inputs_dir = os.path.join(run_dir, "inputs")
 
@@ -194,15 +217,20 @@ print(json.dumps(output))
 
         nonexistent_dir = os.path.join(self.test_dir, "nonexistent")
 
+        # Create minimal metadata file that calculate_files_size expects
+        metadata_file = os.path.join(run_dir, "test_run.json")
+        with open(metadata_file, "w") as f:
+            json.dump({"metadata": {}}, f)
+
         # Should not raise an exception
-        record_input(run_dir, inputs_dir_path=nonexistent_dir)
+        record_input(run_dir, run_id="test_run", inputs_dir_path=nonexistent_dir)
 
         # Inputs directory should still be created
         inputs_dir = os.path.join(run_dir, "inputs")
         self.assertTrue(os.path.exists(inputs_dir))
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_function_execution(self, mock_safe_id, mock_popen):
         """Test the main run function execution flow."""
         # Setup mocks
@@ -223,7 +251,12 @@ print(json.dumps(output))
         options = {"duration": "10s"}
 
         result = run(
-            src=self.test_src, manifest=manifest, run_config=run_config, input_data=input_data, options=options
+            app_id="sample-app",
+            src=self.test_src,
+            manifest=manifest,
+            run_config=run_config,
+            input_data=input_data,
+            options=options,
         )
 
         # Verify run ID was generated
@@ -235,7 +268,7 @@ print(json.dumps(output))
         popen_args = mock_popen.call_args
 
         # Check the command
-        self.assertEqual(popen_args[0][0], ["python", "executor.py"])
+        self.assertEqual(popen_args[0][0], [sys.executable, "executor.py"])
 
         # Check that stdin was written to
         mock_process.stdin.write.assert_called_once()
@@ -262,8 +295,8 @@ print(json.dumps(output))
         self.assertEqual(stdin_json["options"], options)
         self.assertEqual(stdin_json["run_config"], run_config)
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_with_inputs_dir_path(self, mock_safe_id, mock_popen):
         """Test run function with inputs directory path."""
         mock_safe_id.return_value = "test-run-id-2"
@@ -281,7 +314,13 @@ print(json.dumps(output))
         test_inputs_dir = os.path.join(self.test_dir, "test_inputs")
         os.makedirs(test_inputs_dir)
 
-        result = run(src=self.test_src, manifest=manifest, run_config=run_config, inputs_dir_path=test_inputs_dir)
+        result = run(
+            app_id="sample-app",
+            src=self.test_src,
+            manifest=manifest,
+            run_config=run_config,
+            inputs_dir_path=test_inputs_dir,
+        )
 
         self.assertEqual(result, "test-run-id-2")  # Verify the input JSON included the absolute path
         stdin_data = mock_process.stdin.write.call_args[0][0]
@@ -289,8 +328,8 @@ print(json.dumps(output))
 
         self.assertEqual(stdin_json["inputs_dir_path"], os.path.abspath(test_inputs_dir))
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_with_no_inputs_dir_path(self, mock_safe_id, mock_popen):
         """Test run function when inputs_dir_path is None."""
         mock_safe_id.return_value = "test-run-id-3"
@@ -304,7 +343,13 @@ print(json.dumps(output))
 
         run_config = {"format": {"input": {"type": "json"}}}
 
-        run(src=self.test_src, manifest=manifest, run_config=run_config, input_data={"test": "data"})
+        run(
+            app_id="sample-app",
+            src=self.test_src,
+            manifest=manifest,
+            run_config=run_config,
+            input_data={"test": "data"},
+        )
 
         # Verify the input JSON has None for inputs_dir_path
         stdin_data = mock_process.stdin.write.call_args[0][0]
@@ -312,8 +357,8 @@ print(json.dumps(output))
 
         self.assertIsNone(stdin_json["inputs_dir_path"])
 
-    @patch("nextmv.cloud.local.runner.subprocess.Popen")
-    @patch("nextmv.cloud.local.runner.safe_id")
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
     def test_run_subprocess_configuration(self, mock_safe_id, mock_popen):
         """Test that subprocess is configured correctly for detached execution."""
         mock_safe_id.return_value = "test-run-id-4"
@@ -327,7 +372,13 @@ print(json.dumps(output))
 
         run_config = {"format": {"input": {"type": "json"}}}
 
-        run(src=self.test_src, manifest=manifest, run_config=run_config, input_data={"test": "data"})
+        run(
+            app_id="sample-app",
+            src=self.test_src,
+            manifest=manifest,
+            run_config=run_config,
+            input_data={"test": "data"},
+        )
 
         # Verify subprocess configuration
         popen_kwargs = mock_popen.call_args[1]
