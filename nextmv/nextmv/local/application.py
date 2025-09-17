@@ -34,6 +34,7 @@ from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.input import Input, InputFormat
+from nextmv.local.executor import LOGS_FILE
 from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest
@@ -712,45 +713,39 @@ class Application:
         # Create a temp dir to store the outputs that are written by default to
         # ".". During the sync process, we don't need to keep these outputs, so
         # we can use a temp dir that will be deleted after the sync is done.
-        temp_results_dir = tempfile.mkdtemp(prefix="nextmv-sync-run-")
+        with tempfile.mkdtemp(prefix="nextmv-sync-run-") as temp_results_dir:
+            runs_dir = os.path.join(self.src, ".nextmv", "runs")
+            if run_ids is None:
+                # If runs are not specified, by default we sync all local runs that
+                # can be found.
+                dirs = os.listdir(runs_dir)
+                run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
 
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        if run_ids is None:
-            # If runs are not specified, by default we sync all local runs that
-            # can be found.
-            dirs = os.listdir(runs_dir)
-            run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
+                if verbose:
+                    log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
+            else:
+                if verbose:
+                    log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
+
+            total = 0
+            for run_id in run_ids:
+                synced = self.__sync_run(
+                    target=target,
+                    run_id=run_id,
+                    runs_dir=runs_dir,
+                    temp_dir=temp_results_dir,
+                    instance_id=instance_id,
+                    verbose=verbose,
+                )
+                if synced:
+                    total += 1
 
             if verbose:
-                log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
-        else:
-            if verbose:
-                log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
-
-        total = 0
-        for run_id in run_ids:
-            synced = self.__sync_run(
-                target=target,
-                run_id=run_id,
-                runs_dir=runs_dir,
-                temp_dir=temp_results_dir,
-                instance_id=instance_id,
-                verbose=verbose,
-            )
-            if synced:
-                total += 1
-
-        if verbose:
-            log(
-                f"🚀 Process completed, synced local application `{self.src}` to "
-                f"Nextmv Cloud application `{target.id}`: "
-                f"{total}/{len(run_ids)} runs."
-            )
-
-        try:
-            shutil.rmtree(temp_results_dir)
-        except OSError as e:
-            raise Exception(f"error deleting temp output directory: {e}") from e
+                log(
+                    f"🚀 Process completed, synced local application `{self.src}` to "
+                    f"Nextmv Cloud application `{target.id}`: "
+                    f"{total}/{len(run_ids)} runs."
+                )
 
     def __run_result(
         self,
@@ -807,7 +802,8 @@ class Application:
             result.error_log = result.metadata.error
 
         if output_type == OutputFormat.JSON:
-            result.output = json.load(open(os.path.join(solutions_dir, "solution.json")))
+            with open(os.path.join(solutions_dir, "solution.json")) as f:
+                result.output = json.load(f)
         elif output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
             shutil.copytree(solutions_dir, output_dir_path, dirs_exist_ok=True)
         else:
@@ -993,13 +989,20 @@ class Application:
 
             return False
 
+        # Check that it is a valid run with inputs, outputs, logs, etc.
+        if not self.__valid_run_result(run_result, runs_dir, run_id):
+            if verbose:
+                log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs, outputs or logs).")
+
+            return False
+
         status = TrackedRunStatus.SUCCEEDED
         if run_result.metadata.status_v2 != StatusV2.succeeded:
             status = TrackedRunStatus.FAILED
 
         # Read the logs of the run and place each line as an element in a list
         run_dir = os.path.join(runs_dir, run_id)
-        with open(os.path.join(run_dir, "logs", "stderr.log")) as f:
+        with open(os.path.join(run_dir, "logs", LOGS_FILE)) as f:
             stderr_logs = f.readlines()
 
         # Create the tracked run object and start configuring it.
@@ -1015,9 +1018,11 @@ class Application:
         # Resolve the input according to its type.
         inputs_path = os.path.join(run_dir, "inputs")
         if input_type == InputFormat.JSON:
-            tracked_run.input = json.load(open(os.path.join(inputs_path, "input.json")))
+            with open(os.path.join(inputs_path, "input.json")) as f:
+                tracked_run.input = json.load(f)
         elif input_type == InputFormat.TEXT:
-            tracked_run.input = open(os.path.join(inputs_path, "input")).read()
+            with open(os.path.join(inputs_path, "input")) as f:
+                tracked_run.input = f.read()
         else:
             tracked_run.input_dir_path = inputs_path
 
@@ -1050,3 +1055,91 @@ class Application:
             log(f"✅ Synced local run `{run_id}` as remote run `{tracked_id}`.")
 
         return True
+
+    def __valid_run_result(self, run_result: RunResult, runs_dir: str, run_id: str) -> bool:
+        """
+        Validate that a run result has all required files and directories.
+
+        This method checks that a local run has the expected directory structure
+        and files, including inputs, outputs, and logs.
+
+        Parameters
+        ----------
+        run_result : RunResult
+            The run result to validate.
+        runs_dir : str
+            Path to the runs directory.
+        run_id : str
+            ID of the run to validate.
+
+        Returns
+        -------
+        bool
+            True if the run is valid, False otherwise.
+        """
+        run_dir = os.path.join(runs_dir, run_id)
+
+        # Check that the run directory exists
+        if not os.path.exists(run_dir):
+            return False
+
+        # Validate inputs
+        if not self.__validate_inputs(run_dir, run_result.metadata.format.format_input.input_type):
+            return False
+
+        # Validate outputs
+        if not self.__validate_outputs(run_dir, run_result.metadata.format.format_output.output_type):
+            return False
+
+        # Validate logs
+        if not self.__validate_logs(run_dir):
+            return False
+
+        return True
+
+    def __validate_inputs(self, run_dir: str, input_type: InputFormat) -> bool:
+        """Validate that the inputs directory and files exist for the given input type."""
+        inputs_path = os.path.join(run_dir, "inputs")
+        if not os.path.exists(inputs_path):
+            return False
+
+        if input_type == InputFormat.JSON:
+            input_file = os.path.join(inputs_path, "input.json")
+
+            return os.path.isfile(input_file)
+
+        if input_type == InputFormat.TEXT:
+            input_file = os.path.join(inputs_path, "input")
+
+            return os.path.isfile(input_file)
+
+        # For CSV_ARCHIVE and MULTI_FILE, inputs_path should be a directory
+        return os.path.isdir(inputs_path)
+
+    def __validate_outputs(self, run_dir: str, output_type: OutputFormat) -> bool:
+        """Validate that the outputs directory and files exist for the given output type."""
+        outputs_dir = os.path.join(run_dir, "outputs")
+        if not os.path.exists(outputs_dir):
+            return False
+
+        solutions_dir = os.path.join(outputs_dir, "solutions")
+        if not os.path.exists(solutions_dir):
+            return False
+
+        if output_type == OutputFormat.JSON:
+            solution_file = os.path.join(solutions_dir, "solution.json")
+
+            return os.path.isfile(solution_file)
+
+        # For CSV_ARCHIVE and MULTI_FILE, solutions_dir should be a directory
+        return os.path.isdir(solutions_dir)
+
+    def __validate_logs(self, run_dir: str) -> bool:
+        """Validate that the logs directory and file exist."""
+        logs_dir = os.path.join(run_dir, "logs")
+        if not os.path.exists(logs_dir):
+            return False
+
+        logs_file = os.path.join(logs_dir, LOGS_FILE)
+
+        return os.path.isfile(logs_file)

@@ -117,7 +117,7 @@ class FormatInput(BaseModel):
     """
     Input format for a run configuration.
 
-    You can import the `FormatInput` class directly from `cloud`:
+    You can import the `FormatInput` class directly from `nextmv`:
 
     ```python
     from nextmv import FormatInput
@@ -127,6 +127,17 @@ class FormatInput(BaseModel):
     ----------
     input_type : InputFormat, optional
         Type of the input format. Defaults to `InputFormat.JSON`.
+
+    Examples
+    --------
+    >>> from nextmv import FormatInput, InputFormat
+    >>> format_input = FormatInput()
+    >>> format_input.input_type
+    <InputFormat.JSON: 'json'>
+
+    >>> format_input = FormatInput(input_type=InputFormat.TEXT)
+    >>> format_input.input_type
+    <InputFormat.TEXT: 'text'>
     """
 
     input_type: InputFormat = Field(
@@ -141,7 +152,7 @@ class FormatOutput(BaseModel):
     """
     Output format for a run configuration.
 
-    You can import the `FormatOutput` class directly from `cloud`:
+    You can import the `FormatOutput` class directly from `nextmv`:
 
     ```python
     from nextmv import FormatOutput
@@ -151,6 +162,17 @@ class FormatOutput(BaseModel):
     ----------
     output_type : OutputFormat, optional
         Type of the output format. Defaults to `OutputFormat.JSON`.
+
+    Examples
+    --------
+    >>> from nextmv import FormatOutput, OutputFormat
+    >>> format_output = FormatOutput()
+    >>> format_output.output_type
+    <OutputFormat.JSON: 'json'>
+
+    >>> format_output = FormatOutput(output_type=OutputFormat.CSV_ARCHIVE)
+    >>> format_output.output_type
+    <OutputFormat.CSV_ARCHIVE: 'csv_archive'>
     """
 
     output_type: OutputFormat = Field(
@@ -165,7 +187,7 @@ class Format(BaseModel):
     """
     Format for a run configuration.
 
-    You can import the `Format` class directly from `cloud`:
+    You can import the `Format` class directly from `nextmv`:
 
     ```python
     from nextmv import Format
@@ -175,6 +197,20 @@ class Format(BaseModel):
     ----------
     format_input : FormatInput
         Input format for the run configuration.
+    format_output : FormatOutput, optional
+        Output format for the run configuration. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import Format, FormatInput, FormatOutput, InputFormat, OutputFormat
+    >>> format_config = Format(
+    ...     format_input=FormatInput(input_type=InputFormat.JSON),
+    ...     format_output=FormatOutput(output_type=OutputFormat.JSON)
+    ... )
+    >>> format_config.format_input.input_type
+    <InputFormat.JSON: 'json'>
+    >>> format_config.format_output.output_type
+    <OutputFormat.JSON: 'json'>
     """
 
     format_input: FormatInput = Field(
@@ -194,7 +230,7 @@ class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
 
-    You can import the `Metadata` class directly from `cloud`:
+    You can import the `Metadata` class directly from `nextmv`:
 
     ```python
     from nextmv import Metadata
@@ -253,7 +289,7 @@ class RunInformation(BaseModel):
     """
     Information of a run.
 
-    You can import the `RunInformation` class directly from `cloud`:
+    You can import the `RunInformation` class directly from `nextmv`:
 
     ```python
     from nextmv import RunInformation
@@ -309,7 +345,7 @@ class ErrorLog(BaseModel):
     """
     Error log of a run, when it was not successful.
 
-    You can import the `ErrorLog` class directly from `cloud`:
+    You can import the `ErrorLog` class directly from `nextmv`:
 
     ```python
     from nextmv import ErrorLog
@@ -337,7 +373,7 @@ class RunResult(RunInformation):
     """
     Result of a run, whether it was successful or not.
 
-    You can import the `RunResult` class directly from `cloud`:
+    You can import the `RunResult` class directly from `nextmv`:
 
     ```python
     from nextmv import RunResult
@@ -363,7 +399,7 @@ class RunLog(BaseModel):
     """
     Log of a run.
 
-    You can import the `RunLog` class directly from `cloud`:
+    You can import the `RunLog` class directly from `nextmv`:
 
     ```python
     from nextmv import RunLog
@@ -373,6 +409,18 @@ class RunLog(BaseModel):
     ----------
     log : str
         Log of the run.
+
+    Examples
+    --------
+    >>> from nextmv import RunLog
+    >>> run_log = RunLog(log="Optimization completed successfully")
+    >>> run_log.log
+    'Optimization completed successfully'
+
+    >>> # Multi-line log
+    >>> multi_line_log = RunLog(log="Starting optimization\\nProcessing data\\nCompleted")
+    >>> multi_line_log.log
+    'Starting optimization\\nProcessing data\\nCompleted'
     """
 
     log: str
@@ -383,7 +431,7 @@ class RunType(str, Enum):
     """
     The actual type of the run.
 
-    You can import the `RunType` class directly from `cloud`:
+    You can import the `RunType` class directly from `nextmv`:
 
     ```python
     from nextmv import RunType
@@ -397,6 +445,24 @@ class RunType(str, Enum):
         External run type.
     ENSEMBLE : str
         Ensemble run type.
+
+    Examples
+    --------
+    >>> from nextmv import RunType
+    >>> run_type = RunType.STANDARD
+    >>> run_type
+    <RunType.STANDARD: 'standard'>
+    >>> run_type.value
+    'standard'
+
+    >>> # Creating from string
+    >>> external_type = RunType("external")
+    >>> external_type
+    <RunType.EXTERNAL: 'external'>
+
+    >>> # All available types
+    >>> list(RunType)
+    [<RunType.STANDARD: 'standard'>, <RunType.EXTERNAL: 'external'>, <RunType.ENSEMBLE: 'ensemble'>]
     """
 
     STANDARD = "standard"
@@ -412,7 +478,7 @@ class RunTypeConfiguration(BaseModel):
     Defines the configuration for the type of the run that is being executed
     on an application.
 
-    You can import the `RunTypeConfiguration` class directly from `cloud`:
+    You can import the `RunTypeConfiguration` class directly from `nextmv`:
 
     ```python
     from nextmv import RunTypeConfiguration
@@ -426,6 +492,35 @@ class RunTypeConfiguration(BaseModel):
         ID of the definition for the run type. Defaults to None.
     reference_id : str, optional
         ID of the reference for the run type. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunTypeConfiguration, RunType
+    >>> config = RunTypeConfiguration(run_type=RunType.STANDARD)
+    >>> config.run_type
+    <RunType.STANDARD: 'standard'>
+    >>> config.definition_id is None
+    True
+
+    >>> # External run with reference
+    >>> external_config = RunTypeConfiguration(
+    ...     run_type=RunType.EXTERNAL,
+    ...     reference_id="ref-12345"
+    ... )
+    >>> external_config.run_type
+    <RunType.EXTERNAL: 'external'>
+    >>> external_config.reference_id
+    'ref-12345'
+
+    >>> # Ensemble run with definition
+    >>> ensemble_config = RunTypeConfiguration(
+    ...     run_type=RunType.ENSEMBLE,
+    ...     definition_id="def-67890"
+    ... )
+    >>> ensemble_config.run_type
+    <RunType.ENSEMBLE: 'ensemble'>
+    >>> ensemble_config.definition_id
+    'def-67890'
     """
 
     run_type: RunType = Field(
@@ -443,7 +538,7 @@ class RunQueuing(BaseModel):
     """
     RunQueuing configuration for a run.
 
-    You can import the `RunQueuing` class directly from `cloud`:
+    You can import the `RunQueuing` class directly from `nextmv`:
 
     ```python
     from nextmv import RunQueuing
@@ -457,6 +552,25 @@ class RunQueuing(BaseModel):
     disabled : bool, optional
         Whether the run should be queued, or not. If True, the run will not be
         queued. If False, the run will be queued. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunQueuing
+    >>> queuing = RunQueuing(priority=1, disabled=False)
+    >>> queuing.priority
+    1
+    >>> queuing.disabled
+    False
+
+    >>> # High priority run
+    >>> high_priority = RunQueuing(priority=1)
+    >>> high_priority.priority
+    1
+
+    >>> # Disabled queuing
+    >>> no_queue = RunQueuing(disabled=True)
+    >>> no_queue.disabled
+    True
     """
 
     priority: Optional[int] = None
@@ -492,7 +606,7 @@ class RunConfiguration(BaseModel):
     """
     Configuration for an app run.
 
-    You can import the `RunConfiguration` class directly from `cloud`:
+    You can import the `RunConfiguration` class directly from `nextmv`:
 
     ```python
     from nextmv import RunConfiguration
@@ -510,6 +624,23 @@ class RunConfiguration(BaseModel):
         ID of the secrets collection to use for the run. Defaults to None.
     queuing : RunQueuing, optional
         Queuing configuration for the run. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunConfiguration, RunQueuing
+    >>> config = RunConfiguration(
+    ...     execution_class="large",
+    ...     queuing=RunQueuing(priority=1)
+    ... )
+    >>> config.execution_class
+    'large'
+    >>> config.queuing.priority
+    1
+
+    >>> # Basic configuration
+    >>> basic_config = RunConfiguration()
+    >>> basic_config.format is None
+    True
     """
 
     execution_class: Optional[str] = None
@@ -534,10 +665,28 @@ class RunConfiguration(BaseModel):
 
         Parameters
         ----------
-        input : Input or dict[str, Any] or BaseModel or str, optional
+        input : Input or dict[str, Any] or BaseModel or str
             The input to use for resolving the run configuration.
         dir_path : str, optional
             The directory path where inputs can be loaded from.
+
+        Examples
+        --------
+        >>> from nextmv import RunConfiguration
+        >>> config = RunConfiguration()
+        >>> config.resolve({"key": "value"})
+        >>> config.format.format_input.input_type
+        <InputFormat.JSON: 'json'>
+
+        >>> config = RunConfiguration()
+        >>> config.resolve("text input")
+        >>> config.format.format_input.input_type
+        <InputFormat.TEXT: 'text'>
+
+        >>> config = RunConfiguration()
+        >>> config.resolve({}, dir_path="/path/to/files")
+        >>> config.format.format_input.input_type
+        <InputFormat.MULTI_FILE: 'multi_file'>
         """
 
         # If the value is set by the user, do not change it.
@@ -579,7 +728,7 @@ class ExternalRunResult(BaseModel):
     Result of a run used to configure a new application run as an
     external one.
 
-    You can import the `ExternalRunResult` class directly from `cloud`:
+    You can import the `ExternalRunResult` class directly from `nextmv`:
 
     ```python
     from nextmv import ExternalRunResult
@@ -597,6 +746,32 @@ class ExternalRunResult(BaseModel):
         Error message of the run. Defaults to None.
     execution_duration : int, optional
         Duration of the run, in milliseconds. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import ExternalRunResult
+    >>> # Successful external run
+    >>> result = ExternalRunResult(
+    ...     output_upload_id="upload-12345",
+    ...     status="succeeded",
+    ...     execution_duration=5000
+    ... )
+    >>> result.status
+    'succeeded'
+    >>> result.execution_duration
+    5000
+
+    >>> # Failed external run
+    >>> failed_result = ExternalRunResult(
+    ...     error_upload_id="error-67890",
+    ...     status="failed",
+    ...     error_message="Optimization failed due to invalid constraints",
+    ...     execution_duration=2000
+    ... )
+    >>> failed_result.status
+    'failed'
+    >>> failed_result.error_message
+    'Optimization failed due to invalid constraints'
     """
 
     output_upload_id: Optional[str] = None
@@ -629,7 +804,7 @@ class TrackedRunStatus(str, Enum):
     """
     The status of a tracked run.
 
-    You can import the `TrackedRunStatus` class directly from `cloud`:
+    You can import the `TrackedRunStatus` class directly from `nextmv`:
 
     ```python
     from nextmv import TrackedRunStatus
@@ -641,6 +816,24 @@ class TrackedRunStatus(str, Enum):
         The run succeeded.
     FAILED : str
         The run failed.
+
+    Examples
+    --------
+    >>> from nextmv import TrackedRunStatus
+    >>> status = TrackedRunStatus.SUCCEEDED
+    >>> status
+    <TrackedRunStatus.SUCCEEDED: 'succeeded'>
+    >>> status.value
+    'succeeded'
+
+    >>> # Creating from string
+    >>> failed_status = TrackedRunStatus("failed")
+    >>> failed_status
+    <TrackedRunStatus.FAILED: 'failed'>
+
+    >>> # All available statuses
+    >>> list(TrackedRunStatus)
+    [<TrackedRunStatus.SUCCEEDED: 'succeeded'>, <TrackedRunStatus.FAILED: 'failed'>]
     """
 
     SUCCEEDED = "succeeded"
@@ -654,7 +847,7 @@ class TrackedRun:
     """
     An external run that is tracked in the Nextmv platform.
 
-    You can import the `TrackedRun` class directly from `cloud`:
+    You can import the `TrackedRun` class directly from `nextmv`:
 
     ```python
     from nextmv import TrackedRun
@@ -662,16 +855,18 @@ class TrackedRun:
 
     Parameters
     ----------
-    input : Input or dict[str, Any] or str
-        The input of the run being tracked. Please note that if the input
-        format is JSON, then the input data must be JSON serializable. This
-        field is required.
-    output : Output or dict[str, Any] or str
-        The output of the run being tracked. Please note that if the output
-        format is JSON, then the output data must be JSON serializable. This
-        field is required. Only JSON output_format is supported.
     status : TrackedRunStatus
         The status of the run being tracked. This field is required.
+    input : Input or dict[str, Any] or str, optional
+        The input of the run being tracked. Please note that if the input
+        format is JSON, then the input data must be JSON serializable. If both
+        `input` and `input_dir_path` are specified, the `input` is ignored, and
+        the files in the directory are used instead. Defaults to None.
+    output : Output or dict[str, Any] or str, optional
+        The output of the run being tracked. Please note that if the output
+        format is JSON, then the output data must be JSON serializable. If both
+        `output` and `output_dir_path` are specified, the `output` is ignored, and
+        the files in the directory are used instead. Defaults to None.
     duration : int, optional
         The duration of the run being tracked, in milliseconds. This field is
         optional. Defaults to None.
@@ -682,6 +877,64 @@ class TrackedRun:
     logs : list[str], optional
         The logs of the run being tracked. Each element of the list is a line in
         the log. This field is optional. Defaults to None.
+    name : str, optional
+        Optional name for the run being tracked. Defaults to None.
+    description : str, optional
+        Optional description for the run being tracked. Defaults to None.
+    input_dir_path : str, optional
+        Path to a directory containing input files. If specified, the calling
+        function will package the files in the directory into a tar file and upload
+        it as a large input. This is useful for non-JSON input formats, such as
+        when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `input` and
+        `input_dir_path` are specified, the `input` is ignored, and the files in
+        the directory are used instead. Defaults to None.
+    output_dir_path : str, optional
+        Path to a directory containing output files. If specified, the calling
+        function will package the files in the directory into a tar file and upload
+        it as a large output. This is useful for non-JSON output formats, such as
+        when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `output` and
+        `output_dir_path` are specified, the `output` is ignored, and the files
+        are saved in the directory instead. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import TrackedRun, TrackedRunStatus
+    >>> # Successful run
+    >>> run = TrackedRun(
+    ...     status=TrackedRunStatus.SUCCEEDED,
+    ...     input={"vehicles": 5, "locations": 10},
+    ...     output={"routes": [{"stops": [1, 2, 3]}]},
+    ...     duration=5000,
+    ...     name="test-run",
+    ...     description="A test optimization run"
+    ... )
+    >>> run.status
+    <TrackedRunStatus.SUCCEEDED: 'succeeded'>
+    >>> run.duration
+    5000
+
+    >>> # Failed run with error
+    >>> failed_run = TrackedRun(
+    ...     status=TrackedRunStatus.FAILED,
+    ...     input={"vehicles": 0},
+    ...     error="No vehicles available for routing",
+    ...     duration=1000,
+    ...     logs=["Starting optimization", "Error: No vehicles found"]
+    ... )
+    >>> failed_run.status
+    <TrackedRunStatus.FAILED: 'failed'>
+    >>> failed_run.error
+    'No vehicles available for routing'
+
+    >>> # Run with directory-based input/output
+    >>> dir_run = TrackedRun(
+    ...     status=TrackedRunStatus.SUCCEEDED,
+    ...     input_dir_path="/path/to/input/files",
+    ...     output_dir_path="/path/to/output/files",
+    ...     duration=10000
+    ... )
+    >>> dir_run.input_dir_path
+    '/path/to/input/files'
 
     Raises
     ------
@@ -784,6 +1037,12 @@ class TrackedRun:
             except (TypeError, OverflowError) as e:
                 raise ValueError("Output is dict[str, Any] but it is not JSON serializable") from e
 
+        if self.input is None and self.input_dir_path is None:
+            raise ValueError("Either input or input_dir_path must be specified.")
+
+        if self.output is None and self.output_dir_path is None:
+            raise ValueError("Either output or output_dir_path must be specified.")
+
     def logs_text(self) -> str:
         """
         Returns the logs as a single string.
@@ -795,6 +1054,29 @@ class TrackedRun:
         str
             The logs as a single string. If no logs are present, an empty
             string is returned.
+
+        Examples
+        --------
+        >>> from nextmv import TrackedRun, TrackedRunStatus
+        >>> run = TrackedRun(
+        ...     status=TrackedRunStatus.SUCCEEDED,
+        ...     logs=["Starting optimization", "Processing data", "Optimization complete"]
+        ... )
+        >>> run.logs_text()
+        'Starting optimization\\nProcessing data\\nOptimization complete'
+
+        >>> # Single string log
+        >>> run_with_string_log = TrackedRun(
+        ...     status=TrackedRunStatus.SUCCEEDED,
+        ...     logs="Single log entry"
+        ... )
+        >>> run_with_string_log.logs_text()
+        'Single log entry'
+
+        >>> # No logs
+        >>> run_no_logs = TrackedRun(status=TrackedRunStatus.SUCCEEDED)
+        >>> run_no_logs.logs_text()
+        ''
 
         Raises
         ------

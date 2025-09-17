@@ -195,7 +195,11 @@ def calculate_map_center_and_zoom(geojson_data: dict) -> tuple[float, float, int
 
         return center_lat, center_lon, zoom_level
 
-    except Exception:
+    except (KeyError, TypeError, ValueError, IndexError) as e:
+        log(f"Warning: Error calculating map center and zoom from GeoJSON data: {e}")
+        return default_lat, default_lon, default_zoom
+    except Exception as e:
+        log(f"Warning: Unexpected error calculating map center and zoom: {e}")
         return default_lat, default_lon, default_zoom
 
 
@@ -259,8 +263,10 @@ def extract_geojson_fields(geojson_data: dict) -> tuple[list[str], list[str]]:
             if field not in popup_fields and len(popup_fields) < 5:
                 popup_fields.append(field)
 
-    except Exception:
-        pass
+    except (KeyError, TypeError, IndexError) as e:
+        log(f"Warning: Error extracting GeoJSON fields: {e}")
+    except Exception as e:
+        log(f"Warning: Unexpected error extracting GeoJSON fields: {e}")
 
     return tooltip_fields, popup_fields
 

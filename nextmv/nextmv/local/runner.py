@@ -264,7 +264,9 @@ def record_input(
             f.write(input_data)
 
     else:
-        raise ValueError("Invalid input data type")
+        raise ValueError(
+            "Invalid input data type: input_data must be a dict or str, or inputs_dir_path must be provided."
+        )
 
     # Update the input size in the run information file.
     calculate_files_size(run_dir, run_id, run_inputs_dir, metadata_key="input_size")

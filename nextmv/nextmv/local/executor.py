@@ -36,11 +36,12 @@ import tempfile
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
-from nextmv.input import load
+from nextmv.input import InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.local.runner import calculate_files_size
-from nextmv.output import Asset, VisualSchema
+from nextmv.output import Asset, OutputFormat, VisualSchema
+from nextmv.status import StatusV2
 
 ASSETS_KEY = "assets"
 """
@@ -245,16 +246,16 @@ def process_run_input(
         returns an empty string.
     """
 
-    if run_format in ("json", "text"):
-        if isinstance(input_data, dict) and run_format == "json":
+    if run_format in (InputFormat.JSON.value, InputFormat.TEXT.value):
+        if isinstance(input_data, dict) and run_format == InputFormat.JSON.value:
             return json.dumps(input_data)
 
-        if isinstance(input_data, str) and run_format == "text":
+        if isinstance(input_data, str) and run_format == InputFormat.TEXT.value:
             return input_data
 
         raise ValueError(f"invalid input data for format {run_format}")
 
-    if run_format == "csv-archive":
+    if run_format == InputFormat.CSV_ARCHIVE.value:
         if input_data is not None:
             raise ValueError("input data must be None for csv-archive format")
 
@@ -266,7 +267,7 @@ def process_run_input(
 
         return ""
 
-    if run_format == "multi-file":
+    if run_format == InputFormat.MULTI_FILE.value:
         if input_data is not None:
             raise ValueError("input data must be None for multi-file format")
 
@@ -366,10 +367,10 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
     duration = round((now - created_at).total_seconds() * 1000, 1)
 
     # Update the status
-    status = "succeeded"
+    status = StatusV2.succeeded.value
     error = ""
     if result.returncode != 0:
-        status = "failed"
+        status = StatusV2.failed.value
         error = result.stderr if result.stderr else "unknown error"
 
     # Update the run info file.
@@ -503,12 +504,12 @@ def process_run_solutions(
     if os.path.exists(output_src) and os.path.isdir(output_src):
         # For csv-archive, copy everything from output to solutions.
         shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
-        output_type = "csv-archive"
+        output_type = OutputFormat.CSV_ARCHIVE.value
 
     elif os.path.exists(solutions_src) and os.path.isdir(solutions_src):
         # For multi-file, copy everything from outputs/solutions to solutions.
         shutil.copytree(solutions_src, solutions_dst, dirs_exist_ok=True)
-        output_type = "multi-file"
+        output_type = OutputFormat.MULTI_FILE.value
 
     else:
         # If we reach here, it means neither output nor outputs/solutions
@@ -517,7 +518,7 @@ def process_run_solutions(
             with open(os.path.join(solutions_dst, "solution.json"), "w") as f:
                 json.dump(stdout_output, f, indent=2)
 
-        output_type = "json"
+        output_type = OutputFormat.JSON.value
 
     # Update the run information file with the output size and type.
     calculate_files_size(run_dir, run_id, solutions_dst, metadata_key="output_size")
