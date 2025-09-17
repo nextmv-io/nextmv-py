@@ -3,8 +3,8 @@ import shutil
 import tempfile
 import unittest
 
-from nextmv.cloud.manifest import Manifest, ManifestType
 from nextmv.cloud.package import _package
+from nextmv.manifest import Manifest, ManifestType
 
 
 class TestPackageOneFile(unittest.TestCase):

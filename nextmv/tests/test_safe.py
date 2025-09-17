@@ -1,6 +1,6 @@
 import unittest
 
-from nextmv.cloud.safe import safe_name_and_id
+from nextmv.safe import safe_name_and_id
 
 
 class TestSafeNameID(unittest.TestCase):

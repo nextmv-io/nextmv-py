@@ -24,15 +24,11 @@ poll
 
 import json
 import os
-import random
 import shutil
 import tarfile
 import tempfile
-import time
-import webbrowser
-from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, Union
 
 import requests
@@ -51,9 +47,18 @@ from nextmv.cloud.batch_experiment import (
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
-from nextmv.cloud.local.runner import run
-from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.run import (
+from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
+from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
+from nextmv.cloud.url import DownloadURL, UploadURL
+from nextmv.cloud.version import Version
+from nextmv.input import Input, InputFormat
+from nextmv.logger import log
+from nextmv.manifest import Manifest
+from nextmv.model import Model, ModelConfiguration
+from nextmv.options import Options
+from nextmv.output import Output, OutputFormat
+from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
+from nextmv.run import (
     ExternalRunResult,
     Format,
     FormatInput,
@@ -63,198 +68,15 @@ from nextmv.cloud.run import (
     RunLog,
     RunResult,
     TrackedRun,
-    TrackedRunStatus,
 )
-from nextmv.cloud.safe import safe_id, safe_name_and_id
-from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
-from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
-from nextmv.cloud.status import StatusV2
-from nextmv.cloud.version import Version
-from nextmv.input import Input, InputFormat
-from nextmv.logger import log
-from nextmv.model import Model, ModelConfiguration
-from nextmv.options import Options
-from nextmv.output import Output, OutputFormat
+from nextmv.safe import safe_id, safe_name_and_id
+from nextmv.status import StatusV2
 
 # Maximum size of the run input/output in bytes. This constant defines the
 # maximum allowed size for run inputs and outputs. When the size exceeds this
 # value, the system will automatically use the large input upload and/or large
 # result download endpoints.
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
-
-
-class DownloadURL(BaseModel):
-    """
-    Result of getting a download URL.
-
-    You can import the `DownloadURL` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import DownloadURL
-    ```
-
-    This class represents a download URL that can be used to fetch content
-    from Nextmv Cloud, typically used for downloading large run results.
-
-    Attributes
-    ----------
-    url : str
-        URL to use for downloading the file.
-
-    Examples
-    --------
-    >>> download_url = DownloadURL(url="https://example.com/download")
-    >>> response = requests.get(download_url.url)
-    """
-
-    url: str
-    """URL to use for downloading the file."""
-
-
-@dataclass
-class PollingOptions:
-    """
-    Options to use when polling for a run result.
-
-    You can import the `PollingOptions` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import PollingOptions
-    ```
-
-    The Cloud API will be polled for the result. The polling stops if:
-
-    * The maximum number of polls (tries) are exhausted. This is specified by
-      the `max_tries` parameter.
-    * The maximum duration of the polling strategy is reached. This is
-      specified by the `max_duration` parameter.
-
-    Before conducting the first poll, the `initial_delay` is used to sleep.
-    After each poll, a sleep duration is calculated using the following
-    strategy, based on exponential backoff with jitter:
-
-    ```
-    sleep_duration = min(`max_delay`, `delay` + `backoff` * 2 ** i + Uniform(0, `jitter`))
-    ```
-
-    Where:
-    * i is the retry (poll) number.
-    * Uniform is the uniform distribution.
-
-    Note that the sleep duration is capped by the `max_delay` parameter.
-
-    Parameters
-    ----------
-    backoff : float, default=0.9
-        Exponential backoff factor, in seconds, to use between polls.
-    delay : float, default=0.1
-        Base delay to use between polls, in seconds.
-    initial_delay : float, default=1.0
-        Initial delay to use before starting the polling strategy, in seconds.
-    max_delay : float, default=20.0
-        Maximum delay to use between polls, in seconds.
-    max_duration : float, default=300.0
-        Maximum duration of the polling strategy, in seconds.
-    max_tries : int, default=100
-        Maximum number of tries to use.
-    jitter : float, default=1.0
-        Jitter to use for the polling strategy. A uniform distribution is sampled
-        between 0 and this number. The resulting random number is added to the
-        delay for each poll, adding a random noise. Set this to 0 to avoid using
-        random jitter.
-    verbose : bool, default=False
-        Whether to log the polling strategy. This is useful for debugging.
-    stop : callable, default=None
-        Function to call to check if the polling should stop. This is useful for
-        stopping the polling based on external conditions. The function should
-        return True to stop the polling and False to continue. The function does
-        not receive any arguments. The function is called before each poll.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import PollingOptions
-    >>> # Create polling options with custom settings
-    >>> polling_options = PollingOptions(
-    ...     max_tries=50,
-    ...     max_duration=600,
-    ...     verbose=True
-    ... )
-    """
-
-    backoff: float = 0.9
-    """
-    Exponential backoff factor, in seconds, to use between polls.
-    """
-    delay: float = 0.1
-    """Base delay to use between polls, in seconds."""
-    initial_delay: float = 1
-    """
-    Initial delay to use before starting the polling strategy, in seconds.
-    """
-    max_delay: float = 20
-    """Maximum delay to use between polls, in seconds."""
-    max_duration: float = -1
-    """
-    Maximum duration of the polling strategy, in seconds. A negative value means no limit.
-    """
-    max_tries: int = -1
-    """Maximum number of tries to use. A negative value means no limit."""
-    jitter: float = 1
-    """
-    Jitter to use for the polling strategy. A uniform distribution is sampled
-    between 0 and this number. The resulting random number is added to the
-    delay for each poll, adding a random noise. Set this to 0 to avoid using
-    random jitter.
-    """
-    verbose: bool = False
-    """Whether to log the polling strategy. This is useful for debugging."""
-    stop: Optional[Callable[[], bool]] = None
-    """
-    Function to call to check if the polling should stop. This is useful for
-    stopping the polling based on external conditions. The function should
-    return True to stop the polling and False to continue. The function does
-    not receive any arguments. The function is called before each poll.
-    """
-
-
-# Default polling options to use when polling for a run result. This constant
-# provides the default values for `PollingOptions` used across the module.
-# Using these defaults is recommended for most use cases unless specific timing
-# needs are required.
-_DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
-
-
-class UploadURL(BaseModel):
-    """
-    Result of getting an upload URL.
-
-    You can import the `UploadURL` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import UploadURL
-    ```
-
-    This class represents an upload URL that can be used to send data to
-    Nextmv Cloud, typically used for uploading large inputs for runs.
-
-    Attributes
-    ----------
-    upload_id : str
-        ID of the upload, used to reference the uploaded content.
-    upload_url : str
-        URL to use for uploading the file.
-
-    Examples
-    --------
-    >>> upload_url = UploadURL(upload_id="123", upload_url="https://example.com/upload")
-    >>> with open("large_input.json", "rb") as f:
-    ...     requests.put(upload_url.upload_url, data=f)
-    """
-
-    upload_id: str
-    """ID of the upload."""
-    upload_url: str
-    """URL to use for uploading the file."""
 
 
 @dataclass
@@ -294,26 +116,17 @@ class Application:
     >>> instances = app.list_instances()
     """
 
+    client: Client
+    """Client to use for interacting with the Nextmv Cloud API."""
     id: str
     """ID of the application."""
 
-    client: Optional[Client] = None
-    """Client to use for interacting with the Nextmv Cloud API."""
     default_instance_id: str = None
     """Default instance ID to use for submitting runs."""
     endpoint: str = "v1/applications/{id}"
     """Base endpoint for the application."""
     experiments_endpoint: str = "{base}/experiments"
     """Base endpoint for the experiments in the application."""
-
-    # Local experience parameters.
-    src: Optional[str] = None
-    """
-    Source of the application, if initialized locally. This is the path
-    to the application's source code.
-    """
-    description: Optional[str] = None
-    """Description of the application."""
 
     def __post_init__(self):
         """Initialize the endpoint and experiments_endpoint attributes.
@@ -323,92 +136,6 @@ class Application:
         """
         self.endpoint = self.endpoint.format(id=self.id)
         self.experiments_endpoint = self.experiments_endpoint.format(base=self.endpoint)
-
-    @classmethod
-    def initialize(
-        cls,
-        name: str,
-        id: Optional[str] = None,
-        description: Optional[str] = None,
-        destination: Optional[str] = None,
-        client: Optional[Client] = None,
-    ) -> "Application":
-        """
-        Initialize a Nextmv application, locally.
-
-        This method will create a new application in the local file system. The
-        application is a folder with the name given by `name`, under the
-        location given by `destination`. If the `destination` parameter is not
-        specified, the current working directory is used as default. This
-        method will scaffold the application with the necessary files and
-        directories to have an opinionated structure for your decision model.
-        Once the application is initialized, you are encouraged to complete it
-        with the decision model itself, so that the application can be run,
-        locally or remotely.
-
-        This method differs from the `Application.new` method in that it
-        creates the application locally rather than in the Cloud.
-
-        Although not required, you are encouraged to specify the `client`
-        parameter, so that the application can be pushed and synced remotely,
-        with the Nextmv Cloud. If you don't specify the `client`, and intend to
-        interact with the Nextmv Cloud, you will encounter an error. Make sure
-        you set the `client` parameter on the `Application` instance after
-        initialization, if you don't provide it here.
-
-        Use the `destination` parameter to specify where you want the app to be
-        initialized, using the current working directory by default.
-
-        Parameters
-        ----------
-        name : str
-            Name of the application.
-        id : str, optional
-            ID of the application. Will be generated if not provided.
-        description : str, optional
-            Description of the application.
-        destination : str, optional
-            Destination directory where the application will be initialized. If
-            not provided, the current working directory will be used.
-        client : Client, optional
-            Client to use for interacting with the Nextmv Cloud API.
-
-        Returns
-        -------
-        Application
-            The initialized application instance.
-        """
-
-        destination_dir = os.getcwd() if destination is None else destination
-        app_id = id if id is not None else safe_id("app")
-
-        # Create the new directory with the given name.
-        src = os.path.join(destination_dir, name)
-        os.makedirs(src, exist_ok=True)
-
-        # Get the path to the initial app structure template.
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        initial_app_structure_path = os.path.join(current_file_dir, "..", "default_app")
-        initial_app_structure_path = os.path.normpath(initial_app_structure_path)
-
-        # Copy everything from initial_app_structure to the new directory.
-        if os.path.exists(initial_app_structure_path):
-            for item in os.listdir(initial_app_structure_path):
-                source_path = os.path.join(initial_app_structure_path, item)
-                dest_path = os.path.join(src, item)
-
-                if os.path.isdir(source_path):
-                    shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
-                    continue
-
-                shutil.copy2(source_path, dest_path)
-
-        return cls(
-            id=app_id,
-            client=client,
-            src=src,
-            description=description,
-        )
 
     @classmethod
     def new(
@@ -1040,223 +767,6 @@ class Application:
 
         return [Version.from_dict(version) for version in response.json()]
 
-    def local_run_metadata(self, run_id: str) -> RunInformation:
-        """
-        Get the metadata of a local run.
-
-        This method is different from `run_metadata`, which retrieves the
-        metadata of a remote run in Nextmv Cloud. This method is used to get the
-        metadata of a run that was executed locally using the `new_local_run`
-        or `new_local_run_with_result` method.
-
-        Retrieves information about a run without including the run output.
-        This is useful when you only need the run's status and metadata.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to retrieve metadata for.
-
-        Returns
-        -------
-        RunInformation
-            Metadata of the run (run information without output).
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-
-        Examples
-        --------
-        >>> metadata = app.local_run_metadata("run-789")
-        >>> print(metadata.metadata.status_v2)
-        StatusV2.succeeded
-        """
-
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        if not os.path.exists(runs_dir):
-            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
-
-        run_dir = os.path.join(runs_dir, run_id)
-        if not os.path.exists(run_dir):
-            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
-
-        info_file = os.path.join(run_dir, f"{run_id}.json")
-        if not os.path.exists(info_file):
-            raise ValueError(f"`{info_file}` file does not exist at: {run_dir}")
-
-        with open(info_file) as f:
-            info_dict = json.load(f)
-
-        info = RunInformation.from_dict(info_dict)
-
-        return info
-
-    def local_run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
-        """
-        Get the local result of a run.
-
-        This method is different from `run_result`, which retrieves the
-        result of a remote run in Nextmv Cloud. This method is used to get the
-        result of a run that was executed locally using the `new_local_run` or
-        `new_local_run_with_result` method.
-
-        Retrieves the complete result of a run, including the run output.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to get results for.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Result of the run, including output.
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-
-        Examples
-        --------
-        >>> result = app.local_run_result("run-123")
-        >>> print(result.metadata.status_v2)
-        'succeeded'
-        """
-
-        run_information = self.local_run_metadata(run_id=run_id)
-
-        return self.__local_run_result(
-            run_id=run_id,
-            run_information=run_information,
-            output_dir_path=output_dir_path,
-        )
-
-    def local_run_result_with_polling(
-        self,
-        run_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        output_dir_path: Optional[str] = ".",
-    ) -> RunResult:
-        """
-        Get the result of a local run with polling.
-
-        This method is different from `run_result_with_polling`, which retrieves
-        the result of a remote run in Nextmv Cloud. This method is used to get
-        the result of a run that was executed locally using the `new_local_run`
-        or `new_local_run_with_result` method.
-
-        Retrieves the result of a run including the run output. This method
-        polls for the result until the run finishes executing or the polling
-        strategy is exhausted.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to retrieve the result for.
-        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
-            Options to use when polling for the run result.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Complete result of the run including output data.
-
-        Raises
-        ------
-        requests.HTTPError
-            If the response status code is not 2xx.
-        TimeoutError
-            If the run does not complete after the polling strategy is
-            exhausted based on time duration.
-        RuntimeError
-            If the run does not complete after the polling strategy is
-            exhausted based on number of tries.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import PollingOptions
-        >>> # Create custom polling options
-        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
-        >>> # Get run result with polling
-        >>> result = app.local_run_result_with_polling("run-123", polling_opts)
-        >>> print(result.output)
-        {'solution': {...}}
-        """
-
-        def polling_func() -> tuple[Any, bool]:
-            run_information = self.local_run_metadata(run_id=run_id)
-            if run_information.metadata.status_v2 in {
-                StatusV2.succeeded,
-                StatusV2.failed,
-                StatusV2.canceled,
-            }:
-                return run_information, True
-
-            return None, False
-
-        run_information = poll(polling_options=polling_options, polling_func=polling_func)
-
-        return self.__local_run_result(
-            run_id=run_id,
-            run_information=run_information,
-            output_dir_path=output_dir_path,
-        )
-
-    def local_run_visuals(self, run_id: str) -> None:
-        """
-        Open the local run visuals in a web browser.
-
-        This method opens the visual representation of a locally executed run
-        in the default web browser. It assumes that the run was executed locally
-        using the `new_local_run` or `new_local_run_with_result` method and that
-        the necessary visualization files are present.
-
-        If the run was correctly configured to produce visual assets, then the
-        run will contain a `visuals` directory with one or more HTML files.
-        Each file is opened in a new tab in the default web browser.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the local run to visualize.
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-        """
-
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        if not os.path.exists(runs_dir):
-            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
-
-        run_dir = os.path.join(runs_dir, run_id)
-        if not os.path.exists(run_dir):
-            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
-
-        visuals_dir = os.path.join(run_dir, "visuals")
-        if not os.path.exists(visuals_dir):
-            raise ValueError(f"`visuals` dir does not exist at: {run_dir}")
-
-        for file in os.listdir(visuals_dir):
-            if file.endswith(".html"):
-                file_path = os.path.join(visuals_dir, file)
-                webbrowser.open_new_tab(f"file://{os.path.realpath(file_path)}")
-
     def managed_input(self, managed_input_id: str) -> ManagedInput:
         """
         Get a managed input.
@@ -1410,7 +920,7 @@ class Application:
         name: str,
         input_set_id: Optional[str] = None,
         description: Optional[str] = None,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
         Create a new acceptance test and poll for the result.
@@ -1750,271 +1260,6 @@ class Application:
 
         return Instance.from_dict(response.json())
 
-    def new_local_run(
-        self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        options: Optional[Union[Options, dict[str, str]]] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
-    ) -> str:
-        """
-        Run the application locally with the provided input.
-
-        Make sure that the `src` attribute is set on the `Application` class
-        before running locally, as it is required by the method.
-
-        Parameters
-        ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
-            Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
-
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
-
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the
-            `input_dir_path` argument instead. This argument takes precedence
-            over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them, to later be
-            uploaded using the `upload_large_input` method. If both the
-            `input_dir_path` and `input` arguments are provided, the `input`
-            is ignored.
-
-            When `input_dir_path` is specified, the `configuration` argument
-            must also be provided. More specifically, the
-            `RunConfiguration.format.format_input.input_type` parameter
-            dictates what kind of input is being submitted to the Nextmv Cloud.
-            Make sure that this parameter is specified when working with the
-            following input formats:
-
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
-
-            When working with JSON or text data, use the `input` argument
-            directly.
-
-            In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
-        name: Optional[str]
-            Name of the local run.
-        description: Optional[str]
-            Description of the local run.
-        options: Optional[Union[Options, dict[str, str]]]
-            Options to use for the run. This can be a `nextmv.Options` object
-            or a dict. If a dict is used, the keys must be strings and the
-            values must be strings as well. If a `nextmv.Options` object is
-            used, the options are extracted from the `.to_cloud_dict()` method.
-            Note that specifying `options` overrides the `input.options` (if
-            the `input` is of type `nextmv.Input`).
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
-            Configuration to use for the run. This can be a
-            `cloud.RunConfiguration` object or a dict. If the object is used,
-            then the `.to_dict()` method is applied to extract the
-            configuration.
-        json_configurations: Optional[dict[str, Any]]
-            Optional configurations for JSON serialization. This is used to
-            customize the serialization before data is sent.
-        input_dir_path: Optional[str]
-            Path to a directory containing input files. This is useful for
-            input formats like `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`. If both `input` and
-            `input_dir_path` are specified, the `input` is ignored, and the
-            files in the directory are used instead.
-
-        Returns
-        -------
-        str
-            ID (`run_id`) of the local run that was executed.
-
-        Raises
-        ------
-        ValueError
-            If the `src` property for the `Application` is not specified.
-            If neither `input` nor `input_dir_path` is specified.
-            If `input_dir_path` is specified but `configuration` is not provided.
-        FileNotFoundError
-            If the manifest.yaml file cannot be found in the specified `src` directory.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import Application
-        >>> app = Application(id="my-app", src="/path/to/app")
-        >>> run_id = app.new_local_run(
-        ...     input={"vehicles": [{"id": "v1"}]},
-        ...     options={"duration": "10s"}
-        ... )
-        >>> print(f"Local run completed with ID: {run_id}")
-        """
-
-        self.__validate_dir_path_and_configuration(input_dir_path, configuration)
-
-        if self.src is None:
-            raise ValueError("`src` property for the `Application` must be specified to run the application locally")
-
-        if input is None and input_dir_path is None:
-            raise ValueError("Either `input` or `input_directory` must be specified")
-
-        try:
-            manifest = Manifest.from_yaml(self.src)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(
-                f"Could not find manifest.yaml in {self.src}. Maybe specify a different `src` dir?"
-            ) from e
-
-        input_data = None if input_dir_path else self.__extract_input_data(input)
-        options_dict = self.__extract_options_dict(options, json_configurations)
-        run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
-        run_id = run(
-            app_id=self.id,
-            src=self.src,
-            manifest=manifest,
-            run_config=run_config_dict,
-            name=name,
-            description=description,
-            input_data=input_data,
-            inputs_dir_path=input_dir_path,
-            options=options_dict,
-        )
-
-        return run_id
-
-    def new_local_run_with_result(
-        self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        run_options: Optional[Union[Options, dict[str, str]]] = None,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
-        output_dir_path: Optional[str] = ".",
-    ) -> RunResult:
-        """
-        Submit an input to start a new local run of the application and poll
-        for the result. This is a convenience method that combines the
-        `new_local_run` and `local_run_result_with_polling` methods, applying
-        polling logic to check when the local run succeeded.
-
-        This method is different from `new_run_with_result`, which submits
-        the input to Nextmv Cloud. This method runs the application locally
-        using the `src` of the app.
-
-        Make sure that the `src` attribute is set on the `Application` class
-        before running locally, as it is required by the method.
-
-        Parameters
-        ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
-            Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
-
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
-
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the
-            `input_dir_path` argument instead. This argument takes precedence
-            over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them, to later be
-            uploaded using the `upload_large_input` method. If both the
-            `input_dir_path` and `input` arguments are provided, the `input`
-            is ignored.
-
-            When `input_dir_path` is specified, the `configuration` argument
-            must also be provided. More specifically, the
-            `RunConfiguration.format.format_input.input_type` parameter
-            dictates what kind of input is being submitted to the Nextmv Cloud.
-            Make sure that this parameter is specified when working with the
-            following input formats:
-
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
-
-            When working with JSON or text data, use the `input` argument
-            directly.
-
-            In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
-        name: Optional[str]
-            Name of the local run.
-        description: Optional[str]
-            Description of the local run.
-        run_options: Optional[Union[Options, dict[str, str]]]
-            Options to use for the run. This can be a `nextmv.Options` object
-            or a dict. If a dict is used, the keys must be strings and the
-            values must be strings as well. If a `nextmv.Options` object is
-            used, the options are extracted from the `.to_cloud_dict()` method.
-            Note that specifying `options` overrides the `input.options` (if
-            the `input` is of type `nextmv.Input`).
-        polling_options: PollingOptions, default=_DEFAULT_POLLING_OPTIONS
-            Options to use when polling for the run result.
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
-            Configuration to use for the run. This can be a
-            `cloud.RunConfiguration` object or a dict. If the object is used,
-            then the `.to_dict()` method is applied to extract the
-            configuration.
-        json_configurations: Optional[dict[str, Any]]
-            Optional configurations for JSON serialization. This is used to
-            customize the serialization before data is sent.
-        input_dir_path: Optional[str]
-            Path to a directory containing input files. This is useful for
-            input formats like `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`. If both `input` and
-            `input_dir_path` are specified, the `input` is ignored, and the
-            files in the directory are used instead.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Result of the run, including output.
-
-        Raises
-        ------
-        ValueError
-            If the `src` property for the `Application` is not specified.
-            If neither `input` nor `inputs_dir_path` is specified.
-            If `inputs_dir_path` is specified but `configuration` is not provided.
-        FileNotFoundError
-            If the manifest.yaml file cannot be found in the specified `src` directory.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import Application
-        >>> app = Application(id="my-app", src="/path/to/app")
-        >>> run_result = app.new_local_run_with_result(
-        ...     input={"vehicles": [{"id": "v1"}]},
-        ...     options={"duration": "10s"}
-        ... )
-        >>> print(f"Local run completed with ID: {run_result.id}")
-        """
-
-        run_id = self.new_local_run(
-            input=input,
-            name=name,
-            description=description,
-            options=run_options,
-            configuration=configuration,
-            json_configurations=json_configurations,
-            input_dir_path=input_dir_path,
-        )
-
-        return self.local_run_result_with_polling(
-            run_id=run_id,
-            polling_options=polling_options,
-            output_dir_path=output_dir_path,
-        )
-
     def new_managed_input(
         self,
         id: str,
@@ -2283,7 +1528,7 @@ class Application:
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
         run_options: Optional[Union[Options, dict[str, str]]] = None,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
@@ -2296,10 +1541,6 @@ class Application:
         result. This is a convenience method that combines the `new_run` and
         `run_result_with_polling` methods, applying polling logic to check when
         the run succeeded.
-
-        This method is different from `new_local_run_with_result`, which
-        executes the application locally. This method submits the run to Nextmv
-        Cloud, and polls for the result.
 
         Parameters
         ----------
@@ -2922,10 +2163,6 @@ class Application:
         """
         Get the metadata of a run.
 
-        This method is different from the `local_run_metadata`, which retrieves
-        the metadata from a local run. This information fetches the metadata
-        from a remote run executed on Nextmv Cloud.
-
         Retrieves information about a run without including the run output.
         This is useful when you only need the run's status and metadata.
 
@@ -2996,10 +2233,6 @@ class Application:
         """
         Get the result of a run.
 
-        This method is different from `local_run_result`, which retrieves the
-        result of a local run. This method fetches the result of a remote run
-        executed on Nextmv Cloud.
-
         Retrieves the complete result of a run, including the run output.
 
         Parameters
@@ -3039,16 +2272,11 @@ class Application:
     def run_result_with_polling(
         self,
         run_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
         Get the result of a run with polling.
-
-        This method is different from `local_run_result_with_polling`, which
-        retrieves the result of a local run with polling. This method fetches
-        the result of a remote run executed on Nextmv Cloud, applying polling
-        logic to check when the run has finished executing
 
         Retrieves the result of a run including the run output. This method polls
         for the result until the run finishes executing or the polling strategy
@@ -3144,106 +2372,6 @@ class Application:
         """
 
         return self.batch_experiment(batch_id=scenario_test_id)
-
-    def sync(  # noqa: C901
-        self,
-        run_ids: Optional[list[str]] = None,
-        instance_id: Optional[str] = None,
-        verbose: Optional[bool] = False,
-    ) -> None:
-        """
-        Sync the local application to the Nextmv Cloud.
-
-        The `Application` class allows you to perform and handle local
-        application runs with methods such as:
-
-        - `new_local_run`
-        - `new_local_run_with_result`
-        - `local_run_metadata`
-        - `local_run_result`
-        - `local_run_result_with_polling`
-
-        The runs produced locally live under `self.src/.nextmv/runs`. This
-        method syncs those runs to Nextmv Cloud, making them available for
-        remote execution and management.
-
-        Parameters
-        ----------
-        run_ids : Optional[list[str]], default=None
-            List of run IDs to sync. If None, all local runs found under
-            `self.src/.nextmv/runs` will be synced.
-        instance_id : Optional[str], default=None
-            Optional instance ID if you want to associate your runs with an
-            instance.
-        verbose : Optional[bool], default=False
-            Whether to print verbose output during the sync process. Useful for
-            debugging a large number of runs being synced.
-
-        Raises
-        ------
-        ValueError
-            If the `src` property is not specified.
-        ValueError
-            If the `client` property is not specified.
-        ValueError
-            If the application does not exist in Nextmv Cloud.
-        ValueError
-            If a run does not exist locally.
-        requests.HTTPError
-            If the response status code is not 2xx.
-        """
-        if self.src is None:
-            raise ValueError(
-                "`src` property for the `Application` must be specified to sync the application to Nextmv Cloud"
-            )
-
-        if self.client is None:
-            raise ValueError(
-                "`client` property for the `Application` must be specified to sync the application to Nextmv Cloud"
-            )
-
-        if not self.exists(self.client, self.id):
-            raise ValueError(
-                f"Application with ID {self.id} does not exist in Nextmv Cloud, create with `Application.new`"
-            )
-
-        # Create a temp dir to store the outputs that are written by default to
-        # ".". During the sync process, we don't need to keep these outputs, so
-        # we can use a temp dir that will be deleted after the sync is done.
-        temp_results_dir = tempfile.mkdtemp(prefix="nextmv-sync-run-")
-
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        if run_ids is None:
-            # If runs are not specified, by default we sync all local runs that
-            # can be found.
-            dirs = os.listdir(runs_dir)
-            run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
-
-            if verbose:
-                log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
-        else:
-            if verbose:
-                log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
-
-        total = 0
-        for run_id in run_ids:
-            synced = self.__sync_run(
-                run_id=run_id,
-                runs_dir=runs_dir,
-                temp_dir=temp_results_dir,
-                instance_id=instance_id,
-                verbose=verbose,
-            )
-            if synced:
-                total += 1
-
-        if verbose:
-            log(f"🚀 Process completed, synced {total}/{len(run_ids)} runs found in {runs_dir}.")
-
-        try:
-            shutil.rmtree(temp_results_dir)
-        except OSError as e:
-            raise Exception(f"error deleting temp output directory: {e}") from e
 
     def track_run(  # noqa: C901
         self,
@@ -3376,7 +2504,7 @@ class Application:
     def track_run_with_result(
         self,
         tracked_run: TrackedRun,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         instance_id: Optional[str] = None,
         output_dir_path: Optional[str] = ".",
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
@@ -4034,69 +3162,6 @@ class Application:
 
         return result
 
-    def __local_run_result(
-        self,
-        run_id: str,
-        run_information: RunInformation,
-        output_dir_path: Optional[str] = ".",
-    ) -> RunResult:
-        """
-        Get the result of a local run.
-
-        This is a private method that retrieves the complete result of a run,
-        including the output data, from a local source. This method serves as
-        the base implementation for retrieving run results, regardless of
-        polling strategy.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to retrieve the result for.
-        run_information : RunInformation
-            Information about the run, including metadata such as output size.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Result of the run, including all metadata and output data.
-
-        Raises
-        ------
-        ValueError
-            If the output format is not JSON and no output_dir_path is
-            provided.
-            If the output format is unknown.
-        """
-
-        # See whether we can attach the output directly or need to save to the given
-        # directory
-        output_type = run_information.metadata.format.format_output.output_type
-        if output_type != OutputFormat.JSON and (not output_dir_path or output_dir_path == ""):
-            raise ValueError(
-                "The output format is not JSON: an `output_dir_path` must be provided.",
-            )
-
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        solutions_dir = os.path.join(runs_dir, run_id, "outputs", "solutions")
-
-        result = RunResult.from_dict(run_information.to_dict())
-
-        if result.metadata.status_v2 != StatusV2.succeeded:
-            result.error_log = result.metadata.error
-
-        if output_type == OutputFormat.JSON:
-            result.output = json.load(open(os.path.join(solutions_dir, "solution.json")))
-        elif output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
-            shutil.copytree(solutions_dir, output_dir_path, dirs_exist_ok=True)
-        else:
-            raise ValueError(f"Unknown output type: {output_type}")
-
-        return result
-
     def __update_app_binary(
         self,
         tar_file: str,
@@ -4409,256 +3474,6 @@ class Application:
         configuration_dict = configuration.to_dict()
 
         return configuration_dict
-
-    def __sync_run(  # noqa: C901
-        self,
-        run_id: str,
-        runs_dir: str,
-        temp_dir: str,
-        instance_id: Optional[str] = None,
-        verbose: Optional[bool] = False,
-    ) -> bool:
-        """
-        Syncs a local run to Nextmv Cloud. Returns True if the run was synced,
-        False if it was skipped (already synced).
-        """
-
-        if verbose:
-            log(f"🔄 Syncing local run {run_id}... ")
-
-        # For files-based runs, the result files are written by default to ".".
-        # Avoid this using a dedicated temp dir.
-        run_result = self.local_run_result(run_id, output_dir_path=temp_dir)
-        input_type = run_result.metadata.format.format_input.input_type
-
-        # Skip runs that have already been synced.
-        already_synced = run_result.synced_run_id is not None and run_result.synced_at is not None
-        if already_synced:
-            if verbose:
-                log(f"   ⏭️  Skipping local run {run_id}, already synced at {run_result.synced_at.isoformat()}.")
-
-            return False
-
-        # Skip runs that don't have the supported type. TODO: delete this when
-        # external runs support CSV_ARCHIVE and MULTI_FILE. Right now,
-        # submitting an external result with a new run is limited to JSON and
-        # TEXT. After this if statement is removed, the rest of the code should
-        # work with CSV_ARCHIVE and MULTI_FILE as well, as using the input dir
-        # path is already considered.
-        if input_type not in {InputFormat.JSON, InputFormat.TEXT}:
-            if verbose:
-                log(
-                    f"   ⏭️  Skipping local run {run_id}, unsupported input type: {input_type.value}. "
-                    f"Supported types are: {[InputFormat.JSON.value, InputFormat.TEXT.value]}",
-                )
-
-            return False
-
-        status = TrackedRunStatus.SUCCEEDED
-        if run_result.metadata.status_v2 != StatusV2.succeeded:
-            status = TrackedRunStatus.FAILED
-
-        # Read the logs of the run and place each line as an element in a list
-        run_dir = os.path.join(runs_dir, run_id)
-        with open(os.path.join(run_dir, "logs", "stderr.log")) as f:
-            stderr_logs = f.readlines()
-
-        # Create the tracked run object and start configuring it.
-        tracked_run = TrackedRun(
-            status=status,
-            duration=int(run_result.metadata.duration),
-            error=run_result.metadata.error,
-            logs=stderr_logs,
-            name=run_result.name,
-            description=run_result.description,
-        )
-
-        # Resolve the input according to its type.
-        inputs_path = os.path.join(run_dir, "inputs")
-        if input_type == InputFormat.JSON:
-            tracked_run.input = json.load(open(os.path.join(inputs_path, "input.json")))
-        elif input_type == InputFormat.TEXT:
-            tracked_run.input = open(os.path.join(inputs_path, "input")).read()
-        else:
-            tracked_run.input_dir_path = inputs_path
-
-        # Resolve the output according to its type.
-        if run_result.metadata.format.format_output.output_type == OutputFormat.JSON:
-            tracked_run.output = run_result.output
-        else:
-            tracked_run.output_dir_path = os.path.join(run_dir, "outputs", "solutions")
-
-        # Actually sync the run by tracking it remotely on Nextmv Cloud.
-        configuration = RunConfiguration(
-            format=Format(
-                format_input=run_result.metadata.format.format_input,
-                format_output=run_result.metadata.format.format_output,
-            ),
-        )
-        tracked_id = self.track_run(
-            tracked_run=tracked_run,
-            instance_id=instance_id,
-            configuration=configuration,
-        )
-
-        # Mark the local run as synced by updating the local run info.
-        run_result.synced_run_id = tracked_id
-        run_result.synced_at = datetime.now(timezone.utc)
-        with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
-            json.dump(run_result.to_dict(), f, indent=2)
-
-        if verbose:
-            log(f"✅ Synced local run {run_id} as remote run {tracked_id}.")
-
-        return True
-
-
-def poll(  # noqa: C901
-    polling_options: PollingOptions,
-    polling_func: Callable[[], tuple[Any, bool]],
-    __sleep_func: Callable[[float], None] = time.sleep,
-) -> Any:
-    """
-    Poll a function until it succeeds or the polling strategy is exhausted.
-
-    You can import the `poll` function directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import poll
-    ```
-
-    This function implements a flexible polling strategy with exponential backoff
-    and jitter. It calls the provided polling function repeatedly until it indicates
-    success, the maximum number of tries is reached, or the maximum duration is exceeded.
-
-    The `polling_func` is a callable that must return a `tuple[Any, bool]`
-    where the first element is the result of the polling and the second
-    element is a boolean indicating if the polling was successful or should be
-    retried.
-
-    Parameters
-    ----------
-    polling_options : PollingOptions
-        Options for configuring the polling behavior, including retry counts,
-        delays, timeouts, and verbosity settings.
-    polling_func : callable
-        Function to call to check if the polling was successful. Must return a tuple
-        where the first element is the result value and the second is a boolean
-        indicating success (True) or need to retry (False).
-
-    Returns
-    -------
-    Any
-        Result value from the polling function when successful.
-
-    Raises
-    ------
-    TimeoutError
-        If the polling exceeds the maximum duration specified in polling_options.
-    RuntimeError
-        If the maximum number of tries is exhausted without success.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import PollingOptions, poll
-    >>> import time
-    >>>
-    >>> # Define a polling function that succeeds after 3 tries
-    >>> counter = 0
-    >>> def check_completion() -> tuple[str, bool]:
-    ...     global counter
-    ...     counter += 1
-    ...     if counter >= 3:
-    ...         return "Success", True
-    ...     return None, False
-    ...
-    >>> # Configure polling options
-    >>> options = PollingOptions(
-    ...     max_tries=5,
-    ...     delay=0.1,
-    ...     backoff=0.2,
-    ...     verbose=True
-    ... )
-    >>>
-    >>> # Poll until the function succeeds
-    >>> result = poll(options, check_completion)
-    >>> print(result)
-    'Success'
-    """
-
-    # Start by sleeping for the duration specified as initial delay.
-    if polling_options.verbose:
-        log(f"polling | sleeping for initial delay: {polling_options.initial_delay}")
-
-    __sleep_func(polling_options.initial_delay)
-
-    start_time = time.time()
-    stopped = False
-
-    # Begin the polling process.
-    max_reached = False
-    ix = 0
-    while True:
-        # Check if we reached the maximum number of tries. Break if so.
-        if ix >= polling_options.max_tries and polling_options.max_tries >= 0:
-            break
-        ix += 1
-
-        # Check is we should stop polling according to the stop callback.
-        if polling_options.stop is not None and polling_options.stop():
-            stopped = True
-
-            break
-
-        # We check if we can stop polling.
-        result, ok = polling_func()
-        if polling_options.verbose:
-            log(f"polling | try # {ix + 1}, ok: {ok}")
-
-        if ok:
-            return result
-
-        # An exit condition happens if we exceed the allowed duration.
-        passed = time.time() - start_time
-        if polling_options.verbose:
-            log(f"polling | elapsed time: {passed}")
-
-        if passed >= polling_options.max_duration and polling_options.max_duration >= 0:
-            raise TimeoutError(
-                f"polling did not succeed after {passed} seconds, exceeds max duration: {polling_options.max_duration}",
-            )
-
-        # Calculate the delay.
-        if max_reached:
-            # If we already reached the maximum, we don't want to further calculate the
-            # delay to avoid overflows.
-            delay = polling_options.max_delay
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
-        else:
-            delay = polling_options.delay  # Base
-            delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
-
-        # We cannot exceed the max delay.
-        if delay >= polling_options.max_delay:
-            max_reached = True
-            delay = polling_options.max_delay
-
-        # Sleep for the calculated delay.
-        sleep_duration = delay
-        if polling_options.verbose:
-            log(f"polling | sleeping for duration: {sleep_duration}")
-
-        __sleep_func(sleep_duration)
-
-    if stopped:
-        log("polling | stop condition met, stopping polling")
-
-        return None
-
-    raise RuntimeError(
-        f"polling did not succeed after {polling_options.max_tries} tries",
-    )
 
 
 def _is_not_exist_error(e: requests.HTTPError) -> bool:

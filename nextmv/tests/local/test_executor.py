@@ -1,5 +1,5 @@
 """
-Unit tests for the nextmv.cloud.local.executor module.
+Unit tests for the nextmv.local.executor module.
 """
 
 import json
@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from nextmv.cloud.local.executor import (
+from nextmv.local.executor import (
     ASSETS_KEY,
     OUTPUTS_KEY,
     SOLUTIONS_KEY,
@@ -48,8 +48,8 @@ class TestLocalExecutor(unittest.TestCase):
             metadata = {"metadata": {"created_at": "2023-01-01T00:00:00Z", "format": {"output": {"type": "json"}}}}
             json.dump(metadata, f)
 
-    @patch("nextmv.cloud.local.executor.load")
-    @patch("nextmv.cloud.local.executor.execute_run")
+    @patch("nextmv.local.executor.load")
+    @patch("nextmv.local.executor.execute_run")
     def test_main_function(self, mock_execute_run, mock_load):
         """Test the main function loads input and calls execute_run."""
         # Setup mock input
@@ -434,14 +434,22 @@ class TestLocalExecutor(unittest.TestCase):
         solution_file = os.path.join(solutions_dst, "solution.json")
         self.assertFalse(os.path.exists(solution_file))
 
-    @patch("nextmv.cloud.local.executor.process_run_output")
-    @patch("nextmv.cloud.local.executor.process_run_input")
+    @patch("nextmv.local.executor.process_run_output")
+    @patch("nextmv.local.executor.process_run_input")
     @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data='{"metadata": {}}')
-    @patch("nextmv.cloud.local.executor.subprocess.run")
-    @patch("nextmv.cloud.local.executor.shutil.copytree")
-    @patch("nextmv.cloud.local.executor.tempfile.TemporaryDirectory")
+    @patch("nextmv.local.executor.subprocess.run")
+    @patch("nextmv.local.executor.shutil.copytree")
+    @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
+    @patch("nextmv.local.executor.os.makedirs")
     def test_execute_run_full_flow(
-        self, mock_temp_dir, mock_copytree, mock_subprocess_run, mock_open, mock_process_input, mock_process_output
+        self,
+        mock_makedirs,
+        mock_temp_dir,
+        mock_copytree,
+        mock_subprocess_run,
+        mock_open,
+        mock_process_input,
+        mock_process_output,
     ):
         """Test the complete execute_run function flow."""
         # Setup mocks
@@ -503,10 +511,10 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.cloud.local.executor.process_run_logs") as mock_logs,
-            patch("nextmv.cloud.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.cloud.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.cloud.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor.process_run_logs") as mock_logs,
+            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor.process_run_assets") as mock_assets,
+            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
             process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
 
@@ -530,10 +538,10 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.cloud.local.executor.process_run_logs") as mock_logs,
-            patch("nextmv.cloud.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.cloud.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.cloud.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor.process_run_logs") as mock_logs,
+            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor.process_run_assets") as mock_assets,
+            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
             process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
 
