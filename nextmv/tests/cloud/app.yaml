@@ -64,3 +64,12 @@ configuration:
           control_type: select
           hidden_from:
             - operator
+  content:
+    format: "multi-file"
+    multi-file:
+      input:
+        path: "my-inputs"
+      output:
+        statistics: "my-outputs/statistics.json"
+        assets: "my-outputs/assets.json"
+        solutions: "my-outputs/solutions"

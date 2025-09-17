@@ -3426,6 +3426,21 @@ class Application:
             },
         }
 
+        if manifest.configuration is not None and manifest.configuration.content is not None:
+            io_config = {
+                "format": manifest.configuration.content.format,
+            }
+            if manifest.configuration.content.multi_file is not None:
+                io_config["multi_file"] = {
+                    "input_path": manifest.configuration.content.multi_file.input.path,
+                    "output_configuration": {
+                        "statistics_path": manifest.configuration.content.multi_file.output.statistics,
+                        "assets_path": manifest.configuration.content.multi_file.output.assets,
+                        "solutions_path": manifest.configuration.content.multi_file.output.solutions,
+                    },
+                }
+            activation_request["io_configuration"] = io_config
+
         if manifest.configuration is not None and manifest.configuration.options is not None:
             options = manifest.configuration.options.to_dict()
             if "format" in options and isinstance(options["format"], list):

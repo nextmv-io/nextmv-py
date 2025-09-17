@@ -692,6 +692,160 @@ class ManifestOptions(BaseModel):
         )
 
 
+class ManifestContentMultiFileInput(BaseModel):
+    """
+    Configuration for multi-file content format input.
+
+    You can import the `ManifestContentMultiFileInput` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestContentMultiFileInput
+    ```
+
+    Parameters
+    ----------
+    path : str
+        The path to the input file or directory.
+
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestContentMultiFileInput
+    >>> input_config = ManifestContentMultiFileInput(path="data/input/")
+    >>> input_config.path
+    'data/input/'
+    """
+
+    path: str
+    """The path to the input file or directory."""
+
+
+class ManifestContentMultiFileOutput(BaseModel):
+    """
+    Configuration for multi-file content format output.
+
+    You can import the `ManifestContentMultiFileOutput` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestContentMultiFileOutput
+    ```
+
+    Parameters
+    ----------
+    statistics : str
+        The path to the statistics file.
+    assets : str
+        The path to the assets file.
+    solutions : str
+        The path to the solutions directory.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestContentMultiFileOutput
+    >>> output_config = ManifestContentMultiFileOutput(
+    ...     statistics="my-outputs/statistics.json",
+    ...     assets="my-outputs/assets.json",
+    ...     solutions="my-outputs/solutions/"
+    ... )
+    >>> output_config.statistics
+    'my-outputs/statistics.json'
+    """
+
+    statistics: str
+    """The path to the statistics file."""
+    assets: str
+    """The path to the assets file."""
+    solutions: str
+    """The path to the solutions directory."""
+
+
+class ManifestContentMultiFile(BaseModel):
+    """
+    Configuration for multi-file content format.
+
+    You can import the `ManifestContentMultiFile` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestContentMultiFile
+    ```
+
+    Parameters
+    ----------
+    input : ManifestContentMultiFileInput
+        Configuration for multi-file content format input.
+    output : ManifestContentMultiFileOutput
+        Configuration for multi-file content format output.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestContentMultiFile, ManifestContentMultiFileInput, ManifestContentMultiFileOutput
+    >>> multi_file_config = ManifestContentMultiFile(
+    ...     input=ManifestContentMultiFileInput(path="data/input/"),
+    ...     output=ManifestContentMultiFileOutput(
+    ...         statistics="my-outputs/statistics.json",
+    ...         assets="my-outputs/assets.json",
+    ...         solutions="my-outputs/solutions/"
+    ...     )
+    ... )
+    >>> multi_file_config.input.path
+    'data/input/'
+
+    """
+
+    input: ManifestContentMultiFileInput
+    """Configuration for multi-file content format input."""
+    output: ManifestContentMultiFileOutput
+    """Configuration for multi-file content format output."""
+
+
+class ManifestContent(BaseModel):
+    """
+    Content configuration for specifying how the app input/output is handled.
+
+    You can import the `ManifestContent` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ManifestContent
+    ```
+
+    Parameters
+    ----------
+    format : str
+        The format of the content. Must be one of "json", "multi-file", or "csv-archive".
+    multi_file : Optional[ManifestContentMultiFile], default=None
+        Configuration for multi-file content format.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import ManifestContent
+    >>> content_config = ManifestContent(
+    ...     format="multi-file",
+    ...     multi_file=ManifestContentMultiFile(
+    ...         input=ManifestContentMultiFileInput(path="data/input/"),
+    ...         output=ManifestContentMultiFileOutput(
+    ...             statistics="my-outputs/statistics.json",
+    ...             assets="my-outputs/assets.json",
+    ...             solutions="my-outputs/solutions/"
+    ...         )
+    ...     )
+    ... )
+    >>> content_config.format
+    'multi-file'
+    >>> content_config.multi_file.input.path
+    'data/input/'
+    """
+
+    format: str
+    """The format of the content. Must be one of "json", "multi-file",
+    or "csv-archive"."""
+    multi_file: Optional[ManifestContentMultiFile] = Field(
+        serialization_alias="multi-file",
+        validation_alias=AliasChoices("multi-file", "multi_file"),
+        default=None,
+    )
+    """Configuration for multi-file content format."""
+
+
 class ManifestConfiguration(BaseModel):
     """
     Configuration for the decision model.
@@ -721,6 +875,8 @@ class ManifestConfiguration(BaseModel):
 
     options: ManifestOptions
     """Options for the decision model."""
+    content: Optional[ManifestContent] = None
+    """Content configuration for specifying how the app input/output is handled."""
 
 
 class Manifest(BaseModel):
