@@ -1347,16 +1347,26 @@ class Application:
                     f"batch experiment {id} does not exist, input_set_id must be defined to create a new one"
                 ) from e
         else:
-            runs = [
-                BatchExperimentRun(
-                    instance_id=candidate_instance_id,
-                    input_set_id=input_set_id,
-                ),
-                BatchExperimentRun(
-                    instance_id=baseline_instance_id,
-                    input_set_id=input_set_id,
-                ),
-            ]
+            # Get all input IDs from the input set.
+            input_set = self.input_set(input_set_id=input_set_id)
+            if not input_set.input_ids:
+                raise ValueError(f"input set {input_set_id} does not contain any inputs")
+            runs = []
+            for input_id in input_set.input_ids:
+                runs.append(
+                    BatchExperimentRun(
+                        instance_id=candidate_instance_id,
+                        input_set_id=input_set_id,
+                        input_id=input_id,
+                    )
+                )
+                runs.append(
+                    BatchExperimentRun(
+                        instance_id=baseline_instance_id,
+                        input_set_id=input_set_id,
+                        input_id=input_id,
+                    )
+                )
             batch_experiment_id = self.new_batch_experiment(
                 name=name,
                 description=description,
@@ -4363,18 +4373,17 @@ class Application:
         """
 
         options_dict = {}
-        if isinstance(input, Input) and input.options is not None:
-            options_dict = input.options.to_dict_cloud()
-
         if options is not None:
             if isinstance(options, Options):
                 options_dict = options.to_dict_cloud()
+
             elif isinstance(options, dict):
                 for k, v in options.items():
                     if isinstance(v, str):
                         options_dict[k] = v
-                    else:
-                        options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
+                        continue
+
+                    options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
 
         return options_dict
 
