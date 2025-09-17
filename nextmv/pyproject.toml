@@ -53,6 +53,8 @@ Repository = "https://github.com/nextmv-io/nextmv-py"
 [project.optional-dependencies]
 all = [
     "mlflow>=2.17.2",
+    "folium>=0.20.0",
+    "plotly>=6.0.1",
 ]
 dev = [
     "build>=1.0.3",
@@ -69,6 +71,8 @@ dev = [
     # mlflow model can be run using the __entrypoint__.py file as a main.py
     # script.
     "nextroute>=1.11.1",
+    "folium>=0.20.0",
+    "plotly>=6.0.1",
 ]
 
 [tool.hatch.version]

@@ -1,5 +1,37 @@
 """Functionality for interacting with the Nextmv Cloud."""
 
+# These imports are kept for backwards compatibility but the preferred import path is
+# from nextmv directly. These imports will be removed in a future release.
+from nextmv.manifest import MANIFEST_FILE_NAME as MANIFEST_FILE_NAME
+from nextmv.manifest import Manifest as Manifest
+from nextmv.manifest import ManifestBuild as ManifestBuild
+from nextmv.manifest import ManifestOption as ManifestOption
+from nextmv.manifest import ManifestPython as ManifestPython
+from nextmv.manifest import ManifestPythonModel as ManifestPythonModel
+from nextmv.manifest import ManifestRuntime as ManifestRuntime
+from nextmv.manifest import ManifestType as ManifestType
+from nextmv.polling import PollingOptions as PollingOptions
+from nextmv.run import ErrorLog as ErrorLog
+from nextmv.run import ExternalRunResult as ExternalRunResult
+from nextmv.run import Format as Format
+from nextmv.run import FormatInput as FormatInput
+from nextmv.run import FormatOutput as FormatOutput
+from nextmv.run import Metadata as Metadata
+from nextmv.run import RunConfiguration as RunConfiguration
+from nextmv.run import RunInformation as RunInformation
+from nextmv.run import RunLog as RunLog
+from nextmv.run import RunQueuing as RunQueuing
+from nextmv.run import RunResult as RunResult
+from nextmv.run import RunType as RunType
+from nextmv.run import RunTypeConfiguration as RunTypeConfiguration
+from nextmv.run import TrackedRun as TrackedRun
+from nextmv.run import TrackedRunStatus as TrackedRunStatus
+from nextmv.run import run_duration as run_duration
+from nextmv.safe import safe_id as safe_id
+from nextmv.safe import safe_name_and_id as safe_name_and_id
+from nextmv.status import Status as Status
+from nextmv.status import StatusV2 as StatusV2
+
 from .acceptance_test import AcceptanceTest as AcceptanceTest
 from .acceptance_test import AcceptanceTestResults as AcceptanceTestResults
 from .acceptance_test import Comparison as Comparison
@@ -20,9 +52,6 @@ from .account import Account as Account
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application
-from .application import DownloadURL as DownloadURL
-from .application import PollingOptions as PollingOptions
-from .application import UploadURL as UploadURL
 from .application import poll as poll
 from .batch_experiment import BatchExperiment as BatchExperiment
 from .batch_experiment import BatchExperimentInformation as BatchExperimentInformation
@@ -34,32 +63,6 @@ from .input_set import InputSet as InputSet
 from .input_set import ManagedInput as ManagedInput
 from .instance import Instance as Instance
 from .instance import InstanceConfiguration as InstanceConfiguration
-from .manifest import MANIFEST_FILE_NAME as MANIFEST_FILE_NAME
-from .manifest import Manifest as Manifest
-from .manifest import ManifestBuild as ManifestBuild
-from .manifest import ManifestOption as ManifestOption
-from .manifest import ManifestPython as ManifestPython
-from .manifest import ManifestPythonModel as ManifestPythonModel
-from .manifest import ManifestRuntime as ManifestRuntime
-from .manifest import ManifestType as ManifestType
-from .run import ErrorLog as ErrorLog
-from .run import ExternalRunResult as ExternalRunResult
-from .run import Format as Format
-from .run import FormatInput as FormatInput
-from .run import FormatOutput as FormatOutput
-from .run import Metadata as Metadata
-from .run import RunConfiguration as RunConfiguration
-from .run import RunInformation as RunInformation
-from .run import RunLog as RunLog
-from .run import RunQueuing as RunQueuing
-from .run import RunResult as RunResult
-from .run import RunType as RunType
-from .run import RunTypeConfiguration as RunTypeConfiguration
-from .run import TrackedRun as TrackedRun
-from .run import TrackedRunStatus as TrackedRunStatus
-from .run import run_duration as run_duration
-from .safe import safe_id as safe_id
-from .safe import safe_name_and_id as safe_name_and_id
 from .scenario import Scenario as Scenario
 from .scenario import ScenarioConfiguration as ScenarioConfiguration
 from .scenario import ScenarioInput as ScenarioInput
@@ -68,8 +71,8 @@ from .secrets import Secret as Secret
 from .secrets import SecretsCollection as SecretsCollection
 from .secrets import SecretsCollectionSummary as SecretsCollectionSummary
 from .secrets import SecretType as SecretType
-from .status import Status as Status
-from .status import StatusV2 as StatusV2
+from .url import DownloadURL as DownloadURL
+from .url import UploadURL as UploadURL
 from .version import Version as Version
 from .version import VersionExecutable as VersionExecutable
 from .version import VersionExecutableRequirements as VersionExecutableRequirements

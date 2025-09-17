@@ -11,18 +11,23 @@ new_run
     Function to initialize a new run.
 record_input
     Function to write the input to the appropriate location.
+calculate_files_size
+    Function to calculate the total size of files in a directory.
 """
 
+import importlib.util
 import json
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
-from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.run import Format, FormatInput, Metadata, RunInformation, StatusV2
-from nextmv.cloud.safe import safe_id
+from nextmv.input import DEFAULT_INPUT_JSON_FILE, INPUTS_KEY
+from nextmv.manifest import Manifest
+from nextmv.run import Format, FormatInput, Metadata, RunInformation, StatusV2
+from nextmv.safe import safe_id
 
 
 def run(
@@ -38,12 +43,6 @@ def run(
 ) -> str:
     """
     Execute a local run.
-
-    You can import the `run` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import run
-    ```
 
     This method recreates, partially, what the Nextmv Cloud does in the backend
     when running an application. A run ID is generated, a run directory is
@@ -80,6 +79,20 @@ def run(
         The ID of the created run.
     """
 
+    # Check for required optional dependencies
+    missing_deps = []
+    if importlib.util.find_spec("folium") is None:
+        missing_deps.append("folium")
+    if importlib.util.find_spec("plotly") is None:
+        missing_deps.append("plotly")
+
+    if missing_deps:
+        raise ImportError(
+            f"{' and '.join(missing_deps)} {'is' if len(missing_deps) == 1 else 'are'} not installed. "
+            "Please install optional dependencies with `pip install nextmv[all]`"
+        )
+
+    # Initialize the run: create the ID, dir, and write the input.
     run_id = safe_id("local")
     run_dir = new_run(
         app_id=app_id,
@@ -96,20 +109,9 @@ def run(
         inputs_dir_path=inputs_dir_path,
     )
 
-    # Start the process as a daemon (detached) so we don't wait for it to finish
-    args = ["python", "executor.py"]
-    process = subprocess.Popen(
-        args,
-        env=os.environ,
-        text=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        cwd=os.path.dirname(__file__),
-        start_new_session=True,  # Detach from parent process
-    )
-
-    # Send input and close stdin immediately without waiting
+    # Start the process as a daemon (detached) so we don't wait for it to
+    # finish. We send the input via stdin and close it immediately without
+    # waiting. We call the `executor.py` script to do the actual execution.
     stdin_input = json.dumps(
         {
             "run_id": run_id,
@@ -121,6 +123,17 @@ def run(
             "inputs_dir_path": os.path.abspath(inputs_dir_path) if inputs_dir_path is not None else None,
             "options": options,
         }
+    )
+    args = [sys.executable, "executor.py"]
+    process = subprocess.Popen(
+        args,
+        env=os.environ,
+        text=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        cwd=os.path.dirname(__file__),
+        start_new_session=True,  # Detach from parent process
     )
     process.stdin.write(stdin_input)
     process.stdin.close()
@@ -138,12 +151,6 @@ def new_run(
 ) -> str:
     """
     Initializes a new run.
-
-    You can import the `new_run` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import new_run
-    ```
 
     The run information is recorded in a JSON file within the run directory.
 
@@ -223,12 +230,6 @@ def record_input(
     """
     Writes the input to the appropriate location.
 
-    You can import the `record_input` method directly from `local`:
-
-    ```python
-    from nextmv.cloud.local import record_input
-    ```
-
     The size of the input is calculated and recorded in the run information.
 
     Parameters
@@ -246,7 +247,7 @@ def record_input(
     """
 
     # Create the inputs directory.
-    run_inputs_dir = os.path.join(run_dir, "inputs")
+    run_inputs_dir = os.path.join(run_dir, INPUTS_KEY)
     os.makedirs(run_inputs_dir, exist_ok=True)
 
     if inputs_dir_path is not None and inputs_dir_path != "":
@@ -257,7 +258,7 @@ def record_input(
 
     elif isinstance(input_data, dict):
         # If no inputs_dir_path is provided, try a single JSON input.
-        with open(os.path.join(run_inputs_dir, "input.json"), "w") as f:
+        with open(os.path.join(run_inputs_dir, DEFAULT_INPUT_JSON_FILE), "w") as f:
             json.dump(input_data, f, indent=2)
 
     elif isinstance(input_data, str):
@@ -266,7 +267,9 @@ def record_input(
             f.write(input_data)
 
     else:
-        raise ValueError("Invalid input data type")
+        raise ValueError(
+            "Invalid input data type: input_data must be a dict or str, or inputs_dir_path must be provided."
+        )
 
     # Update the input size in the run information file.
     calculate_files_size(run_dir, run_id, run_inputs_dir, metadata_key="input_size")
@@ -275,13 +278,6 @@ def record_input(
 def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key: str) -> None:
     """
     Calculates the total size of the files in a directory, in bytes.
-
-    You can import the `calculate_files_size` method directly from
-    `local`:
-
-    ```python
-    from nextmv.cloud.local import calculate_files_size
-    ```
 
     The calculated size is stored in the run information metadata under the
     specified key.

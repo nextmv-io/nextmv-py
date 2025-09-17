@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Optional
 
 from nextmv.base_model import BaseModel
-from nextmv.cloud.run import Format
+from nextmv.run import Format
 
 
 class ManagedInput(BaseModel):

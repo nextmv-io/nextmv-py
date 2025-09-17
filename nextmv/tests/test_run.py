@@ -2,7 +2,7 @@ import datetime
 import time
 import unittest
 
-from nextmv.cloud.run import run_duration
+from nextmv.run import run_duration
 
 
 class TestRunDuration(unittest.TestCase):
