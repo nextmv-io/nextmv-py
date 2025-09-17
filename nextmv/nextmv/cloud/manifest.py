@@ -43,6 +43,7 @@ import yaml
 from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
+from nextmv.input import InputFormat
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
 
@@ -844,6 +845,12 @@ class ManifestContent(BaseModel):
         default=None,
     )
     """Configuration for multi-file content format."""
+
+    def __post_init__(self):
+        """Post-initialization to validate fields."""
+        acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
+        if self.format not in acceptable_formats:
+            raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
 
 
 class ManifestConfiguration(BaseModel):
