@@ -1,5 +1,15 @@
 """
-Utilities for generating “safe” IDs and huma-readable names
+
+The safe module contains utilities for generating “safe” IDs and human-readable
+names.
+
+Functions
+---------
+safe_name_and_id
+    Generate a safe ID and human-readable name from a prefix and user-supplied
+    identifier.
+safe_id
+    Generate a safe ID from a prefix.
 """
 
 import re

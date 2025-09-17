@@ -58,6 +58,10 @@ OUTPUTS_KEY = "outputs"
 """
 Outputs key constant used for identifying outputs in the run output.
 """
+LOGS_FILE = "stderr.log"
+"""
+Constant used for identifying the file used for logging.
+"""
 
 
 def main() -> None:
@@ -115,50 +119,72 @@ def execute_run(
         provided, this parameter is ignored.
     """
 
-    # Create a temp dir, and copy the entire src there, to have a transient
-    # place to work from, and be cleaned up afterwards.
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_src = os.path.join(temp_dir, "src")
-        shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(".nextmv"))
+    # Create the logs dir to register whatever failure might happen during the
+    # execution process.
+    logs_dir = os.path.join(run_dir, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
 
-        stdin_input = process_run_input(
-            temp_src=temp_src,
-            run_format=run_config["format"]["input"]["type"],
-            input_data=input_data,
-            inputs_dir_path=inputs_dir_path,
-        )
+    # The complete execution is wrapped to capture any errors.
+    try:
+        # Create a temp dir, and copy the entire src there, to have a transient
+        # place to work from, and be cleaned up afterwards.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_src = os.path.join(temp_dir, "src")
+            shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(".nextmv"))
 
-        # Set the run status to running.
+            stdin_input = process_run_input(
+                temp_src=temp_src,
+                run_format=run_config["format"]["input"]["type"],
+                input_data=input_data,
+                inputs_dir_path=inputs_dir_path,
+            )
+
+            # Set the run status to running.
+            info_file = os.path.join(run_dir, f"{run_id}.json")
+            with open(info_file, "r+") as f:
+                info = json.load(f)
+                info["metadata"]["status_v2"] = "running"
+                f.seek(0)
+                json.dump(info, f, indent=2)
+                f.truncate()
+
+            # Start a Python subprocess to execute the entrypoint. For now, we are
+            # supporting a Python-first experience, so we are not summoning
+            # applications that are not Python-based.
+            entrypoint = os.path.join(temp_src, manifest_entrypoint)
+            args = ["python", entrypoint] + options_args(options)
+
+            result = subprocess.run(
+                args,
+                env=os.environ,
+                check=False,
+                text=True,
+                capture_output=True,
+                input=stdin_input,
+                cwd=temp_src,
+            )
+
+            process_run_output(
+                run_id=run_id,
+                temp_src=temp_src,
+                result=result,
+                run_dir=run_dir,
+            )
+
+    except Exception as e:
+        # If we encounter an exception, we log it to the stderr log file.
+        with open(os.path.join(logs_dir, LOGS_FILE), "a") as f:
+            f.write(f"\nException during run execution: {str(e)}\n")
+
+        # Also, we update the run information file to set the status to failed.
         info_file = os.path.join(run_dir, f"{run_id}.json")
         with open(info_file, "r+") as f:
             info = json.load(f)
-            info["metadata"]["status_v2"] = "running"
+            info["metadata"]["status_v2"] = "failed"
+            info["metadata"]["error"] = str(e)
             f.seek(0)
             json.dump(info, f, indent=2)
             f.truncate()
-
-        # Start a Python subprocess to execute the entrypoint. For now, we are
-        # supporting a Python-first experience, so we are not summoning
-        # applications that are not Python-based.
-        entrypoint = os.path.join(temp_src, manifest_entrypoint)
-        args = ["python", entrypoint] + options_args(options)
-
-        result = subprocess.run(
-            args,
-            env=os.environ,
-            check=False,
-            text=True,
-            capture_output=True,
-            input=stdin_input,
-            cwd=temp_src,
-        )
-
-        process_run_output(
-            run_id=run_id,
-            temp_src=temp_src,
-            result=result,
-            run_dir=run_dir,
-        )
 
 
 def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:
@@ -369,7 +395,7 @@ def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]) -> 
 
     logs_dir = os.path.join(run_dir, "logs")
     os.makedirs(logs_dir, exist_ok=True)
-    with open(os.path.join(logs_dir, "stderr.log"), "w") as f:
+    with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
         f.write(result.stderr)
 
 

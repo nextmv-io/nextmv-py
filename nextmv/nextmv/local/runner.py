@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
@@ -88,6 +89,7 @@ def run(
             "Please install optional dependencies with `pip install nextmv[all]`"
         )
 
+    # Initialize the run: create the ID, dir, and write the input.
     run_id = safe_id("local")
     run_dir = new_run(
         app_id=app_id,
@@ -104,20 +106,9 @@ def run(
         inputs_dir_path=inputs_dir_path,
     )
 
-    # Start the process as a daemon (detached) so we don't wait for it to finish.
-    args = ["python", "executor.py"]
-    process = subprocess.Popen(
-        args,
-        env=os.environ,
-        text=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        cwd=os.path.dirname(__file__),
-        start_new_session=True,  # Detach from parent process
-    )
-
-    # Send input and close stdin immediately without waiting
+    # Start the process as a daemon (detached) so we don't wait for it to
+    # finish. We send the input via stdin and close it immediately without
+    # waiting. We call the `executor.py` script to do the actual execution.
     stdin_input = json.dumps(
         {
             "run_id": run_id,
@@ -129,6 +120,17 @@ def run(
             "inputs_dir_path": os.path.abspath(inputs_dir_path) if inputs_dir_path is not None else None,
             "options": options,
         }
+    )
+    args = [sys.executable, "executor.py"]
+    process = subprocess.Popen(
+        args,
+        env=os.environ,
+        text=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        cwd=os.path.dirname(__file__),
+        start_new_session=True,  # Detach from parent process
     )
     process.stdin.write(stdin_input)
     process.stdin.close()

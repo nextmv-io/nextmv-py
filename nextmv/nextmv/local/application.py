@@ -62,8 +62,6 @@ class Application:
 
     Parameters
     ----------
-    id : str
-        ID of the application.
     src : str
         Source of the application, when initialized locally. An application's
         source typically refers to the directory containing the `app.yaml`
@@ -74,13 +72,11 @@ class Application:
     Examples
     --------
     >>> from nextmv.local import Application
-    >>> app = Application(id="your-app-id", src="path/to/app")
+    >>> app = Application(src="path/to/app")
     >>> # Retrieve an app's run result
     >>> result = app.run_result("run-id")
     """
 
-    id: str
-    """ID of the application."""
     src: str
     """
     Source of the application, when initialized locally. An application's
@@ -94,8 +90,7 @@ class Application:
     @classmethod
     def initialize(
         cls,
-        name: str,
-        id: Optional[str] = None,
+        src: Optional[str] = None,
         description: Optional[str] = None,
         destination: Optional[str] = None,
     ) -> "Application":
@@ -103,24 +98,23 @@ class Application:
         Initialize a sample Nextmv application, locally.
 
         This method will create a new application in the local file system. The
-        application is a folder with the name given by `name`, under the
-        location given by `destination`. If the `destination` parameter is not
-        specified, the current working directory is used as default. This
-        method will scaffold the application with the necessary files and
-        directories to have an opinionated structure for your decision model.
-        Once the application is initialized, you are encouraged to complete it
-        with the decision model itself, so that the application can be run
-        locally.
+        application is a dir with the name given by `src` (it becomes the
+        _source_ of the app), under the location given by `destination`. If the
+        `destination` parameter is not specified, the current working directory
+        is used as default. This method will scaffold the application with the
+        necessary files and directories to have an opinionated structure for
+        your decision model. Once the application is initialized, you are
+        encouraged to complete it with the decision model itself, so that the
+        application can be run locally.
 
-        Use the `destination` parameter to specify where you want the app to be
-        initialized, using the current working directory by default.
+        If the `src` parameter is not provided, a random name will be generated
+        for the application.
 
         Parameters
         ----------
-        name : str
-            Name of the application.
-        id : str, optional
-            ID of the application. Will be generated if not provided.
+        src : str, optional
+            Source (ID, name) of the application. Will be generated if not
+            provided.
         description : str, optional
             Description of the application.
         destination : str, optional
@@ -134,11 +128,14 @@ class Application:
         """
 
         destination_dir = os.getcwd() if destination is None else destination
-        app_id = id if id is not None else safe_id("app")
+        app_id = src if src is not None else safe_id("app")
 
         # Create the new directory with the given name.
-        src = os.path.join(destination_dir, name)
-        os.makedirs(src, exist_ok=True)
+        app_src = os.path.join(destination_dir, app_id)
+        if os.path.exists(app_src):
+            raise FileExistsError(f"destination dir for src already exists: {app_src}")
+
+        os.makedirs(app_src, exist_ok=False)
 
         # Get the path to the initial app structure template.
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -147,19 +144,10 @@ class Application:
 
         # Copy everything from initial_app_structure to the new directory.
         if os.path.exists(initial_app_structure_path):
-            for item in os.listdir(initial_app_structure_path):
-                source_path = os.path.join(initial_app_structure_path, item)
-                dest_path = os.path.join(src, item)
-
-                if os.path.isdir(source_path):
-                    shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
-                    continue
-
-                shutil.copy2(source_path, dest_path)
+            shutil.copytree(initial_app_structure_path, app_src, dirs_exist_ok=True)
 
         return cls(
-            id=app_id,
-            src=src,
+            src=app_src,
             description=description,
         )
 
@@ -506,7 +494,7 @@ class Application:
         options_dict = self.__extract_options_dict(options, json_configurations)
         run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
         run_id = run(
-            app_id=self.id,
+            app_id=self.src,
             src=self.src,
             manifest=manifest,
             run_config=run_config_dict,
@@ -719,7 +707,7 @@ class Application:
                 "target Application does not exist in Nextmv Cloud, create it with `cloud.Application.new`"
             )
         if verbose:
-            log(f"☁️ Starting sync of local application runs to Nextmv Cloud application {target.id}")
+            log(f"☁️ Starting sync of local application `{self.src}` to Nextmv Cloud application `{target.id}`.")
 
         # Create a temp dir to store the outputs that are written by default to
         # ".". During the sync process, we don't need to keep these outputs, so
@@ -754,8 +742,9 @@ class Application:
 
         if verbose:
             log(
-                f"🚀 Process completed, synced {total}/{len(run_ids)} runs found in {runs_dir} "
-                f"to Nextmv Cloud application {target.id}."
+                f"🚀 Process completed, synced local application `{self.src}` to "
+                f"Nextmv Cloud application `{target.id}`: "
+                f"{total}/{len(run_ids)} runs."
             )
 
         try:
@@ -977,7 +966,7 @@ class Application:
         """
 
         if verbose:
-            log(f"🔄 Syncing local run {run_id}... ")
+            log(f"🔄 Syncing local run `{run_id}`... ")
 
         # For files-based runs, the result files are written by default to ".".
         # Avoid this using a dedicated temp dir.
@@ -988,7 +977,7 @@ class Application:
         already_synced = run_result.synced_run_id is not None and run_result.synced_at is not None
         if already_synced:
             if verbose:
-                log(f"   ⏭️  Skipping local run {run_id}, already synced at {run_result.synced_at.isoformat()}.")
+                log(f"   ⏭️  Skipping local run `{run_id}`, already synced at {run_result.synced_at.isoformat()}.")
 
             return False
 
@@ -1001,7 +990,7 @@ class Application:
         if input_type not in {InputFormat.JSON, InputFormat.TEXT}:
             if verbose:
                 log(
-                    f"   ⏭️  Skipping local run {run_id}, unsupported input type: {input_type.value}. "
+                    f"   ⏭️  Skipping local run `{run_id}`, unsupported input type: {input_type.value}. "
                     f"Supported types are: {[InputFormat.JSON.value, InputFormat.TEXT.value]}",
                 )
 
@@ -1061,6 +1050,6 @@ class Application:
             json.dump(run_result.to_dict(), f, indent=2)
 
         if verbose:
-            log(f"✅ Synced local run {run_id} as remote run {tracked_id}.")
+            log(f"✅ Synced local run `{run_id}` as remote run `{tracked_id}`.")
 
         return True

@@ -5,6 +5,7 @@ Unit tests for the nextmv.local.runner module.
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -267,7 +268,7 @@ print(json.dumps(output))
         popen_args = mock_popen.call_args
 
         # Check the command
-        self.assertEqual(popen_args[0][0], ["python", "executor.py"])
+        self.assertEqual(popen_args[0][0], [sys.executable, "executor.py"])
 
         # Check that stdin was written to
         mock_process.stdin.write.assert_called_once()

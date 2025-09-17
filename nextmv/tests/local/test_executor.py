@@ -440,8 +440,16 @@ class TestLocalExecutor(unittest.TestCase):
     @patch("nextmv.local.executor.subprocess.run")
     @patch("nextmv.local.executor.shutil.copytree")
     @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
+    @patch("nextmv.local.executor.os.makedirs")
     def test_execute_run_full_flow(
-        self, mock_temp_dir, mock_copytree, mock_subprocess_run, mock_open, mock_process_input, mock_process_output
+        self,
+        mock_makedirs,
+        mock_temp_dir,
+        mock_copytree,
+        mock_subprocess_run,
+        mock_open,
+        mock_process_input,
+        mock_process_output,
     ):
         """Test the complete execute_run function flow."""
         # Setup mocks

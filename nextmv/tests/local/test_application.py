@@ -20,19 +20,16 @@ class TestApplication(unittest.TestCase):
         """Test the Application.initialize method."""
         with tempfile.TemporaryDirectory() as temp_dir:
             app_name = "test-app"
-            app_id = "test-app-id"
             description = "Test application"
 
             # Initialize the application
             app = Application.initialize(
-                name=app_name,
-                id=app_id,
+                src=app_name,
                 description=description,
                 destination=temp_dir,
             )
 
             # Verify the application object
-            self.assertEqual(app.id, app_id)
             self.assertEqual(app.description, description)
             self.assertEqual(app.src, os.path.join(temp_dir, app_name))
 
@@ -66,20 +63,17 @@ class TestApplication(unittest.TestCase):
             try:
                 os.chdir(temp_dir)
 
-                app_name = "default-test-app"
-
                 # Initialize with minimal parameters
-                app = Application.initialize(name=app_name)
+                app = Application.initialize()
 
                 # Verify the application object has generated ID
-                self.assertIsNotNone(app.id)
                 self.assertIsNone(app.description)  # description should be None when not provided
                 # Use the current working directory for comparison since that's where the app is created
-                expected_src_path = os.path.join(os.getcwd(), app_name)
+                expected_src_path = os.path.join(os.getcwd(), app.src)
                 self.assertEqual(app.src, expected_src_path)
 
                 # Verify the directory structure was created in current directory
-                app_dir = os.path.join(temp_dir, app_name)
+                app_dir = os.path.join(temp_dir, app.src)
                 self.assertTrue(os.path.exists(app_dir))
                 self.assertTrue(os.path.isdir(app_dir))
 
@@ -91,7 +85,7 @@ class TestApplication(unittest.TestCase):
                 os.chdir(original_cwd)
 
     def test_initialize_existing_directory(self):
-        """Test that initialize works when the directory already exists."""
+        """Test that initialize does not work when the directory already exists."""
         with tempfile.TemporaryDirectory() as temp_dir:
             app_name = "existing-app"
             app_dir = os.path.join(temp_dir, app_name)
@@ -99,18 +93,16 @@ class TestApplication(unittest.TestCase):
             # Pre-create the directory
             os.makedirs(app_dir, exist_ok=True)
 
-            # Initialize should still work
-            app = Application.initialize(
-                name=app_name,
-                destination=temp_dir,
-            )
+            # Initialize should raise FileExistsError
+            with self.assertRaises(FileExistsError) as context:
+                Application.initialize(
+                    src=app_name,
+                    destination=temp_dir,
+                )
 
-            # Verify the application was created successfully
-            self.assertIsNotNone(app.id)
-            self.assertIsNone(app.description)  # description should be None when not provided
-            self.assertEqual(app.src, app_dir)
-            self.assertTrue(os.path.exists(app_dir))
-            self.assertTrue(os.path.exists(os.path.join(app_dir, "app.yaml")))
+            # Verify the error message contains the expected path
+            self.assertIn(app_dir, str(context.exception))
+            self.assertIn("destination dir for src already exists", str(context.exception))
 
 
 class TestApplicationNewLocalRun(unittest.TestCase):
@@ -153,7 +145,7 @@ print(json.dumps(output))
 """)
 
         # Create test application
-        self.app = Application(id="test-app", src=self.app_src)
+        self.app = Application(src=self.app_src)
 
     def tearDown(self):
         """Clean up test fixtures."""
@@ -390,7 +382,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         os.makedirs(self.runs_dir)
 
         # Create test application
-        self.app = Application(id="test-app", src=self.app_src)
+        self.app = Application(src=self.app_src)
 
         # Test run ID
         self.test_run_id = "run-123"
