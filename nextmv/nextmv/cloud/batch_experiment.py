@@ -79,7 +79,7 @@ class ExperimentStatus(str, Enum):
     FAILED = "failed"
     """Experiment failed."""
     DRAFT = "draft"
-    """Experiment is a draft"""
+    """Experiment is a draft."""
     CANCELED = "canceled"
     """Experiment was canceled."""
     STOPPING = "stopping"
