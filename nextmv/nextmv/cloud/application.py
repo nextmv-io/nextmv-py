@@ -239,7 +239,7 @@ class Application:
     def acceptance_test_with_polling(
         self,
         acceptance_test_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
         Retrieve details of an acceptance test using polling.
@@ -356,7 +356,7 @@ class Application:
     def batch_experiment_with_polling(
         self,
         batch_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Get a batch experiment with polling.
@@ -1220,7 +1220,7 @@ class Application:
         option_sets: Optional[dict[str, dict[str, str]]] = None,
         runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
         type: Optional[str] = "batch",
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Convenience method to create a new batch experiment and poll for the
@@ -1994,7 +1994,7 @@ class Application:
         scenarios: list[Scenario],
         description: Optional[str] = None,
         repetitions: Optional[int] = 0,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Convenience method to create a new scenario test and poll for the
@@ -2670,7 +2670,7 @@ class Application:
     def scenario_test_with_polling(
         self,
         scenario_test_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Get a scenario test with polling.
