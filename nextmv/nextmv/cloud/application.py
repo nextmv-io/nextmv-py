@@ -36,12 +36,13 @@ import requests
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
-from nextmv.cloud.acceptance_test import AcceptanceTest, ExperimentStatus, Metric
+from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import (
     BatchExperiment,
     BatchExperimentInformation,
     BatchExperimentMetadata,
     BatchExperimentRun,
+    ExperimentStatus,
     to_runs,
 )
 from nextmv.cloud.client import Client, get_size
@@ -235,6 +236,57 @@ class Application:
 
         return AcceptanceTest.from_dict(response.json())
 
+    def acceptance_test_with_polling(
+        self,
+        acceptance_test_id: str,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> AcceptanceTest:
+        """
+        Retrieve details of an acceptance test using polling.
+
+        Retrieves the result of an acceptance test. This method polls for the
+        result until the test finishes executing or the polling strategy is
+        exhausted.
+
+        Parameters
+        ----------
+        acceptance_test_id : str
+            ID of the acceptance test to retrieve.
+
+        Returns
+        -------
+        AcceptanceTest
+            The requested acceptance test details.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> test = app.acceptance_test_with_polling("test-123")
+        >>> print(test.name)
+        'My Test'
+        """
+
+        def polling_func() -> tuple[Any, bool]:
+            acceptance_test_result = self.acceptance_test(acceptance_test_id=acceptance_test_id)
+            if acceptance_test_result.status in {
+                ExperimentStatus.COMPLETED,
+                ExperimentStatus.FAILED,
+                ExperimentStatus.DRAFT,
+                ExperimentStatus.CANCELED,
+                ExperimentStatus.DELETE_FAILED,
+            }:
+                return acceptance_test_result, True
+
+            return None, False
+
+        acceptance_test = poll(polling_options=polling_options, polling_func=polling_func)
+
+        return self.acceptance_test(acceptance_test_id=acceptance_test.id)
+
     def batch_experiment(self, batch_id: str) -> BatchExperiment:
         """
         Get a batch experiment.
@@ -267,6 +319,90 @@ class Application:
         )
 
         return BatchExperiment.from_dict(response.json())
+
+    def batch_experiment_metadata(self, batch_id: str) -> BatchExperimentMetadata:
+        """
+        Get metadata for a batch experiment.
+
+        Parameters
+        ----------
+        batch_id : str
+            ID of the batch experiment.
+
+        Returns
+        -------
+        BatchExperimentMetadata
+            The requested batch experiment metadata.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> metadata = app.batch_experiment_metadata("batch-123")
+        >>> print(metadata.name)
+        'My Batch Experiment'
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_id}/metadata",
+        )
+
+        return BatchExperimentMetadata.from_dict(response.json())
+
+    def batch_experiment_with_polling(
+        self,
+        batch_id: str,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> BatchExperiment:
+        """
+        Get a batch experiment with polling.
+
+        Retrieves the result of an experiment. This method polls for the result
+        until the experiment finishes executing or the polling strategy is
+        exhausted.
+
+        Parameters
+        ----------
+        batch_id : str
+            ID of the batch experiment.
+
+        Returns
+        -------
+        BatchExperiment
+            The requested batch experiment details.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> batch_exp = app.batch_experiment_with_polling("batch-123")
+        >>> print(batch_exp.name)
+        'My Batch Experiment'
+        """
+
+        def polling_func() -> tuple[Any, bool]:
+            batch_metadata = self.batch_experiment_metadata(batch_id=batch_id)
+            if batch_metadata.status in {
+                ExperimentStatus.COMPLETED,
+                ExperimentStatus.FAILED,
+                ExperimentStatus.DRAFT,
+                ExperimentStatus.CANCELED,
+                ExperimentStatus.DELETE_FAILED,
+            }:
+                return batch_metadata, True
+
+            return None, False
+
+        batch_information = poll(polling_options=polling_options, polling_func=polling_func)
+
+        return self.batch_experiment(batch_id=batch_information.id)
 
     def cancel_run(self, run_id: str) -> None:
         """
@@ -977,7 +1113,8 @@ class Application:
         >>> print(test.status)
         'completed'
         """
-        _ = self.new_acceptance_test(
+
+        acceptance_test = self.new_acceptance_test(
             candidate_instance_id=candidate_instance_id,
             baseline_instance_id=baseline_instance_id,
             id=id,
@@ -987,20 +1124,10 @@ class Application:
             description=description,
         )
 
-        def polling_func() -> tuple[AcceptanceTest, bool]:
-            test_information = self.acceptance_test(acceptance_test_id=id)
-            if test_information.status in [
-                ExperimentStatus.completed,
-                ExperimentStatus.failed,
-                ExperimentStatus.canceled,
-            ]:
-                return test_information, True
-
-            return None, False
-
-        test_information = poll(polling_options=polling_options, polling_func=polling_func)
-
-        return test_information
+        return self.acceptance_test_with_polling(
+            acceptance_test_id=acceptance_test.id,
+            polling_options=polling_options,
+        )
 
     def new_batch_experiment(
         self,
@@ -1082,6 +1209,76 @@ class Application:
         )
 
         return response.json()["id"]
+
+    def new_batch_experiment_with_result(
+        self,
+        name: str,
+        input_set_id: Optional[str] = None,
+        instance_ids: Optional[list[str]] = None,
+        description: Optional[str] = None,
+        id: Optional[str] = None,
+        option_sets: Optional[dict[str, dict[str, str]]] = None,
+        runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
+        type: Optional[str] = "batch",
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> BatchExperiment:
+        """
+        Convenience method to create a new batch experiment and poll for the
+        result.
+
+        This method combines the `new_batch_experiment` and
+        `batch_experiment_with_polling` methods, applying polling logic to
+        check when the experiment succeeded.
+
+        Parameters
+        ----------
+        name: str
+            Name of the batch experiment.
+        input_set_id: str
+            ID of the input set to use for the batch experiment.
+        instance_ids: list[str]
+            List of instance IDs to use for the batch experiment. This argument
+            is deprecated, use `runs` instead.
+        description: Optional[str]
+            Optional description of the batch experiment.
+        id: Optional[str]
+            ID of the batch experiment. Will be generated if not provided.
+        option_sets: Optional[dict[str, dict[str, str]]]
+            Option sets to use for the batch experiment. This is a dictionary
+            where the keys are option set IDs and the values are dictionaries
+            with the actual options.
+        runs: Optional[list[BatchExperimentRun]]
+            List of runs to use for the batch experiment.
+        type: Optional[str]
+            Type of the batch experiment. This is used to determine the
+            experiment type. The default value is "batch". If you want to
+            create a scenario test, set this to "scenario".
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the batch experiment result.
+
+        Returns
+        -------
+        BatchExperiment
+            The completed batch experiment with results.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        batch_id = self.new_batch_experiment(
+            name=name,
+            input_set_id=input_set_id,
+            instance_ids=instance_ids,
+            description=description,
+            id=id,
+            option_sets=option_sets,
+            runs=runs,
+            type=type,
+        )
+
+        return self.batch_experiment_with_polling(batch_id=batch_id, polling_options=polling_options)
 
     def new_input_set(
         self,
@@ -1790,6 +1987,69 @@ class Application:
             runs=runs,
         )
 
+    def new_scenario_test_with_result(
+        self,
+        id: str,
+        name: str,
+        scenarios: list[Scenario],
+        description: Optional[str] = None,
+        repetitions: Optional[int] = 0,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> BatchExperiment:
+        """
+        Convenience method to create a new scenario test and poll for the
+        result.
+
+        This method combines the `new_scenario_test` and
+        `scenario_test_with_polling` methods, applying polling logic to
+        check when the test succeeded.
+
+        The scenario tests uses the batch experiments API under the hood.
+
+        Parameters
+        ----------
+        id: str
+            ID of the scenario test.
+        name: str
+            Name of the scenario test.
+        scenarios: list[Scenario]
+            List of scenarios to use for the scenario test. At least one
+            scenario should be provided.
+        description: Optional[str]
+            Optional description of the scenario test.
+        repetitions: Optional[int]
+            Number of repetitions to use for the scenario test. 0
+            repetitions means that the tests will be executed once. 1
+            repetition means that the test will be repeated once, i.e.: it
+            will be executed twice. 2 repetitions equals 3 executions, so on,
+            and so forth.
+
+        Returns
+        -------
+        BatchExperiment
+            The completed scenario test as a BatchExperiment.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If no scenarios are provided.
+        """
+
+        test_id = self.new_scenario_test(
+            id=id,
+            name=name,
+            scenarios=scenarios,
+            description=description,
+            repetitions=repetitions,
+        )
+
+        return self.scenario_test_with_polling(
+            scenario_test_id=test_id,
+            polling_options=polling_options,
+        )
+
     def new_secrets_collection(
         self,
         secrets: list[Secret],
@@ -2343,9 +2603,9 @@ class Application:
         """
         Get a scenario test.
 
-        Retrieves a scenario test by ID. Scenario tests are based on batch experiments,
-        so this function returns the corresponding batch experiment associated with
-        the scenario test.
+        Retrieves a scenario test by ID. Scenario tests are based on batch
+        experiments, so this function returns the corresponding batch
+        experiment associated with the scenario test.
 
         Parameters
         ----------
@@ -2372,6 +2632,82 @@ class Application:
         """
 
         return self.batch_experiment(batch_id=scenario_test_id)
+
+    def scenario_test_metadata(self, scenario_test_id: str) -> BatchExperimentMetadata:
+        """
+        Get the metadata for a scenario test, given its ID.
+
+        Scenario tests are based on batch experiments, so this function returns
+        the corresponding batch experiment metadata associated with the
+        scenario test.
+
+        Parameters
+        ----------
+        scenario_test_id : str
+            ID of the scenario test to retrieve.
+
+        Returns
+        -------
+        BatchExperimentMetadata
+            The scenario test metadata as a batch experiment.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> metadata = app.scenario_test_metadata("scenario-123")
+        >>> print(metadata.name)
+        'My Scenario Test'
+        >>> print(metadata.type)
+        'scenario'
+        """
+
+        return self.batch_experiment_metadata(batch_id=scenario_test_id)
+
+    def scenario_test_with_polling(
+        self,
+        scenario_test_id: str,
+        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+    ) -> BatchExperiment:
+        """
+        Get a scenario test with polling.
+
+        Retrieves the result of a scenario test. This method polls for the
+        result until the test finishes executing or the polling strategy is
+        exhausted.
+
+        The scenario tests uses the batch experiments API under the hood.
+
+        Parameters
+        ----------
+        scenario_test_id : str
+            ID of the scenario test to retrieve.
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the scenario test result.
+
+        Returns
+        -------
+        BatchExperiment
+            The scenario test details as a batch experiment.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> test = app.scenario_test_with_polling("scenario-123")
+        >>> print(test.name)
+        'My Scenario Test'
+        >>> print(test.type)
+        'scenario'
+        """
+
+        return self.batch_experiment_with_polling(batch_id=scenario_test_id, polling_options=polling_options)
 
     def track_run(  # noqa: C901
         self,

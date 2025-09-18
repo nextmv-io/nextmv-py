@@ -38,7 +38,6 @@ from .acceptance_test import Comparison as Comparison
 from .acceptance_test import ComparisonInstance as ComparisonInstance
 from .acceptance_test import DistributionPercentiles as DistributionPercentiles
 from .acceptance_test import DistributionSummaryStatistics as DistributionSummaryStatistics
-from .acceptance_test import ExperimentStatus as ExperimentStatus
 from .acceptance_test import Metric as Metric
 from .acceptance_test import MetricParams as MetricParams
 from .acceptance_test import MetricResult as MetricResult
@@ -57,6 +56,7 @@ from .batch_experiment import BatchExperiment as BatchExperiment
 from .batch_experiment import BatchExperimentInformation as BatchExperimentInformation
 from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
 from .batch_experiment import BatchExperimentRun as BatchExperimentRun
+from .batch_experiment import ExperimentStatus as ExperimentStatus
 from .client import Client as Client
 from .client import get_size as get_size
 from .input_set import InputSet as InputSet
