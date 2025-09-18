@@ -893,7 +893,7 @@ class AcceptanceTest(BaseModel):
     """Creation date of the acceptance test."""
     updated_at: datetime
     """Last update date of the acceptance test."""
-    status: Optional[ExperimentStatus] = ExperimentStatus.unknown
+    status: Optional[ExperimentStatus] = ExperimentStatus.UNKNOWN
     """Status of the acceptance test."""
     results: Optional[AcceptanceTestResults] = None
     """Results of the acceptance test."""

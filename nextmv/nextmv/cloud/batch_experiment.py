@@ -52,6 +52,8 @@ class ExperimentStatus(str, Enum):
         Experiment is being deleted.
     DELETE_FAILED : str
         Experiment deletion failed.
+    UNKNOWN : str
+        Experiment status is unknown.
 
     Examples
     --------
@@ -71,21 +73,23 @@ class ExperimentStatus(str, Enum):
     """
 
     STARTED = "started"
-    """Batch experiment started."""
+    """Experiment started."""
     COMPLETED = "completed"
-    """Batch experiment completed."""
+    """Experiment completed."""
     FAILED = "failed"
-    """Batch experiment failed."""
+    """Experiment failed."""
     DRAFT = "draft"
-    """Batch experiment is a draft"""
+    """Experiment is a draft"""
     CANCELED = "canceled"
-    """Batch experiment was canceled."""
+    """Experiment was canceled."""
     STOPPING = "stopping"
-    """Batch experiment is stopping."""
+    """Experiment is stopping."""
     DELETING = "deleting"
-    """Batch experiment is being deleted."""
+    """Experiment is being deleted."""
     DELETE_FAILED = "delete-failed"
-    """Batch experiment deletion failed."""
+    """Experiment deletion failed."""
+    UNKNOWN = "unknown"
+    """Experiment status is unknown."""
 
 
 class BatchExperimentInformation(BaseModel):
