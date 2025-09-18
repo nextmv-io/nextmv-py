@@ -653,7 +653,7 @@ class Application:
 
         Examples
         --------
-        >>> batch_exp = app.batch_experiment("batch-123")
+        >>> batch_exp = app.batch_experiment_with_polling("batch-123")
         >>> print(batch_exp.name)
         'My Batch Experiment'
         """
