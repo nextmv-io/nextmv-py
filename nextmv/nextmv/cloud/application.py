@@ -2321,8 +2321,8 @@ class Application:
 
         Returns
         -------
-        str
-            ID of the scenario test.
+        BatchExperiment
+            The completed scenario test as a BatchExperiment.
 
         Raises
         ------
