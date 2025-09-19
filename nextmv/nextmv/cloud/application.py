@@ -3729,6 +3729,7 @@ class Application:
 
         return result
 
+    @staticmethod
     def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
         """Converts a manifest to a payload dictionary for the API."""
 
