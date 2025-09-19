@@ -256,6 +256,47 @@ class UploadURL(BaseModel):
     """URL to use for uploading the file."""
 
 
+def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
+    """Auxiliary function that converts a manifest to a payload dictionary for the API."""
+
+    activation_request = {
+        "requirements": {
+            "executable_type": manifest.type,
+            "runtime": manifest.runtime,
+        },
+    }
+
+    if manifest.configuration is not None and manifest.configuration.content is not None:
+        content = manifest.configuration.content
+        io_config = {
+            "format": content.format,
+        }
+        if content.multi_file is not None:
+            multi_config = io_config["multi_file"] = {}
+            if content.multi_file.input is not None:
+                multi_config["input_path"] = content.multi_file.input.path
+            if content.multi_file.output is not None:
+                output_config = multi_config["output_configuration"] = {}
+                if content.multi_file.output.statistics:
+                    output_config["statistics_path"] = content.multi_file.output.statistics
+                if content.multi_file.output.assets:
+                    output_config["assets_path"] = content.multi_file.output.assets
+                if content.multi_file.output.solutions:
+                    output_config["solutions_path"] = content.multi_file.output.solutions
+        activation_request["io_configuration"] = io_config
+
+    if manifest.configuration is not None and manifest.configuration.options is not None:
+        options = manifest.configuration.options.to_dict()
+        if "format" in options and isinstance(options["format"], list):
+            # the endpoint expects a dictionary with a template key having a list of strings
+            # the app.yaml however defines format as a list of strings, so we need to convert it here
+            options["format"] = {
+                "template": options["format"],
+            }
+        activation_request["requirements"]["options"] = options
+    return activation_request
+
+
 @dataclass
 class Application:
     """
@@ -3729,47 +3770,6 @@ class Application:
 
         return result
 
-    @staticmethod
-    def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
-        """Converts a manifest to a payload dictionary for the API."""
-
-        activation_request = {
-            "requirements": {
-                "executable_type": manifest.type,
-                "runtime": manifest.runtime,
-            },
-        }
-
-        if manifest.configuration is not None and manifest.configuration.content is not None:
-            content = manifest.configuration.content
-            io_config = {
-                "format": content.format,
-            }
-            if content.multi_file is not None:
-                multi_config = io_config["multi_file"] = {}
-                if content.multi_file.input is not None:
-                    multi_config["input_path"] = content.multi_file.input.path
-                if content.multi_file.output is not None:
-                    output_config = multi_config["output_configuration"] = {}
-                    if content.multi_file.output.statistics:
-                        output_config["statistics_path"] = content.multi_file.output.statistics
-                    if content.multi_file.output.assets:
-                        output_config["assets_path"] = content.multi_file.output.assets
-                    if content.multi_file.output.solutions:
-                        output_config["solutions_path"] = content.multi_file.output.solutions
-            activation_request["io_configuration"] = io_config
-
-        if manifest.configuration is not None and manifest.configuration.options is not None:
-            options = manifest.configuration.options.to_dict()
-            if "format" in options and isinstance(options["format"], list):
-                # the endpoint expects a dictionary with a template key having a list of strings
-                # the app.yaml however defines format as a list of strings, so we need to convert it here
-                options["format"] = {
-                    "template": options["format"],
-                }
-            activation_request["requirements"]["options"] = options
-        return activation_request
-
     def __update_app_binary(
         self,
         tar_file: str,
@@ -3799,7 +3799,7 @@ class Application:
         response = self.client.request(
             method="PUT",
             endpoint=endpoint,
-            payload=Application.__convert_manifest_to_payload(manifest=manifest),
+            payload=__convert_manifest_to_payload(manifest=manifest),
         )
 
         if verbose:
