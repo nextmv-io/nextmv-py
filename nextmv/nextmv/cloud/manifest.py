@@ -880,7 +880,7 @@ class ManifestConfiguration(BaseModel):
     'debug_mode'
     """
 
-    options: ManifestOptions
+    options: Optional[ManifestOptions] = None
     """Options for the decision model."""
     content: Optional[ManifestContent] = None
     """Content configuration for specifying how the app input/output is handled."""

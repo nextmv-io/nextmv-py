@@ -1919,8 +1919,6 @@ class Application:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
-        self.__validate_dir_path_and_configuration(input_dir_path, configuration)
-
         tar_file = ""
         if input_dir_path is not None and input_dir_path != "":
             if not os.path.exists(input_dir_path):
@@ -3860,39 +3858,6 @@ class Application:
             return input_set
 
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
-
-    def __validate_dir_path_and_configuration(
-        self,
-        dir_path: Optional[str],
-        configuration: Optional[RunConfiguration],
-    ) -> None:
-        """
-        Auxiliary function to validate the directory path and configuration.
-        """
-        if dir_path is None or dir_path == "":
-            return
-
-        if configuration is None:
-            raise ValueError(
-                "If dir_path is provided, a RunConfiguration must also be provided.",
-            )
-
-        if configuration.format is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format must also be provided.",
-            )
-
-        if configuration.format.format_input is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
-            )
-
-        input_type = configuration.format.format_input.input_type
-        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type."
-                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
-            )
 
     def __package_inputs(self, dir_path: str) -> str:
         """
