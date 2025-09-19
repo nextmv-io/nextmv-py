@@ -3764,14 +3764,17 @@ class Application:
             io_config = {
                 "format": manifest.configuration.content.format,
             }
+            output_config = {}
+            if manifest.configuration.content.multi_file.output.statistics:
+                output_config["statistics_path"] = manifest.configuration.content.multi_file.output.statistics
+            if manifest.configuration.content.multi_file.output.assets:
+                output_config["assets_path"] = manifest.configuration.content.multi_file.output.assets
+            if manifest.configuration.content.multi_file.output.solutions:
+                output_config["solutions_path"] = manifest.configuration.content.multi_file.output.solutions
             if manifest.configuration.content.multi_file is not None:
                 io_config["multi_file"] = {
                     "input_path": manifest.configuration.content.multi_file.input.path,
-                    "output_configuration": {
-                        "statistics_path": manifest.configuration.content.multi_file.output.statistics,
-                        "assets_path": manifest.configuration.content.multi_file.output.assets,
-                        "solutions_path": manifest.configuration.content.multi_file.output.solutions,
-                    },
+                    "output_configuration": output_config,
                 }
             activation_request["io_configuration"] = io_config
 

@@ -733,11 +733,11 @@ class ManifestContentMultiFileOutput(BaseModel):
 
     Parameters
     ----------
-    statistics : str
+    statistics : Optional[str], default=""
         The path to the statistics file.
-    assets : str
+    assets : Optional[str], default=""
         The path to the assets file.
-    solutions : str
+    solutions : Optional[str], default=""
         The path to the solutions directory.
 
     Examples
@@ -752,11 +752,11 @@ class ManifestContentMultiFileOutput(BaseModel):
     'my-outputs/statistics.json'
     """
 
-    statistics: str
+    statistics: Optional[str] = ""
     """The path to the statistics file."""
-    assets: str
+    assets: Optional[str] = ""
     """The path to the assets file."""
-    solutions: str
+    solutions: Optional[str] = ""
     """The path to the solutions directory."""
 
 
