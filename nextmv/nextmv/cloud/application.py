@@ -3763,21 +3763,22 @@ class Application:
         }
 
         if manifest.configuration is not None and manifest.configuration.content is not None:
+            content = manifest.configuration.content
             io_config = {
-                "format": manifest.configuration.content.format,
+                "format": content.format,
             }
-            output_config = {}
-            if manifest.configuration.content.multi_file.output.statistics:
-                output_config["statistics_path"] = manifest.configuration.content.multi_file.output.statistics
-            if manifest.configuration.content.multi_file.output.assets:
-                output_config["assets_path"] = manifest.configuration.content.multi_file.output.assets
-            if manifest.configuration.content.multi_file.output.solutions:
-                output_config["solutions_path"] = manifest.configuration.content.multi_file.output.solutions
-            if manifest.configuration.content.multi_file is not None:
-                io_config["multi_file"] = {
-                    "input_path": manifest.configuration.content.multi_file.input.path,
-                    "output_configuration": output_config,
-                }
+            if content.multi_file is not None:
+                multi_config = io_config["multi_file"] = {}
+                if content.multi_file.input is not None:
+                    multi_config["input_path"] = content.multi_file.input.path
+                if content.multi_file.output is not None:
+                    output_config = multi_config["output_configuration"] = {}
+                    if content.multi_file.output.statistics:
+                        output_config["statistics_path"] = content.multi_file.output.statistics
+                    if content.multi_file.output.assets:
+                        output_config["assets_path"] = content.multi_file.output.assets
+                    if content.multi_file.output.solutions:
+                        output_config["solutions_path"] = content.multi_file.output.solutions
             activation_request["io_configuration"] = io_config
 
         if manifest.configuration is not None and manifest.configuration.options is not None:
