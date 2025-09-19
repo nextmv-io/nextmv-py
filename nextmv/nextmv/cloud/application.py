@@ -3729,31 +3729,8 @@ class Application:
 
         return result
 
-    def __update_app_binary(
-        self,
-        tar_file: str,
-        manifest: Manifest,
-        verbose: bool = False,
-    ) -> None:
-        """Updates the application binary in Cloud."""
-
-        if verbose:
-            log(f'🌟 Pushing to application: "{self.id}".')
-
-        endpoint = f"{self.endpoint}/binary"
-        response = self.client.request(
-            method="GET",
-            endpoint=endpoint,
-        )
-        upload_url = response.json()["upload_url"]
-
-        with open(tar_file, "rb") as f:
-            response = self.client.request(
-                method="PUT",
-                endpoint=upload_url,
-                data=f,
-                headers={"Content-Type": "application/octet-stream"},
-            )
+    def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
+        """Converts a manifest to a payload dictionary for the API."""
 
         activation_request = {
             "requirements": {
@@ -3790,11 +3767,38 @@ class Application:
                     "template": options["format"],
                 }
             activation_request["requirements"]["options"] = options
+        return activation_request
+
+    def __update_app_binary(
+        self,
+        tar_file: str,
+        manifest: Manifest,
+        verbose: bool = False,
+    ) -> None:
+        """Updates the application binary in Cloud."""
+
+        if verbose:
+            log(f'🌟 Pushing to application: "{self.id}".')
+
+        endpoint = f"{self.endpoint}/binary"
+        response = self.client.request(
+            method="GET",
+            endpoint=endpoint,
+        )
+        upload_url = response.json()["upload_url"]
+
+        with open(tar_file, "rb") as f:
+            response = self.client.request(
+                method="PUT",
+                endpoint=upload_url,
+                data=f,
+                headers={"Content-Type": "application/octet-stream"},
+            )
 
         response = self.client.request(
             method="PUT",
             endpoint=endpoint,
-            payload=activation_request,
+            payload=Application.__convert_manifest_to_payload(manifest=manifest),
         )
 
         if verbose:
