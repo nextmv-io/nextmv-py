@@ -37,6 +37,10 @@ from .instance import InstanceConfiguration as InstanceConfiguration
 from .manifest import MANIFEST_FILE_NAME as MANIFEST_FILE_NAME
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
+from .manifest import ManifestContent as ManifestContent
+from .manifest import ManifestContentMultiFile as ManifestContentMultiFile
+from .manifest import ManifestContentMultiFileInput as ManifestContentMultiFileInput
+from .manifest import ManifestContentMultiFileOutput as ManifestContentMultiFileOutput
 from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestPython as ManifestPython
 from .manifest import ManifestPythonModel as ManifestPythonModel
