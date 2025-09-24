@@ -209,6 +209,7 @@ def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:
 def process_run_input(
     temp_src: str,
     run_format: str,
+    manifest: Manifest,
     input_data: Optional[Union[dict[str, Any], str]] = None,
     inputs_dir_path: Optional[str] = None,
 ) -> str:
@@ -218,7 +219,7 @@ def process_run_input(
     rather, it is returned as a string in this function. If the format is
     `csv-archive`, then the input files are written to an `input` directory. If
     the format is `multi-file`, then the input files are written to an `inputs`
-    directory.
+    directory or to a custom location specified in the manifest.
 
     Parameters
     ----------
@@ -226,6 +227,8 @@ def process_run_input(
         The path to the temporary source directory.
     run_format : str
         The run format, one of `json`, `text`, `csv-archive`, or `multi-file`.
+    manifest : Manifest
+        The application manifest.
     input_data : Optional[Union[dict[str, Any], str]], optional
         The input data for the run, by default None. If `inputs_dir_path` is
         provided, this parameter is ignored.
@@ -240,6 +243,7 @@ def process_run_input(
         returns an empty string.
     """
 
+    # For JSON and TEXT formats, we return the input data as a string.
     if run_format in (InputFormat.JSON.value, InputFormat.TEXT.value):
         if isinstance(input_data, dict) and run_format == InputFormat.JSON.value:
             return json.dumps(input_data)
@@ -249,10 +253,11 @@ def process_run_input(
 
         raise ValueError(f"invalid input data for format {run_format}")
 
-    if run_format == InputFormat.CSV_ARCHIVE.value:
-        if input_data is not None:
-            raise ValueError("input data must be None for csv-archive format")
+    if input_data is not None:
+        raise ValueError("input data must be None for csv-archive or multi-file format")
 
+    # For CSV-ARCHIVE format, we write the input files to an `input` directory.
+    if run_format == InputFormat.CSV_ARCHIVE.value:
         input_dir = os.path.join(temp_src, "input")
         os.makedirs(input_dir, exist_ok=True)
 
@@ -261,11 +266,18 @@ def process_run_input(
 
         return ""
 
+    # For MULTI-FILE format, we write the input files to an `inputs` directory,
+    # or to a custom location specified in the manifest.
     if run_format == InputFormat.MULTI_FILE.value:
-        if input_data is not None:
-            raise ValueError("input data must be None for multi-file format")
-
         inputs_dir = os.path.join(temp_src, INPUTS_KEY)
+        if (
+            manifest.configuration is not None
+            and manifest.configuration.content is not None
+            and manifest.configuration.content.format == InputFormat.MULTI_FILE
+            and manifest.configuration.content.multi_file is not None
+        ):
+            inputs_dir = os.path.join(temp_src, manifest.configuration.content.multi_file.input)
+
         os.makedirs(inputs_dir, exist_ok=True)
 
         if inputs_dir_path is not None and inputs_dir_path != "":
@@ -330,11 +342,15 @@ def process_run_output(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
+        temp_src=temp_src,
+        manifest=manifest,
     )
     process_run_assets(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
+        temp_src=temp_src,
+        manifest=manifest,
     )
     process_run_solutions(
         run_id=run_id,
@@ -344,6 +360,7 @@ def process_run_output(
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
         output_format=output_format,
+        manifest=manifest,
     )
     process_run_visuals(
         run_dir=run_dir,
@@ -466,6 +483,8 @@ def process_run_statistics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
     stdout_output: dict[str, Any],
+    temp_src: str,
+    manifest: Manifest,
 ) -> None:
     """
     Processes the statistics of the run. Check for an outputs/statistics folder
@@ -480,10 +499,24 @@ def process_run_statistics(
         The path to the outputs directory in the run directory.
     stdout_output : dict[str, Any]
         The stdout output of the run, parsed as a dictionary.
+    temp_src : str
+        The path to the temporary source directory.
+    manifest : Manifest
+        The application manifest.
     """
 
     stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
     stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
+
+    # Check for custom location in manifest and override stats_src if needed.
+    if (
+        manifest.configuration is not None
+        and manifest.configuration.content is not None
+        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.multi_file is not None
+    ):
+        stats_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.statistics)
+
     if os.path.exists(stats_src) and os.path.isdir(stats_src):
         shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
         return
@@ -497,7 +530,13 @@ def process_run_statistics(
         json.dump(statistics, f, indent=2)
 
 
-def process_run_assets(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]) -> None:
+def process_run_assets(
+    temp_run_outputs_dir: str,
+    outputs_dir: str,
+    stdout_output: dict[str, Any],
+    temp_src: str,
+    manifest: Manifest,
+) -> None:
     """
     Processes the assets of the run. Check for an outputs/assets folder being
     created by the run. If it exists, copy it to the run directory. If it
@@ -511,10 +550,24 @@ def process_run_assets(temp_run_outputs_dir: str, outputs_dir: str, stdout_outpu
         The path to the outputs directory in the run directory.
     stdout_output : dict[str, Any]
         The stdout output of the run, parsed as a dictionary.
+    temp_src : str
+        The path to the temporary source directory.
+    manifest : Manifest
+        The application manifest.
     """
 
     assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
+
+    # Check for custom location in manifest and override stats_src if needed.
+    if (
+        manifest.configuration is not None
+        and manifest.configuration.content is not None
+        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.multi_file is not None
+    ):
+        assets_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.assets)
+
     if os.path.exists(assets_src) and os.path.isdir(assets_src):
         shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
         return
@@ -536,6 +589,7 @@ def process_run_solutions(
     outputs_dir: str,
     stdout_output: dict[str, Any],
     output_format: OutputFormat,
+    manifest: Manifest,
 ) -> None:
     """
     Processes the solutions (output) of the run. This method has the handle all
@@ -562,6 +616,8 @@ def process_run_solutions(
         The stdout output of the run, parsed as a dictionary.
     output_format : OutputFormat
         The output format of the run.
+    manifest : Manifest
+        The application manifest.
     """
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
@@ -572,12 +628,19 @@ def process_run_solutions(
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
     os.makedirs(solutions_dst, exist_ok=True)
 
-    output_src = os.path.join(temp_src, OUTPUT_KEY)
-    solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
-
     if output_format == OutputFormat.CSV_ARCHIVE:
+        output_src = os.path.join(temp_src, OUTPUT_KEY)
         shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
     elif output_format == OutputFormat.MULTI_FILE:
+        solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
+        if (
+            manifest.configuration is not None
+            and manifest.configuration.content is not None
+            and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+            and manifest.configuration.content.multi_file is not None
+        ):
+            solutions_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.solutions)
+
         shutil.copytree(solutions_src, solutions_dst, dirs_exist_ok=True)
     else:
         if stdout_output:
