@@ -254,6 +254,8 @@ class Metadata(BaseModel):
         Size of the input in bytes.
     output_size : float
         Size of the output in bytes.
+    format : Format
+        Format of the input and output of the run.
     status : Status
         Deprecated: use status_v2.
     status_v2 : StatusV2

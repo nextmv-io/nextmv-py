@@ -2,6 +2,10 @@ import unittest
 
 from nextmv.manifest import (
     Manifest,
+    ManifestContent,
+    ManifestContentMultiFile,
+    ManifestContentMultiFileInput,
+    ManifestContentMultiFileOutput,
     ManifestOption,
     ManifestOptions,
     ManifestOptionUI,
@@ -154,6 +158,23 @@ class TestManifest(unittest.TestCase):
         )
         self.assertEqual(manifest.configuration.options.format, ["-{{name}}", "{{value}}"])
 
+        self.assertDictEqual(
+            manifest.configuration.content.to_dict(),
+            {
+                "format": "multi-file",
+                "multi-file": {
+                    "input": {
+                        "path": "my-inputs",
+                    },
+                    "output": {
+                        "statistics": "my-outputs/statistics.json",
+                        "assets": "my-outputs/assets.json",
+                        "solutions": "my-outputs/solutions",
+                    },
+                },
+            },
+        )
+
     def test_extract_options(self):
         manifest = Manifest.from_yaml("tests/cloud")
         options = manifest.extract_options()
@@ -242,6 +263,32 @@ class TestManifest(unittest.TestCase):
         manifest_options = ManifestOptions.from_options(options, format=["-{{name}}", "{{value}}"])
         self.assertEqual(manifest_options.format, ["-{{name}}", "{{value}}"])
         self.assertEqual(manifest_options.strict, False)
+
+    def test_manifest_content_from_dict(self):
+        manifest_content_dict = {
+            "format": "multi-file",
+            "multi-file": {
+                "input": {
+                    "path": "data/input_data",
+                },
+                "output": {
+                    "statistics": "data/output/stats.json",
+                    "assets": "data/output/assets.json",
+                    "solutions": "data/output/solutions",
+                },
+            },
+        }
+
+        manifest_content = ManifestContent.from_dict(manifest_content_dict)
+
+        self.assertEqual(manifest_content.format, "multi-file")
+        self.assertIsInstance(manifest_content.multi_file, ManifestContentMultiFile)
+        self.assertIsInstance(manifest_content.multi_file.input, ManifestContentMultiFileInput)
+        self.assertIsInstance(manifest_content.multi_file.output, ManifestContentMultiFileOutput)
+        self.assertEqual(manifest_content.multi_file.input.path, "data/input_data")
+        self.assertEqual(manifest_content.multi_file.output.statistics, "data/output/stats.json")
+        self.assertEqual(manifest_content.multi_file.output.assets, "data/output/assets.json")
+        self.assertEqual(manifest_content.multi_file.output.solutions, "data/output/solutions")
 
     def test_from_options_with_validation(self):
         options = Options(

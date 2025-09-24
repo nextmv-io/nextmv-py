@@ -1648,7 +1648,7 @@ class Application:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
-        self.__validate_dir_path_and_configuration(input_dir_path, configuration)
+        self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
 
         tar_file = ""
         if input_dir_path is not None and input_dir_path != "":
@@ -3498,6 +3498,47 @@ class Application:
 
         return result
 
+    @staticmethod
+    def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
+        """Converts a manifest to a payload dictionary for the API."""
+
+        activation_request = {
+            "requirements": {
+                "executable_type": manifest.type,
+                "runtime": manifest.runtime,
+            },
+        }
+
+        if manifest.configuration is not None and manifest.configuration.content is not None:
+            content = manifest.configuration.content
+            io_config = {
+                "format": content.format,
+            }
+            if content.multi_file is not None:
+                multi_config = io_config["multi_file"] = {}
+                if content.multi_file.input is not None:
+                    multi_config["input_path"] = content.multi_file.input.path
+                if content.multi_file.output is not None:
+                    output_config = multi_config["output_configuration"] = {}
+                    if content.multi_file.output.statistics:
+                        output_config["statistics_path"] = content.multi_file.output.statistics
+                    if content.multi_file.output.assets:
+                        output_config["assets_path"] = content.multi_file.output.assets
+                    if content.multi_file.output.solutions:
+                        output_config["solutions_path"] = content.multi_file.output.solutions
+            activation_request["requirements"]["io_configuration"] = io_config
+
+        if manifest.configuration is not None and manifest.configuration.options is not None:
+            options = manifest.configuration.options.to_dict()
+            if "format" in options and isinstance(options["format"], list):
+                # the endpoint expects a dictionary with a template key having a list of strings
+                # the app.yaml however defines format as a list of strings, so we need to convert it here
+                options["format"] = {
+                    "template": options["format"],
+                }
+            activation_request["requirements"]["options"] = options
+        return activation_request
+
     def __update_app_binary(
         self,
         tar_file: str,
@@ -3524,27 +3565,10 @@ class Application:
                 headers={"Content-Type": "application/octet-stream"},
             )
 
-        activation_request = {
-            "requirements": {
-                "executable_type": manifest.type,
-                "runtime": manifest.runtime,
-            },
-        }
-
-        if manifest.configuration is not None and manifest.configuration.options is not None:
-            options = manifest.configuration.options.to_dict()
-            if "format" in options and isinstance(options["format"], list):
-                # the endpoint expects a dictionary with a template key having a list of strings
-                # the app.yaml however defines format as a list of strings, so we need to convert it here
-                options["format"] = {
-                    "template": options["format"],
-                }
-            activation_request["requirements"]["options"] = options
-
         response = self.client.request(
             method="PUT",
             endpoint=endpoint,
-            payload=activation_request,
+            payload=Application.__convert_manifest_to_payload(manifest=manifest),
         )
 
         if verbose:
@@ -3615,36 +3639,29 @@ class Application:
 
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
 
-    def __validate_dir_path_and_configuration(
+    def __validate_input_dir_path_and_configuration(
         self,
-        dir_path: Optional[str],
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
+        input_dir_path: Optional[str],
+        configuration: Optional[RunConfiguration],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
-
-        if dir_path is None or dir_path == "":
+        if (
+            configuration is None
+            or configuration.format is None
+            or configuration.format.format_input is None
+            or configuration.format.format_input.input_type is None
+        ):
+            # No explicit input type set, so we cannot confirm it.
             return
 
-        if configuration is None:
+        input_type = configuration.format.format_input.input_type
+        dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
+        if input_type in dir_types and not input_dir_path:
             raise ValueError(
-                "If dir_path is provided, a RunConfiguration must also be provided.",
-            )
-
-        config_format = self.__extract_config_format(configuration)
-
-        if config_format is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format must also be provided.",
-            )
-
-        input_type = self.__extract_input_type(config_format)
-
-        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
-                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+                f"If RunConfiguration.format.format_input.input_type is set to {input_type}, "
+                "then input_dir_path must be provided.",
             )
 
     def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:
