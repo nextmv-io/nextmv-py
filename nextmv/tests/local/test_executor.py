@@ -24,6 +24,8 @@ from nextmv.local.executor import (
     process_run_solutions,
     process_run_statistics,
 )
+from nextmv.manifest import Manifest
+from nextmv.output import OutputFormat
 
 
 class TestLocalExecutor(unittest.TestCase):
@@ -36,6 +38,26 @@ class TestLocalExecutor(unittest.TestCase):
         self.run_dir = os.path.join(self.test_dir, "run_dir")
         os.makedirs(self.temp_src)
         os.makedirs(self.run_dir)
+
+        # Create mock manifest
+        self.mock_manifest = Mock(spec=Manifest)
+        self.mock_manifest.entrypoint = "main.py"
+        self.mock_manifest.configuration = None
+
+        # Create nested mock for format
+        mock_format = Mock()
+        mock_input_format = Mock()
+        mock_output_format = Mock()
+        mock_input_format.type = "json"
+        mock_output_format.type = "json"
+        mock_format.input = mock_input_format
+        mock_format.output = mock_output_format
+        self.mock_manifest.format = mock_format
+
+        # Create mock output format
+        self.mock_output_format = Mock(spec=OutputFormat)
+        self.mock_output_format.type = "json"
+        self.mock_output_format.value = "json"
 
     def tearDown(self):
         """Clean up test fixtures."""
@@ -57,7 +79,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_input.data = {
             "run_id": "test_run_id",
             "src": "/test/src",
-            "manifest_entrypoint": "main.py",
+            "manifest_dict": {"entrypoint": "main.py", "type": "python"},
             "run_dir": "/test/run_dir",
             "run_config": {"format": {"input": {"type": "json"}}},
             "inputs_dir_path": None,
@@ -76,7 +98,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_execute_run.assert_called_once_with(
             run_id="test_run_id",
             src="/test/src",
-            manifest_entrypoint="main.py",
+            manifest_dict={"entrypoint": "main.py", "type": "python"},
             run_dir="/test/run_dir",
             run_config={"format": {"input": {"type": "json"}}},
             inputs_dir_path=None,
@@ -128,7 +150,9 @@ class TestLocalExecutor(unittest.TestCase):
     def test_process_run_input_json_format_with_dict(self):
         """Test process_run_input with JSON format and dict input."""
         input_data = {"test": "data", "value": 42}
-        result = process_run_input(temp_src=self.temp_src, run_format="json", input_data=input_data)
+        result = process_run_input(
+            temp_src=self.temp_src, run_format="json", input_data=input_data, manifest=self.mock_manifest
+        )
 
         expected = json.dumps(input_data)
         self.assertEqual(result, expected)
@@ -136,21 +160,33 @@ class TestLocalExecutor(unittest.TestCase):
     def test_process_run_input_text_format_with_string(self):
         """Test process_run_input with text format and string input."""
         input_data = "test text input"
-        result = process_run_input(temp_src=self.temp_src, run_format="text", input_data=input_data)
+        result = process_run_input(
+            temp_src=self.temp_src, run_format="text", input_data=input_data, manifest=self.mock_manifest
+        )
 
         self.assertEqual(result, input_data)
 
     def test_process_run_input_json_format_invalid_input(self):
         """Test process_run_input with JSON format but non-dict input."""
         with self.assertRaises(ValueError) as context:
-            process_run_input(temp_src=self.temp_src, run_format="json", input_data="string instead of dict")
+            process_run_input(
+                temp_src=self.temp_src,
+                run_format="json",
+                input_data="string instead of dict",
+                manifest=self.mock_manifest,
+            )
 
         self.assertIn("invalid input data for format json", str(context.exception))
 
     def test_process_run_input_text_format_invalid_input(self):
         """Test process_run_input with text format but non-string input."""
         with self.assertRaises(ValueError) as context:
-            process_run_input(temp_src=self.temp_src, run_format="text", input_data={"dict": "instead of string"})
+            process_run_input(
+                temp_src=self.temp_src,
+                run_format="text",
+                input_data={"dict": "instead of string"},
+                manifest=self.mock_manifest,
+            )
 
         self.assertIn("invalid input data for format text", str(context.exception))
 
@@ -163,7 +199,12 @@ class TestLocalExecutor(unittest.TestCase):
         with open(os.path.join(inputs_dir_path, "data.csv"), "w") as f:
             f.write("col1,col2\nval1,val2\n")
 
-        result = process_run_input(temp_src=self.temp_src, run_format="csv-archive", inputs_dir_path=inputs_dir_path)
+        result = process_run_input(
+            temp_src=self.temp_src,
+            run_format="csv-archive",
+            inputs_dir_path=inputs_dir_path,
+            manifest=self.mock_manifest,
+        )
 
         self.assertEqual(result, "")
 
@@ -175,9 +216,14 @@ class TestLocalExecutor(unittest.TestCase):
     def test_process_run_input_csv_archive_with_input_data_error(self):
         """Test process_run_input with csv-archive format and input_data (should error)."""
         with self.assertRaises(ValueError) as context:
-            process_run_input(temp_src=self.temp_src, run_format="csv-archive", input_data={"should": "error"})
+            process_run_input(
+                temp_src=self.temp_src,
+                run_format="csv-archive",
+                input_data={"should": "error"},
+                manifest=self.mock_manifest,
+            )
 
-        self.assertIn("input data must be None for csv-archive format", str(context.exception))
+        self.assertIn("input data must be None for csv-archive or multi-file format", str(context.exception))
 
     def test_process_run_input_multi_file_format(self):
         """Test process_run_input with multi-file format."""
@@ -191,7 +237,12 @@ class TestLocalExecutor(unittest.TestCase):
         with open(os.path.join(inputs_dir_path, "file2.json"), "w") as f:
             json.dump({"test": "data"}, f)
 
-        result = process_run_input(temp_src=self.temp_src, run_format="multi-file", inputs_dir_path=inputs_dir_path)
+        result = process_run_input(
+            temp_src=self.temp_src,
+            run_format="multi-file",
+            inputs_dir_path=inputs_dir_path,
+            manifest=self.mock_manifest,
+        )
 
         self.assertEqual(result, "")
 
@@ -204,9 +255,11 @@ class TestLocalExecutor(unittest.TestCase):
     def test_process_run_input_multi_file_with_input_data_error(self):
         """Test process_run_input with multi-file format and input_data (should error)."""
         with self.assertRaises(ValueError) as context:
-            process_run_input(temp_src=self.temp_src, run_format="multi-file", input_data="should error")
+            process_run_input(
+                temp_src=self.temp_src, run_format="multi-file", input_data="should error", manifest=self.mock_manifest
+            )
 
-        self.assertIn("input data must be None for multi-file format", str(context.exception))
+        self.assertIn("input data must be None for csv-archive or multi-file format", str(context.exception))
 
     def test_process_run_logs(self):
         """Test process_run_logs function."""
@@ -214,7 +267,11 @@ class TestLocalExecutor(unittest.TestCase):
         mock_result = Mock()
         mock_result.stderr = "Error line 1\nError line 2\n"
 
-        process_run_logs(self.run_dir, mock_result)
+        stdout_output = {"logs": ["test log 1", "test log 2"]}
+
+        process_run_logs(
+            output_format=self.mock_output_format, run_dir=self.run_dir, result=mock_result, stdout_output=stdout_output
+        )
 
         # Check that logs directory was created
         logs_dir = os.path.join(self.run_dir, "logs")
@@ -244,7 +301,9 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {}
 
-        process_run_statistics(temp_outputs_dir, outputs_dir, stdout_output)
+        process_run_statistics(
+            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+        )
 
         # Check that statistics directory was copied
         stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
@@ -259,7 +318,9 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {STATISTICS_KEY: {"duration": 2.5, "iterations": 100}}
 
-        process_run_statistics(temp_outputs_dir, outputs_dir, stdout_output)
+        process_run_statistics(
+            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+        )
 
         # Check that statistics.json was created
         stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
@@ -282,7 +343,9 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {}
 
-        process_run_statistics(temp_outputs_dir, outputs_dir, stdout_output)
+        process_run_statistics(
+            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+        )
 
         # Check that statistics directory was not created
         stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
@@ -303,7 +366,9 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {}
 
-        process_run_assets(temp_outputs_dir, outputs_dir, stdout_output)
+        process_run_assets(
+            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+        )
 
         # Check that assets directory was copied
         assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
@@ -323,7 +388,9 @@ class TestLocalExecutor(unittest.TestCase):
             ]
         }
 
-        process_run_assets(temp_outputs_dir, outputs_dir, stdout_output)
+        process_run_assets(
+            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+        )
 
         # Check that assets.json was created
         assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
@@ -356,7 +423,16 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        process_run_solutions(
+            "test_run_id",
+            self.run_dir,
+            temp_outputs_dir,
+            self.temp_src,
+            outputs_dir,
+            stdout_output,
+            output_format=OutputFormat.CSV_ARCHIVE,
+            manifest=self.mock_manifest,
+        )
 
         # Check that solutions directory was created and files copied
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -381,7 +457,16 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        process_run_solutions(
+            "test_run_id",
+            self.run_dir,
+            temp_outputs_dir,
+            self.temp_src,
+            outputs_dir,
+            stdout_output,
+            output_format=OutputFormat.MULTI_FILE,
+            manifest=self.mock_manifest,
+        )
 
         # Check that solutions directory was created and files copied
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -399,7 +484,16 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        process_run_solutions(
+            "test_run_id",
+            self.run_dir,
+            temp_outputs_dir,
+            self.temp_src,
+            outputs_dir,
+            stdout_output,
+            output_format=self.mock_output_format,
+            manifest=self.mock_manifest,
+        )
 
         # Check that solution.json was created
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -424,7 +518,16 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions("test_run_id", self.run_dir, temp_outputs_dir, self.temp_src, outputs_dir, stdout_output)
+        process_run_solutions(
+            "test_run_id",
+            self.run_dir,
+            temp_outputs_dir,
+            self.temp_src,
+            outputs_dir,
+            stdout_output,
+            output_format=self.mock_output_format,
+            manifest=self.mock_manifest,
+        )
 
         # Check that solutions directory was created
         solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -434,9 +537,11 @@ class TestLocalExecutor(unittest.TestCase):
         solution_file = os.path.join(solutions_dst, "solution.json")
         self.assertFalse(os.path.exists(solution_file))
 
+    @patch("nextmv.local.executor.json.load")
+    @patch("nextmv.local.executor.json.dump")
     @patch("nextmv.local.executor.process_run_output")
     @patch("nextmv.local.executor.process_run_input")
-    @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data='{"metadata": {}}')
+    @patch("builtins.open", new_callable=unittest.mock.mock_open)
     @patch("nextmv.local.executor.subprocess.run")
     @patch("nextmv.local.executor.shutil.copytree")
     @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
@@ -450,6 +555,8 @@ class TestLocalExecutor(unittest.TestCase):
         mock_open,
         mock_process_input,
         mock_process_output,
+        mock_json_dump,
+        mock_json_load,
     ):
         """Test the complete execute_run function flow."""
         # Setup mocks
@@ -466,11 +573,13 @@ class TestLocalExecutor(unittest.TestCase):
 
         run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
 
-        # Call execute_run
+        # Configure mock JSON operations
+        mock_json_load.return_value = {"metadata": {"status_v2": "pending"}}
+
         execute_run(
             run_id="test_run_id",
             src="/test/src",
-            manifest_dict="main.py",
+            manifest_dict={"entrypoint": "main.py", "files": ["main.py"]},
             run_dir="/test/run_dir",
             run_config=run_config,
             input_data={"test": "data"},
@@ -482,7 +591,11 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Verify process_run_input was called
         mock_process_input.assert_called_once_with(
-            temp_src=temp_src, run_format="json", input_data={"test": "data"}, inputs_dir_path=None
+            temp_src=temp_src,
+            run_format="json",
+            manifest=unittest.mock.ANY,
+            input_data={"test": "data"},
+            inputs_dir_path=None,
         )
 
         # Verify subprocess.run was called
@@ -494,7 +607,11 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Verify process_run_output was called
         mock_process_output.assert_called_once_with(
-            run_id="test_run_id", temp_src=temp_src, result=mock_result, run_dir="/test/run_dir"
+            manifest=unittest.mock.ANY,
+            run_id="test_run_id",
+            temp_src=temp_src,
+            result=mock_result,
+            run_dir="/test/run_dir",
         )
 
     def test_process_run_output_with_valid_json(self):
@@ -516,10 +633,21 @@ class TestLocalExecutor(unittest.TestCase):
             patch("nextmv.local.executor.process_run_assets") as mock_assets,
             patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
-            process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
+            process_run_output(
+                manifest=self.mock_manifest,
+                run_id="test_run_id",
+                temp_src=self.temp_src,
+                result=mock_result,
+                run_dir=self.run_dir,
+            )
 
             # Verify all processing functions were called
-            mock_logs.assert_called_once_with(run_dir=self.run_dir, result=mock_result)
+            mock_logs.assert_called_once_with(
+                output_format=unittest.mock.ANY,
+                run_dir=self.run_dir,
+                result=mock_result,
+                stdout_output={"solution": {"value": 42}, "statistics": {"duration": 1.5}},
+            )
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
@@ -543,17 +671,25 @@ class TestLocalExecutor(unittest.TestCase):
             patch("nextmv.local.executor.process_run_assets") as mock_assets,
             patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
         ):
-            process_run_output("test_run_id", self.temp_src, mock_result, self.run_dir)
+            process_run_output(
+                manifest=self.mock_manifest,
+                run_id="test_run_id",
+                temp_src=self.temp_src,
+                result=mock_result,
+                run_dir=self.run_dir,
+            )
 
             # Verify all processing functions were called with empty dict
-            mock_logs.assert_called_once_with(run_dir=self.run_dir, result=mock_result)
+            mock_logs.assert_called_once_with(
+                output_format=unittest.mock.ANY, run_dir=self.run_dir, result=mock_result, stdout_output={}
+            )
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
 
             # Get the stdout_output that was passed to the functions
             stdout_output = mock_stats.call_args.kwargs["stdout_output"]
-            self.assertEqual(stdout_output, "")
+            self.assertEqual(stdout_output, {})
 
 
 if __name__ == "__main__":

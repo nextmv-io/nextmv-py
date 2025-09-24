@@ -279,8 +279,9 @@ print(json.dumps(output))
         stdin_json = json.loads(stdin_data)
 
         expected_keys = [
+            "run_id",
             "src",
-            "manifest_entrypoint",
+            "manifest_dict",
             "run_dir",
             "run_config",
             "input_data",
@@ -290,7 +291,7 @@ print(json.dumps(output))
         for key in expected_keys:
             self.assertIn(key, stdin_json)
 
-        self.assertEqual(stdin_json["manifest_entrypoint"], "./main.py")
+        self.assertEqual(stdin_json["manifest_dict"]["entrypoint"], "./main.py")
         self.assertEqual(stdin_json["input_data"], input_data)
         self.assertEqual(stdin_json["options"], options)
         self.assertEqual(stdin_json["run_config"], run_config)
