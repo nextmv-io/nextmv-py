@@ -41,7 +41,7 @@ from nextmv.manifest import Manifest
 from nextmv.options import Options
 from nextmv.output import DEFAULT_OUTPUT_JSON_FILE, LOGS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
-from nextmv.run import Format, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
+from nextmv.run import ErrorLog, Format, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
 from nextmv.safe import safe_id
 from nextmv.status import StatusV2
 
@@ -785,6 +785,13 @@ class Application:
             If the output format is unknown.
         """
 
+        result = RunResult.from_dict(run_information.to_dict())
+        if result.metadata.error:
+            result.error_log = ErrorLog(error=result.metadata.error)
+
+        if result.metadata.status_v2 != StatusV2.succeeded:
+            return result
+
         # See whether we can attach the output directly or need to save to the given
         # directory
         output_type = run_information.metadata.format.format_output.output_type
@@ -795,11 +802,6 @@ class Application:
 
         runs_dir = os.path.join(self.src, ".nextmv", "runs")
         solutions_dir = os.path.join(runs_dir, run_id, OUTPUTS_KEY, SOLUTIONS_KEY)
-
-        result = RunResult.from_dict(run_information.to_dict())
-
-        if result.metadata.status_v2 != StatusV2.succeeded:
-            result.error_log = result.metadata.error
 
         if output_type == OutputFormat.JSON:
             with open(os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)) as f:

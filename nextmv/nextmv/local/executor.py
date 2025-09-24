@@ -125,9 +125,12 @@ def execute_run(
             temp_src = os.path.join(temp_dir, "src")
             shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(".nextmv"))
 
+            manifest = Manifest.from_dict(manifest_dict)
+
             stdin_input = process_run_input(
                 temp_src=temp_src,
                 run_format=run_config["format"]["input"]["type"],
+                manifest=manifest,
                 input_data=input_data,
                 inputs_dir_path=inputs_dir_path,
             )
@@ -144,7 +147,6 @@ def execute_run(
             # Start a Python subprocess to execute the entrypoint. For now, we are
             # supporting a Python-first experience, so we are not summoning
             # applications that are not Python-based.
-            manifest = Manifest.from_dict(manifest_dict)
             entrypoint = os.path.join(temp_src, manifest.entrypoint)
             args = ["python", entrypoint] + options_args(options)
 
@@ -311,7 +313,7 @@ def process_run_output(
     """
 
     # Parse stdout as JSON, if possible.
-    stdout_output = ""
+    stdout_output = {}
     raw_output = result.stdout
     if raw_output.strip() != "":
         stdout_output = json.loads(raw_output)
@@ -471,7 +473,7 @@ def process_run_logs(
     os.makedirs(logs_dir, exist_ok=True)
     std_err = result.stderr
     with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
-        if output_format == OutputFormat.MULTI_FILE:
+        if output_format == OutputFormat.MULTI_FILE and stdout_output != {}:
             f.write(json.dumps(stdout_output))
             if std_err:
                 f.write("\n")
