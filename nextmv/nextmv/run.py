@@ -1039,12 +1039,6 @@ class TrackedRun:
             except (TypeError, OverflowError) as e:
                 raise ValueError("Output is dict[str, Any] but it is not JSON serializable") from e
 
-        if self.input is None and self.input_dir_path is None:
-            raise ValueError("Either input or input_dir_path must be specified.")
-
-        if self.output is None and self.output_dir_path is None:
-            raise ValueError("Either output or output_dir_path must be specified.")
-
     def logs_text(self) -> str:
         """
         Returns the logs as a single string.

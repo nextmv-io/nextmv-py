@@ -713,7 +713,7 @@ class Application:
         # Create a temp dir to store the outputs that are written by default to
         # ".". During the sync process, we don't need to keep these outputs, so
         # we can use a temp dir that will be deleted after the sync is done.
-        with tempfile.mkdtemp(prefix="nextmv-sync-run-") as temp_results_dir:
+        with tempfile.TemporaryDirectory(prefix="nextmv-sync-run-") as temp_results_dir:
             runs_dir = os.path.join(self.src, ".nextmv", "runs")
             if run_ids is None:
                 # If runs are not specified, by default we sync all local runs that
