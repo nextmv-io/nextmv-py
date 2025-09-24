@@ -116,7 +116,7 @@ def run(
         {
             "run_id": run_id,
             "src": os.path.abspath(src),
-            "manifest_entrypoint": manifest.entrypoint,
+            "manifest_dict": manifest.to_dict(),
             "run_dir": os.path.abspath(run_dir),
             "run_config": run_config,
             "input_data": input_data,

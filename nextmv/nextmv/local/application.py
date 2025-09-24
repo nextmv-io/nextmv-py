@@ -476,7 +476,7 @@ class Application:
         >>> print(f"Local run completed with ID: {run_id}")
         """
 
-        self.__validate_dir_path_and_configuration(input_dir_path, configuration)
+        self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
 
         if self.src is None:
             raise ValueError("`src` property for the `Application` must be specified to run the application locally")
@@ -811,16 +811,16 @@ class Application:
 
         return result
 
-    def __validate_dir_path_and_configuration(
+    def __validate_input_dir_path_and_configuration(
         self,
-        dir_path: Optional[str],
+        input_dir_path: Optional[str],
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
 
-        if dir_path is None or dir_path == "":
+        if input_dir_path is None or input_dir_path == "":
             return
 
         if configuration is None:

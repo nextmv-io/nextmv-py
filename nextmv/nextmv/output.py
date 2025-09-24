@@ -90,6 +90,10 @@ OUTPUTS_KEY = "outputs"
 """
 Outputs key constant used for identifying outputs in the run output.
 """
+OUTPUT_KEY = "output"
+"""
+Output key constant used for identifying output in the run output.
+"""
 LOGS_KEY = "logs"
 """
 Logs key constant used for identifying logs in the run output.

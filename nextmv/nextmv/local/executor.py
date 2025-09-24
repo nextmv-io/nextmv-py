@@ -40,11 +40,13 @@ from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.local.runner import calculate_files_size
+from nextmv.manifest import Manifest
 from nextmv.output import (
     ASSETS_KEY,
     DEFAULT_OUTPUT_JSON_FILE,
     LOGS_FILE,
     LOGS_KEY,
+    OUTPUT_KEY,
     OUTPUTS_KEY,
     SOLUTIONS_KEY,
     STATISTICS_KEY,
@@ -66,7 +68,7 @@ def main() -> None:
     execute_run(
         run_id=input.data["run_id"],
         src=input.data["src"],
-        manifest_entrypoint=input.data["manifest_entrypoint"],
+        manifest_dict=input.data["manifest_dict"],
         run_dir=input.data["run_dir"],
         run_config=input.data["run_config"],
         inputs_dir_path=input.data["inputs_dir_path"],
@@ -78,7 +80,7 @@ def main() -> None:
 def execute_run(
     run_id: str,
     src: str,
-    manifest_entrypoint: str,
+    manifest_dict: dict[str, Any],
     run_dir: str,
     run_config: dict[str, Any],
     inputs_dir_path: Optional[str] = None,
@@ -142,7 +144,8 @@ def execute_run(
             # Start a Python subprocess to execute the entrypoint. For now, we are
             # supporting a Python-first experience, so we are not summoning
             # applications that are not Python-based.
-            entrypoint = os.path.join(temp_src, manifest_entrypoint)
+            manifest = Manifest.from_dict(manifest_dict)
+            entrypoint = os.path.join(temp_src, manifest.entrypoint)
             args = ["python", entrypoint] + options_args(options)
 
             result = subprocess.run(
@@ -156,6 +159,7 @@ def execute_run(
             )
 
             process_run_output(
+                manifest=manifest,
                 run_id=run_id,
                 temp_src=temp_src,
                 result=result,
@@ -270,7 +274,13 @@ def process_run_input(
         return ""
 
 
-def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedProcess[str], run_dir: str) -> None:
+def process_run_output(
+    manifest: Manifest,
+    run_id: str,
+    temp_src: str,
+    result: subprocess.CompletedProcess[str],
+    run_dir: str,
+) -> None:
     """
     Processes the result of the subprocess run. This function is in charge of
     handling the run results, including solutions, statistics, logs, assets,
@@ -278,6 +288,8 @@ def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedP
 
     Parameters
     ----------
+    manifest : Manifest
+        The application manifest.
     temp_src : str
         The path to the temporary source directory.
     result : subprocess.CompletedProcess[str]
@@ -297,14 +309,22 @@ def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedP
     os.makedirs(outputs_dir, exist_ok=True)
     temp_run_outputs_dir = os.path.join(temp_src, OUTPUTS_KEY)
 
+    output_format = resolve_output_format(
+        manifest=manifest,
+        temp_run_outputs_dir=temp_run_outputs_dir,
+        temp_src=temp_src,
+    )
+
     process_run_information(
         run_id=run_id,
         run_dir=run_dir,
         result=result,
     )
     process_run_logs(
+        output_format=output_format,
         run_dir=run_dir,
         result=result,
+        stdout_output=stdout_output,
     )
     process_run_statistics(
         temp_run_outputs_dir=temp_run_outputs_dir,
@@ -323,11 +343,48 @@ def process_run_output(run_id: str, temp_src: str, result: subprocess.CompletedP
         temp_src=temp_src,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
+        output_format=output_format,
     )
     process_run_visuals(
         run_dir=run_dir,
         outputs_dir=outputs_dir,
     )
+
+
+def resolve_output_format(
+    manifest: Manifest,
+    temp_run_outputs_dir: str,
+    temp_src: str,
+) -> OutputFormat:
+    """
+    Resolves the output format of the run. This function checks the manifest
+    configuration for the output format. If not specified, it checks for the
+    presence of an `output` directory (for `csv-archive`), or an
+    `outputs/solutions` directory (for `multi-file`). If neither exist, it
+    defaults to `json`.
+
+    Parameters
+    ----------
+    manifest : Manifest
+        The application manifest.
+    temp_run_outputs_dir : str
+        The path to the temporary outputs directory.
+    temp_src : str
+        The path to the temporary source directory.
+    """
+
+    if manifest.configuration is not None and manifest.configuration.content is not None:
+        return manifest.configuration.content.format
+
+    output_dir = os.path.join(temp_src, OUTPUT_KEY)
+    if os.path.exists(output_dir) and os.path.isdir(output_dir):
+        return OutputFormat.CSV_ARCHIVE
+
+    solutions_dir = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
+    if os.path.exists(solutions_dir) and os.path.isdir(solutions_dir):
+        return OutputFormat.MULTI_FILE
+
+    return OutputFormat.JSON
 
 
 def process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
@@ -372,25 +429,44 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
         json.dump(info, f, indent=2)
 
 
-def process_run_logs(run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
+def process_run_logs(
+    output_format: OutputFormat,
+    run_dir: str,
+    result: subprocess.CompletedProcess[str],
+    stdout_output: dict[str, Any],
+) -> None:
     """
     Processes the logs of the run. Writes the logs to a logs directory.
 
     Parameters
     ----------
+    output_format : OutputFormat
+        The output format of the run.
     run_dir : str
         The path to the run directory.
     result : subprocess.CompletedProcess[str]
         The result of the subprocess run.
+    stdout_output : dict[str, Any]
+        The stdout output of the run, parsed as a dictionary.
     """
 
     logs_dir = os.path.join(run_dir, LOGS_KEY)
     os.makedirs(logs_dir, exist_ok=True)
+    std_err = result.stderr
     with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
-        f.write(result.stderr)
+        if output_format == OutputFormat.MULTI_FILE:
+            f.write(json.dumps(stdout_output))
+            if std_err:
+                f.write("\n")
+
+        f.write(std_err)
 
 
-def process_run_statistics(temp_run_outputs_dir: str, outputs_dir: str, stdout_output: dict[str, Any]) -> None:
+def process_run_statistics(
+    temp_run_outputs_dir: str,
+    outputs_dir: str,
+    stdout_output: dict[str, Any],
+) -> None:
     """
     Processes the statistics of the run. Check for an outputs/statistics folder
     being created by the run. If it exists, copy it to the run directory. If it
@@ -459,6 +535,7 @@ def process_run_solutions(
     temp_src: str,
     outputs_dir: str,
     stdout_output: dict[str, Any],
+    output_format: OutputFormat,
 ) -> None:
     """
     Processes the solutions (output) of the run. This method has the handle all
@@ -471,6 +548,10 @@ def process_run_solutions(
 
     Parameters
     ----------
+    run_id : str
+        The ID of the run.
+    run_dir : str
+        The path to the run directory.
     temp_run_outputs_dir : str
         The path to the temporary outputs directory.
     temp_src : str
@@ -479,6 +560,8 @@ def process_run_solutions(
         The path to the outputs directory in the run directory.
     stdout_output : dict[str, Any]
         The stdout output of the run, parsed as a dictionary.
+    output_format : OutputFormat
+        The output format of the run.
     """
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
@@ -489,30 +572,21 @@ def process_run_solutions(
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
     os.makedirs(solutions_dst, exist_ok=True)
 
-    output_src = os.path.join(temp_src, "output")
+    output_src = os.path.join(temp_src, OUTPUT_KEY)
     solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
-    if os.path.exists(output_src) and os.path.isdir(output_src):
-        # For csv-archive, copy everything from output to solutions.
+
+    if output_format == OutputFormat.CSV_ARCHIVE:
         shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
-        output_type = OutputFormat.CSV_ARCHIVE.value
-
-    elif os.path.exists(solutions_src) and os.path.isdir(solutions_src):
-        # For multi-file, copy everything from outputs/solutions to solutions.
+    elif output_format == OutputFormat.MULTI_FILE:
         shutil.copytree(solutions_src, solutions_dst, dirs_exist_ok=True)
-        output_type = OutputFormat.MULTI_FILE.value
-
     else:
-        # If we reach here, it means neither output nor outputs/solutions
-        # exist, so we simply dump whatever is in stdout as solution.json.
         if stdout_output:
             with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w") as f:
                 json.dump(stdout_output, f, indent=2)
 
-        output_type = OutputFormat.JSON.value
-
     # Update the run information file with the output size and type.
     calculate_files_size(run_dir, run_id, solutions_dst, metadata_key="output_size")
-    info["metadata"]["format"]["output"] = {"type": output_type}
+    info["metadata"]["format"]["output"] = {"type": output_format.value}
     with open(info_file, "w") as f:
         json.dump(info, f, indent=2)
 

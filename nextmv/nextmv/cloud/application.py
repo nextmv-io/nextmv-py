@@ -3642,26 +3642,33 @@ class Application:
     def __validate_input_dir_path_and_configuration(
         self,
         input_dir_path: Optional[str],
-        configuration: Optional[RunConfiguration],
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
-        if (
-            configuration is None
-            or configuration.format is None
-            or configuration.format.format_input is None
-            or configuration.format.format_input.input_type is None
-        ):
-            # No explicit input type set, so we cannot confirm it.
+
+        if input_dir_path is None or input_dir_path == "":
             return
 
-        input_type = configuration.format.format_input.input_type
-        dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
-        if input_type in dir_types and not input_dir_path:
+        if configuration is None:
             raise ValueError(
-                f"If RunConfiguration.format.format_input.input_type is set to {input_type}, "
-                "then input_dir_path must be provided.",
+                "If dir_path is provided, a RunConfiguration must also be provided.",
+            )
+
+        config_format = self.__extract_config_format(configuration)
+
+        if config_format is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format must also be provided.",
+            )
+
+        input_type = self.__extract_input_type(config_format)
+
+        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
+                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
             )
 
     def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:

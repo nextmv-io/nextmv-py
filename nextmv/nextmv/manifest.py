@@ -25,6 +25,14 @@ ManifestOptions
     Class containing a list of options for the decision model.
 ManifestValidation
     Class for validation rules for options in the manifest.
+ManifestContentMultiFileInput
+    Class for multi-file content format input configuration.
+ManifestContentMultiFileOutput
+    Class for multi-file content format output configuration.
+ManifestContentMultiFile
+    Class for multi-file content format configuration.
+ManifestContent
+    Class for content configuration specifying how app input/output is handled.
 ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
@@ -32,7 +40,7 @@ Manifest
 
 Constants
 --------
-FILE_NAME
+MANIFEST_FILE_NAME
     Name of the app manifest file.
 """
 
@@ -53,10 +61,10 @@ MANIFEST_FILE_NAME = "app.yaml"
 
 This constant defines the standard filename for Nextmv app manifest files.
 
-You can import the `FILE_NAME` constant directly from `nextmv`:
+You can import the `MANIFEST_FILE_NAME` constant directly from `nextmv`:
 
 ```python
-from nextmv import FILE_NAME
+from nextmv import MANIFEST_FILE_NAME
 ```
 
 Notes
@@ -344,7 +352,7 @@ class ManifestOptionUI(BaseModel):
         "toggle". This attribute is not used in the local `Options` class, but
         it is used in the Nextmv Cloud UI to define the type of control to use for
         the option. This will be validated by the Nextmv Cloud, and availability
-        is based on options_type.
+        is based on option_type.
     hidden_from : list[str], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
@@ -604,7 +612,7 @@ class ManifestOptions(BaseModel):
         is a parameter that configures the decision model.
     validation: Optional[ManifestValidation], default=None
         Optional validation rules for all options.
-    format: Optional[list[str]], default=None
+    format : Optional[list[str]], default=None
         A list of strings that define how options are transformed into command
         line arguments. Use `{{name}}` to refer to the option name and
         `{{value}}` to refer to the option value.
@@ -698,10 +706,10 @@ class ManifestContentMultiFileInput(BaseModel):
     """
     Configuration for multi-file content format input.
 
-    You can import the `ManifestContentMultiFileInput` class directly from `cloud`:
+    You can import the `ManifestContentMultiFileInput` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFileInput
+    from nextmv import ManifestContentMultiFileInput
     ```
 
     Parameters
@@ -712,7 +720,7 @@ class ManifestContentMultiFileInput(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFileInput
+    >>> from nextmv import ManifestContentMultiFileInput
     >>> input_config = ManifestContentMultiFileInput(path="data/input/")
     >>> input_config.path
     'data/input/'
@@ -726,10 +734,10 @@ class ManifestContentMultiFileOutput(BaseModel):
     """
     Configuration for multi-file content format output.
 
-    You can import the `ManifestContentMultiFileOutput` class directly from `cloud`:
+    You can import the `ManifestContentMultiFileOutput` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFileOutput
+    from nextmv import ManifestContentMultiFileOutput
     ```
 
     Parameters
@@ -743,7 +751,7 @@ class ManifestContentMultiFileOutput(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFileOutput
+    >>> from nextmv import ManifestContentMultiFileOutput
     >>> output_config = ManifestContentMultiFileOutput(
     ...     statistics="my-outputs/statistics.json",
     ...     assets="my-outputs/assets.json",
@@ -765,10 +773,10 @@ class ManifestContentMultiFile(BaseModel):
     """
     Configuration for multi-file content format.
 
-    You can import the `ManifestContentMultiFile` class directly from `cloud`:
+    You can import the `ManifestContentMultiFile` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFile
+    from nextmv import ManifestContentMultiFile
     ```
 
     Parameters
@@ -780,7 +788,7 @@ class ManifestContentMultiFile(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFile, ManifestContentMultiFileInput, ManifestContentMultiFileOutput
+    >>> from nextmv import ManifestContentMultiFile, ManifestContentMultiFileInput, ManifestContentMultiFileOutput
     >>> multi_file_config = ManifestContentMultiFile(
     ...     input=ManifestContentMultiFileInput(path="data/input/"),
     ...     output=ManifestContentMultiFileOutput(
@@ -804,10 +812,10 @@ class ManifestContent(BaseModel):
     """
     Content configuration for specifying how the app input/output is handled.
 
-    You can import the `ManifestContent` class directly from `cloud`:
+    You can import the `ManifestContent` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContent
+    from nextmv import ManifestContent
     ```
 
     Parameters
@@ -819,7 +827,7 @@ class ManifestContent(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContent
+    >>> from nextmv import ManifestContent
     >>> content_config = ManifestContent(
     ...     format="multi-file",
     ...     multi_file=ManifestContentMultiFile(
@@ -837,9 +845,11 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: str
-    """The format of the content. Must be one of "json", "multi-file",
-    or "csv-archive"."""
+    format: InputFormat
+    """
+    The format of the content. Can only be `InputFormat.JSON`,
+    `InputFormat.MULTI_FILE`, or `InputFormat.CSV_ARCHIVE`.
+    """
     multi_file: Optional[ManifestContentMultiFile] = Field(
         serialization_alias="multi-file",
         validation_alias=AliasChoices("multi-file", "multi_file"),
@@ -847,7 +857,7 @@ class ManifestContent(BaseModel):
     )
     """Configuration for multi-file content format."""
 
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """Post-initialization to validate fields."""
         acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
@@ -936,6 +946,12 @@ class Manifest(BaseModel):
     configuration : Optional[ManifestConfiguration], default=None
         A list of options for the decision model. An option is a
         parameter that configures the decision model.
+    entrypoint : Optional[str], default=None
+        Optional entrypoint for the decision model. When not specified, the
+        following default entrypoints are used, according to the `.runtime`:
+        - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
+        - `ManifestRuntime.DEFAULT`: `./main`
+        - Java: `./main.jar`
 
     Examples
     --------
@@ -1174,7 +1190,8 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.model import ModelConfiguration, Options, Option
+        >>> from nextmv.model import ModelConfiguration
+        >>> from nextmv.options import Options, Option
         >>> from nextmv import Manifest
         >>> opts = Options(Option(name="vehicle_count", option_type=int, default=5))
         >>> mc = ModelConfiguration(name="vehicle_router", options=opts)
@@ -1237,7 +1254,7 @@ class Manifest(BaseModel):
         ----------
         options : nextmv.options.Options
             The options to include in the manifest.
-        validation : nextmv.options.OptionsEnforcement default=None
+        validation : nextmv.options.OptionsEnforcement, default=None
             The validation rules for the options. This is used to set the
             `validation` attribute of the `ManifestOptions`.
 

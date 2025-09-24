@@ -470,7 +470,7 @@ class TestLocalExecutor(unittest.TestCase):
         execute_run(
             run_id="test_run_id",
             src="/test/src",
-            manifest_entrypoint="main.py",
+            manifest_dict="main.py",
             run_dir="/test/run_dir",
             run_config=run_config,
             input_data={"test": "data"},
