@@ -1,15 +1,16 @@
-"""Module with the logic for handling an app manifest.
+"""
+Module with the logic for handling an app manifest.
 
 This module provides classes and functions for managing Nextmv app manifests.
 Manifest files (app.yaml) define how an application is built, run, and deployed
-on the Nextmv Cloud platform.
+on the Nextmv platform.
 
 Classes
 -------
 ManifestType
     Enum for application types based on programming language.
 ManifestRuntime
-    Enum for runtime environments where apps run on Nextmv Cloud.
+    Enum for runtime environments where apps run on Nextmv.
 ManifestBuild
     Class for build-specific attributes in the manifest.
 ManifestPythonModel
@@ -24,14 +25,22 @@ ManifestOptions
     Class containing a list of options for the decision model.
 ManifestValidation
     Class for validation rules for options in the manifest.
+ManifestContentMultiFileInput
+    Class for multi-file content format input configuration.
+ManifestContentMultiFileOutput
+    Class for multi-file content format output configuration.
+ManifestContentMultiFile
+    Class for multi-file content format configuration.
+ManifestContent
+    Class for content configuration specifying how app input/output is handled.
 ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
-    Main class representing an app manifest for Nextmv Cloud.
+    Main class representing an app manifest for Nextmv.
 
 Constants
 --------
-FILE_NAME
+MANIFEST_FILE_NAME
     Name of the app manifest file.
 """
 
@@ -52,10 +61,10 @@ MANIFEST_FILE_NAME = "app.yaml"
 
 This constant defines the standard filename for Nextmv app manifest files.
 
-You can import the `FILE_NAME` constant directly from `cloud`:
+You can import the `MANIFEST_FILE_NAME` constant directly from `nextmv`:
 
 ```python
-from nextmv.cloud import FILE_NAME
+from nextmv import MANIFEST_FILE_NAME
 ```
 
 Notes
@@ -68,10 +77,10 @@ class ManifestType(str, Enum):
     """
     Type of application in the manifest, based on the programming language.
 
-    You can import the `ManifestType` class directly from `cloud`:
+    You can import the `ManifestType` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestType
+    from nextmv import ManifestType
     ```
 
     This enum defines the supported programming languages for applications
@@ -88,7 +97,7 @@ class ManifestType(str, Enum):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestType
+    >>> from nextmv import ManifestType
     >>> manifest_type = ManifestType.PYTHON
     >>> manifest_type
     <ManifestType.PYTHON: 'python'>
@@ -108,10 +117,10 @@ class ManifestRuntime(str, Enum):
     """
     Runtime (environment) where the app will be run on Nextmv Cloud.
 
-    You can import the `ManifestRuntime` class directly from `cloud`:
+    You can import the `ManifestRuntime` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestRuntime
+    from nextmv import ManifestRuntime
     ```
 
     This enum defines the supported runtime environments for applications
@@ -133,7 +142,7 @@ class ManifestRuntime(str, Enum):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestRuntime
+    >>> from nextmv import ManifestRuntime
     >>> runtime = ManifestRuntime.PYTHON
     >>> runtime
     <ManifestRuntime.PYTHON: 'ghcr.io/nextmv-io/runtime/python:3.11'>
@@ -163,10 +172,10 @@ class ManifestBuild(BaseModel):
     """
     Build-specific attributes.
 
-    You can import the `ManifestBuild` class directly from `cloud`:
+    You can import the `ManifestBuild` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestBuild
+    from nextmv import ManifestBuild
     ```
 
     Parameters
@@ -182,7 +191,7 @@ class ManifestBuild(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestBuild
+    >>> from nextmv import ManifestBuild
     >>> build_config = ManifestBuild(
     ...     command="make build",
     ...     environment={"DEBUG": "true"}
@@ -216,7 +225,7 @@ class ManifestBuild(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import ManifestBuild
+        >>> from nextmv import ManifestBuild
         >>> build_config = ManifestBuild(environment={"COUNT": 1, "NAME": "test"})
         >>> build_config.environment_to_dict()
         {'COUNT': '1', 'NAME': 'test'}
@@ -235,10 +244,10 @@ class ManifestPythonModel(BaseModel):
     """
     Model-specific instructions for a Python app.
 
-    You can import the `ManifestPythonModel` class directly from `cloud`:
+    You can import the `ManifestPythonModel` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestPythonModel
+    from nextmv import ManifestPythonModel
     ```
 
     Parameters
@@ -253,7 +262,7 @@ class ManifestPythonModel(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestPythonModel
+    >>> from nextmv import ManifestPythonModel
     >>> python_model_config = ManifestPythonModel(
     ...     name="routing_model",
     ...     options=[{"name": "max_vehicles", "type": "int", "default": 10}]
@@ -277,10 +286,10 @@ class ManifestPython(BaseModel):
     """
     Python-specific instructions.
 
-    You can import the `ManifestPython` class directly from `cloud`:
+    You can import the `ManifestPython` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestPython
+    from nextmv import ManifestPython
     ```
 
     Parameters
@@ -297,7 +306,7 @@ class ManifestPython(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestPython, ManifestPythonModel
+    >>> from nextmv import ManifestPython, ManifestPythonModel
     >>> python_config = ManifestPython(
     ...     pip_requirements="requirements.txt",
     ...     model=ManifestPythonModel(name="my_model")
@@ -328,10 +337,10 @@ class ManifestOptionUI(BaseModel):
     """
     UI attributes for an option in the manifest.
 
-    You can import the `ManifestOptionUI` class directly from `cloud`:
+    You can import the `ManifestOptionUI` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOptionUI
+    from nextmv import ManifestOptionUI
     ```
 
     Parameters
@@ -343,7 +352,7 @@ class ManifestOptionUI(BaseModel):
         "toggle". This attribute is not used in the local `Options` class, but
         it is used in the Nextmv Cloud UI to define the type of control to use for
         the option. This will be validated by the Nextmv Cloud, and availability
-        is based on options_type.
+        is based on option_type.
     hidden_from : list[str], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
@@ -354,7 +363,7 @@ class ManifestOptionUI(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOptionUI
+    >>> from nextmv import ManifestOptionUI
     >>> ui_config = ManifestOptionUI(control_type="input")
     >>> ui_config.control_type
     'input'
@@ -374,10 +383,10 @@ class ManifestOption(BaseModel):
     """
     An option for the decision model that is recorded in the manifest.
 
-    You can import the `ManifestOption` class directly from `cloud`:
+    You can import the `ManifestOption` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOption
+    from nextmv import ManifestOption
     ```
 
     Parameters
@@ -409,7 +418,7 @@ class ManifestOption(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOption
+    >>> from nextmv import ManifestOption
     >>> option = ManifestOption(
     ...     name="solve.duration",
     ...     option_type="string",
@@ -462,7 +471,7 @@ class ManifestOption(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Option
-        >>> from nextmv.cloud import ManifestOption
+        >>> from nextmv import ManifestOption
         >>> sdk_option = Option(name="max_stops", option_type=int, default=100)
         >>> manifest_opt = ManifestOption.from_option(sdk_option)
         >>> manifest_opt.name
@@ -514,7 +523,7 @@ class ManifestOption(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import ManifestOption
+        >>> from nextmv import ManifestOption
         >>> manifest_opt = ManifestOption(name="max_stops", option_type="int", default=100)
         >>> sdk_option = manifest_opt.to_option()
         >>> sdk_option.name
@@ -552,10 +561,10 @@ class ManifestValidation(BaseModel):
     """
     Validation rules for options in the manifest.
 
-    You can import the `ManifestValidation` class directly from `cloud`:
+    You can import the `ManifestValidation` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestValidation
+    from nextmv import ManifestValidation
     ```
 
     Parameters
@@ -569,7 +578,7 @@ class ManifestValidation(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestValidation
+    >>> from nextmv import ManifestValidation
     >>> validation = ManifestValidation(enforce="all")
     >>> validation.enforce
     'all'
@@ -588,10 +597,10 @@ class ManifestOptions(BaseModel):
     """
     Options for the decision model.
 
-    You can import the `ManifestOptions` class directly from `cloud`:
+    You can import the `ManifestOptions` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestOptions
+    from nextmv import ManifestOptions
     ```
 
     Parameters
@@ -603,7 +612,7 @@ class ManifestOptions(BaseModel):
         is a parameter that configures the decision model.
     validation: Optional[ManifestValidation], default=None
         Optional validation rules for all options.
-    format: Optional[list[str]], default=None
+    format : Optional[list[str]], default=None
         A list of strings that define how options are transformed into command
         line arguments. Use `{{name}}` to refer to the option name and
         `{{value}}` to refer to the option value.
@@ -611,7 +620,7 @@ class ManifestOptions(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestOptions, ManifestOption
+    >>> from nextmv import ManifestOptions, ManifestOption
     >>> options_config = ManifestOptions(
     ...     strict=True,
     ...     validation=ManifestValidation(enforce="all"),
@@ -677,7 +686,7 @@ class ManifestOptions(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Options, Option
-        >>> from nextmv.cloud import ManifestOptions
+        >>> from nextmv import ManifestOptions
         >>> sdk_options = Options(Option("max_vehicles", int, 5))
         >>> manifest_options = ManifestOptions.from_options(sdk_options)
         >>> manifest_options.items[0].name
@@ -697,10 +706,10 @@ class ManifestContentMultiFileInput(BaseModel):
     """
     Configuration for multi-file content format input.
 
-    You can import the `ManifestContentMultiFileInput` class directly from `cloud`:
+    You can import the `ManifestContentMultiFileInput` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFileInput
+    from nextmv import ManifestContentMultiFileInput
     ```
 
     Parameters
@@ -711,7 +720,7 @@ class ManifestContentMultiFileInput(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFileInput
+    >>> from nextmv import ManifestContentMultiFileInput
     >>> input_config = ManifestContentMultiFileInput(path="data/input/")
     >>> input_config.path
     'data/input/'
@@ -725,10 +734,10 @@ class ManifestContentMultiFileOutput(BaseModel):
     """
     Configuration for multi-file content format output.
 
-    You can import the `ManifestContentMultiFileOutput` class directly from `cloud`:
+    You can import the `ManifestContentMultiFileOutput` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFileOutput
+    from nextmv import ManifestContentMultiFileOutput
     ```
 
     Parameters
@@ -742,7 +751,7 @@ class ManifestContentMultiFileOutput(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFileOutput
+    >>> from nextmv import ManifestContentMultiFileOutput
     >>> output_config = ManifestContentMultiFileOutput(
     ...     statistics="my-outputs/statistics.json",
     ...     assets="my-outputs/assets.json",
@@ -764,10 +773,10 @@ class ManifestContentMultiFile(BaseModel):
     """
     Configuration for multi-file content format.
 
-    You can import the `ManifestContentMultiFile` class directly from `cloud`:
+    You can import the `ManifestContentMultiFile` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContentMultiFile
+    from nextmv import ManifestContentMultiFile
     ```
 
     Parameters
@@ -779,7 +788,7 @@ class ManifestContentMultiFile(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContentMultiFile, ManifestContentMultiFileInput, ManifestContentMultiFileOutput
+    >>> from nextmv import ManifestContentMultiFile, ManifestContentMultiFileInput, ManifestContentMultiFileOutput
     >>> multi_file_config = ManifestContentMultiFile(
     ...     input=ManifestContentMultiFileInput(path="data/input/"),
     ...     output=ManifestContentMultiFileOutput(
@@ -803,10 +812,10 @@ class ManifestContent(BaseModel):
     """
     Content configuration for specifying how the app input/output is handled.
 
-    You can import the `ManifestContent` class directly from `cloud`:
+    You can import the `ManifestContent` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestContent
+    from nextmv import ManifestContent
     ```
 
     Parameters
@@ -818,7 +827,7 @@ class ManifestContent(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestContent
+    >>> from nextmv import ManifestContent
     >>> content_config = ManifestContent(
     ...     format="multi-file",
     ...     multi_file=ManifestContentMultiFile(
@@ -836,9 +845,11 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: str
-    """The format of the content. Must be one of "json", "multi-file",
-    or "csv-archive"."""
+    format: InputFormat
+    """
+    The format of the content. Can only be `InputFormat.JSON`,
+    `InputFormat.MULTI_FILE`, or `InputFormat.CSV_ARCHIVE`.
+    """
     multi_file: Optional[ManifestContentMultiFile] = Field(
         serialization_alias="multi-file",
         validation_alias=AliasChoices("multi-file", "multi_file"),
@@ -846,7 +857,7 @@ class ManifestContent(BaseModel):
     )
     """Configuration for multi-file content format."""
 
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """Post-initialization to validate fields."""
         acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
@@ -857,10 +868,10 @@ class ManifestConfiguration(BaseModel):
     """
     Configuration for the decision model.
 
-    You can import the `ManifestConfiguration` class directly from `cloud`:
+    You can import the `ManifestConfiguration` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import ManifestConfiguration
+    from nextmv import ManifestConfiguration
     ```
 
     Parameters
@@ -870,7 +881,7 @@ class ManifestConfiguration(BaseModel):
 
     Examples
     --------
-    >>> from nextmv.cloud import ManifestConfiguration, ManifestOptions, ManifestOption
+    >>> from nextmv import ManifestConfiguration, ManifestOptions, ManifestOption
     >>> model_config = ManifestConfiguration(
     ...     options=ManifestOptions(
     ...         items=[ManifestOption(name="debug_mode", option_type="bool", default=False)]
@@ -890,10 +901,10 @@ class Manifest(BaseModel):
     """
     Represents an app manifest (`app.yaml`) for Nextmv Cloud.
 
-    You can import the `Manifest` class directly from `cloud`:
+    You can import the `Manifest` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import Manifest
+    from nextmv import Manifest
     ```
 
     An application that runs on the Nextmv Platform must contain a file named
@@ -935,10 +946,16 @@ class Manifest(BaseModel):
     configuration : Optional[ManifestConfiguration], default=None
         A list of options for the decision model. An option is a
         parameter that configures the decision model.
+    entrypoint : Optional[str], default=None
+        Optional entrypoint for the decision model. When not specified, the
+        following default entrypoints are used, according to the `.runtime`:
+        - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
+        - `ManifestRuntime.DEFAULT`: `./main`
+        - Java: `./main.jar`
 
     Examples
     --------
-    >>> from nextmv.cloud import Manifest, ManifestRuntime, ManifestType
+    >>> from nextmv import Manifest, ManifestRuntime, ManifestType
     >>> manifest = Manifest(
     ...     files=["main.py", "model_logic/"],
     ...     runtime=ManifestRuntime.PYTHON,
@@ -996,6 +1013,29 @@ class Manifest(BaseModel):
     Configuration for the decision model. A list of options for the decision
     model. An option is a parameter that configures the decision model.
     """
+    entrypoint: Optional[str] = None
+    """
+    Optional entrypoint for the decision model. When not specified, the
+    following default entrypoints are used, according to the `.runtime`:
+
+    - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
+    - `ManifestRuntime.DEFAULT`: `./main`
+    - Java: `./main.jar`
+    """
+
+    def model_post_init(self, __context) -> None:
+        if self.entrypoint is None:
+            if self.runtime in (ManifestRuntime.PYTHON, ManifestRuntime.HEXALY, ManifestRuntime.PYOMO):
+                self.entrypoint = "./main.py"
+            elif self.runtime == ManifestRuntime.DEFAULT:
+                self.entrypoint = "./main"
+            elif self.runtime == ManifestRuntime.JAVA:
+                self.entrypoint = "./main.jar"
+            else:
+                raise ValueError(
+                    f'entrypoint is not provided but the runtime "{self.runtime}" could not '
+                    "be resolved to establish a default entrypoint"
+                )
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":
@@ -1034,7 +1074,7 @@ class Manifest(BaseModel):
         type: python
         ```
 
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
         """
@@ -1065,7 +1105,7 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> manifest = Manifest(files=["solver.py"], type="python")
         >>> # manifest.to_yaml("./output_dir") # This would create ./output_dir/app.yaml
         """
@@ -1088,7 +1128,7 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import Manifest, ManifestConfiguration, ManifestOptions, ManifestOption
+        >>> from nextmv import Manifest, ManifestConfiguration, ManifestOptions, ManifestOption
         >>> manifest = Manifest(
         ...     files=["main.py"],
         ...     configuration=ManifestConfiguration(
@@ -1150,8 +1190,9 @@ class Manifest(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.model import ModelConfiguration, Options, Option
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv.model import ModelConfiguration
+        >>> from nextmv.options import Options, Option
+        >>> from nextmv import Manifest
         >>> opts = Options(Option(name="vehicle_count", option_type=int, default=5))
         >>> mc = ModelConfiguration(name="vehicle_router", options=opts)
         >>> manifest = Manifest.from_model_configuration(mc)
@@ -1213,7 +1254,7 @@ class Manifest(BaseModel):
         ----------
         options : nextmv.options.Options
             The options to include in the manifest.
-        validation : nextmv.options.OptionsEnforcement default=None
+        validation : nextmv.options.OptionsEnforcement, default=None
             The validation rules for the options. This is used to set the
             `validation` attribute of the `ManifestOptions`.
 
@@ -1225,7 +1266,7 @@ class Manifest(BaseModel):
         Examples
         --------
         >>> from nextmv.options import Options, Option
-        >>> from nextmv.cloud import Manifest
+        >>> from nextmv import Manifest
         >>> opts = Options(
         ...     Option(name="max_runtime", option_type=str, default="60s"),
         ...     Option(name="use_heuristic", option_type=bool, default=True)

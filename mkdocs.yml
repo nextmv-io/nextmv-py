@@ -31,12 +31,6 @@ nav:
               - Acceptance tests: nextmv/tutorials/experiments/acceptance-tests.md
               - Input sets: nextmv/tutorials/experiments/input-sets.md
       - Reference:
-          - base_model.py: nextmv/reference/base_model.md
-          - input.py: nextmv/reference/input.md
-          - logger.py: nextmv/reference/logger.md
-          - model.py: nextmv/reference/model.md
-          - options.py: nextmv/reference/options.md
-          - output.py: nextmv/reference/output.md
           - cloud:
               - acceptance_test.py: nextmv/reference/cloud/acceptance_test.md
               - account.py: nextmv/reference/cloud/account.md
@@ -45,12 +39,27 @@ nav:
               - client.py: nextmv/reference/cloud/client.md
               - input_set.py: nextmv/reference/cloud/input_set.md
               - instance.py: nextmv/reference/cloud/instance.md
-              - manifest.py: nextmv/reference/cloud/manifest.md
-              - run.py: nextmv/reference/cloud/run.md
               - scenario.py: nextmv/reference/cloud/scenario.md
               - secrets.py: nextmv/reference/cloud/secrets.md
-              - status.py: nextmv/reference/cloud/status.md
+              - url.py: nextmv/reference/cloud/url.md
               - version.py: nextmv/reference/cloud/version.md
+          - local:
+              - application.py: nextmv/reference/local/application.md
+              - executor.py: nextmv/reference/local/executor.md
+              - geojson_handler.py: nextmv/reference/local/geojson_handler.md
+              - plotly_handler.py: nextmv/reference/local/plotly_handler.md
+              - runner.py: nextmv/reference/local/runner.md
+          - base_model.py: nextmv/reference/base_model.md
+          - input.py: nextmv/reference/input.md
+          - logger.py: nextmv/reference/logger.md
+          - manifest.py: nextmv/reference/manifest.md
+          - model.py: nextmv/reference/model.md
+          - options.py: nextmv/reference/options.md
+          - output.py: nextmv/reference/output.md
+          - polling.py: nextmv/reference/polling.md
+          - run.py: nextmv/reference/run.md
+          - safe.py: nextmv/reference/safe.md
+          - status.py: nextmv/reference/status.md
   - nextmv-gurobipy:
       - Overview & installation: nextmv-gurobipy/index.md
       - Tutorials:

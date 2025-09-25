@@ -3,8 +3,6 @@ import shutil
 import subprocess
 import unittest
 
-import nextmv.options
-
 import nextmv
 
 

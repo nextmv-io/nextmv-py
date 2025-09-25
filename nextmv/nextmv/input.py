@@ -20,6 +20,13 @@ Functions
 ---------
 load
     Load input data using a specified loader.
+
+Constants
+---------
+INPUTS_KEY : str
+    Key used for identifying inputs in the run.
+DEFAULT_INPUT_JSON_FILE : str
+    Constant for the default input JSON file name.
 """
 
 import copy
@@ -35,6 +42,15 @@ from typing import Any, Optional, Union
 from nextmv._serialization import serialize_json
 from nextmv.deprecated import deprecated
 from nextmv.options import Options
+
+INPUTS_KEY = "inputs"
+"""
+Inputs key constant used for identifying inputs in the run.
+"""
+DEFAULT_INPUT_JSON_FILE = "input.json"
+"""
+Constant for the default input JSON file name.
+"""
 
 
 class InputFormat(str, Enum):
@@ -911,7 +927,7 @@ class LocalInputLoader(InputLoader):
             If the path is not a directory or the default directory doesn't exist.
         """
 
-        dir_path = "inputs"
+        dir_path = INPUTS_KEY
         if path is not None and path != "":
             if not os.path.isdir(path):
                 raise ValueError(f"path {path} is not a directory")

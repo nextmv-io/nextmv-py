@@ -24,13 +24,9 @@ poll
 
 import json
 import os
-import random
 import shutil
 import tarfile
 import tempfile
-import time
-import uuid
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional, Union
@@ -52,8 +48,18 @@ from nextmv.cloud.batch_experiment import (
 from nextmv.cloud.client import Client, get_size
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
-from nextmv.cloud.manifest import Manifest
-from nextmv.cloud.run import (
+from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
+from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
+from nextmv.cloud.url import DownloadURL, UploadURL
+from nextmv.cloud.version import Version
+from nextmv.input import Input, InputFormat
+from nextmv.logger import log
+from nextmv.manifest import Manifest
+from nextmv.model import Model, ModelConfiguration
+from nextmv.options import Options
+from nextmv.output import Output, OutputFormat
+from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
+from nextmv.run import (
     ExternalRunResult,
     Format,
     FormatInput,
@@ -64,196 +70,14 @@ from nextmv.cloud.run import (
     RunResult,
     TrackedRun,
 )
-from nextmv.cloud.safe import _name_and_id, _safe_id
-from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
-from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
-from nextmv.cloud.status import StatusV2
-from nextmv.cloud.version import Version
-from nextmv.input import Input, InputFormat
-from nextmv.logger import log
-from nextmv.model import Model, ModelConfiguration
-from nextmv.options import Options
-from nextmv.output import Output, OutputFormat
+from nextmv.safe import safe_id, safe_name_and_id
+from nextmv.status import StatusV2
 
 # Maximum size of the run input/output in bytes. This constant defines the
 # maximum allowed size for run inputs and outputs. When the size exceeds this
 # value, the system will automatically use the large input upload and/or large
 # result download endpoints.
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
-
-
-class DownloadURL(BaseModel):
-    """
-    Result of getting a download URL.
-
-    You can import the `DownloadURL` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import DownloadURL
-    ```
-
-    This class represents a download URL that can be used to fetch content
-    from Nextmv Cloud, typically used for downloading large run results.
-
-    Attributes
-    ----------
-    url : str
-        URL to use for downloading the file.
-
-    Examples
-    --------
-    >>> download_url = DownloadURL(url="https://example.com/download")
-    >>> response = requests.get(download_url.url)
-    """
-
-    url: str
-    """URL to use for downloading the file."""
-
-
-@dataclass
-class PollingOptions:
-    """
-    Options to use when polling for a run result.
-
-    You can import the `PollingOptions` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import PollingOptions
-    ```
-
-    The Cloud API will be polled for the result. The polling stops if:
-
-    * The maximum number of polls (tries) are exhausted. This is specified by
-      the `max_tries` parameter.
-    * The maximum duration of the polling strategy is reached. This is
-      specified by the `max_duration` parameter.
-
-    Before conducting the first poll, the `initial_delay` is used to sleep.
-    After each poll, a sleep duration is calculated using the following
-    strategy, based on exponential backoff with jitter:
-
-    ```
-    sleep_duration = min(`max_delay`, `delay` + `backoff` * 2 ** i + Uniform(0, `jitter`))
-    ```
-
-    Where:
-    * i is the retry (poll) number.
-    * Uniform is the uniform distribution.
-
-    Note that the sleep duration is capped by the `max_delay` parameter.
-
-    Parameters
-    ----------
-    backoff : float, default=0.9
-        Exponential backoff factor, in seconds, to use between polls.
-    delay : float, default=0.1
-        Base delay to use between polls, in seconds.
-    initial_delay : float, default=1.0
-        Initial delay to use before starting the polling strategy, in seconds.
-    max_delay : float, default=20.0
-        Maximum delay to use between polls, in seconds.
-    max_duration : float, default=300.0
-        Maximum duration of the polling strategy, in seconds.
-    max_tries : int, default=100
-        Maximum number of tries to use.
-    jitter : float, default=1.0
-        Jitter to use for the polling strategy. A uniform distribution is sampled
-        between 0 and this number. The resulting random number is added to the
-        delay for each poll, adding a random noise. Set this to 0 to avoid using
-        random jitter.
-    verbose : bool, default=False
-        Whether to log the polling strategy. This is useful for debugging.
-    stop : callable, default=None
-        Function to call to check if the polling should stop. This is useful for
-        stopping the polling based on external conditions. The function should
-        return True to stop the polling and False to continue. The function does
-        not receive any arguments. The function is called before each poll.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import PollingOptions
-    >>> # Create polling options with custom settings
-    >>> polling_options = PollingOptions(
-    ...     max_tries=50,
-    ...     max_duration=600,
-    ...     verbose=True
-    ... )
-    """
-
-    backoff: float = 0.9
-    """
-    Exponential backoff factor, in seconds, to use between polls.
-    """
-    delay: float = 0.1
-    """Base delay to use between polls, in seconds."""
-    initial_delay: float = 1
-    """
-    Initial delay to use before starting the polling strategy, in seconds.
-    """
-    max_delay: float = 20
-    """Maximum delay to use between polls, in seconds."""
-    max_duration: float = -1
-    """
-    Maximum duration of the polling strategy, in seconds. A negative value means no limit.
-    """
-    max_tries: int = -1
-    """Maximum number of tries to use. A negative value means no limit."""
-    jitter: float = 1
-    """
-    Jitter to use for the polling strategy. A uniform distribution is sampled
-    between 0 and this number. The resulting random number is added to the
-    delay for each poll, adding a random noise. Set this to 0 to avoid using
-    random jitter.
-    """
-    verbose: bool = False
-    """Whether to log the polling strategy. This is useful for debugging."""
-    stop: Optional[Callable[[], bool]] = None
-    """
-    Function to call to check if the polling should stop. This is useful for
-    stopping the polling based on external conditions. The function should
-    return True to stop the polling and False to continue. The function does
-    not receive any arguments. The function is called before each poll.
-    """
-
-
-# Default polling options to use when polling for a run result. This constant
-# provides the default values for `PollingOptions` used across the module.
-# Using these defaults is recommended for most use cases unless specific timing
-# needs are required.
-_DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
-
-
-class UploadURL(BaseModel):
-    """
-    Result of getting an upload URL.
-
-    You can import the `UploadURL` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import UploadURL
-    ```
-
-    This class represents an upload URL that can be used to send data to
-    Nextmv Cloud, typically used for uploading large inputs for runs.
-
-    Attributes
-    ----------
-    upload_id : str
-        ID of the upload, used to reference the uploaded content.
-    upload_url : str
-        URL to use for uploading the file.
-
-    Examples
-    --------
-    >>> upload_url = UploadURL(upload_id="123", upload_url="https://example.com/upload")
-    >>> with open("large_input.json", "rb") as f:
-    ...     requests.put(upload_url.upload_url, data=f)
-    """
-
-    upload_id: str
-    """ID of the upload."""
-    upload_url: str
-    """URL to use for uploading the file."""
 
 
 @dataclass
@@ -305,15 +129,6 @@ class Application:
     experiments_endpoint: str = "{base}/experiments"
     """Base endpoint for the experiments in the application."""
 
-    # Local experience parameters.
-    src: Optional[str] = None
-    """
-    Source of the application, if initialized locally. This is the path
-    to the application's source code.
-    """
-    description: Optional[str] = None
-    """Description of the application."""
-
     def __post_init__(self):
         """Initialize the endpoint and experiments_endpoint attributes.
 
@@ -322,92 +137,6 @@ class Application:
         """
         self.endpoint = self.endpoint.format(id=self.id)
         self.experiments_endpoint = self.experiments_endpoint.format(base=self.endpoint)
-
-    @classmethod
-    def initialize(
-        cls,
-        name: str,
-        id: Optional[str] = None,
-        description: Optional[str] = None,
-        destination: Optional[str] = None,
-        client: Optional[Client] = None,
-    ) -> "Application":
-        """
-        Initialize a Nextmv application, locally.
-
-        This method will create a new application in the local file system. The
-        application is a folder with the name given by `name`, under the
-        location given by `destination`. If the `destination` parameter is not
-        specified, the current working directory is used as default. This
-        method will scaffold the application with the necessary files and
-        directories to have an opinionated structure for your decision model.
-        Once the application is initialized, you are encouraged to complete it
-        with the decision model itself, so that the application can be run,
-        locally or remotely.
-
-        This method differs from the `Application.new` method in that it
-        creates the application locally rather than in the Cloud.
-
-        Although not required, you are encouraged to specify the `client`
-        parameter, so that the application can be pushed and synced remotely,
-        with the Nextmv Cloud. If you don't specify the `client`, and intend to
-        interact with the Nextmv Cloud, you will encounter an error. Make sure
-        you set the `client` parameter on the `Application` instance after
-        initialization, if you don't provide it here.
-
-        Use the `destination` parameter to specify where you want the app to be
-        initialized, using the current working directory by default.
-
-        Parameters
-        ----------
-        name : str
-            Name of the application.
-        id : str, optional
-            ID of the application. Will be generated if not provided.
-        description : str, optional
-            Description of the application.
-        destination : str, optional
-            Destination directory where the application will be initialized. If
-            not provided, the current working directory will be used.
-        client : Client, optional
-            Client to use for interacting with the Nextmv Cloud API.
-
-        Returns
-        -------
-        Application
-            The initialized application instance.
-        """
-
-        destination_dir = os.getcwd() if destination is None else destination
-        app_id = id if id is not None else str(uuid.uuid4())
-
-        # Create the new directory with the given name.
-        src = os.path.join(destination_dir, name)
-        os.makedirs(src, exist_ok=True)
-
-        # Get the path to the initial app structure template.
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        initial_app_structure_path = os.path.join(current_file_dir, "..", "default_app")
-        initial_app_structure_path = os.path.normpath(initial_app_structure_path)
-
-        # Copy everything from initial_app_structure to the new directory.
-        if os.path.exists(initial_app_structure_path):
-            for item in os.listdir(initial_app_structure_path):
-                source_path = os.path.join(initial_app_structure_path, item)
-                dest_path = os.path.join(src, item)
-
-                if os.path.isdir(source_path):
-                    shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
-                    continue
-
-                shutil.copy2(source_path, dest_path)
-
-        return cls(
-            id=app_id,
-            client=client,
-            src=src,
-            description=description,
-        )
 
     @classmethod
     def new(
@@ -510,7 +239,7 @@ class Application:
     def acceptance_test_with_polling(
         self,
         acceptance_test_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
         Retrieve details of an acceptance test using polling.
@@ -627,7 +356,7 @@ class Application:
     def batch_experiment_with_polling(
         self,
         batch_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Get a batch experiment with polling.
@@ -1327,7 +1056,7 @@ class Application:
         name: str,
         input_set_id: Optional[str] = None,
         description: Optional[str] = None,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
         Create a new acceptance test and poll for the result.
@@ -1491,7 +1220,7 @@ class Application:
         option_sets: Optional[dict[str, dict[str, str]]] = None,
         runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
         type: Optional[str] = "batch",
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Convenience method to create a new batch experiment and poll for the
@@ -1931,13 +1660,7 @@ class Application:
 
             tar_file = self.__package_inputs(input_dir_path)
 
-        input_data = None
-        if isinstance(input, BaseModel):
-            input_data = input.to_dict()
-        elif isinstance(input, dict) or isinstance(input, str):
-            input_data = input
-        elif isinstance(input, Input):
-            input_data = input.data
+        input_data = self.__extract_input_data(input)
 
         input_size = 0
         if input_data is not None:
@@ -1950,20 +1673,10 @@ class Application:
             upload_id = upload_url.upload_id
             upload_id_used = True
 
-        options_dict = {}
-        if isinstance(input, Input) and input.options is not None:
-            options_dict = input.options.to_dict_cloud()
+        options_dict = self.__extract_options_dict(options, json_configurations)
 
-        if options is not None:
-            if isinstance(options, Options):
-                options_dict = options.to_dict_cloud()
-            elif isinstance(options, dict):
-                for k, v in options.items():
-                    if isinstance(v, str):
-                        options_dict[k] = v
-                    else:
-                        options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
-
+        # Builds the payload progressively based on the different arguments
+        # that must be provided.
         payload = {}
         if upload_id_used:
             payload["upload_id"] = upload_id
@@ -1980,15 +1693,7 @@ class Application:
                     raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
             payload["options"] = options_dict
 
-        if configuration is not None:
-            configuration_dict = (
-                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
-            )
-        else:
-            configuration = RunConfiguration()
-            configuration.resolve(input=input, dir_path=input_dir_path)
-            configuration_dict = configuration.to_dict()
-
+        configuration_dict = self.__extract_run_config(input, configuration, input_dir_path)
         payload["configuration"] = configuration_dict
 
         if batch_experiment_id is not None:
@@ -2020,7 +1725,7 @@ class Application:
         description: Optional[str] = None,
         upload_id: Optional[str] = None,
         run_options: Optional[Union[Options, dict[str, str]]] = None,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
         batch_experiment_id: Optional[str] = None,
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
@@ -2289,7 +1994,7 @@ class Application:
         scenarios: list[Scenario],
         description: Optional[str] = None,
         repetitions: Optional[int] = 0,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Convenience method to create a new scenario test and poll for the
@@ -2496,7 +2201,7 @@ class Application:
             return self.version(version_id=id)
 
         if id is None:
-            id = _safe_id(prefix="version")
+            id = safe_id(prefix="version")
 
         payload = {
             "id": id,
@@ -2827,7 +2532,7 @@ class Application:
     def run_result_with_polling(
         self,
         run_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         output_dir_path: Optional[str] = ".",
     ) -> RunResult:
         """
@@ -2965,7 +2670,7 @@ class Application:
     def scenario_test_with_polling(
         self,
         scenario_test_id: str,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
         Get a scenario test with polling.
@@ -3004,7 +2709,12 @@ class Application:
 
         return self.batch_experiment_with_polling(batch_id=scenario_test_id, polling_options=polling_options)
 
-    def track_run(self, tracked_run: TrackedRun, instance_id: Optional[str] = None) -> str:
+    def track_run(  # noqa: C901
+        self,
+        tracked_run: TrackedRun,
+        instance_id: Optional[str] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+    ) -> str:
         """
         Track an external run.
 
@@ -3013,6 +2723,14 @@ class Application:
         information about a run in Nextmv is useful for things like
         experimenting and testing.
 
+        Please read the documentation on the `TrackedRun` class carefully, as
+        there are important considerations to take into account when using this
+        method. For example, if you intend to upload JSON input/output, use the
+        `input`/`output` attributes of the `TrackedRun` class. On the other
+        hand, if you intend to track files-based input/output, use the
+        `input_dir_path`/`output_dir_path` attributes of the `TrackedRun`
+        class.
+
         Parameters
         ----------
         tracked_run : TrackedRun
@@ -3020,6 +2738,11 @@ class Application:
         instance_id : Optional[str], default=None
             Optional instance ID if you want to associate your tracked run with
             an instance.
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
 
         Returns
         -------
@@ -3042,22 +2765,55 @@ class Application:
         >>> run_id = app.track_run(tracked_run)
         """
 
+        # Get the URL to upload the input to.
         url_input = self.upload_url()
 
+        # Handle the case where the input is being uploaded as files. We need
+        # to tar them.
+        input_tar_file = ""
+        input_dir_path = tracked_run.input_dir_path
+        if input_dir_path is not None and input_dir_path != "":
+            if not os.path.exists(input_dir_path):
+                raise ValueError(f"Directory {input_dir_path} does not exist.")
+
+            if not os.path.isdir(input_dir_path):
+                raise ValueError(f"Path {input_dir_path} is not a directory.")
+
+            input_tar_file = self.__package_inputs(input_dir_path)
+
+        # Handle the case where the input is uploaded as Input or a dict.
         upload_input = tracked_run.input
-        if isinstance(tracked_run.input, Input):
+        if upload_input is not None and isinstance(tracked_run.input, Input):
             upload_input = tracked_run.input.data
 
-        self.upload_large_input(input=upload_input, upload_url=url_input)
+        # Actually uploads de input.
+        self.upload_large_input(input=upload_input, upload_url=url_input, tar_file=input_tar_file)
 
+        # Get the URL to upload the output to.
         url_output = self.upload_url()
 
+        # Handle the case where the output is being uploaded as files. We need
+        # to tar them.
+        output_tar_file = ""
+        output_dir_path = tracked_run.output_dir_path
+        if output_dir_path is not None and output_dir_path != "":
+            if not os.path.exists(output_dir_path):
+                raise ValueError(f"Directory {output_dir_path} does not exist.")
+
+            if not os.path.isdir(output_dir_path):
+                raise ValueError(f"Path {output_dir_path} is not a directory.")
+
+            output_tar_file = self.__package_inputs(output_dir_path)
+
+        # Handle the case where the output is uploaded as Output or a dict.
         upload_output = tracked_run.output
-        if isinstance(tracked_run.output, Output):
+        if upload_output is not None and isinstance(tracked_run.output, Output):
             upload_output = tracked_run.output.to_dict()
 
-        self.upload_large_input(input=upload_output, upload_url=url_output)
+        # Actually uploads the output.
+        self.upload_large_input(input=upload_output, upload_url=url_output, tar_file=output_tar_file)
 
+        # Create the external run result and appends logs if required.
         external_result = ExternalRunResult(
             output_upload_id=url_output.upload_id,
             status=tracked_run.status.value,
@@ -3076,14 +2832,18 @@ class Application:
             upload_id=url_input.upload_id,
             external_result=external_result,
             instance_id=instance_id,
+            name=tracked_run.name,
+            description=tracked_run.description,
+            configuration=configuration,
         )
 
     def track_run_with_result(
         self,
         tracked_run: TrackedRun,
-        polling_options: PollingOptions = _DEFAULT_POLLING_OPTIONS,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
         instance_id: Optional[str] = None,
         output_dir_path: Optional[str] = ".",
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
     ) -> RunResult:
         """
         Track an external run and poll for the result. This is a convenience
@@ -3104,6 +2864,11 @@ class Application:
             Path to a directory where non-JSON output files will be saved. This is
             required if the output is non-JSON. If the directory does not exist, it
             will be created. Uses the current directory by default.
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
 
         Returns
         -------
@@ -3123,7 +2888,11 @@ class Application:
             If the run does not succeed after the polling strategy is
             exhausted based on number of tries.
         """
-        run_id = self.track_run(tracked_run=tracked_run, instance_id=instance_id)
+        run_id = self.track_run(
+            tracked_run=tracked_run,
+            instance_id=instance_id,
+            configuration=configuration,
+        )
 
         return self.run_result_with_polling(
             run_id=run_id,
@@ -3829,7 +3598,7 @@ class Application:
         # If working with a list of managed inputs, we need to create an
         # input set.
         if scenario.scenario_input.scenario_input_type == ScenarioInputType.INPUT:
-            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = safe_name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -3849,7 +3618,7 @@ class Application:
             for data in scenario.scenario_input.scenario_input_data:
                 upload_url = self.upload_url()
                 self.upload_large_input(input=data, upload_url=upload_url)
-                name, id = _name_and_id(prefix="man-input", entity_id=scenario_id)
+                name, id = safe_name_and_id(prefix="man-input", entity_id=scenario_id)
                 managed_input = self.new_managed_input(
                     id=id,
                     name=name,
@@ -3858,7 +3627,7 @@ class Application:
                 )
                 managed_inputs.append(managed_input)
 
-            name, id = _name_and_id(prefix="inpset", entity_id=scenario_id)
+            name, id = safe_name_and_id(prefix="inpset", entity_id=scenario_id)
             input_set = self.new_input_set(
                 id=id,
                 name=name,
@@ -3873,27 +3642,70 @@ class Application:
     def __validate_input_dir_path_and_configuration(
         self,
         input_dir_path: Optional[str],
-        configuration: Optional[RunConfiguration],
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
-        if (
-            configuration is None
-            or configuration.format is None
-            or configuration.format.format_input is None
-            or configuration.format.format_input.input_type is None
-        ):
-            # No explicit input type set, so we cannot confirm it.
+
+        if input_dir_path is None or input_dir_path == "":
             return
 
-        input_type = configuration.format.format_input.input_type
-        dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
-        if input_type in dir_types and not input_dir_path:
+        if configuration is None:
             raise ValueError(
-                f"If RunConfiguration.format.format_input.input_type is set to {input_type}, "
-                "then input_dir_path must be provided.",
+                "If dir_path is provided, a RunConfiguration must also be provided.",
             )
+
+        config_format = self.__extract_config_format(configuration)
+
+        if config_format is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format must also be provided.",
+            )
+
+        input_type = self.__extract_input_type(config_format)
+
+        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
+                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+            )
+
+    def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:
+        """Extract format from configuration, handling both RunConfiguration objects and dicts."""
+        if isinstance(configuration, RunConfiguration):
+            return configuration.format
+
+        if isinstance(configuration, dict):
+            config_format = configuration.get("format")
+            if config_format is not None and isinstance(config_format, dict):
+                return Format.from_dict(config_format) if hasattr(Format, "from_dict") else config_format
+
+            return config_format
+
+        raise ValueError("Configuration must be a RunConfiguration object or a dict.")
+
+    def __extract_input_type(self, config_format: Any) -> Any:
+        """Extract input type from config format."""
+        if isinstance(config_format, dict):
+            format_input = config_format.get("format_input") or config_format.get("input")
+            if format_input is None:
+                raise ValueError(
+                    "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
+                )
+
+            if isinstance(format_input, dict):
+                return format_input.get("input_type") or format_input.get("type")
+
+            return getattr(format_input, "input_type", None)
+
+        # Handle Format object
+        if config_format.format_input is None:
+            raise ValueError(
+                "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
+            )
+
+        return config_format.format_input.input_type
 
     def __package_inputs(self, dir_path: str) -> str:
         """
@@ -3956,153 +3768,72 @@ class Application:
 
         return size_exceeds or non_json_payload
 
+    def __extract_input_data(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+    ) -> Optional[Union[dict[str, Any], str]]:
+        """
+        Auxiliary function to extract the input data from the input, based on
+        its type.
+        """
 
-def poll(  # noqa: C901
-    polling_options: PollingOptions,
-    polling_func: Callable[[], tuple[Any, bool]],
-    __sleep_func: Callable[[float], None] = time.sleep,
-) -> Any:
-    """
-    Poll a function until it succeeds or the polling strategy is exhausted.
+        input_data = None
+        if isinstance(input, BaseModel):
+            input_data = input.to_dict()
+        elif isinstance(input, dict) or isinstance(input, str):
+            input_data = input
+        elif isinstance(input, Input):
+            input_data = input.data
 
-    You can import the `poll` function directly from `cloud`:
+        return input_data
 
-    ```python
-    from nextmv.cloud import poll
-    ```
+    def __extract_options_dict(
+        self,
+        options: Optional[Union[Options, dict[str, str]]] = None,
+        json_configurations: Optional[dict[str, Any]] = None,
+    ) -> dict[str, str]:
+        """
+        Auxiliary function to extract the options that will be sent to the
+        application for execution.
+        """
 
-    This function implements a flexible polling strategy with exponential backoff
-    and jitter. It calls the provided polling function repeatedly until it indicates
-    success, the maximum number of tries is reached, or the maximum duration is exceeded.
+        options_dict = {}
+        if options is not None:
+            if isinstance(options, Options):
+                options_dict = options.to_dict_cloud()
 
-    The `polling_func` is a callable that must return a `tuple[Any, bool]`
-    where the first element is the result of the polling and the second
-    element is a boolean indicating if the polling was successful or should be
-    retried.
+            elif isinstance(options, dict):
+                for k, v in options.items():
+                    if isinstance(v, str):
+                        options_dict[k] = v
+                        continue
 
-    Parameters
-    ----------
-    polling_options : PollingOptions
-        Options for configuring the polling behavior, including retry counts,
-        delays, timeouts, and verbosity settings.
-    polling_func : callable
-        Function to call to check if the polling was successful. Must return a tuple
-        where the first element is the result value and the second is a boolean
-        indicating success (True) or need to retry (False).
+                    options_dict[k] = deflated_serialize_json(v, json_configurations=json_configurations)
 
-    Returns
-    -------
-    Any
-        Result value from the polling function when successful.
+        return options_dict
 
-    Raises
-    ------
-    TimeoutError
-        If the polling exceeds the maximum duration specified in polling_options.
-    RuntimeError
-        If the maximum number of tries is exhausted without success.
+    def __extract_run_config(
+        self,
+        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+        dir_path: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        Auxiliary function to extract the run configuration that will be sent
+        to the application for execution.
+        """
 
-    Examples
-    --------
-    >>> from nextmv.cloud import PollingOptions, poll
-    >>> import time
-    >>>
-    >>> # Define a polling function that succeeds after 3 tries
-    >>> counter = 0
-    >>> def check_completion() -> tuple[str, bool]:
-    ...     global counter
-    ...     counter += 1
-    ...     if counter >= 3:
-    ...         return "Success", True
-    ...     return None, False
-    ...
-    >>> # Configure polling options
-    >>> options = PollingOptions(
-    ...     max_tries=5,
-    ...     delay=0.1,
-    ...     backoff=0.2,
-    ...     verbose=True
-    ... )
-    >>>
-    >>> # Poll until the function succeeds
-    >>> result = poll(options, check_completion)
-    >>> print(result)
-    'Success'
-    """
-
-    # Start by sleeping for the duration specified as initial delay.
-    if polling_options.verbose:
-        log(f"polling | sleeping for initial delay: {polling_options.initial_delay}")
-
-    __sleep_func(polling_options.initial_delay)
-
-    start_time = time.time()
-    stopped = False
-
-    # Begin the polling process.
-    max_reached = False
-    ix = 0
-    while True:
-        # Check if we reached the maximum number of tries. Break if so.
-        if ix >= polling_options.max_tries and polling_options.max_tries >= 0:
-            break
-        ix += 1
-
-        # Check is we should stop polling according to the stop callback.
-        if polling_options.stop is not None and polling_options.stop():
-            stopped = True
-
-            break
-
-        # We check if we can stop polling.
-        result, ok = polling_func()
-        if polling_options.verbose:
-            log(f"polling | try # {ix + 1}, ok: {ok}")
-
-        if ok:
-            return result
-
-        # An exit condition happens if we exceed the allowed duration.
-        passed = time.time() - start_time
-        if polling_options.verbose:
-            log(f"polling | elapsed time: {passed}")
-
-        if passed >= polling_options.max_duration and polling_options.max_duration >= 0:
-            raise TimeoutError(
-                f"polling did not succeed after {passed} seconds, exceeds max duration: {polling_options.max_duration}",
+        if configuration is not None:
+            configuration_dict = (
+                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
             )
+            return configuration_dict
 
-        # Calculate the delay.
-        if max_reached:
-            # If we already reached the maximum, we don't want to further calculate the
-            # delay to avoid overflows.
-            delay = polling_options.max_delay
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
-        else:
-            delay = polling_options.delay  # Base
-            delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        configuration = RunConfiguration()
+        configuration.resolve(input=input, dir_path=dir_path)
+        configuration_dict = configuration.to_dict()
 
-        # We cannot exceed the max delay.
-        if delay >= polling_options.max_delay:
-            max_reached = True
-            delay = polling_options.max_delay
-
-        # Sleep for the calculated delay.
-        sleep_duration = delay
-        if polling_options.verbose:
-            log(f"polling | sleeping for duration: {sleep_duration}")
-
-        __sleep_func(sleep_duration)
-
-    if stopped:
-        log("polling | stop condition met, stopping polling")
-
-        return None
-
-    raise RuntimeError(
-        f"polling did not succeed after {polling_options.max_tries} tries",
-    )
+        return configuration_dict
 
 
 def _is_not_exist_error(e: requests.HTTPError) -> bool:

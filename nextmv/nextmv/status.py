@@ -1,9 +1,9 @@
 """
-Provides status enums for Nextmv Cloud runs.
+Provides status enums for Nextmv application runs.
 
-This module defines enumerations for representing the status of a run in
-Nextmv Cloud. It includes a deprecated `Status` enum and the current `StatusV2`
-enum.
+This module defines enumerations for representing the status of a run in a
+Nextmv application. It includes a deprecated `Status` enum and the current
+`StatusV2` enum.
 
 Classes
 -------
@@ -23,10 +23,10 @@ class Status(str, Enum):
 
     Status of a run.
 
-    You can import the `Status` class directly from `cloud`:
+    You can import the `Status` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import Status
+    from nextmv import Status
     ```
 
     This enum represents the possible states of a run. It is deprecated and
@@ -67,14 +67,14 @@ class StatusV2(str, Enum):
     """
     Status of a run.
 
-    You can import the `StatusV2` class directly from `cloud`:
+    You can import the `StatusV2` class directly from `nextmv`:
 
     ```python
-    from nextmv.cloud import StatusV2
+    from nextmv import StatusV2
     ```
 
     This enum represents the comprehensive set of possible states for a run
-    in Nextmv Cloud.
+    in Nextmv.
 
     Attributes
     ----------

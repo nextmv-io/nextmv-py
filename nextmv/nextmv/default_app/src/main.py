@@ -24,7 +24,8 @@ assets = create_visuals(name, input.data["radius"], input.data["distance"])
 
 # Write output and statistics.
 output = nextmv.Output(
-    solution=None,
+    options=options,
+    solution={"message": message},
     statistics=nextmv.Statistics(
         result=nextmv.ResultStatistics(
             value=1.23,

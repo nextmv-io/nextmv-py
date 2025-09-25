@@ -20,7 +20,7 @@ from datetime import datetime
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
-from nextmv.cloud.status import Status, StatusV2
+from nextmv.status import Status, StatusV2
 
 
 class QueuedRun(BaseModel):

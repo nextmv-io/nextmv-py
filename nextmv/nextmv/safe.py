@@ -1,5 +1,15 @@
 """
-Utilities for generating “safe” IDs and huma-readable names
+
+The safe module contains utilities for generating “safe” IDs and human-readable
+names.
+
+Functions
+---------
+safe_name_and_id
+    Generate a safe ID and human-readable name from a prefix and user-supplied
+    identifier.
+safe_id
+    Generate a safe ID from a prefix.
 """
 
 import re
@@ -31,10 +41,16 @@ def _nanoid(size: int = 8, alphabet: str = string.ascii_lowercase + string.digit
     return "".join(secrets.choice(alphabet) for _ in range(size))
 
 
-def _name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
+def safe_name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
     """
     Generate a safe ID and human-readable name from a prefix and user-supplied
     identifier.
+
+    You can import the `safe_name_and_id` function directly from `nextmv`:
+
+    ```python
+    from nextmv import safe_name_and_id
+    ```
 
     Parameters
     ----------
@@ -48,6 +64,11 @@ def _name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
     -------
     tuple[str, str]
         A tuple containing the human-readable name and the safe ID.
+
+    Examples
+    --------
+    >>> safe_name_and_id("app", "My Application 123!")
+    ('App My Application 123', 'app-my-application-123-4f5g6h7j')
     """
 
     if not prefix or not entity_id:
@@ -83,9 +104,15 @@ def _name_and_id(prefix: str, entity_id: str) -> tuple[str, str]:
     return safe_name, safe_id
 
 
-def _safe_id(prefix: str) -> str:
+def safe_id(prefix: str) -> str:
     """
     Generate a safe ID from a prefix.
+
+    You can import the `safe_id` function directly from `nextmv`:
+
+    ```python
+    from nextmv import safe_id
+    ```
 
     Parameters
     ----------
@@ -96,6 +123,11 @@ def _safe_id(prefix: str) -> str:
     -------
     str
         A safe ID.
+
+    Examples
+    --------
+    >>> safe_id("app")
+    'app-4f5g6h7j'
     """
 
     random_slug = _nanoid(8)

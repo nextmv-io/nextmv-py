@@ -10,8 +10,8 @@ import tarfile
 import tempfile
 from typing import Optional
 
-from nextmv.cloud.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.logger import log
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
 from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 
 _MANDATORY_FILES_PER_TYPE = {
