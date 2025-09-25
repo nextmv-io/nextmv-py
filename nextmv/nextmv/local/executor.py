@@ -278,7 +278,7 @@ def process_run_input(
             and manifest.configuration.content.format == InputFormat.MULTI_FILE
             and manifest.configuration.content.multi_file is not None
         ):
-            inputs_dir = os.path.join(temp_src, manifest.configuration.content.multi_file.input)
+            inputs_dir = os.path.join(temp_src, manifest.configuration.content.multi_file.input.path)
 
         os.makedirs(inputs_dir, exist_ok=True)
 
@@ -507,8 +507,9 @@ def process_run_statistics(
         The application manifest.
     """
 
-    stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
     stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
+    os.makedirs(stats_dst, exist_ok=True)
+    statistics_file = f"{STATISTICS_KEY}.json"
 
     # Check for custom location in manifest and override stats_src if needed.
     if (
@@ -517,8 +518,15 @@ def process_run_statistics(
         and manifest.configuration.content.format == OutputFormat.MULTI_FILE
         and manifest.configuration.content.multi_file is not None
     ):
-        stats_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.statistics)
+        stats_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.statistics)
 
+        # If the custom statistics file exists, copy it to the stats destination
+        if os.path.exists(stats_src_file) and os.path.isfile(stats_src_file):
+            stats_dst_file = os.path.join(stats_dst, statistics_file)
+            shutil.copy2(stats_src_file, stats_dst_file)
+            return
+
+    stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
     if os.path.exists(stats_src) and os.path.isdir(stats_src):
         shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
         return
@@ -526,8 +534,7 @@ def process_run_statistics(
     if STATISTICS_KEY not in stdout_output:
         return
 
-    os.makedirs(stats_dst, exist_ok=True)
-    with open(os.path.join(stats_dst, f"{STATISTICS_KEY}.json"), "w") as f:
+    with open(os.path.join(stats_dst, statistics_file), "w") as f:
         statistics = {STATISTICS_KEY: stdout_output[STATISTICS_KEY]}
         json.dump(statistics, f, indent=2)
 
@@ -558,18 +565,26 @@ def process_run_assets(
         The application manifest.
     """
 
-    assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
+    os.makedirs(assets_dst, exist_ok=True)
+    assets_file = f"{ASSETS_KEY}.json"
 
-    # Check for custom location in manifest and override stats_src if needed.
+    # Check for custom location in manifest and override assets_src if needed.
     if (
         manifest.configuration is not None
         and manifest.configuration.content is not None
         and manifest.configuration.content.format == OutputFormat.MULTI_FILE
         and manifest.configuration.content.multi_file is not None
     ):
-        assets_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.assets)
+        assets_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.assets)
 
+        # If the custom assets file exists, copy it to the assets destination
+        if os.path.exists(assets_src_file) and os.path.isfile(assets_src_file):
+            assets_dst_file = os.path.join(assets_dst, assets_file)
+            shutil.copy2(assets_src_file, assets_dst_file)
+            return
+
+    assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     if os.path.exists(assets_src) and os.path.isdir(assets_src):
         shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
         return
@@ -577,8 +592,7 @@ def process_run_assets(
     if ASSETS_KEY not in stdout_output:
         return
 
-    os.makedirs(assets_dst, exist_ok=True)
-    with open(os.path.join(assets_dst, f"{ASSETS_KEY}.json"), "w") as f:
+    with open(os.path.join(assets_dst, assets_file), "w") as f:
         assets = {ASSETS_KEY: stdout_output[ASSETS_KEY]}
         json.dump(assets, f, indent=2)
 

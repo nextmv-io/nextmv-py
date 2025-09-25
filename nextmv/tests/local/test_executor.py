@@ -349,7 +349,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Check that statistics directory was not created
         stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
-        self.assertFalse(os.path.exists(stats_dst))
+        self.assertTrue(os.path.exists(stats_dst))
 
     def test_process_run_assets_from_directory(self):
         """Test process_run_assets when assets directory exists."""
