@@ -46,6 +46,11 @@ from nextmv.cloud.batch_experiment import (
     to_runs,
 )
 from nextmv.cloud.client import Client, get_size
+from nextmv.cloud.ensemble import (
+    EnsembleDefinition,
+    RunGroup,
+    EvaluationRule,
+)
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
@@ -1279,6 +1284,55 @@ class Application:
         )
 
         return self.batch_experiment_with_polling(batch_id=batch_id, polling_options=polling_options)
+    
+    def new_ensemble_defintion(
+        self,
+        id: str,
+        name: Optional[str],
+        description: Optional[str],
+        run_groups: Optional[list[RunGroup]],
+        rules: Optional[list[EvaluationRule]],
+    ) -> EnsembleDefinition:
+        """
+        Create a new ensemble definition.
+
+        Parameters
+        ----------
+        id: str
+            ID of the ensemble defintion.
+        name: Optional[str]
+            Name of the ensemble definition.
+        description: Optional[str]
+            Description of the ensemble definition.
+        run_groups: Optional[list[RunGroup]]
+            Information to facilitate the execution of child runs.
+        rules: Optional[list[EvaluationRule]]
+            Information to facilitate the selection of
+            a result for the ensemble run from child runs.
+        """
+
+        payload = {
+            "id": id,
+        }
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if description is not None:
+            payload["description"] = description
+        if run_groups is not None:
+            payload["run_groups"] = [run_group.to_dict() for run_group in run_groups]
+        if rules is not None:
+            payload["rules"] = [rule.to_dict() for rule in rules]
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/ensembles",
+            payload=payload,
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
 
     def new_input_set(
         self,
