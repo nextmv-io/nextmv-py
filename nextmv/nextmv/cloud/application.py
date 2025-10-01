@@ -556,6 +556,30 @@ class Application:
             endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
         )
 
+    def delete_ensemble_definition(self, ensemble_definition_id: str) -> None:
+        """
+        Delete a secrets collection.
+
+        Parameters
+        ----------
+        ensemble_definition_id : str
+            ID of the ensemble definition to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_ensemble_definition("development-ensemble-definition")
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/ensembles/{ensemble_definition_id}",
+        )
+
     @staticmethod
     def exists(client: Client, id: str) -> bool:
         """
@@ -3078,6 +3102,56 @@ class Application:
         )
 
         return Instance.from_dict(response.json())
+
+    def update_ensemble_definition(
+        self,
+        id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> EnsembleDefinition:
+        """
+        Update an ensemble definition.
+
+        Parameters
+        ----------
+        id : str
+            ID of the ensemble definition to update.
+        name : Optional[str], default=None
+            Optional name of the ensemble definition.
+        description : Optional[str], default=None
+            Optional description of the ensemble definition.
+
+        Returns
+        -------
+        EnsembleDefinition
+            The updated ensemble definition.
+
+        Raises
+        ------
+        ValueError
+            If neither name nor description is updated
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if name is None and description is None:
+            raise ValueError(
+                "Must define at least one value among name and description to modify"
+            )
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.endpoint}/ensembles/{id}",
+            payload=payload,
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
 
     def update_batch_experiment(
         self,
