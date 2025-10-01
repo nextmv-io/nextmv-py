@@ -687,6 +687,39 @@ class Application:
             if _is_not_exist_error(e):
                 return False
             raise e
+        
+    def ensemble_definition(self, ensemble_definition_id: str) -> EnsembleDefinition:
+        """
+        Get an ensemble definition.
+
+        Parameters
+        ----------
+        ensemble_definition_id : str
+            ID of the ensemble definition to retrieve.
+
+        Returns
+        -------
+        EnsembleDefintion
+            The requested ensemble definition details.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> ensemble_definition = app.ensemble_definition("instance-123")
+        >>> print(ensemble_definition.name)
+        'Production Ensemble Definition'
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/ensembles/{ensemble_definition_id}",
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
 
     def list_acceptance_tests(self) -> list[AcceptanceTest]:
         """
