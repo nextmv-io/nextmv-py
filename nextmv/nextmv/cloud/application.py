@@ -1288,10 +1288,10 @@ class Application:
     def new_ensemble_defintion(
         self,
         id: str,
-        name: Optional[str],
-        description: Optional[str],
-        run_groups: Optional[list[RunGroup]],
-        rules: Optional[list[EvaluationRule]],
+        run_groups: list[RunGroup],
+        rules: list[EvaluationRule],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> EnsembleDefinition:
         """
         Create a new ensemble definition.
@@ -1311,20 +1311,18 @@ class Application:
             a result for the ensemble run from child runs.
         """
 
+        if name is None:
+            name = id
+        if description is None:
+            description = name
+
         payload = {
             "id": id,
+            "run_groups": [run_group.to_dict() for run_group in run_groups],
+            "rules": [rule.to_dict() for rule in rules],
+            "name": name,
+            "description": description,
         }
-
-        if name is not None:
-            payload["name"] = name
-        if description is not None:
-            payload["description"] = description
-        if description is not None:
-            payload["description"] = description
-        if run_groups is not None:
-            payload["run_groups"] = [run_group.to_dict() for run_group in run_groups]
-        if rules is not None:
-            payload["rules"] = [rule.to_dict() for rule in rules]
 
         response = self.client.request(
             method="POST",
@@ -2256,13 +2254,14 @@ class Application:
 
         if id is None:
             id = safe_id(prefix="version")
+        if name is None:
+            name = id
 
         payload = {
             "id": id,
+            "name": name,
         }
 
-        if name is not None:
-            payload["name"] = name
         if description is not None:
             payload["description"] = description
 

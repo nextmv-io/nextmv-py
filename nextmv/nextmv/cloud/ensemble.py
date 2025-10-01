@@ -1,12 +1,23 @@
-"""Classes for working with Nextmv Cloud Ensemble Runs.
+"""
+Classes for working with Nextmv Cloud Ensemble Runs.
 
 This module provides classes for interacting with ensemble runs in Nextmv Cloud.
 It details the core data structures for ensemble definitions.
 
 Classes
 -------
+RunGroup
+    A structure to group execution of child runs for an ensemble run.
+RuleObjective
+    An enum that specifies the supported evaluation rule objectives.
+ToleranceType
+    An enum that specifies the supported tolerance types for evaluation rules.
+RuleTolerance
+    A structure for defining tolerance thresholds for an evaluation rule
+EvaluationRule
+    A structure to evaluate run results for an ensemble run.
 EnsembleDefinition
-    Representation of a Nextmv Cloud Ensemble Definition for an application
+    Representation of a Nextmv Cloud Ensemble Definition for an application.
 """
 
 from enum import Enum
@@ -44,9 +55,9 @@ class RunGroup(BaseModel):
     """The unique identifier of the run group."""
     instance_id : str
     """ID of the app instance that this run group executes on."""
-    options : Optional[dict]
+    options : Optional[dict] = None
     """Runtime options/parameters for the application."""
-    repetitions : Optional[int]
+    repetitions : Optional[int] = None
     """The number of times the run is to be repeated on the instance and with
     the options defined in the run group"""
 
@@ -174,7 +185,7 @@ class EvaluationRule(BaseModel):
     tolerance : RuleTolerance
     """The tolerance by which runs can be accepted as a potential result
     for an evaluation rule"""
-    index : Optional[int]
+    index : int
     """The index (non-negative integer) of the evalutation rule. Lower indicies
     are evaluated first."""
 
@@ -216,13 +227,13 @@ class EnsembleDefinition(BaseModel):
     """The unique identifier of the ensemble definition."""
     application_id : str
     """ID of the application that this ensemble definition belongs to."""
-    name : str
+    name : str = ""
     """Human-readable name of the ensemble definition."""
-    description : str
+    description : str = ""
     """Detailed description of the ensemble definition."""
-    run_groups : Optional[list[RunGroup]]
+    run_groups : list[RunGroup]
     """The run groups that structure the execution of an ensemble run"""
-    rules : Optional[list[EvaluationRule]]
+    rules : list[EvaluationRule]
     """The rules by which ensemble child runs are evaluated
     to find an optimal result."""
     created_at : datetime
