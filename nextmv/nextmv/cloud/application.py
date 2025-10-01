@@ -833,6 +833,36 @@ class Application:
         )
 
         return [Instance.from_dict(instance) for instance in response.json()]
+    
+    def list_ensemble_definitions(self) -> list[EnsembleDefinition]:
+        """
+        List all ensemble_definitions.
+
+        Returns
+        -------
+        list['EnsembleDefinition']
+            List of all ensemble definitions associated with this application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> ensemble_definitions = app.list_ensemble_definitions()
+        >>> for ensemble_definition in ensemble_definitions:
+        ...     print(ensemble_definition.name)
+        'Development Ensemble Definition'
+        'Production Ensemble Definition'
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/ensembles",
+        )
+
+        return [EnsembleDefinition.from_dict(ensemble_definition) for ensemble_definition in response.json()["items"]]
 
     def list_managed_inputs(self) -> list[ManagedInput]:
         """
