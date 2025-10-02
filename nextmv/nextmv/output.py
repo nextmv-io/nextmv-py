@@ -51,10 +51,6 @@ SOLUTIONS_KEY
     Solutions key constant used for identifying solutions in the run output.
 OUTPUTS_KEY
     Outputs key constant used for identifying outputs in the run output.
-LOGS_FILE
-    Constant used for identifying the file used for logging.
-DEFAULT_OUTPUT_JSON_FILE
-    Constant for the default output JSON file name.
 """
 
 import copy
@@ -89,22 +85,6 @@ Solutions key constant used for identifying solutions in the run output.
 OUTPUTS_KEY = "outputs"
 """
 Outputs key constant used for identifying outputs in the run output.
-"""
-OUTPUT_KEY = "output"
-"""
-Output key constant used for identifying output in the run output.
-"""
-LOGS_KEY = "logs"
-"""
-Logs key constant used for identifying logs in the run output.
-"""
-LOGS_FILE = "stderr.log"
-"""
-Constant used for identifying the file used for logging.
-"""
-DEFAULT_OUTPUT_JSON_FILE = "solution.json"
-"""
-Constant for the default output JSON file name.
 """
 
 

@@ -47,6 +47,7 @@ nav:
               - application.py: nextmv/reference/local/application.md
               - executor.py: nextmv/reference/local/executor.md
               - geojson_handler.py: nextmv/reference/local/geojson_handler.md
+              - local.py: nextmv/reference/local/local.md
               - plotly_handler.py: nextmv/reference/local/plotly_handler.md
               - runner.py: nextmv/reference/local/runner.md
           - base_model.py: nextmv/reference/base_model.md

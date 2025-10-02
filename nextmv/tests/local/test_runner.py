@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 from nextmv.local.runner import new_run, record_input, run
 from nextmv.manifest import Manifest, ManifestRuntime
 
@@ -70,7 +71,7 @@ print(json.dumps(output))
 
         result_dir = new_run(app_id="sample-app", src=self.test_src, run_id=run_id, run_config=run_config)
 
-        expected_dir = os.path.join(self.test_src, ".nextmv", "runs", run_id)
+        expected_dir = os.path.join(self.test_src, NEXTMV_DIR, RUNS_KEY, run_id)
         self.assertEqual(result_dir, expected_dir)
         self.assertTrue(os.path.exists(expected_dir))
         self.assertTrue(os.path.isdir(expected_dir))
@@ -81,7 +82,7 @@ print(json.dumps(output))
         run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
 
         # Ensure .nextmv/runs doesn't exist
-        runs_dir = os.path.join(self.test_src, ".nextmv", "runs")
+        runs_dir = os.path.join(self.test_src, NEXTMV_DIR, RUNS_KEY)
         self.assertFalse(os.path.exists(runs_dir))
 
         result_dir = new_run(app_id="sample-app", src=self.test_src, run_id=run_id, run_config=run_config)

@@ -11,8 +11,6 @@ new_run
     Function to initialize a new run.
 record_input
     Function to write the input to the appropriate location.
-calculate_files_size
-    Function to calculate the total size of files in a directory.
 """
 
 import importlib.util
@@ -24,7 +22,8 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
-from nextmv.input import DEFAULT_INPUT_JSON_FILE, INPUTS_KEY
+from nextmv.input import INPUTS_KEY
+from nextmv.local.local import DEFAULT_INPUT_JSON_FILE, NEXTMV_DIR, RUNS_KEY, calculate_files_size
 from nextmv.manifest import Manifest
 from nextmv.run import Format, FormatInput, Metadata, RunInformation, StatusV2
 from nextmv.safe import safe_id
@@ -176,7 +175,7 @@ def new_run(
     """
 
     # First, ensure the runs directory exists.
-    runs_dir = os.path.join(src, ".nextmv", "runs")
+    runs_dir = os.path.join(src, NEXTMV_DIR, RUNS_KEY)
     os.makedirs(runs_dir, exist_ok=True)
 
     # Create a new run directory.
@@ -273,40 +272,3 @@ def record_input(
 
     # Update the input size in the run information file.
     calculate_files_size(run_dir, run_id, run_inputs_dir, metadata_key="input_size")
-
-
-def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key: str) -> None:
-    """
-    Calculates the total size of the files in a directory, in bytes.
-
-    The calculated size is stored in the run information metadata under the
-    specified key.
-
-    Parameters
-    ----------
-    run_dir : str
-        The path to the run directory.
-    run_id : str
-        The ID of the run.
-    dir_path : str
-        The path to the directory whose size is to be calculated.
-    metadata_key : str
-        The key under which to store the calculated size in the run information
-        metadata.
-    """
-
-    total_size = 0
-    for dirpath, _, filenames in os.walk(dir_path):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            # Skip if it is a symbolic link
-            if not os.path.islink(fp):
-                total_size += os.path.getsize(fp)
-
-    info_file = os.path.join(run_dir, f"{run_id}.json")
-    with open(info_file, "r+") as f:
-        info = json.load(f)
-        info["metadata"][metadata_key] = total_size
-        f.seek(0)
-        json.dump(info, f, indent=2)
-        f.truncate()

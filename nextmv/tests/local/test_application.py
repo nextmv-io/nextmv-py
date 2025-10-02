@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import yaml
 from nextmv.input import Input, InputFormat
 from nextmv.local.application import Application
+from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 from nextmv.options import Options
 from nextmv.output import OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions
@@ -378,7 +379,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         os.makedirs(self.app_src)
 
         # Create .nextmv/runs directory structure
-        self.runs_dir = os.path.join(self.app_src, ".nextmv", "runs")
+        self.runs_dir = os.path.join(self.app_src, NEXTMV_DIR, RUNS_KEY)
         os.makedirs(self.runs_dir)
 
         # Create test application

@@ -21,6 +21,7 @@ from typing import Any, Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.input_set import InputSet
+from nextmv.run import Run
 
 
 class ExperimentStatus(str, Enum):
@@ -191,7 +192,10 @@ class BatchExperiment(BatchExperimentInformation):
     instance_ids : list[str]
         List of instance IDs used for the experiment.
     grouped_distributional_summaries : list[dict[str, Any]], optional
-        Grouped distributional summaries of the batch experiment. Defaults to None.
+        Grouped distributional summaries of the batch experiment. Defaults to
+        None.
+    runs : list[Run], optional
+        List of runs in the batch experiment. Defaults to None.
     """
 
     input_set_id: str
@@ -200,6 +204,8 @@ class BatchExperiment(BatchExperimentInformation):
     """List of instance IDs used for the experiment."""
     grouped_distributional_summaries: Optional[list[dict[str, Any]]] = None
     """Grouped distributional summaries of the batch experiment."""
+    runs: Optional[list[Run]] = None
+    """List of runs in the batch experiment."""
 
 
 class BatchExperimentRun(BaseModel):
