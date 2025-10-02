@@ -711,7 +711,7 @@ class Application:
             if _is_not_exist_error(e):
                 return False
             raise e
-        
+
     def ensemble_definition(self, ensemble_definition_id: str) -> EnsembleDefinition:
         """
         Get an ensemble definition.
@@ -857,7 +857,7 @@ class Application:
         )
 
         return [Instance.from_dict(instance) for instance in response.json()]
-    
+
     def list_ensemble_definitions(self) -> list[EnsembleDefinition]:
         """
         List all ensemble_definitions.
@@ -1371,7 +1371,7 @@ class Application:
         )
 
         return self.batch_experiment_with_polling(batch_id=batch_id, polling_options=polling_options)
-    
+
     def new_ensemble_defintion(
         self,
         id: str,
@@ -3137,9 +3137,7 @@ class Application:
         payload = {}
 
         if name is None and description is None:
-            raise ValueError(
-                "Must define at least one value among name and description to modify"
-            )
+            raise ValueError("Must define at least one value among name and description to modify")
         if name is not None:
             payload["name"] = name
         if description is not None:

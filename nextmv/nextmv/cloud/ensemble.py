@@ -20,11 +20,12 @@ EnsembleDefinition
     Representation of a Nextmv Cloud Ensemble Definition for an application.
 """
 
-from enum import Enum
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from nextmv.base_model import BaseModel
+
 
 class RunGroup(BaseModel):
     """A structure to group child runs for an ensemble run.
@@ -34,7 +35,7 @@ class RunGroup(BaseModel):
     ```python
     from nextmv.cloud import RunGroup
     ```
-    
+
     This class represents a grouping of child runs that share a configuration
     for ensemble run executions.
 
@@ -51,15 +52,16 @@ class RunGroup(BaseModel):
         the options defined in the run group
     """
 
-    id : str
+    id: str
     """The unique identifier of the run group."""
-    instance_id : str
+    instance_id: str
     """ID of the app instance that this run group executes on."""
-    options : Optional[dict] = None
+    options: Optional[dict] = None
     """Runtime options/parameters for the application."""
-    repetitions : Optional[int] = None
+    repetitions: Optional[int] = None
     """The number of times the run is to be repeated on the instance and with
     the options defined in the run group"""
+
 
 class RuleObjective(str, Enum):
     """The value of this data determines how a value of a run is optimized to
@@ -87,6 +89,7 @@ class RuleObjective(str, Enum):
     """Maximize the value of the evaluated metric."""
     MINIMIZE = "minimize"
     """Minimize the value of the evaluated metric."""
+
 
 class ToleranceType(str, Enum):
     """The type of comparison used to determine if a run metric is within
@@ -117,16 +120,17 @@ class ToleranceType(str, Enum):
     """Uses the the percentage of the "best" run by which the run being
     evaluted for tolerance differs. A value of `1` is 100%."""
 
+
 class RuleTolerance(BaseModel):
     """A structure used to determine if a run is within tolerance of of the best
     run (as determined by the objective of the `EvaluationRule` it is defined on).
-    
+
     You can import the `RuleTolerance` class directly from `cloud`:
 
     ```python
     from nextmv.cloud import RuleTolerance
     ```
-    
+
     This class represents the tolerance on a particular evaluation rule by
     which a child run may be selected as the result of an ensemble run.
 
@@ -137,11 +141,12 @@ class RuleTolerance(BaseModel):
         The method by which runs are determined to be within tolerance.
     """
 
-    value : float
+    value: float
     """The value within which runs can deviate from the "best" run
     for that metric to be considered within tolerance of it."""
-    type : ToleranceType
+    type: ToleranceType
     """The method by which runs are determined to be within tolerance."""
+
 
 class EvaluationRule(BaseModel):
     """A structure to evaluate run results for an ensemble run.
@@ -151,7 +156,7 @@ class EvaluationRule(BaseModel):
     ```python
     from nextmv.cloud import EvaluationRule
     ```
-    
+
     This class represents a rule by which the child runs for an ensemble run
     will be evaluated for the purpose of selecting an optimal result for the
     ensemble run.
@@ -174,20 +179,21 @@ class EvaluationRule(BaseModel):
         are evaluated first.
     """
 
-    id : str
+    id: str
     """The unique identifier of the evaluation rule."""
-    statistics_path : str
+    statistics_path: str
     """The path within the statistics of a run output (conforming to Nextmv
     statistics convention and flattened to a string starting with `$` and
     delimited by `.` e.g. `$.result.value`.)"""
-    objective : RuleObjective
+    objective: RuleObjective
     """The objective by which runs are optimized for this rule"""
-    tolerance : RuleTolerance
+    tolerance: RuleTolerance
     """The tolerance by which runs can be accepted as a potential result
     for an evaluation rule"""
-    index : int
+    index: int
     """The index (non-negative integer) of the evalutation rule. Lower indicies
     are evaluated first."""
+
 
 class EnsembleDefinition(BaseModel):
     """An ensemble definition for an application.
@@ -223,20 +229,20 @@ class EnsembleDefinition(BaseModel):
         Timestamp when the ensemble definition was last updated.
     """
 
-    id : str
+    id: str
     """The unique identifier of the ensemble definition."""
-    application_id : str
+    application_id: str
     """ID of the application that this ensemble definition belongs to."""
-    name : str = ""
+    name: str = ""
     """Human-readable name of the ensemble definition."""
-    description : str = ""
+    description: str = ""
     """Detailed description of the ensemble definition."""
-    run_groups : list[RunGroup]
+    run_groups: list[RunGroup]
     """The run groups that structure the execution of an ensemble run"""
-    rules : list[EvaluationRule]
+    rules: list[EvaluationRule]
     """The rules by which ensemble child runs are evaluated
     to find an optimal result."""
-    created_at : datetime
+    created_at: datetime
     """Timestamp when the ensemble definition was created."""
-    updated_at : datetime
+    updated_at: datetime
     """Timestamp when the ensemble definition was last updated."""
