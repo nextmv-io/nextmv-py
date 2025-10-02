@@ -68,7 +68,7 @@ from .ensemble import EvaluationRule as EvaluationRule
 from .ensemble import RuleObjective as RuleObjective
 from .ensemble import RuleTolerance as RuleTolerance
 from .ensemble import RunGroup as RunGroup
-from .ensemble import ToleranceType as ToleranceType
+from .ensemble import ToleranceType as EnsembleToleranceType
 from .input_set import InputSet as InputSet
 from .input_set import ManagedInput as ManagedInput
 from .instance import Instance as Instance

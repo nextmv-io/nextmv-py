@@ -95,7 +95,7 @@ class ToleranceType(str, Enum):
     You can import the `ToleranceType` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import ToleranceType
+    from nextmv.cloud import EnsembleToleranceType
     ```
 
     This enum specifies the supported tolerance types.
