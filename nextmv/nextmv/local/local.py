@@ -84,8 +84,9 @@ def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key:
         for f in filenames:
             fp = os.path.join(dirpath, f)
             # Skip if it is a symbolic link
-            if not os.path.islink(fp):
-                total_size += os.path.getsize(fp)
+            if os.path.islink(fp):
+                continue
+            total_size += os.path.getsize(fp)
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
     with open(info_file, "r+") as f:
