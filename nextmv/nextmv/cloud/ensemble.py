@@ -91,14 +91,14 @@ class RuleObjective(str, Enum):
     """Minimize the value of the evaluated metric."""
 
 
-class ToleranceType(str, Enum):
+class RuleToleranceType(str, Enum):
     """The type of comparison used to determine if a run metric is within
     tolerance of a the "best" run for that rule and metric
 
-    You can import the `ToleranceType` class directly from `cloud`:
+    You can import the `RuleToleranceType` class directly from `cloud`:
 
     ```python
-    from nextmv.cloud import EnsembleToleranceType
+    from nextmv.cloud import RuleToleranceType
     ```
 
     This enum specifies the supported tolerance types.
@@ -144,7 +144,7 @@ class RuleTolerance(BaseModel):
     value: float
     """The value within which runs can deviate from the "best" run
     for that metric to be considered within tolerance of it."""
-    type: ToleranceType
+    type: RuleToleranceType
     """The method by which runs are determined to be within tolerance."""
 
 

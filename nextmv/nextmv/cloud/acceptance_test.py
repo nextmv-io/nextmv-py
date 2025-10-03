@@ -47,6 +47,7 @@ from typing import Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.batch_experiment import ExperimentStatus
+from nextmv.deprecated import deprecated
 
 
 class MetricType(str, Enum):
@@ -214,6 +215,9 @@ class Comparison(str, Enum):
 
 class ToleranceType(str, Enum):
     """
+    !!! warning
+        `ToleranceType` is deprecated, use `MetricToleranceType` instead.
+
     Type of tolerance used for a metric.
 
     You can import the `ToleranceType` class directly from `cloud`:
@@ -243,12 +247,62 @@ class ToleranceType(str, Enum):
     """
 
     undefined = ""
+    """ToleranceType is deprecated, please use MetricToleranceType instead.
+    Undefined tolerance type."""
+    absolute = "absolute"
+    """ToleranceType is deprecated, please use MetricToleranceType instead.
+    Absolute tolerance type."""
+    relative = "relative"
+    """ToleranceType is deprecated, please use MetricToleranceType instead.
+    Relative tolerance type."""
+
+    def __new__(cls, value: str):
+        """Create a new ToleranceType instance and emit deprecation warning."""
+        deprecated(
+            "ToleranceType",
+            "ToleranceType is deprecated and will be removed in a future version. "
+            "Please use MetricToleranceType instead",
+        )
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        return obj
+
+class MetricToleranceType(str, Enum):
+    """
+    Type of tolerance used for a metric.
+
+    You can import the `MetricToleranceType` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import MetricToleranceType
+    ```
+
+    This enumeration defines the different types of tolerances that can be used
+    when comparing metrics in acceptance tests.
+
+    Attributes
+    ----------
+    undefined : str
+        Undefined tolerance type (empty string).
+    absolute : str
+        Absolute tolerance type, using a fixed value.
+    relative : str
+        Relative tolerance type, using a percentage.
+
+    Examples
+    --------
+    >>> from nextmv.cloud import MetricToleranceType
+    >>> tol_type = MetricToleranceType.absolute
+    >>> tol_type
+    <MetricToleranceType.absolute: 'absolute'>
+    """
+
+    undefined = ""
     """Undefined tolerance type."""
     absolute = "absolute"
     """Absolute tolerance type."""
     relative = "relative"
     """Relative tolerance type."""
-
 
 class MetricTolerance(BaseModel):
     """
@@ -265,22 +319,22 @@ class MetricTolerance(BaseModel):
 
     Attributes
     ----------
-    type : ToleranceType
+    type : MetricToleranceType
         Type of tolerance (absolute or relative).
     value : float
         Value of the tolerance.
 
     Examples
     --------
-    >>> from nextmv.cloud import MetricTolerance, ToleranceType
-    >>> tolerance = MetricTolerance(type=ToleranceType.absolute, value=0.1)
+    >>> from nextmv.cloud import MetricTolerance, MetricToleranceType
+    >>> tolerance = MetricTolerance(type=MetricToleranceType.absolute, value=0.1)
     >>> tolerance.type
-    <ToleranceType.absolute: 'absolute'>
+    <MetricToleranceType.absolute: 'absolute'>
     >>> tolerance.value
     0.1
     """
 
-    type: ToleranceType
+    type: MetricToleranceType
     """Type of tolerance."""
     value: float
     """Value of the tolerance."""
