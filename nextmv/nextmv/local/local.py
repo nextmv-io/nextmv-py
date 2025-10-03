@@ -2,24 +2,24 @@
 Local module to hold convenience functions used in the `local` package.
 
 Functions
----------
+----------
 calculate_files_size
     Function to calculate the total size of files in a directory.
 
-Constants
----------
-OUTPUT_KEY
+Attributes
+----------
+OUTPUT_KEY : str
     Output key constant used for identifying output in the run output.
-LOGS_KEY
+LOGS_KEY : str
     Logs key constant used for identifying logs in the run output.
-LOGS_FILE
+LOGS_FILE : str
     Constant used for identifying the file used for logging.
-DEFAULT_OUTPUT_JSON_FILE
+DEFAULT_OUTPUT_JSON_FILE : str
     Constant for the default output JSON file name.
-RUNS_KEY
+RUNS_KEY : str
     Runs key constant used for identifying the runs directory in the nextmv
     location.
-NEXTMV_DIR
+NEXTMV_DIR : str
     Constant for the Nextmv directory name.
 DEFAULT_INPUT_JSON_FILE : str
     Constant for the default input JSON file name.

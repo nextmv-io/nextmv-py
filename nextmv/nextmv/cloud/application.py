@@ -2793,7 +2793,7 @@ class Application:
         Examples
         --------
         >>> from nextmv.cloud import Application
-        >>> from nextmv.cloud.run import TrackedRun
+        >>> from nextmv import TrackedRun
         >>> app = Application(id="app_123")
         >>> tracked_run = TrackedRun(input={"data": [...]}, output={"solution": [...]})
         >>> run_id = app.track_run(tracked_run)

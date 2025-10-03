@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `output` module [here](../reference/output.md).
+    Find the reference for the `output` module [here](./reference/output.md).
 
 Write the output data after a run is completed. The [`Output`][output] class is
 the main holding place for the decisions made by the decision model. An output
@@ -359,14 +359,14 @@ visualization][custom-visualization] schemas, whichever the case may be.
 
 [custom-assets]: https://docs.nextmv.io/docs/using-nextmv/run/custom-assets
 [custom-visualization]: https://docs.nextmv.io/docs/using-nextmv/run/custom-visualization/overview
-[output]: ../reference/output.md#nextmv.nextmv.output.Output
-[output-writer]: ../reference/output.md#nextmv.nextmv.output.OutputWriter
-[write]: ../reference/output.md#nextmv.nextmv.output.write
-[local-output-writer]: ../reference/output.md#nextmv.nextmv.output.LocalOutputWriter
+[output]: ./reference/output.md#nextmv.nextmv.output.Output
+[output-writer]: ./reference/output.md#nextmv.nextmv.output.OutputWriter
+[write]: ./reference/output.md#nextmv.nextmv.output.write
+[local-output-writer]: ./reference/output.md#nextmv.nextmv.output.LocalOutputWriter
 [options]: ./options.md
-[statistics]: ../reference/output.md#nextmv.nextmv.output.Statistics
-[assets]: ../reference/output.md#nextmv.nextmv.output.Asset
-[solution-file]: ../reference/output.md#nextmv.nextmv.output.SolutionFile
-[json-solution-file]: ../reference/output.md#nextmv.nextmv.output.json_solution_file
-[csv-solution-file]: ../reference/output.md#nextmv.nextmv.output.csv_solution_file
-[text-solution-file]: ../reference/output.md#nextmv.nextmv.output.text_solution_file
+[statistics]: ./reference/output.md#nextmv.nextmv.output.Statistics
+[assets]: ./reference/output.md#nextmv.nextmv.output.Asset
+[solution-file]: ./reference/output.md#nextmv.nextmv.output.SolutionFile
+[json-solution-file]: ./reference/output.md#nextmv.nextmv.output.json_solution_file
+[csv-solution-file]: ./reference/output.md#nextmv.nextmv.output.csv_solution_file
+[text-solution-file]: ./reference/output.md#nextmv.nextmv.output.text_solution_file

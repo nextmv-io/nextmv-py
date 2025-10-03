@@ -19,11 +19,42 @@
 
 <!-- markdownlint-enable MD033 MD013 -->
 
-The [Nextmv Python SDK][nextmv], `nextmv`, is a package to interact
-programmatically with the Nextmv Platform from Python. A great way to get
-started is to check out the [community apps][community-apps-get-started]. The
-following apps are a non-exhaustive list of concrete examples for using this
-SDK:
+The [Nextmv Python SDK][nextmv], `nextmv`, is a library to interact
+programmatically with the Nextmv Platform from Python. There are three main
+packages (or namespaces) in the SDK:
+
+1. [`nextmv`][modeling-index] (root): modeling constructs to work with decision
+   models in an opinionated way.
+2. [`nextmv.local`][local-index]: functionality to run and interact with decision models
+   locally, i,e., on your machine.
+3. [`nextmv.cloud`][cloud-index]: functionality to interact with Nextmv Cloud, e.g., to run
+   decision models remotely, perform experimentation, testing, versioning, and
+   more.
+
+Please refer to each of the sections in this documentation for more details on
+each of these packages.
+
+## Installation
+
+The library is hosted on [PyPI][nextmv-pypi]. Python `>=3.9` is required.
+
+Install via `pip`:
+
+```bash
+pip install nextmv
+```
+
+Install all optional dependencies (recommended):
+
+```bash
+pip install "nextmv[all]"
+```
+
+## Examples
+
+A great way to get started is to check out the [community
+apps][community-apps-get-started]. The following apps are a non-exhaustive list
+of concrete examples for using this SDK:
 
 * [`python-ampl-facilitylocation`][python-ampl-facilitylocation],
   [`python-ampl-knapsack`][python-ampl-knapsack],
@@ -47,25 +78,13 @@ SDK:
 * [`python-pyvroom-routing`][python-pyvroom-routing]
 * [`python-xpress-knapsack`][python-xpress-knapsack]
 
-## Installation
-
-The package is hosted on [PyPI][nextmv-pypi]. Python `>=3.9` is required.
-
-Install via `pip`:
-
-```bash
-pip install nextmv
-```
-
-Install all optional dependencies (recommended):
-
-```bash
-pip install "nextmv[all]"
-```
-
 [nextmv-pypi]: https://pypi.org/project/nextmv/
 [nextmv]: https://github.com/nextmv-io/nextmv-py/tree/develop/nextmv
 [community-apps-get-started]: https://docs.nextmv.io/docs/use-cases/community-apps/get-started
+
+[modeling-index]: ./modeling/index.md
+[local-index]: ./local/index.md
+[cloud-index]: ./cloud/index.md
 
 [python-ampl-facilitylocation]: https://github.com/nextmv-io/community-apps/blob/develop/python-ampl-facilitylocation
 [python-ampl-knapsack]: https://github.com/nextmv-io/community-apps/blob/develop/python-ampl-knapsack

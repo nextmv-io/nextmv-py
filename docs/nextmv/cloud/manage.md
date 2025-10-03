@@ -74,7 +74,7 @@ application.delete()
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 Make sure to check out the latest version of `nextmv` to see all the available
 features of the [`Application`][reference-application]. Here are some of the
@@ -111,5 +111,5 @@ methods you can use that were not covered in this guide:
 [signup]: https://cloud.nextmv.io
 [api-key]: https://cloud.nextmv.io/team/api-keys
 [cli]: https://docs.nextmv.io/docs/using-nextmv/reference/cli
-[reference-client]: ../../reference/cloud/client.md
-[reference-application]: ../../reference/cloud/application.md
+[reference-client]: ./reference/client.md
+[reference-application]: ./reference/application.md

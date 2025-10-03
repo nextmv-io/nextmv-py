@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `input` module [here](../reference/input.md).
+    Find the reference for the `input` module [here](./reference/input.md).
 
 Capture the input data for the run. The [`Input`][input] class is the main
 holding place for a decision model's input data. An input is built through
@@ -264,12 +264,12 @@ $ python main.py
 }
 ```
 
-[data-file]: ../reference/input.md#nextmv.nextmv.input.DataFile
-[json-data-file]: ../reference/input.md#nextmv.nextmv.input.json_data_file
-[csv-data-file]: ../reference/input.md#nextmv.nextmv.input.csv_data_file
-[text-data-file]: ../reference/input.md#nextmv.nextmv.input.text_data_file
-[input]: ../reference/input.md#nextmv.nextmv.input.Input
-[input-loader]: ../reference/input.md#nextmv.nextmv.input.InputLoader
-[load]: ../reference/input.md#nextmv.nextmv.input.load
-[local-input-loader]: ../reference/input.md#nextmv.nextmv.input.LocalInputLoader
+[data-file]: ./reference/input.md#nextmv.nextmv.input.DataFile
+[json-data-file]: ./reference/input.md#nextmv.nextmv.input.json_data_file
+[csv-data-file]: ./reference/input.md#nextmv.nextmv.input.csv_data_file
+[text-data-file]: ./reference/input.md#nextmv.nextmv.input.text_data_file
+[input]: ./reference/input.md#nextmv.nextmv.input.Input
+[input-loader]: ./reference/input.md#nextmv.nextmv.input.InputLoader
+[load]: ./reference/input.md#nextmv.nextmv.input.load
+[local-input-loader]: ./reference/input.md#nextmv.nextmv.input.LocalInputLoader
 [options]: ./options.md

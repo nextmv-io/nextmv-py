@@ -6,19 +6,8 @@ including application management, running applications, and managing inputs.
 
 Classes
 -------
-DownloadURL
-    Result of getting a download URL.
-PollingOptions
-    Options for polling when waiting for run results.
-UploadURL
-    Result of getting an upload URL.
 Application
-    Class for interacting with applications in Nextmv Cloud.
-
-Functions
----------
-poll
-    Function to poll for results with configurable options.
+    Class for interacting with local Nextmv Applications.
 """
 
 import json
