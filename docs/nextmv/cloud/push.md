@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 A Nextmv Cloud Application is a decision model that be executed remotely on the
 Nextmv Platform. An application is an executable program that fulfills the
@@ -168,7 +168,7 @@ app.push( # Use verbose=True for step-by-step output.
 ```
 
 [cli]: https://docs.nextmv.io/docs/using-nextmv/reference/cli
-[model]: ../model.md
+[model]: ../modeling/model.md
 [app-manifest]: https://docs.nextmv.io/docs/using-nextmv/deploy/app/manifest
 [file-strategy]: #file-strategy
 [object-strategy]: #object-strategy

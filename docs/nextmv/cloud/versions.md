@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 Application versions allow you to preserve and manage different iterations of your application.
 This is useful for rollbacks, testing different versions, or maintaining stable releases while
@@ -10,12 +10,14 @@ developing new features.
 
 ## Understanding Versions
 
-A Nextmv Cloud Application Version refers to a specific executable created from a pushed
-application. The underlying executable is immutable and can be configured to run in an [instance][instance].
+A Nextmv Cloud Application Version refers to a specific executable created from
+a pushed application. The underlying executable is immutable and can be
+configured to run in an [instance][instance].
 
-When you [push][push] an application, the executable is stored in a development instance.
-Subsequent pushes overwrite this executable. Creating a version preserves a copy of the current
-executable, allowing you to maintain multiple stable versions.
+When you [push][push] an application, the executable is stored in a development
+instance. Subsequent pushes overwrite this executable. Creating a version
+preserves a copy of the current executable, allowing you to maintain multiple
+stable versions.
 
 ## Creating Versions
 
@@ -44,5 +46,5 @@ app.new_version(
 )
 ```
 
-[instance]: ../../reference/instance.md
-[push]: ../../reference/push.md
+[instance]: ./instances.md
+[push]: ./push.md

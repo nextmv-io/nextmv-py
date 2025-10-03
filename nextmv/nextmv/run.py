@@ -595,11 +595,11 @@ class Run(BaseModel):
     """Class name for the execution of a job."""
     runtime: str
     """Runtime environment for the run."""
-    status: Status
-    """Deprecated, use status_v2 instead."""
     status_v2: StatusV2
     """Status of the run."""
 
+    status: Optional[Status] = None
+    """Deprecated, use status_v2 instead."""
     queuing_priority: Optional[int] = None
     """Priority of the run in the queue."""
     queuing_disabled: Optional[bool] = None

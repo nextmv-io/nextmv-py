@@ -1,8 +1,8 @@
-# Run an Application
+# Run a Cloud Application
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 A run is a single execution of an app against an instance. It is the basic
 functionality encompassed of receiving an input, running the app, and returning
@@ -24,12 +24,13 @@ jitter, timeouts, and other Nextmv Cloud nuances for you.
 ```python
 import os
 
+import nextmv
 from nextmv import cloud
 
 client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
 app = cloud.Application(client=client, id="<YOUR_APP_ID>")
 
-run_id = app.new_run_with_result(
+run_result = app.new_run_with_result(
     input={"foo": "bar"},
     instance_id="<YOUR_INSTANCE_ID>",
     run_options={
@@ -39,7 +40,7 @@ run_id = app.new_run_with_result(
     polling_options=cloud.PollingOptions(),  # Customize polling options.
 )
 
-print(run_id)
+nextmv.write(run_result)
 ```
 
 Please find these other sections in this tutorial:
@@ -132,7 +133,7 @@ involves the following steps:
    `run_id`.
 
     The following example shows how to get the run results using the
-    [`Application.run_result`][app-run-metadata] method.
+    [`Application.run_result`][app-run-result] method.
 
     ```python
     import os
@@ -144,7 +145,6 @@ involves the following steps:
     app = cloud.Application(client=client, id="<YOUR_APP_ID>")
     run_result = app.run_result(run_id="<YOUR_RUN_ID>")
     nextmv.write(run_result)  # Get the full result of the run.
-
     ```
 
     ```bash
@@ -201,9 +201,9 @@ and timeouts for you:
   the result in a single call. Using this method is recommended because we have
   a built-in polling mechanism that handles retries, exponential backoff,
   jitter, and timeouts.
-* [`Application.run_metadata_with_polling`][app-run-metadata-with-polling]:
-  does the same as `run_metadata`, but it also polls for the metadata of the
-  run. This method returns the metadata of the run, and it is useful for
+* [`Application.run_result_with_polling`][app-run-result-with-polling]:
+  does the same as `run_result`, but it also polls for the metadata of the
+  run. This method returns the result of the run, and it is useful for
   checking the status of the run in a single call.
 
 ## Running with non-JSON payloads
@@ -268,15 +268,13 @@ Please note the following:
   the files in the directory are used instead.
 * When `input_dir_path` is specified, the `configuration` argument _must_ be
   provided. More specifically, the [`.input_type`][input-type-param] parameter
-  dictates what kind of input is being submitted to the Nextmv Cloud.
-
-  * [`InputFormat.CSV_ARCHIVE`][inputformat]: the input format will be set to
-        `csv-archive`.
-  * [`InputFormat.MULTI_FILE`][inputformat]: the input format will be set to
-        `multi-file`.
-
-  In both cases, the input files are read from the directory specified by
+  dictates what kind of input is being submitted to the Nextmv Cloud. In both
+  cases, the input files are read from the directory specified by
   `input_dir_path`, tarred, and uploaded to Nextmv Cloud.
+
+      * [`InputFormat.CSV_ARCHIVE`][inputformat]: the input format will be set to `csv-archive`.
+      * [`InputFormat.MULTI_FILE`][inputformat]: the input format will be set to `multi-file`.
+
 * The output format is also specified in the configuration. It can be set to
   either `csv-archive` or `multi-file` (see
   [`.output_type`][output-type-param]), depending on the input format.
@@ -295,12 +293,12 @@ app = cloud.Application(client=client, id="1504")
 
 # Run with CSV_ARCHIVE input.
 csv_run_id = app.new_run(
-    configuration=cloud.RunConfiguration(
-        format=cloud.Format(
-            format_input=cloud.FormatInput(
+    configuration=nextmv.RunConfiguration(
+        format=nextmv.Format(
+            format_input=nextmv.FormatInput(
                 input_type=nextmv.InputFormat.CSV_ARCHIVE,
             ),
-            format_output=cloud.FormatOutput(
+            format_output=nextmv.FormatOutput(
                 output_type=nextmv.OutputFormat.CSV_ARCHIVE,
             ),
         )
@@ -311,12 +309,12 @@ print(f"CSV run ID: {csv_run_id}")
 
 # Run with MULTI_FILE input.
 multi_file_run_id = app.new_run(
-    configuration=cloud.RunConfiguration(
-        format=cloud.Format(
-            format_input=cloud.FormatInput(
+    configuration=nextmv.RunConfiguration(
+        format=nextmv.Format(
+            format_input=nextmv.FormatInput(
                 input_type=nextmv.InputFormat.MULTI_FILE,
             ),
-            format_output=cloud.FormatOutput(
+            format_output=nextmv.FormatOutput(
                 output_type=nextmv.OutputFormat.MULTI_FILE,
             ),
         )
@@ -340,11 +338,40 @@ You can cancel a run using the [`Application.cancel_run`][app-cancel-run] method
 ```python
 import os
 
-from nextmv.cloud import Application, Client
+from nextmv import cloud
 
-client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
-app = Application(client=client, id="<YOUR_APP_ID>")
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
 app.cancel_run(run_id="<YOUR_RUN_ID>")
+```
+
+## List all runs
+
+You can list all the runs created in your local app using the
+[`Application.list_runs`][app-list-runs] method. This method returns a list of
+runs, each containing metadata about the run, such as its ID, creation time,
+duration, status, and more.
+
+```python
+import os
+
+from nextmv import cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
+# List all runs
+runs = app.list_runs()
+for run in runs:
+    print(f"Run ID: {run.id}, Status: {run.status_v2.value}")
+```
+
+You should see an output similar to this one:
+
+```bash
+Run ID: latest-w2ze2sth, Status: succeeded
+Run ID: latest-80mxxuq8, Status: succeeded
+Run ID: latest-rq0pw6sy, Status: succeeded
 ```
 
 [subscription-apps]: /platform/deploy-app/subscription-apps
@@ -353,14 +380,16 @@ app.cancel_run(run_id="<YOUR_RUN_ID>")
 [cancel-run-section]: #cancel-a-run
 [running-non-json-section]: #running-with-non-json-payloads
 [webhooks]: https://docs.nextmv.io/docs/using-nextmv/setup/webhooks
-[app-new-run]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.new_run
-[app-run-metadata]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.run_metadata
-[app-run-metadata-with-polling]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.run_metadata_with_polling
-[app-new-run-with-result]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.new_run_with_result
-[app-cancel-run]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.cancel_run
+[app-new-run]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run
+[app-run-metadata]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.run_metadata
+[app-list-runs]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.list_runs
+[app-run-result]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.run_result
+[app-run-result-with-polling]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.run_result_with_polling
+[app-new-run-with-result]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run_with_result
+[app-cancel-run]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.cancel_run
 [cancel-a-run]: #cancel-a-run
-[input]: ../../reference/input.md#nextmv.nextmv.input.Input
-[inputformat]: ../../reference/input.md#nextmv.nextmv.input.InputFormat
-[input-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatInput
-[output-type-param]: ../../reference/cloud/run/#nextmv.nextmv.cloud.run.FormatOutput
+[input]: ../modeling/reference/input.md#nextmv.nextmv.input.Input
+[inputformat]: ../modeling/reference/input.md#nextmv.nextmv.input.InputFormat
+[input-type-param]: ../modeling/reference/run.md#nextmv.nextmv.run.FormatInput
+[output-type-param]: ../modeling/reference/run.md#nextmv.nextmv.run.FormatOutput
 [queued-runs]: ./queuing.md

@@ -21,8 +21,8 @@ Functions
 load
     Load input data using a specified loader.
 
-Constants
----------
+Attributes
+----------
 INPUTS_KEY : str
     Key used for identifying inputs in the run.
 """

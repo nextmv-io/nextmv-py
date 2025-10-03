@@ -2,7 +2,7 @@
 
 !!! tip
 
-    When using the [`Application.new_run`](../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.new_run) or [`Application.new_run_with_result`](../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.new_run_with_result) methods, input size is automatically handled by the SDK.
+    When using the [`Application.new_run`](./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run) or [`Application.new_run_with_result`](./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run_with_result) methods, input size is automatically handled by the SDK.
     You may skip this tutorial if you are using these methods.
 
 When submitting a new run and retrieving the run's results, there are size
@@ -78,5 +78,5 @@ nextmv.write(download_response)
 ```
 
 [large-payloads-image]: ../../../images/large_file_run_overview.png
-[application-upload-url]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.upload_url
-[application-upload-large-input]: ../../reference/cloud/application.md#nextmv.nextmv.cloud.application.Application.upload_large_input
+[application-upload-url]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_url
+[application-upload-large-input]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_large_input

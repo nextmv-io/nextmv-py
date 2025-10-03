@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `model` module [here](../reference/model.md).
+    Find the reference for the `model` module [here](./reference/model.md).
 
 A decision model is a program that makes decisions, i.e.: solves decision
 problems. The model takes in an input (representing the problem data and

@@ -4,6 +4,7 @@ This is the basic structure of a Nextmv application.
 
 ```text
 ├── app.yaml
+├── main.py
 ├── README.md
 ├── requirements.txt
 └── src
@@ -11,7 +12,21 @@ This is the basic structure of a Nextmv application.
 
 * `app.yaml`: App manifest, containing the configuration to run the app
   remotely on Nextmv Cloud.
+* `main.py`: Entry point for the app.
 * `README.md`: Description of the app.
 * `requirements.txt`: Python dependencies for the app.
-* `src/`: Source code for the app. The `main.py` file is the entry point for
-  the app.
+* `src/`: Source code for the app.
+
+A sample input file is also provided as `input.json`.
+
+1. Install packages.
+
+    ```bash
+    pip3 install -r requirements.txt
+    ```
+
+2. Run the app.
+
+    ```bash
+    cat input.json | python3 main.py
+    ```

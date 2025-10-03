@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 Application instances allow you to deploy and run different versions of your application in various
 environments. This is useful for separating development, staging, and production workloads, or running
@@ -73,4 +73,4 @@ app.update_instance(
 )
 ```
 
-[version]: ../../reference/cloud/version.md
+[version]: ./reference/version.md

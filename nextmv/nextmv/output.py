@@ -41,15 +41,15 @@ Functions
 write
     Write the output to the specified destination.
 
-Constants
----------
-ASSETS_KEY
+Attributes
+----------
+ASSETS_KEY : str
     Assets key constant used for identifying assets in the run output.
-STATISTICS_KEY
+STATISTICS_KEY : str
     Statistics key constant used for identifying statistics in the run output.
-SOLUTIONS_KEY
+SOLUTIONS_KEY : str
     Solutions key constant used for identifying solutions in the run output.
-OUTPUTS_KEY
+OUTPUTS_KEY : str
     Outputs key constant used for identifying outputs in the run output.
 """
 

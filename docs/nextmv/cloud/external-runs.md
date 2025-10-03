@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 You can track runs that happened externally from the Nextmv Platform. This is
 useful for onboarding to Nextmv quickly without having to run your decision

@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `scenario` module [here](../../reference/cloud/scenario.md).
+    Find the reference for the `scenario` module [here](./reference/scenario.md).
 
 !!! tip
 
@@ -138,7 +138,7 @@ following options:
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 You can create a scenario test using the `Application.create_scenario_test`
 method.
@@ -255,7 +255,7 @@ Please note the following from the example above:
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 Scenario tests are designed to be visualized from the [Console web
 interface][console-web]. Go to the app, `Experiments` > `Scenario` tab.
@@ -302,7 +302,7 @@ for st in scenario_tests:
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 You can update a scenario test using the `Application.update_scenario_test`
 method.
