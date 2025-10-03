@@ -25,8 +25,6 @@ Constants
 ---------
 INPUTS_KEY : str
     Key used for identifying inputs in the run.
-DEFAULT_INPUT_JSON_FILE : str
-    Constant for the default input JSON file name.
 """
 
 import copy
@@ -46,10 +44,6 @@ from nextmv.options import Options
 INPUTS_KEY = "inputs"
 """
 Inputs key constant used for identifying inputs in the run.
-"""
-DEFAULT_INPUT_JSON_FILE = "input.json"
-"""
-Constant for the default input JSON file name.
 """
 
 

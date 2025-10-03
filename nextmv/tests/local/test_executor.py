@@ -10,10 +10,6 @@ import unittest
 from unittest.mock import Mock, patch
 
 from nextmv.local.executor import (
-    ASSETS_KEY,
-    OUTPUTS_KEY,
-    SOLUTIONS_KEY,
-    STATISTICS_KEY,
     execute_run,
     main,
     options_args,
@@ -25,7 +21,7 @@ from nextmv.local.executor import (
     process_run_statistics,
 )
 from nextmv.manifest import Manifest
-from nextmv.output import OutputFormat
+from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 
 
 class TestLocalExecutor(unittest.TestCase):

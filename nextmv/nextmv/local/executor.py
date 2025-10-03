@@ -38,22 +38,17 @@ from typing import Any, Optional, Union
 
 from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
-from nextmv.local.plotly_handler import handle_plotly_visual
-from nextmv.local.runner import calculate_files_size
-from nextmv.manifest import Manifest
-from nextmv.output import (
-    ASSETS_KEY,
+from nextmv.local.local import (
     DEFAULT_OUTPUT_JSON_FILE,
     LOGS_FILE,
     LOGS_KEY,
+    NEXTMV_DIR,
     OUTPUT_KEY,
-    OUTPUTS_KEY,
-    SOLUTIONS_KEY,
-    STATISTICS_KEY,
-    Asset,
-    OutputFormat,
-    VisualSchema,
+    calculate_files_size,
 )
+from nextmv.local.plotly_handler import handle_plotly_visual
+from nextmv.manifest import Manifest
+from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, Asset, OutputFormat, VisualSchema
 from nextmv.status import StatusV2
 
 
@@ -123,7 +118,7 @@ def execute_run(
         # place to work from, and be cleaned up afterwards.
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_src = os.path.join(temp_dir, "src")
-            shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(".nextmv"))
+            shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(NEXTMV_DIR))
 
             manifest = Manifest.from_dict(manifest_dict)
 
