@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `logger` module [here](../reference/logger.md).
+    Find the reference for the `logger` module [here](./reference/logger.md).
 
 The Nextmv platform captures logs via `stderr`. Please note that any messages
 printed to `stdout` will not be displayed in Nextmv Cloud. Use the provided

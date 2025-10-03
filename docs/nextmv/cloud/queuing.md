@@ -106,4 +106,4 @@ $ python main.py
 }
 ```
 
-[account-queue]: ../../reference/cloud/account/#nextmv.nextmv.cloud.account.Account.queue
+[account-queue]: ./reference/account.md#nextmv.nextmv.cloud.account.Account.queue

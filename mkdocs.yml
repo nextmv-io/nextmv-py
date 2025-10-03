@@ -7,79 +7,88 @@ site_author: Nextmv
 nav:
   - Home: index.md
   - nextmv:
-      - Overview & installation: nextmv/index.md
-      - Tutorials:
-          - Options: nextmv/tutorials/options.md
-          - Input: nextmv/tutorials/input.md
-          - Logging: nextmv/tutorials/logging.md
-          - Output: nextmv/tutorials/output.md
-          - Model: nextmv/tutorials/model.md
-          - Applications:
-              - Managing an app: nextmv/tutorials/applications/manage.md
-              - Push to an app: nextmv/tutorials/applications/push.md
-              - Versions: nextmv/tutorials/applications/versions.md
-              - Instances: nextmv/tutorials/applications/instances.md
-              - Run an app: nextmv/tutorials/applications/runs.md
-              - Track runs: nextmv/tutorials/applications/external-runs.md
-              - Secrets: nextmv/tutorials/applications/secrets.md
-              - Large payloads: nextmv/tutorials/applications/large-payloads.md
-              - Queuing & prioritization: nextmv/tutorials/applications/queuing.md
-              - Execution classes: nextmv/tutorials/applications/execution-classes.md
-          - Experiments:
-              - Scenario tests: nextmv/tutorials/experiments/scenario-tests.md
-              - Batch experiments: nextmv/tutorials/experiments/batch-experiments.md
-              - Acceptance tests: nextmv/tutorials/experiments/acceptance-tests.md
-              - Input sets: nextmv/tutorials/experiments/input-sets.md
-      - Reference:
-          - cloud:
-              - acceptance_test.py: nextmv/reference/cloud/acceptance_test.md
-              - account.py: nextmv/reference/cloud/account.md
-              - application.py: nextmv/reference/cloud/application.md
-              - batch_experiment.py: nextmv/reference/cloud/batch_experiment.md
-              - client.py: nextmv/reference/cloud/client.md
-              - input_set.py: nextmv/reference/cloud/input_set.md
-              - instance.py: nextmv/reference/cloud/instance.md
-              - scenario.py: nextmv/reference/cloud/scenario.md
-              - secrets.py: nextmv/reference/cloud/secrets.md
-              - url.py: nextmv/reference/cloud/url.md
-              - version.py: nextmv/reference/cloud/version.md
-          - local:
-              - application.py: nextmv/reference/local/application.md
-              - executor.py: nextmv/reference/local/executor.md
-              - geojson_handler.py: nextmv/reference/local/geojson_handler.md
-              - plotly_handler.py: nextmv/reference/local/plotly_handler.md
-              - runner.py: nextmv/reference/local/runner.md
-          - base_model.py: nextmv/reference/base_model.md
-          - input.py: nextmv/reference/input.md
-          - logger.py: nextmv/reference/logger.md
-          - manifest.py: nextmv/reference/manifest.md
-          - model.py: nextmv/reference/model.md
-          - options.py: nextmv/reference/options.md
-          - output.py: nextmv/reference/output.md
-          - polling.py: nextmv/reference/polling.md
-          - run.py: nextmv/reference/run.md
-          - safe.py: nextmv/reference/safe.md
-          - status.py: nextmv/reference/status.md
+      - 👋 Overview & installation: nextmv/index.md
+      - ✏️ Modeling:
+          - Overview: nextmv/modeling/index.md
+          - Options: nextmv/modeling/options.md
+          - Input: nextmv/modeling/input.md
+          - Logging: nextmv/modeling/logging.md
+          - Output: nextmv/modeling/output.md
+          - Model: nextmv/modeling/model.md
+          - Reference:
+              - base_model.py: nextmv/modeling/reference/base_model.md
+              - input.py: nextmv/modeling/reference/input.md
+              - logger.py: nextmv/modeling/reference/logger.md
+              - manifest.py: nextmv/modeling/reference/manifest.md
+              - model.py: nextmv/modeling/reference/model.md
+              - options.py: nextmv/modeling/reference/options.md
+              - output.py: nextmv/modeling/reference/output.md
+              - polling.py: nextmv/modeling/reference/polling.md
+              - run.py: nextmv/modeling/reference/run.md
+              - safe.py: nextmv/modeling/reference/safe.md
+              - status.py: nextmv/modeling/reference/status.md
+      - 💻 Local:
+          - Overview: nextmv/local/index.md
+          - Get started - new app: nextmv/local/get-started-new-app.md
+          - Get started - existing app: nextmv/local/get-started-existing-app.md
+          - Run an app: nextmv/local/runs.md
+          - Sync to Cloud: nextmv/local/sync.md
+          - Visualize run assets: nextmv/local/visuals.md
+          - Reference:
+              - application.py: nextmv/local/reference/application.md
+              - executor.py: nextmv/local/reference/executor.md
+              - geojson_handler.py: nextmv/local/reference/geojson_handler.md
+              - local.py: nextmv/local/reference/local.md
+              - plotly_handler.py: nextmv/local/reference/plotly_handler.md
+              - runner.py: nextmv/local/reference/runner.md
+      - ☁️ Cloud:
+          - Overview: nextmv/cloud/index.md
+          - Managing an app: nextmv/cloud/manage.md
+          - Push to an app: nextmv/cloud/push.md
+          - Run an app: nextmv/cloud/runs.md
+          - Versions: nextmv/cloud/versions.md
+          - Instances: nextmv/cloud/instances.md
+          - Track runs: nextmv/cloud/external-runs.md
+          - Secrets: nextmv/cloud/secrets.md
+          - Large payloads: nextmv/cloud/large-payloads.md
+          - Queuing & prioritization: nextmv/cloud/queuing.md
+          - Execution classes: nextmv/cloud/execution-classes.md
+          - Scenario tests: nextmv/cloud/scenario-tests.md
+          - Batch experiments: nextmv/cloud/batch-experiments.md
+          - Acceptance tests: nextmv/cloud/acceptance-tests.md
+          - Input sets: nextmv/cloud/input-sets.md
+          - Reference:
+              - acceptance_test.py: nextmv/cloud/reference/acceptance_test.md
+              - account.py: nextmv/cloud/reference/account.md
+              - application.py: nextmv/cloud/reference/application.md
+              - batch_experiment.py: nextmv/cloud/reference/batch_experiment.md
+              - client.py: nextmv/cloud/reference/client.md
+              - input_set.py: nextmv/cloud/reference/input_set.md
+              - instance.py: nextmv/cloud/reference/instance.md
+              - scenario.py: nextmv/cloud/reference/scenario.md
+              - secrets.py: nextmv/cloud/reference/secrets.md
+              - url.py: nextmv/cloud/reference/url.md
+              - version.py: nextmv/cloud/reference/version.md
   - nextmv-gurobipy:
-      - Overview & installation: nextmv-gurobipy/index.md
-      - Tutorials:
+      - 👋 Overview & installation: nextmv-gurobipy/index.md
+      - 📓 Tutorials:
           - Options: nextmv-gurobipy/tutorials/options.md
           - Model: nextmv-gurobipy/tutorials/model.md
           - Statistics: nextmv-gurobipy/tutorials/statistics.md
           - Solution: nextmv-gurobipy/tutorials/solution.md
-      - Reference:
+      - ⚙️ Reference:
           - model.py: nextmv-gurobipy/reference/model.md
           - options.py: nextmv-gurobipy/reference/options.md
           - solution.py: nextmv-gurobipy/reference/solution.md
           - statistics.py: nextmv-gurobipy/reference/statistics.md
   - nextmv-scikit-learn:
-      - Overview & installation: nextmv-scikit-learn/index.md
-      - Tutorials:
+      - 👋 Overview & installation: nextmv-scikit-learn/index.md
+      - 📓 Tutorials:
           - Options: nextmv-scikit-learn/tutorials/options.md
           - Model: nextmv-scikit-learn/tutorials/model.md
           - Statistics: nextmv-scikit-learn/tutorials/statistics.md
           - Solution: nextmv-scikit-learn/tutorials/solution.md
-      - Reference:
+      - ⚙️ Reference:
           - dummy:
               - model.py: nextmv-scikit-learn/reference/dummy/model.md
               - options.py: nextmv-scikit-learn/reference/dummy/options.md
@@ -121,6 +130,7 @@ theme:
     - navigation.collapse
     - navigation.sections
     - navigation.top
+    - navigation.footer
     - content.code.copy
     - content.code.annotate
     - search.highlight

@@ -6,19 +6,8 @@ including application management, running applications, and managing inputs.
 
 Classes
 -------
-DownloadURL
-    Result of getting a download URL.
-PollingOptions
-    Options for polling when waiting for run results.
-UploadURL
-    Result of getting an upload URL.
 Application
-    Class for interacting with applications in Nextmv Cloud.
-
-Functions
----------
-poll
-    Function to poll for results with configurable options.
+    Class for interacting with local Nextmv Applications.
 """
 
 import json
@@ -33,15 +22,22 @@ from typing import Any, Optional, Union
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
-from nextmv.input import DEFAULT_INPUT_JSON_FILE, INPUTS_KEY, Input, InputFormat
-from nextmv.local.executor import LOGS_FILE
+from nextmv.input import INPUTS_KEY, Input, InputFormat
+from nextmv.local.local import (
+    DEFAULT_INPUT_JSON_FILE,
+    DEFAULT_OUTPUT_JSON_FILE,
+    LOGS_FILE,
+    LOGS_KEY,
+    NEXTMV_DIR,
+    RUNS_KEY,
+)
 from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.options import Options
-from nextmv.output import DEFAULT_OUTPUT_JSON_FILE, LOGS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
+from nextmv.output import OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
-from nextmv.run import ErrorLog, Format, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
+from nextmv.run import ErrorLog, Format, Run, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
 from nextmv.safe import safe_id
 from nextmv.status import StatusV2
 
@@ -152,224 +148,35 @@ class Application:
             description=description,
         )
 
-    def run_metadata(self, run_id: str) -> RunInformation:
+    def list_runs(self) -> list[Run]:
         """
-        Get the metadata of a local run.
-
-        This method is the local equivalent to
-        `cloud.Application.run_metadata`, which retrieves the metadata of a
-        remote run in Nextmv Cloud. This method is used to get the metadata of
-        a run that was executed locally using the `new_run` or
-        `new_run_with_result` method.
-
-        Retrieves information about a run without including the run output.
-        This is useful when you only need the run's status and metadata.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to retrieve metadata for.
+        List all runs for the application.
 
         Returns
         -------
-        RunInformation
-            Metadata of the run (run information without output).
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-
-        Examples
-        --------
-        >>> metadata = app.run_metadata("run-789")
-        >>> print(metadata.metadata.status_v2)
-        StatusV2.succeeded
+        list[Run]
+            A list of all runs associated with the application.
         """
 
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
         if not os.path.exists(runs_dir):
             raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
 
-        run_dir = os.path.join(runs_dir, run_id)
-        if not os.path.exists(run_dir):
-            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+        dirs = os.listdir(runs_dir)
+        if not dirs:
+            return []
 
-        info_file = os.path.join(run_dir, f"{run_id}.json")
-        if not os.path.exists(info_file):
-            raise ValueError(f"`{info_file}` file does not exist at: {run_dir}")
+        run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
+        if not run_ids:
+            return []
 
-        with open(info_file) as f:
-            info_dict = json.load(f)
+        runs = []
+        for run_id in run_ids:
+            info = self.run_metadata(run_id=run_id)
+            run = info.to_run()
+            runs.append(run)
 
-        info = RunInformation.from_dict(info_dict)
-
-        return info
-
-    def run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
-        """
-        Get the local result of a run.
-
-        This method is the local equivalent to `cloud.Application.run_result`,
-        which retrieves the result of a remote run in Nextmv Cloud. This method
-        is used to get the result of a run that was executed locally using the
-        `new_run` or `new_run_with_result` method.
-
-        Retrieves the complete result of a run, including the run output.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to get results for.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Result of the run, including output.
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-
-        Examples
-        --------
-        >>> result = app.run_result("run-123")
-        >>> print(result.metadata.status_v2)
-        'succeeded'
-        """
-
-        run_information = self.run_metadata(run_id=run_id)
-
-        return self.__run_result(
-            run_id=run_id,
-            run_information=run_information,
-            output_dir_path=output_dir_path,
-        )
-
-    def run_result_with_polling(
-        self,
-        run_id: str,
-        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        output_dir_path: Optional[str] = ".",
-    ) -> RunResult:
-        """
-        Get the result of a local run with polling.
-
-        This method is the local equivalent to
-        `cloud.Application.run_result_with_polling`, which retrieves the result
-        of a remote run in Nextmv Cloud. This method is used to get the result
-        of a run that was executed locally using the `new_run` or
-        `new_run_with_result` method.
-
-        Retrieves the result of a run including the run output. This method
-        polls for the result until the run finishes executing or the polling
-        strategy is exhausted.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the run to retrieve the result for.
-        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
-            Options to use when polling for the run result.
-        output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
-            exist, it will be created. Uses the current directory by default.
-
-        Returns
-        -------
-        RunResult
-            Complete result of the run including output data.
-
-        Raises
-        ------
-        requests.HTTPError
-            If the response status code is not 2xx.
-        TimeoutError
-            If the run does not complete after the polling strategy is
-            exhausted based on time duration.
-        RuntimeError
-            If the run does not complete after the polling strategy is
-            exhausted based on number of tries.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import PollingOptions
-        >>> # Create custom polling options
-        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
-        >>> # Get run result with polling
-        >>> result = app.run_result_with_polling("run-123", polling_opts)
-        >>> print(result.output)
-        {'solution': {...}}
-        """
-
-        def polling_func() -> tuple[Any, bool]:
-            run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status_v2 in {
-                StatusV2.succeeded,
-                StatusV2.failed,
-                StatusV2.canceled,
-            }:
-                return run_information, True
-
-            return None, False
-
-        run_information = poll(polling_options=polling_options, polling_func=polling_func)
-
-        return self.__run_result(
-            run_id=run_id,
-            run_information=run_information,
-            output_dir_path=output_dir_path,
-        )
-
-    def run_visuals(self, run_id: str) -> None:
-        """
-        Open the local run visuals in a web browser.
-
-        This method opens the visual representation of a locally executed run
-        in the default web browser. It assumes that the run was executed locally
-        using the `new_run` or `new_run_with_result` method and that
-        the necessary visualization files are present.
-
-        If the run was correctly configured to produce visual assets, then the
-        run will contain a `visuals` directory with one or more HTML files.
-        Each file is opened in a new tab in the default web browser.
-
-        Parameters
-        ----------
-        run_id : str
-            ID of the local run to visualize.
-
-        Raises
-        ------
-        ValueError
-            If the `.nextmv/runs` directory does not exist at the application
-            source, or if the specified run ID does not exist.
-        """
-
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
-        if not os.path.exists(runs_dir):
-            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
-
-        run_dir = os.path.join(runs_dir, run_id)
-        if not os.path.exists(run_dir):
-            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
-
-        visuals_dir = os.path.join(run_dir, "visuals")
-        if not os.path.exists(visuals_dir):
-            raise ValueError(f"`visuals` dir does not exist at: {run_dir}")
-
-        for file in os.listdir(visuals_dir):
-            if file.endswith(".html"):
-                file_path = os.path.join(visuals_dir, file)
-                webbrowser.open_new_tab(f"file://{os.path.realpath(file_path)}")
+        return runs
 
     def new_run(
         self,
@@ -642,6 +449,225 @@ class Application:
             output_dir_path=output_dir_path,
         )
 
+    def run_metadata(self, run_id: str) -> RunInformation:
+        """
+        Get the metadata of a local run.
+
+        This method is the local equivalent to
+        `cloud.Application.run_metadata`, which retrieves the metadata of a
+        remote run in Nextmv Cloud. This method is used to get the metadata of
+        a run that was executed locally using the `new_run` or
+        `new_run_with_result` method.
+
+        Retrieves information about a run without including the run output.
+        This is useful when you only need the run's status and metadata.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve metadata for.
+
+        Returns
+        -------
+        RunInformation
+            Metadata of the run (run information without output).
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+
+        Examples
+        --------
+        >>> metadata = app.run_metadata("run-789")
+        >>> print(metadata.metadata.status_v2)
+        StatusV2.succeeded
+        """
+
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        info_file = os.path.join(run_dir, f"{run_id}.json")
+        if not os.path.exists(info_file):
+            raise ValueError(f"`{info_file}` file does not exist at: {run_dir}")
+
+        with open(info_file) as f:
+            info_dict = json.load(f)
+
+        info = RunInformation.from_dict(info_dict)
+
+        return info
+
+    def run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
+        """
+        Get the local result of a run.
+
+        This method is the local equivalent to `cloud.Application.run_result`,
+        which retrieves the result of a remote run in Nextmv Cloud. This method
+        is used to get the result of a run that was executed locally using the
+        `new_run` or `new_run_with_result` method.
+
+        Retrieves the complete result of a run, including the run output.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to get results for.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This
+            is required if the output is non-JSON. If the directory does not
+            exist, it will be created. Uses the current directory by default.
+
+        Returns
+        -------
+        RunResult
+            Result of the run, including output.
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+
+        Examples
+        --------
+        >>> result = app.run_result("run-123")
+        >>> print(result.metadata.status_v2)
+        'succeeded'
+        """
+
+        run_information = self.run_metadata(run_id=run_id)
+
+        return self.__run_result(
+            run_id=run_id,
+            run_information=run_information,
+            output_dir_path=output_dir_path,
+        )
+
+    def run_result_with_polling(
+        self,
+        run_id: str,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+        output_dir_path: Optional[str] = ".",
+    ) -> RunResult:
+        """
+        Get the result of a local run with polling.
+
+        This method is the local equivalent to
+        `cloud.Application.run_result_with_polling`, which retrieves the result
+        of a remote run in Nextmv Cloud. This method is used to get the result
+        of a run that was executed locally using the `new_run` or
+        `new_run_with_result` method.
+
+        Retrieves the result of a run including the run output. This method
+        polls for the result until the run finishes executing or the polling
+        strategy is exhausted.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the result for.
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the run result.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This
+            is required if the output is non-JSON. If the directory does not
+            exist, it will be created. Uses the current directory by default.
+
+        Returns
+        -------
+        RunResult
+            Complete result of the run including output data.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the run does not complete after the polling strategy is
+            exhausted based on time duration.
+        RuntimeError
+            If the run does not complete after the polling strategy is
+            exhausted based on number of tries.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import PollingOptions
+        >>> # Create custom polling options
+        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
+        >>> # Get run result with polling
+        >>> result = app.run_result_with_polling("run-123", polling_opts)
+        >>> print(result.output)
+        {'solution': {...}}
+        """
+
+        def polling_func() -> tuple[Any, bool]:
+            run_information = self.run_metadata(run_id=run_id)
+            if run_information.metadata.status_v2 in {
+                StatusV2.succeeded,
+                StatusV2.failed,
+                StatusV2.canceled,
+            }:
+                return run_information, True
+
+            return None, False
+
+        run_information = poll(polling_options=polling_options, polling_func=polling_func)
+
+        return self.__run_result(
+            run_id=run_id,
+            run_information=run_information,
+            output_dir_path=output_dir_path,
+        )
+
+    def run_visuals(self, run_id: str) -> None:
+        """
+        Open the local run visuals in a web browser.
+
+        This method opens the visual representation of a locally executed run
+        in the default web browser. It assumes that the run was executed locally
+        using the `new_run` or `new_run_with_result` method and that
+        the necessary visualization files are present.
+
+        If the run was correctly configured to produce visual assets, then the
+        run will contain a `visuals` directory with one or more HTML files.
+        Each file is opened in a new tab in the default web browser.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the local run to visualize.
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+        """
+
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        visuals_dir = os.path.join(run_dir, "visuals")
+        if not os.path.exists(visuals_dir):
+            raise ValueError(f"`visuals` dir does not exist at: {run_dir}")
+
+        for file in os.listdir(visuals_dir):
+            if file.endswith(".html"):
+                file_path = os.path.join(visuals_dir, file)
+                webbrowser.open_new_tab(f"file://{os.path.realpath(file_path)}")
+
     def sync(  # noqa: C901
         self,
         target: cloud.Application,
@@ -714,7 +740,7 @@ class Application:
         # ".". During the sync process, we don't need to keep these outputs, so
         # we can use a temp dir that will be deleted after the sync is done.
         with tempfile.TemporaryDirectory(prefix="nextmv-sync-run-") as temp_results_dir:
-            runs_dir = os.path.join(self.src, ".nextmv", "runs")
+            runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
             if run_ids is None:
                 # If runs are not specified, by default we sync all local runs that
                 # can be found.
@@ -800,7 +826,7 @@ class Application:
                 "The output format is not JSON: an `output_dir_path` must be provided.",
             )
 
-        runs_dir = os.path.join(self.src, ".nextmv", "runs")
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
         solutions_dir = os.path.join(runs_dir, run_id, OUTPUTS_KEY, SOLUTIONS_KEY)
 
         if output_type == OutputFormat.JSON:

@@ -47,7 +47,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Optional, Union
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
@@ -226,6 +226,406 @@ class Format(BaseModel):
     """Output format for the run configuration."""
 
 
+class RunType(str, Enum):
+    """
+    The actual type of the run.
+
+    You can import the `RunType` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunType
+    ```
+
+    Parameters
+    ----------
+    STANDARD : str
+        Standard run type.
+    EXTERNAL : str
+        External run type.
+    ENSEMBLE : str
+        Ensemble run type.
+
+    Examples
+    --------
+    >>> from nextmv import RunType
+    >>> run_type = RunType.STANDARD
+    >>> run_type
+    <RunType.STANDARD: 'standard'>
+    >>> run_type.value
+    'standard'
+
+    >>> # Creating from string
+    >>> external_type = RunType("external")
+    >>> external_type
+    <RunType.EXTERNAL: 'external'>
+
+    >>> # All available types
+    >>> list(RunType)
+    [<RunType.STANDARD: 'standard'>, <RunType.EXTERNAL: 'external'>, <RunType.ENSEMBLE: 'ensemble'>]
+    """
+
+    STANDARD = "standard"
+    """Standard run type."""
+    EXTERNAL = "external"
+    """External run type."""
+    ENSEMBLE = "ensemble"
+    """Ensemble run type."""
+
+
+class RunTypeConfiguration(BaseModel):
+    """
+    Defines the configuration for the type of the run that is being executed
+    on an application.
+
+    You can import the `RunTypeConfiguration` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunTypeConfiguration
+    ```
+
+    Parameters
+    ----------
+    run_type : RunType
+        Type of the run.
+    definition_id : str, optional
+        ID of the definition for the run type. Defaults to None.
+    reference_id : str, optional
+        ID of the reference for the run type. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunTypeConfiguration, RunType
+    >>> config = RunTypeConfiguration(run_type=RunType.STANDARD)
+    >>> config.run_type
+    <RunType.STANDARD: 'standard'>
+    >>> config.definition_id is None
+    True
+
+    >>> # External run with reference
+    >>> external_config = RunTypeConfiguration(
+    ...     run_type=RunType.EXTERNAL,
+    ...     reference_id="ref-12345"
+    ... )
+    >>> external_config.run_type
+    <RunType.EXTERNAL: 'external'>
+    >>> external_config.reference_id
+    'ref-12345'
+
+    >>> # Ensemble run with definition
+    >>> ensemble_config = RunTypeConfiguration(
+    ...     run_type=RunType.ENSEMBLE,
+    ...     definition_id="def-67890"
+    ... )
+    >>> ensemble_config.run_type
+    <RunType.ENSEMBLE: 'ensemble'>
+    >>> ensemble_config.definition_id
+    'def-67890'
+    """
+
+    run_type: Optional[RunType] = Field(
+        serialization_alias="type",
+        validation_alias=AliasChoices("type", "run_type"),
+        default=None,
+    )
+    """Type of the run."""
+    definition_id: Optional[str] = None
+    """ID of the definition for the run type."""
+    reference_id: Optional[str] = None
+    """ID of the reference for the run type."""
+
+    @field_validator("run_type", mode="before")
+    @classmethod
+    def validate_run_type(cls, v):
+        """Convert empty string to None for run_type validation."""
+        if v == "":
+            return None
+        return v
+
+
+class StatisticsIndicator(BaseModel):
+    """
+    Statistics indicator of a run.
+
+    You can import the `StatisticsIndicator` class directly from `nextmv`:
+
+    ```python
+    from nextmv import StatisticsIndicator
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the indicator.
+    value : Any
+        Value of the indicator.
+
+    Examples
+    --------
+    >>> from nextmv import StatisticsIndicator
+    >>> indicator = StatisticsIndicator(name="total_cost", value=1250.75)
+    >>> indicator.name
+    'total_cost'
+    >>> indicator.value
+    1250.75
+
+    >>> # Boolean indicator
+    >>> bool_indicator = StatisticsIndicator(name="optimal", value=True)
+    >>> bool_indicator.name
+    'optimal'
+    >>> bool_indicator.value
+    True
+    """
+
+    name: str
+    """Name of the indicator."""
+    value: Any
+    """Value of the indicator."""
+
+
+class RunInfoStatistics(BaseModel):
+    """
+    Statistics information for a run.
+
+    You can import the `RunInfoStatistics` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunInfoStatistics
+    ```
+
+    Parameters
+    ----------
+    status : str
+        Status of the statistics in the run.
+    error : str, optional
+        Error message if the statistics could not be retrieved. Defaults to None.
+    indicators : list[StatisticsIndicator], optional
+        List of statistics indicators. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunInfoStatistics, StatisticsIndicator
+    >>> indicators = [
+    ...     StatisticsIndicator(name="total_cost", value=1250.75),
+    ...     StatisticsIndicator(name="optimal", value=True)
+    ... ]
+    >>> stats = RunInfoStatistics(status="success", indicators=indicators)
+    >>> stats.status
+    'success'
+    >>> len(stats.indicators)
+    2
+
+    >>> # Statistics with error
+    >>> error_stats = RunInfoStatistics(
+    ...     status="error",
+    ...     error="Failed to calculate statistics"
+    ... )
+    >>> error_stats.status
+    'error'
+    >>> error_stats.error
+    'Failed to calculate statistics'
+    """
+
+    status: str
+    """Status of the statistics in the run."""
+
+    error: Optional[str] = None
+    """Error message if the statistics could not be retrieved."""
+    indicators: Optional[list[StatisticsIndicator]] = None
+    """List of statistics indicators."""
+
+
+class OptionsSummaryItem(BaseModel):
+    """
+    Summary item for options used in a run.
+
+    You can import the `OptionsSummaryItem` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OptionsSummaryItem
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the option.
+    value : Any
+        Value of the option.
+    source : str
+        Source of the option.
+
+    Examples
+    --------
+    >>> from nextmv import OptionsSummaryItem
+    >>> option = OptionsSummaryItem(
+    ...     name="time_limit",
+    ...     value=30,
+    ...     source="config"
+    ... )
+    >>> option.name
+    'time_limit'
+    >>> option.value
+    30
+    >>> option.source
+    'config'
+
+    >>> # Option from environment variable
+    >>> env_option = OptionsSummaryItem(
+    ...     name="solver_type",
+    ...     value="gurobi",
+    ...     source="environment"
+    ... )
+    >>> env_option.source
+    'environment'
+    """
+
+    name: str
+    """Name of the option."""
+    value: Any
+    """Value of the option."""
+    source: str
+    """Source of the option."""
+
+
+class Run(BaseModel):
+    """
+    Information about a run in the Nextmv platform.
+
+    You can import the `Run` class directly from `nextmv`:
+
+    ```python
+    from nextmv import Run
+    ```
+
+    Parameters
+    ----------
+    id : str
+        ID of the run.
+    user_email : str
+        Email of the user who initiated the run.
+    name : str
+        Name of the run.
+    description : str
+        Description of the run.
+    created_at : datetime
+        Timestamp when the run was created.
+    application_id : str
+        ID of the application associated with the run.
+    application_instance_id : str
+        ID of the application instance associated with the run.
+    application_version_id : str
+        ID of the application version associated with the run.
+    run_type : RunTypeConfiguration
+        Configuration for the type of the run.
+    execution_class : str
+        Class name for the execution of a job.
+    runtime : str
+        Runtime environment for the run.
+    status : Status
+        Deprecated, use status_v2 instead.
+    status_v2 : StatusV2
+        Status of the run.
+    queuing_priority : int, optional
+        Priority of the run in the queue. Defaults to None.
+    queuing_disabled : bool, optional
+        Whether the run is disabled from queuing. Defaults to None.
+    experiment_id : str, optional
+        ID of the experiment associated with the run. Defaults to None.
+    statistics : RunInfoStatistics, optional
+        Statistics of the run. Defaults to None.
+    input_id : str, optional
+        ID of the input associated with the run. Defaults to None.
+    option_set : str, optional
+        ID of the option set associated with the run. Defaults to None.
+    options : dict[str, str], optional
+        Options associated with the run. Defaults to None.
+    request_options : dict[str, str], optional
+        Request options associated with the run. Defaults to None.
+    options_summary : list[OptionsSummaryItem], optional
+        Summary of options used in the run. Defaults to None.
+    scenario_id : str, optional
+        ID of the scenario associated with the run. Defaults to None.
+    repetition : int, optional
+        Repetition number of the run. Defaults to None.
+    input_set_id : str, optional
+        ID of the input set associated with the run. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import Run, RunTypeConfiguration, RunType, StatusV2
+    >>> from datetime import datetime
+    >>> run = Run(
+    ...     id="run-12345",
+    ...     user_email="user@example.com",
+    ...     name="Test Run",
+    ...     description="A test optimization run",
+    ...     created_at=datetime.now(),
+    ...     application_id="app-123",
+    ...     application_instance_id="instance-456",
+    ...     application_version_id="version-789",
+    ...     run_type=RunTypeConfiguration(run_type=RunType.STANDARD),
+    ...     execution_class="small",
+    ...     runtime="python",
+    ...     status_v2=StatusV2.SUCCEEDED
+    ... )
+    >>> run.id
+    'run-12345'
+    >>> run.name
+    'Test Run'
+    """
+
+    id: str
+    """ID of the run."""
+    user_email: str
+    """Email of the user who initiated the run."""
+    name: str
+    """Name of the run."""
+    description: str
+    """Description of the run."""
+    created_at: datetime
+    """Timestamp when the run was created."""
+    application_id: str
+    """ID of the application associated with the run."""
+    application_instance_id: str
+    """ID of the application instance associated with the run."""
+    application_version_id: str
+    """ID of the application version associated with the run."""
+    run_type: RunTypeConfiguration
+    """Configuration for the type of the run."""
+    execution_class: str
+    """Class name for the execution of a job."""
+    runtime: str
+    """Runtime environment for the run."""
+    status_v2: StatusV2
+    """Status of the run."""
+
+    status: Optional[Status] = None
+    """Deprecated, use status_v2 instead."""
+    queuing_priority: Optional[int] = None
+    """Priority of the run in the queue."""
+    queuing_disabled: Optional[bool] = None
+    """Whether the run is disabled from queuing."""
+    experiment_id: Optional[str] = None
+    """ID of the experiment associated with the run."""
+    statistics: Optional[RunInfoStatistics] = None
+    """Statistics of the run."""
+    input_id: Optional[str] = None
+    """ID of the input associated with the run."""
+    option_set: Optional[str] = None
+    """ID of the option set associated with the run."""
+    options: Optional[dict[str, str]] = None
+    """Options associated with the run."""
+    request_options: Optional[dict[str, str]] = None
+    """Request options associated with the run."""
+    options_summary: Optional[list[OptionsSummaryItem]] = None
+    """Summary of options used in the run."""
+    scenario_id: Optional[str] = None
+    """ID of the scenario associated with the run."""
+    repetition: Optional[int] = None
+    """Repetition number of the run."""
+    input_set_id: Optional[str] = None
+    """ID of the input set associated with the run."""
+
+
 class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
@@ -342,6 +742,81 @@ class RunInformation(BaseModel):
     has not been synced yet.
     """
 
+    def to_run(self) -> Run:
+        """
+        Transform this `RunInformation` instance into a `Run` instance.
+
+        This method maps all available attributes from the `RunInformation`
+        and its metadata to create a `Run` instance. Attributes that are not
+        available in RunInformation are set to None or appropriate defaults.
+
+        Returns
+        -------
+        Run
+            A Run instance with attributes populated from this RunInformation.
+
+        Examples
+        --------
+        >>> from nextmv import RunInformation, Metadata, Format, FormatInput, FormatOutput
+        >>> from nextmv import StatusV2, RunTypeConfiguration, RunType
+        >>> from datetime import datetime
+        >>> metadata = Metadata(
+        ...     application_id="app-123",
+        ...     application_instance_id="instance-456",
+        ...     application_version_id="version-789",
+        ...     created_at=datetime.now(),
+        ...     duration=5000.0,
+        ...     error="",
+        ...     input_size=1024.0,
+        ...     output_size=2048.0,
+        ...     format=Format(
+        ...         format_input=FormatInput(),
+        ...         format_output=FormatOutput()
+        ...     ),
+        ...     status_v2=StatusV2.SUCCEEDED
+        ... )
+        >>> run_info = RunInformation(
+        ...     id="run-123",
+        ...     description="Test run",
+        ...     name="Test",
+        ...     user_email="user@example.com",
+        ...     metadata=metadata
+        ... )
+        >>> run = run_info.to_run()
+        >>> run.id
+        'run-123'
+        >>> run.application_id
+        'app-123'
+        """
+        return Run(
+            id=self.id,
+            user_email=self.user_email,
+            name=self.name,
+            description=self.description,
+            created_at=self.metadata.created_at,
+            application_id=self.metadata.application_id,
+            application_instance_id=self.metadata.application_instance_id,
+            application_version_id=self.metadata.application_version_id,
+            run_type=RunTypeConfiguration(),  # Default empty configuration
+            execution_class="",  # Not available in RunInformation
+            runtime="",  # Not available in RunInformation
+            status=self.metadata.status,
+            status_v2=self.metadata.status_v2,
+            # Optional fields that are not available in RunInformation
+            queuing_priority=None,
+            queuing_disabled=None,
+            experiment_id=None,
+            statistics=None,
+            input_id=None,
+            option_set=None,
+            options=None,
+            request_options=None,
+            options_summary=None,
+            scenario_id=None,
+            repetition=None,
+            input_set_id=None,
+        )
+
 
 class ErrorLog(BaseModel):
     """
@@ -427,113 +902,6 @@ class RunLog(BaseModel):
 
     log: str
     """Log of the run."""
-
-
-class RunType(str, Enum):
-    """
-    The actual type of the run.
-
-    You can import the `RunType` class directly from `nextmv`:
-
-    ```python
-    from nextmv import RunType
-    ```
-
-    Parameters
-    ----------
-    STANDARD : str
-        Standard run type.
-    EXTERNAL : str
-        External run type.
-    ENSEMBLE : str
-        Ensemble run type.
-
-    Examples
-    --------
-    >>> from nextmv import RunType
-    >>> run_type = RunType.STANDARD
-    >>> run_type
-    <RunType.STANDARD: 'standard'>
-    >>> run_type.value
-    'standard'
-
-    >>> # Creating from string
-    >>> external_type = RunType("external")
-    >>> external_type
-    <RunType.EXTERNAL: 'external'>
-
-    >>> # All available types
-    >>> list(RunType)
-    [<RunType.STANDARD: 'standard'>, <RunType.EXTERNAL: 'external'>, <RunType.ENSEMBLE: 'ensemble'>]
-    """
-
-    STANDARD = "standard"
-    """Standard run type."""
-    EXTERNAL = "external"
-    """External run type."""
-    ENSEMBLE = "ensemble"
-    """Ensemble run type."""
-
-
-class RunTypeConfiguration(BaseModel):
-    """
-    Defines the configuration for the type of the run that is being executed
-    on an application.
-
-    You can import the `RunTypeConfiguration` class directly from `nextmv`:
-
-    ```python
-    from nextmv import RunTypeConfiguration
-    ```
-
-    Parameters
-    ----------
-    run_type : RunType
-        Type of the run.
-    definition_id : str, optional
-        ID of the definition for the run type. Defaults to None.
-    reference_id : str, optional
-        ID of the reference for the run type. Defaults to None.
-
-    Examples
-    --------
-    >>> from nextmv import RunTypeConfiguration, RunType
-    >>> config = RunTypeConfiguration(run_type=RunType.STANDARD)
-    >>> config.run_type
-    <RunType.STANDARD: 'standard'>
-    >>> config.definition_id is None
-    True
-
-    >>> # External run with reference
-    >>> external_config = RunTypeConfiguration(
-    ...     run_type=RunType.EXTERNAL,
-    ...     reference_id="ref-12345"
-    ... )
-    >>> external_config.run_type
-    <RunType.EXTERNAL: 'external'>
-    >>> external_config.reference_id
-    'ref-12345'
-
-    >>> # Ensemble run with definition
-    >>> ensemble_config = RunTypeConfiguration(
-    ...     run_type=RunType.ENSEMBLE,
-    ...     definition_id="def-67890"
-    ... )
-    >>> ensemble_config.run_type
-    <RunType.ENSEMBLE: 'ensemble'>
-    >>> ensemble_config.definition_id
-    'def-67890'
-    """
-
-    run_type: RunType = Field(
-        serialization_alias="type",
-        validation_alias=AliasChoices("type", "run_type"),
-    )
-    """Type of the run."""
-    definition_id: Optional[str] = None
-    """ID of the definition for the run type."""
-    reference_id: Optional[str] = None
-    """ID of the reference for the run type."""
 
 
 class RunQueuing(BaseModel):

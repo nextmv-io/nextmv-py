@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `options` module [here](../reference/options.md).
+    Find the reference for the `options` module [here](./reference/options.md).
 
 Use options to capture parameters (i.e.: configurations) for the run.
 

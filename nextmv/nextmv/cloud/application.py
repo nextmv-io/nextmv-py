@@ -69,6 +69,7 @@ from nextmv.run import (
     Format,
     FormatInput,
     FormatOutput,
+    Run,
     RunConfiguration,
     RunInformation,
     RunLog,
@@ -297,7 +298,8 @@ class Application:
 
     def batch_experiment(self, batch_id: str) -> BatchExperiment:
         """
-        Get a batch experiment.
+        Get a batch experiment. This method also returns the runs of the batch
+        experiment under the `.runs` attribute.
 
         Parameters
         ----------
@@ -326,7 +328,17 @@ class Application:
             endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
         )
 
-        return BatchExperiment.from_dict(response.json())
+        exp = BatchExperiment.from_dict(response.json())
+
+        runs_response = self.client.request(
+            method="GET",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_id}/runs",
+        )
+
+        runs = [Run.from_dict(run) for run in runs_response.json().get("runs", [])]
+        exp.runs = runs
+
+        return exp
 
     def batch_experiment_metadata(self, batch_id: str) -> BatchExperimentMetadata:
         """
@@ -912,6 +924,28 @@ class Application:
         )
 
         return [ManagedInput.from_dict(managed_input) for managed_input in response.json()]
+
+    def list_runs(self) -> list[Run]:
+        """
+        List all runs.
+
+        Returns
+        -------
+        list[Run]
+            List of runs.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs",
+        )
+
+        return [Run.from_dict(run) for run in response.json().get("runs", [])]
 
     def list_scenario_tests(self) -> list[BatchExperimentMetadata]:
         """
@@ -2902,7 +2936,7 @@ class Application:
         Examples
         --------
         >>> from nextmv.cloud import Application
-        >>> from nextmv.cloud.run import TrackedRun
+        >>> from nextmv import TrackedRun
         >>> app = Application(id="app_123")
         >>> tracked_run = TrackedRun(input={"data": [...]}, output={"solution": [...]})
         >>> run_id = app.track_run(tracked_run)

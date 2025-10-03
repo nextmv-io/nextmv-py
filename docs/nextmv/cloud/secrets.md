@@ -2,7 +2,7 @@
 
 !!! tip "Reference"
 
-    Find the reference for the `Application` class [here](../../reference/cloud/application.md).
+    Find the reference for the `Application` class [here](./reference/application.md).
 
 Secrets collections are a secure mechanism for storing and using sensitive
 information such as API keys and license files in your application (decision
