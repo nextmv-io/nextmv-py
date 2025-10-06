@@ -46,6 +46,11 @@ from nextmv.cloud.batch_experiment import (
     to_runs,
 )
 from nextmv.cloud.client import Client, get_size
+from nextmv.cloud.ensemble import (
+    EnsembleDefinition,
+    EvaluationRule,
+    RunGroup,
+)
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
@@ -129,6 +134,8 @@ class Application:
     """Base endpoint for the application."""
     experiments_endpoint: str = "{base}/experiments"
     """Base endpoint for the experiments in the application."""
+    ensembles_endpoint: str = "{base}/ensembles"
+    """Base endpoint for managing the ensemble definitions in the application"""
 
     def __post_init__(self):
         """Initialize the endpoint and experiments_endpoint attributes.
@@ -138,6 +145,7 @@ class Application:
         """
         self.endpoint = self.endpoint.format(id=self.id)
         self.experiments_endpoint = self.experiments_endpoint.format(base=self.endpoint)
+        self.ensembles_endpoint = self.ensembles_endpoint.format(base=self.endpoint)
 
     @classmethod
     def new(
@@ -515,6 +523,30 @@ class Application:
             endpoint=f"{self.experiments_endpoint}/batch/{batch_id}",
         )
 
+    def delete_ensemble_definition(self, ensemble_definition_id: str) -> None:
+        """
+        Delete an ensemble definition.
+
+        Parameters
+        ----------
+        ensemble_definition_id : str
+            ID of the ensemble definition to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_ensemble_definition("development-ensemble-definition")
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.ensembles_endpoint}/{ensemble_definition_id}",
+        )
+
     def delete_scenario_test(self, scenario_test_id: str) -> None:
         """
         Delete a scenario test.
@@ -562,6 +594,39 @@ class Application:
             method="DELETE",
             endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
         )
+
+    def ensemble_definition(self, ensemble_definition_id: str) -> EnsembleDefinition:
+        """
+        Get an ensemble definition.
+
+        Parameters
+        ----------
+        ensemble_definition_id : str
+            ID of the ensemble definition to retrieve.
+
+        Returns
+        -------
+        EnsembleDefintion
+            The requested ensemble definition details.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> ensemble_definition = app.ensemble_definition("instance-123")
+        >>> print(ensemble_definition.name)
+        'Production Ensemble Definition'
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.ensembles_endpoint}/{ensemble_definition_id}",
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
 
     @staticmethod
     def exists(client: Client, id: str) -> bool:
@@ -747,6 +812,36 @@ class Application:
         )
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
+
+    def list_ensemble_definitions(self) -> list[EnsembleDefinition]:
+        """
+        List all ensemble_definitions.
+
+        Returns
+        -------
+        list[EnsembleDefinition]
+            List of all ensemble definitions associated with this application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> ensemble_definitions = app.list_ensemble_definitions()
+        >>> for ensemble_definition in ensemble_definitions:
+        ...     print(ensemble_definition.name)
+        'Development Ensemble Definition'
+        'Production Ensemble Definition'
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.ensembles_endpoint}",
+        )
+
+        return [EnsembleDefinition.from_dict(ensemble_definition) for ensemble_definition in response.json()["items"]]
 
     def list_input_sets(self) -> list[InputSet]:
         """
@@ -1313,6 +1408,53 @@ class Application:
         )
 
         return self.batch_experiment_with_polling(batch_id=batch_id, polling_options=polling_options)
+
+    def new_ensemble_defintion(
+        self,
+        id: str,
+        run_groups: list[RunGroup],
+        rules: list[EvaluationRule],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> EnsembleDefinition:
+        """
+        Create a new ensemble definition.
+
+        Parameters
+        ----------
+        id: str
+            ID of the ensemble defintion.
+        run_groups: list[RunGroup]
+            Information to facilitate the execution of child runs.
+        rules: list[EvaluationRule]
+            Information to facilitate the selection of
+            a result for the ensemble run from child runs.
+        name: Optional[str]
+            Name of the ensemble definition.
+        description: Optional[str]
+            Description of the ensemble definition.
+        """
+
+        if name is None:
+            name = id
+        if description is None:
+            description = name
+
+        payload = {
+            "id": id,
+            "run_groups": [run_group.to_dict() for run_group in run_groups],
+            "rules": [rule.to_dict() for rule in rules],
+            "name": name,
+            "description": description,
+        }
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.ensembles_endpoint}",
+            payload=payload,
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
 
     def new_input_set(
         self,
@@ -2236,13 +2378,14 @@ class Application:
 
         if id is None:
             id = safe_id(prefix="version")
+        if name is None:
+            name = id
 
         payload = {
             "id": id,
+            "name": name,
         }
 
-        if name is not None:
-            payload["name"] = name
         if description is not None:
             payload["description"] = description
 
@@ -2934,6 +3077,98 @@ class Application:
             output_dir_path=output_dir_path,
         )
 
+    def update_batch_experiment(
+        self,
+        batch_experiment_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> BatchExperimentInformation:
+        """
+        Update a batch experiment.
+
+        Parameters
+        ----------
+        batch_experiment_id : str
+            ID of the batch experiment to update.
+        name : Optional[str], default=None
+            Optional name of the batch experiment.
+        description : Optional[str], default=None
+            Optional description of the batch experiment.
+
+        Returns
+        -------
+        BatchExperimentInformation
+            The information with the updated batch experiment.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.experiments_endpoint}/batch/{batch_experiment_id}",
+            payload=payload,
+        )
+
+        return BatchExperimentInformation.from_dict(response.json())
+
+    def update_ensemble_definition(
+        self,
+        id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> EnsembleDefinition:
+        """
+        Update an ensemble definition.
+
+        Parameters
+        ----------
+        id : str
+            ID of the ensemble definition to update.
+        name : Optional[str], default=None
+            Optional name of the ensemble definition.
+        description : Optional[str], default=None
+            Optional description of the ensemble definition.
+
+        Returns
+        -------
+        EnsembleDefinition
+            The updated ensemble definition.
+
+        Raises
+        ------
+        ValueError
+            If neither name nor description is updated
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        payload = {}
+
+        if name is None and description is None:
+            raise ValueError("Must define at least one value among name and description to modify")
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.ensembles_endpoint}/{id}",
+            payload=payload,
+        )
+
+        return EnsembleDefinition.from_dict(response.json())
+
     def update_instance(
         self,
         id: str,
@@ -2996,50 +3231,6 @@ class Application:
         )
 
         return Instance.from_dict(response.json())
-
-    def update_batch_experiment(
-        self,
-        batch_experiment_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-    ) -> BatchExperimentInformation:
-        """
-        Update a batch experiment.
-
-        Parameters
-        ----------
-        batch_experiment_id : str
-            ID of the batch experiment to update.
-        name : Optional[str], default=None
-            Optional name of the batch experiment.
-        description : Optional[str], default=None
-            Optional description of the batch experiment.
-
-        Returns
-        -------
-        BatchExperimentInformation
-            The information with the updated batch experiment.
-
-        Raises
-        ------
-        requests.HTTPError
-            If the response status code is not 2xx.
-        """
-
-        payload = {}
-
-        if name is not None:
-            payload["name"] = name
-        if description is not None:
-            payload["description"] = description
-
-        response = self.client.request(
-            method="PATCH",
-            endpoint=f"{self.experiments_endpoint}/batch/{batch_experiment_id}",
-            payload=payload,
-        )
-
-        return BatchExperimentInformation.from_dict(response.json())
 
     def update_managed_input(
         self,

@@ -47,6 +47,7 @@ from .acceptance_test import MetricParams as MetricParams
 from .acceptance_test import MetricResult as MetricResult
 from .acceptance_test import MetricStatistics as MetricStatistics
 from .acceptance_test import MetricTolerance as MetricTolerance
+from .acceptance_test import MetricToleranceType as MetricToleranceType
 from .acceptance_test import MetricType as MetricType
 from .acceptance_test import ResultStatistics as ResultStatistics
 from .acceptance_test import StatisticType as StatisticType
@@ -63,6 +64,12 @@ from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .batch_experiment import ExperimentStatus as ExperimentStatus
 from .client import Client as Client
 from .client import get_size as get_size
+from .ensemble import EnsembleDefinition as EnsembleDefinition
+from .ensemble import EvaluationRule as EvaluationRule
+from .ensemble import RuleObjective as RuleObjective
+from .ensemble import RuleTolerance as RuleTolerance
+from .ensemble import RuleToleranceType as RuleToleranceType
+from .ensemble import RunGroup as RunGroup
 from .input_set import InputSet as InputSet
 from .input_set import ManagedInput as ManagedInput
 from .instance import Instance as Instance
