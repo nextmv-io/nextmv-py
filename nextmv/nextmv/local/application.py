@@ -1002,21 +1002,6 @@ class Application:
 
             return False
 
-        # Skip runs that don't have the supported type. TODO: delete this when
-        # external runs support CSV_ARCHIVE and MULTI_FILE. Right now,
-        # submitting an external result with a new run is limited to JSON and
-        # TEXT. After this if statement is removed, the rest of the code should
-        # work with CSV_ARCHIVE and MULTI_FILE as well, as using the input dir
-        # path is already considered.
-        if input_type not in {InputFormat.JSON, InputFormat.TEXT}:
-            if verbose:
-                log(
-                    f"   ⏭️  Skipping local run `{run_id}`, unsupported input type: {input_type.value}. "
-                    f"Supported types are: {[InputFormat.JSON.value, InputFormat.TEXT.value]}",
-                )
-
-            return False
-
         # Check that it is a valid run with inputs, outputs, logs, etc.
         if not self.__valid_run_result(run_result, runs_dir, run_id):
             if verbose:

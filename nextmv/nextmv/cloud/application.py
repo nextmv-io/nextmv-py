@@ -46,11 +46,7 @@ from nextmv.cloud.batch_experiment import (
     to_runs,
 )
 from nextmv.cloud.client import Client, get_size
-from nextmv.cloud.ensemble import (
-    EnsembleDefinition,
-    EvaluationRule,
-    RunGroup,
-)
+from nextmv.cloud.ensemble import EnsembleDefinition, EvaluationRule, RunGroup
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
@@ -1883,6 +1879,7 @@ class Application:
         query_params = {}
         if instance_id is not None or self.default_instance_id is not None:
             query_params["instance_id"] = instance_id if instance_id is not None else self.default_instance_id
+
         response = self.client.request(
             method="POST",
             endpoint=f"{self.endpoint}/runs",
