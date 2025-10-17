@@ -325,6 +325,9 @@ class ManifestPython(BaseModel):
     Contains (additional) Python dependencies that will be bundled with the
     app.
     """
+    arch: Optional[str] = None
+    """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
+    "arm64" if not specified."""
     model: Optional[ManifestPythonModel] = None
     """Information about an encoded decision model.
 

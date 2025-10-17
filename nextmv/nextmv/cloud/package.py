@@ -253,6 +253,30 @@ def __install_dependencies(
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
 
+    platform_filter = []
+    if not manifest.python.arch or manifest.python.arch == "arm64":
+        platform_filter.extend(
+            [
+                "--platform=manylinux2014_aarch64",
+                "--platform=manylinux_2_17_aarch64",
+                "--platform=manylinux_2_24_aarch64",
+                "--platform=manylinux_2_28_aarch64",
+                "--platform=linux_aarch64",
+            ]
+        )
+    elif manifest.python.arch == "amd64":
+        platform_filter.extend(
+            [
+                "--platform=manylinux2014_x86_64",
+                "--platform=manylinux_2_17_x86_64",
+                "--platform=manylinux_2_24_x86_64",
+                "--platform=manylinux_2_28_x86_64",
+                "--platform=linux_x86_64",
+            ]
+        )
+    else:
+        raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
+
     py_cmd = __get_python_command()
     dep_dir = os.path.join(".nextmv", "python", "deps")
     command = [
@@ -262,11 +286,6 @@ def __install_dependencies(
         "install",
         "-r",
         pip_requirements,
-        "--platform=manylinux2014_aarch64",
-        "--platform=manylinux_2_17_aarch64",
-        "--platform=manylinux_2_24_aarch64",
-        "--platform=manylinux_2_28_aarch64",
-        "--platform=linux_aarch64",
         "--only-binary=:all:",
         "--python-version=3.11",
         "--implementation=cp",
@@ -277,7 +296,7 @@ def __install_dependencies(
         "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
         "--no-input",
         "--quiet",
-    ]
+    ] + platform_filter
     result = subprocess.run(
         command,
         cwd=app_dir,
