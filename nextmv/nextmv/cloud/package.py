@@ -411,7 +411,7 @@ def __confirm_python_version(output: str) -> None:
 def __confirm_python_bundling_version(version: str) -> None:
     # Only accept versions in the form "major.minor" where both are integers
     re_version = re.compile(r"^(\d+)\.(\d+)$")
-    match = re_version.match(version)
+    match = re_version.fullmatch(version)
     if match:
         major, minor = int(match.group(1)), int(match.group(2))
         if major == 3 and minor >= 9:
