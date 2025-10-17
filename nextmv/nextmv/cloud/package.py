@@ -409,16 +409,13 @@ def __confirm_python_version(output: str) -> None:
 
 
 def __confirm_python_bundling_version(version: str) -> None:
-    re_version = re.compile(r"\d+\.\d+")
-    if re_version.match(version):
-        try:
-            major, minor = map(int, version.split("."))
-        except ValueError:
-            (major,) = map(int, version.split("."))
-
+    # Only accept versions in the form "major.minor" where both are integers
+    re_version = re.compile(r"^(\d+)\.(\d+)$")
+    match = re_version.match(version)
+    if match:
+        major, minor = int(match.group(1)), int(match.group(2))
         if major == 3 and minor >= 9:
             return
-
     raise Exception(f"python version 3.9 or higher is required for bundling, got {version}")
 
 
