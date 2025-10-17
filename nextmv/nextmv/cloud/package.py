@@ -222,7 +222,7 @@ def __handle_python(
     __install_dependencies(manifest, app_dir, temp_dir)
 
 
-def __install_dependencies(
+def __install_dependencies(  # noqa: C901 # complexity
     manifest: Manifest,
     app_dir: str,
     temp_dir: str,
