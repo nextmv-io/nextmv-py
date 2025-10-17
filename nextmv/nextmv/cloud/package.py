@@ -277,26 +277,34 @@ def __install_dependencies(
     else:
         raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
+    version_filter = ["--python-version=3.11"]
+    if manifest.python.version:
+        __confirm_python_bundling_version(manifest.python.version)
+        version_filter = [f"--python-version={manifest.python.version}"]
+
     py_cmd = __get_python_command()
     dep_dir = os.path.join(".nextmv", "python", "deps")
-    command = [
-        py_cmd,
-        "-m",
-        "pip",
-        "install",
-        "-r",
-        pip_requirements,
-        "--only-binary=:all:",
-        "--python-version=3.11",
-        "--implementation=cp",
-        "--upgrade",
-        "--no-warn-conflicts",
-        "--target",
-        os.path.join(temp_dir, dep_dir),
-        "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
-        "--no-input",
-        "--quiet",
-    ] + platform_filter
+    command = (
+        [
+            py_cmd,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            pip_requirements,
+            "--only-binary=:all:",
+            "--implementation=cp",
+            "--upgrade",
+            "--no-warn-conflicts",
+            "--target",
+            os.path.join(temp_dir, dep_dir),
+            "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
+            "--no-input",
+            "--quiet",
+        ]
+        + platform_filter
+        + version_filter
+    )
     result = subprocess.run(
         command,
         cwd=app_dir,
@@ -398,6 +406,20 @@ def __confirm_python_version(output: str) -> None:
             return
 
     raise Exception("python version 3.9 or higher is required")
+
+
+def __confirm_python_bundling_version(version: str) -> None:
+    re_version = re.compile(r"\d+\.\d+")
+    if re_version.match(version):
+        try:
+            major, minor = map(int, version.split("."))
+        except ValueError:
+            (major,) = map(int, version.split("."))
+
+        if major == 3 and minor >= 9:
+            return
+
+    raise Exception(f"python version 3.9 or higher is required for bundling, got {version}")
 
 
 def __compress_tar(source: str, target: str) -> tuple[str, int]:

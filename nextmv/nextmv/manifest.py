@@ -328,6 +328,9 @@ class ManifestPython(BaseModel):
     arch: Optional[str] = None
     """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
     "arm64" if not specified."""
+    version: Optional[str] = None
+    """The Python version this model is meant to run with. Uses "3.11" if not specified.
+    """
     model: Optional[ManifestPythonModel] = None
     """Information about an encoded decision model.
 
