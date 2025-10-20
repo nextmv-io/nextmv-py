@@ -3867,70 +3867,47 @@ class Application:
     def __validate_input_dir_path_and_configuration(
         self,
         input_dir_path: Optional[str],
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
+        configuration: Optional[RunConfiguration],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
         """
+        input_type = self.__get_input_type(configuration)
 
-        if input_dir_path is None or input_dir_path == "":
+        # If no explicit input type is defined, there is nothing to validate.
+        if input_type is None:
             return
 
-        if configuration is None:
+        # Validate that the input directory path is provided when explicitly required.
+        input_type = configuration.format.format_input.input_type
+        dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
+        if input_type in dir_types and not input_dir_path:
             raise ValueError(
-                "If dir_path is provided, a RunConfiguration must also be provided.",
+                f"If RunConfiguration.format.format_input.input_type is set to {input_type}, "
+                "then input_dir_path must be provided.",
             )
 
-        config_format = self.__extract_config_format(configuration)
+    def __get_input_type(config: Union[RunConfiguration, dict[str, Any]]) -> Union[InputFormat, None]:
+        """
+        Auxiliary function to extract the input type from the run configuration.
+        """
 
-        if config_format is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format must also be provided.",
-            )
+        if config is None:
+            return None
 
-        input_type = self.__extract_input_type(config_format)
+        if isinstance(config, dict):
+            try:
+                config = RunConfiguration.from_dict(config)
+            except Exception:
+                return None
 
-        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
-                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
-            )
-
-    def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:
-        """Extract format from configuration, handling both RunConfiguration objects and dicts."""
-        if isinstance(configuration, RunConfiguration):
-            return configuration.format
-
-        if isinstance(configuration, dict):
-            config_format = configuration.get("format")
-            if config_format is not None and isinstance(config_format, dict):
-                return Format.from_dict(config_format) if hasattr(Format, "from_dict") else config_format
-
-            return config_format
-
-        raise ValueError("Configuration must be a RunConfiguration object or a dict.")
-
-    def __extract_input_type(self, config_format: Any) -> Any:
-        """Extract input type from config format."""
-        if isinstance(config_format, dict):
-            format_input = config_format.get("format_input") or config_format.get("input")
-            if format_input is None:
-                raise ValueError(
-                    "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
-                )
-
-            if isinstance(format_input, dict):
-                return format_input.get("input_type") or format_input.get("type")
-
-            return getattr(format_input, "input_type", None)
-
-        # Handle Format object
-        if config_format.format_input is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
-            )
-
-        return config_format.format_input.input_type
+        if (
+            isinstance(config, RunConfiguration)
+            and config.format is not None
+            and config.format.format_input is not None
+            and config.format.format_input.input_type is not None
+        ):
+            return config.format.format_input.input_type
 
     def __package_inputs(self, dir_path: str) -> str:
         """
