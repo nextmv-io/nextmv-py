@@ -3887,7 +3887,7 @@ class Application:
                 "then input_dir_path must be provided.",
             )
 
-    def __get_input_type(config: Union[RunConfiguration, dict[str, Any]]) -> Union[InputFormat, None]:
+    def __get_input_type(self, config: Union[RunConfiguration, dict[str, Any]]) -> Union[InputFormat, None]:
         """
         Auxiliary function to extract the input type from the run configuration.
         """
