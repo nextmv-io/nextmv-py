@@ -1101,7 +1101,15 @@ class Application:
             return False
 
         # Validate outputs
-        if not self.__validate_outputs(run_dir, run_result.metadata.format.format_output.output_type):
+        format_output = run_result.metadata.format.format_output
+        if format_output is None or not format_output:
+            return False
+
+        output_type = format_output.output_type
+        if output_type is None or output_type == "":
+            return False
+
+        if not self.__validate_outputs(run_dir, output_type):
             return False
 
         # Validate logs

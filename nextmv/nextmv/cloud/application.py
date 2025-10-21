@@ -187,17 +187,20 @@ class Application:
         >>> app = Application.new(client=client, name="My New App", id="my-app")
         """
 
+        if id is None:
+            id = safe_id("app")
+
         if exist_ok and cls.exists(client=client, id=id):
             return Application(client=client, id=id)
 
         payload = {
             "name": name,
+            "id": id,
         }
 
         if description is not None:
             payload["description"] = description
-        if id is not None:
-            payload["id"] = id
+
         if is_workflow is not None:
             payload["is_pipeline"] = is_workflow
 
