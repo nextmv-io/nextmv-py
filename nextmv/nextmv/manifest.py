@@ -166,6 +166,10 @@ class ManifestRuntime(str, Enum):
     Based on the python runtime, it provisions (pre-installs) the Hexaly solver
     to run Python applications.
     """
+    CUOPT = "ghcr.io/nextmv-io/runtime/cuopt:latest"
+    """
+    A runtime providing the NVIDIA cuOpt solver.
+    """
 
 
 class ManifestBuild(BaseModel):
