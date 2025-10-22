@@ -172,6 +172,39 @@ class ManifestRuntime(str, Enum):
     """
 
 
+class ManifestPythonArch(str, Enum):
+    """
+    Target architecture for bundling Python apps.
+
+    You can import the `ManifestPythonArch` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestPythonArch
+    ```
+
+    Attributes
+    ----------
+    ARM64 : str
+        ARM 64-bit architecture.
+    AMD64 : str
+        AMD 64-bit architecture.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestPythonArch
+    >>> arch = ManifestPythonArch.ARM64
+    >>> arch
+    <ManifestPythonArch.ARM64: 'arm64'>
+    >>> str(arch)
+    'arm64'
+    """
+
+    ARM64 = "arm64"
+    """ARM 64-bit architecture."""
+    AMD64 = "amd64"
+    """AMD 64-bit architecture."""
+
+
 class ManifestBuild(BaseModel):
     """
     Build-specific attributes.
@@ -329,7 +362,7 @@ class ManifestPython(BaseModel):
     Contains (additional) Python dependencies that will be bundled with the
     app.
     """
-    arch: Optional[str] = None
+    arch: Optional[ManifestPythonArch] = None
     """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
     "arm64" if not specified."""
     version: Optional[Union[str, float]] = None
