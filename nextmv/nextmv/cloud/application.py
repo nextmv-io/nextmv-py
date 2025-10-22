@@ -3879,7 +3879,6 @@ class Application:
             return
 
         # Validate that the input directory path is provided when explicitly required.
-        input_type = configuration.format.format_input.input_type
         dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
         if input_type in dir_types and not input_dir_path:
             raise ValueError(
