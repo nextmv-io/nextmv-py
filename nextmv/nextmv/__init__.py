@@ -21,6 +21,7 @@ from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestPython as ManifestPython
+from .manifest import ManifestPythonArch as ManifestPythonArch
 from .manifest import ManifestPythonModel as ManifestPythonModel
 from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
