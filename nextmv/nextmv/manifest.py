@@ -49,7 +49,7 @@ from enum import Enum
 from typing import Any, Optional, Union
 
 import yaml
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.base_model import BaseModel
 from nextmv.input import InputFormat
@@ -332,7 +332,7 @@ class ManifestPython(BaseModel):
     arch: Optional[str] = None
     """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
     "arm64" if not specified."""
-    version: Optional[str] = None
+    version: Optional[Union[str, float]] = None
     """The Python version this model is meant to run with. Uses "3.11" if not specified.
     """
     model: Optional[ManifestPythonModel] = None
@@ -341,6 +341,17 @@ class ManifestPython(BaseModel):
     As handled via mlflow. This information is used to load the decision model
     from the app bundle.
     """
+
+    @field_validator("version", mode="before")
+    @classmethod
+    def validate_version(cls, v: Optional[Union[str, float]]) -> Optional[str]:
+        # We allow the version to be a float in the manifest for convenience, but we want
+        # to store it as a string internally.
+        if v is None:
+            return None
+        if isinstance(v, float):
+            return str(v)
+        return v
 
 
 class ManifestOptionUI(BaseModel):
@@ -1035,7 +1046,12 @@ class Manifest(BaseModel):
 
     def model_post_init(self, __context) -> None:
         if self.entrypoint is None:
-            if self.runtime in (ManifestRuntime.PYTHON, ManifestRuntime.HEXALY, ManifestRuntime.PYOMO):
+            if self.runtime in (
+                ManifestRuntime.PYTHON,
+                ManifestRuntime.HEXALY,
+                ManifestRuntime.PYOMO,
+                ManifestRuntime.CUOPT,
+            ):
                 self.entrypoint = "./main.py"
             elif self.runtime == ManifestRuntime.DEFAULT:
                 self.entrypoint = "./main"
