@@ -3867,7 +3867,7 @@ class Application:
     def __validate_input_dir_path_and_configuration(
         self,
         input_dir_path: Optional[str],
-        configuration: Optional[RunConfiguration],
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
     ) -> None:
         """
         Auxiliary function to validate the directory path and configuration.
