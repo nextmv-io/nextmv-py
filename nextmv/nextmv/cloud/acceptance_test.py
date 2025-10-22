@@ -256,16 +256,25 @@ class ToleranceType(str, Enum):
     """ToleranceType is deprecated, please use MetricToleranceType instead.
     Relative tolerance type."""
 
-    def __new__(cls, value: str):
-        """Create a new ToleranceType instance and emit deprecation warning."""
+
+# Override __getattribute__ to emit deprecation warnings when enum values are accessed
+_original_getattribute = ToleranceType.__class__.__getattribute__
+
+
+def _deprecated_getattribute(cls, name: str):
+    # Only emit deprecation warning if this is specifically the ToleranceType class
+    if cls is ToleranceType and name in ("undefined", "absolute", "relative"):
         deprecated(
-            "ToleranceType",
+            f"ToleranceType.{name}",
             "ToleranceType is deprecated and will be removed in a future version. "
             "Please use MetricToleranceType instead",
         )
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        return obj
+
+    return _original_getattribute(cls, name)
+
+
+ToleranceType.__class__.__getattribute__ = _deprecated_getattribute
+
 
 class MetricToleranceType(str, Enum):
     """
@@ -303,6 +312,7 @@ class MetricToleranceType(str, Enum):
     """Absolute tolerance type."""
     relative = "relative"
     """Relative tolerance type."""
+
 
 class MetricTolerance(BaseModel):
     """

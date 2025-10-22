@@ -46,11 +46,7 @@ from nextmv.cloud.batch_experiment import (
     to_runs,
 )
 from nextmv.cloud.client import Client, get_size
-from nextmv.cloud.ensemble import (
-    EnsembleDefinition,
-    EvaluationRule,
-    RunGroup,
-)
+from nextmv.cloud.ensemble import EnsembleDefinition, EvaluationRule, RunGroup
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.instance import Instance, InstanceConfiguration
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
