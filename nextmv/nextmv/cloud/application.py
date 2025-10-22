@@ -3909,6 +3909,8 @@ class Application:
         ):
             return config.format.format_input.input_type
 
+        return None
+
     def __package_inputs(self, dir_path: str) -> str:
         """
         This is an auxiliary function for packaging the inputs found in the
