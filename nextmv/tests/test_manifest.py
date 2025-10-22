@@ -10,6 +10,7 @@ from nextmv.manifest import (
     ManifestOptions,
     ManifestOptionUI,
     ManifestPython,
+    ManifestPythonArch,
     ManifestRuntime,
     ManifestType,
     ManifestValidation,
@@ -100,6 +101,8 @@ class TestManifest(unittest.TestCase):
     def test_manifest_python_from_dict(self):
         manifest_python_dict = {
             "pip-requirements": "foo_requirements.txt",
+            "version": 3.11,
+            "arch": "amd64",
             "model": {
                 "name": "foo_model",
             },
@@ -108,6 +111,8 @@ class TestManifest(unittest.TestCase):
         manifest_python = ManifestPython.from_dict(manifest_python_dict)
 
         self.assertEqual(manifest_python.pip_requirements, "foo_requirements.txt")
+        self.assertEqual(manifest_python.version, "3.11")
+        self.assertEqual(manifest_python.arch, ManifestPythonArch.AMD64)
         self.assertEqual(manifest_python.model.name, "foo_model")
 
     def test_manifest_python_direct_instantiation(self):
