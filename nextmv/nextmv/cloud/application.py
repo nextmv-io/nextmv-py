@@ -3895,10 +3895,7 @@ class Application:
             return None
 
         if isinstance(config, dict):
-            try:
-                config = RunConfiguration.from_dict(config)
-            except Exception:
-                return None
+            config = RunConfiguration.from_dict(config)
 
         if (
             isinstance(config, RunConfiguration)
