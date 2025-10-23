@@ -687,6 +687,56 @@ class Metadata(BaseModel):
     """Deprecated: use status_v2."""
 
 
+class SyncedRun(BaseModel):
+    """
+    Information about a run that has been synced to a remote application.
+
+    You can import the `SyncedRun` class directly from `nextmv`:
+
+    ```python
+    from nextmv import SyncedRun
+    ```
+
+    Parameters
+    ----------
+    run_id : str
+        ID of the synced remote run. When the `Application.sync` method is
+        used, this field marks the association between the local run (`id`) and
+        the remote run (`synced_run.id`).
+    synced_at : datetime
+        Timestamp when the run was synced with the remote run.
+    app_id : str
+        The ID of the remote application that the local run was synced to.
+    instance_id : Optional[str], optional
+        The instance of the remote application that the local run was synced
+        to. This field is optional and may be None. If it is not specified, it
+        indicates that the run was synced against the default instance of the
+        app. Defaults to None.
+    """
+
+    run_id: str
+    """
+    ID of the synced remote run. When the `Application.sync` method is used,
+    this field marks the association between the local run (`id`) and the
+    remote run (`synced_run.id`)
+    """
+    synced_at: datetime
+    """
+    Timestamp when the run was synced with the remote run.
+    """
+    app_id: str
+    """
+    The ID of the remote application that the local run was synced to.
+    """
+
+    instance_id: Optional[str] = None
+    """
+    The instance of the remote application that the local run was synced to.
+    This field is optional and may be None. If it is not specified, it
+    indicates that the run was synced against the default instance of the app.
+    """
+
+
 class RunInformation(BaseModel):
     """
     Information of a run.
@@ -727,19 +777,18 @@ class RunInformation(BaseModel):
     """
     URL to the run in the Nextmv console.
     """
-    synced_run_id: Optional[str] = None
+    synced_runs: Optional[list[SyncedRun]] = None
     """
-    ID of the synced remote run, if applicable. When the `Application.sync`
-    method is used, this field marks the association between the local run
-    (`id`) and the remote run (`synced_run_id`). This field is None if the run
-    was not created using `Application.sync` or if the run has not been synced
-    yet.
-    """
-    synced_at: Optional[datetime] = None
-    """
-    Timestamp when the run was synced with the remote run. This field is
-    None if the run was not created using `Application.sync` or if the run
-    has not been synced yet.
+    List of synced runs associated with this run, if applicable. When the
+    `Application.sync` method is used, this field contains the associations
+    between the local run (`id`) and the remote runs (`synced_run.id`). This
+    field is None if the run was not created using `Application.sync` or if the
+    run has not been synced yet. It is possible to sync a single local run to
+    multiple remote runs. A remote run is identified by its application ID and
+    instance (if applicable). A local run cannot be synced to a remote run if
+    it is already present, this is, if there exists a record in the list with
+    the same application ID and instance. If there is not a repeated remote
+    run, a new record is added to the list.
     """
 
     def to_run(self) -> Run:
@@ -816,6 +865,83 @@ class RunInformation(BaseModel):
             repetition=None,
             input_set_id=None,
         )
+
+    def add_synced_run(self, synced_run: SyncedRun) -> bool:
+        """
+        Add a synced run to the RunInformation.
+
+        This method adds a `SyncedRun` instance to the list of synced runs
+        associated with this `RunInformation`. If the list is None, it
+        initializes it first. If the run has already been synced, then it is
+        not added to the list. A run is already synced if there exists a record
+        in the list with the same application ID. This method returns True if
+        the synced run was added, and False otherwise.
+
+        Parameters
+        ----------
+        synced_run : SyncedRun
+            The SyncedRun instance to add.
+
+        Returns
+        -------
+        bool
+            True if the synced run was added, False if it was already present.
+        """
+
+        if self.synced_runs is None:
+            self.synced_runs = [synced_run]
+
+            return True
+
+        if synced_run.instance_id is None:
+            for existing_run in self.synced_runs:
+                if existing_run.app_id == synced_run.app_id:
+                    return False
+        else:
+            for existing_run in self.synced_runs:
+                if existing_run.app_id == synced_run.app_id and existing_run.instance_id == synced_run.instance_id:
+                    return False
+
+        self.synced_runs.append(synced_run)
+
+        return True
+
+    def is_synced(self, app_id: str, instance_id: Optional[str] = None) -> tuple[SyncedRun, bool]:
+        """
+        Check if the run has been synced to a specific application and instance.
+
+        This method checks if there exists a `SyncedRun` in the list of synced
+        runs that matches the given application ID and optional instance ID.
+
+        Parameters
+        ----------
+        app_id : str
+            The application ID to check.
+        instance_id : Optional[str], optional
+            The instance ID to check. If None, only the application ID is
+            considered. Defaults to None.
+
+        Returns
+        -------
+        tuple[SyncedRun, bool]
+            A tuple containing the SyncedRun instance if found, and a boolean
+            indicating whether the run has been synced to the specified
+            application and instance.
+        """
+
+        if self.synced_runs is None:
+            return None, False
+
+        if instance_id is None:
+            for existing_run in self.synced_runs:
+                if existing_run.app_id == app_id:
+                    return existing_run, True
+        else:
+            for existing_run in self.synced_runs:
+                if existing_run.app_id == app_id and existing_run.instance_id == instance_id:
+                    return existing_run, True
+
+        return None, False
 
 
 class ErrorLog(BaseModel):

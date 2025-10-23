@@ -3020,8 +3020,6 @@ class Application:
             url_stats = self.upload_url()
             self.upload_large_input(input=stats_dict, upload_url=url_stats)
             external_result.statistics_upload_id = url_stats.upload_id
-        else:
-            external_result.statistics_upload_id = ""
 
         # Handle the assets upload if provided.
         assets = tracked_run.assets
@@ -3046,8 +3044,6 @@ class Application:
             url_assets = self.upload_url()
             self.upload_large_input(input=assets_dict, upload_url=url_assets)
             external_result.assets_upload_id = url_assets.upload_id
-        else:
-            external_result.assets_upload_id = ""
 
         return self.new_run(
             upload_id=url_input.upload_id,

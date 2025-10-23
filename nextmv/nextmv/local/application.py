@@ -37,7 +37,17 @@ from nextmv.manifest import Manifest
 from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
-from nextmv.run import ErrorLog, Format, Run, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
+from nextmv.run import (
+    ErrorLog,
+    Format,
+    Run,
+    RunConfiguration,
+    RunInformation,
+    RunResult,
+    SyncedRun,
+    TrackedRun,
+    TrackedRunStatus,
+)
 from nextmv.safe import safe_id
 from nextmv.status import StatusV2
 
@@ -995,10 +1005,10 @@ class Application:
         input_type = run_result.metadata.format.format_input.input_type
 
         # Skip runs that have already been synced.
-        already_synced = run_result.synced_run_id is not None and run_result.synced_at is not None
+        synced_run, already_synced = run_result.is_synced(app_id=target.id, instance_id=instance_id)
         if already_synced:
             if verbose:
-                log(f"   ⏭️  Skipping local run `{run_id}`, already synced at {run_result.synced_at.isoformat()}.")
+                log(f"   ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
 
             return False
 
@@ -1076,13 +1086,18 @@ class Application:
         )
 
         # Mark the local run as synced by updating the local run info.
-        run_result.synced_run_id = tracked_id
-        run_result.synced_at = datetime.now(timezone.utc)
+        synced_run = SyncedRun(
+            run_id=tracked_id,
+            synced_at=datetime.now(timezone.utc),
+            app_id=target.id,
+            instance_id=instance_id,
+        )
+        run_result.add_synced_run(synced_run)
         with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
             json.dump(run_result.to_dict(), f, indent=2)
 
         if verbose:
-            log(f"✅ Synced local run `{run_id}` as remote run `{tracked_id}`.")
+            log(f"✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
 
         return True
 
