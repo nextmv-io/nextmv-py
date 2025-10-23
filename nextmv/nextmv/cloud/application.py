@@ -1823,8 +1823,6 @@ class Application:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
-        self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
-
         tar_file = ""
         if input_dir_path is not None and input_dir_path != "":
             if not os.path.exists(input_dir_path):
@@ -3022,6 +3020,8 @@ class Application:
             url_stats = self.upload_url()
             self.upload_large_input(input=stats_dict, upload_url=url_stats)
             external_result.statistics_upload_id = url_stats.upload_id
+        else:
+            external_result.statistics_upload_id = ""
 
         # Handle the assets upload if provided.
         assets = tracked_run.assets
@@ -3046,6 +3046,8 @@ class Application:
             url_assets = self.upload_url()
             self.upload_large_input(input=assets_dict, upload_url=url_assets)
             external_result.assets_upload_id = url_assets.upload_id
+        else:
+            external_result.assets_upload_id = ""
 
         return self.new_run(
             upload_id=url_input.upload_id,
@@ -3905,49 +3907,6 @@ class Application:
             return input_set
 
         raise ValueError(f"Unknown scenario input type: {scenario.scenario_input.scenario_input_type}")
-
-    def __validate_input_dir_path_and_configuration(
-        self,
-        input_dir_path: Optional[str],
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
-    ) -> None:
-        """
-        Auxiliary function to validate the directory path and configuration.
-        """
-        input_type = self.__get_input_type(configuration)
-
-        # If no explicit input type is defined, there is nothing to validate.
-        if input_type is None:
-            return
-
-        # Validate that the input directory path is provided when explicitly required.
-        dir_types = (InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE)
-        if input_type in dir_types and not input_dir_path:
-            raise ValueError(
-                f"If RunConfiguration.format.format_input.input_type is set to {input_type}, "
-                "then input_dir_path must be provided.",
-            )
-
-    def __get_input_type(self, config: Union[RunConfiguration, dict[str, Any]]) -> Optional[InputFormat]:
-        """
-        Auxiliary function to extract the input type from the run configuration.
-        """
-
-        if config is None:
-            return None
-
-        if isinstance(config, dict):
-            config = RunConfiguration.from_dict(config)
-
-        if (
-            isinstance(config, RunConfiguration)
-            and config.format is not None
-            and config.format.format_input is not None
-            and config.format.format_input.input_type is not None
-        ):
-            return config.format.format_input.input_type
-
-        return None
 
     def __package_inputs(self, dir_path: str) -> str:
         """
