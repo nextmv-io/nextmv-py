@@ -52,7 +52,7 @@ from pydantic import AliasChoices, Field, field_validator
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.input import Input, InputFormat
-from nextmv.output import Output, OutputFormat
+from nextmv.output import Asset, Output, OutputFormat, Statistics
 from nextmv.status import Status, StatusV2
 
 
@@ -1154,6 +1154,16 @@ class ExternalRunResult(BaseModel):
     """Error message of the run."""
     execution_duration: Optional[int] = None
     """Duration of the run, in milliseconds."""
+    statistics_upload_id: Optional[str] = None
+    """
+    ID of the statistics upload. Use this field when working with `CSV_ARCHIVE`
+    or `MULTI_FILE` output formats.
+    """
+    assets_upload_id: Optional[str] = None
+    """
+    ID of the assets upload. Use this field when working with `CSV_ARCHIVE`
+    or `MULTI_FILE` output formats.
+    """
 
     def __post_init_post_parse__(self):
         """
@@ -1265,6 +1275,18 @@ class TrackedRun:
         when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `output` and
         `output_dir_path` are specified, the `output` is ignored, and the files
         are saved in the directory instead. Defaults to None.
+    statistics : Statistics or dict[str, Any], optional
+        Statistics of the run being tracked. Only use this field if you want to
+        track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+        are working with `JSON` or `TEXT` output formats, this field will be
+        ignored, as the statistics are extracted directly from the `output`.
+        This field is optional. Defaults to None.
+    assets : list[Asset or dict[str, Any]], optional
+        Assets associated with the run being tracked. Only use this field if you
+        want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output formats.
+        If you are working with `JSON` or `TEXT` output formats, this field will
+        be ignored, as the assets are extracted directly from the `output`.
+        This field is optional. Defaults to None.
 
     Examples
     --------
@@ -1364,6 +1386,20 @@ class TrackedRun:
     when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `output` and
     `output_dir_path` are specified, the `output` is ignored, and the files
     are saved in the directory instead.
+    """
+    statistics: Optional[Union[Statistics, dict[str, Any]]] = None
+    """
+    Statistics of the run being tracked. Only use this field if you want to
+    track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+    are working with `JSON` or `TEXT` output formats, this field will be
+    ignored, as the statistics are extracted directly from the `output`.
+    """
+    assets: Optional[list[Union[Asset, dict[str, Any]]]] = None
+    """
+    Assets associated with the run being tracked. Only use this field if you
+    want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output formats.
+    If you are working with `JSON` or `TEXT` output formats, this field will
+    be ignored, as the assets are extracted directly from the `output`.
     """
 
     def __post_init__(self):  # noqa: C901

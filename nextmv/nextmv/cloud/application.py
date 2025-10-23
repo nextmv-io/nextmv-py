@@ -58,7 +58,7 @@ from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.model import Model, ModelConfiguration
 from nextmv.options import Options
-from nextmv.output import Output, OutputFormat
+from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
@@ -1793,7 +1793,7 @@ class Application:
             when the run is part of a batch experiment.
         external_result: Optional[Union[ExternalRunResult, dict[str, Any]]]
             External result to use for the run. This can be a
-            `cloud.ExternalRunResult` object or a dict. If the object is used,
+            `nextmv.ExternalRunResult` object or a dict. If the object is used,
             then the `.to_dict()` method is applied to extract the
             configuration. This is used when the run is an external run. We
             suggest that instead of specifying this parameter, you use the
@@ -2997,6 +2997,7 @@ class Application:
             execution_duration=tracked_run.duration,
         )
 
+        # Handle the stderr logs if provided.
         if tracked_run.logs is not None:
             url_stderr = self.upload_url()
             self.upload_large_input(input=tracked_run.logs_text(), upload_url=url_stderr)
@@ -3004,6 +3005,47 @@ class Application:
 
         if tracked_run.error is not None and tracked_run.error != "":
             external_result.error_message = tracked_run.error
+
+        # Handle the statistics upload if provided.
+        stats = tracked_run.statistics
+        if stats is not None:
+            if isinstance(stats, Statistics):
+                stats_dict = stats.to_dict()
+                stats_dict = {STATISTICS_KEY: stats_dict}
+            elif isinstance(stats, dict):
+                stats_dict = stats
+                if STATISTICS_KEY not in stats_dict:
+                    stats_dict = {STATISTICS_KEY: stats_dict}
+            else:
+                raise ValueError("tracked_run.statistics must be either a `Statistics` or `dict` object")
+
+            url_stats = self.upload_url()
+            self.upload_large_input(input=stats_dict, upload_url=url_stats)
+            external_result.statistics_upload_id = url_stats.upload_id
+
+        # Handle the assets upload if provided.
+        assets = tracked_run.assets
+        if assets is not None:
+            if isinstance(assets, list):
+                assets_list = []
+                for ix, asset in enumerate(assets):
+                    if isinstance(asset, Asset):
+                        assets_list.append(asset.to_dict())
+                    elif isinstance(asset, dict):
+                        assets_list.append(asset)
+                    else:
+                        raise ValueError(f"tracked_run.assets, index {ix} must be an `Asset` or `dict` object")
+                assets_dict = {ASSETS_KEY: assets_list}
+            elif isinstance(assets, dict):
+                assets_dict = assets
+                if ASSETS_KEY not in assets_dict:
+                    assets_dict = {ASSETS_KEY: assets_dict}
+            else:
+                raise ValueError("tracked_run.assets must be either a `list[Asset]`, `list[dict]`, or `dict` object")
+
+            url_assets = self.upload_url()
+            self.upload_large_input(input=assets_dict, upload_url=url_assets)
+            external_result.assets_upload_id = url_assets.upload_id
 
         return self.new_run(
             upload_id=url_input.upload_id,

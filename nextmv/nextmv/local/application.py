@@ -35,7 +35,7 @@ from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.options import Options
-from nextmv.output import OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
+from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import ErrorLog, Format, Run, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
 from nextmv.safe import safe_id
@@ -1040,10 +1040,27 @@ class Application:
             tracked_run.input_dir_path = inputs_path
 
         # Resolve the output according to its type.
-        if run_result.metadata.format.format_output.output_type == OutputFormat.JSON:
+        output_type = run_result.metadata.format.format_output.output_type
+        if output_type == OutputFormat.JSON:
             tracked_run.output = run_result.output
         else:
             tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
+
+        # Resolve the statistics according to their type and presence. If
+        # working with JSON, the statistics should be resolved from the output.
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            stats_file_path = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
+            if os.path.exists(stats_file_path):
+                with open(stats_file_path) as f:
+                    tracked_run.statistics = json.load(f)
+
+        # Resolve the assets according to their type and presence. If working
+        # with JSON, the assets should be resolved from the output.
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            assets_file_path = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
+            if os.path.exists(assets_file_path):
+                with open(assets_file_path) as f:
+                    tracked_run.assets = json.load(f)
 
         # Actually sync the run by tracking it remotely on Nextmv Cloud.
         configuration = RunConfiguration(
