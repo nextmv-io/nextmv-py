@@ -1026,7 +1026,7 @@ class Application:
         # Read the logs of the run and place each line as an element in a list
         run_dir = os.path.join(runs_dir, run_id)
         with open(os.path.join(run_dir, LOGS_KEY, LOGS_FILE)) as f:
-            stderr_logs = f.readlines()
+            stderr_logs = [line.rstrip("\n") for line in f.readlines()]
 
         # Create the tracked run object and start configuring it.
         tracked_run = TrackedRun(
