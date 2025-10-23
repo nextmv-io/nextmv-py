@@ -5,6 +5,7 @@ Unit tests for the nextmv.local.executor module.
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -597,7 +598,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Verify subprocess.run was called
         mock_subprocess_run.assert_called_once()
         call_args = mock_subprocess_run.call_args
-        self.assertEqual(call_args[0][0][:2], ["python", os.path.join(temp_src, "main.py")])
+        self.assertEqual(call_args[0][0][:2], [sys.executable, os.path.join(temp_src, "main.py")])
         self.assertIn("-duration", call_args[0][0])
         self.assertIn("10s", call_args[0][0])
 

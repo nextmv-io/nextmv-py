@@ -32,6 +32,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from datetime import datetime, timezone
 from typing import Any, Optional, Union
@@ -143,7 +144,7 @@ def execute_run(
             # supporting a Python-first experience, so we are not summoning
             # applications that are not Python-based.
             entrypoint = os.path.join(temp_src, manifest.entrypoint)
-            args = ["python", entrypoint] + options_args(options)
+            args = [sys.executable, entrypoint] + options_args(options)
 
             result = subprocess.run(
                 args,

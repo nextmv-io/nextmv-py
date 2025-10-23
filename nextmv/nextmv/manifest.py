@@ -49,7 +49,7 @@ from enum import Enum
 from typing import Any, Optional, Union
 
 import yaml
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.base_model import BaseModel
 from nextmv.input import InputFormat
@@ -166,6 +166,43 @@ class ManifestRuntime(str, Enum):
     Based on the python runtime, it provisions (pre-installs) the Hexaly solver
     to run Python applications.
     """
+    CUOPT = "ghcr.io/nextmv-io/runtime/cuopt:latest"
+    """
+    A runtime providing the NVIDIA cuOpt solver.
+    """
+
+
+class ManifestPythonArch(str, Enum):
+    """
+    Target architecture for bundling Python apps.
+
+    You can import the `ManifestPythonArch` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestPythonArch
+    ```
+
+    Attributes
+    ----------
+    ARM64 : str
+        ARM 64-bit architecture.
+    AMD64 : str
+        AMD 64-bit architecture.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestPythonArch
+    >>> arch = ManifestPythonArch.ARM64
+    >>> arch
+    <ManifestPythonArch.ARM64: 'arm64'>
+    >>> str(arch)
+    'arm64'
+    """
+
+    ARM64 = "arm64"
+    """ARM 64-bit architecture."""
+    AMD64 = "amd64"
+    """AMD 64-bit architecture."""
 
 
 class ManifestBuild(BaseModel):
@@ -325,12 +362,29 @@ class ManifestPython(BaseModel):
     Contains (additional) Python dependencies that will be bundled with the
     app.
     """
+    arch: Optional[ManifestPythonArch] = None
+    """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
+    "arm64" if not specified."""
+    version: Optional[Union[str, float]] = None
+    """The Python version this model is meant to run with. Uses "3.11" if not specified.
+    """
     model: Optional[ManifestPythonModel] = None
     """Information about an encoded decision model.
 
     As handled via mlflow. This information is used to load the decision model
     from the app bundle.
     """
+
+    @field_validator("version", mode="before")
+    @classmethod
+    def validate_version(cls, v: Optional[Union[str, float]]) -> Optional[str]:
+        # We allow the version to be a float in the manifest for convenience, but we want
+        # to store it as a string internally.
+        if v is None:
+            return None
+        if isinstance(v, float):
+            return str(v)
+        return v
 
 
 class ManifestOptionUI(BaseModel):
@@ -1025,7 +1079,12 @@ class Manifest(BaseModel):
 
     def model_post_init(self, __context) -> None:
         if self.entrypoint is None:
-            if self.runtime in (ManifestRuntime.PYTHON, ManifestRuntime.HEXALY, ManifestRuntime.PYOMO):
+            if self.runtime in (
+                ManifestRuntime.PYTHON,
+                ManifestRuntime.HEXALY,
+                ManifestRuntime.PYOMO,
+                ManifestRuntime.CUOPT,
+            ):
                 self.entrypoint = "./main.py"
             elif self.runtime == ManifestRuntime.DEFAULT:
                 self.entrypoint = "./main"

@@ -222,7 +222,7 @@ def __handle_python(
     __install_dependencies(manifest, app_dir, temp_dir)
 
 
-def __install_dependencies(
+def __install_dependencies(  # noqa: C901 # complexity
     manifest: Manifest,
     app_dir: str,
     temp_dir: str,
@@ -253,31 +253,58 @@ def __install_dependencies(
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
 
+    platform_filter = []
+    if not manifest.python.arch or manifest.python.arch == "arm64":
+        platform_filter.extend(
+            [
+                "--platform=manylinux2014_aarch64",
+                "--platform=manylinux_2_17_aarch64",
+                "--platform=manylinux_2_24_aarch64",
+                "--platform=manylinux_2_28_aarch64",
+                "--platform=linux_aarch64",
+            ]
+        )
+    elif manifest.python.arch == "amd64":
+        platform_filter.extend(
+            [
+                "--platform=manylinux2014_x86_64",
+                "--platform=manylinux_2_17_x86_64",
+                "--platform=manylinux_2_24_x86_64",
+                "--platform=manylinux_2_28_x86_64",
+                "--platform=linux_x86_64",
+            ]
+        )
+    else:
+        raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
+
+    version_filter = ["--python-version=3.11"]
+    if manifest.python.version:
+        __confirm_python_bundling_version(manifest.python.version)
+        version_filter = [f"--python-version={manifest.python.version}"]
+
     py_cmd = __get_python_command()
     dep_dir = os.path.join(".nextmv", "python", "deps")
-    command = [
-        py_cmd,
-        "-m",
-        "pip",
-        "install",
-        "-r",
-        pip_requirements,
-        "--platform=manylinux2014_aarch64",
-        "--platform=manylinux_2_17_aarch64",
-        "--platform=manylinux_2_24_aarch64",
-        "--platform=manylinux_2_28_aarch64",
-        "--platform=linux_aarch64",
-        "--only-binary=:all:",
-        "--python-version=3.11",
-        "--implementation=cp",
-        "--upgrade",
-        "--no-warn-conflicts",
-        "--target",
-        os.path.join(temp_dir, dep_dir),
-        "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
-        "--no-input",
-        "--quiet",
-    ]
+    command = (
+        [
+            py_cmd,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            pip_requirements,
+            "--only-binary=:all:",
+            "--implementation=cp",
+            "--upgrade",
+            "--no-warn-conflicts",
+            "--target",
+            os.path.join(temp_dir, dep_dir),
+            "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
+            "--no-input",
+            "--quiet",
+        ]
+        + platform_filter
+        + version_filter
+    )
     result = subprocess.run(
         command,
         cwd=app_dir,
@@ -379,6 +406,17 @@ def __confirm_python_version(output: str) -> None:
             return
 
     raise Exception("python version 3.9 or higher is required")
+
+
+def __confirm_python_bundling_version(version: str) -> None:
+    # Only accept versions in the form "major.minor" where both are integers
+    re_version = re.compile(r"^(\d+)\.(\d+)$")
+    match = re_version.fullmatch(version)
+    if match:
+        major, minor = int(match.group(1)), int(match.group(2))
+        if major == 3 and minor >= 9:
+            return
+    raise Exception(f"python version 3.9 or higher is required for bundling, got {version}")
 
 
 def __compress_tar(source: str, target: str) -> tuple[str, int]:
