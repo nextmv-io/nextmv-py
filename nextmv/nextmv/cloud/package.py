@@ -103,6 +103,19 @@ def _run_build_command(
         log(result.stdout)
 
 
+def _get_shell_command_elements(pre_push_command):
+    """Get the shell command elements based on the operating system."""
+    # Check if we're in a Unix-like shell (including MINGW on Windows)
+    if "SHELL" in os.environ or shutil.which("bash"):
+        return ["bash", "-c", pre_push_command]
+    # Default to cmd on Windows
+    elif platform.system() == "Windows":
+        return ["cmd", "/c", pre_push_command]
+    # Default to sh on Unix-like systems (Linux, macOS)
+    else:
+        return ["sh", "-c", pre_push_command]
+
+
 def _run_pre_push_command(
     app_dir: str,
     pre_push_command: Optional[str] = None,
@@ -113,9 +126,7 @@ def _run_pre_push_command(
     if pre_push_command is None or pre_push_command == "":
         return
 
-    elements = ["bash", "-c", pre_push_command]
-    if platform.system() == "Windows":
-        elements = ["cmd", "/c", pre_push_command]
+    elements = _get_shell_command_elements(pre_push_command)
 
     command_str = " ".join(elements)
     log(f'🔨 Running pre-push command: "{command_str}"')

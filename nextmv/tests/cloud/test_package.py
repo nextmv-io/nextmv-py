@@ -1,10 +1,17 @@
 import os
+import platform
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
-from nextmv.cloud.package import _package
+from nextmv.cloud.package import _get_shell_command_elements, _package
 from nextmv.manifest import Manifest, ManifestType
+
+# Add the parent directory to the sys.path to allow imports from the main package. This
+# is meant to help VS Code testing features.
+sys.path.append(os.path.dirname(sys.path[0]))
 
 
 class TestPackageOneFile(unittest.TestCase):
@@ -71,3 +78,11 @@ class TestPackageDir(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             _package(self.app_dir, self.manifest, verbose=False)
         self.assertIn("missing mandatory files", str(context.exception))
+
+    def test_get_shell_command_elements(self):
+        if platform.system() == "Windows":
+            command = _get_shell_command_elements("dir")
+            subprocess.run(command, check=True)
+        else:
+            command = _get_shell_command_elements("ls -la")
+            subprocess.run(command, check=True)
