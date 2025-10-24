@@ -81,8 +81,8 @@ class TestPackageDir(unittest.TestCase):
 
     def test_get_shell_command_elements(self):
         if platform.system() == "Windows":
-            command = _get_shell_command_elements("dir")
+            command = _get_shell_command_elements("echo Hello World")
             subprocess.run(command, check=True)
         else:
-            command = _get_shell_command_elements("ls -la")
+            command = _get_shell_command_elements("echo 'Hello World'")
             subprocess.run(command, check=True)
