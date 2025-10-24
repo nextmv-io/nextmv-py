@@ -2,16 +2,11 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
 
 from nextmv.cloud.package import _get_shell_command_elements, _package
 from nextmv.manifest import Manifest, ManifestType
-
-# Add the parent directory to the sys.path to allow imports from the main package. This
-# is meant to help VS Code testing features.
-sys.path.append(os.path.dirname(sys.path[0]))
 
 
 class TestPackageOneFile(unittest.TestCase):
