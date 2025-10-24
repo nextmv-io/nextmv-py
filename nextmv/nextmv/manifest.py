@@ -1024,17 +1024,28 @@ class Manifest(BaseModel):
     ['main.py', 'model_logic/']
     """
 
-    files: list[str]
-    """The files to include (or exclude) in the app. This is mandatory."""
-
+    type: ManifestType = ManifestType.PYTHON
+    """
+    Type of application, based on the programming language. This is mandatory.
+    """
     runtime: ManifestRuntime = ManifestRuntime.PYTHON
     """
     The runtime to use for the app. It provides the environment in which the
     app runs. This is mandatory.
     """
-    type: ManifestType = ManifestType.PYTHON
+    python: Optional[ManifestPython] = None
     """
-    Type of application, based on the programming language. This is mandatory.
+    Python-specific attributes. Only for Python apps. Contains further
+    Python-specific attributes.
+    """
+    files: list[str] = Field(
+        default_factory=list,
+    )
+    """The files to include (or exclude) in the app. This is mandatory."""
+    configuration: Optional[ManifestConfiguration] = None
+    """
+    Configuration for the decision model. A list of options for the decision
+    model. An option is a parameter that configures the decision model.
     """
     build: Optional[ManifestBuild] = None
     """
@@ -1061,16 +1072,6 @@ class Manifest(BaseModel):
     Windows). The command must exit with a status of 0 to continue the push
     process. This command is executed just before the app gets bundled and
     pushed (after the build command).
-    """
-    python: Optional[ManifestPython] = None
-    """
-    Python-specific attributes. Only for Python apps. Contains further
-    Python-specific attributes.
-    """
-    configuration: Optional[ManifestConfiguration] = None
-    """
-    Configuration for the decision model. A list of options for the decision
-    model. An option is a parameter that configures the decision model.
     """
     entrypoint: Optional[str] = None
     """
@@ -1175,7 +1176,14 @@ class Manifest(BaseModel):
         """
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME), "w") as file:
-            yaml.dump(self.to_dict(), file)
+            yaml.dump(
+                self.to_dict(),
+                file,
+                sort_keys=False,
+                default_flow_style=False,
+                indent=2,
+                width=120,
+            )
 
     def extract_options(self) -> Optional[Options]:
         """
@@ -1376,9 +1384,12 @@ def default_python_manifest() -> Manifest:
         A default Python manifest with common settings.
     """
 
-    return Manifest(
+    m = Manifest(
         files=["main.py"],
         runtime=ManifestRuntime.PYTHON,
         type=ManifestType.PYTHON,
         python=ManifestPython(pip_requirements="requirements.txt"),
     )
+    m.entrypoint = None  # TODO: change this when we are ready for the entrypoint.
+
+    return m
