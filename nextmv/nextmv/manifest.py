@@ -11,6 +11,8 @@ ManifestType
     Enum for application types based on programming language.
 ManifestRuntime
     Enum for runtime environments where apps run on Nextmv.
+ManifestPythonArch
+    Enum for target architecture for bundling Python apps.
 ManifestBuild
     Class for build-specific attributes in the manifest.
 ManifestPythonModel
@@ -37,6 +39,11 @@ ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
     Main class representing an app manifest for Nextmv.
+
+Functions
+---------
+default_python_manifest
+    Creates a default Python manifest as a starting point for applications.
 
 Constants
 --------
@@ -331,7 +338,7 @@ class ManifestPython(BaseModel):
 
     Parameters
     ----------
-    pip_requirements : Optional[str], default=None
+    pip_requirements : Optional[Union[str, list[str]]], default=None
         Path to a requirements.txt file containing (additional) Python
         dependencies that will be bundled with the app. Alternatively, you can provide a
         list of strings, each representing a package to install, e.g.,
@@ -358,10 +365,11 @@ class ManifestPython(BaseModel):
         default=None,
     )
     """
-    Path to a requirements.txt file.
+    Path to a requirements.txt file or list of packages.
 
     Contains (additional) Python dependencies that will be bundled with the
-    app.
+    app. Can be either a string path to a requirements.txt file or a list
+    of package specifications.
     """
     arch: Optional[ManifestPythonArch] = None
     """
@@ -383,6 +391,31 @@ class ManifestPython(BaseModel):
     @field_validator("version", mode="before")
     @classmethod
     def validate_version(cls, v: Optional[Union[str, float]]) -> Optional[str]:
+        """
+        Validate and convert the Python version field to a string.
+
+        This validator allows the version to be specified as either a float or string
+        in the manifest for convenience, but ensures it's stored internally as a string.
+
+        Parameters
+        ----------
+        v : Optional[Union[str, float]]
+            The version value to validate. Can be None, a string, or a float.
+
+        Returns
+        -------
+        Optional[str]
+            The version as a string, or None if the input was None.
+
+        Examples
+        --------
+        >>> ManifestPython.validate_version(3.11)
+        '3.11'
+        >>> ManifestPython.validate_version("3.11")
+        '3.11'
+        >>> ManifestPython.validate_version(None) is None
+        True
+        """
         # We allow the version to be a float in the manifest for convenience, but we want
         # to store it as a string internally.
         if v is None:
@@ -917,7 +950,23 @@ class ManifestContent(BaseModel):
     """Configuration for multi-file content format."""
 
     def model_post_init(self, __context) -> None:
-        """Post-initialization to validate fields."""
+        """
+        Post-initialization validation to ensure format field contains valid values.
+
+        This method is automatically called by Pydantic after the model is initialized
+        to validate that the format field contains one of the acceptable values.
+
+        Parameters
+        ----------
+        __context : Any
+            Pydantic context (unused in this implementation).
+
+        Raises
+        ------
+        ValueError
+            If the format field contains an invalid value that is not one of the
+            acceptable formats (JSON, MULTI_FILE, or CSV_ARCHIVE).
+        """
         acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
@@ -1084,6 +1133,26 @@ class Manifest(BaseModel):
     """
 
     def model_post_init(self, __context) -> None:
+        """
+        Post-initialization to set default entrypoint based on runtime if not specified.
+
+        This method is automatically called by Pydantic after the model is initialized.
+        If no entrypoint is provided, it sets a default entrypoint based on the runtime:
+        - Python runtimes (PYTHON, HEXALY, PYOMO, CUOPT): "./main.py"
+        - DEFAULT runtime: "./main"
+        - JAVA runtime: "./main.jar"
+
+        Parameters
+        ----------
+        __context : Any
+            Pydantic context (unused in this implementation).
+
+        Raises
+        ------
+        ValueError
+            If no entrypoint is provided and the runtime cannot be resolved to
+            establish a default entrypoint.
+        """
         if self.entrypoint is None:
             if self.runtime in (
                 ManifestRuntime.PYTHON,
