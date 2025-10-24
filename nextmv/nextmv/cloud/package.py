@@ -106,7 +106,7 @@ def _run_build_command(
 def _get_shell_command_elements(pre_push_command):
     """Get the shell command elements based on the operating system."""
     # Check if we're in a Unix-like shell (including MINGW on Windows)
-    if "SHELL" in os.environ or shutil.which("bash"):
+    if "SHELL" in os.environ:
         return ["bash", "-c", pre_push_command]
     # Default to cmd on Windows
     elif platform.system() == "Windows":
