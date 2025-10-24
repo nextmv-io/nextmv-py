@@ -988,7 +988,7 @@ def _remove_empty_directories(directory: str) -> None:
 
 def _should_copy_file(src_file: str, dst_file: str) -> bool:
     """
-    Determine if a file should be copied based on existence and content.
+    Determine if a file should be copied based on existence, content, and modification time.
 
     Parameters
     ----------
@@ -1006,9 +1006,16 @@ def _should_copy_file(src_file: str, dst_file: str) -> bool:
         return True
 
     try:
+        # First check if content is different
         src_checksum = _calculate_file_checksum(src_file)
         dst_checksum = _calculate_file_checksum(dst_file)
-        return src_checksum != dst_checksum
+        if src_checksum != dst_checksum:
+            return True
+
+        # If content is the same, check if source file is newer
+        src_mtime = os.path.getmtime(src_file)
+        dst_mtime = os.path.getmtime(dst_file)
+        return src_mtime > dst_mtime
     except OSError:
         return True
 
