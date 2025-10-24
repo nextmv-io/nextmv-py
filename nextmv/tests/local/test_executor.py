@@ -274,11 +274,11 @@ class TestLocalExecutor(unittest.TestCase):
         logs_dir = os.path.join(self.run_dir, "logs")
         self.assertTrue(os.path.exists(logs_dir))
 
-        # Check that stderr.log was created with correct content
-        stderr_file = os.path.join(logs_dir, "stderr.log")
-        self.assertTrue(os.path.exists(stderr_file))
+        # Check that logs.log was created with correct content
+        logs_file = os.path.join(logs_dir, "logs.log")
+        self.assertTrue(os.path.exists(logs_file))
 
-        with open(stderr_file) as f:
+        with open(logs_file) as f:
             content = f.read()
 
         self.assertEqual(content, "Error line 1\nError line 2\n")
@@ -299,7 +299,12 @@ class TestLocalExecutor(unittest.TestCase):
         stdout_output = {}
 
         process_run_statistics(
-            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+            temp_outputs_dir,
+            outputs_dir,
+            stdout_output,
+            temp_src=self.temp_src,
+            manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that statistics directory was copied
@@ -316,7 +321,12 @@ class TestLocalExecutor(unittest.TestCase):
         stdout_output = {STATISTICS_KEY: {"duration": 2.5, "iterations": 100}}
 
         process_run_statistics(
-            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+            temp_outputs_dir,
+            outputs_dir,
+            stdout_output,
+            temp_src=self.temp_src,
+            manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that statistics.json was created
@@ -341,7 +351,12 @@ class TestLocalExecutor(unittest.TestCase):
         stdout_output = {}
 
         process_run_statistics(
-            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+            temp_outputs_dir,
+            outputs_dir,
+            stdout_output,
+            temp_src=self.temp_src,
+            manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that statistics directory was not created
@@ -364,7 +379,12 @@ class TestLocalExecutor(unittest.TestCase):
         stdout_output = {}
 
         process_run_assets(
-            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+            temp_outputs_dir,
+            outputs_dir,
+            stdout_output,
+            temp_src=self.temp_src,
+            manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that assets directory was copied
@@ -386,7 +406,12 @@ class TestLocalExecutor(unittest.TestCase):
         }
 
         process_run_assets(
-            temp_outputs_dir, outputs_dir, stdout_output, temp_src=self.temp_src, manifest=self.mock_manifest
+            temp_outputs_dir,
+            outputs_dir,
+            stdout_output,
+            temp_src=self.temp_src,
+            manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that assets.json was created
@@ -429,6 +454,7 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             output_format=OutputFormat.CSV_ARCHIVE,
             manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that solutions directory was created and files copied
@@ -463,6 +489,7 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             output_format=OutputFormat.MULTI_FILE,
             manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that solutions directory was created and files copied
@@ -490,6 +517,7 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             output_format=self.mock_output_format,
             manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that solution.json was created
@@ -524,6 +552,7 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             output_format=self.mock_output_format,
             manifest=self.mock_manifest,
+            src=self.test_dir,
         )
 
         # Check that solutions directory was created
@@ -609,6 +638,7 @@ class TestLocalExecutor(unittest.TestCase):
             temp_src=temp_src,
             result=mock_result,
             run_dir="/test/run_dir",
+            src="/test/src",
         )
 
     def test_process_run_output_with_valid_json(self):
@@ -636,6 +666,7 @@ class TestLocalExecutor(unittest.TestCase):
                 temp_src=self.temp_src,
                 result=mock_result,
                 run_dir=self.run_dir,
+                src=self.test_dir,
             )
 
             # Verify all processing functions were called
@@ -674,11 +705,12 @@ class TestLocalExecutor(unittest.TestCase):
                 temp_src=self.temp_src,
                 result=mock_result,
                 run_dir=self.run_dir,
+                src=self.test_dir,
             )
 
-            # Verify all processing functions were called with empty dict
+            # Verify all processing functions were called with empty string
             mock_logs.assert_called_once_with(
-                output_format=unittest.mock.ANY, run_dir=self.run_dir, result=mock_result, stdout_output={}
+                output_format=unittest.mock.ANY, run_dir=self.run_dir, result=mock_result, stdout_output=""
             )
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
@@ -686,7 +718,7 @@ class TestLocalExecutor(unittest.TestCase):
 
             # Get the stdout_output that was passed to the functions
             stdout_output = mock_stats.call_args.kwargs["stdout_output"]
-            self.assertEqual(stdout_output, {})
+            self.assertEqual(stdout_output, "")
 
 
 if __name__ == "__main__":
