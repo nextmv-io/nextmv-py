@@ -907,6 +907,9 @@ def _copy_new_or_modified_files(
     3. Files that are NOT present in the original source directory (if provided)
     4. Files that are NOT present in any of the exclusion directories (if provided)
 
+    Empty directories are not created or are removed after copying to avoid
+    cluttering the output with empty folders.
+
     Parameters
     ----------
     src_dir : str
@@ -927,11 +930,12 @@ def _copy_new_or_modified_files(
     if exclusion_dirs is not None:
         exclusion_directories.extend(exclusion_dirs)
 
+    files_copied = False
     for root, _dirs, files in os.walk(src_dir):
         rel_root = os.path.relpath(root, src_dir)
         dst_root = dst_dir if rel_root == "." else os.path.join(dst_dir, rel_root)
-        os.makedirs(dst_root, exist_ok=True)
 
+        files_to_copy = []
         for file in files:
             # Skip if file exists in any exclusion directory
             if exclusion_directories and _file_exists_in_exclusion_dirs(file, rel_root, exclusion_directories):
@@ -941,7 +945,45 @@ def _copy_new_or_modified_files(
             dst_file = os.path.join(dst_root, file)
 
             if _should_copy_file(src_file, dst_file):
+                files_to_copy.append((src_file, dst_file))
+
+        # Only create directory if there are files to copy
+        if files_to_copy:
+            os.makedirs(dst_root, exist_ok=True)
+            for src_file, dst_file in files_to_copy:
                 shutil.copy2(src_file, dst_file)
+                files_copied = True
+
+    # Clean up empty directories after copying
+    if files_copied:
+        _remove_empty_directories(dst_dir)
+
+
+def _remove_empty_directories(directory: str) -> None:
+    """
+    Recursively remove empty directories starting from the given directory.
+
+    This function walks the directory tree bottom-up and removes any directories
+    that are empty after all files have been processed. It preserves the root
+    directory even if it's empty.
+
+    Parameters
+    ----------
+    directory : str
+        The root directory path to start cleaning from.
+    """
+    for root, dirs, files in os.walk(directory, topdown=False):
+        # Skip the root directory itself
+        if root == directory:
+            continue
+
+        # If directory is empty (no files and no subdirectories), remove it
+        if not files and not dirs:
+            try:
+                os.rmdir(root)
+            except OSError:
+                # Directory might not be empty due to hidden files or permissions
+                pass
 
 
 def _should_copy_file(src_file: str, dst_file: str) -> bool:

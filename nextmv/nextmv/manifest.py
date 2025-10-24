@@ -357,19 +357,24 @@ class ManifestPython(BaseModel):
         validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
         default=None,
     )
-    """Path to a requirements.txt file.
+    """
+    Path to a requirements.txt file.
 
     Contains (additional) Python dependencies that will be bundled with the
     app.
     """
     arch: Optional[ManifestPythonArch] = None
-    """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
-    "arm64" if not specified."""
+    """
+    The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
+    "arm64" if not specified.
+    """
     version: Optional[Union[str, float]] = None
-    """The Python version this model is meant to run with. Uses "3.11" if not specified.
+    """
+    The Python version this model is meant to run with. Uses "3.11" if not specified.
     """
     model: Optional[ManifestPythonModel] = None
-    """Information about an encoded decision model.
+    """
+    Information about an encoded decision model.
 
     As handled via mlflow. This information is used to load the decision model
     from the app bundle.
@@ -1352,3 +1357,28 @@ class Manifest(BaseModel):
         )
 
         return manifest
+
+
+def default_python_manifest() -> Manifest:
+    """
+    Creates a default Python manifest as a starting point for applications
+    being executed on the Nextmv Platform.
+
+    You can import the `default_python_manifest` function directly from `nextmv`:
+
+    ```python
+    from nextmv import default_python_manifest
+    ```
+
+    Returns
+    -------
+    Manifest
+        A default Python manifest with common settings.
+    """
+
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        python=ManifestPython(pip_requirements="requirements.txt"),
+    )

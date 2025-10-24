@@ -33,13 +33,14 @@ from nextmv.local.local import (
 )
 from nextmv.local.runner import run
 from nextmv.logger import log
-from nextmv.manifest import Manifest
+from nextmv.manifest import Manifest, default_python_manifest
 from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ErrorLog,
     Format,
+    FormatInput,
     Run,
     RunConfiguration,
     RunInformation,
@@ -93,6 +94,39 @@ class Application:
 
     description: Optional[str] = None
     """Description of the application."""
+    manifest: Optional[Manifest] = None
+    """
+    Manifest of the application. A manifest is a file named `app.yaml` that
+    must be present at the root of the application's `src` directory. If the
+    app is initialized, and a manifest is not present, a default Python
+    manifest will be created, using the `nextmv.default_python_manifest`
+    function. If you specify this argument, and a manifest file is already
+    present in the `src` directory, the provided manifest will override the
+    existing one.
+    """
+
+    def __post_init__(self):
+        """
+        Validate the presence of the manifest in the application.
+        """
+
+        if self.manifest is not None:
+            self.manifest.to_yaml(self.src)
+
+            return
+
+        try:
+            manifest = Manifest.from_yaml(self.src)
+            self.manifest = manifest
+
+            return
+
+        except Exception:
+            manifest = default_python_manifest()
+            self.manifest = manifest
+            manifest.to_yaml(self.src)
+
+            return
 
     @classmethod
     def initialize(
@@ -293,7 +327,7 @@ class Application:
         >>> print(f"Local run completed with ID: {run_id}")
         """
 
-        self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
+        configuration = self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
 
         if self.src is None:
             raise ValueError("`src` property for the `Application` must be specified to run the application locally")
@@ -853,7 +887,7 @@ class Application:
         self,
         input_dir_path: Optional[str],
         configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
-    ) -> None:
+    ) -> RunConfiguration:
         """
         Auxiliary function to validate the directory path and configuration.
         """
@@ -862,60 +896,45 @@ class Application:
             return
 
         if configuration is None:
-            raise ValueError(
-                "If dir_path is provided, a RunConfiguration must also be provided.",
-            )
+            if self.manifest.configuration is not None and self.manifest.configuration.content is not None:
+                configuration = RunConfiguration(
+                    format=Format(
+                        format_input=FormatInput(
+                            input_type=self.manifest.configuration.content.format,
+                        ),
+                    ),
+                )
+            else:
+                raise ValueError(
+                    "If `dir_path` is provided, either a `RunConfiguration` must also be provided or "
+                    "the application's manifest (app.yaml) must include the format under "
+                    "`configuration.content.format`.",
+                )
 
-        config_format = self.__extract_config_format(configuration)
+        # Forcefully turn the configuration into a RunConfiguration object to
+        # make it easier to deal with in the other functions.
+        if isinstance(configuration, dict):
+            configuration = RunConfiguration.from_dict(configuration)
 
+        config_format = configuration.format
         if config_format is None:
             raise ValueError(
-                "If dir_path is provided, RunConfiguration.format must also be provided.",
+                "If `dir_path` is provided, `RunConfiguration.format` must also be provided.",
             )
 
-        input_type = self.__extract_input_type(config_format)
+        input_type = config_format.format_input
+        if input_type is None:
+            raise ValueError(
+                "If `dir_path` is provided, `RunConfiguration.format.format_input` must also be provided.",
+            )
 
         if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
             raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input.input_type must be set to a valid type. "
-                f"Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+                "If `dir_path` is provided, `RunConfiguration.format.format_input.input_type` must be set to "
+                f"a valid type. Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
             )
 
-    def __extract_config_format(self, configuration: Union[RunConfiguration, dict[str, Any]]) -> Any:
-        """Extract format from configuration, handling both RunConfiguration objects and dicts."""
-        if isinstance(configuration, RunConfiguration):
-            return configuration.format
-
-        if isinstance(configuration, dict):
-            config_format = configuration.get("format")
-            if config_format is not None and isinstance(config_format, dict):
-                return Format.from_dict(config_format) if hasattr(Format, "from_dict") else config_format
-
-            return config_format
-
-        raise ValueError("Configuration must be a RunConfiguration object or a dict.")
-
-    def __extract_input_type(self, config_format: Any) -> Any:
-        """Extract input type from config format."""
-        if isinstance(config_format, dict):
-            format_input = config_format.get("format_input") or config_format.get("input")
-            if format_input is None:
-                raise ValueError(
-                    "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
-                )
-
-            if isinstance(format_input, dict):
-                return format_input.get("input_type") or format_input.get("type")
-
-            return getattr(format_input, "input_type", None)
-
-        # Handle Format object
-        if config_format.format_input is None:
-            raise ValueError(
-                "If dir_path is provided, RunConfiguration.format.format_input must also be provided.",
-            )
-
-        return config_format.format_input.input_type
+        return configuration
 
     def __extract_input_data(
         self,
