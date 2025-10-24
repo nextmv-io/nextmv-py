@@ -36,7 +36,7 @@ LOGS_KEY = "logs"
 """
 Logs key constant used for identifying logs in the run output.
 """
-LOGS_FILE = "stderr.log"
+LOGS_FILE = "logs.log"
 """
 Constant used for identifying the file used for logging.
 """

@@ -11,6 +11,8 @@ ManifestType
     Enum for application types based on programming language.
 ManifestRuntime
     Enum for runtime environments where apps run on Nextmv.
+ManifestPythonArch
+    Enum for target architecture for bundling Python apps.
 ManifestBuild
     Class for build-specific attributes in the manifest.
 ManifestPythonModel
@@ -37,6 +39,11 @@ ManifestConfiguration
     Class for configuration settings for the decision model.
 Manifest
     Main class representing an app manifest for Nextmv.
+
+Functions
+---------
+default_python_manifest
+    Creates a default Python manifest as a starting point for applications.
 
 Constants
 --------
@@ -331,7 +338,7 @@ class ManifestPython(BaseModel):
 
     Parameters
     ----------
-    pip_requirements : Optional[str], default=None
+    pip_requirements : Optional[Union[str, list[str]]], default=None
         Path to a requirements.txt file containing (additional) Python
         dependencies that will be bundled with the app. Alternatively, you can provide a
         list of strings, each representing a package to install, e.g.,
@@ -357,19 +364,25 @@ class ManifestPython(BaseModel):
         validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
         default=None,
     )
-    """Path to a requirements.txt file.
+    """
+    Path to a requirements.txt file or list of packages.
 
     Contains (additional) Python dependencies that will be bundled with the
-    app.
+    app. Can be either a string path to a requirements.txt file or a list
+    of package specifications.
     """
     arch: Optional[ManifestPythonArch] = None
-    """The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
-    "arm64" if not specified."""
+    """
+    The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
+    "arm64" if not specified.
+    """
     version: Optional[Union[str, float]] = None
-    """The Python version this model is meant to run with. Uses "3.11" if not specified.
+    """
+    The Python version this model is meant to run with. Uses "3.11" if not specified.
     """
     model: Optional[ManifestPythonModel] = None
-    """Information about an encoded decision model.
+    """
+    Information about an encoded decision model.
 
     As handled via mlflow. This information is used to load the decision model
     from the app bundle.
@@ -378,6 +391,31 @@ class ManifestPython(BaseModel):
     @field_validator("version", mode="before")
     @classmethod
     def validate_version(cls, v: Optional[Union[str, float]]) -> Optional[str]:
+        """
+        Validate and convert the Python version field to a string.
+
+        This validator allows the version to be specified as either a float or string
+        in the manifest for convenience, but ensures it's stored internally as a string.
+
+        Parameters
+        ----------
+        v : Optional[Union[str, float]]
+            The version value to validate. Can be None, a string, or a float.
+
+        Returns
+        -------
+        Optional[str]
+            The version as a string, or None if the input was None.
+
+        Examples
+        --------
+        >>> ManifestPython.validate_version(3.11)
+        '3.11'
+        >>> ManifestPython.validate_version("3.11")
+        '3.11'
+        >>> ManifestPython.validate_version(None) is None
+        True
+        """
         # We allow the version to be a float in the manifest for convenience, but we want
         # to store it as a string internally.
         if v is None:
@@ -912,7 +950,23 @@ class ManifestContent(BaseModel):
     """Configuration for multi-file content format."""
 
     def model_post_init(self, __context) -> None:
-        """Post-initialization to validate fields."""
+        """
+        Post-initialization validation to ensure format field contains valid values.
+
+        This method is automatically called by Pydantic after the model is initialized
+        to validate that the format field contains one of the acceptable values.
+
+        Parameters
+        ----------
+        __context : Any
+            Pydantic context (unused in this implementation).
+
+        Raises
+        ------
+        ValueError
+            If the format field contains an invalid value that is not one of the
+            acceptable formats (JSON, MULTI_FILE, or CSV_ARCHIVE).
+        """
         acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
@@ -1019,17 +1073,28 @@ class Manifest(BaseModel):
     ['main.py', 'model_logic/']
     """
 
-    files: list[str]
-    """The files to include (or exclude) in the app. This is mandatory."""
-
+    type: ManifestType = ManifestType.PYTHON
+    """
+    Type of application, based on the programming language. This is mandatory.
+    """
     runtime: ManifestRuntime = ManifestRuntime.PYTHON
     """
     The runtime to use for the app. It provides the environment in which the
     app runs. This is mandatory.
     """
-    type: ManifestType = ManifestType.PYTHON
+    python: Optional[ManifestPython] = None
     """
-    Type of application, based on the programming language. This is mandatory.
+    Python-specific attributes. Only for Python apps. Contains further
+    Python-specific attributes.
+    """
+    files: list[str] = Field(
+        default_factory=list,
+    )
+    """The files to include (or exclude) in the app. This is mandatory."""
+    configuration: Optional[ManifestConfiguration] = None
+    """
+    Configuration for the decision model. A list of options for the decision
+    model. An option is a parameter that configures the decision model.
     """
     build: Optional[ManifestBuild] = None
     """
@@ -1057,16 +1122,6 @@ class Manifest(BaseModel):
     process. This command is executed just before the app gets bundled and
     pushed (after the build command).
     """
-    python: Optional[ManifestPython] = None
-    """
-    Python-specific attributes. Only for Python apps. Contains further
-    Python-specific attributes.
-    """
-    configuration: Optional[ManifestConfiguration] = None
-    """
-    Configuration for the decision model. A list of options for the decision
-    model. An option is a parameter that configures the decision model.
-    """
     entrypoint: Optional[str] = None
     """
     Optional entrypoint for the decision model. When not specified, the
@@ -1078,6 +1133,26 @@ class Manifest(BaseModel):
     """
 
     def model_post_init(self, __context) -> None:
+        """
+        Post-initialization to set default entrypoint based on runtime if not specified.
+
+        This method is automatically called by Pydantic after the model is initialized.
+        If no entrypoint is provided, it sets a default entrypoint based on the runtime:
+        - Python runtimes (PYTHON, HEXALY, PYOMO, CUOPT): "./main.py"
+        - DEFAULT runtime: "./main"
+        - JAVA runtime: "./main.jar"
+
+        Parameters
+        ----------
+        __context : Any
+            Pydantic context (unused in this implementation).
+
+        Raises
+        ------
+        ValueError
+            If no entrypoint is provided and the runtime cannot be resolved to
+            establish a default entrypoint.
+        """
         if self.entrypoint is None:
             if self.runtime in (
                 ManifestRuntime.PYTHON,
@@ -1170,7 +1245,14 @@ class Manifest(BaseModel):
         """
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME), "w") as file:
-            yaml.dump(self.to_dict(), file)
+            yaml.dump(
+                self.to_dict(),
+                file,
+                sort_keys=False,
+                default_flow_style=False,
+                indent=2,
+                width=120,
+            )
 
     def extract_options(self) -> Optional[Options]:
         """
@@ -1352,3 +1434,31 @@ class Manifest(BaseModel):
         )
 
         return manifest
+
+
+def default_python_manifest() -> Manifest:
+    """
+    Creates a default Python manifest as a starting point for applications
+    being executed on the Nextmv Platform.
+
+    You can import the `default_python_manifest` function directly from `nextmv`:
+
+    ```python
+    from nextmv import default_python_manifest
+    ```
+
+    Returns
+    -------
+    Manifest
+        A default Python manifest with common settings.
+    """
+
+    m = Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        python=ManifestPython(pip_requirements="requirements.txt"),
+    )
+    m.entrypoint = None  # TODO: change this when we are ready for the entrypoint.
+
+    return m
