@@ -35,9 +35,19 @@ from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.options import Options
-from nextmv.output import OUTPUTS_KEY, SOLUTIONS_KEY, OutputFormat
+from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
-from nextmv.run import ErrorLog, Format, Run, RunConfiguration, RunInformation, RunResult, TrackedRun, TrackedRunStatus
+from nextmv.run import (
+    ErrorLog,
+    Format,
+    Run,
+    RunConfiguration,
+    RunInformation,
+    RunResult,
+    SyncedRun,
+    TrackedRun,
+    TrackedRunStatus,
+)
 from nextmv.safe import safe_id
 from nextmv.status import StatusV2
 
@@ -995,25 +1005,10 @@ class Application:
         input_type = run_result.metadata.format.format_input.input_type
 
         # Skip runs that have already been synced.
-        already_synced = run_result.synced_run_id is not None and run_result.synced_at is not None
+        synced_run, already_synced = run_result.is_synced(app_id=target.id, instance_id=instance_id)
         if already_synced:
             if verbose:
-                log(f"   ⏭️  Skipping local run `{run_id}`, already synced at {run_result.synced_at.isoformat()}.")
-
-            return False
-
-        # Skip runs that don't have the supported type. TODO: delete this when
-        # external runs support CSV_ARCHIVE and MULTI_FILE. Right now,
-        # submitting an external result with a new run is limited to JSON and
-        # TEXT. After this if statement is removed, the rest of the code should
-        # work with CSV_ARCHIVE and MULTI_FILE as well, as using the input dir
-        # path is already considered.
-        if input_type not in {InputFormat.JSON, InputFormat.TEXT}:
-            if verbose:
-                log(
-                    f"   ⏭️  Skipping local run `{run_id}`, unsupported input type: {input_type.value}. "
-                    f"Supported types are: {[InputFormat.JSON.value, InputFormat.TEXT.value]}",
-                )
+                log(f"   ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
 
             return False
 
@@ -1031,7 +1026,7 @@ class Application:
         # Read the logs of the run and place each line as an element in a list
         run_dir = os.path.join(runs_dir, run_id)
         with open(os.path.join(run_dir, LOGS_KEY, LOGS_FILE)) as f:
-            stderr_logs = f.readlines()
+            stderr_logs = [line.rstrip("\n") for line in f.readlines()]
 
         # Create the tracked run object and start configuring it.
         tracked_run = TrackedRun(
@@ -1055,10 +1050,27 @@ class Application:
             tracked_run.input_dir_path = inputs_path
 
         # Resolve the output according to its type.
-        if run_result.metadata.format.format_output.output_type == OutputFormat.JSON:
+        output_type = run_result.metadata.format.format_output.output_type
+        if output_type == OutputFormat.JSON:
             tracked_run.output = run_result.output
         else:
             tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
+
+        # Resolve the statistics according to their type and presence. If
+        # working with JSON, the statistics should be resolved from the output.
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            stats_file_path = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
+            if os.path.exists(stats_file_path):
+                with open(stats_file_path) as f:
+                    tracked_run.statistics = json.load(f)
+
+        # Resolve the assets according to their type and presence. If working
+        # with JSON, the assets should be resolved from the output.
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            assets_file_path = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
+            if os.path.exists(assets_file_path):
+                with open(assets_file_path) as f:
+                    tracked_run.assets = json.load(f)
 
         # Actually sync the run by tracking it remotely on Nextmv Cloud.
         configuration = RunConfiguration(
@@ -1074,13 +1086,18 @@ class Application:
         )
 
         # Mark the local run as synced by updating the local run info.
-        run_result.synced_run_id = tracked_id
-        run_result.synced_at = datetime.now(timezone.utc)
+        synced_run = SyncedRun(
+            run_id=tracked_id,
+            synced_at=datetime.now(timezone.utc),
+            app_id=target.id,
+            instance_id=instance_id,
+        )
+        run_result.add_synced_run(synced_run)
         with open(os.path.join(run_dir, f"{run_id}.json"), "w") as f:
             json.dump(run_result.to_dict(), f, indent=2)
 
         if verbose:
-            log(f"✅ Synced local run `{run_id}` as remote run `{tracked_id}`.")
+            log(f"✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
 
         return True
 
@@ -1116,7 +1133,15 @@ class Application:
             return False
 
         # Validate outputs
-        if not self.__validate_outputs(run_dir, run_result.metadata.format.format_output.output_type):
+        format_output = run_result.metadata.format.format_output
+        if format_output is None or not format_output:
+            return False
+
+        output_type = format_output.output_type
+        if output_type is None or output_type == "":
+            return False
+
+        if not self.__validate_outputs(run_dir, output_type):
             return False
 
         # Validate logs

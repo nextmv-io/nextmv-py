@@ -69,6 +69,7 @@ from .run import RunResult as RunResult
 from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
 from .run import StatisticsIndicator as StatisticsIndicator
+from .run import SyncedRun as SyncedRun
 from .run import TrackedRun as TrackedRun
 from .run import TrackedRunStatus as TrackedRunStatus
 from .run import run_duration as run_duration
