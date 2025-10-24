@@ -892,9 +892,6 @@ class Application:
         Auxiliary function to validate the directory path and configuration.
         """
 
-        if input_dir_path is None or input_dir_path == "":
-            return
-
         if configuration is None:
             if self.manifest.configuration is not None and self.manifest.configuration.content is not None:
                 configuration = RunConfiguration(
@@ -904,17 +901,20 @@ class Application:
                         ),
                     ),
                 )
-            else:
-                raise ValueError(
-                    "If `dir_path` is provided, either a `RunConfiguration` must also be provided or "
-                    "the application's manifest (app.yaml) must include the format under "
-                    "`configuration.content.format`.",
-                )
-
-        # Forcefully turn the configuration into a RunConfiguration object to
-        # make it easier to deal with in the other functions.
-        if isinstance(configuration, dict):
+        elif isinstance(configuration, dict):
+            # Forcefully turn the configuration into a RunConfiguration object to
+            # make it easier to deal with in the other functions.
             configuration = RunConfiguration.from_dict(configuration)
+
+        if input_dir_path is None or input_dir_path == "":
+            return configuration
+
+        if configuration is None:
+            raise ValueError(
+                "If `dir_path` is provided, either a `RunConfiguration` must also be provided or "
+                "the application's manifest (app.yaml) must include the format under "
+                "`configuration.content.format`.",
+            )
 
         config_format = configuration.format
         if config_format is None:
