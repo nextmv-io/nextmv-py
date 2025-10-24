@@ -16,6 +16,10 @@ process_run_input
     Function to process the run input based on the format.
 process_run_output
     Function to process the run output and handle results.
+resolve_output_format
+    Function to determine the output format from manifest or directory structure.
+process_run_information
+    Function to update run metadata including duration and status.
 process_run_logs
     Function to process and save run logs.
 process_run_statistics
@@ -26,8 +30,13 @@ process_run_solutions
     Function to process and save run solutions.
 process_run_visuals
     Function to process and save run visuals.
+resolve_stdout
+    Function to parse subprocess stdout output.
+ignore_patterns
+    Function to filter files and directories during source code copying.
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -84,25 +93,26 @@ def execute_run(
     input_data: Optional[Union[dict[str, Any], str]] = None,
 ) -> None:
     """
-    This function actually executes the decision model run, using a
-    subprocess to call the entrypoint script with the appropriate input and
-    options.
+    Executes the decision model run using a subprocess to call the entrypoint
+    script with the appropriate input and options.
 
     Parameters
     ----------
+    run_id : str
+        The unique identifier for the run.
     src : str
         The path to the application source code.
-    manifest_entrypoint : str
-        The entrypoint script as defined in the application manifest.
+    manifest_dict : dict[str, Any]
+        The manifest dictionary containing application configuration.
     run_dir : str
-        The path to the run directory.
+        The path to the run directory where outputs will be stored.
     run_config : dict[str, Any]
-        The run configuration.
+        The run configuration containing format and other settings.
     inputs_dir_path : Optional[str], optional
         The path to the directory containing input files, by default None. If
         provided, this parameter takes precedence over `input_data`.
     options : Optional[dict[str, Any]], optional
-        Additional options for the run, by default None.
+        Additional command-line options for the run, by default None.
     input_data : Optional[Union[dict[str, Any], str]], optional
         The input data for the run, by default None. If `inputs_dir_path` is
         provided, this parameter is ignored.
@@ -119,7 +129,7 @@ def execute_run(
         # place to work from, and be cleaned up afterwards.
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_src = os.path.join(temp_dir, "src")
-            shutil.copytree(src, temp_src, ignore=shutil.ignore_patterns(NEXTMV_DIR))
+            shutil.copytree(src, temp_src, ignore=ignore_patterns)
 
             manifest = Manifest.from_dict(manifest_dict)
 
@@ -162,6 +172,7 @@ def execute_run(
                 temp_src=temp_src,
                 result=result,
                 run_dir=run_dir,
+                src=src,
             )
 
     except Exception as e:
@@ -290,29 +301,30 @@ def process_run_output(
     temp_src: str,
     result: subprocess.CompletedProcess[str],
     run_dir: str,
+    src: str,
 ) -> None:
     """
     Processes the result of the subprocess run. This function is in charge of
     handling the run results, including solutions, statistics, logs, assets,
-    etc.
+    and visuals.
 
     Parameters
     ----------
     manifest : Manifest
-        The application manifest.
+        The application manifest containing configuration details.
+    run_id : str
+        The unique identifier for the run.
     temp_src : str
         The path to the temporary source directory.
     result : subprocess.CompletedProcess[str]
-        The result of the subprocess run.
+        The result of the subprocess run containing stdout, stderr, and return code.
     run_dir : str
-        The path to the run directory.
+        The path to the run directory where outputs will be stored.
+    src : str
+        The path to the application source code.
     """
 
-    # Parse stdout as JSON, if possible.
-    stdout_output = {}
-    raw_output = result.stdout
-    if raw_output.strip() != "":
-        stdout_output = json.loads(raw_output)
+    stdout_output = resolve_stdout(result)
 
     # Create outputs directory.
     outputs_dir = os.path.join(run_dir, OUTPUTS_KEY)
@@ -324,7 +336,6 @@ def process_run_output(
         temp_run_outputs_dir=temp_run_outputs_dir,
         temp_src=temp_src,
     )
-
     process_run_information(
         run_id=run_id,
         run_dir=run_dir,
@@ -342,6 +353,7 @@ def process_run_output(
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
+        src=src,
     )
     process_run_assets(
         temp_run_outputs_dir=temp_run_outputs_dir,
@@ -349,6 +361,7 @@ def process_run_output(
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
+        src=src,
     )
     process_run_solutions(
         run_id=run_id,
@@ -359,6 +372,7 @@ def process_run_output(
         stdout_output=stdout_output,
         output_format=output_format,
         manifest=manifest,
+        src=src,
     )
     process_run_visuals(
         run_dir=run_dir,
@@ -381,11 +395,16 @@ def resolve_output_format(
     Parameters
     ----------
     manifest : Manifest
-        The application manifest.
+        The application manifest containing configuration details.
     temp_run_outputs_dir : str
         The path to the temporary outputs directory.
     temp_src : str
         The path to the temporary source directory.
+
+    Returns
+    -------
+    OutputFormat
+        The determined output format (JSON, CSV_ARCHIVE, or MULTI_FILE).
     """
 
     if manifest.configuration is not None and manifest.configuration.content is not None:
@@ -449,29 +468,34 @@ def process_run_logs(
     output_format: OutputFormat,
     run_dir: str,
     result: subprocess.CompletedProcess[str],
-    stdout_output: dict[str, Any],
+    stdout_output: Union[str, dict[str, Any]],
 ) -> None:
     """
     Processes the logs of the run. Writes the logs to a logs directory.
+    For multi-file format, stdout is written to logs if present.
 
     Parameters
     ----------
     output_format : OutputFormat
-        The output format of the run.
+        The output format of the run (JSON, CSV_ARCHIVE, or MULTI_FILE).
     run_dir : str
-        The path to the run directory.
+        The path to the run directory where logs will be stored.
     result : subprocess.CompletedProcess[str]
-        The result of the subprocess run.
-    stdout_output : dict[str, Any]
-        The stdout output of the run, parsed as a dictionary.
+        The result of the subprocess run containing stderr output.
+    stdout_output : Union[str, dict[str, Any]]
+        The stdout output of the run, either as raw string or parsed dictionary.
     """
 
     logs_dir = os.path.join(run_dir, LOGS_KEY)
     os.makedirs(logs_dir, exist_ok=True)
     std_err = result.stderr
     with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
-        if output_format == OutputFormat.MULTI_FILE and stdout_output != {}:
-            f.write(json.dumps(stdout_output))
+        if output_format == OutputFormat.MULTI_FILE and bool(stdout_output):
+            if isinstance(stdout_output, dict):
+                f.write(json.dumps(stdout_output))
+            elif isinstance(stdout_output, str):
+                f.write(stdout_output)
+
             if std_err:
                 f.write("\n")
 
@@ -481,14 +505,15 @@ def process_run_logs(
 def process_run_statistics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
-    stdout_output: dict[str, Any],
+    stdout_output: Union[str, dict[str, Any]],
     temp_src: str,
     manifest: Manifest,
+    src: str,
 ) -> None:
     """
-    Processes the statistics of the run. Check for an outputs/statistics folder
-    being created by the run. If it exists, copy it to the run directory. If it
-    doesn't exist, attempt to get the stats from stdout.
+    Processes the statistics of the run. Checks for an outputs/statistics folder
+    or custom statistics file location from manifest. If found, copies to run
+    directory. Otherwise, attempts to extract statistics from stdout.
 
     Parameters
     ----------
@@ -496,12 +521,15 @@ def process_run_statistics(
         The path to the temporary outputs directory.
     outputs_dir : str
         The path to the outputs directory in the run directory.
-    stdout_output : dict[str, Any]
-        The stdout output of the run, parsed as a dictionary.
+    stdout_output : Union[str, dict[str, Any]]
+        The stdout output of the run, either as raw string or parsed dictionary.
     temp_src : str
         The path to the temporary source directory.
     manifest : Manifest
-        The application manifest.
+        The application manifest containing configuration and custom paths.
+    src : str
+        The path to the original application source code, used to avoid copying
+        files that are already part of the source.
     """
 
     stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
@@ -525,7 +553,10 @@ def process_run_statistics(
 
     stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
     if os.path.exists(stats_src) and os.path.isdir(stats_src):
-        shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
+        _copy_new_or_modified_files(stats_src, stats_dst, src)
+        return
+
+    if not isinstance(stdout_output, dict):
         return
 
     if STATISTICS_KEY not in stdout_output:
@@ -539,14 +570,15 @@ def process_run_statistics(
 def process_run_assets(
     temp_run_outputs_dir: str,
     outputs_dir: str,
-    stdout_output: dict[str, Any],
+    stdout_output: Union[str, dict[str, Any]],
     temp_src: str,
     manifest: Manifest,
+    src: str,
 ) -> None:
     """
-    Processes the assets of the run. Check for an outputs/assets folder being
-    created by the run. If it exists, copy it to the run directory. If it
-    doesn't exist, attempt to get the assets from stdout.
+    Processes the assets of the run. Checks for an outputs/assets folder or
+    custom assets file location from manifest. If found, copies to run directory.
+    Otherwise, attempts to extract assets from stdout.
 
     Parameters
     ----------
@@ -554,12 +586,15 @@ def process_run_assets(
         The path to the temporary outputs directory.
     outputs_dir : str
         The path to the outputs directory in the run directory.
-    stdout_output : dict[str, Any]
-        The stdout output of the run, parsed as a dictionary.
+    stdout_output : Union[str, dict[str, Any]]
+        The stdout output of the run, either as raw string or parsed dictionary.
     temp_src : str
         The path to the temporary source directory.
     manifest : Manifest
-        The application manifest.
+        The application manifest containing configuration and custom paths.
+    src : str
+        The path to the original application source code, used to avoid copying
+        files that are already part of the source.
     """
 
     assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
@@ -583,7 +618,10 @@ def process_run_assets(
 
     assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     if os.path.exists(assets_src) and os.path.isdir(assets_src):
-        shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
+        _copy_new_or_modified_files(assets_src, assets_dst, src)
+        return
+
+    if not isinstance(stdout_output, dict):
         return
 
     if ASSETS_KEY not in stdout_output:
@@ -600,37 +638,42 @@ def process_run_solutions(
     temp_run_outputs_dir: str,
     temp_src: str,
     outputs_dir: str,
-    stdout_output: dict[str, Any],
+    stdout_output: Union[str, dict[str, Any]],
     output_format: OutputFormat,
     manifest: Manifest,
+    src: str,
 ) -> None:
     """
-    Processes the solutions (output) of the run. This method has the handle all
-    the different formats for processing solutions. This includes looking for
-    an `output` directory (`csv-archive`), an `outputs/solutions` directory
-    (`multi-file`), or looking for solutions in the stdout output (`json` or
-    `text`). For flexibility, we copy whatever is in the `output` and
-    `outputs/solutions` directories, if they exist. If neither exist, we
-    attempt to get the solution from stdout.
+    Processes the solutions (output) of the run. Handles all different output
+    formats including CSV-archive, multi-file, JSON, and text. Looks for
+    `output` directory (csv-archive), `outputs/solutions` directory (multi-file),
+    or custom solutions path from manifest. Falls back to stdout for JSON/text.
+    Updates run metadata with output size and format information.
+
+    Only copies files that are truly new outputs, excluding files that already
+    exist in the original source code, inputs, statistics, or assets directories
+    to prevent copying application data as solutions.
 
     Parameters
     ----------
     run_id : str
-        The ID of the run.
+        The unique identifier of the run.
     run_dir : str
-        The path to the run directory.
+        The path to the run directory where outputs are stored.
     temp_run_outputs_dir : str
         The path to the temporary outputs directory.
     temp_src : str
         The path to the temporary source directory.
     outputs_dir : str
         The path to the outputs directory in the run directory.
-    stdout_output : dict[str, Any]
-        The stdout output of the run, parsed as a dictionary.
+    stdout_output : Union[str, dict[str, Any]]
+        The stdout output of the run, either as raw string or parsed dictionary.
     output_format : OutputFormat
-        The output format of the run.
+        The determined output format (JSON, CSV_ARCHIVE, MULTI_FILE, or TEXT).
     manifest : Manifest
-        The application manifest.
+        The application manifest containing configuration and custom paths.
+    src : str
+        The path to the application source code.
     """
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
@@ -641,9 +684,12 @@ def process_run_solutions(
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
     os.makedirs(solutions_dst, exist_ok=True)
 
+    # Build list of directories to exclude from copying
+    exclusion_dirs = _build_exclusion_directories(src, manifest, outputs_dir, run_dir)
+
     if output_format == OutputFormat.CSV_ARCHIVE:
         output_src = os.path.join(temp_src, OUTPUT_KEY)
-        shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
+        _copy_new_or_modified_files(output_src, solutions_dst, src, exclusion_dirs)
     elif output_format == OutputFormat.MULTI_FILE:
         solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
         if (
@@ -654,11 +700,14 @@ def process_run_solutions(
         ):
             solutions_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.solutions)
 
-        shutil.copytree(solutions_src, solutions_dst, dirs_exist_ok=True)
+        _copy_new_or_modified_files(solutions_src, solutions_dst, src, exclusion_dirs)
     else:
-        if stdout_output:
+        if bool(stdout_output):
             with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w") as f:
-                json.dump(stdout_output, f, indent=2)
+                if isinstance(stdout_output, dict):
+                    json.dump(stdout_output, f, indent=2)
+                elif isinstance(stdout_output, str):
+                    f.write(stdout_output)
 
     # Update the run information file with the output size and type.
     calculate_files_size(run_dir, run_id, solutions_dst, metadata_key="output_size")
@@ -670,14 +719,15 @@ def process_run_solutions(
 def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
     """
     Processes the visuals from the assets in the run output. This function looks
-    for Plotly assets and generates HTML files for each visual.
+    for visual assets (Plotly and GeoJSON) in the assets.json file and generates
+    HTML files for each visual. ChartJS visuals are ignored for local runs.
 
     Parameters
     ----------
     run_dir : str
-        The path to the run directory.
+        The path to the run directory where visuals will be stored.
     outputs_dir : str
-        The path to the outputs directory in the run directory.
+        The path to the outputs directory in the run directory containing assets.
     """
 
     # Get the assets.
@@ -709,6 +759,266 @@ def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
 
         # ChartJS is not easily supported directly from Python in local runs,
         # so we ignore it for now.
+
+
+def resolve_stdout(result: subprocess.CompletedProcess[str]) -> Union[str, dict[str, Any]]:
+    """
+    Resolves the stdout output of the subprocess run. If the stdout is valid
+    JSON, it returns the parsed dictionary. Otherwise, it returns the raw
+    string output.
+
+    Parameters
+    ----------
+    result : subprocess.CompletedProcess[str]
+        The result of the subprocess run.
+
+    Returns
+    -------
+    Union[str, dict[str, Any]]
+        The parsed stdout output as a dictionary if valid JSON, otherwise the
+        raw string output.
+    """
+    raw_output = result.stdout
+    if raw_output.strip() == "":
+        return ""
+
+    try:
+        return json.loads(raw_output)
+    except json.JSONDecodeError:
+        return raw_output
+
+
+def ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
+    """
+    Custom ignore function for copytree that filters files and directories
+    during source code copying. Excludes virtual environments, cache files,
+    the nextmv directory, and non-essential files while preserving Python
+    source files and application manifests.
+
+    Parameters
+    ----------
+    dir_path : str
+        The path to the directory being processed.
+    names : list[str]
+        A list of file and directory names in the current directory.
+
+    Returns
+    -------
+    list[str]
+        A list of names to ignore during the copy operation.
+    """
+    ignored = []
+    for name in names:
+        full_path = os.path.join(dir_path, name)
+
+        # Ignore nextmv directory
+        if name == NEXTMV_DIR:
+            ignored.append(name)
+            continue
+
+        # Ignore virtual environment directories
+        if name in ("venv", ".venv", "env", ".env", "virtualenv", ".virtualenv"):
+            ignored.append(name)
+            continue
+
+        # Ignore __pycache__ directories
+        if name == "__pycache__":
+            ignored.append(name)
+            continue
+
+        # If it's a file, only keep Python files and app.yaml
+        if os.path.isfile(full_path):
+            if not (name.endswith(".py") or name == "app.yaml"):
+                ignored.append(name)
+                continue
+
+        # Ignore .pyc files explicitly
+        if name.endswith(".pyc"):
+            ignored.append(name)
+            continue
+
+    return ignored
+
+
+def _build_exclusion_directories(src: str, manifest: Manifest, outputs_dir: str, run_dir: str) -> list[str]:
+    """
+    Build a list of directories to exclude when copying solution files.
+
+    Parameters
+    ----------
+    src : str
+        The path to the original application source code.
+    manifest : Manifest
+        The application manifest containing configuration.
+    outputs_dir : str
+        The path to the outputs directory in the run directory.
+    run_dir : str
+        The path to the run directory.
+
+    Returns
+    -------
+    list[str]
+        List of directory paths to exclude from copying.
+    """
+    exclusion_dirs = []
+
+    # Add inputs directory from original source
+    inputs_dir_original = os.path.join(src, INPUTS_KEY)
+    if os.path.exists(inputs_dir_original):
+        exclusion_dirs.append(inputs_dir_original)
+
+    # Add custom inputs directory if specified in manifest
+    if (
+        manifest.configuration is not None
+        and manifest.configuration.content is not None
+        and manifest.configuration.content.format == InputFormat.MULTI_FILE
+        and manifest.configuration.content.multi_file is not None
+    ):
+        custom_inputs_dir = os.path.join(src, manifest.configuration.content.multi_file.input.path)
+        if os.path.exists(custom_inputs_dir):
+            exclusion_dirs.append(custom_inputs_dir)
+
+    # Add inputs directory from run directory
+    inputs_dir_run = os.path.join(run_dir, INPUTS_KEY)
+    if os.path.exists(inputs_dir_run):
+        exclusion_dirs.append(inputs_dir_run)
+
+    # Add statistics and assets directories from run outputs
+    stats_dir = os.path.join(outputs_dir, STATISTICS_KEY)
+    if os.path.exists(stats_dir):
+        exclusion_dirs.append(stats_dir)
+
+    assets_dir = os.path.join(outputs_dir, ASSETS_KEY)
+    if os.path.exists(assets_dir):
+        exclusion_dirs.append(assets_dir)
+
+    return exclusion_dirs
+
+
+def _copy_new_or_modified_files(
+    src_dir: str, dst_dir: str, original_src_dir: Optional[str] = None, exclusion_dirs: Optional[list[str]] = None
+) -> None:
+    """
+    Copy files from source to destination only if they meet specific criteria.
+
+    This function ensures that only files that are either:
+    1. New files (not present in destination)
+    2. Existing files with different content (based on checksum comparison)
+    3. Files that are NOT present in the original source directory (if provided)
+    4. Files that are NOT present in any of the exclusion directories (if provided)
+
+    Parameters
+    ----------
+    src_dir : str
+        The source directory path to copy from.
+    dst_dir : str
+        The destination directory path to copy to.
+    original_src_dir : Optional[str], optional
+        The original source directory to check against. Files present in this
+        directory will NOT be copied, by default None.
+    exclusion_dirs : Optional[list[str]], optional
+        Additional directories to check against. Files present in any of these
+        directories will NOT be copied, by default None.
+    """
+    # Build list of all exclusion directories
+    exclusion_directories = []
+    if original_src_dir is not None:
+        exclusion_directories.append(original_src_dir)
+    if exclusion_dirs is not None:
+        exclusion_directories.extend(exclusion_dirs)
+
+    for root, _dirs, files in os.walk(src_dir):
+        rel_root = os.path.relpath(root, src_dir)
+        dst_root = dst_dir if rel_root == "." else os.path.join(dst_dir, rel_root)
+        os.makedirs(dst_root, exist_ok=True)
+
+        for file in files:
+            # Skip if file exists in any exclusion directory
+            if exclusion_directories and _file_exists_in_exclusion_dirs(file, rel_root, exclusion_directories):
+                continue
+
+            src_file = os.path.join(root, file)
+            dst_file = os.path.join(dst_root, file)
+
+            if _should_copy_file(src_file, dst_file):
+                shutil.copy2(src_file, dst_file)
+
+
+def _should_copy_file(src_file: str, dst_file: str) -> bool:
+    """
+    Determine if a file should be copied based on existence and content.
+
+    Parameters
+    ----------
+    src_file : str
+        Path to the source file.
+    dst_file : str
+        Path to the destination file.
+
+    Returns
+    -------
+    bool
+        True if the file should be copied, False otherwise.
+    """
+    if not os.path.exists(dst_file):
+        return True
+
+    try:
+        src_checksum = _calculate_file_checksum(src_file)
+        dst_checksum = _calculate_file_checksum(dst_file)
+        return src_checksum != dst_checksum
+    except OSError:
+        return True
+
+
+def _calculate_file_checksum(file_path: str) -> str:
+    """
+    Calculate MD5 checksum of a file.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file.
+
+    Returns
+    -------
+    str
+        The MD5 checksum of the file.
+    """
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def _file_exists_in_exclusion_dirs(file_name: str, rel_root: str, exclusion_dirs: list[str]) -> bool:
+    """
+    Check if a file exists in any of the exclusion directories.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to check.
+    rel_root : str
+        The relative root path from the source directory.
+    exclusion_dirs : list[str]
+        List of directories to check against.
+
+    Returns
+    -------
+    bool
+        True if the file exists in any exclusion directory, False otherwise.
+    """
+    for exclusion_dir in exclusion_dirs:
+        if rel_root != ".":
+            exclusion_file = os.path.join(exclusion_dir, rel_root, file_name)
+        else:
+            exclusion_file = os.path.join(exclusion_dir, file_name)
+
+        if os.path.exists(exclusion_file):
+            return True
+    return False
 
 
 if __name__ == "__main__":
