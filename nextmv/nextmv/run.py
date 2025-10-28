@@ -1562,7 +1562,7 @@ class TrackedRun:
             try:
                 _ = serialize_json(self.output.solution)
             except (TypeError, OverflowError) as e:
-                raise ValueError("Output.data is not JSON serializable") from e
+                raise ValueError("`Output.solution` is not JSON serializable") from e
         elif isinstance(self.output, dict):
             try:
                 _ = serialize_json(self.output)
