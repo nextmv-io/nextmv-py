@@ -304,7 +304,6 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             temp_src=self.temp_src,
             manifest=self.mock_manifest,
-            src=self.test_dir,
         )
 
         # Check that statistics directory was copied
@@ -326,7 +325,6 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             temp_src=self.temp_src,
             manifest=self.mock_manifest,
-            src=self.test_dir,
         )
 
         # Check that statistics.json was created
@@ -356,7 +354,6 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             temp_src=self.temp_src,
             manifest=self.mock_manifest,
-            src=self.test_dir,
         )
 
         # Check that statistics directory was not created
@@ -384,7 +381,6 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             temp_src=self.temp_src,
             manifest=self.mock_manifest,
-            src=self.test_dir,
         )
 
         # Check that assets directory was copied
@@ -411,7 +407,6 @@ class TestLocalExecutor(unittest.TestCase):
             stdout_output,
             temp_src=self.temp_src,
             manifest=self.mock_manifest,
-            src=self.test_dir,
         )
 
         # Check that assets.json was created
