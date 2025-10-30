@@ -864,7 +864,15 @@ def _copy_new_or_modified_files(  # noqa: C901
     runtime_files_rel = []
     runtime_files_abs = []
     for root, _, files in os.walk(runtime_dir):
+        # Skip __pycache__ directories
+        if "__pycache__" in root:
+            continue
+
         for rel_file in files:
+            # Skip .pyc files
+            if rel_file.endswith(".pyc"):
+                continue
+
             file_path = os.path.join(root, rel_file)
             runtime_files_rel.append(os.path.relpath(file_path, runtime_dir))
             runtime_files_abs.append(file_path)
