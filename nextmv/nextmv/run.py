@@ -682,9 +682,10 @@ class Metadata(BaseModel):
     """Format of the input and output of the run."""
     status_v2: StatusV2
     """Status of the run."""
-
     status: Optional[Status] = None
     """Deprecated: use status_v2."""
+    statistics: Optional[dict[str, Any]] = None
+    """User defined statistics of the run."""
 
 
 class SyncedRun(BaseModel):
