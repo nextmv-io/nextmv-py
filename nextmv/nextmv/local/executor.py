@@ -549,6 +549,9 @@ def process_run_statistics(
         shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
         return
 
+    if not isinstance(stdout_output, dict):
+        return
+
     if STATISTICS_KEY not in stdout_output:
         return
 
@@ -605,6 +608,9 @@ def process_run_assets(
     assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     if os.path.exists(assets_src) and os.path.isdir(assets_src):
         shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
+        return
+
+    if not isinstance(stdout_output, dict):
         return
 
     if ASSETS_KEY not in stdout_output:
