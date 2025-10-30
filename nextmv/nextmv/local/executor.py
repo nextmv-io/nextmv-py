@@ -32,13 +32,12 @@ process_run_visuals
     Function to process and save run visuals.
 resolve_stdout
     Function to parse subprocess stdout output.
-ignore_patterns
-    Function to filter files and directories during source code copying.
 """
 
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -129,7 +128,7 @@ def execute_run(
         # place to work from, and be cleaned up afterwards.
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_src = os.path.join(temp_dir, "src")
-            shutil.copytree(src, temp_src, ignore=ignore_patterns)
+            shutil.copytree(src, temp_src, ignore=_ignore_patterns)
 
             manifest = Manifest.from_dict(manifest_dict)
 
@@ -353,7 +352,6 @@ def process_run_output(
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
-        src=src,
     )
     process_run_assets(
         temp_run_outputs_dir=temp_run_outputs_dir,
@@ -361,7 +359,6 @@ def process_run_output(
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
-        src=src,
     )
     process_run_solutions(
         run_id=run_id,
@@ -508,7 +505,6 @@ def process_run_statistics(
     stdout_output: Union[str, dict[str, Any]],
     temp_src: str,
     manifest: Manifest,
-    src: str,
 ) -> None:
     """
     Processes the statistics of the run. Checks for an outputs/statistics folder
@@ -527,9 +523,6 @@ def process_run_statistics(
         The path to the temporary source directory.
     manifest : Manifest
         The application manifest containing configuration and custom paths.
-    src : str
-        The path to the original application source code, used to avoid copying
-        files that are already part of the source.
     """
 
     stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
@@ -553,7 +546,7 @@ def process_run_statistics(
 
     stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
     if os.path.exists(stats_src) and os.path.isdir(stats_src):
-        _copy_new_or_modified_files(stats_src, stats_dst, src)
+        shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
         return
 
     if not isinstance(stdout_output, dict):
@@ -573,7 +566,6 @@ def process_run_assets(
     stdout_output: Union[str, dict[str, Any]],
     temp_src: str,
     manifest: Manifest,
-    src: str,
 ) -> None:
     """
     Processes the assets of the run. Checks for an outputs/assets folder or
@@ -592,9 +584,6 @@ def process_run_assets(
         The path to the temporary source directory.
     manifest : Manifest
         The application manifest containing configuration and custom paths.
-    src : str
-        The path to the original application source code, used to avoid copying
-        files that are already part of the source.
     """
 
     assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
@@ -618,7 +607,7 @@ def process_run_assets(
 
     assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
     if os.path.exists(assets_src) and os.path.isdir(assets_src):
-        _copy_new_or_modified_files(assets_src, assets_dst, src)
+        shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
         return
 
     if not isinstance(stdout_output, dict):
@@ -684,12 +673,9 @@ def process_run_solutions(
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
     os.makedirs(solutions_dst, exist_ok=True)
 
-    # Build list of directories to exclude from copying
-    exclusion_dirs = _build_exclusion_directories(src, manifest, outputs_dir, run_dir)
-
     if output_format == OutputFormat.CSV_ARCHIVE:
         output_src = os.path.join(temp_src, OUTPUT_KEY)
-        _copy_new_or_modified_files(output_src, solutions_dst, src, exclusion_dirs)
+        shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
     elif output_format == OutputFormat.MULTI_FILE:
         solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
         if (
@@ -700,7 +686,16 @@ def process_run_solutions(
         ):
             solutions_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.solutions)
 
-        _copy_new_or_modified_files(solutions_src, solutions_dst, src, exclusion_dirs)
+        _copy_new_or_modified_files(
+            runtime_dir=solutions_src,
+            dst_dir=solutions_dst,
+            original_src_dir=src,
+            exclusion_dirs=[
+                os.path.join(outputs_dir, STATISTICS_KEY),
+                os.path.join(outputs_dir, ASSETS_KEY),
+                os.path.join(run_dir, INPUTS_KEY),
+            ],
+        )
     else:
         if bool(stdout_output):
             with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w") as f:
@@ -788,7 +783,7 @@ def resolve_stdout(result: subprocess.CompletedProcess[str]) -> Union[str, dict[
         return raw_output
 
 
-def ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
+def _ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
     """
     Custom ignore function for copytree that filters files and directories
     during source code copying. Excludes virtual environments, cache files,
@@ -817,7 +812,7 @@ def ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
             continue
 
         # Ignore virtual environment directories
-        if name in ("venv", ".venv", "env", ".env", "virtualenv", ".virtualenv"):
+        if re.match(r"^\.?(venv|env|virtualenv).*$", name):
             ignored.append(name)
             continue
 
@@ -840,123 +835,127 @@ def ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
     return ignored
 
 
-def _build_exclusion_directories(src: str, manifest: Manifest, outputs_dir: str, run_dir: str) -> list[str]:
-    """
-    Build a list of directories to exclude when copying solution files.
-
-    Parameters
-    ----------
-    src : str
-        The path to the original application source code.
-    manifest : Manifest
-        The application manifest containing configuration.
-    outputs_dir : str
-        The path to the outputs directory in the run directory.
-    run_dir : str
-        The path to the run directory.
-
-    Returns
-    -------
-    list[str]
-        List of directory paths to exclude from copying.
-    """
-    exclusion_dirs = []
-
-    # Add inputs directory from original source
-    inputs_dir_original = os.path.join(src, INPUTS_KEY)
-    if os.path.exists(inputs_dir_original):
-        exclusion_dirs.append(inputs_dir_original)
-
-    # Add custom inputs directory if specified in manifest
-    if (
-        manifest.configuration is not None
-        and manifest.configuration.content is not None
-        and manifest.configuration.content.format == InputFormat.MULTI_FILE
-        and manifest.configuration.content.multi_file is not None
-    ):
-        custom_inputs_dir = os.path.join(src, manifest.configuration.content.multi_file.input.path)
-        if os.path.exists(custom_inputs_dir):
-            exclusion_dirs.append(custom_inputs_dir)
-
-    # Add inputs directory from run directory
-    inputs_dir_run = os.path.join(run_dir, INPUTS_KEY)
-    if os.path.exists(inputs_dir_run):
-        exclusion_dirs.append(inputs_dir_run)
-
-    # Add statistics and assets directories from run outputs
-    stats_dir = os.path.join(outputs_dir, STATISTICS_KEY)
-    if os.path.exists(stats_dir):
-        exclusion_dirs.append(stats_dir)
-
-    assets_dir = os.path.join(outputs_dir, ASSETS_KEY)
-    if os.path.exists(assets_dir):
-        exclusion_dirs.append(assets_dir)
-
-    return exclusion_dirs
-
-
-def _copy_new_or_modified_files(
-    src_dir: str, dst_dir: str, original_src_dir: Optional[str] = None, exclusion_dirs: Optional[list[str]] = None
+def _copy_new_or_modified_files(  # noqa: C901
+    runtime_dir: str,
+    dst_dir: str,
+    original_src_dir: Optional[str] = None,
+    exclusion_dirs: Optional[list[str]] = None,
 ) -> None:
     """
-    Copy files from source to destination only if they meet specific criteria.
+    Copy only new or modified files from runtime directory to destination directory.
 
-    This function ensures that only files that are either:
-    1. New files (not present in destination)
-    2. Existing files with different content (based on checksum comparison)
-    3. Files that are NOT present in the original source directory (if provided)
-    4. Files that are NOT present in any of the exclusion directories (if provided)
-
-    Empty directories are not created or are removed after copying to avoid
-    cluttering the output with empty folders.
+    This function identifies files that are either new (not present in the original
+    source) or have been modified (different content, checksum, or modification time)
+    compared to the original source. It excludes files that exist in specified
+    exclusion directories to avoid copying input data, statistics, or assets as
+    solution outputs.
 
     Parameters
     ----------
-    src_dir : str
-        The source directory path to copy from.
+    runtime_dir : str
+        The path to the runtime directory containing files to potentially copy.
     dst_dir : str
-        The destination directory path to copy to.
+        The destination directory where new or modified files will be copied.
     original_src_dir : Optional[str], optional
-        The original source directory to check against. Files present in this
-        directory will NOT be copied, by default None.
+        The path to the original source directory for comparison, by default None.
+        If None, all files from runtime_dir are considered new.
     exclusion_dirs : Optional[list[str]], optional
-        Additional directories to check against. Files present in any of these
-        directories will NOT be copied, by default None.
+        List of directory paths containing files to exclude from copying,
+        by default None. Files matching those in exclusion directories will
+        not be copied even if they are new or modified.
     """
-    # Build list of all exclusion directories
-    exclusion_directories = []
-    if original_src_dir is not None:
-        exclusion_directories.append(original_src_dir)
-    if exclusion_dirs is not None:
-        exclusion_directories.extend(exclusion_dirs)
 
-    files_copied = False
-    for root, _dirs, files in os.walk(src_dir):
-        rel_root = os.path.relpath(root, src_dir)
-        dst_root = dst_dir if rel_root == "." else os.path.join(dst_dir, rel_root)
+    # Gather a list of the files that are created/modified in the runtime dir,
+    # this is, the directory where the actual executable code is run from.
+    runtime_files_rel = []
+    runtime_files_abs = []
+    for root, _, files in os.walk(runtime_dir):
+        # Skip __pycache__ directories
+        if "__pycache__" in root:
+            continue
 
-        files_to_copy = []
-        for file in files:
-            # Skip if file exists in any exclusion directory
-            if exclusion_directories and _file_exists_in_exclusion_dirs(file, rel_root, exclusion_directories):
+        for rel_file in files:
+            # Skip .pyc files
+            if rel_file.endswith(".pyc"):
                 continue
 
-            src_file = os.path.join(root, file)
-            dst_file = os.path.join(dst_root, file)
+            file_path = os.path.join(root, rel_file)
+            runtime_files_rel.append(os.path.relpath(file_path, runtime_dir))
+            runtime_files_abs.append(file_path)
 
-            if _should_copy_file(src_file, dst_file):
-                files_to_copy.append((src_file, dst_file))
+    # Gather a list of the files that exist in the original source dir. Given
+    # that the source dir is copied to the runtime dir before execution, we can
+    # use this to determine which files are new or modified.
+    original_src_files_rel = set()
+    if original_src_dir is not None:
+        for root, _, files in os.walk(original_src_dir):
+            for rel_file in files:
+                file_path = os.path.join(root, rel_file)
+                original_src_files_rel.add(os.path.relpath(file_path, original_src_dir))
 
-        # Only create directory if there are files to copy
-        if files_to_copy:
-            os.makedirs(dst_root, exist_ok=True)
-            for src_file, dst_file in files_to_copy:
-                shutil.copy2(src_file, dst_file)
-                files_copied = True
+    # Gather a list of the files that exist in the exclusion dirs. This is used
+    # to avoid copying files that are part of this special exclusion set.
+    exclusion_files_rel = set()
+    if exclusion_dirs is not None:
+        for exclusion_dir in exclusion_dirs:
+            for root, _, files in os.walk(exclusion_dir):
+                for rel_file in files:
+                    file_path = os.path.join(root, rel_file)
+                    exclusion_files_rel.add(os.path.relpath(file_path, exclusion_dir))
 
-    # Clean up empty directories after copying
-    if files_copied:
-        _remove_empty_directories(dst_dir)
+    # Now we filter the runtime files to only keep those that are new or
+    # modified compared to the original source files.
+    files_before_exclusion = []
+    for ix, rel_file in enumerate(runtime_files_rel):
+        abs_file = runtime_files_abs[ix]
+
+        # If the file is net new, we keep it.
+        if rel_file not in original_src_files_rel:
+            files_before_exclusion.append(abs_file)
+            continue
+
+        # If content of the file is different, we keep it.
+        runtime_checksum = _calculate_file_checksum(abs_file)
+        original_abs_file = os.path.join(original_src_dir, rel_file)
+        original_checksum = _calculate_file_checksum(original_abs_file)
+        if runtime_checksum != original_checksum:
+            files_before_exclusion.append(abs_file)
+            continue
+
+        # If content of the file is the same, but the date is newer, we keep it.
+        src_mtime = os.path.getmtime(abs_file)
+        original_mtime = os.path.getmtime(original_abs_file)
+        if src_mtime > original_mtime:
+            files_before_exclusion.append(abs_file)
+            continue
+
+    # Now we filter out any files that are part of the exclusion set.
+    final_files = []
+    if exclusion_dirs is not None:
+        for file in files_before_exclusion:
+            rel_file = os.path.relpath(file, runtime_dir)
+            if rel_file in exclusion_files_rel:
+                continue
+
+            final_files.append(file)
+    else:
+        final_files = files_before_exclusion
+
+    # Now that we have a clean list of files that we are going to copy, we
+    # proceed to copy them over to the destination directory.
+    for file in final_files:
+        rel_file = os.path.relpath(file, runtime_dir)
+        dst_file = os.path.join(dst_dir, rel_file)
+
+        # Create the directory structure if it doesn't exist
+        dst_file_dir = os.path.dirname(dst_file)
+        os.makedirs(dst_file_dir, exist_ok=True)
+
+        # Copy the file
+        shutil.copy2(file, dst_file)
+
+    # Finally, we remove any empty directories that might have been created.
+    _remove_empty_directories(dst_dir)
 
 
 def _remove_empty_directories(directory: str) -> None:
@@ -986,33 +985,6 @@ def _remove_empty_directories(directory: str) -> None:
                 pass
 
 
-def _should_copy_file(src_file: str, dst_file: str) -> bool:
-    """
-    Determine if a file should be copied based on existence and content.
-
-    Parameters
-    ----------
-    src_file : str
-        Path to the source file.
-    dst_file : str
-        Path to the destination file.
-
-    Returns
-    -------
-    bool
-        True if the file should be copied, False otherwise.
-    """
-    if not os.path.exists(dst_file):
-        return True
-
-    try:
-        src_checksum = _calculate_file_checksum(src_file)
-        dst_checksum = _calculate_file_checksum(dst_file)
-        return src_checksum != dst_checksum
-    except OSError:
-        return True
-
-
 def _calculate_file_checksum(file_path: str) -> str:
     """
     Calculate MD5 checksum of a file.
@@ -1032,35 +1004,6 @@ def _calculate_file_checksum(file_path: str) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-
-
-def _file_exists_in_exclusion_dirs(file_name: str, rel_root: str, exclusion_dirs: list[str]) -> bool:
-    """
-    Check if a file exists in any of the exclusion directories.
-
-    Parameters
-    ----------
-    file_name : str
-        The name of the file to check.
-    rel_root : str
-        The relative root path from the source directory.
-    exclusion_dirs : list[str]
-        List of directories to check against.
-
-    Returns
-    -------
-    bool
-        True if the file exists in any exclusion directory, False otherwise.
-    """
-    for exclusion_dir in exclusion_dirs:
-        if rel_root != ".":
-            exclusion_file = os.path.join(exclusion_dir, rel_root, file_name)
-        else:
-            exclusion_file = os.path.join(exclusion_dir, file_name)
-
-        if os.path.exists(exclusion_file):
-            return True
-    return False
 
 
 if __name__ == "__main__":
