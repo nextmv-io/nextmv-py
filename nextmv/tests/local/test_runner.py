@@ -30,7 +30,7 @@ class TestLocalRunner(unittest.TestCase):
             "id": "test-app",
             "name": "Test App",
             "description": "Test application",
-            "entrypoint": "main.py",
+            "execution": {"entrypoint": "main.py"},
             "type": "python",
             "runtime": "ghcr.io/nextmv-io/runtime/python:3.11",
             "files": ["main.py"],
@@ -292,7 +292,7 @@ print(json.dumps(output))
         for key in expected_keys:
             self.assertIn(key, stdin_json)
 
-        self.assertEqual(stdin_json["manifest_dict"]["entrypoint"], "./main.py")
+        self.assertEqual(stdin_json["manifest_dict"]["execution"]["entrypoint"], "./main.py")
         self.assertEqual(stdin_json["input_data"], input_data)
         self.assertEqual(stdin_json["options"], options)
         self.assertEqual(stdin_json["run_config"], run_config)

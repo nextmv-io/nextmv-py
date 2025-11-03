@@ -1450,6 +1450,5 @@ def default_python_manifest() -> Manifest:
         type=ManifestType.PYTHON,
         python=ManifestPython(pip_requirements="requirements.txt"),
     )
-    m.entrypoint = None  # TODO: change this when we are ready for the entrypoint.
 
     return m

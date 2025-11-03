@@ -81,7 +81,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_input.data = {
             "run_id": "test_run_id",
             "src": "/test/src",
-            "manifest_dict": {"entrypoint": "main.py", "type": "python"},
+            "manifest_dict": {"execution": {"entrypoint": "main.py"}, "type": "python"},
             "run_dir": "/test/run_dir",
             "run_config": {"format": {"input": {"type": "json"}}},
             "inputs_dir_path": None,
@@ -100,7 +100,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_execute_run.assert_called_once_with(
             run_id="test_run_id",
             src="/test/src",
-            manifest_dict={"entrypoint": "main.py", "type": "python"},
+            manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python"},
             run_dir="/test/run_dir",
             run_config={"format": {"input": {"type": "json"}}},
             inputs_dir_path=None,
@@ -605,7 +605,7 @@ class TestLocalExecutor(unittest.TestCase):
         execute_run(
             run_id="test_run_id",
             src="/test/src",
-            manifest_dict={"entrypoint": "main.py", "files": ["main.py"]},
+            manifest_dict={"execution": {"entrypoint": "main.py"}, "files": ["main.py"]},
             run_dir="/test/run_dir",
             run_config=run_config,
             input_data={"test": "data"},
