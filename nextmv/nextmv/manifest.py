@@ -1005,6 +1005,40 @@ class ManifestConfiguration(BaseModel):
     """Content configuration for specifying how the app input/output is handled."""
 
 
+class ManifestExecution(BaseModel):
+    """
+    Execution configuration for the decision model.
+
+    You can import the `ManifestExecution` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestExecution
+    ```
+
+    Parameters
+    ----------
+    entrypoint : Optional[str], default=None
+        The entrypoint for the decision model, e.g.: `./app.py`.
+    cwd : Optional[str], default=None
+        The working directory to set when running the app, e.g.: `./src/`.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestExecution
+    >>> exec_config = ManifestExecution(
+    ...     entrypoint="./app.py",
+    ...     cwd="./src/"
+    ... )
+    >>> exec_config.entrypoint
+    './app.py'
+    """
+
+    entrypoint: Optional[str] = None
+    """The entrypoint for the decision model, e.g.: `./app.py`."""
+    cwd: Optional[str] = None
+    """The working directory to set when running the app, e.g.: `./src/`."""
+
+
 class Manifest(BaseModel):
     """
     Represents an app manifest (`app.yaml`) for Nextmv Cloud.
@@ -1130,6 +1164,11 @@ class Manifest(BaseModel):
     - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
     - `ManifestRuntime.DEFAULT`: `./main`
     - Java: `./main.jar`
+    """
+    execution: Optional[ManifestExecution] = None
+    """
+    Optional execution configuration for the decision model. Allows configuration of
+    entrypoint and more.
     """
 
     def model_post_init(self, __context) -> None:

@@ -3802,6 +3802,13 @@ class Application:
                     "template": options["format"],
                 }
             activation_request["requirements"]["options"] = options
+
+        if manifest.execution is not None:
+            if manifest.execution.entrypoint:
+                activation_request["requirements"]["entrypoint"] = manifest.execution.entrypoint
+            if manifest.execution.cwd:
+                activation_request["requirements"]["working_directory"] = manifest.execution.cwd
+
         return activation_request
 
     def __update_app_binary(
