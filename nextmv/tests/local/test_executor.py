@@ -25,7 +25,7 @@ from nextmv.local.executor import (
     process_run_solutions,
     process_run_statistics,
 )
-from nextmv.manifest import Manifest
+from nextmv.manifest import Manifest, ManifestExecution
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 
 
@@ -42,7 +42,8 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Create mock manifest
         self.mock_manifest = Mock(spec=Manifest)
-        self.mock_manifest.entrypoint = "main.py"
+        self.mock_manifest.execution = Mock(spec=ManifestExecution)
+        self.mock_manifest.execution.entrypoint = "main.py"
         self.mock_manifest.configuration = None
 
         # Create nested mock for format

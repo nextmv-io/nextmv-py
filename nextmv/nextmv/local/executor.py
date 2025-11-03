@@ -56,7 +56,7 @@ from nextmv.local.local import (
     calculate_files_size,
 )
 from nextmv.local.plotly_handler import handle_plotly_visual
-from nextmv.manifest import Manifest
+from nextmv.manifest import Manifest, ManifestType
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, Asset, OutputFormat, VisualSchema
 from nextmv.status import StatusV2
 
@@ -152,7 +152,7 @@ def execute_run(
             # Start a Python subprocess to execute the entrypoint. For now, we are
             # supporting a Python-first experience, so we are not summoning
             # applications that are not Python-based.
-            entrypoint = os.path.join(temp_src, manifest.entrypoint)
+            entrypoint = os.path.join(temp_src, __determine_entrypoint(manifest))
             args = [sys.executable, entrypoint] + options_args(options)
 
             result = subprocess.run(
@@ -188,6 +188,25 @@ def execute_run(
             f.seek(0)
             json.dump(info, f, indent=2)
             f.truncate()
+
+
+def __determine_entrypoint(manifest: Manifest) -> str:
+    """Returns the default entrypoint based on the runtime if not explicitly set."""
+    if manifest.execution is not None and manifest.execution.entrypoint is not None:
+        return manifest.execution.entrypoint
+
+    # Determine default entrypoint based on type
+    if manifest.type == ManifestType.PYTHON:
+        return "./main.py"
+    elif manifest.type == ManifestType.GO:
+        return "./main"
+    elif manifest.type == ManifestType.JAVA:
+        return "./main.jar"
+    else:
+        raise ValueError(
+            f'entrypoint is not provided but the app type "{manifest.type}" could not '
+            "be resolved to establish a default entrypoint"
+        )
 
 
 def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:

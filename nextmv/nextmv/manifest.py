@@ -1156,59 +1156,11 @@ class Manifest(BaseModel):
     process. This command is executed just before the app gets bundled and
     pushed (after the build command).
     """
-    entrypoint: Optional[str] = None
-    """
-    Optional entrypoint for the decision model. When not specified, the
-    following default entrypoints are used, according to the `.runtime`:
-
-    - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
-    - `ManifestRuntime.DEFAULT`: `./main`
-    - Java: `./main.jar`
-    """
     execution: Optional[ManifestExecution] = None
     """
     Optional execution configuration for the decision model. Allows configuration of
     entrypoint and more.
     """
-
-    def model_post_init(self, __context) -> None:
-        """
-        Post-initialization to set default entrypoint based on runtime if not specified.
-
-        This method is automatically called by Pydantic after the model is initialized.
-        If no entrypoint is provided, it sets a default entrypoint based on the runtime:
-        - Python runtimes (PYTHON, HEXALY, PYOMO, CUOPT): "./main.py"
-        - DEFAULT runtime: "./main"
-        - JAVA runtime: "./main.jar"
-
-        Parameters
-        ----------
-        __context : Any
-            Pydantic context (unused in this implementation).
-
-        Raises
-        ------
-        ValueError
-            If no entrypoint is provided and the runtime cannot be resolved to
-            establish a default entrypoint.
-        """
-        if self.entrypoint is None:
-            if self.runtime in (
-                ManifestRuntime.PYTHON,
-                ManifestRuntime.HEXALY,
-                ManifestRuntime.PYOMO,
-                ManifestRuntime.CUOPT,
-            ):
-                self.entrypoint = "./main.py"
-            elif self.runtime == ManifestRuntime.DEFAULT:
-                self.entrypoint = "./main"
-            elif self.runtime == ManifestRuntime.JAVA:
-                self.entrypoint = "./main.jar"
-            else:
-                raise ValueError(
-                    f'entrypoint is not provided but the runtime "{self.runtime}" could not '
-                    "be resolved to establish a default entrypoint"
-                )
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":
