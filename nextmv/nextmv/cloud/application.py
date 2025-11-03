@@ -3764,7 +3764,7 @@ class Application:
         return result
 
     @staticmethod
-    def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:
+    def __convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:  # noqa: C901
         """Converts a manifest to a payload dictionary for the API."""
 
         activation_request = {
