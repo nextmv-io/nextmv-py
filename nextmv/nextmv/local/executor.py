@@ -153,6 +153,7 @@ def execute_run(
             # supporting a Python-first experience, so we are not summoning
             # applications that are not Python-based.
             entrypoint = os.path.join(temp_src, __determine_entrypoint(manifest))
+            cwd = __determine_cwd(manifest, default=temp_src)
             args = [sys.executable, entrypoint] + options_args(options)
 
             result = subprocess.run(
@@ -162,7 +163,7 @@ def execute_run(
                 text=True,
                 capture_output=True,
                 input=stdin_input,
-                cwd=temp_src,
+                cwd=cwd,
             )
 
             process_run_output(
@@ -207,6 +208,16 @@ def __determine_entrypoint(manifest: Manifest) -> str:
             f'entrypoint is not provided but the app type "{manifest.type}" could not '
             "be resolved to establish a default entrypoint"
         )
+
+
+def __determine_cwd(manifest: Manifest, default: str) -> str:
+    """
+    Returns the working directory based on the manifest if set, otherwise the default.
+    """
+    if manifest.execution is not None and manifest.execution.cwd is not None:
+        return manifest.execution.cwd
+
+    return default
 
 
 def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:
