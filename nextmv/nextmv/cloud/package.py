@@ -205,8 +205,16 @@ def __find_files(
 def __confirm_mandatory_files(manifest: Manifest, present_files: list[str]) -> None:
     """Confirm that all mandatory files are present in the given list of files."""
 
-    mandatory_files = _MANDATORY_FILES_PER_TYPE[manifest.type]
+    missing_files = []
     found_files = {os.path.normpath(file): True for file in present_files}
+
+    # Check for mandatory files (if a custom execution config is provided we check the
+    # custom entrypoint instead)
+    mandatory_files = []
+    if manifest.execution is None or manifest.execution.entrypoint is None:
+        mandatory_files = _MANDATORY_FILES_PER_TYPE[manifest.type]
+    else:
+        mandatory_files.append(os.path.normpath(manifest.execution.entrypoint))
     missing_files = [file for file in mandatory_files if file not in found_files]
 
     if missing_files:
