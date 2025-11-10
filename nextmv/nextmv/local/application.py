@@ -526,7 +526,7 @@ class Application:
         if not os.path.exists(run_dir):
             raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
 
-        logs_dir = os.path.join(runs_dir, LOGS_KEY)
+        logs_dir = os.path.join(run_dir, LOGS_KEY)
         if not os.path.exists(logs_dir):
             return ""
 
