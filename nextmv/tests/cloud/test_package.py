@@ -1,9 +1,11 @@
 import os
+import platform
 import shutil
+import subprocess
 import tempfile
 import unittest
 
-from nextmv.cloud.package import _package
+from nextmv.cloud.package import _get_shell_command_elements, _package
 from nextmv.manifest import Manifest, ManifestType
 
 
@@ -71,3 +73,11 @@ class TestPackageDir(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             _package(self.app_dir, self.manifest, verbose=False)
         self.assertIn("missing mandatory files", str(context.exception))
+
+    def test_get_shell_command_elements(self):
+        if platform.system() == "Windows":
+            command = _get_shell_command_elements("echo Hello World")
+            subprocess.run(command, check=True)
+        else:
+            command = _get_shell_command_elements("echo 'Hello World'")
+            subprocess.run(command, check=True)
