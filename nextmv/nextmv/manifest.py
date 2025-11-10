@@ -984,8 +984,10 @@ class ManifestConfiguration(BaseModel):
 
     Parameters
     ----------
-    options : ManifestOptions
+    options : Optional[ManifestOptions], default=None
         Options for the decision model.
+    content : Optional[ManifestContent], default=None
+        Content configuration for specifying how the app input/output is handled.
 
     Examples
     --------
@@ -1254,12 +1256,24 @@ class Manifest(BaseModel):
                 width=120,
             )
 
-    def extract_options(self) -> Optional[Options]:
+    def extract_options(self, should_parse: bool = True) -> Optional[Options]:
         """
         Convert the manifest options to a `nextmv.Options` object.
 
         If the manifest does not have valid options defined in
         `.configuration.options.items`, this method returns `None`.
+
+        Use the `should_parse` argument to decide if you want the options
+        parsed, or not. For more information on option parsing, please read the
+        docstrings on the `.parse()` method of the `nextmv.Options` object.
+
+        Parameters
+        ----------
+        should_parse : bool, default=True
+            Whether to parse the options, or not. By default, options are
+            parsed. When command-line arguments are parsed, the help menu is
+            created, thus parsing Options more than once may result in
+            unexpected behavior.
 
         Returns
         -------
@@ -1293,7 +1307,11 @@ class Manifest(BaseModel):
 
         options = [option.to_option() for option in self.configuration.options.items]
 
-        return Options(*options)
+        opt = Options(*options)
+        if should_parse:
+            opt.parse()
+
+        return opt
 
     @classmethod
     def from_model_configuration(

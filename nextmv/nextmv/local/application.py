@@ -493,6 +493,52 @@ class Application:
             output_dir_path=output_dir_path,
         )
 
+    def run_logs(self, run_id: str) -> str:
+        """
+        Get the logs of a local run.
+
+        If the run does not have any logs, or they are empty, then this method
+        simply returns a blank string. This method is equivalent to fetching
+        the content of the `.nextmv/runs/{run_id}/logs/logs.log` file.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve logs for.
+
+        Returns
+        -------
+        str
+            The contents of the logs file for the run.
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+        """
+
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        logs_dir = os.path.join(runs_dir, LOGS_KEY)
+        if not os.path.exists(logs_dir):
+            return ""
+
+        logs_file = os.path.join(logs_dir, LOGS_FILE)
+        if not os.path.exists(logs_file):
+            return ""
+
+        with open(logs_file) as f:
+            logs = f.read()
+
+        return logs
+
     def run_metadata(self, run_id: str) -> RunInformation:
         """
         Get the metadata of a local run.
