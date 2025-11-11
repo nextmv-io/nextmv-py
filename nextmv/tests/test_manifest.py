@@ -182,7 +182,7 @@ class TestManifest(unittest.TestCase):
 
     def test_extract_options(self):
         manifest = Manifest.from_yaml("tests/cloud")
-        options = manifest.extract_options()
+        options = manifest.extract_options(should_parse=False)
         self.assertEqual(len(options.options), 5)
 
         found = {
