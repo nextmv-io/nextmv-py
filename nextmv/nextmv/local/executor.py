@@ -191,35 +191,6 @@ def execute_run(
             f.truncate()
 
 
-def __determine_entrypoint(manifest: Manifest) -> str:
-    """Returns the default entrypoint based on the runtime if not explicitly set."""
-    if manifest.execution is not None and manifest.execution.entrypoint is not None:
-        return manifest.execution.entrypoint
-
-    # Determine default entrypoint based on type
-    if manifest.type == ManifestType.PYTHON:
-        return "./main.py"
-    elif manifest.type == ManifestType.GO:
-        return "./main"
-    elif manifest.type == ManifestType.JAVA:
-        return "./main.jar"
-    else:
-        raise ValueError(
-            f'entrypoint is not provided but the app type "{manifest.type}" could not '
-            "be resolved to establish a default entrypoint"
-        )
-
-
-def __determine_cwd(manifest: Manifest, default: str) -> str:
-    """
-    Returns the working directory based on the manifest if set, otherwise the default.
-    """
-    if manifest.execution is not None and manifest.execution.cwd is not None:
-        return manifest.execution.cwd
-
-    return default
-
-
 def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:
     """
     Converts options dictionary to a list of command-line arguments.
@@ -1034,6 +1005,35 @@ def _calculate_file_checksum(file_path: str) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def __determine_entrypoint(manifest: Manifest) -> str:
+    """Returns the default entrypoint based on the runtime if not explicitly set."""
+    if manifest.execution is not None and manifest.execution.entrypoint is not None:
+        return manifest.execution.entrypoint
+
+    # Determine default entrypoint based on type
+    if manifest.type == ManifestType.PYTHON:
+        return "./main.py"
+    elif manifest.type == ManifestType.GO:
+        return "./main"
+    elif manifest.type == ManifestType.JAVA:
+        return "./main.jar"
+    else:
+        raise ValueError(
+            f'entrypoint is not provided but the app type "{manifest.type}" could not '
+            "be resolved to establish a default entrypoint"
+        )
+
+
+def __determine_cwd(manifest: Manifest, default: str) -> str:
+    """
+    Returns the working directory based on the manifest if set, otherwise the default.
+    """
+    if manifest.execution is not None and manifest.execution.cwd is not None:
+        return manifest.execution.cwd
+
+    return default
 
 
 if __name__ == "__main__":
