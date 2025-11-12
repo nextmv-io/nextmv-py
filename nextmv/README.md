@@ -25,7 +25,7 @@ Welcome to `nextmv`, the general Python SDK for the Nextmv Platform.
 
 ## Installation
 
-Requires Python `>=3.9`. Install using `pip`:
+Requires Python `>=3.10`. Install using `pip`:
 
 ```bash
 pip install nextmv

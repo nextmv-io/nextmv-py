@@ -1,9 +1,9 @@
 import datetime
 import json
-from typing import Any, Union
+from typing import Any
 
 
-def deflated_serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
+def deflated_serialize_json(obj: dict | list, json_configurations: dict[str, Any] = None) -> str:
     """
     Serialize a Python object (dict or list) to a JSON string with default configuration for a deflated format.
 
@@ -35,7 +35,7 @@ def deflated_serialize_json(obj: Union[dict, list], json_configurations: dict[st
     )
 
 
-def serialize_json(obj: Union[dict, list], json_configurations: dict[str, Any] = None) -> str:
+def serialize_json(obj: dict | list, json_configurations: dict[str, Any] = None) -> str:
     """
     Serialize a Python object (dict or list) to a JSON string.
 

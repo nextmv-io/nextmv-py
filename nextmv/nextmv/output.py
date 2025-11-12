@@ -60,7 +60,7 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import AliasChoices, Field
 
@@ -119,16 +119,11 @@ class RunStatistics(BaseModel):
     {'duration': 10.5, 'iterations': 100, 'custom': {'convergence': 0.001}}
     """
 
-    duration: Optional[float] = None
+    duration: float | None = None
     """Duration of the run in seconds."""
-    iterations: Optional[int] = None
+    iterations: int | None = None
     """Number of iterations."""
-    custom: Optional[
-        Union[
-            Any,
-            dict[str, Any],
-        ]
-    ] = None
+    custom: Any | dict[str, Any] | None = None
     """Custom statistics created by the user. Can normally expect a `dict[str,
     Any]`."""
 
@@ -164,16 +159,11 @@ class ResultStatistics(BaseModel):
     {'duration': 5.2, 'value': 42.0, 'custom': {'gap': 0.05}}
     """
 
-    duration: Optional[float] = None
+    duration: float | None = None
     """Duration of the run in seconds."""
-    value: Optional[float] = None
+    value: float | None = None
     """Value of the result."""
-    custom: Optional[
-        Union[
-            Any,
-            dict[str, Any],
-        ]
-    ] = None
+    custom: Any | dict[str, Any] | None = None
     """Custom statistics created by the user. Can normally expect a `dict[str,
     Any]`."""
 
@@ -239,9 +229,9 @@ class Series(BaseModel):
     2
     """
 
-    name: Optional[str] = None
+    name: str | None = None
     """Name of the series."""
-    data_points: Optional[list[DataPoint]] = None
+    data_points: list[DataPoint] | None = None
     """Data of the series."""
 
 
@@ -274,9 +264,9 @@ class SeriesData(BaseModel):
     1
     """
 
-    value: Optional[Series] = None
+    value: Series | None = None
     """A series for the value of the solution."""
-    custom: Optional[list[Series]] = None
+    custom: list[Series] | None = None
     """A list of series for custom statistics."""
 
 
@@ -314,13 +304,13 @@ class Statistics(BaseModel):
     100.0
     """
 
-    run: Optional[RunStatistics] = None
+    run: RunStatistics | None = None
     """Statistics about the run."""
-    result: Optional[ResultStatistics] = None
+    result: ResultStatistics | None = None
     """Statistics about the last result."""
-    series_data: Optional[SeriesData] = None
+    series_data: SeriesData | None = None
     """Data of the series."""
-    statistics_schema: Optional[str] = Field(
+    statistics_schema: str | None = Field(
         serialization_alias="schema",
         validation_alias=AliasChoices("schema", "statistics_schema"),
         default="v1",
@@ -407,7 +397,7 @@ class Visual(BaseModel):
     label: str
     """Label for the custom tab of the visual asset in the Nextmv Console."""
 
-    visual_type: Optional[str] = Field(
+    visual_type: str | None = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "visual_type"),
         default="custom-tab",
@@ -482,11 +472,11 @@ class Asset(BaseModel):
     content: Any
     """Content of the asset. The type must be serializable to JSON."""
 
-    content_type: Optional[str] = "json"
+    content_type: str | None = "json"
     """Content type of the asset. Only `json` is allowed"""
-    description: Optional[str] = None
+    description: str | None = None
     """Description of the asset."""
-    visual: Optional[Visual] = None
+    visual: Visual | None = None
     """Visual schema of the asset."""
 
     def __post_init__(self):
@@ -633,12 +623,12 @@ class SolutionFile:
     The `writer_args` and `writer_kwargs` parameters of this class can be used
     to provide those additional arguments.
     """
-    writer_args: Optional[list[Any]] = None
+    writer_args: list[Any] | None = None
     """
     Optional positional arguments to pass to the writer function. This can be
     used to customize the behavior of the writer.
     """
-    writer_kwargs: Optional[dict[str, Any]] = None
+    writer_kwargs: dict[str, Any] | None = None
     """
     Optional keyword arguments to pass to the writer function. This can be used
     to customize the behavior of the writer.
@@ -648,7 +638,7 @@ class SolutionFile:
 def json_solution_file(
     name: str,
     data: dict[str, Any],
-    json_configurations: Optional[dict[str, Any]] = None,
+    json_configurations: dict[str, Any] | None = None,
 ) -> SolutionFile:
     """
     This is a convenience function to build a `SolutionFile`. It writes the
@@ -711,7 +701,7 @@ def json_solution_file(
 def csv_solution_file(
     name: str,
     data: list[dict[str, Any]],
-    csv_configurations: Optional[dict[str, Any]] = None,
+    csv_configurations: dict[str, Any] | None = None,
 ) -> SolutionFile:
     """
     This is a convenience function to build a `SolutionFile`. It writes the
@@ -933,7 +923,7 @@ class Output:
     True
     """
 
-    options: Optional[Union[Options, dict[str, Any]]] = None
+    options: Options | dict[str, Any] | None = None
     """
     Options that the `Output` was created with. These options can be of type
     `Options` or a simple dictionary. If the options are of type `Options`,
@@ -949,18 +939,13 @@ class Output:
     }
     ```
     """
-    output_format: Optional[OutputFormat] = OutputFormat.JSON
+    output_format: OutputFormat | None = OutputFormat.JSON
     """
     Format of the output data. Default is `OutputFormat.JSON`. When set to
     `OutputFormat.MULTI_FILE`, the `solution_files` field must be specified and
     cannot be `None`.
     """
-    solution: Optional[
-        Union[
-            Union[dict[str, Any], Any],  # JSON
-            dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
-        ]
-    ] = None
+    solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None
     """
     The solution to the decision problem. Use this filed when working with
     `output_format` of types:
@@ -975,7 +960,7 @@ class Output:
     this `solution` field is ignored, as you should use the `solution_files`
     field instead.
     """
-    statistics: Optional[Union[Statistics, dict[str, Any]]] = None
+    statistics: Statistics | dict[str, Any] | None = None
     """
     Statistics of the solution. These statistics can be of type `Statistics` or a
     simple dictionary. If the statistics are of type `Statistics`, they will be
@@ -983,19 +968,19 @@ class Output:
     dictionary, they will be used as is. If the statistics are not provided, an
     empty dictionary will be used.
     """
-    csv_configurations: Optional[dict[str, Any]] = None
+    csv_configurations: dict[str, Any] | None = None
     """
     Optional configuration for writing CSV files, to be used when the
     `output_format` is `OutputFormat.CSV_ARCHIVE`. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module.
     """
-    json_configurations: Optional[dict[str, Any]] = None
+    json_configurations: dict[str, Any] | None = None
     """
     Optional configuration for writing JSON files, to be used when the
     `output_format` is `OutputFormat.JSON`. These configurations are passed as
     kwargs to the `json.dumps` function.
     """
-    assets: Optional[list[Union[Asset, dict[str, Any]]]] = None
+    assets: list[Asset | dict[str, Any]] | None = None
     """
     Optional list of assets to be included in the output. These assets can be of
     type `Asset` or a simple dictionary. If the assets are of type `Asset`, they
@@ -1003,7 +988,7 @@ class Output:
     dictionary, they will be used as is. If the assets are not provided, an
     empty list will be used.
     """
-    solution_files: Optional[list[SolutionFile]] = None
+    solution_files: list[SolutionFile] | None = None
     """
     Optional list of solution files to be included in the output. These files
     are of type `SolutionFile`, which allows for custom serialization and
@@ -1162,7 +1147,7 @@ class OutputWriter:
     ...         print(f"Writing output to {path}")
     """
 
-    def write(self, output: Union[Output, dict[str, Any], BaseModel], *args, **kwargs) -> None:
+    def write(self, output: Output | dict[str, Any] | BaseModel, *args, **kwargs) -> None:
         """
         Write the output data.
 
@@ -1212,9 +1197,9 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_json(
         self,
-        output: Union[Output, dict[str, Any], BaseModel],
+        output: Output | dict[str, Any] | BaseModel,
         output_dict: dict[str, Any],
-        path: Optional[str] = None,
+        path: str | None = None,
     ) -> None:
         """
         Write output in JSON format.
@@ -1246,9 +1231,9 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_archive(
         self,
-        output: Union[Output, dict[str, Any], BaseModel],
+        output: Output | dict[str, Any] | BaseModel,
         output_dict: dict[str, Any],
-        path: Optional[str] = None,
+        path: str | None = None,
     ) -> None:
         """
         Write output in CSV archive format.
@@ -1312,9 +1297,9 @@ class LocalOutputWriter(OutputWriter):
 
     def _write_multi_file(
         self,
-        output: Union[Output, dict[str, Any], BaseModel],
+        output: Output | dict[str, Any] | BaseModel,
         output_dict: dict[str, Any],
-        path: Optional[str] = None,
+        path: str | None = None,
     ) -> None:
         """
         Write output to multiple files.
@@ -1367,7 +1352,7 @@ class LocalOutputWriter(OutputWriter):
         parent_dir: str,
         output_dict: dict[str, Any],
         element_key: str,
-        json_configurations: Optional[dict[str, Any]] = None,
+        json_configurations: dict[str, Any] | None = None,
     ):
         """
         Auxiliary function to write a specific element of the output
@@ -1440,8 +1425,8 @@ class LocalOutputWriter(OutputWriter):
 
     def write(
         self,
-        output: Union[Output, dict[str, Any], BaseModel],
-        path: Optional[str] = None,
+        output: Output | dict[str, Any] | BaseModel,
+        path: str | None = None,
         skip_stdout_reset: bool = False,
     ) -> None:
         """
@@ -1526,8 +1511,8 @@ class LocalOutputWriter(OutputWriter):
 
 
 def write_local(
-    output: Union[Output, dict[str, Any]],
-    path: Optional[str] = None,
+    output: Output | dict[str, Any],
+    path: str | None = None,
     skip_stdout_reset: bool = False,
 ) -> None:
     """
@@ -1591,10 +1576,10 @@ _LOCAL_OUTPUT_WRITER = LocalOutputWriter()
 
 
 def write(
-    output: Union[Output, dict[str, Any], BaseModel],
-    path: Optional[str] = None,
+    output: Output | dict[str, Any] | BaseModel,
+    path: str | None = None,
     skip_stdout_reset: bool = False,
-    writer: Optional[OutputWriter] = _LOCAL_OUTPUT_WRITER,
+    writer: OutputWriter | None = _LOCAL_OUTPUT_WRITER,
 ) -> None:
     """
     Write the output to the specified destination.

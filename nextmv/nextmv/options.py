@@ -21,7 +21,7 @@ import copy
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any
 
 from nextmv.base_model import BaseModel
 from nextmv.deprecated import deprecated
@@ -74,17 +74,17 @@ class Parameter:
     param_type: type
     """The type of the parameter."""
 
-    default: Optional[Any] = None
+    default: Any | None = None
     """The default value of the parameter. Even though this is optional, it is
     recommended to provide a default value for all parameters."""
-    description: Optional[str] = None
+    description: str | None = None
     """An optional description of the parameter. This is useful for generating
     help messages for the configuration."""
     required: bool = False
     """Whether the parameter is required. If a parameter is required, it will
     be an error to not provide a value for it, either trough a command-line
     argument, an environment variable or a default value."""
-    choices: list[Optional[Any]] = None
+    choices: list[Any | None] = None
     """Limits values to a specific set of choices."""
 
     def __post_init__(self):
@@ -246,12 +246,12 @@ class Option:
     option_type: type
     """The type of the option."""
 
-    default: Optional[Any] = None
+    default: Any | None = None
     """
     The default value of the option. Even though this is optional, it is
     recommended to provide a default value for all options.
     """
-    description: Optional[str] = None
+    description: str | None = None
     """
     An optional description of the option. This is useful for generating help
     messages for the `Options`.
@@ -262,16 +262,16 @@ class Option:
     error to not provide a value for it, either trough a command-line argument,
     an environment variable or a default value.
     """
-    choices: Optional[list[Any]] = None
+    choices: list[Any] | None = None
     """Limits values to a specific set of choices."""
-    additional_attributes: Optional[dict[str, Any]] = None
+    additional_attributes: dict[str, Any] | None = None
     """
     Optional additional attributes for the option. The Nextmv Cloud may
     perform validation on these attributes. For example, the maximum length of
     a string or the maximum value of an integer. These additional attributes
     will be shown in the help message of the `Options`.
     """
-    control_type: Optional[str] = None
+    control_type: str | None = None
     """
     The type of control to use for the option in the Nextmv Cloud UI. This is
     useful for defining how the option should be presented in the Nextmv
@@ -281,13 +281,13 @@ class Option:
     the option. This will be validated by the Nextmv Cloud, and availability
     is based on options_type.
     """
-    hidden_from: Optional[list[str]] = None
+    hidden_from: list[str] | None = None
     """
     A list of team roles for which this option will be hidden in the UI. For
     example, if you want to hide an option from the "operator" role, you can
     pass `hidden_from=["operator"]`.
     """
-    display_name: Optional[str] = None
+    display_name: str | None = None
     """
     An optional display name for the option. This is useful for making
     the option more user-friendly in the UI.
@@ -1032,7 +1032,7 @@ class Options:
         return False
 
     @staticmethod
-    def _option_type(option: Union[Option, Parameter]) -> type:
+    def _option_type(option: Option | Parameter) -> type:
         """
         Get the type of an option.
 

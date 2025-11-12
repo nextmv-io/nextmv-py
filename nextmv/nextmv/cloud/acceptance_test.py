@@ -43,7 +43,6 @@ AcceptanceTest : BaseModel
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.batch_experiment import ExperimentStatus
@@ -861,9 +860,9 @@ class AcceptanceTestResults(BaseModel):
 
     passed: bool
     """Whether the acceptance test passed (or not)."""
-    metric_results: Optional[list[MetricResult]] = None
+    metric_results: list[MetricResult] | None = None
     """Results of the metrics."""
-    error: Optional[str] = None
+    error: str | None = None
     """Error message if the acceptance test failed."""
 
 
@@ -957,7 +956,7 @@ class AcceptanceTest(BaseModel):
     """Creation date of the acceptance test."""
     updated_at: datetime
     """Last update date of the acceptance test."""
-    status: Optional[ExperimentStatus] = ExperimentStatus.UNKNOWN
+    status: ExperimentStatus | None = ExperimentStatus.UNKNOWN
     """Status of the acceptance test."""
-    results: Optional[AcceptanceTestResults] = None
+    results: AcceptanceTestResults | None = None
     """Results of the acceptance test."""

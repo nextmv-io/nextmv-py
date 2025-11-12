@@ -22,7 +22,6 @@ EnsembleDefinition
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from nextmv.base_model import BaseModel
 
@@ -56,9 +55,9 @@ class RunGroup(BaseModel):
     """The unique identifier of the run group."""
     instance_id: str
     """ID of the app instance that this run group executes on."""
-    options: Optional[dict] = None
+    options: dict | None = None
     """Runtime options/parameters for the application."""
-    repetitions: Optional[int] = None
+    repetitions: int | None = None
     """The number of times the run is to be repeated on the instance and with
     the options defined in the run group"""
 

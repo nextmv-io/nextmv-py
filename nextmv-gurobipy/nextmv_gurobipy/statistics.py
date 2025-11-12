@@ -15,7 +15,7 @@ STATUS
 """
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -66,7 +66,7 @@ Examples
 """
 
 
-def ModelStatistics(model: gp.Model, run_duration_start: Optional[float] = None) -> nextmv.Statistics:
+def ModelStatistics(model: gp.Model, run_duration_start: float | None = None) -> nextmv.Statistics:
     """
     Creates a Nextmv statistics object from a Gurobi model, once it has been optimized.
 
@@ -113,7 +113,7 @@ def ModelStatistics(model: gp.Model, run_duration_start: Optional[float] = None)
     if run_duration_start is not None:
         run.duration = time.time() - run_duration_start
 
-    def safe_get(attr_name: str) -> Optional[Any]:
+    def safe_get(attr_name: str) -> Any | None:
         """
         Safely get an attribute from the model by returning None if it does not exist.
 
