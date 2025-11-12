@@ -13,12 +13,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14"
+    "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
     "scikit-learn>=1.6.1",
-    "nextmv>=0.29.0"
+    "nextmv>=0.34.1"
 ]
 description = "An SDK for integrating scikit-learn with the Nextmv platform"
 dynamic = [
