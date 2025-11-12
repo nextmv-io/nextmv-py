@@ -1,18 +1,17 @@
 import unittest
-from typing import Optional
 
 from nextmv.base_model import BaseModel
 
 
 class Foo(BaseModel):
     bar: str
-    baz: Optional[int] = None
+    baz: int | None = None
 
 
 class Roh(BaseModel):
     foo: Foo
-    qux: Optional[list[str]] = None
-    lorem: Optional[str] = None
+    qux: list[str] | None = None
+    lorem: str | None = None
 
 
 class TestBaseModel(unittest.TestCase):

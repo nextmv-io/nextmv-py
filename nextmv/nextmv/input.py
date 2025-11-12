@@ -35,7 +35,7 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from nextmv._serialization import serialize_json
 from nextmv.deprecated import deprecated
@@ -155,17 +155,17 @@ class DataFile:
 
     The `loader` function should return the data that will be used in the model.
     """
-    loader_kwargs: Optional[dict[str, Any]] = None
+    loader_kwargs: dict[str, Any] | None = None
     """
     Optional keyword arguments to pass to the loader function. This can be used
     to customize the behavior of the loader.
     """
-    loader_args: Optional[list[Any]] = None
+    loader_args: list[Any] | None = None
     """
     Optional positional arguments to pass to the loader function. This can be
     used to customize the behavior of the loader.
     """
-    input_data_key: Optional[str] = None
+    input_data_key: str | None = None
     """
     Use this parameter to set a custom key to represent your file.
 
@@ -180,8 +180,8 @@ class DataFile:
 
 def json_data_file(
     name: str,
-    json_configurations: Optional[dict[str, Any]] = None,
-    input_data_key: Optional[str] = None,
+    json_configurations: dict[str, Any] | None = None,
+    input_data_key: str | None = None,
 ) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads JSON data.
@@ -231,7 +231,7 @@ def json_data_file(
 
     json_configurations = json_configurations or {}
 
-    def loader(file_path: str) -> Union[dict[str, Any], Any]:
+    def loader(file_path: str) -> dict[str, Any] | Any:
         with open(file_path, encoding="utf-8") as f:
             return json.load(f, **json_configurations)
 
@@ -244,8 +244,8 @@ def json_data_file(
 
 def csv_data_file(
     name: str,
-    csv_configurations: Optional[dict[str, Any]] = None,
-    input_data_key: Optional[str] = None,
+    csv_configurations: dict[str, Any] | None = None,
+    input_data_key: str | None = None,
 ) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads CSV data.
@@ -306,7 +306,7 @@ def csv_data_file(
     )
 
 
-def text_data_file(name: str, input_data_key: Optional[str] = None) -> DataFile:
+def text_data_file(name: str, input_data_key: str | None = None) -> DataFile:
     """
     This is a convenience function to create a `DataFile` that reads utf-8
     encoded text data.
@@ -408,13 +408,7 @@ class Input:
         If the `input_format` is not one of the supported formats.
     """
 
-    data: Union[
-        Union[dict[str, Any], Any],  # JSON
-        str,  # TEXT
-        list[dict[str, Any]],  # CSV
-        dict[str, list[dict[str, Any]]],  # CSV_ARCHIVE
-        dict[str, Any],  # MULTI_FILE
-    ]
+    data: dict[str, Any] | Any | str | list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, Any]
     """
     The actual data.
 
@@ -427,14 +421,14 @@ class Input:
     - For `MULTI_FILE`: `dict[str, Any]`
     """
 
-    input_format: Optional[InputFormat] = InputFormat.JSON
+    input_format: InputFormat | None = InputFormat.JSON
     """
     Format of the input data.
 
     Default is `InputFormat.JSON`.
     """
 
-    options: Optional[Options] = None
+    options: Options | None = None
     """
     Options that the `Input` was created with.
 
@@ -558,7 +552,7 @@ class InputLoader:
     def load(
         self,
         input_format: InputFormat = InputFormat.JSON,
-        options: Optional[Options] = None,
+        options: Options | None = None,
         *args,
         **kwargs,
     ) -> Input:
@@ -636,7 +630,7 @@ class LocalInputLoader(InputLoader):
         with open(path, encoding="utf-8") as f:
             return f.read().rstrip("\n")
 
-    def _read_csv(path: str, csv_configurations: Optional[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _read_csv(path: str, csv_configurations: dict[str, Any] | None) -> list[dict[str, Any]]:
         """
         Read a CSV file and return its contents as a list of dictionaries.
 
@@ -655,7 +649,7 @@ class LocalInputLoader(InputLoader):
         with open(path, encoding="utf-8") as f:
             return list(csv.DictReader(f, **csv_configurations))
 
-    def _read_json(path: str, _) -> Union[dict[str, Any], Any]:
+    def _read_json(path: str, _) -> dict[str, Any] | Any:
         """
         Read a JSON file and return its parsed contents.
 
@@ -704,11 +698,11 @@ class LocalInputLoader(InputLoader):
 
     def load(
         self,
-        input_format: Optional[InputFormat] = InputFormat.JSON,
-        options: Optional[Options] = None,
-        path: Optional[str] = None,
-        csv_configurations: Optional[dict[str, Any]] = None,
-        data_files: Optional[list[DataFile]] = None,
+        input_format: InputFormat | None = InputFormat.JSON,
+        options: Options | None = None,
+        path: str | None = None,
+        csv_configurations: dict[str, Any] | None = None,
+        data_files: list[DataFile] | None = None,
     ) -> Input:
         """
         Load the input data. The input data can be in various formats. For
@@ -789,11 +783,11 @@ class LocalInputLoader(InputLoader):
 
     def _load_utf8_encoded(
         self,
-        csv_configurations: Optional[dict[str, Any]],
-        path: Optional[str] = None,
-        input_format: Optional[InputFormat] = InputFormat.JSON,
+        csv_configurations: dict[str, Any] | None,
+        path: str | None = None,
+        input_format: InputFormat | None = InputFormat.JSON,
         use_file_reader: bool = False,
-    ) -> Union[dict[str, Any], str, list[dict[str, Any]]]:
+    ) -> dict[str, Any] | str | list[dict[str, Any]]:
         """
         Load a utf-8 encoded file from stdin or filesystem.
 
@@ -831,8 +825,8 @@ class LocalInputLoader(InputLoader):
 
     def _load_archive(
         self,
-        csv_configurations: Optional[dict[str, Any]],
-        path: Optional[str] = None,
+        csv_configurations: dict[str, Any] | None,
+        path: str | None = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """
         Load CSV files from a directory.
@@ -887,7 +881,7 @@ class LocalInputLoader(InputLoader):
     def _load_multi_file(
         self,
         data_files: list[DataFile],
-        path: Optional[str] = None,
+        path: str | None = None,
     ) -> dict[str, Any]:
         """
         Load multiple files from a directory.
@@ -961,10 +955,10 @@ class LocalInputLoader(InputLoader):
 
 
 def load_local(
-    input_format: Optional[InputFormat] = InputFormat.JSON,
-    options: Optional[Options] = None,
-    path: Optional[str] = None,
-    csv_configurations: Optional[dict[str, Any]] = None,
+    input_format: InputFormat | None = InputFormat.JSON,
+    options: Options | None = None,
+    path: str | None = None,
+    csv_configurations: dict[str, Any] | None = None,
 ) -> Input:
     """
     !!! warning
@@ -1016,12 +1010,12 @@ _LOCAL_INPUT_LOADER = LocalInputLoader()
 
 
 def load(
-    input_format: Optional[InputFormat] = InputFormat.JSON,
-    options: Optional[Options] = None,
-    path: Optional[str] = None,
-    csv_configurations: Optional[dict[str, Any]] = None,
-    loader: Optional[InputLoader] = _LOCAL_INPUT_LOADER,
-    data_files: Optional[list[DataFile]] = None,
+    input_format: InputFormat | None = InputFormat.JSON,
+    options: Options | None = None,
+    path: str | None = None,
+    csv_configurations: dict[str, Any] | None = None,
+    loader: InputLoader | None = _LOCAL_INPUT_LOADER,
+    data_files: list[DataFile] | None = None,
 ) -> Input:
     """
     Load input data using the specified loader.

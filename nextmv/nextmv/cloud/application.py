@@ -29,7 +29,7 @@ import tarfile
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 import requests
 
@@ -148,9 +148,9 @@ class Application:
         cls,
         client: Client,
         name: str,
-        id: Optional[str] = None,
-        description: Optional[str] = None,
-        is_workflow: Optional[bool] = None,
+        id: str | None = None,
+        description: str | None = None,
+        is_workflow: bool | None = None,
         exist_ok: bool = False,
     ) -> "Application":
         """
@@ -1063,10 +1063,10 @@ class Application:
         candidate_instance_id: str,
         baseline_instance_id: str,
         id: str,
-        metrics: list[Union[Metric, dict[str, Any]]],
+        metrics: list[Metric | dict[str, Any]],
         name: str,
-        input_set_id: Optional[str] = None,
-        description: Optional[str] = None,
+        input_set_id: str | None = None,
+        description: str | None = None,
     ) -> AcceptanceTest:
         """
         Create a new acceptance test.
@@ -1180,10 +1180,10 @@ class Application:
         candidate_instance_id: str,
         baseline_instance_id: str,
         id: str,
-        metrics: list[Union[Metric, dict[str, Any]]],
+        metrics: list[Metric | dict[str, Any]],
         name: str,
-        input_set_id: Optional[str] = None,
-        description: Optional[str] = None,
+        input_set_id: str | None = None,
+        description: str | None = None,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> AcceptanceTest:
         """
@@ -1260,13 +1260,13 @@ class Application:
     def new_batch_experiment(
         self,
         name: str,
-        input_set_id: Optional[str] = None,
-        instance_ids: Optional[list[str]] = None,
-        description: Optional[str] = None,
-        id: Optional[str] = None,
-        option_sets: Optional[dict[str, dict[str, str]]] = None,
-        runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
-        type: Optional[str] = "batch",
+        input_set_id: str | None = None,
+        instance_ids: list[str] | None = None,
+        description: str | None = None,
+        id: str | None = None,
+        option_sets: dict[str, dict[str, str]] | None = None,
+        runs: list[BatchExperimentRun | dict[str, Any]] | None = None,
+        type: str | None = "batch",
     ) -> str:
         """
         Create a new batch experiment.
@@ -1341,13 +1341,13 @@ class Application:
     def new_batch_experiment_with_result(
         self,
         name: str,
-        input_set_id: Optional[str] = None,
-        instance_ids: Optional[list[str]] = None,
-        description: Optional[str] = None,
-        id: Optional[str] = None,
-        option_sets: Optional[dict[str, dict[str, str]]] = None,
-        runs: Optional[list[Union[BatchExperimentRun, dict[str, Any]]]] = None,
-        type: Optional[str] = "batch",
+        input_set_id: str | None = None,
+        instance_ids: list[str] | None = None,
+        description: str | None = None,
+        id: str | None = None,
+        option_sets: dict[str, dict[str, str]] | None = None,
+        runs: list[BatchExperimentRun | dict[str, Any]] | None = None,
+        type: str | None = "batch",
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
@@ -1413,8 +1413,8 @@ class Application:
         id: str,
         run_groups: list[RunGroup],
         rules: list[EvaluationRule],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> EnsembleDefinition:
         """
         Create a new ensemble definition.
@@ -1459,13 +1459,13 @@ class Application:
         self,
         id: str,
         name: str,
-        description: Optional[str] = None,
-        end_time: Optional[datetime] = None,
-        instance_id: Optional[str] = None,
-        maximum_runs: Optional[int] = None,
-        run_ids: Optional[list[str]] = None,
-        start_time: Optional[datetime] = None,
-        inputs: Optional[list[ManagedInput]] = None,
+        description: str | None = None,
+        end_time: datetime | None = None,
+        instance_id: str | None = None,
+        maximum_runs: int | None = None,
+        run_ids: list[str] | None = None,
+        start_time: datetime | None = None,
+        inputs: list[ManagedInput] | None = None,
     ) -> InputSet:
         """
         Create a new input set. You can create an input set from three
@@ -1553,8 +1553,8 @@ class Application:
         version_id: str,
         id: str,
         name: str,
-        description: Optional[str] = None,
-        configuration: Optional[InstanceConfiguration] = None,
+        description: str | None = None,
+        configuration: InstanceConfiguration | None = None,
         exist_ok: bool = False,
     ) -> Instance:
         """
@@ -1636,10 +1636,10 @@ class Application:
         self,
         id: str,
         name: str,
-        description: Optional[str] = None,
-        upload_id: Optional[str] = None,
-        run_id: Optional[str] = None,
-        format: Optional[Union[Format, dict[str, Any]]] = None,
+        description: str | None = None,
+        upload_id: str | None = None,
+        run_id: str | None = None,
+        format: Format | dict[str, Any] | None = None,
     ) -> ManagedInput:
         """
         Create a new managed input. There are two methods for creating a
@@ -1715,17 +1715,17 @@ class Application:
 
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        instance_id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        upload_id: Optional[str] = None,
-        options: Optional[Union[Options, dict[str, str]]] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        batch_experiment_id: Optional[str] = None,
-        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        upload_id: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        batch_experiment_id: str | None = None,
+        external_result: ExternalRunResult | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -1893,19 +1893,19 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        instance_id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        upload_id: Optional[str] = None,
-        run_options: Optional[Union[Options, dict[str, str]]] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        upload_id: str | None = None,
+        run_options: Options | dict[str, str] | None = None,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        batch_experiment_id: Optional[str] = None,
-        external_result: Optional[Union[ExternalRunResult, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
-        output_dir_path: Optional[str] = ".",
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        batch_experiment_id: str | None = None,
+        external_result: ExternalRunResult | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
@@ -2045,8 +2045,8 @@ class Application:
         id: str,
         name: str,
         scenarios: list[Scenario],
-        description: Optional[str] = None,
-        repetitions: Optional[int] = 0,
+        description: str | None = None,
+        repetitions: int | None = 0,
     ) -> str:
         """
         Create a new scenario test. The test is based on `scenarios` and you
@@ -2166,8 +2166,8 @@ class Application:
         id: str,
         name: str,
         scenarios: list[Scenario],
-        description: Optional[str] = None,
-        repetitions: Optional[int] = 0,
+        description: str | None = None,
+        repetitions: int | None = 0,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
@@ -2229,7 +2229,7 @@ class Application:
         secrets: list[Secret],
         id: str,
         name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> SecretsCollectionSummary:
         """
         Create a new secrets collection.
@@ -2313,9 +2313,9 @@ class Application:
 
     def new_version(
         self,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
         exist_ok: bool = False,
     ) -> Version:
         """
@@ -2397,11 +2397,11 @@ class Application:
 
     def push(
         self,
-        manifest: Optional[Manifest] = None,
-        app_dir: Optional[str] = None,
+        manifest: Manifest | None = None,
+        app_dir: str | None = None,
         verbose: bool = False,
-        model: Optional[Model] = None,
-        model_configuration: Optional[ModelConfiguration] = None,
+        model: Model | None = None,
+        model_configuration: ModelConfiguration | None = None,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
@@ -2664,7 +2664,7 @@ class Application:
         )
         return RunLog.from_dict(response.json())
 
-    def run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
+    def run_result(self, run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """
         Get the result of a run.
 
@@ -2708,7 +2708,7 @@ class Application:
         self,
         run_id: str,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        output_dir_path: Optional[str] = ".",
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Get the result of a run with polling.
@@ -2887,8 +2887,8 @@ class Application:
     def track_run(  # noqa: C901
         self,
         tracked_run: TrackedRun,
-        instance_id: Optional[str] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+        instance_id: str | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
     ) -> str:
         """
         Track an external run.
@@ -3058,9 +3058,9 @@ class Application:
         self,
         tracked_run: TrackedRun,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        instance_id: Optional[str] = None,
-        output_dir_path: Optional[str] = ".",
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
+        instance_id: str | None = None,
+        output_dir_path: str | None = ".",
+        configuration: RunConfiguration | dict[str, Any] | None = None,
     ) -> RunResult:
         """
         Track an external run and poll for the result. This is a convenience
@@ -3120,8 +3120,8 @@ class Application:
     def update_batch_experiment(
         self,
         batch_experiment_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> BatchExperimentInformation:
         """
         Update a batch experiment.
@@ -3164,8 +3164,8 @@ class Application:
     def update_ensemble_definition(
         self,
         id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> EnsembleDefinition:
         """
         Update an ensemble definition.
@@ -3212,10 +3212,10 @@ class Application:
     def update_instance(
         self,
         id: str,
-        name: Optional[str] = None,
-        version_id: Optional[str] = None,
-        description: Optional[str] = None,
-        configuration: Optional[InstanceConfiguration] = None,
+        name: str | None = None,
+        version_id: str | None = None,
+        description: str | None = None,
+        configuration: InstanceConfiguration | None = None,
     ) -> Instance:
         """
         Update an instance.
@@ -3275,8 +3275,8 @@ class Application:
     def update_managed_input(
         self,
         managed_input_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> ManagedInput:
         """
         Update a managed input.
@@ -3325,8 +3325,8 @@ class Application:
     def update_scenario_test(
         self,
         scenario_test_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> BatchExperimentInformation:
         """
         Update a scenario test.
@@ -3374,9 +3374,9 @@ class Application:
     def update_secrets_collection(
         self,
         secrets_collection_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        secrets: Optional[list[Secret]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        secrets: list[Secret] | None = None,
     ) -> SecretsCollectionSummary:
         """
         Update a secrets collection.
@@ -3453,10 +3453,10 @@ class Application:
 
     def upload_large_input(
         self,
-        input: Optional[Union[dict[str, Any], str]],
+        input: dict[str, Any] | str | None,
         upload_url: UploadURL,
-        json_configurations: Optional[dict[str, Any]] = None,
-        tar_file: Optional[str] = None,
+        json_configurations: dict[str, Any] | None = None,
+        tar_file: str | None = None,
     ) -> None:
         """
         Upload large input data to the provided upload URL.
@@ -3676,7 +3676,7 @@ class Application:
         self,
         run_id: str,
         run_information: RunInformation,
-        output_dir_path: Optional[str] = ".",
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Get the result of a run.
@@ -3950,7 +3950,7 @@ class Application:
         upload_id_used: bool,
         input_size: int,
         tar_file: str,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
     ) -> bool:
         """
         Auxiliary function to determine if an upload URL is required
@@ -3974,8 +3974,8 @@ class Application:
 
     def __extract_input_data(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-    ) -> Optional[Union[dict[str, Any], str]]:
+        input: Input | dict[str, Any] | BaseModel | str = None,
+    ) -> dict[str, Any] | str | None:
         """
         Auxiliary function to extract the input data from the input, based on
         its type.
@@ -3993,8 +3993,8 @@ class Application:
 
     def __extract_options_dict(
         self,
-        options: Optional[Union[Options, dict[str, str]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
+        options: Options | dict[str, str] | None = None,
+        json_configurations: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         """
         Auxiliary function to extract the options that will be sent to the
@@ -4018,9 +4018,9 @@ class Application:
 
     def __extract_run_config(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        dir_path: Optional[str] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        dir_path: str | None = None,
     ) -> dict[str, Any]:
         """
         Auxiliary function to extract the run configuration that will be sent

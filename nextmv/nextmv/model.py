@@ -20,7 +20,7 @@ import os
 import shutil
 import warnings
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from nextmv.input import Input
 from nextmv.logger import log
@@ -152,11 +152,11 @@ class ModelConfiguration:
 
     name: str
     """The name of the decision model."""
-    requirements: Optional[list[str]] = None
+    requirements: list[str] | None = None
     """A list of Python dependencies that the decision model requires."""
-    options: Optional[Options] = None
+    options: Options | None = None
     """Options that the decision model requires."""
-    options_enforcement: Optional[OptionsEnforcement] = None
+    options_enforcement: OptionsEnforcement | None = None
     """Enforcement of options for the model."""
 
 
@@ -308,7 +308,7 @@ class Model:
                 self,
                 context,
                 model_input,
-                params: Optional[dict[str, Any]] = None,
+                params: dict[str, Any] | None = None,
             ) -> Any:
                 """
                 MLflow-compliant prediction method that calls the Nextmv model's solve method.
@@ -376,7 +376,7 @@ class Model:
 
 def _cleanup_python_model(
     model_dir: str,
-    model_configuration: Optional[ModelConfiguration] = None,
+    model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
 ) -> None:
     """

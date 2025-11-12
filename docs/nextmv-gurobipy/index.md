@@ -35,7 +35,7 @@ of concrete examples for using this SDK:
 
 ## Installation
 
-The package is hosted on [PyPI][nextmv-gurobipy-pypi]. Python `>=3.9` is
+The package is hosted on [PyPI][nextmv-gurobipy-pypi]. Python `>=3.10` is
 required.
 
 Install via `pip`:

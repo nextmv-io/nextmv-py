@@ -53,7 +53,7 @@ MANIFEST_FILE_NAME
 
 import os
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 import yaml
 from pydantic import AliasChoices, Field, field_validator
@@ -244,14 +244,14 @@ class ManifestBuild(BaseModel):
     'make build'
     """
 
-    command: Optional[str] = None
+    command: str | None = None
     """The command to run to build the app.
 
     This command will be executed without a shell, i.e., directly. The command
     must exit with a status of 0 to continue the push process of the app to
     Nextmv Cloud. This command is executed prior to the pre-push command.
     """
-    environment: Optional[dict[str, Any]] = None
+    environment: dict[str, Any] | None = None
     """Environment variables to set when running the build command.
 
     Given as key-value pairs.
@@ -317,7 +317,7 @@ class ManifestPythonModel(BaseModel):
 
     name: str
     """The name of the decision model."""
-    options: Optional[list[dict[str, Any]]] = None
+    options: list[dict[str, Any]] | None = None
     """
     Options for the decision model. This is a data representation of the
     `nextmv.Options` class. It consists of a list of dicts. Each dict
@@ -359,7 +359,7 @@ class ManifestPython(BaseModel):
     'requirements.txt'
     """
 
-    pip_requirements: Optional[Union[str, list[str]]] = Field(
+    pip_requirements: str | list[str] | None = Field(
         serialization_alias="pip-requirements",
         validation_alias=AliasChoices("pip-requirements", "pip_requirements"),
         default=None,
@@ -371,16 +371,16 @@ class ManifestPython(BaseModel):
     app. Can be either a string path to a requirements.txt file or a list
     of package specifications.
     """
-    arch: Optional[ManifestPythonArch] = None
+    arch: ManifestPythonArch | None = None
     """
     The architecture this model is meant to run on. One of "arm64" or "amd64". Uses
     "arm64" if not specified.
     """
-    version: Optional[Union[str, float]] = None
+    version: str | float | None = None
     """
     The Python version this model is meant to run with. Uses "3.11" if not specified.
     """
-    model: Optional[ManifestPythonModel] = None
+    model: ManifestPythonModel | None = None
     """
     Information about an encoded decision model.
 
@@ -390,7 +390,7 @@ class ManifestPython(BaseModel):
 
     @field_validator("version", mode="before")
     @classmethod
-    def validate_version(cls, v: Optional[Union[str, float]]) -> Optional[str]:
+    def validate_version(cls, v: str | float | None) -> str | None:
         """
         Validate and convert the Python version field to a string.
 
@@ -461,11 +461,11 @@ class ManifestOptionUI(BaseModel):
     'input'
     """
 
-    control_type: Optional[str] = None
+    control_type: str | None = None
     """The type of control to use for the option in the Nextmv Cloud UI."""
-    hidden_from: Optional[list[str]] = None
+    hidden_from: list[str] | None = None
     """A list of team roles for which this option will be hidden in the UI."""
-    display_name: Optional[str] = None
+    display_name: str | None = None
     """An optional display name for the option. This is useful for making
     the option more user-friendly in the UI.
     """
@@ -529,15 +529,15 @@ class ManifestOption(BaseModel):
     )
     """The type of the option (e.g., "string", "int", "bool", "float)."""
 
-    default: Optional[Any] = None
+    default: Any | None = None
     """The default value of the option"""
-    description: Optional[str] = ""
+    description: str | None = ""
     """The description of the option"""
     required: bool = False
     """Whether the option is required or not"""
-    additional_attributes: Optional[dict[str, Any]] = None
+    additional_attributes: dict[str, Any] | None = None
     """Optional additional attributes for the option."""
-    ui: Optional[ManifestOptionUI] = None
+    ui: ManifestOptionUI | None = None
     """Optional UI attributes for the option."""
 
     @classmethod
@@ -727,16 +727,16 @@ class ManifestOptions(BaseModel):
     2
     """
 
-    strict: Optional[bool] = False
+    strict: bool | None = False
     """If strict is set to `True`, only the listed options will be allowed."""
-    validation: Optional[ManifestValidation] = None
+    validation: ManifestValidation | None = None
     """Optional validation rules for all options."""
-    items: Optional[list[ManifestOption]] = None
+    items: list[ManifestOption] | None = None
     """The actual list of options for the decision model.
 
     An option is a parameter that configures the decision model.
     """
-    format: Optional[list[str]] = None
+    format: list[str] | None = None
     """A list of strings that define how options are transformed into command line arguments.
 
     Use `{{name}}` to refer to the option name and `{{value}}` to refer to the option value.
@@ -749,7 +749,7 @@ class ManifestOptions(BaseModel):
         cls,
         options: Options,
         validation: OptionsEnforcement = None,
-        format: Optional[list[str]] = None,
+        format: list[str] | None = None,
     ) -> "ManifestOptions":
         """
         Create a `ManifestOptions` from a `nextmv.Options`.
@@ -853,11 +853,11 @@ class ManifestContentMultiFileOutput(BaseModel):
     'my-outputs/statistics.json'
     """
 
-    statistics: Optional[str] = ""
+    statistics: str | None = ""
     """The path to the statistics file."""
-    assets: Optional[str] = ""
+    assets: str | None = ""
     """The path to the assets file."""
-    solutions: Optional[str] = ""
+    solutions: str | None = ""
     """The path to the solutions directory."""
 
 
@@ -942,7 +942,7 @@ class ManifestContent(BaseModel):
     The format of the content. Can only be `InputFormat.JSON`,
     `InputFormat.MULTI_FILE`, or `InputFormat.CSV_ARCHIVE`.
     """
-    multi_file: Optional[ManifestContentMultiFile] = Field(
+    multi_file: ManifestContentMultiFile | None = Field(
         serialization_alias="multi-file",
         validation_alias=AliasChoices("multi-file", "multi_file"),
         default=None,
@@ -999,9 +999,9 @@ class ManifestConfiguration(BaseModel):
     'debug_mode'
     """
 
-    options: Optional[ManifestOptions] = None
+    options: ManifestOptions | None = None
     """Options for the decision model."""
-    content: Optional[ManifestContent] = None
+    content: ManifestContent | None = None
     """Content configuration for specifying how the app input/output is handled."""
 
 
@@ -1033,9 +1033,9 @@ class ManifestExecution(BaseModel):
     './app.py'
     """
 
-    entrypoint: Optional[str] = None
+    entrypoint: str | None = None
     """The entrypoint for the decision model, e.g.: `./app.py`."""
-    cwd: Optional[str] = None
+    cwd: str | None = None
     """The working directory to set when running the app, e.g.: `./src/`."""
 
 
@@ -1116,7 +1116,7 @@ class Manifest(BaseModel):
     The runtime to use for the app. It provides the environment in which the
     app runs. This is mandatory.
     """
-    python: Optional[ManifestPython] = None
+    python: ManifestPython | None = None
     """
     Python-specific attributes. Only for Python apps. Contains further
     Python-specific attributes.
@@ -1125,12 +1125,12 @@ class Manifest(BaseModel):
         default_factory=list,
     )
     """The files to include (or exclude) in the app. This is mandatory."""
-    configuration: Optional[ManifestConfiguration] = None
+    configuration: ManifestConfiguration | None = None
     """
     Configuration for the decision model. A list of options for the decision
     model. An option is a parameter that configures the decision model.
     """
-    build: Optional[ManifestBuild] = None
+    build: ManifestBuild | None = None
     """
     Build-specific attributes.
 
@@ -1141,7 +1141,7 @@ class Manifest(BaseModel):
     set environment variables when running the build command given as key-value
     pairs.
     """
-    pre_push: Optional[str] = Field(
+    pre_push: str | None = Field(
         serialization_alias="pre-push",
         validation_alias=AliasChoices("pre-push", "pre_push"),
         default=None,
@@ -1156,7 +1156,7 @@ class Manifest(BaseModel):
     process. This command is executed just before the app gets bundled and
     pushed (after the build command).
     """
-    execution: Optional[ManifestExecution] = None
+    execution: ManifestExecution | None = None
     """
     Optional execution configuration for the decision model. Allows configuration of
     entrypoint and more.
@@ -1245,7 +1245,7 @@ class Manifest(BaseModel):
                 width=120,
             )
 
-    def extract_options(self) -> Optional[Options]:
+    def extract_options(self) -> Options | None:
         """
         Convert the manifest options to a `nextmv.Options` object.
 

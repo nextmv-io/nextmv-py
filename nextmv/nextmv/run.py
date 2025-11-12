@@ -45,7 +45,7 @@ run_duration(start, end)
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import AliasChoices, Field, field_validator
 
@@ -56,7 +56,7 @@ from nextmv.output import Asset, Output, OutputFormat, Statistics
 from nextmv.status import Status, StatusV2
 
 
-def run_duration(start: Union[datetime, float], end: Union[datetime, float]) -> int:
+def run_duration(start: datetime | float, end: datetime | float) -> int:
     """
     Calculate the duration of a run in milliseconds.
 
@@ -218,7 +218,7 @@ class Format(BaseModel):
         validation_alias=AliasChoices("input", "format_input"),
     )
     """Input format for the run configuration."""
-    format_output: Optional[FormatOutput] = Field(
+    format_output: FormatOutput | None = Field(
         serialization_alias="output",
         validation_alias=AliasChoices("output", "format_output"),
         default=None,
@@ -322,15 +322,15 @@ class RunTypeConfiguration(BaseModel):
     'def-67890'
     """
 
-    run_type: Optional[RunType] = Field(
+    run_type: RunType | None = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "run_type"),
         default=None,
     )
     """Type of the run."""
-    definition_id: Optional[str] = None
+    definition_id: str | None = None
     """ID of the definition for the run type."""
-    reference_id: Optional[str] = None
+    reference_id: str | None = None
     """ID of the reference for the run type."""
 
     @field_validator("run_type", mode="before")
@@ -428,9 +428,9 @@ class RunInfoStatistics(BaseModel):
     status: str
     """Status of the statistics in the run."""
 
-    error: Optional[str] = None
+    error: str | None = None
     """Error message if the statistics could not be retrieved."""
-    indicators: Optional[list[StatisticsIndicator]] = None
+    indicators: list[StatisticsIndicator] | None = None
     """List of statistics indicators."""
 
 
@@ -598,31 +598,31 @@ class Run(BaseModel):
     status_v2: StatusV2
     """Status of the run."""
 
-    status: Optional[Status] = None
+    status: Status | None = None
     """Deprecated, use status_v2 instead."""
-    queuing_priority: Optional[int] = None
+    queuing_priority: int | None = None
     """Priority of the run in the queue."""
-    queuing_disabled: Optional[bool] = None
+    queuing_disabled: bool | None = None
     """Whether the run is disabled from queuing."""
-    experiment_id: Optional[str] = None
+    experiment_id: str | None = None
     """ID of the experiment associated with the run."""
-    statistics: Optional[RunInfoStatistics] = None
+    statistics: RunInfoStatistics | None = None
     """Statistics of the run."""
-    input_id: Optional[str] = None
+    input_id: str | None = None
     """ID of the input associated with the run."""
-    option_set: Optional[str] = None
+    option_set: str | None = None
     """ID of the option set associated with the run."""
-    options: Optional[dict[str, str]] = None
+    options: dict[str, str] | None = None
     """Options associated with the run."""
-    request_options: Optional[dict[str, str]] = None
+    request_options: dict[str, str] | None = None
     """Request options associated with the run."""
-    options_summary: Optional[list[OptionsSummaryItem]] = None
+    options_summary: list[OptionsSummaryItem] | None = None
     """Summary of options used in the run."""
-    scenario_id: Optional[str] = None
+    scenario_id: str | None = None
     """ID of the scenario associated with the run."""
-    repetition: Optional[int] = None
+    repetition: int | None = None
     """Repetition number of the run."""
-    input_set_id: Optional[str] = None
+    input_set_id: str | None = None
     """ID of the input set associated with the run."""
 
 
@@ -682,9 +682,9 @@ class Metadata(BaseModel):
     """Format of the input and output of the run."""
     status_v2: StatusV2
     """Status of the run."""
-    status: Optional[Status] = None
+    status: Status | None = None
     """Deprecated: use status_v2."""
-    statistics: Optional[dict[str, Any]] = None
+    statistics: dict[str, Any] | None = None
     """User defined statistics of the run."""
 
 
@@ -730,7 +730,7 @@ class SyncedRun(BaseModel):
     The ID of the remote application that the local run was synced to.
     """
 
-    instance_id: Optional[str] = None
+    instance_id: str | None = None
     """
     The instance of the remote application that the local run was synced to.
     This field is optional and may be None. If it is not specified, it
@@ -778,7 +778,7 @@ class RunInformation(BaseModel):
     """
     URL to the run in the Nextmv console.
     """
-    synced_runs: Optional[list[SyncedRun]] = None
+    synced_runs: list[SyncedRun] | None = None
     """
     List of synced runs associated with this run, if applicable. When the
     `Application.sync` method is used, this field contains the associations
@@ -907,7 +907,7 @@ class RunInformation(BaseModel):
 
         return True
 
-    def is_synced(self, app_id: str, instance_id: Optional[str] = None) -> tuple[SyncedRun, bool]:
+    def is_synced(self, app_id: str, instance_id: str | None = None) -> tuple[SyncedRun, bool]:
         """
         Check if the run has been synced to a specific application and instance.
 
@@ -965,11 +965,11 @@ class ErrorLog(BaseModel):
         Standard error. Defaults to None.
     """
 
-    error: Optional[str] = None
+    error: str | None = None
     """Error message."""
-    stdout: Optional[str] = None
+    stdout: str | None = None
     """Standard output."""
-    stderr: Optional[str] = None
+    stderr: str | None = None
     """Standard error."""
 
 
@@ -993,9 +993,9 @@ class RunResult(RunInformation):
         None.
     """
 
-    error_log: Optional[ErrorLog] = None
+    error_log: ErrorLog | None = None
     """Error log of the run. Only available if the run failed."""
-    output: Optional[dict[str, Any]] = None
+    output: dict[str, Any] | None = None
     """Output of the run. Only available if the run succeeded."""
 
 
@@ -1070,12 +1070,12 @@ class RunQueuing(BaseModel):
     True
     """
 
-    priority: Optional[int] = None
+    priority: int | None = None
     """
     Priority of the run in the queue. 1 is the highest priority, 9 is the
     lowest priority.
     """
-    disabled: Optional[bool] = None
+    disabled: bool | None = None
     """
     Whether the run should be queued, or not. If True, the run will not be
     queued. If False, the run will be queued.
@@ -1140,21 +1140,21 @@ class RunConfiguration(BaseModel):
     True
     """
 
-    execution_class: Optional[str] = None
+    execution_class: str | None = None
     """Execution class for the instance."""
-    format: Optional[Format] = None
+    format: Format | None = None
     """Format for the run configuration."""
-    run_type: Optional[RunTypeConfiguration] = None
+    run_type: RunTypeConfiguration | None = None
     """Run type configuration for the run."""
-    secrets_collection_id: Optional[str] = None
+    secrets_collection_id: str | None = None
     """ID of the secrets collection to use for the run."""
-    queuing: Optional[RunQueuing] = None
+    queuing: RunQueuing | None = None
     """Queuing configuration for the run."""
 
     def resolve(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str],
-        dir_path: Optional[str] = None,
+        input: Input | dict[str, Any] | BaseModel | str,
+        dir_path: str | None = None,
     ) -> None:
         """
         Resolves the run configuration by modifying or setting the `format`,
@@ -1271,22 +1271,22 @@ class ExternalRunResult(BaseModel):
     'Optimization failed due to invalid constraints'
     """
 
-    output_upload_id: Optional[str] = None
+    output_upload_id: str | None = None
     """ID of the output upload."""
-    error_upload_id: Optional[str] = None
+    error_upload_id: str | None = None
     """ID of the error upload."""
-    status: Optional[str] = None
+    status: str | None = None
     """Status of the run."""
-    error_message: Optional[str] = None
+    error_message: str | None = None
     """Error message of the run."""
-    execution_duration: Optional[int] = None
+    execution_duration: int | None = None
     """Duration of the run, in milliseconds."""
-    statistics_upload_id: Optional[str] = None
+    statistics_upload_id: str | None = None
     """
     ID of the statistics upload. Use this field when working with `CSV_ARCHIVE`
     or `MULTI_FILE` output formats.
     """
-    assets_upload_id: Optional[str] = None
+    assets_upload_id: str | None = None
     """
     ID of the assets upload. Use this field when working with `CSV_ARCHIVE`
     or `MULTI_FILE` output formats.
@@ -1466,37 +1466,37 @@ class TrackedRun:
     status: TrackedRunStatus
     """The status of the run being tracked"""
 
-    input: Optional[Union[Input, dict[str, Any], str]] = None
+    input: Input | dict[str, Any] | str | None = None
     """
     The input of the run being tracked. Please note that if the input
     format is JSON, then the input data must be JSON serializable. If both
     `input` and `input_dir_path` are specified, the `input` is ignored, and
     the files in the directory are used instead.
     """
-    output: Optional[Union[Output, dict[str, Any], str]] = None
+    output: Output | dict[str, Any] | str | None = None
     """
     The output of the run being tracked. Please note that if the output
     format is JSON, then the output data must be JSON serializable. If both
     `output` and `output_dir_path` are specified, the `output` is ignored, and
     the files in the directory are used instead.
     """
-    duration: Optional[int] = None
+    duration: int | None = None
     """The duration of the run being tracked, in milliseconds."""
-    error: Optional[str] = None
+    error: str | None = None
     """An error message if the run failed. You should only specify this if the
     run failed, otherwise an exception will be raised."""
-    logs: Optional[list[str]] = None
+    logs: list[str] | None = None
     """The logs of the run being tracked. Each element of the list is a line in
     the log."""
-    name: Optional[str] = None
+    name: str | None = None
     """
     Optional name for the run being tracked.
     """
-    description: Optional[str] = None
+    description: str | None = None
     """
     Optional description for the run being tracked.
     """
-    input_dir_path: Optional[str] = None
+    input_dir_path: str | None = None
     """
     Path to a directory containing input files. If specified, the calling
     function will package the files in the directory into a tar file and upload
@@ -1505,7 +1505,7 @@ class TrackedRun:
     `input_dir_path` are specified, the `input` is ignored, and the files in
     the directory are used instead.
     """
-    output_dir_path: Optional[str] = None
+    output_dir_path: str | None = None
     """
     Path to a directory containing output files. If specified, the calling
     function will package the files in the directory into a tar file and upload
@@ -1514,14 +1514,14 @@ class TrackedRun:
     `output_dir_path` are specified, the `output` is ignored, and the files
     are saved in the directory instead.
     """
-    statistics: Optional[Union[Statistics, dict[str, Any]]] = None
+    statistics: Statistics | dict[str, Any] | None = None
     """
     Statistics of the run being tracked. Only use this field if you want to
     track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
     are working with `JSON` or `TEXT` output formats, this field will be
     ignored, as the statistics are extracted directly from the `output`.
     """
-    assets: Optional[list[Union[Asset, dict[str, Any]]]] = None
+    assets: list[Asset | dict[str, Any]] | None = None
     """
     Assets associated with the run being tracked. Only use this field if you
     want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output formats.

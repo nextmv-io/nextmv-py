@@ -19,7 +19,7 @@ import random
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from nextmv.logger import log
 
@@ -121,7 +121,7 @@ class PollingOptions:
     """
     verbose: bool = False
     """Whether to log the polling strategy. This is useful for debugging."""
-    stop: Optional[Callable[[], bool]] = None
+    stop: Callable[[], bool] | None = None
     """
     Function to call to check if the polling should stop. This is useful for
     stopping the polling based on external conditions. The function should

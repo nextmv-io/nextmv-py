@@ -36,7 +36,7 @@ each of these packages.
 
 ## Installation
 
-The library is hosted on [PyPI][nextmv-pypi]. Python `>=3.9` is required.
+The library is hosted on [PyPI][nextmv-pypi]. Python `>=3.10` is required.
 
 Install via `pip`:
 

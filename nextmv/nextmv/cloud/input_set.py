@@ -11,7 +11,6 @@ InputSet
 """
 
 from datetime import datetime
-from typing import Optional
 
 from nextmv.base_model import BaseModel
 from nextmv.run import Format
@@ -59,19 +58,19 @@ class ManagedInput(BaseModel):
     id: str
     """ID of the input."""
 
-    name: Optional[str] = None
+    name: str | None = None
     """Name of the input."""
-    description: Optional[str] = None
+    description: str | None = None
     """Description of the input."""
-    run_id: Optional[str] = None
+    run_id: str | None = None
     """ID of the run that created the input."""
-    upload_id: Optional[str] = None
+    upload_id: str | None = None
     """ID of the upload that created the input."""
-    format: Optional[Format] = None
+    format: Format | None = None
     """Format of the input."""
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     """Creation time of the input."""
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     """Last update time of the input."""
 
 

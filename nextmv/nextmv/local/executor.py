@@ -43,7 +43,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
-from typing import Any, Optional, Union
+from typing import Any
 
 from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
@@ -87,9 +87,9 @@ def execute_run(
     manifest_dict: dict[str, Any],
     run_dir: str,
     run_config: dict[str, Any],
-    inputs_dir_path: Optional[str] = None,
-    options: Optional[dict[str, Any]] = None,
-    input_data: Optional[Union[dict[str, Any], str]] = None,
+    inputs_dir_path: str | None = None,
+    options: dict[str, Any] | None = None,
+    input_data: dict[str, Any] | str | None = None,
 ) -> None:
     """
     Executes the decision model run using a subprocess to call the entrypoint
@@ -191,7 +191,7 @@ def execute_run(
             f.truncate()
 
 
-def options_args(options: Optional[dict[str, Any]] = None) -> list[str]:
+def options_args(options: dict[str, Any] | None = None) -> list[str]:
     """
     Converts options dictionary to a list of command-line arguments.
 
@@ -219,8 +219,8 @@ def process_run_input(
     temp_src: str,
     run_format: str,
     manifest: Manifest,
-    input_data: Optional[Union[dict[str, Any], str]] = None,
-    inputs_dir_path: Optional[str] = None,
+    input_data: dict[str, Any] | str | None = None,
+    inputs_dir_path: str | None = None,
 ) -> str:
     """
     In the temp source, writes the run input according to the run format. If
@@ -466,7 +466,7 @@ def process_run_logs(
     output_format: OutputFormat,
     run_dir: str,
     result: subprocess.CompletedProcess[str],
-    stdout_output: Union[str, dict[str, Any]],
+    stdout_output: str | dict[str, Any],
 ) -> None:
     """
     Processes the logs of the run. Writes the logs to a logs directory.
@@ -503,7 +503,7 @@ def process_run_logs(
 def process_run_statistics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
-    stdout_output: Union[str, dict[str, Any]],
+    stdout_output: str | dict[str, Any],
     temp_src: str,
     manifest: Manifest,
 ) -> None:
@@ -564,7 +564,7 @@ def process_run_statistics(
 def process_run_assets(
     temp_run_outputs_dir: str,
     outputs_dir: str,
-    stdout_output: Union[str, dict[str, Any]],
+    stdout_output: str | dict[str, Any],
     temp_src: str,
     manifest: Manifest,
 ) -> None:
@@ -628,7 +628,7 @@ def process_run_solutions(
     temp_run_outputs_dir: str,
     temp_src: str,
     outputs_dir: str,
-    stdout_output: Union[str, dict[str, Any]],
+    stdout_output: str | dict[str, Any],
     output_format: OutputFormat,
     manifest: Manifest,
     src: str,
@@ -757,7 +757,7 @@ def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
         # so we ignore it for now.
 
 
-def resolve_stdout(result: subprocess.CompletedProcess[str]) -> Union[str, dict[str, Any]]:
+def resolve_stdout(result: subprocess.CompletedProcess[str]) -> str | dict[str, Any]:
     """
     Resolves the stdout output of the subprocess run. If the stdout is valid
     JSON, it returns the parsed dictionary. Otherwise, it returns the raw
@@ -839,8 +839,8 @@ def _ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
 def _copy_new_or_modified_files(  # noqa: C901
     runtime_dir: str,
     dst_dir: str,
-    original_src_dir: Optional[str] = None,
-    exclusion_dirs: Optional[list[str]] = None,
+    original_src_dir: str | None = None,
+    exclusion_dirs: list[str] | None = None,
 ) -> None:
     """
     Copy only new or modified files from runtime directory to destination directory.
