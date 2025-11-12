@@ -9,7 +9,7 @@ class TestModelOptions(unittest.TestCase):
     def test_to_nextmv(self):
         gopt = ngp.ModelOptions()
         nopt = gopt.to_nextmv()
-        got = nopt.parameters_dict()
+        got = nopt.options_dict()
 
         path = os.path.join(os.path.dirname(__file__), "expected_option_parameters.json")
         with open(path) as f:
