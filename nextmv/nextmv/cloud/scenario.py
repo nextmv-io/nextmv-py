@@ -15,7 +15,7 @@ Scenario
 import itertools
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 
 @dataclass
@@ -158,11 +158,7 @@ class ScenarioInput:
     Type of input for the scenario. This is used to determine how the input
     should be processed.
     """
-    scenario_input_data: Union[
-        str,  # Input set ID
-        list[str],  # List of Input IDs
-        list[dict[str, Any]],  # Raw data
-    ]
+    scenario_input_data: str | list[str] | list[dict[str, Any]]
     """
     Input data for the scenario. This can be a single input set ID (`str`), a
     list of input IDs (`list[str]`), or raw data (`list[dict[str, Any]]`).
@@ -252,12 +248,12 @@ class Scenario:
     instance_id: str
     """ID of the instance to be used for the scenario."""
 
-    scenario_id: Optional[str] = None
+    scenario_id: str | None = None
     """
     Optional ID of the scenario. The default value will be set as
     `scenario-<index>` if not set.
     """
-    configuration: Optional[list[ScenarioConfiguration]] = None
+    configuration: list[ScenarioConfiguration] | None = None
     """Optional configuration for the scenario. Use this attribute to configure
     variation of options for the scenario.
     """
@@ -300,8 +296,8 @@ class Scenario:
         if self.configuration is None or len(self.configuration) == 0:
             return [{}]
 
-        keys, value_lists = zip(*((config.name, config.values) for config in self.configuration))
-        combinations = [dict(zip(keys, values)) for values in itertools.product(*value_lists)]
+        keys, value_lists = zip(*((config.name, config.values) for config in self.configuration), strict=False)
+        combinations = [dict(zip(keys, values, strict=False)) for values in itertools.product(*value_lists)]
 
         return combinations
 

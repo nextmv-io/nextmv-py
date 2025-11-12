@@ -4,7 +4,7 @@ import os
 import shutil
 import unittest
 from io import StringIO
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
@@ -631,7 +631,7 @@ class TestOutput(unittest.TestCase):
     def _test_local_writer_csvarchive(
         self,
         write_path: str,
-        function_path: Optional[str] = None,
+        function_path: str | None = None,
     ) -> None:
         """Auxiliary function that is used to test the flow of a CSV archive
         output output writer but with different directories."""

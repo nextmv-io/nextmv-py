@@ -13,7 +13,6 @@ RandomForestRegressorStatistics
 
 import time
 from collections.abc import Iterable
-from typing import Optional
 
 from sklearn import ensemble
 
@@ -25,7 +24,7 @@ def GradientBoostingRegressorStatistics(
     X: Iterable,
     y: Iterable,
     sample_weight: float = None,
-    run_duration_start: Optional[float] = None,
+    run_duration_start: float | None = None,
 ) -> nextmv.Statistics:
     """Create a Nextmv statistics object from a GradientBoostingRegressor model.
 
@@ -106,7 +105,7 @@ def RandomForestRegressorStatistics(
     X: Iterable,
     y: Iterable,
     sample_weight: float = None,
-    run_duration_start: Optional[float] = None,
+    run_duration_start: float | None = None,
 ) -> nextmv.Statistics:
     """Create a Nextmv statistics object from a RandomForestRegressor model.
 

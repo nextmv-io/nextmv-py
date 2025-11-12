@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
-from typing import Any, Optional, Union
+from typing import Any
 
 from nextmv.input import INPUTS_KEY
 from nextmv.local.local import DEFAULT_INPUT_JSON_FILE, NEXTMV_DIR, RUNS_KEY, calculate_files_size
@@ -34,11 +34,11 @@ def run(
     src: str,
     manifest: Manifest,
     run_config: dict[str, Any],
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    input_data: Optional[Union[dict[str, Any], str]] = None,
-    inputs_dir_path: Optional[str] = None,
-    options: Optional[dict[str, Any]] = None,
+    name: str | None = None,
+    description: str | None = None,
+    input_data: dict[str, Any] | str | None = None,
+    inputs_dir_path: str | None = None,
+    options: dict[str, Any] | None = None,
 ) -> str:
     """
     Execute a local run.
@@ -145,8 +145,8 @@ def new_run(
     src: str,
     run_id: str,
     run_config: dict[str, Any],
-    name: Optional[str] = None,
-    description: Optional[str] = None,
+    name: str | None = None,
+    description: str | None = None,
 ) -> str:
     """
     Initializes a new run.
@@ -223,8 +223,8 @@ def new_run(
 def record_input(
     run_dir: str,
     run_id: str,
-    input_data: Optional[Union[dict[str, Any], str]] = None,
-    inputs_dir_path: Optional[str] = None,
+    input_data: dict[str, Any] | str | None = None,
+    inputs_dir_path: str | None = None,
 ) -> None:
     """
     Writes the input to the appropriate location.

@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-from typing import Optional
 
 from nextmv.logger import log
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
@@ -24,8 +23,8 @@ _MANDATORY_FILES_PER_TYPE = {
 def _package(
     app_dir: str,
     manifest: Manifest,
-    model: Optional[Model] = None,
-    model_configuration: Optional[ModelConfiguration] = None,
+    model: Model | None = None,
+    model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
 ) -> tuple[str, str]:
     """Package the app into a tarball."""
@@ -75,7 +74,7 @@ def _package(
 
 def _run_build_command(
     app_dir: str,
-    manifest_build: Optional[ManifestBuild] = None,
+    manifest_build: ManifestBuild | None = None,
     verbose: bool = False,
 ) -> None:
     """Run the build command specified in the manifest."""
@@ -118,7 +117,7 @@ def _get_shell_command_elements(pre_push_command):
 
 def _run_pre_push_command(
     app_dir: str,
-    pre_push_command: Optional[str] = None,
+    pre_push_command: str | None = None,
     verbose: bool = False,
 ) -> None:
     """Run the pre-push command specified in the manifest."""
@@ -217,8 +216,8 @@ def __handle_python(
     app_dir: str,
     temp_dir: str,
     manifest: Manifest,
-    model: Optional[Model] = None,
-    model_configuration: Optional[ModelConfiguration] = None,
+    model: Model | None = None,
+    model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
 ) -> None:
     """Handles the Python-specific packaging logic."""

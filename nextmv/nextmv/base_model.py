@@ -18,7 +18,7 @@ from_dict:
 """
 
 from importlib import import_module
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel as PydanticBaseModel
 
@@ -32,7 +32,7 @@ class BaseModel(PydanticBaseModel):
     """
 
     @classmethod
-    def from_dict(cls, data: Optional[dict[str, Any]] = None):
+    def from_dict(cls, data: dict[str, Any] | None = None):
         """
         Instantiate the class from a dictionary.
 
