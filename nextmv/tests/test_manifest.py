@@ -269,6 +269,25 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest_options.format, ["-{{name}}", "{{value}}"])
         self.assertEqual(manifest_options.strict, False)
 
+    def test_manifest_from_dict(self):
+        manifest_dict = {
+            "type": "go",
+            "runtime": "ghcr.io/nextmv-io/runtime/default:latest",
+            "files": ["./build/binary"],
+            "execution": {
+                "entrypoint": "./binary",
+                "cwd": "./build/",
+            },
+        }
+
+        manifest = Manifest.from_dict(manifest_dict)
+
+        self.assertEqual(manifest.type, ManifestType.GO)
+        self.assertEqual(manifest.runtime, ManifestRuntime.DEFAULT)
+        self.assertListEqual(manifest.files, ["./build/binary"])
+        self.assertEqual(manifest.execution.entrypoint, "./binary")
+        self.assertEqual(manifest.execution.cwd, "./build/")
+
     def test_manifest_content_from_dict(self):
         manifest_content_dict = {
             "format": "multi-file",

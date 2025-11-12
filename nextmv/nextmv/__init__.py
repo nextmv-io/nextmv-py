@@ -19,6 +19,7 @@ from .logger import reset_stdout as reset_stdout
 from .manifest import MANIFEST_FILE_NAME as MANIFEST_FILE_NAME
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
+from .manifest import ManifestExecution as ManifestExecution
 from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestPython as ManifestPython
 from .manifest import ManifestPythonArch as ManifestPythonArch
