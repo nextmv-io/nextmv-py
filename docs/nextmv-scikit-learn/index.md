@@ -51,7 +51,7 @@ models:
 
 ## Installation
 
-The package is hosted on [PyPI][nextmv-scikit-learn-pypi]. Python `>=3.9` is
+The package is hosted on [PyPI][nextmv-scikit-learn-pypi]. Python `>=3.10` is
 required.
 
 Install via `pip`:

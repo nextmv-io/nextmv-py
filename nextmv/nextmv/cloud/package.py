@@ -413,10 +413,10 @@ def __confirm_python_version(output: str) -> None:
         except ValueError:
             major, minor = map(int, version.split("."))
 
-        if major == 3 and minor >= 9:
+        if major == 3 and minor >= 10:
             return
 
-    raise Exception("python version 3.9 or higher is required")
+    raise Exception("python version 3.10 or higher is required")
 
 
 def __confirm_python_bundling_version(version: str) -> None:
@@ -425,9 +425,9 @@ def __confirm_python_bundling_version(version: str) -> None:
     match = re_version.fullmatch(version)
     if match:
         major, minor = int(match.group(1)), int(match.group(2))
-        if major == 3 and minor >= 9:
+        if major == 3 and minor >= 10:
             return
-    raise Exception(f"python version 3.9 or higher is required for bundling, got {version}")
+    raise Exception(f"python version 3.10 or higher is required for bundling, got {version}")
 
 
 def __compress_tar(source: str, target: str) -> tuple[str, int]:
