@@ -17,7 +17,7 @@ import tempfile
 import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Optional, Union
+from typing import Any
 
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
@@ -92,9 +92,9 @@ class Application:
     manifest.
     """
 
-    description: Optional[str] = None
+    description: str | None = None
     """Description of the application."""
-    manifest: Optional[Manifest] = None
+    manifest: Manifest | None = None
     """
     Manifest of the application. A manifest is a file named `app.yaml` that
     must be present at the root of the application's `src` directory. If the
@@ -131,9 +131,9 @@ class Application:
     @classmethod
     def initialize(
         cls,
-        src: Optional[str] = None,
-        description: Optional[str] = None,
-        destination: Optional[str] = None,
+        src: str | None = None,
+        description: str | None = None,
+        destination: str | None = None,
     ) -> "Application":
         """
         Initialize a sample Nextmv application, locally.
@@ -224,13 +224,13 @@ class Application:
 
     def new_run(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        options: Optional[Union[Options, dict[str, str]]] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        name: str | None = None,
+        description: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
     ) -> str:
         """
         Run the application locally with the provided input.
@@ -361,15 +361,15 @@ class Application:
 
     def new_run_with_result(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        run_options: Optional[Union[Options, dict[str, str]]] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        name: str | None = None,
+        description: str | None = None,
+        run_options: Options | dict[str, str] | None = None,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
-        input_dir_path: Optional[str] = None,
-        output_dir_path: Optional[str] = ".",
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Submit an input to start a new local run of the application and poll
@@ -548,7 +548,7 @@ class Application:
 
         return info
 
-    def run_result(self, run_id: str, output_dir_path: Optional[str] = ".") -> RunResult:
+    def run_result(self, run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """
         Get the local result of a run.
 
@@ -598,7 +598,7 @@ class Application:
         self,
         run_id: str,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
-        output_dir_path: Optional[str] = ".",
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Get the result of a local run with polling.
@@ -715,9 +715,9 @@ class Application:
     def sync(  # noqa: C901
         self,
         target: cloud.Application,
-        run_ids: Optional[list[str]] = None,
-        instance_id: Optional[str] = None,
-        verbose: Optional[bool] = False,
+        run_ids: list[str] | None = None,
+        instance_id: str | None = None,
+        verbose: bool | None = False,
     ) -> None:
         """
         Sync the local application to a Nextmv Cloud application target.
@@ -821,7 +821,7 @@ class Application:
         self,
         run_id: str,
         run_information: RunInformation,
-        output_dir_path: Optional[str] = ".",
+        output_dir_path: str | None = ".",
     ) -> RunResult:
         """
         Get the result of a local run.
@@ -885,8 +885,8 @@ class Application:
 
     def __validate_input_dir_path_and_configuration(
         self,
-        input_dir_path: Optional[str],
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]],
+        input_dir_path: str | None,
+        configuration: RunConfiguration | dict[str, Any] | None,
     ) -> RunConfiguration:
         """
         Auxiliary function to validate the directory path and configuration.
@@ -938,8 +938,8 @@ class Application:
 
     def __extract_input_data(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-    ) -> Optional[Union[dict[str, Any], str]]:
+        input: Input | dict[str, Any] | BaseModel | str = None,
+    ) -> dict[str, Any] | str | None:
         """
         Auxiliary function to extract the input data from the input, based on
         its type.
@@ -957,8 +957,8 @@ class Application:
 
     def __extract_options_dict(
         self,
-        options: Optional[Union[Options, dict[str, str]]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
+        options: Options | dict[str, str] | None = None,
+        json_configurations: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         """
         Auxiliary function to extract the options that will be sent to the
@@ -980,9 +980,9 @@ class Application:
 
     def __extract_run_config(
         self,
-        input: Union[Input, dict[str, Any], BaseModel, str] = None,
-        configuration: Optional[Union[RunConfiguration, dict[str, Any]]] = None,
-        dir_path: Optional[str] = None,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        dir_path: str | None = None,
     ) -> dict[str, Any]:
         """
         Auxiliary function to extract the run configuration that will be sent
@@ -1007,8 +1007,8 @@ class Application:
         run_id: str,
         runs_dir: str,
         temp_dir: str,
-        instance_id: Optional[str] = None,
-        verbose: Optional[bool] = False,
+        instance_id: str | None = None,
+        verbose: bool | None = False,
     ) -> bool:
         """
         Syncs a local run to a Nextmv Cloud target application. Returns True if

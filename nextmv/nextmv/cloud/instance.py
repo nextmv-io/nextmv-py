@@ -13,7 +13,6 @@ Instance
 """
 
 from datetime import datetime
-from typing import Optional
 
 from nextmv.base_model import BaseModel
 
@@ -48,11 +47,11 @@ class InstanceConfiguration(BaseModel):
     ... )
     """
 
-    execution_class: Optional[str] = None
+    execution_class: str | None = None
     """Execution class for the instance."""
-    options: Optional[dict] = None
+    options: dict | None = None
     """Options of the app that the instance uses."""
-    secrets_collection_id: Optional[str] = None
+    secrets_collection_id: str | None = None
     """ID of the secrets collection that the instance uses."""
 
 

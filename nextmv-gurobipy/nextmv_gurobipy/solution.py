@@ -8,12 +8,12 @@ ModelSolution
     Creates a basic solution dictionary from a Gurobi model.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import gurobipy as gp
 
 
-def ModelSolution(model: gp.Model) -> Optional[dict[str, Any]]:
+def ModelSolution(model: gp.Model) -> dict[str, Any] | None:
     """
     Creates a basic solution dictionary from a Gurobi model.
 

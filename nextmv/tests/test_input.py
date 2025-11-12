@@ -4,7 +4,6 @@ import os
 import shutil
 import unittest
 from io import StringIO
-from typing import Optional
 from unittest.mock import patch
 
 import pandas as pd
@@ -184,7 +183,7 @@ class TestInput(unittest.TestCase):
     def _test_local_loader_csv_archive(
         self,
         test_dir: str,
-        load_path: Optional[str] = None,
+        load_path: str | None = None,
     ):
         """This is an auxiliary function that is used to test the flow of the
         CSV archive input loader but with different directories."""

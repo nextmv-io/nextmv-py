@@ -9,7 +9,6 @@ Model
 """
 
 import os
-from typing import Optional
 
 import gurobipy as gp
 from gurobipy._paramdetails import param_details
@@ -17,7 +16,7 @@ from gurobipy._paramdetails import param_details
 import nextmv
 
 
-def Model(options: nextmv.Options, license_path: Optional[str] = "") -> gp.Model:
+def Model(options: nextmv.Options, license_path: str | None = "") -> gp.Model:
     """
     Creates a Gurobi model, using Nextmv options.
 

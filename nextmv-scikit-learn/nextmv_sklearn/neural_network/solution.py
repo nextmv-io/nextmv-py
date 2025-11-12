@@ -15,7 +15,7 @@ Loss
 
 import base64
 import pickle
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import numpy as np
 from pydantic import BaseModel, BeforeValidator, ConfigDict, PlainSerializer
@@ -105,9 +105,9 @@ class MLPRegressorSolution(BaseModel):
     """The minimum loss reached by the solver throughout fitting."""
     loss_curve_: list[np.float64] = None
     """Loss value evaluated at the end of each training step."""
-    validation_scores_: Optional[list[float]] = None
+    validation_scores_: list[float] | None = None
     """The score at each iteration on a held-out validation set."""
-    best_validation_score_: Optional[float] = None
+    best_validation_score_: float | None = None
     """The best validation score (i.e. R2 score) that triggered the early stopping."""
     t_: int = 0
     """The number of training samples seen by the solver during fitting."""

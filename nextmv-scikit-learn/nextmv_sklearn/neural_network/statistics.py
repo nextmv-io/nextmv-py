@@ -11,7 +11,6 @@ MLPRegressorStatistics
 
 import time
 from collections.abc import Iterable
-from typing import Optional
 
 from sklearn import neural_network
 
@@ -23,7 +22,7 @@ def MLPRegressorStatistics(
     X: Iterable,
     y: Iterable,
     sample_weight: float = None,
-    run_duration_start: Optional[float] = None,
+    run_duration_start: float | None = None,
 ) -> nextmv.Statistics:
     """
     Creates a Nextmv statistics object from a sklearn.neural_network.MLPRegressor model.

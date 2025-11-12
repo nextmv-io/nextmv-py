@@ -34,6 +34,7 @@ SKIP_PARAMETERS = [
     "TuneBaseSettings",
     "TuneParams",
     "TuneUseFilename",
+    "TuneIgnoreSettings",
     # Cluster manager only
     "Username",
 ]

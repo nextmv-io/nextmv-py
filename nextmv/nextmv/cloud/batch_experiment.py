@@ -17,7 +17,7 @@ BatchExperimentMetadata
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.input_set import InputSet
@@ -156,19 +156,19 @@ class BatchExperimentInformation(BaseModel):
     updated_at: datetime
     """Last update date of the batch experiment."""
 
-    status: Optional[ExperimentStatus] = None
+    status: ExperimentStatus | None = None
     """Status of the batch experiment."""
-    description: Optional[str] = None
+    description: str | None = None
     """Description of the batch experiment."""
-    number_of_requested_runs: Optional[int] = None
+    number_of_requested_runs: int | None = None
     """Number of runs requested for the batch experiment."""
-    number_of_runs: Optional[int] = None
+    number_of_runs: int | None = None
     """Number of runs in the batch experiment."""
-    number_of_completed_runs: Optional[int] = None
+    number_of_completed_runs: int | None = None
     """Number of completed runs in the batch experiment."""
-    type: Optional[str] = None
+    type: str | None = None
     """Type of the batch experiment."""
-    option_sets: Optional[dict[str, dict[str, str]]] = None
+    option_sets: dict[str, dict[str, str]] | None = None
     """Option sets used for the experiment."""
 
 
@@ -202,9 +202,9 @@ class BatchExperiment(BatchExperimentInformation):
     """ID of the input set used for the experiment."""
     instance_ids: list[str]
     """List of instance IDs used for the experiment."""
-    grouped_distributional_summaries: Optional[list[dict[str, Any]]] = None
+    grouped_distributional_summaries: list[dict[str, Any]] | None = None
     """Grouped distributional summaries of the batch experiment."""
-    runs: Optional[list[Run]] = None
+    runs: list[Run] | None = None
     """List of runs in the batch experiment."""
 
 
@@ -244,17 +244,17 @@ class BatchExperimentRun(BaseModel):
     input_id: str
     """ID of the input used for the experiment."""
 
-    option_set: Optional[str] = None
+    option_set: str | None = None
     """Option set used for the experiment."""
-    instance_id: Optional[str] = None
+    instance_id: str | None = None
     """ID of the instance used for the experiment."""
-    version_id: Optional[str] = None
+    version_id: str | None = None
     """ID of the version used for the experiment."""
-    input_set_id: Optional[str] = None
+    input_set_id: str | None = None
     """ID of the input set used for the experiment."""
-    scenario_id: Optional[str] = None
+    scenario_id: str | None = None
     """If the batch experiment is a scenario test, this is the ID of that test."""
-    repetition: Optional[int] = None
+    repetition: int | None = None
     """Repetition number of the experiment."""
 
     def __post_init_post_parse__(self):
@@ -290,7 +290,7 @@ class BatchExperimentMetadata(BatchExperimentInformation):
         ID of the application used for the batch experiment. Defaults to None.
     """
 
-    app_id: Optional[str] = None
+    app_id: str | None = None
     """ID of the application used for the batch experiment."""
 
 

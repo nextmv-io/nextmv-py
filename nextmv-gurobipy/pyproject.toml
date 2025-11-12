@@ -10,15 +10,14 @@ classifiers = [
     "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
-    "gurobipy>=12.0.1",
-    "nextmv>=0.25.0"
+    "gurobipy>=13.0.0",
+    "nextmv>=0.34.1"
 ]
 description = "An SDK for integrating Gurobi with the Nextmv platform"
 dynamic = [
@@ -40,7 +39,7 @@ maintainers = [
 ]
 name = "nextmv-gurobipy"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
@@ -58,6 +57,6 @@ dev = [
     "build>=1.0.3",
     "ruff>=0.1.7",
     "twine>=4.0.2",
-    "gurobipy>=12.0.1",
-    "nextmv>=0.29.0",
+    "gurobipy>=13.0.0",
+    "nextmv>=0.34.1"
 ]

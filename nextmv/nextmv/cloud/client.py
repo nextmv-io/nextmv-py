@@ -16,7 +16,7 @@ get_size(obj)
 
 import os
 from dataclasses import dataclass, field
-from typing import IO, Any, Optional, Union
+from typing import IO, Any
 from urllib.parse import urljoin
 
 import requests
@@ -98,7 +98,7 @@ class Client:
     >>> print(response.json())
     """
 
-    api_key: Optional[str] = None
+    api_key: str | None = None
     """API key to use for authenticating with the Nextmv Cloud API. If not
     provided, the client will look for the NEXTMV_API_KEY environment
     variable."""
@@ -117,7 +117,7 @@ class Client:
     seconds."""
     configuration_file: str = "~/.nextmv/config.yaml"
     """Path to the configuration file used by the Nextmv CLI."""
-    headers: Optional[dict[str, str]] = None
+    headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
     max_retries: int = 10
     """Maximum number of retries to use for requests to the Nextmv Cloud
@@ -196,11 +196,11 @@ class Client:
         self,
         method: str,
         endpoint: str,
-        data: Optional[Any] = None,
-        headers: Optional[dict[str, str]] = None,
-        payload: Optional[dict[str, Any]] = None,
-        query_params: Optional[dict[str, Any]] = None,
-        json_configurations: Optional[dict[str, Any]] = None,
+        data: Any | None = None,
+        headers: dict[str, str] | None = None,
+        payload: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
         Makes a request to the Nextmv Cloud API.
@@ -324,10 +324,10 @@ class Client:
 
     def upload_to_presigned_url(
         self,
-        data: Optional[Union[dict[str, Any], str]],
+        data: dict[str, Any] | str | None,
         url: str,
-        json_configurations: Optional[dict[str, Any]] = None,
-        tar_file: Optional[str] = None,
+        json_configurations: dict[str, Any] | None = None,
+        tar_file: str | None = None,
     ) -> None:
         """
         Uploads data to a presigned URL.
@@ -369,7 +369,7 @@ class Client:
         >>> client.upload_to_presigned_url(data=input_data, url="PRE_SIGNED_URL") # doctest: +SKIP
         """
 
-        upload_data: Optional[str] = None
+        upload_data: str | None = None
         if data is not None:
             if isinstance(data, dict):
                 upload_data = deflated_serialize_json(data, json_configurations=json_configurations)
@@ -433,7 +433,7 @@ class Client:
         }
 
 
-def get_size(obj: Union[dict[str, Any], IO[bytes], str], json_configurations: Optional[dict[str, Any]] = None) -> int:
+def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[str, Any] | None = None) -> int:
     """
     Finds the size of an object in bytes.
 
