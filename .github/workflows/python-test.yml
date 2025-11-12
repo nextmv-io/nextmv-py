@@ -6,8 +6,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-        platform: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
+        python-version: ["3.10", "3.13"]
+        platform:
+          [
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-latest,
+            macos-15-intel,
+          ]
         package: ["nextmv", "nextmv-gurobipy", "nextmv-scikit-learn"]
     steps:
       - name: git clone
