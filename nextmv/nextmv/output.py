@@ -877,6 +877,27 @@ class Output:
         Configuration for writing JSON files. Default is None.
     assets : Optional[list[Union[Asset, dict[str, Any]]]], optional
         List of assets to be included in the output. Default is None.
+    solution_files: Optional[list[SolutionFile]], default = None
+        Optional list of solution files to be included in the output. These
+        files are of type `SolutionFile`, which allows for custom serialization
+        and writing of the solution data to files. When this field is
+        specified, then the `output_format` must be set to
+        `OutputFormat.MULTI_FILE`, otherwise an exception will be raised. The
+        `SolutionFile` class allows you to define the name of the file, the
+        data to be written, and the writer function that will handle the
+        serialization of the data. This is useful when you need to write the
+        solution to multiple files with different formats or configurations.
+
+        There are convenience functions to create `SolutionFile` objects for
+        common use cases, such as:
+
+        - `json_solution_file`: for writing JSON data to a file.
+        - `csv_solution_file`: for writing CSV data to a file.
+        - `text_solution_file`: for writing utf-8 encoded data to a file.
+
+        For other data types, such as Excel, you can create your own
+        `SolutionFile` objects by providing a `name`, `data`, and a `writer`
+        function that will handle the serialization of the data.
 
     Raises
     ------

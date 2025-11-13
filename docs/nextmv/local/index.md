@@ -5,7 +5,7 @@ locally on your machine.
 
 !!! success "Free to use"
 
-    The local experience is completely free of charge and does not require a
+    The `local` experience is completely free of charge and does not require a
     Nextmv account.
 
 At Nextmv, we believe that decision models should be easy to build, test, and
