@@ -25,7 +25,7 @@ from nextmv.local.executor import (
     process_run_solutions,
     process_run_statistics,
 )
-from nextmv.manifest import Manifest
+from nextmv.manifest import Manifest, ManifestExecution
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 
 
@@ -42,7 +42,8 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Create mock manifest
         self.mock_manifest = Mock(spec=Manifest)
-        self.mock_manifest.entrypoint = "main.py"
+        self.mock_manifest.execution = Mock(spec=ManifestExecution)
+        self.mock_manifest.execution.entrypoint = "main.py"
         self.mock_manifest.configuration = None
 
         # Create nested mock for format
@@ -80,7 +81,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_input.data = {
             "run_id": "test_run_id",
             "src": "/test/src",
-            "manifest_dict": {"entrypoint": "main.py", "type": "python"},
+            "manifest_dict": {"execution": {"entrypoint": "main.py"}, "type": "python"},
             "run_dir": "/test/run_dir",
             "run_config": {"format": {"input": {"type": "json"}}},
             "inputs_dir_path": None,
@@ -99,7 +100,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_execute_run.assert_called_once_with(
             run_id="test_run_id",
             src="/test/src",
-            manifest_dict={"entrypoint": "main.py", "type": "python"},
+            manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python"},
             run_dir="/test/run_dir",
             run_config={"format": {"input": {"type": "json"}}},
             inputs_dir_path=None,
@@ -604,7 +605,7 @@ class TestLocalExecutor(unittest.TestCase):
         execute_run(
             run_id="test_run_id",
             src="/test/src",
-            manifest_dict={"entrypoint": "main.py", "files": ["main.py"]},
+            manifest_dict={"execution": {"entrypoint": "main.py"}, "files": ["main.py"]},
             run_dir="/test/run_dir",
             run_config=run_config,
             input_data={"test": "data"},

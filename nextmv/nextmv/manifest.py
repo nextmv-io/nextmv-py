@@ -1007,6 +1007,40 @@ class ManifestConfiguration(BaseModel):
     """Content configuration for specifying how the app input/output is handled."""
 
 
+class ManifestExecution(BaseModel):
+    """
+    Execution configuration for the decision model.
+
+    You can import the `ManifestExecution` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestExecution
+    ```
+
+    Parameters
+    ----------
+    entrypoint : Optional[str], default=None
+        The entrypoint for the decision model, e.g.: `./app.py`.
+    cwd : Optional[str], default=None
+        The working directory to set when running the app, e.g.: `./src/`.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestExecution
+    >>> exec_config = ManifestExecution(
+    ...     entrypoint="./app.py",
+    ...     cwd="./src/"
+    ... )
+    >>> exec_config.entrypoint
+    './app.py'
+    """
+
+    entrypoint: str | None = None
+    """The entrypoint for the decision model, e.g.: `./app.py`."""
+    cwd: str | None = None
+    """The working directory to set when running the app, e.g.: `./src/`."""
+
+
 class Manifest(BaseModel):
     """
     Represents an app manifest (`app.yaml`) for Nextmv Cloud.
@@ -1124,54 +1158,11 @@ class Manifest(BaseModel):
     process. This command is executed just before the app gets bundled and
     pushed (after the build command).
     """
-    entrypoint: str | None = None
+    execution: ManifestExecution | None = None
     """
-    Optional entrypoint for the decision model. When not specified, the
-    following default entrypoints are used, according to the `.runtime`:
-
-    - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
-    - `ManifestRuntime.DEFAULT`: `./main`
-    - Java: `./main.jar`
+    Optional execution configuration for the decision model. Allows configuration of
+    entrypoint and more.
     """
-
-    def model_post_init(self, __context) -> None:
-        """
-        Post-initialization to set default entrypoint based on runtime if not specified.
-
-        This method is automatically called by Pydantic after the model is initialized.
-        If no entrypoint is provided, it sets a default entrypoint based on the runtime:
-        - Python runtimes (PYTHON, HEXALY, PYOMO, CUOPT): "./main.py"
-        - DEFAULT runtime: "./main"
-        - JAVA runtime: "./main.jar"
-
-        Parameters
-        ----------
-        __context : Any
-            Pydantic context (unused in this implementation).
-
-        Raises
-        ------
-        ValueError
-            If no entrypoint is provided and the runtime cannot be resolved to
-            establish a default entrypoint.
-        """
-        if self.entrypoint is None:
-            if self.runtime in (
-                ManifestRuntime.PYTHON,
-                ManifestRuntime.HEXALY,
-                ManifestRuntime.PYOMO,
-                ManifestRuntime.CUOPT,
-            ):
-                self.entrypoint = "./main.py"
-            elif self.runtime == ManifestRuntime.DEFAULT:
-                self.entrypoint = "./main"
-            elif self.runtime == ManifestRuntime.JAVA:
-                self.entrypoint = "./main.jar"
-            else:
-                raise ValueError(
-                    f'entrypoint is not provided but the runtime "{self.runtime}" could not '
-                    "be resolved to establish a default entrypoint"
-                )
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":
@@ -1477,6 +1468,5 @@ def default_python_manifest() -> Manifest:
         type=ManifestType.PYTHON,
         python=ManifestPython(pip_requirements="requirements.txt"),
     )
-    m.entrypoint = None  # TODO: change this when we are ready for the entrypoint.
 
     return m
