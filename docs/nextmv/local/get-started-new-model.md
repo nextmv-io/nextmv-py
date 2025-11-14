@@ -1,9 +1,9 @@
-# Get started with a new app
+# Get started with a new decision model
 
 If you are new to Nextmv, and want to explore the local experience, this guide
 is a great place to start. On the other hand, if you already have a Python
 decision model, you can head to the [tutorial on getting started with an
-existing app][get-started-existing-app] instead.
+existing model][get-started-existing-model] instead.
 
 Let's dive right in 🤿.
 
@@ -58,6 +58,18 @@ app-<RANDOM_IDENTIFIER>
 
     Think of the app as a shell that contains your decision model code, and
     provides the necessary structure to run it.
+
+The [`app.yaml` manifest][app-manifest] file contains the configuration of the
+app. This tutorial is not meant to discuss the app manifest in-depth, however,
+these are the main attributes shown in the manifest:
+
+* `type`: it is a `python` application.
+* `runtime`: when deployed to Nextmv Cloud, this application can be run on the
+  standard `python:3.11` runtime.
+* `files`: contains files that make up the executable code of the app. In this case,
+  it includes all the files under the `src` directory, and the `main.py` file.
+* `python.pip-requirements`: specifies the file with the Python packages that
+  need to be installed for the application.
 
 ### Make sure it works
 
@@ -136,7 +148,8 @@ print("run_2:", run_2)
 ```
 
 When you instantiate a [`local.Application`][local-app], the `src` argument
-must point to a directory where the `app.yaml` manifest file is located.
+must point to a directory where the [`app.yaml` manifest][app-manifest] file is
+located.
 
 This will print the IDs of the runs created. The app runs start in the
 background, similar to this:
@@ -496,7 +509,6 @@ You have successfully:
 After you complete exploring the `local` experience, you can unleash the full
 potential of the Nextmv Platform with [Cloud][cloud-index].
 
-[get-started-existing-app]: ./get-started-existing-app.md
 [get-run-result]: #3-get-a-run-result
 [sample-visuals]: ../../images/sample-visuals.png
 [cloud-index]: ../cloud/index.md
@@ -508,3 +520,5 @@ potential of the Nextmv Platform with [Cloud][cloud-index].
 [local-app-run-metadata]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_metadata
 [local-app-new-run-with-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run_with_result
 [local-app-run-visuals]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_visuals
+[app-manifest]: https://docs.nextmv.io/docs/using-nextmv/deploy/app/manifest
+[get-started-existing-model]: ./get-started-existing-model.md

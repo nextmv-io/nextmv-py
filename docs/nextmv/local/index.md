@@ -24,15 +24,15 @@ features of the local experience:
 
 | Feature | Description |
 |---------|-------------|
-| [Get started - new app][get-started-new-app] | Create a new Nextmv Application and run it locally |
-| [Get started - existing app][get-started-existing-app] | Run your existing Python decision model locally |
+| [Get started - new model][get-started-new-model] | Create a new Nextmv Application and run it locally |
+| [Get started - existing model][get-started-existing-model] | Run your existing Python decision model locally |
 | [Run an app][runs] | Create and manage runs for your local Application |
 | [Sync to Cloud][sync] | Push your local Application to Nextmv Cloud |
 | [Visualize run assets][visuals] | View the visual assets produced by your local runs |
 
 [cloud-overview]: ../cloud/index.md
-[get-started-new-app]: ./get-started-new-app.md
-[get-started-existing-app]: ./get-started-existing-app.md
+[get-started-new-model]: ./get-started-new-model.md
+[get-started-existing-model]: ./get-started-existing-model.md
 [runs]: ./runs.md
 [sync]: ./sync.md
 [visuals]: ./visuals.md
