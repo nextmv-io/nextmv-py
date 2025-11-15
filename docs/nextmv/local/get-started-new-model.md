@@ -131,7 +131,7 @@ from nextmv import local
 # Instantiate the local application.
 local_app = local.Application(src="<YOUR_APP_SRC>")
 
-# Provide any input you want to the app. This input can come from a file, for
+# Provide any input you want for the app. This input can come from a file, for
 # example.
 input = {
     "name": "Patches",
@@ -152,10 +152,11 @@ must point to a directory where the [`app.yaml` manifest][app-manifest] file is
 located.
 
 This will print the IDs of the runs created. The app runs start in the
-background, similar to this:
+background. Run the script, or notebook cell, to get an output similar to this:
 
 ```bash
 $ python app2.py
+
 run_1: local-lyxnxlsl
 run_2: local-ykfq7nej
 ```
@@ -182,10 +183,12 @@ result_1 = local_app.run_result(run_id="<RUN_ID_1_PRINTED_IN_STEP_2>")
 nextmv.write(result_1)
 ```
 
-You should see an output similar to this one:
+Run the script, or notebook cell, and you should see an output similar to this
+one:
 
 ```bash
 $ python app3.py
+
 {
   "description": "Local run created at 2025-10-03T09:14:49.543398Z",
   "id": "local-au9xnvbj",
@@ -268,10 +271,12 @@ result_info_2 = local_app.run_metadata(run_id="<RUN_ID_2_PRINTED_IN_STEP_2>")
 nextmv.write(result_info_2)
 ```
 
-You should see an output similar to this one:
+Run the script, or notebook cell, and you should see an output similar to this
+one:
 
 ```bash
 $ python app4.py
+
 {
   "description": "Local run created at 2025-11-14T19:43:15.237810Z",
   "id": "local-ykfq7nej",
@@ -307,7 +312,7 @@ its status, creation time, and more.
 
 Since runs are started in the background, you should poll until the run
 succeeds (or fails) to get the results. You can use the
-`local.Application.new_run_with_result`[local-app-new-run-with-result] method
+[`local.Application.new_run_with_result`][local-app-new-run-with-result] method
 to do everything:
 
 1. Start a run
@@ -325,7 +330,7 @@ from nextmv import local
 # Instantiate the local application.
 local_app = local.Application(src="<YOUR_APP_SRC>")
 
-# Provide any input you want to the app. This input can come from a file, for
+# Provide any input you want for the app. This input can come from a file, for
 # example.
 input = {
     "name": "Patches",
@@ -338,11 +343,12 @@ result_3 = local_app.new_run_with_result(input=input)
 nextmv.write(result_3)
 ```
 
-You should see an output similar to the one shown in the [getting a run result
-section][get-run-result].
+Run the script, or notebook cell, and you should see an output similar to the
+one shown in the [getting a run result section][get-run-result].
 
 ```bash
 $ python app5.py
+
 {
   "description": "Local run created at 2025-11-14T20:12:13.058486Z",
   "id": "local-xfsgm9t7",
@@ -433,10 +439,10 @@ app-<RANDOM_IDENTIFIER>
 ├── .gitignore
 ├── .nextmv
 │   └── runs
-│       ├── {RUN_ID_2}
+│       ├── {RUN_ID_1}
 │       │   ├── inputs
 │       │   │   └── input.json
-│       │   ├── {RUN_ID_2}.json
+│       │   ├── {RUN_ID_1}.json
 │       │   ├── logs
 │       │   │   └── logs.log
 │       │   ├── outputs
@@ -486,8 +492,6 @@ app-<RANDOM_IDENTIFIER>
 └── src
     ├── __init__.py
     └── visuals.py
-
-44 directories, 43 files
 ```
 
 The `.nextmv` dir is used to store and manage the `local` applications runs in

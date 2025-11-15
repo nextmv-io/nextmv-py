@@ -1,9 +1,9 @@
 # Get started with an existing decision model
 
 If you already have a Python decision model, this guide will help you get it
-running locally using the `nextmv.local` package. On the other hand, if you are
-new to Nextmv, you can head to the [tutorial on getting started with a new
-model][get-started-new-model] instead.
+running locally using the `nextmv.local` package. On the other hand, if you
+don't have a decision model and are exploring Nextmv, you can head to the
+[tutorial on getting started with a new model][get-started-new-model] instead.
 
 To complete this tutorial, we will use an external example, working under the
 principle that it is not a Nextmv-created decision model. You can, and should,
@@ -190,6 +190,7 @@ Make sure your decision model works by running the executable code.
 
 ```bash
 $ python main.py
+
 Objective: 6208
 Route for vehicle 0:
  0 Load(0) ->  7 Load(8) ->  3 Load(10) ->  4 Load(14) ->  1 Load(15) ->  0 Load(15)
@@ -248,16 +249,38 @@ manifest][app-manifest], to the root of the project. This file contains the
 configuration of the app.
 
 ```yaml title="app.yaml"
-# This manifest holds the information the app needs to run on the Nextmv Cloud.
 type: python
 runtime: ghcr.io/nextmv-io/runtime/python:3.11
-python:
-  # All listed packages will get bundled with the app.
-  pip-requirements: requirements.txt
-
-# List all files/directories that should be included in the app.
 files:
   - main.py
+python:
+  pip-requirements: requirements.txt
+configuration:
+  content:
+    format: json
+  options:
+    items:
+      - name: duration
+        description: Duration for the solver, in seconds.
+        required: false
+        option_type: float
+        default: 1
+        additional_attributes:
+          min: 0
+          max: 10
+          step: 1
+        ui:
+          control_type: slider
+      - name: input
+        description: Path to input file. Default is stdin.
+        required: false
+        option_type: string
+        default: ""
+      - name: output
+        description: Path to output file. Default is stdout.
+        required: false
+        option_type: string
+        default: ""
 ```
 
 This tutorial is not meant to discuss the app manifest in-depth, for that you
@@ -293,13 +316,157 @@ nextmv>=0.35.0
 Now, you can overwrite the your `main.py` file with the Nextmv-ified version.
 
 ```python title="main.py"
-MISSING CODE HERE!
+"""Capacited Vehicles Routing Problem (CVRP)."""
+
+from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+
+import nextmv
+
+
+def print_solution(data, manager, routing, solution, options: nextmv.Options) -> nextmv.Output:
+    """Prints solution on console."""
+    print(f"Objective: {solution.ObjectiveValue()}")
+
+    total_distance = 0
+    total_load = 0
+    routes = []
+    for vehicle_id in range(data["num_vehicles"]):
+        if not routing.IsVehicleUsed(solution, vehicle_id):
+            continue
+        index = routing.Start(vehicle_id)
+        plan_output = f"Route for vehicle {vehicle_id}:\n"
+        route_distance = 0
+        route_load = 0
+        plan = []
+        while not routing.IsEnd(index):
+            node_index = manager.IndexToNode(index)
+            route_load += data["demands"][node_index]
+            plan_output += f" {node_index} Load({route_load}) -> "
+            previous_index = index
+            index = solution.Value(routing.NextVar(index))
+            route_distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+            stop = {
+                "node": node_index,
+                "load": route_load,
+            }
+            plan.append(stop)
+        plan_output += f" {manager.IndexToNode(index)} Load({route_load})\n"
+        stop = {
+            "node": manager.IndexToNode(index),
+            "load": route_load,
+        }
+        plan.append(stop)
+        plan_output += f"Distance of the route: {route_distance}m\n"
+        plan_output += f"Load of the route: {route_load}\n"
+        route = {
+            "vehicle_id": vehicle_id,
+            "distance": route_distance,
+            "load": route_load,
+            "plan": plan,
+        }
+        routes.append(route)
+        print(plan_output)
+        total_distance += route_distance
+        total_load += route_load
+    print(f"Total distance of all routes: {total_distance}m")
+    print(f"Total load of all routes: {total_load}")
+
+    statistics = nextmv.Statistics(
+        result=nextmv.ResultStatistics(
+            duration=routing.solver().WallTime() / 1000.0,
+            value=solution.ObjectiveValue(),
+            custom={
+                "total_distance": total_distance,
+                "total_load": total_load,
+            },
+        )
+    )
+    output = nextmv.Output(
+        options=options,
+        solution={"routes": routes},
+        statistics=statistics,
+    )
+
+    return output
+
+
+def main():
+    """Solve the CVRP problem."""
+    nextmv.redirect_stdout()
+    manifest = nextmv.Manifest.from_yaml(".")
+    options = manifest.extract_options()
+    input = nextmv.load(path=options.input)
+
+    # Instantiate the data problem.
+    data = input.data
+
+    # Create the routing index manager.
+    manager = pywrapcp.RoutingIndexManager(len(data["distance_matrix"]), data["num_vehicles"], data["depot"])
+
+    # Create Routing Model.
+    routing = pywrapcp.RoutingModel(manager)
+
+    # Create and register a transit callback.
+    def distance_callback(from_index, to_index):
+        """Returns the distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        return data["distance_matrix"][from_node][to_node]
+
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+
+    # Define cost of each arc.
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
+    # Add Capacity constraint.
+    def demand_callback(from_index):
+        """Returns the demand of the node."""
+        # Convert from routing variable Index to demands NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        return data["demands"][from_node]
+
+    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
+    routing.AddDimensionWithVehicleCapacity(
+        demand_callback_index,
+        0,  # null capacity slack
+        data["vehicle_capacities"],  # vehicle maximum capacities
+        True,  # start cumul to zero
+        "Capacity",
+    )
+
+    # Setting first solution heuristic.
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    search_parameters.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    search_parameters.time_limit.FromSeconds(options.duration)
+
+    # Solve the problem.
+    solution = routing.SolveWithParameters(search_parameters)
+
+    # Print solution on console.
+    if solution:
+        output = print_solution(data, manager, routing, solution, options)
+        nextmv.write(output, path=options.output)
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 This is a short summary of the changes introduced to the example:
 
-* Change 1
-* Change 2
+* Load the app manifest from the `app.yaml` file.
+* Extract options (configurations) from the manifest.
+* The input data is no longer in the Python file itself. We will move it to a
+  file under `inputs/input.json`. In a single `json` file we will define
+  the complete input. Given that we are working with the `json` content
+  format, we use the Python SDK to load the input data from `stdin`.
+* Modify the definition of data to use the loaded input data.
+* Store the solution to the problem, and solver metrics (statistics), in an
+  output.
+* Write the output to `stdout`, given that we are working with the `json`
+  content format.
 
 Here is the data file that you need to place in an `inputs` directory:
 
@@ -348,69 +515,88 @@ You are ready to run your existing Nextmv Application locally using the
 
 ## 5. Start a run
 
-You can initialize a local Application instance for your existing Nextmv
-Application:
+Let's use the mechanisms provided by the `local` package to run the app
+systematically by submitting a couple of runs to the local app, using the
+[`local.Application.new_run`][local-app-new-run] method.
+
+Create a script named `app1.py`, or use a cell of a Jupyter notebook. Copy and
+paste the following code into it, making sure you use the correct app `src`
+(for this example, the current working directory, `"."`).:
 
 ```python
+import os
+
+import nextmv
 from nextmv import local
 
-local_app = local.Application(src="/path/to/your/existing/app")
-```
+# Instantiate the local application.
+local_app = local.Application(src="<YOUR_APP_SRC>")
 
-This will create a local Application instance that points to your existing app
-directory. The app directory must contain a valid `app.yaml` manifest file at
-its root.
+# Provide any input you want for the app. This input can come from a file, for
+# example.
+input = nextmv.load(path=os.path.join("inputs", "input.json"))
 
-* You must specify the `src` argument with the path to your existing
-  application directory.
-* The directory must be structured according to Nextmv Application conventions.
-
-Let's use the mechanisms provided by the `local` package to run the app
-systematically by submitting a couple of runs to the local app.
-
-```python
-input = { # Provide any input appropriate for your app
-  "name": "Patches",
-  "radius": 6378,
-  "distance": 147.6
-}
-
+# Execute some local runs with the provided input.
 run_1 = local_app.new_run(input=input)
-print(run_1)
+print("run_1:", run_1)
 
 run_2 = local_app.new_run(input=input)
-print(run_2)
+print("run_2:", run_2)
 ```
 
+When you instantiate a [`local.Application`][local-app], the `src` argument
+must point to a directory where the [`app.yaml` manifest][app-manifest] file is
+located.
+
 This will print the IDs of the runs created. The app runs start in the
-background.
+background. Run the script, or notebook cell, to get an output similar to this:
 
-## Get a run result
+```bash
+$ python app1.py
 
-You can get a run result using the run ID.
+run_1: local-lyxnxlsl
+run_2: local-ykfq7nej
+```
+
+## 6. Get a run result
+
+You can get a run result using the run ID with the
+[`local.Application.run_result`][local-app-run-result] method.
+
+Create another script, which you can name `app2.py`, or use another cell in the
+Jupyter notebook. Copy and paste the following code into it, making sure you
+use the correct run ID (one of the identifiers that were printed in step 5) and
+app `src`:
 
 ```python
 import nextmv
+from nextmv import local
 
+# Instantiate the local application.
+local_app = local.Application(src="<YOUR_APP_SRC>")
 
-result_1 = local_app.run_result(run_id=run_1)
+# Get the result of a specific run by its ID.
+result_1 = local_app.run_result(run_id="<RUN_ID_1_PRINTED_IN_STEP_5>")
 nextmv.write(result_1)
 ```
 
-You should see an output similar to this one:
+Run the script, or notebook cell, and you should see an output similar to this
+one:
 
-```json
+```bash
+$ python app2.py
+
 {
-  "description": "Local run created at 2025-10-03T09:14:49.543398Z",
-  "id": "local-au9xnvbj",
+  "description": "Local run created at 2025-11-15T04:25:24.898982Z",
+  "id": "local-odl83e4j",
   "metadata": {
-    "application_id": "/path/to/your/existing/app",
+    "application_id": ".",
     "application_instance_id": "",
     "application_version_id": "",
-    "created_at": "2025-10-03T09:14:49.543398Z",
-    "duration": 1311.6,
+    "created_at": "2025-11-15T04:25:24.898982Z",
+    "duration": 1801.5,
     "error": "",
-    "input_size": 62.0,
+    "input_size": 3649.0,
     "output_size": 0.0,
     "format": {
       "input": {
@@ -422,28 +608,155 @@ You should see an output similar to this one:
     },
     "status_v2": "succeeded"
   },
-  "name": "local run local-au9xnvbj",
+  "name": "local run local-odl83e4j",
   "user_email": "",
   "console_url": "",
-  "synced_run_id": "devint-D6OCps3Ng",
-  "synced_at": "2025-10-03T09:15:06.868320Z",
   "output": {
     "options": {
-      "details": true
+      "duration": 1,
+      "input": "",
+      "output": ""
     },
     "solution": {
-      "message": "Hello, Patches"
+      "routes": [
+        {
+          "vehicle_id": 0,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 7,
+              "load": 8
+            },
+            {
+              "node": 3,
+              "load": 10
+            },
+            {
+              "node": 4,
+              "load": 14
+            },
+            {
+              "node": 1,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 1,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 14,
+              "load": 4
+            },
+            {
+              "node": 16,
+              "load": 12
+            },
+            {
+              "node": 10,
+              "load": 14
+            },
+            {
+              "node": 9,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 2,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 12,
+              "load": 2
+            },
+            {
+              "node": 11,
+              "load": 3
+            },
+            {
+              "node": 15,
+              "load": 11
+            },
+            {
+              "node": 13,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 3,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 8,
+              "load": 8
+            },
+            {
+              "node": 2,
+              "load": 9
+            },
+            {
+              "node": 6,
+              "load": 13
+            },
+            {
+              "node": 5,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        }
+      ]
     },
     "statistics": {
       "result": {
-        "value": 1.23,
+        "duration": 1.001,
+        "value": 6208.0,
         "custom": {
-          "message": "Hello, Patches"
+          "total_distance": 6208,
+          "total_load": 60
         }
       },
       "schema": "v1"
     },
-    "assets": [...]
+    "assets": []
   }
 }
 ```
@@ -458,42 +771,61 @@ more.
     The Nextmv SDK keeps track of all the local runs you create inside your
     application.
 
-## Get run information
+## 7. Get run information
 
 Runs may take a while to complete. We recommend you poll for the run status
 until it is completed. Once the run is completed, you can get the run result as
-shown above.
+shown above. To get the run information, use the run ID and the
+[`local.Application.run_metadata`][local-app-run-metadata] method.
+
+Create another script, which you can name `app3.py`, or use another cell in the
+Jupyter notebook. Copy and paste the following code into it, making sure you
+use the correct run ID (one of the identifiers that were printed in step 5) and
+app `src`:
 
 You can get the run information using the run ID.
 
 ```python
-result_info_2 = local_app.run_metadata(run_id=run_2)
+import nextmv
+from nextmv import local
+
+# Instantiate the local application.
+local_app = local.Application(src="<YOUR_APP_SRC>")
+
+# Get the information of a specific run by its ID.
+result_info_2 = local_app.run_metadata(run_id="<RUN_ID_2_PRINTED_IN_STEP_5>")
 nextmv.write(result_info_2)
 ```
 
-You should see an output similar to this one:
+Run the script, or notebook cell, and you should see an output similar to this
+one:
 
-```json
+```bash
+$ python app3.py
+
 {
-  "description": "Local run created at 2025-10-03T09:14:49.549581Z",
-  "id": "local-9881aggf",
+  "description": "Local run created at 2025-11-15T04:25:24.898982Z",
+  "id": "local-odl83e4j",
   "metadata": {
-    "application_id": "/path/to/your/existing/app",
+    "application_id": ".",
     "application_instance_id": "",
     "application_version_id": "",
-    "created_at": "2025-10-03T09:14:49.549581Z",
-    "duration": 0.0,
+    "created_at": "2025-11-15T04:25:24.898982Z",
+    "duration": 1801.5,
     "error": "",
-    "input_size": 62.0,
+    "input_size": 3649.0,
     "output_size": 0.0,
     "format": {
       "input": {
         "type": "json"
+      },
+      "output": {
+        "type": "json"
       }
     },
-    "status_v2": "queued"
+    "status_v2": "succeeded"
   },
-  "name": "local run local-9881aggf",
+  "name": "local run local-odl83e4j",
   "user_email": "",
   "console_url": ""
 }
@@ -502,56 +834,308 @@ You should see an output similar to this one:
 As you can see, the run information contains metadata about the run, such as its
 status, creation time, and more.
 
-## All in one
+## 8. All in one
 
 Since runs are started in the background, you should poll until the run
-succeeds (or fails) to get the results. You can use the `new_run_with_result`
-method to do everything:
+succeeds (or fails) to get the results. You can use the
+[`local.Application.new_run_with_result`][local-app-new-run-with-result] method
+to do everything:
 
 1. Start a run
 2. Poll for results
 3. Return them
 
+Create another script, which you can name `app4.py`, or use another cell in the
+Jupyter notebook. Copy and paste the following code into it, making sure you
+use the correct app `src`:
+
 ```python
+import os
+
+import nextmv
+from nextmv import local
+
+# Instantiate the local application.
+local_app = local.Application(src="<YOUR_APP_SRC>")
+
+# Provide any input you want for the app. This input can come from a file, for
+# example.
+input = nextmv.load(path=os.path.join("inputs", "input.json"))
+
+# Start a new run and get its result immediately.
 result_3 = local_app.new_run_with_result(input=input)
 nextmv.write(result_3)
+
 ```
 
-You should see an output similar to the one shown in the [getting a run result
-section][get-run-result].
+Run the script, or notebook cell, and you should see an output similar to the
+one shown in the [getting a run result section][get-run-result].
+
+```bash
+$ python app4.py
+
+{
+  "description": "Local run created at 2025-11-15T04:37:31.074413Z",
+  "id": "local-cufver73",
+  "metadata": {
+    "application_id": ".",
+    "application_instance_id": "",
+    "application_version_id": "",
+    "created_at": "2025-11-15T04:37:31.074413Z",
+    "duration": 1763.5,
+    "error": "",
+    "input_size": 3649.0,
+    "output_size": 0.0,
+    "format": {
+      "input": {
+        "type": "json"
+      },
+      "output": {
+        "type": "json"
+      }
+    },
+    "status_v2": "succeeded"
+  },
+  "name": "local run local-cufver73",
+  "user_email": "",
+  "console_url": "",
+  "output": {
+    "options": {
+      "duration": 1,
+      "input": "",
+      "output": ""
+    },
+    "solution": {
+      "routes": [
+        {
+          "vehicle_id": 0,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 7,
+              "load": 8
+            },
+            {
+              "node": 3,
+              "load": 10
+            },
+            {
+              "node": 4,
+              "load": 14
+            },
+            {
+              "node": 1,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 1,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 14,
+              "load": 4
+            },
+            {
+              "node": 16,
+              "load": 12
+            },
+            {
+              "node": 10,
+              "load": 14
+            },
+            {
+              "node": 9,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 2,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 12,
+              "load": 2
+            },
+            {
+              "node": 11,
+              "load": 3
+            },
+            {
+              "node": 15,
+              "load": 11
+            },
+            {
+              "node": 13,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        },
+        {
+          "vehicle_id": 3,
+          "distance": 1552,
+          "load": 15,
+          "plan": [
+            {
+              "node": 0,
+              "load": 0
+            },
+            {
+              "node": 8,
+              "load": 8
+            },
+            {
+              "node": 2,
+              "load": 9
+            },
+            {
+              "node": 6,
+              "load": 13
+            },
+            {
+              "node": 5,
+              "load": 15
+            },
+            {
+              "node": 0,
+              "load": 15
+            }
+          ]
+        }
+      ]
+    },
+    "statistics": {
+      "result": {
+        "duration": 1.001,
+        "value": 6208.0,
+        "custom": {
+          "total_distance": 6208,
+          "total_load": 60
+        }
+      },
+      "schema": "v1"
+    },
+    "assets": []
+  }
+}
+```
 
 The complete methodology for running is discussed in detail in the [runs
 tutorial][runs-tutorial].
 
-## Visualize assets
+## 9. Understanding what happened
 
-If your app produces visual assets, you can visualize them locally with the
-following code:
+If you inspect the application directory consolidated in step 4 again, you
+will see a structure similar to the following:
 
-```python
-local_app.run_visuals(run_id=run_1)
+```text
+.
+├── .gitignore
+├── .nextmv
+│   └── runs
+│       ├── {RUN_ID_1}
+│       │   ├── inputs
+│       │   │   └── input.json
+│       │   ├── {RUN_ID_1}.json
+│       │   ├── logs
+│       │   │   └── logs.log
+│       │   └── outputs
+│       │       ├── assets
+│       │       │   └── assets.json
+│       │       ├── solutions
+│       │       │   └── solution.json
+│       │       └── statistics
+│       │           └── statistics.json
+│       ├── {RUN_ID_2}
+│       │   ├── inputs
+│       │   │   └── input.json
+│       │   ├── {RUN_ID_2}.json
+│       │   ├── logs
+│       │   │   └── logs.log
+│       │   └── outputs
+│       │       ├── assets
+│       │       │   └── assets.json
+│       │       ├── solutions
+│       │       │   └── solution.json
+│       │       └── statistics
+│       │           └── statistics.json
+│       └── {RUN_ID_3}
+│           ├── inputs
+│           │   └── input.json
+│           ├── {RUN_ID_3}.json
+│           ├── logs
+│           │   └── logs.log
+│           └── outputs
+│               ├── assets
+│               │   └── assets.json
+│               ├── solutions
+│               │   └── solution.json
+│               └── statistics
+│                   └── statistics.json
+├── app.yaml
+├── inputs
+│   └── input.json
+├── main.py
+└── requirements.txt
 ```
 
-This will open a browser window for each asset produced by the run. The visual
-assets depend on what your specific application generates.
+The `.nextmv` dir is used to store and manage the `local` applications runs in
+a structured way. The `local` package is used to interact with these files,
+with methods for starting runs, retrieving results, visualizing charts, and
+more.
+
+🎉🎉🎉 Congratulations, you have finished this tutorial!
 
 ## Next steps
 
 You have successfully:
 
-* connected to your existing Nextmv Application,
-* ran it locally using the `nextmv.local` package,
-* obtained run results, and
-* visualized assets (if your app produces them).
+* Nextmv-ified a decision model.
+* Ran it locally.
+* Obtained run results.
 
-After you complete exploring the local experience, you can unleash the full
+After you complete exploring the `local` experience, you can unleash the full
 potential of the Nextmv Platform with [Cloud][cloud-index].
 
 [get-started-new-model]: ./get-started-new-model.md
-[get-run-result]: #get-a-run-result
+[get-run-result]: #6-get-a-run-result
 [app-manifest]: https://docs.nextmv.io/docs/using-nextmv/deploy/app/manifest
 [cloud-index]: ../cloud/index.md
 [runs-tutorial]: ./runs.md
 [or-tools-example]: https://developers.google.com/optimization/routing/cvrp
 [app-diagram]: ../../images/app-diagram.png
 [modeling-constructs]: ../modeling/index.md
+[local-app]: ./reference/application.md#nextmv.nextmv.local.application.Application
+[local-app-new-run]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run
+[local-app-run-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_result
+[local-app-run-metadata]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_metadata
+[local-app-new-run-with-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run_with_result
