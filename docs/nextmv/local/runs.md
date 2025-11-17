@@ -325,11 +325,43 @@ Run ID: local-80mxxuq8, Status: succeeded
 Run ID: local-rq0pw6sy, Status: succeeded
 ```
 
+## Run logs
+
+You can retrieve the logs for a specific run using the
+[`Application.run_logs`][app-run-logs] method. This method returns the logs as
+a string, which can be printed directly to display them in the same format as
+they are stored locally.
+
+```python
+from nextmv import local
+
+app = local.Application(src="<YOUR_APP_SRC>")
+
+# Get the logs for a specific run
+logs = app.run_logs(run_id="local-rq0pw6sy")
+print(logs)
+```
+
+The logs are retrieved from the `.nextmv/runs/{run_id}/logs/logs.log` file in
+your local application directory. If the run does not have any logs or they are
+empty, the method returns an empty string.
+
+Example output:
+
+```bash
+$ python main.py
+
+2025-10-03T09:14:49.543Z [INFO] Starting run local-rq0pw6sy
+2025-10-03T09:14:49.612Z [INFO] Processing input data
+2025-10-03T09:14:50.821Z [INFO] Run completed successfully
+```
+
 [polling-section]: #polling
 [app-new-run]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run
 [app-run-metadata]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_metadata
 [app-run-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_result
 [app-list-runs]: ./reference/application.md#nextmv.nextmv.local.application.Application.list_runs
+[app-run-logs]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_logs
 [app-run-result-with-polling]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_result_with_polling
 [app-new-run-with-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run_with_result
 [input]: ../modeling/reference/input.md#nextmv.nextmv.input.Input

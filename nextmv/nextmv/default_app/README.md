@@ -22,11 +22,11 @@ A sample input file is also provided as `input.json`.
 1. Install packages.
 
     ```bash
-    pip3 install -r requirements.txt
+    pip install -r requirements.txt
     ```
 
 2. Run the app.
 
     ```bash
-    cat input.json | python3 main.py
+    cat input.json | python main.py
     ```

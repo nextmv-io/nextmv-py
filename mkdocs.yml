@@ -29,8 +29,8 @@ nav:
               - status.py: nextmv/modeling/reference/status.md
       - 💻 Local:
           - Overview: nextmv/local/index.md
-          - Get started - new app: nextmv/local/get-started-new-app.md
-          - Get started - existing app: nextmv/local/get-started-existing-app.md
+          - Get started - new model: nextmv/local/get-started-new-model.md
+          - Get started - existing model: nextmv/local/get-started-existing-model.md
           - Run an app: nextmv/local/runs.md
           - Sync to Cloud: nextmv/local/sync.md
           - Visualize run assets: nextmv/local/visuals.md
