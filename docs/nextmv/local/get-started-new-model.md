@@ -129,7 +129,7 @@ use the correct app `src` (the directory name created above):
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Provide any input you want for the app. This input can come from a file, for
 # example.
@@ -176,7 +176,7 @@ import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Get the result of a specific run by its ID.
 result_1 = local_app.run_result(run_id="<RUN_ID_1_PRINTED_IN_STEP_2>")
@@ -264,7 +264,7 @@ import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Get the information of a specific run by its ID.
 result_info_2 = local_app.run_metadata(run_id="<RUN_ID_2_PRINTED_IN_STEP_2>")
@@ -328,7 +328,7 @@ import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Provide any input you want for the app. This input can come from a file, for
 # example.
@@ -413,7 +413,7 @@ app `src`:
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Display the visuals of a specific run by its ID.
 local_app.run_visuals(run_id="<RUN_ID_1_PRINTED_IN_STEP_2>")
