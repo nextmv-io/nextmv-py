@@ -12,13 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
-      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      GO_VERSION: ""
-      PYTHON_VERSION: ""
-      APPS: ""
-      APP_NAMES: ""
-      FILTERS: ""
-      AUTOMATIC_APP_NAMES: false
     permissions:
       id-token: write
       contents: write
@@ -33,7 +26,6 @@ jobs:
           curl -sS "https://cloud.nextmv.io/install-cli.txt" | bash -
 
       - name: Set up Nextmv CLI
-        if: ${{ env.APPS != '' }}
         run: |
           export PATH=$PATH:~/.nextmv # Make CLI available in non-interactive shell
           nextmv configure --api-key ${{ env.NEXTMV_API_KEY }}
@@ -41,4 +33,8 @@ jobs:
       - name: Deploy Nextmv Application
         run: |
           export PATH=$PATH:~/.nextmv # Make CLI available in non-interactive shell
-          nextmv help # Example command to verify installation, replace with actual deployment commands
+          nextmv help # Example command to verify installation, you can delete this line.
+
+          # Use these commands to deploy your Nextmv application
+          # nextmv app push -a <NEXTMV_APP_ID>
+        # working-directory: ./path/to/your/nextmv/app/app.yaml
