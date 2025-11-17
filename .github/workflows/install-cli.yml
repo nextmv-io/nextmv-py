@@ -1,0 +1,44 @@
+name: Deploy Nextmv Application
+run-name: Deploy by @${{ github.actor }} from ${{ github.ref_name }}
+
+on: push
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
+      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      GO_VERSION: ""
+      PYTHON_VERSION: ""
+      APPS: ""
+      APP_NAMES: ""
+      FILTERS: ""
+      AUTOMATIC_APP_NAMES: false
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: git clone
+        uses: actions/checkout@v5
+
+      - name: Install Nextmv CLI
+        run: |
+          export NEXTMV_API_KEY=${{ env.NEXTMV_API_KEY }}
+          export NEXTMV_BASE_URL=https://api.cloud.nextmv.io
+          curl -sS "https://cloud.nextmv.io/install-cli.txt" | bash -
+
+      - name: Set up Nextmv CLI
+        if: ${{ env.APPS != '' }}
+        run: |
+          export PATH=$PATH:~/.nextmv # Make CLI available in non-interactive shell
+          nextmv configure --api-key ${{ env.NEXTMV_API_KEY }}
+
+      - name: Deploy Nextmv Application
+        run: |
+          export PATH=$PATH:~/.nextmv # Make CLI available in non-interactive shell
+          nextmv help # Example command to verify installation, replace with actual deployment commands
