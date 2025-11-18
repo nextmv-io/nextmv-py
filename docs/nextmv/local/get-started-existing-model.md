@@ -1,5 +1,9 @@
 # Get started with an existing decision model
 
+!!! tip
+
+    ⌛️ Approximate time to complete: 15 min.
+
 If you already have a Python decision model, this guide will help you get it
 running locally using the `nextmv.local` package. On the other hand, if you
 don't have a decision model and are exploring Nextmv, you can head to the

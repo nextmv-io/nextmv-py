@@ -1,5 +1,9 @@
 # Get started with a new decision model
 
+!!! tip
+
+    ⌛️ Approximate time to complete: 10 min.
+
 If you are new to Nextmv, and want to explore the local experience, this guide
 is a great place to start. On the other hand, if you already have a Python
 decision model, you can head to the [tutorial on getting started with an
