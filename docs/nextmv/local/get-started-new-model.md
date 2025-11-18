@@ -16,7 +16,7 @@ Let's dive right in 🤿.
 Create a script named `app1.py`, or use a cell of a Jupyter notebook. Copy and
 paste the following code into it:
 
-```python
+```python title="app1.py"
 from nextmv import local
 
 local_app = local.Application.initialize()
@@ -129,7 +129,7 @@ Create another script, which you can name `app2.py`, or use another cell in the
 Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct app `src` (the directory name created above):
 
-```python
+```python title="app2.py"
 from nextmv import local
 
 # Instantiate the local application.
@@ -175,7 +175,7 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app3.py"
 import nextmv
 from nextmv import local
 
@@ -263,7 +263,7 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app4.py"
 import nextmv
 from nextmv import local
 
@@ -327,7 +327,7 @@ Create another script, which you can name `app5.py`, or use another cell in the
 Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct app `src`:
 
-```python
+```python title="app5.py"
 import nextmv
 from nextmv import local
 
@@ -413,7 +413,7 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app6.py"
 from nextmv import local
 
 # Instantiate the local application.
