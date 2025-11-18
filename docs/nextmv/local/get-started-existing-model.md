@@ -869,7 +869,6 @@ input = nextmv.load(path=os.path.join("inputs", "input.json"))
 # Start a new run and get its result immediately.
 result_3 = local_app.new_run_with_result(input=input)
 nextmv.write(result_3)
-
 ```
 
 Run the script, or notebook cell, and you should see an output similar to the
