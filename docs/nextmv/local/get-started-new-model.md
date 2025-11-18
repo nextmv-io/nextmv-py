@@ -1,5 +1,9 @@
 # Get started with a new decision model
 
+!!! tip
+
+    ⌛️ Approximate time to complete: 10 min.
+
 If you are new to Nextmv, and want to explore the local experience, this guide
 is a great place to start. On the other hand, if you already have a Python
 decision model, you can head to the [tutorial on getting started with an
@@ -12,7 +16,7 @@ Let's dive right in 🤿.
 Create a script named `app1.py`, or use a cell of a Jupyter notebook. Copy and
 paste the following code into it:
 
-```python
+```python title="app1.py"
 from nextmv import local
 
 local_app = local.Application.initialize()
@@ -125,11 +129,11 @@ Create another script, which you can name `app2.py`, or use another cell in the
 Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct app `src` (the directory name created above):
 
-```python
+```python title="app2.py"
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Provide any input you want for the app. This input can come from a file, for
 # example.
@@ -171,12 +175,12 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app3.py"
 import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Get the result of a specific run by its ID.
 result_1 = local_app.run_result(run_id="<RUN_ID_1_PRINTED_IN_STEP_2>")
@@ -259,12 +263,12 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app4.py"
 import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Get the information of a specific run by its ID.
 result_info_2 = local_app.run_metadata(run_id="<RUN_ID_2_PRINTED_IN_STEP_2>")
@@ -323,12 +327,12 @@ Create another script, which you can name `app5.py`, or use another cell in the
 Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct app `src`:
 
-```python
+```python title="app5.py"
 import nextmv
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Provide any input you want for the app. This input can come from a file, for
 # example.
@@ -409,11 +413,11 @@ Jupyter notebook. Copy and paste the following code into it, making sure you
 use the correct run ID (one of the identifiers that were printed in step 2) and
 app `src`:
 
-```python
+```python title="app6.py"
 from nextmv import local
 
 # Instantiate the local application.
-local_app = local.Application(src="<YOUR_APP_SRC>")
+local_app = local.Application(src=".")
 
 # Display the visuals of a specific run by its ID.
 local_app.run_visuals(run_id="<RUN_ID_1_PRINTED_IN_STEP_2>")
