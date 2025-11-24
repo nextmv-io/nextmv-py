@@ -158,25 +158,17 @@ class ManifestRuntime(str, Enum):
     """
 
     DEFAULT = "ghcr.io/nextmv-io/runtime/default:latest"
-    """This runtime is used to run compiled applications such as Go binaries."""
+    """A runtime used to run compiled applications such as Go binaries."""
     PYTHON = "ghcr.io/nextmv-io/runtime/python:3.11"
-    """
-    This runtime is used as the basis for all other Python runtimes and Python
-    applications.
-    """
+    """A runtime used to run standard Python applications."""
     JAVA = "ghcr.io/nextmv-io/runtime/java:latest"
-    """This runtime is used to run Java applications."""
+    """A runtime used to run Java applications."""
     PYOMO = "ghcr.io/nextmv-io/runtime/pyomo:latest"
-    """This runtime provisions Python packages to run Pyomo applications."""
-    HEXALY = "ghcr.io/nextmv-io/runtime/hexaly:latest"
-    """
-    Based on the python runtime, it provisions (pre-installs) the Hexaly solver
-    to run Python applications.
-    """
+    """A runtime provisioning Python packages to run Pyomo applications."""
     CUOPT = "ghcr.io/nextmv-io/runtime/cuopt:latest"
-    """
-    A runtime providing the NVIDIA cuOpt solver.
-    """
+    """A runtime providing the NVIDIA cuOpt solver."""
+    GAMSPY = "ghcr.io/nextmv-io/runtime/gamspy:latest"
+    """A runtime provisioning the GAMS Python API and supported solvers."""
 
 
 class ManifestPythonArch(str, Enum):
