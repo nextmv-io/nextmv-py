@@ -277,7 +277,9 @@ def __install_dependencies(  # noqa: C901 # complexity
                 "--platform=manylinux2014_aarch64",
                 "--platform=manylinux_2_17_aarch64",
                 "--platform=manylinux_2_24_aarch64",
+                "--platform=manylinux_2_26_aarch64",
                 "--platform=manylinux_2_28_aarch64",
+                "--platform=manylinux_2_34_aarch64",
                 "--platform=linux_aarch64",
             ]
         )
@@ -287,7 +289,9 @@ def __install_dependencies(  # noqa: C901 # complexity
                 "--platform=manylinux2014_x86_64",
                 "--platform=manylinux_2_17_x86_64",
                 "--platform=manylinux_2_24_x86_64",
+                "--platform=manylinux_2_26_x86_64",
                 "--platform=manylinux_2_28_x86_64",
+                "--platform=manylinux_2_34_x86_64",
                 "--platform=linux_x86_64",
             ]
         )
