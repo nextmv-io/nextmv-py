@@ -118,6 +118,8 @@ class ManifestType(str, Enum):
     """Go format"""
     JAVA = "java"
     """Java format"""
+    BINARY = "binary"
+    """Binary format"""
 
 
 class ManifestRuntime(str, Enum):

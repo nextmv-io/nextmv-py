@@ -1017,6 +1017,8 @@ def __determine_entrypoint(manifest: Manifest) -> str:
         return "./main.py"
     elif manifest.type == ManifestType.GO:
         return "./main"
+    elif manifest.type == ManifestType.BINARY:
+        return "./main"
     elif manifest.type == ManifestType.JAVA:
         return "./main.jar"
     else:
