@@ -16,6 +16,7 @@ from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],
     ManifestType.GO: ["main"],
+    ManifestType.BINARY: ["main"],
     ManifestType.JAVA: ["main.jar"],
 }
 
