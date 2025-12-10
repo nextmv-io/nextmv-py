@@ -19,9 +19,9 @@
 
 <!-- markdownlint-enable MD033 MD013 -->
 
-The [Nextmv Python SDK][nextmv], `nextmv`, is a library to interact
-programmatically with the Nextmv Platform from Python. There are three main
-packages (or namespaces) in the SDK:
+The [Nextmv Python SDK][nextmv], `nextmv`, is a free and open-source library to
+interact programmatically with the Nextmv Platform from Python. There are three
+main packages (or namespaces) in the SDK:
 
 1. [`nextmv`][modeling-index] (root): modeling constructs to work with decision
    models in an opinionated way.

@@ -36,8 +36,8 @@
 Nextmv offers several Python SDKs to help you work with decision models and the
 Nextmv Cloud API:
 
-* [`nextmv`][nextmv]: The general-purpose Python SDK for working with decision
-      models and the Nextmv Cloud API.
+* [`nextmv`][nextmv]: A free and open-source, general-purpose Python SDK for
+      working with decision models and the Nextmv Cloud API.
 * [`nextmv-gurobipy`][nextmv-gurobipy]: A Python SDK providing convenience
       functions for working with Gurobi (`gurobipy`) models in the Nextmv
       platform.

@@ -3,10 +3,10 @@
 The `nextmv.local` package provides functionality to run Nextmv Applications
 locally on your machine.
 
-!!! success "Free to use"
+!!! success "Open source & free"
 
-    The `local` experience is completely free of charge and does not require a
-    Nextmv account.
+    The `local` experience is completely open-source and free of charge, it does
+    not require a Nextmv account.
 
 At Nextmv, we believe that decision models should be easy to build, test, and
 run. The Nextmv [Cloud Platform][cloud-overview] provides great functionality
