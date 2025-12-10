@@ -15,6 +15,7 @@ Instance
 from datetime import datetime
 
 from nextmv.base_model import BaseModel
+from nextmv.run import RunQueuing
 
 
 class InstanceConfiguration(BaseModel):
@@ -37,6 +38,10 @@ class InstanceConfiguration(BaseModel):
         Runtime options/parameters for the application.
     secrets_collection_id : str, optional
         ID of the secrets collection to use with this instance.
+    queuing : RunQueuing, optional
+        Queuing configuration for the instance.
+    integration_id : str, optional
+        ID of the integration to use for the instance.
 
     Examples
     --------
@@ -53,6 +58,29 @@ class InstanceConfiguration(BaseModel):
     """Options of the app that the instance uses."""
     secrets_collection_id: str | None = None
     """ID of the secrets collection that the instance uses."""
+    queuing: RunQueuing | None = None
+    """Queuing configuration for the instance."""
+    integration_id: str | None = None
+    """ID of the integration to use for the instance."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Validations done after parsing the model.
+
+        Raises
+        ------
+        ValueError
+            If execution_class is an empty string.
+        """
+
+        if self.integration_id is None or self.integration_id == "":
+            return
+
+        integration_val = "integration"
+        if self.execution_class is not None and self.execution_class != "" and self.execution_class != integration_val:
+            raise ValueError(f"When integration_id is set, execution_class must be `{integration_val}` or None.")
+
+        self.execution_class = integration_val
 
 
 class Instance(BaseModel):

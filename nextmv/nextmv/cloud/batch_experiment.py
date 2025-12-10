@@ -257,7 +257,7 @@ class BatchExperimentRun(BaseModel):
     repetition: int | None = None
     """Repetition number of the experiment."""
 
-    def __post_init_post_parse__(self):
+    def model_post_init(self, __context) -> None:
         """
         Logic to run after the class is initialized.
 
