@@ -1081,7 +1081,7 @@ class RunQueuing(BaseModel):
     queued. If False, the run will be queued.
     """
 
-    def __post_init_post_parse__(self):
+    def model_post_init(self, __context) -> None:
         """
         Validations done after parsing the model.
 
@@ -1121,6 +1121,8 @@ class RunConfiguration(BaseModel):
         ID of the secrets collection to use for the run. Defaults to None.
     queuing : RunQueuing, optional
         Queuing configuration for the run. Defaults to None.
+    integration_id : str, optional
+        ID of the integration to use for the run. Defaults to None.
 
     Examples
     --------
@@ -1150,6 +1152,27 @@ class RunConfiguration(BaseModel):
     """ID of the secrets collection to use for the run."""
     queuing: RunQueuing | None = None
     """Queuing configuration for the run."""
+    integration_id: str | None = None
+    """ID of the integration to use for the run."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Validations done after parsing the model.
+
+        Raises
+        ------
+        ValueError
+            If execution_class is an empty string.
+        """
+
+        if self.integration_id is None or self.integration_id == "":
+            return
+
+        integration_val = "integration"
+        if self.execution_class is not None and self.execution_class != "" and self.execution_class != integration_val:
+            raise ValueError(f"When integration_id is set, execution_class must be `{integration_val}` or None.")
+
+        self.execution_class = integration_val
 
     def resolve(
         self,
@@ -1292,7 +1315,7 @@ class ExternalRunResult(BaseModel):
     or `MULTI_FILE` output formats.
     """
 
-    def __post_init_post_parse__(self):
+    def model_post_init(self, __context) -> None:
         """
         Validations done after parsing the model.
 
