@@ -36,7 +36,7 @@ client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
 integration = cloud.Integration.new(
     client=client,
     name="My Databricks Runtime",
-    integration_id="my-dbx-runtime",
+    integration_id="my-dbx-runtime", # Auto-generated if omitted
     description="Databricks integration for production workloads",
     integration_type=cloud.IntegrationType.RUNTIME,
     exec_types=[cloud.ManifestType.PYTHON],
@@ -65,6 +65,7 @@ client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
 integration = cloud.Integration.new(
     client=client,
     name="App-Specific Integration",
+    integration_id="my-dbx-runtime", # Auto-generated if omitted
     integration_type=cloud.IntegrationType.DATA,
     exec_types=[cloud.ManifestType.PYTHON],
     provider=cloud.IntegrationProvider.DBX,
@@ -78,6 +79,123 @@ print(f"Created integration: {integration.integration_id}")
 
 the `exist_ok` parameter can be set to `True` to instantiate the integration if
 it already exists.
+
+## Running with an integration
+
+Once you've created an integration, you can use it to execute your application
+runs on external compute resources. There are two ways to configure an
+integration for your runs:
+
+1. Directly in the run configuration.
+2. At the instance level.
+
+### 1. Direct integration in run configuration
+
+You can specify an integration directly when submitting a run using the
+`RunConfiguration` class. This approach is useful for one-off runs or when you
+want to use a specific integration regardless of the instance configuration.
+
+```python
+import os
+
+from nextmv import RunConfiguration, cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
+# Submit a run with a specific integration
+run_id = app.new_run(
+    input={"key": "value"},
+    configuration=RunConfiguration(integration_id="my-dbx-runtime"),
+)
+
+print(f"Submitted run: {run_id}")
+```
+
+To get the results directly, use `new_run_with_result`:
+
+```python
+import os
+
+from nextmv import RunConfiguration, cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
+# Submit a run and wait for results
+result = app.new_run_with_result(
+    input={"key": "value"},
+    configuration=RunConfiguration(integration_id="my-dbx-runtime"),
+)
+
+print(f"Run completed: {result.metadata.status_v2.value}")
+print(f"Output: {result.output}")
+```
+
+!!! note
+
+    When you specify an `integration_id`, the `execution_class` is automatically
+    set to `"integration"`. You don't need to specify it manually.
+
+!!! note
+
+    Specifying an integration directly in the run configuration overrides any
+    integration set at the instance level. This is useful when you need to:
+
+      * Test different integrations without modifying the instance.
+      * Route specific runs to different compute environments.
+      * Use a fallback integration for certain scenarios.
+
+### 2. Instance-level integration
+
+For more permanent configurations, you can set an integration at the instance
+level using `InstanceConfiguration`. When you submit runs using that instance,
+the integration will be automatically applied.
+
+First, create an instance with an integration:
+
+```python
+import os
+
+from nextmv import cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
+# Create an instance with an integration
+instance = app.new_instance(
+    id="inst_databricks",
+    name="Databricks Instance",
+    version_id="ver_1234567890",
+    configuration=cloud.InstanceConfiguration(
+        integration_id="my-dbx-runtime",
+    ),
+)
+
+print(f"Created instance: {instance.id}")
+```
+
+Then, submit runs using the instance, the integration is automatically applied:
+
+```python
+import os
+
+from nextmv import cloud
+
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+app = cloud.Application(client=client, id="<YOUR_APP_ID>")
+
+# The integration from the instance configuration is used
+run_id = app.new_run(
+    input={"key": "value"},
+    instance_id="inst_databricks",
+)
+
+print(f"Submitted run using instance integration: {run_id}")
+
+```
+
+Or get results directly with the `new_run_with_result` method.
 
 ## Getting integrations
 
