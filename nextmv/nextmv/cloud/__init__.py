@@ -74,6 +74,10 @@ from .input_set import InputSet as InputSet
 from .input_set import ManagedInput as ManagedInput
 from .instance import Instance as Instance
 from .instance import InstanceConfiguration as InstanceConfiguration
+from .integration import Integration as Integration
+from .integration import IntegrationProvider as IntegrationProvider
+from .integration import IntegrationType as IntegrationType
+from .integration import list_integrations as list_integrations
 from .scenario import Scenario as Scenario
 from .scenario import ScenarioConfiguration as ScenarioConfiguration
 from .scenario import ScenarioInput as ScenarioInput

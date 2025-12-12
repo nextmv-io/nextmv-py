@@ -1564,7 +1564,7 @@ def write_local(
 
     deprecated(
         name="write_local",
-        reason="`write_local` is deprecated, use `write` instead.",
+        reason="`write_local` is deprecated, use `write` instead",
     )
 
     writer = LocalOutputWriter()
