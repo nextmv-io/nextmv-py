@@ -429,19 +429,7 @@ class Integration(BaseModel):
 
         integration = self.get(client=self.client, integration_id=self.integration_id)
         integration_dict = integration.to_dict()
-        payload = {
-            "name": integration_dict["name"],
-            "id": integration_dict["id"],
-            "description": integration_dict["description"],
-            "global": integration_dict["global"],
-            "type": integration_dict["type"],
-            "provider": integration_dict["provider"],
-            "exec_types": integration_dict["exec_types"],
-            "provider_config": integration_dict["provider_config"],
-        }
-
-        if integration_dict.get("application_ids") is not None:
-            payload["application_ids"] = integration_dict["application_ids"]
+        payload = integration_dict
 
         if name is not None:
             payload["name"] = name
