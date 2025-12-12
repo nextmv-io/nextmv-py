@@ -77,7 +77,7 @@ integration = cloud.Integration.new(
 print(f"Created integration: {integration.integration_id}")
 ```
 
-the `exist_ok` parameter can be set to `True` to instantiate the integration if
+The `exist_ok` parameter can be set to `True` to instantiate the integration if
 it already exists.
 
 ## Running with an integration

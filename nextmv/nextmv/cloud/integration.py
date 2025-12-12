@@ -23,7 +23,6 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-import requests
 from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
@@ -213,21 +212,17 @@ class Integration(BaseModel):
         >>> print(integration.to_dict())
         """
 
-        try:
-            response = client.request(
-                method="GET",
-                endpoint=f"v1/integrations/{integration_id}",
-            )
-            response_dict = response.json()
-            response_dict["client"] = client
-            integration = cls.from_dict(response_dict)
+        response = client.request(
+            method="GET",
+            endpoint=f"v1/integrations/{integration_id}",
+        )
+        response_dict = response.json()
+        response_dict["client"] = client
 
-            return integration
-        except requests.HTTPError as e:
-            raise Exception(f"Failed to retrieve integration '{integration_id}': {e}") from e
+        return cls.from_dict(response_dict)
 
     @classmethod
-    def new(
+    def new(  # noqa: C901
         cls,
         client: Client,
         name: str,
@@ -284,6 +279,8 @@ class Integration(BaseModel):
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+        ValueError
+            If both `is_global` is True and `application_ids` is provided.
 
         Examples
         --------
@@ -300,11 +297,20 @@ class Integration(BaseModel):
         >>> print(integration.to_dict())
         """
 
+        if is_global and application_ids is not None:
+            raise ValueError("An integration cannot be global and have specific application IDs.")
+        elif not is_global and application_ids is None:
+            raise ValueError("A non-global integration must have specific application IDs.")
+
         if integration_id is None:
             integration_id = safe_id("integration")
 
         if exist_ok:
-            return cls.get(client=client, integration_id=integration_id)
+            try:
+                integration = cls.get(client=client, integration_id=integration_id)
+                return integration
+            except Exception:
+                pass
 
         if not isinstance(integration_type, IntegrationType):
             integration_type = IntegrationType(integration_type)
@@ -372,7 +378,7 @@ class Integration(BaseModel):
         provider: IntegrationProvider | str | None = None,
         provider_config: dict[str, Any] | None = None,
         description: str | None = None,
-        is_global: bool = False,
+        is_global: bool | None = None,
         application_ids: list[str] | None = None,
     ) -> "Integration":
         """
@@ -395,9 +401,10 @@ class Integration(BaseModel):
             New configuration specific to the integration provider.
         description : str, optional
             The new description of the integration.
-        is_global : bool, optional, default=False
+        is_global : bool, optional
             Indicates whether the integration is global (available to all
-            applications in the account). Default is False.
+            applications in the account). If not provided, the current value
+            is preserved.
         application_ids : list[str], optional
             New list of application IDs that have access to this integration.
 
@@ -460,9 +467,23 @@ class Integration(BaseModel):
         if description is not None:
             payload["description"] = description
 
-        payload["global"] = is_global
+        if is_global is not None:
+            payload["global"] = is_global
+
         if application_ids is not None:
             payload["application_ids"] = application_ids
+
+        # Final validation: ensure invariants are met.
+        if payload["global"] is True and payload.get("application_ids"):
+            raise ValueError(
+                "An integration cannot be global and have application_ids. "
+                "To make an integration global, call update(is_global=True, application_ids=[])."
+            )
+        if payload["global"] is False and not payload.get("application_ids"):
+            raise ValueError(
+                "A non-global integration must have specific application IDs. "
+                "Provide application_ids with at least one ID, or set is_global=True."
+            )
 
         response = self.client.request(
             method="PUT",
