@@ -53,6 +53,7 @@ nav:
           - Large payloads: nextmv/cloud/large-payloads.md
           - Queuing & prioritization: nextmv/cloud/queuing.md
           - Execution classes: nextmv/cloud/execution-classes.md
+          - Integrations: nextmv/cloud/integrations.md
           - Scenario tests: nextmv/cloud/scenario-tests.md
           - Batch experiments: nextmv/cloud/batch-experiments.md
           - Acceptance tests: nextmv/cloud/acceptance-tests.md
@@ -66,6 +67,7 @@ nav:
               - ensemble.py: nextmv/cloud/reference/ensemble.md
               - input_set.py: nextmv/cloud/reference/input_set.md
               - instance.py: nextmv/cloud/reference/instance.md
+              - integration.py: nextmv/cloud/reference/integration.md
               - scenario.py: nextmv/cloud/reference/scenario.md
               - secrets.py: nextmv/cloud/reference/secrets.md
               - url.py: nextmv/cloud/reference/url.md

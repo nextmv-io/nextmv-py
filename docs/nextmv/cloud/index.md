@@ -29,31 +29,38 @@ interacting with Nextmv Cloud.
 
 ## Application & run management
 
-Tutorials to manage your Cloud Applications and their runs.
+Tutorials to manage your Cloud applications and their runs.
 
 | Feature | Description |
 |---------|-------------|
-| [Managing an Application][manage] | Create, delete, and list applications |
-| [Pushing an Application][push] | Upload your executable decision model to a Cloud Application |
-| [Running an Application][runs] | Create and manage runs for your Cloud Application |
-| [Versions][versions] | Manage versions of your Cloud Application |
-| [Instances][instances] | Manage instances of your Cloud Application |
-| [Track Runs][external-runs] | Associate external runs executed outside of Cloud with your Cloud Application |
-| [Secrets][secrets] | Manage secrets to use in your Cloud Application |
-| [Large Payloads][large-payloads] | Manage large payloads for your Cloud Application |
-| [Queuing & prioritization][queuing] | Manage queuing and prioritization for your Cloud Application |
-| [Execution classes][execution-classes] | Manage execution classes for your Cloud Application |
+| [Managing an application][manage] | Create, delete, and list applications |
+| [Pushing an application][push] | Upload your executable decision model to a Cloud application |
+| [Running an application][runs] | Create and manage runs for your Cloud application |
+| [Versions][versions] | Manage versions of your Cloud application |
+| [Instances][instances] | Manage instances of your Cloud application |
+| [Track Runs][external-runs] | Associate external runs executed outside of Cloud with your Cloud application |
+| [Secrets][secrets] | Manage secrets to use in your Cloud application |
+| [Large Payloads][large-payloads] | Manage large payloads for your Cloud application |
+| [Queuing & prioritization][queuing] | Manage queuing and prioritization for your Cloud application |
+| [Execution classes][execution-classes] | Manage execution classes for your Cloud application |
 
 ## Application testing and experimentation
 
-Tutorials to manage testing and experimentation for your Cloud Applications.
+Tutorials to manage testing and experimentation for your Cloud applications.
 
 | Feature | Description |
 |---------|-------------|
-| [Scenario tests][scenario-tests] | Manage scenario tests for your Cloud Application |
-| [Batch experiments][batch-experiments] | Manage batch experiments for your Cloud Application |
-| [Acceptance tests][acceptance-tests] | Manage acceptance tests for your Cloud Application |
-| [Input sets][input-sets] | Manage input sets for your Cloud Application |
+| [Scenario tests][scenario-tests] | Manage scenario tests for your Cloud application |
+| [Batch experiments][batch-experiments] | Manage batch experiments for your Cloud application |
+| [Acceptance tests][acceptance-tests] | Manage acceptance tests for your Cloud application |
+| [Input sets][input-sets] | Manage input sets for your Cloud application |
+
+## Account management
+
+| Feature | Description |
+|---------|-------------|
+| [Queuing & prioritization][queuing] | Get the queue for your Cloud account |
+| [Integrations][integrations] | Manage integrations for your Cloud account |
 
 [signup]: https://cloud.nextmv.io
 [api-key]: https://cloud.nextmv.io/team/api-keys
@@ -68,6 +75,7 @@ Tutorials to manage testing and experimentation for your Cloud Applications.
 [large-payloads]: ./large-payloads.md
 [queuing]: ./queuing.md
 [execution-classes]: ./execution-classes.md
+[integrations]: ./integrations.md
 [scenario-tests]: ./scenario-tests.md
 [batch-experiments]: ./batch-experiments.md
 [acceptance-tests]: ./acceptance-tests.md

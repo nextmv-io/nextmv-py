@@ -1,10 +1,10 @@
-# Push to an Application
+# Push to an application
 
 !!! tip "Reference"
 
     Find the reference for the `Application` class [here](./reference/application.md).
 
-A Nextmv Cloud Application is a decision model that be executed remotely on the
+A Nextmv Cloud application is a decision model that be executed remotely on the
 Nextmv Platform. An application is an executable program that fulfills the
 following minimum requirements:
 

@@ -54,7 +54,7 @@ app-<RANDOM_IDENTIFIER>
 
 !!! abstract "Application"
 
-    So, what is a Nextmv Application? A Nextmv Application is an entity that
+    So, what is a Nextmv application? A Nextmv application is an entity that
     contains a decision model as executable code. An Application can make a run
     by taking an input, executing the decision model, and producing an
     output. An Application is defined by its code, and a configuration file
@@ -509,7 +509,7 @@ more.
 
 You have successfully:
 
-* Created a new Nextmv Application.
+* Created a new Nextmv application.
 * Ran it locally.
 * Obtained run results.
 * Visualized assets.

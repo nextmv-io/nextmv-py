@@ -1,4 +1,4 @@
-# Manage Versions for an Application
+# Manage Versions for an application
 
 !!! tip "Reference"
 
@@ -10,7 +10,7 @@ developing new features.
 
 ## Understanding Versions
 
-A Nextmv Cloud Application Version refers to a specific executable created from
+A Nextmv Cloud application Version refers to a specific executable created from
 a pushed application. The underlying executable is immutable and can be
 configured to run in an [instance][instance].
 

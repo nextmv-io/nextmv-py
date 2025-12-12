@@ -1,4 +1,4 @@
-# Nextmv Application
+# Nextmv application
 
 This is the basic structure of a Nextmv application.
 

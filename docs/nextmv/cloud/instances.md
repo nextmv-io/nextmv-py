@@ -1,4 +1,4 @@
-# Manage Instances for an Application
+# Manage instances for an application
 
 !!! tip "Reference"
 
@@ -8,9 +8,9 @@ Application instances allow you to deploy and run different versions of your app
 environments. This is useful for separating development, staging, and production workloads, or running
 multiple configurations of the same application.
 
-## Understanding Instances
+## Understanding instances
 
-A Nextmv Cloud Application Instance is a way to configure your runs in a repeatable way.
+A Nextmv Cloud application instance is a way to configure your runs in a repeatable way.
 Each instance can run a specific version of your application with its own configuration.
 
 When you create an instance, you specify which version of your application run.
@@ -18,7 +18,7 @@ When you create an instance, you specify which version of your application run.
 After creating a [version][version] from the latest push, you can either create a
 new instance or update an instance with the latest version.
 
-## Creating Instances
+## Creating instances
 
 If you want to create a new instance after using `app.push()`, your script might include the following.
 
@@ -51,7 +51,7 @@ instance = app.new_instance(
 )
 ```
 
-## Updating Instances
+## Updating instances
 
 Often, you will already have an instance created that you might want to
 update with you new version.  In this case, your `push.py` might look like this:

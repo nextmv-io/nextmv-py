@@ -10,7 +10,7 @@ Application][cloud-application].
 
 All your local runs are structured under the `.nextmv` directory of your local
 app. The sync process will track all your local runs and push them to your
-Cloud Application.
+Cloud application.
 
 To unleash the full potential of Nextmv, let's create a
 [`cloud.Application`][cloud-application], and sync our
@@ -23,7 +23,7 @@ you can take full advantage of the Nextmv Platform with features such as:
 
 ---
 
-Let's start by creating a [Cloud Application][cloud-application].
+Let's start by creating a [Cloud application][cloud-application].
 
 ```python
 import os
@@ -61,7 +61,7 @@ You should see an output similar to the following:
 * You can specify the `run_ids` parameter to sync specific runs, as opposed to all
   the runs in your local app.
 * You can specify the `instance_id` parameter to sync the runs to a specific
-  [instance][instance] of your Cloud Application.
+  [instance][instance] of your Cloud application.
 
 What happens when you run the command again?
 
