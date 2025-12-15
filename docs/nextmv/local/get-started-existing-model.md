@@ -222,11 +222,11 @@ Total load of all routes: 60
 
 ## 4. Nextmv-ify the decision model
 
-We are going to turn the executable decision model into a Nextmv Application.
+We are going to turn the executable decision model into a Nextmv application.
 
 !!! abstract "Application"
 
-    So, what is a Nextmv Application? A Nextmv Application is an entity that
+    So, what is a Nextmv application? A Nextmv application is an entity that
     contains a decision model as executable code. An Application can make a run
     by taking an input, executing the decision model, and producing an
     output. An Application is defined by its code, and a configuration file
@@ -235,7 +235,7 @@ We are going to turn the executable decision model into a Nextmv Application.
     Think of the app as a shell that contains your decision model code, and
     provides the necessary structure to run it.
 
-A run on a Nextmv Application follows this convention:
+A run on a Nextmv application follows this convention:
 
 ![App diagram][app-diagram]
 
@@ -612,7 +612,7 @@ structure, for the example provided:
 └── requirements.txt
 ```
 
-You are ready to run your existing Nextmv Application locally using the
+You are ready to run your existing Nextmv application locally using the
 `nextmv.local` package 🥳.
 
 ## 5. Start a run

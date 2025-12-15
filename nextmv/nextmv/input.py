@@ -998,7 +998,7 @@ def load_local(
 
     deprecated(
         name="load_local",
-        reason="`load_local` is deprecated, use `load` instead.",
+        reason="`load_local` is deprecated, use `load` instead",
     )
 
     loader = LocalInputLoader()

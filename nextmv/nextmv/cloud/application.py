@@ -3215,7 +3215,7 @@ class Application:
         name: str | None = None,
         version_id: str | None = None,
         description: str | None = None,
-        configuration: InstanceConfiguration | None = None,
+        configuration: InstanceConfiguration | dict[str, Any] | None = None,
     ) -> Instance:
         """
         Update an instance.
@@ -3230,7 +3230,7 @@ class Application:
             Optional ID of the version to associate the instance with.
         description : Optional[str], default=None
             Optional description of the instance.
-        configuration : Optional[InstanceConfiguration], default=None
+        configuration : Optional[InstanceConfiguration | dict[str, Any]], default=None
             Optional configuration to use for the instance.
 
         Returns
@@ -3247,13 +3247,7 @@ class Application:
         # Get the instance as it currently exsits.
         instance = self.instance(id)
         instance_dict = instance.to_dict()
-
-        payload = {
-            "name": instance_dict["name"],
-            "version_id": instance_dict["version_id"],
-            "description": instance_dict["description"],
-            "configuration": instance_dict["configuration"],
-        }
+        payload = instance_dict
 
         if name is not None:
             payload["name"] = name
@@ -3262,7 +3256,14 @@ class Application:
         if description is not None:
             payload["description"] = description
         if configuration is not None:
-            payload["configuration"] = configuration.to_dict()
+            if isinstance(configuration, dict):
+                config_dict = configuration
+            elif isinstance(configuration, InstanceConfiguration):
+                config_dict = configuration.to_dict()
+            else:
+                raise TypeError("configuration must be either a dict or InstanceConfiguration object")
+
+            payload["configuration"] = config_dict
 
         response = self.client.request(
             method="PUT",
@@ -3303,11 +3304,7 @@ class Application:
 
         managed_input = self.managed_input(managed_input_id)
         managed_input_dict = managed_input.to_dict()
-
-        payload = {
-            "name": managed_input_dict["name"],
-            "description": managed_input_dict["description"],
-        }
+        payload = managed_input_dict
 
         if name is not None:
             payload["name"] = name
@@ -3376,7 +3373,7 @@ class Application:
         secrets_collection_id: str,
         name: str | None = None,
         description: str | None = None,
-        secrets: list[Secret] | None = None,
+        secrets: list[Secret | dict[str, Any]] | None = None,
     ) -> SecretsCollectionSummary:
         """
         Update a secrets collection.
@@ -3393,7 +3390,7 @@ class Application:
             Optional new name for the secrets collection.
         description : Optional[str], default=None
             Optional new description for the secrets collection.
-        secrets : Optional[list[Secret]], default=None
+        secrets : Optional[list[Secret | dict[str, Any]]], default=None
             Optional list of secrets to update. Each secret should be an
             instance of the Secret class containing a key and value.
 
@@ -3429,19 +3426,23 @@ class Application:
 
         collection = self.secrets_collection(secrets_collection_id)
         collection_dict = collection.to_dict()
-
-        payload = {
-            "name": collection_dict["name"],
-            "description": collection_dict["description"],
-            "secrets": collection_dict["secrets"],
-        }
+        payload = collection_dict
 
         if name is not None:
             payload["name"] = name
         if description is not None:
             payload["description"] = description
         if secrets is not None and len(secrets) > 0:
-            payload["secrets"] = [secret.to_dict() for secret in secrets]
+            secrets_dicts = []
+            for ix, secret in enumerate(secrets):
+                if isinstance(secret, dict):
+                    secrets_dicts.append(secret)
+                elif isinstance(secret, Secret):
+                    secrets_dicts.append(secret.to_dict())
+                else:
+                    raise ValueError(f"secret at index {ix} must be either a Secret or dict object")
+
+            payload["secrets"] = secrets_dicts
 
         response = self.client.request(
             method="PUT",

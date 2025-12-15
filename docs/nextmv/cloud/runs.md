@@ -1,4 +1,4 @@
-# Run a Cloud Application
+# Run a Cloud application
 
 !!! tip "Reference"
 

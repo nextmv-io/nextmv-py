@@ -18,7 +18,7 @@ documentation][secrets-collections].
 
 ## Create a secrets collection
 
-Start by creating a secrets collection in your Nextmv Application. You can do
+Start by creating a secrets collection in your Nextmv application. You can do
 this with the `new_secrets_collection` method.
 
 ```python

@@ -1,6 +1,6 @@
 # Local overview
 
-The `nextmv.local` package provides functionality to run Nextmv Applications
+The `nextmv.local` package provides functionality to run Nextmv applications
 locally on your machine.
 
 !!! success "Free & open-source"
@@ -24,7 +24,7 @@ features of the local experience:
 
 | Feature | Description |
 |---------|-------------|
-| [Get started - new model][get-started-new-model] | Create a new Nextmv Application and run it locally |
+| [Get started - new model][get-started-new-model] | Create a new Nextmv application and run it locally |
 | [Get started - existing model][get-started-existing-model] | Run your existing Python decision model locally |
 | [Run an app][runs] | Create and manage runs for your local Application |
 | [Sync to Cloud][sync] | Push your local Application to Nextmv Cloud |

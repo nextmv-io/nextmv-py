@@ -7,7 +7,7 @@ including application management, running applications, and managing inputs.
 Classes
 -------
 Application
-    Class for interacting with local Nextmv Applications.
+    Class for interacting with local Nextmv applications.
 """
 
 import json
