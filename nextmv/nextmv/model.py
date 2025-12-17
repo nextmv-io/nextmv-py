@@ -284,7 +284,7 @@ class Model:
             import mlflow as mlflow
         except ImportError as e:
             raise ImportError(
-                "mlflow is not installed. Please install optional dependencies with `pip install nextmv[all]`"
+                "mlflow is not installed. Please install optional dependencies with `pip install nextmv[notebook]`"
             ) from e
 
         finally:
