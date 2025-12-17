@@ -127,7 +127,7 @@ pushed to Nextmv Cloud. To push a `nextmv.Model` to Nextmv Cloud, you need
 optional dependencies. You can install them by running:
 
 ```bash
-pip install "nextmv[all]"
+pip install "nextmv[notebook]"
 ```
 
 Once all the optional dependencies are installed, you can push the app to
