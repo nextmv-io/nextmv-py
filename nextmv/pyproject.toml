@@ -51,9 +51,11 @@ Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [project.optional-dependencies]
 all = [
-    "mlflow>=2.17.2",
     "folium>=0.20.0",
     "plotly>=6.0.1",
+]
+notebook = [
+    "mlflow>=2.17.2",
 ]
 dev = [
     "build>=1.0.3",
