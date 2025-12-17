@@ -330,12 +330,12 @@ def __install_dependencies(  # noqa: C901 # complexity
     result = subprocess.run(
         command,
         cwd=app_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,  # Merge stderr into stdout
         text=True,
-        capture_output=True,
-        check=True,
     )
     if result.returncode != 0:
-        raise Exception(f"error installing dependencies: {result.stderr}")
+        raise Exception(f"error installing dependencies: {os.linesep}{result.stdout}")
 
 
 def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str) -> str:
