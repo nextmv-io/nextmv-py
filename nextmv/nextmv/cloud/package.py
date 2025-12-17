@@ -335,7 +335,7 @@ def __install_dependencies(  # noqa: C901 # complexity
         text=True,
     )
     if result.returncode != 0:
-        raise Exception(f"error installing dependencies:{os.linesep}{result.stdout}")
+        raise Exception(f"error installing dependencies: {os.linesep}{result.stdout}")
 
 
 def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str) -> str:
