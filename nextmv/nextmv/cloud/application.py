@@ -2644,11 +2644,13 @@ class Application:
             if asset_type == "json":
                 return download_response.json()
             return download_response.content
-        if isinstance(destination, io.BytesIO):
+        elif isinstance(destination, io.BytesIO):
             destination.write(download_response.content)
+            return None
         else:
             with open(destination, "wb") as file:
                 file.write(download_response.content)
+            return None
 
     def run_input(self, run_id: str) -> dict[str, Any]:
         """
