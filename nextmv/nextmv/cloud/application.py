@@ -2542,7 +2542,7 @@ class Application:
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
 
-    def list_assets(self, run_id: str) -> list[Asset]:
+    def list_assets(self, run_id: str) -> list[RunAsset]:
         """
         List the assets of a run.
 
