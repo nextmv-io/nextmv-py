@@ -2598,8 +2598,11 @@ class Application:
 
         Returns
         -------
-        None
-            This method doesn't return anything.
+        Any or None
+            If ``destination`` is None, returns the asset content: for JSON assets, a
+            ``dict`` parsed from the JSON response; for other asset types, the raw
+            ``bytes`` content. If ``destination`` is provided, the content is written
+            to the given destination and the method returns ``None``.
 
         Raises
         ------
