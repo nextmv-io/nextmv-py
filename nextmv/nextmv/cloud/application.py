@@ -2539,6 +2539,78 @@ class Application:
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
 
+    def list_run_assets(self, run_id: str) -> list[Asset]:
+        """
+        List the assets of a run.
+
+        Retrieves a list of assets associated with a specific run. Assets can
+        include files or other resources generated during the execution of the
+        run.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to list assets for.
+
+        Returns
+        -------
+        list[RunAsset]
+            List of assets associated with the run.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> assets = app.list_run_assets("run-123")
+        >>> for asset in assets:
+        ...     print(asset.name, asset.url)
+        output.json https://...
+        log.txt https://...
+        """
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/assets",
+        )
+        assets_data = response.json().get("assets", [])
+        return [Asset.from_dict(asset) for asset in assets_data]
+
+    def run_asset(self, run_id: str, asset_id: str) -> Asset:
+        """
+        Get a specific asset of a run.
+        Retrieves a specific asset associated with a run by its ID.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to get the asset for.
+        asset_id : str
+            ID of the asset to retrieve.
+
+        Returns
+        -------
+        Asset
+            The requested asset.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> asset = app.run_asset("run-123", "asset-456")
+        >>> print(asset.name, asset.url)
+        output.json https://...
+        """
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/assets/{asset_id}",
+        )
+        return Asset.from_dict(response.json())
+
     def run_input(self, run_id: str) -> dict[str, Any]:
         """
         Get the input of a run.
