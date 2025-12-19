@@ -469,9 +469,17 @@ class Asset(BaseModel):
 
     name: str
     """Name of the asset."""
-    content: Any
-    """Content of the asset. The type must be serializable to JSON."""
 
+    id: str | None = None
+    """
+    The ID of the asset. This ID will be populated by the Nextmv platform and can be used
+    to download the asset later.
+    """
+    content: Any | None = None
+    """
+    Content of the asset. The type must be serializable to JSON. Can be empty when
+    fetching the asset metadata only (e.g.: via the asset list endpoint).
+    """
     content_type: str | None = "json"
     """Content type of the asset. Only `json` is allowed"""
     description: str | None = None

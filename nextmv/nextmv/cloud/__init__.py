@@ -57,6 +57,7 @@ from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application
 from .application import poll as poll
+from .assets import RunAsset as RunAsset
 from .batch_experiment import BatchExperiment as BatchExperiment
 from .batch_experiment import BatchExperimentInformation as BatchExperimentInformation
 from .batch_experiment import BatchExperimentMetadata as BatchExperimentMetadata
