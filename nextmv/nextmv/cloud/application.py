@@ -22,8 +22,10 @@ poll
     Function to poll for results with configurable options.
 """
 
+import io
 import json
 import os
+import pathlib
 import shutil
 import tarfile
 import tempfile
@@ -37,6 +39,7 @@ from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
+from nextmv.cloud.assets import RunAsset
 from nextmv.cloud.batch_experiment import (
     BatchExperiment,
     BatchExperimentInformation,
@@ -2538,6 +2541,120 @@ class Application:
             shutil.rmtree(output_dir)
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
+
+    def list_assets(self, run_id: str) -> list[RunAsset]:
+        """
+        List the assets of a run.
+
+        Retrieves a list of assets associated with a specific run. This method ONLY
+        returns the asset metadata, the content needs to be fetched via the
+        `download_asset_content` method.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to list assets for.
+
+        Returns
+        -------
+        list[RunAsset]
+            List of assets associated with the run.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> assets = app.list_assets("run-123")
+        >>> for asset in assets:
+        ...     print(asset.id, asset.name)
+        b459daa6-1c13-48c6-b4c3-a262ea94cd04 clustering_polygons
+        a1234567-89ab-cdef-0123-456789abcdef histogram
+        """
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/assets",
+        )
+        assets_data = response.json().get("items", [])
+        for asset_data in assets_data:
+            asset_data["run_id"] = run_id
+        return [RunAsset.from_dict(asset) for asset in assets_data]
+
+    def download_asset_content(
+        self,
+        asset: RunAsset,
+        destination: str | pathlib.Path | io.BytesIO | None = None,
+    ) -> Any | None:
+        """
+        Downloads an asset's content to a specified destination.
+
+        Parameters
+        ----------
+        asset : RunAsset
+            The asset to be downloaded.
+        destination : Union[str, pathlib.Path, io.BytesIO, None]
+            The destination where the asset will be saved. This can be a file path
+            (as a string or pathlib.Path) or an io.BytesIO object. If None, the asset
+            content will not be saved to a file, but returned immediately. If the asset
+            type is JSON, the content will be returned as a dict.
+
+        Returns
+        -------
+        Any or None
+            If `destination` is None, returns the asset content: for JSON assets, a
+            `dict` parsed from the JSON response; for other asset types, the raw
+            `bytes` content. If `destination` is provided, the content is written
+            to the given destination and the method returns `None`.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> assets = app.list_assets("run-123")
+        >>> asset = assets[0]  # Assume we want to download the first asset
+        >>> # Download to a file path
+        >>> app.download_asset_content(asset, "polygons.geojson")
+        >>> # Download to an in-memory bytes buffer
+        >>> import io
+        >>> buffer = io.BytesIO()
+        >>> app.download_asset_content(asset, buffer)
+        >>> # Download and get content directly (for JSON assets)
+        >>> content = app.download_asset_content(asset)
+        >>> print(content)
+        {'type': 'FeatureCollection', 'features': [...]}
+        """
+        # First, get the download_url for the asset.
+        download_url_response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{asset.run_id}/assets/{asset.id}",
+        ).json()
+        download_url = download_url_response["download_url"]
+        asset_type = download_url_response.get("type", "json")
+
+        # Now, download the asset content using the download_url.
+        download_response = self.client.request(
+            method="GET",
+            endpoint=download_url,
+            headers={"Content-Type": "application/json" if asset_type == "json" else "application/octet-stream"},
+        )
+
+        # Save the content to the specified destination.
+        if destination is None:
+            if asset_type == "json":
+                return download_response.json()
+            return download_response.content
+        elif isinstance(destination, io.BytesIO):
+            destination.write(download_response.content)
+            return None
+        else:
+            with open(destination, "wb") as file:
+                file.write(download_response.content)
+            return None
 
     def run_input(self, run_id: str) -> dict[str, Any]:
         """
