@@ -2548,7 +2548,7 @@ class Application:
 
         Retrieves a list of assets associated with a specific run. This method ONLY
         returns the asset metadata, the content needs to be fetched via the
-        `download_asset` method.
+        `download_asset_content` method.
 
         Parameters
         ----------
@@ -2582,9 +2582,13 @@ class Application:
             asset_data["run_id"] = run_id
         return [RunAsset.from_dict(asset) for asset in assets_data]
 
-    def download_asset(self, asset: RunAsset, destination: str | pathlib.Path | io.BytesIO | None = None) -> Any | None:
+    def download_asset_content(
+        self,
+        asset: RunAsset,
+        destination: str | pathlib.Path | io.BytesIO | None = None,
+    ) -> Any | None:
         """
-        Downloads an asset to a specified destination.
+        Downloads an asset's content to a specified destination.
 
         Parameters
         ----------
@@ -2599,10 +2603,10 @@ class Application:
         Returns
         -------
         Any or None
-            If ``destination`` is None, returns the asset content: for JSON assets, a
-            ``dict`` parsed from the JSON response; for other asset types, the raw
-            ``bytes`` content. If ``destination`` is provided, the content is written
-            to the given destination and the method returns ``None``.
+            If `destination` is None, returns the asset content: for JSON assets, a
+            `dict` parsed from the JSON response; for other asset types, the raw
+            `bytes` content. If `destination` is provided, the content is written
+            to the given destination and the method returns `None`.
 
         Raises
         ------
@@ -2614,13 +2618,13 @@ class Application:
         >>> assets = app.list_assets("run-123")
         >>> asset = assets[0]  # Assume we want to download the first asset
         >>> # Download to a file path
-        >>> app.download_asset(asset, "polygons.geojson")
+        >>> app.download_asset_content(asset, "polygons.geojson")
         >>> # Download to an in-memory bytes buffer
         >>> import io
         >>> buffer = io.BytesIO()
-        >>> app.download_asset(asset, buffer)
+        >>> app.download_asset_content(asset, buffer)
         >>> # Download and get content directly (for JSON assets)
-        >>> content = app.download_asset(asset)
+        >>> content = app.download_asset_content(asset)
         >>> print(content)
         {'type': 'FeatureCollection', 'features': [...]}
         """
