@@ -7,6 +7,7 @@ from rich import print
 
 from nextmv.__about__ import __version__
 
+# Version subcommand application.
 app = typer.Typer()
 
 
