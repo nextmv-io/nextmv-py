@@ -1,3 +1,7 @@
+"""
+This module defines the version command for the Nextmv CLI.
+"""
+
 import typer
 from rich import print
 
