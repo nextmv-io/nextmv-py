@@ -19,6 +19,7 @@ import typer
 from rich import print
 from rich.prompt import Confirm
 
+from nextmv.cli.community.community import app as community_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.configuration.configuration import app as configuration_app
 from nextmv.cli.error import error
@@ -33,8 +34,10 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-# Register subcommands.
-app.add_typer(configuration_app, name="configuration")  # Requires a name due to callback in configuration.py.
+# Register subcommands. The `name` parameter is required when the subcommand
+# module has a callback function defined.
+app.add_typer(community_app, name="community")
+app.add_typer(configuration_app, name="configuration")
 app.add_typer(version_app)
 
 
