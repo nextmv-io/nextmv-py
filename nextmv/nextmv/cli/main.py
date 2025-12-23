@@ -1,7 +1,16 @@
 """
 The Nextmv Command Line Interface (CLI).
 
-This module is the main entry point for the Nextmv CLI application.
+This module is the main entry point for the Nextmv CLI application. The Nextmv
+CLI is built with [Typer](https://typer.tiangolo.com/) and provides various
+commands to interact with Nextmv services. You should visit the "Learn" section
+of the Typer documentation to learn about the features that are used here.
+
+The Nextmv CLI also uses [Rich](https://rich.readthedocs.io/en/stable/) for
+rich text and formatting in the terminal. The command documentation is created
+using Rich markup. You should also visit the Rich documentation to learn more
+about the features used here. An example of Rich markup can be found in the
+epilog of the Typer application defined below.
 """
 
 import typer
