@@ -45,14 +45,6 @@ def configure(
             metavar="PROFILE_NAME",
         ),
     ] = None,
-    endpoint: Annotated[  # Hidden because it is meant for internal use.
-        str | None,
-        typer.Option(
-            "--endpoint",
-            "-e",
-            hidden=True,
-        ),
-    ] = DEFAULT_ENDPOINT,
     show: Annotated[
         bool,
         typer.Option("--show", "-s", help="Shows the current configuration and all profiles."),
@@ -65,6 +57,14 @@ def configure(
             help="Deletes the specified profile from the configuration. Use with [code]--profile[/code].",
         ),
     ] = False,
+    endpoint: Annotated[  # Hidden because it is meant for internal use.
+        str | None,
+        typer.Option(
+            "--endpoint",
+            "-e",
+            hidden=True,
+        ),
+    ] = DEFAULT_ENDPOINT,
 ) -> None:
     """
     Configure the CLI and manage profiles.
