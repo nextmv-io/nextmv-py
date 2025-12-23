@@ -13,8 +13,12 @@ from nextmv.cli.configure import (
     CONFIG_FILE,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
+    GO_CLI_PATH,
+    check_config_in_path,
+    go_cli_exists,
     load_config,
     obscure_api_key,
+    remove_go_cli,
     save_config,
 )
 from nextmv.cli.main import app
@@ -252,6 +256,91 @@ class TestConfigConstants(unittest.TestCase):
     def test_default_endpoint(self):
         """Test the default endpoint value."""
         self.assertEqual(DEFAULT_ENDPOINT, "api.cloud.nextmv.io")
+
+
+class TestGoCliExists(unittest.TestCase):
+    """Tests for the go_cli_exists function."""
+
+    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch.object(Path, "exists")
+    def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path):
+        """Test that go_cli_exists returns True when the Go CLI file exists."""
+        mock_exists.return_value = True
+
+        result = go_cli_exists()
+
+        self.assertTrue(result)
+        mock_check_path.assert_called_once()
+
+    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch.object(Path, "exists")
+    def test_go_cli_exists_returns_false_when_file_not_exists(self, mock_exists, mock_check_path):
+        """Test that go_cli_exists returns False when the Go CLI file does not exist."""
+        mock_exists.return_value = False
+
+        result = go_cli_exists()
+
+        self.assertFalse(result)
+        mock_check_path.assert_called_once()
+
+
+class TestRemoveGoCli(unittest.TestCase):
+    """Tests for the remove_go_cli function."""
+
+    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch.object(Path, "unlink")
+    @patch.object(Path, "exists")
+    def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_check_path):
+        """Test that remove_go_cli deletes the file when it exists."""
+        mock_exists.return_value = True
+
+        remove_go_cli()
+
+        mock_unlink.assert_called_once()
+        mock_check_path.assert_called_once()
+
+    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch.object(Path, "unlink")
+    @patch.object(Path, "exists")
+    def test_remove_go_cli_does_not_delete_when_not_exists(self, mock_exists, mock_unlink, mock_check_path):
+        """Test that remove_go_cli does not attempt to delete when file does not exist."""
+        mock_exists.return_value = False
+
+        remove_go_cli()
+
+        mock_unlink.assert_not_called()
+        mock_check_path.assert_called_once()
+
+
+class TestCheckConfigInPath(unittest.TestCase):
+    """Tests for the check_config_in_path function."""
+
+    @patch("nextmv.cli.configure.print")
+    @patch.dict(os.environ, {"PATH": f"/usr/bin:{CONFIG_DIR}:/usr/local/bin"})
+    def test_check_config_in_path_prints_warning_when_in_path(self, mock_print):
+        """Test that a warning is printed when CONFIG_DIR is in PATH."""
+        check_config_in_path()
+
+        mock_print.assert_called_once()
+        call_args = str(mock_print.call_args)
+        self.assertIn("PATH", call_args)
+
+    @patch("nextmv.cli.configure.print")
+    @patch.dict(os.environ, {"PATH": "/usr/bin:/usr/local/bin"})
+    def test_check_config_in_path_no_warning_when_not_in_path(self, mock_print):
+        """Test that no warning is printed when CONFIG_DIR is not in PATH."""
+        check_config_in_path()
+
+        mock_print.assert_not_called()
+
+
+class TestGoCliPath(unittest.TestCase):
+    """Tests for the GO_CLI_PATH constant."""
+
+    def test_go_cli_path_is_in_config_dir(self):
+        """Test that GO_CLI_PATH is inside CONFIG_DIR."""
+        self.assertEqual(GO_CLI_PATH.parent, CONFIG_DIR)
+        self.assertEqual(GO_CLI_PATH.name, "nextmv")
 
 
 if __name__ == "__main__":
