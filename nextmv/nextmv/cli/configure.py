@@ -251,7 +251,7 @@ def delete_profile(config: dict[str, Any], profile: str | None = None) -> None:
     ----------
     config : dict[str, Any]
         The current configuration.
-    profile_name : str
+    profile : str
         The name of the profile to delete.
     """
 
