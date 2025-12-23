@@ -1,5 +1,5 @@
 """
-Unit tests for the nextmv configure command.
+Unit tests for the nextmv configuration command.
 """
 
 import os
@@ -7,21 +7,18 @@ import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from nextmv.cli.configure import (
+from nextmv.cli.configuration.config import (
     API_KEY_KEY,
     CONFIG_DIR,
     CONFIG_FILE,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     GO_CLI_PATH,
-    check_config_in_path,
-    go_cli_exists,
     load_config,
     obscure_api_key,
-    remove_go_cli,
     save_config,
 )
-from nextmv.cli.main import app
+from nextmv.cli.main import app, check_config_in_path, go_cli_exists, remove_go_cli
 from typer.testing import CliRunner
 
 
@@ -47,18 +44,18 @@ class TestConfigureCommand(unittest.TestCase):
             os.environ["NEXTMV_API_KEY"] = self.env_api_key
 
     def test_configure_no_args_shows_error(self):
-        """Test that running configure without arguments shows an error."""
-        result = self.runner.invoke(self.app, ["configure"])
-        self.assertEqual(result.exit_code, 1)
-        self.assertIn("API_KEY", result.output)
+        """Test that running configuration create without arguments shows an error."""
+        result = self.runner.invoke(self.app, ["configuration", "create"])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIn("--api-key", result.output)
 
-    @patch("nextmv.cli.configure.save_config")
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.create.save_config")
+    @patch("nextmv.cli.configuration.create.load_config")
     def test_configure_default_profile(self, mock_load, mock_save):
         """Test configuring the default profile with an API key."""
         mock_load.return_value = {}
 
-        result = self.runner.invoke(self.app, ["configure", self.test_api_key])
+        result = self.runner.invoke(self.app, ["configuration", "create", "--api-key", self.test_api_key])
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Configuration saved successfully", result.output)
@@ -70,13 +67,15 @@ class TestConfigureCommand(unittest.TestCase):
         self.assertEqual(saved_config[API_KEY_KEY], self.test_api_key)
         self.assertEqual(saved_config[ENDPOINT_KEY], DEFAULT_ENDPOINT)
 
-    @patch("nextmv.cli.configure.save_config")
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.create.save_config")
+    @patch("nextmv.cli.configuration.create.load_config")
     def test_configure_named_profile(self, mock_load, mock_save):
         """Test configuring a named profile."""
         mock_load.return_value = {}
 
-        result = self.runner.invoke(self.app, ["configure", self.test_api_key, "--profile", self.test_profile])
+        result = self.runner.invoke(
+            self.app, ["configuration", "create", "--api-key", self.test_api_key, "--profile", self.test_profile]
+        )
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Configuration saved successfully", result.output)
@@ -88,28 +87,30 @@ class TestConfigureCommand(unittest.TestCase):
         self.assertIn(self.test_profile, saved_config)
         self.assertEqual(saved_config[self.test_profile][API_KEY_KEY], self.test_api_key)
 
-    @patch("nextmv.cli.configure.save_config")
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.create.save_config")
+    @patch("nextmv.cli.configuration.create.load_config")
     def test_configure_reserved_profile_name_default(self, mock_load, mock_save):
         """Test that 'default' profile name is rejected."""
         mock_load.return_value = {}
 
-        result = self.runner.invoke(self.app, ["configure", self.test_api_key, "--profile", "default"])
+        result = self.runner.invoke(
+            self.app, ["configuration", "create", "--api-key", self.test_api_key, "--profile", "default"]
+        )
 
         self.assertEqual(result.exit_code, 1)
         self.assertIn("reserved", result.output.lower())
         mock_save.assert_not_called()
 
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.list.load_config")
     def test_profiles_empty(self, mock_load):
         """Test showing profiles when no configuration exists."""
         mock_load.return_value = {}
 
-        result = self.runner.invoke(self.app, ["configure", "--show"])
+        result = self.runner.invoke(self.app, ["configuration", "list"])
 
         self.assertEqual(result.exit_code, 1)
 
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.list.load_config")
     def test_show_profiles_with_config(self, mock_load):
         """Test showing profiles when configuration exists."""
         mock_load.return_value = {
@@ -121,15 +122,16 @@ class TestConfigureCommand(unittest.TestCase):
             },
         }
 
-        result = self.runner.invoke(self.app, ["configure", "--show"])
+        result = self.runner.invoke(self.app, ["configuration", "list"])
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Default", result.output)
         self.assertIn("custom_profile", result.output)
 
-    @patch("nextmv.cli.configure.save_config")
-    @patch("nextmv.cli.configure.load_config")
-    def test_delete_profile(self, mock_load, mock_save):
+    @patch("nextmv.cli.configuration.delete.save_config")
+    @patch("nextmv.cli.configuration.delete.load_config")
+    @patch("rich.prompt.Confirm.ask", return_value=True)
+    def test_delete_profile(self, mock_confirm, mock_load, mock_save):
         """Test deleting a profile."""
         mock_load.return_value = {
             API_KEY_KEY: "default_key",
@@ -140,7 +142,7 @@ class TestConfigureCommand(unittest.TestCase):
             },
         }
 
-        result = self.runner.invoke(self.app, ["configure", "--profile", self.test_profile, "--delete"])
+        result = self.runner.invoke(self.app, ["configuration", "delete", "--profile", self.test_profile])
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("deleted successfully", result.output)
@@ -150,7 +152,7 @@ class TestConfigureCommand(unittest.TestCase):
         saved_config = mock_save.call_args[0][0]
         self.assertNotIn(self.test_profile, saved_config)
 
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.delete.load_config")
     def test_delete_nonexistent_profile(self, mock_load):
         """Test deleting a profile that doesn't exist."""
         mock_load.return_value = {
@@ -158,27 +160,27 @@ class TestConfigureCommand(unittest.TestCase):
             ENDPOINT_KEY: DEFAULT_ENDPOINT,
         }
 
-        result = self.runner.invoke(self.app, ["configure", "--profile", "nonexistent", "--delete"])
+        result = self.runner.invoke(self.app, ["configuration", "delete", "--profile", "nonexistent"])
 
         self.assertEqual(result.exit_code, 1)
         self.assertIn("does not exist", result.output)
 
     def test_delete_without_profile_shows_error(self):
-        """Test that --delete without --profile shows an error."""
-        result = self.runner.invoke(self.app, ["configure", "--delete"])
+        """Test that delete subcommand without --profile shows an error."""
+        result = self.runner.invoke(self.app, ["configuration", "delete"])
 
-        self.assertEqual(result.exit_code, 1)
+        self.assertEqual(result.exit_code, 2)
         self.assertIn("--profile", result.output)
 
-    @patch("nextmv.cli.configure.save_config")
-    @patch("nextmv.cli.configure.load_config")
+    @patch("nextmv.cli.configuration.create.save_config")
+    @patch("nextmv.cli.configuration.create.load_config")
     def test_configure_strips_https_from_endpoint(self, mock_load, mock_save):
         """Test that https:// is stripped from the endpoint."""
         mock_load.return_value = {}
 
         result = self.runner.invoke(
             self.app,
-            ["configure", self.test_api_key, "--endpoint", "https://custom.api.com"],
+            ["configuration", "create", "--api-key", self.test_api_key, "--endpoint", "https://custom.api.com"],
         )
 
         self.assertEqual(result.exit_code, 0)
@@ -261,8 +263,8 @@ class TestConfigConstants(unittest.TestCase):
 class TestGoCliExists(unittest.TestCase):
     """Tests for the go_cli_exists function."""
 
-    @patch("nextmv.cli.configure.print")
-    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "exists")
     def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path, mock_print):
         """Test that go_cli_exists returns True when the Go CLI file exists."""
@@ -273,7 +275,7 @@ class TestGoCliExists(unittest.TestCase):
         self.assertTrue(result)
         mock_check_path.assert_called_once()
 
-    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "exists")
     def test_go_cli_exists_returns_false_when_file_not_exists(self, mock_exists, mock_check_path):
         """Test that go_cli_exists returns False when the Go CLI file does not exist."""
@@ -288,8 +290,8 @@ class TestGoCliExists(unittest.TestCase):
 class TestRemoveGoCli(unittest.TestCase):
     """Tests for the remove_go_cli function."""
 
-    @patch("nextmv.cli.configure.print")
-    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
     def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_check_path, mock_print):
@@ -301,7 +303,7 @@ class TestRemoveGoCli(unittest.TestCase):
         mock_unlink.assert_called_once()
         mock_check_path.assert_called_once()
 
-    @patch("nextmv.cli.configure.check_config_in_path")
+    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
     def test_remove_go_cli_does_not_delete_when_not_exists(self, mock_exists, mock_unlink, mock_check_path):
@@ -317,7 +319,7 @@ class TestRemoveGoCli(unittest.TestCase):
 class TestCheckConfigInPath(unittest.TestCase):
     """Tests for the check_config_in_path function."""
 
-    @patch("nextmv.cli.configure.print")
+    @patch("nextmv.cli.main.print")
     @patch.dict(os.environ, {"PATH": f"/usr/bin{os.pathsep}{CONFIG_DIR}{os.pathsep}/usr/local/bin"})
     def test_check_config_in_path_prints_warning_when_in_path(self, mock_print):
         """Test that a warning is printed when CONFIG_DIR is in PATH."""
@@ -327,7 +329,7 @@ class TestCheckConfigInPath(unittest.TestCase):
         call_args = str(mock_print.call_args)
         self.assertIn("PATH", call_args)
 
-    @patch("nextmv.cli.configure.print")
+    @patch("nextmv.cli.main.print")
     @patch.dict(os.environ, {"PATH": "/usr/bin:/usr/local/bin"})
     def test_check_config_in_path_no_warning_when_not_in_path(self, mock_print):
         """Test that no warning is printed when CONFIG_DIR is not in PATH."""

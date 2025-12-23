@@ -19,12 +19,12 @@ class TestCallback(unittest.TestCase):
     @patch("nextmv.cli.main.go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_callback_skips_config_check_for_configure(self, mock_load_config, mock_go_cli_exists):
-        """Test that the callback skips config check when running configure."""
+        """Test that the callback skips config check when running configuration."""
         mock_load_config.return_value = {}
         mock_go_cli_exists.return_value = False
 
-        # Running configure should not trigger the error even with empty config
-        result = self.runner.invoke(self.app, ["configure", "--help"])
+        # Running configuration should not trigger the error even with empty config
+        result = self.runner.invoke(self.app, ["configuration", "--help"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Configure the CLI", result.output)
 

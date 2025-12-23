@@ -1,0 +1,54 @@
+"""
+This module defines the configuration delete command for the Nextmv CLI.
+"""
+
+from typing import Annotated
+
+import typer
+from nextmv.cli.configuration.config import load_config, save_config
+from nextmv.cli.error import error
+from rich import print
+from rich.prompt import Confirm
+
+# Set up subcommand application.
+app = typer.Typer()
+
+
+@app.command()
+def delete(
+    profile: Annotated[  # Similar to nextmv.cli.options.ProfileOption but with different help text.
+        str,
+        typer.Option(
+            "--profile",
+            "-p",
+            help="Profile name to delete.",
+            envvar="NEXTMV_PROFILE",
+            metavar="PROFILE_NAME",
+        ),
+    ],
+) -> None:
+    """
+    Delete a profile from the configuration.
+
+    [bold][underline]Examples[/underline][/bold]
+
+    - Delete a profile named [italic]hare[/italic].
+        [green]nextmv configuration delete --profile hare[/green]
+    """
+    config = load_config()
+    if profile not in config:
+        error(f"Profile [bold cyan]{profile}[/bold cyan] does not exist.")
+
+    confirm = Confirm.ask(
+        f"Are you sure you want to delete profile [bold cyan]{profile}[/bold cyan]? This action cannot be undone",
+        default=False,
+    )
+
+    if not confirm:
+        print(f":bulb: Profile [bold cyan]{profile}[/bold cyan] will not be deleted.")
+        return
+
+    del config[profile]
+    save_config(config)
+
+    print(f":white_check_mark: Profile [bold cyan]{profile}[/bold cyan] deleted successfully.")

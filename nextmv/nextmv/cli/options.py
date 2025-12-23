@@ -16,7 +16,7 @@ ProfileOption = Annotated[
     typer.Option(
         "--profile",
         "-p",
-        help="Specify the profile to use. Use [code]nextmv configure[/code] to manage profiles.",
+        help="Specify the profile to use. Use [code]nextmv configuration[/code] to manage profiles.",
         envvar="NEXTMV_PROFILE",
         metavar="PROFILE_NAME",
     ),
