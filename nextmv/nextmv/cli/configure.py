@@ -270,7 +270,7 @@ def delete_profile(config: dict[str, Any], profile: str | None = None) -> None:
 def go_cli_exists() -> bool:
     """
     Check if the Go CLI is installed by looking for the 'nextmv' executable
-    under the config dir
+    under the config dir.
 
     Returns
     -------
