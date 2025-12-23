@@ -98,8 +98,11 @@ def configure(
     if profile is not None and profile.strip().lower() == "default":
         error("[code]default[/code] is a reserved profile name.")
 
-    if "https://" in endpoint:
-        endpoint = str(endpoint).replace("https://", "")
+    endpoint = str(endpoint)
+    if endpoint.startswith("https://"):
+        endpoint = endpoint[len("https://") :]
+    elif endpoint.startswith("http://"):
+        endpoint = endpoint[len("http://") :]
 
     config = load_config()
     if delete:
