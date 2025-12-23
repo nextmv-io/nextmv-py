@@ -24,7 +24,7 @@ class TestConfigureCommand(unittest.TestCase):
     """Tests for the configure CLI command."""
 
     def setUp(self):
-        self.runner = CliRunner()
+        self.runner = CliRunner(env={"NO_COLOR": "1"})
         self.app = app
         self.test_api_key = "test_api_key_12345"
         self.test_profile = "test_profile"
