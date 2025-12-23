@@ -261,9 +261,10 @@ class TestConfigConstants(unittest.TestCase):
 class TestGoCliExists(unittest.TestCase):
     """Tests for the go_cli_exists function."""
 
+    @patch("nextmv.cli.configure.print")
     @patch("nextmv.cli.configure.check_config_in_path")
     @patch.object(Path, "exists")
-    def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path):
+    def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path, mock_print):
         """Test that go_cli_exists returns True when the Go CLI file exists."""
         mock_exists.return_value = True
 
@@ -287,10 +288,11 @@ class TestGoCliExists(unittest.TestCase):
 class TestRemoveGoCli(unittest.TestCase):
     """Tests for the remove_go_cli function."""
 
+    @patch("nextmv.cli.configure.print")
     @patch("nextmv.cli.configure.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
-    def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_check_path):
+    def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_check_path, mock_print):
         """Test that remove_go_cli deletes the file when it exists."""
         mock_exists.return_value = True
 
@@ -316,7 +318,7 @@ class TestCheckConfigInPath(unittest.TestCase):
     """Tests for the check_config_in_path function."""
 
     @patch("nextmv.cli.configure.print")
-    @patch.dict(os.environ, {"PATH": f"/usr/bin:{CONFIG_DIR}:/usr/local/bin"})
+    @patch.dict(os.environ, {"PATH": f"/usr/bin{os.pathsep}{CONFIG_DIR}{os.pathsep}/usr/local/bin"})
     def test_check_config_in_path_prints_warning_when_in_path(self, mock_print):
         """Test that a warning is printed when CONFIG_DIR is in PATH."""
         check_config_in_path()
