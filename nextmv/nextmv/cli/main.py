@@ -5,9 +5,10 @@ This module is the main entry point for the Nextmv CLI application.
 """
 
 import typer
+from rich import print
 
+from nextmv.cli.configure import GO_CLI_PATH, exists_go_cli, load_config, remove_go_cli
 from nextmv.cli.configure import app as configure_app
-from nextmv.cli.configure import load_config
 from nextmv.cli.error import error
 from nextmv.cli.version import app as version_app
 
@@ -32,7 +33,43 @@ def callback(ctx: typer.Context) -> None:
     environment.
     """
 
-    # Check that configuration exists for required commands.
+    handle_go_cli()
+    handle_config_existence(ctx)
+
+
+def handle_go_cli() -> None:
+    """
+    Handle the presence of the deprecated Go CLI by notifying the user.
+
+    This function checks if the Go CLI is installed and prompts the user to
+    remove it to avoid conflicts with the Python CLI.
+    """
+
+    go_cli_exists = exists_go_cli()
+    if go_cli_exists:
+        delete = typer.confirm(
+            f"Do you want to delete the deprecated Nextmv CLI at {GO_CLI_PATH} now?",
+            default=True,
+        )
+        if delete:
+            remove_go_cli()
+        else:
+            print(
+                ":bulb: You can delete the [italic red]deprecated[/italic red] Nextmv CLI "
+                f"later by removing [italic]{GO_CLI_PATH}[/italic]. Make sure you also clean up your [code]PATH[/code]."
+            )
+
+
+def handle_config_existence(ctx: typer.Context) -> None:
+    """
+    Check if configuration exists and show an error if it does not.
+
+    Parameters
+    ----------
+    ctx : typer.Context
+        The Typer context object.
+    """
+
     ignored_commands = {"configure", "version"}
     if ctx.invoked_subcommand in ignored_commands:
         return

@@ -2,6 +2,7 @@
 This module defines the configure command for the Nextmv CLI.
 """
 
+import os
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -22,6 +23,7 @@ API_KEY_KEY = "apikey"
 ENDPOINT_KEY = "endpoint"
 CONFIG_DIR = Path.home() / ".nextmv"
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
+GO_CLI_PATH = CONFIG_DIR / "nextmv"
 DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
 
 
@@ -128,6 +130,8 @@ def show_profiles() -> None:
     console.
     """
     config = load_config()
+    if config == {}:
+        error("No configuration found. Please run [code]nextmv configure[/code].")
 
     default = {
         "api_key": config.get(API_KEY_KEY),
@@ -256,3 +260,55 @@ def delete_profile(config: dict[str, Any], profile: str | None = None) -> None:
     print(f":white_check_mark: Profile [bold cyan]{profile}[/bold cyan] deleted successfully.")
 
     raise typer.Exit()
+
+
+def exists_go_cli() -> bool:
+    """
+    Check if the Go CLI is installed by looking for the 'nextmv' executable
+    under the config dir
+
+    Returns
+    -------
+    bool
+        True if the Go CLI is installed, False otherwise.
+    """
+
+    # Check if the Go CLI executable exists
+    go_cli_path = CONFIG_DIR / "nextmv"
+    exists = go_cli_path.exists()
+    if exists:
+        print(
+            ":construction: A [italic red]deprecated[/italic red] Nextmv CLI is installed at "
+            f"[italic]{GO_CLI_PATH}[/italic]. You must delete it to avoid conflicts."
+        )
+
+    check_config_in_path()
+
+    return exists
+
+
+def remove_go_cli() -> None:
+    """
+    Remove the Go CLI executable if it exists and notify about PATH cleanup.
+    """
+
+    if GO_CLI_PATH.exists():
+        GO_CLI_PATH.unlink()
+        print(f":white_check_mark: Deleted deprecated {GO_CLI_PATH}.")
+
+    check_config_in_path()
+
+
+def check_config_in_path() -> None:
+    """
+    Check if the configuration directory is in the PATH and notify the user.
+    """
+
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+    config_dir_str = str(CONFIG_DIR)
+
+    if config_dir_str in path_dirs:
+        print(
+            f":construction: [italic]{CONFIG_DIR}[/italic] was found in your [code]PATH[/code]. "
+            f"You should remove any entries related to [italic]{CONFIG_DIR}[/italic] from your [code]PATH[/code]."
+        )
