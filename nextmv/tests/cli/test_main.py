@@ -32,8 +32,7 @@ class TestCallback(unittest.TestCase):
         mock_load_config.return_value = {}
 
         result = self.runner.invoke(self.app, ["version"])
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("No configuration found", result.output)
+        self.assertEqual(result.exit_code, 0)
 
     @patch("nextmv.cli.main.load_config")
     def test_callback_allows_command_when_config_exists(self, mock_load_config):

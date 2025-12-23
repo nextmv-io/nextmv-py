@@ -27,8 +27,14 @@ app.add_typer(version_app)
 
 @app.callback()
 def callback(ctx: typer.Context) -> None:
-    # Check that configuration exists for all commands except configure.
-    if ctx.invoked_subcommand == "configure":
+    """
+    Callback function that runs before any command. Useful for checks on the
+    environment.
+    """
+
+    # Check that configuration exists for required commands.
+    ignored_commands = {"configure", "version"}
+    if ctx.invoked_subcommand in ignored_commands:
         return
 
     config = load_config()
