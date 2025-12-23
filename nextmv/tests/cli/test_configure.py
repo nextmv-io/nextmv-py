@@ -24,7 +24,7 @@ class TestConfigureCommand(unittest.TestCase):
     """Tests for the configure CLI command."""
 
     def setUp(self):
-        self.runner = CliRunner(env={"NO_COLOR": "1"})
+        self.runner = CliRunner()
         self.app = app
         self.test_api_key = "test_api_key_12345"
         self.test_profile = "test_profile"
@@ -37,7 +37,7 @@ class TestConfigureCommand(unittest.TestCase):
 
     def test_configure_help(self):
         """Test that --help shows the help message."""
-        result = self.runner.invoke(self.app, ["configure", "--help"])
+        result = self.runner.invoke(self.app, ["configure", "--help"], color=False)
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Configure the CLI", result.output)
         self.assertIn("--profile", result.output)
