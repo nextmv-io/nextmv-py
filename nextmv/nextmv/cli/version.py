@@ -6,7 +6,7 @@ import typer
 
 from nextmv.__about__ import __version__
 
-# Version subcommand application.
+# Set up subcommand application.
 app = typer.Typer()
 
 
@@ -15,4 +15,5 @@ def version() -> None:
     """
     Show the current version of the Nextmv CLI.
     """
+
     print(__version__)
