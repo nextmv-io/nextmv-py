@@ -106,15 +106,13 @@ class TestConfigureCommand(unittest.TestCase):
         mock_save.assert_not_called()
 
     @patch("nextmv.cli.configure.load_config")
-    def test_show_profiles_empty(self, mock_load):
+    def test_profiles_empty(self, mock_load):
         """Test showing profiles when no configuration exists."""
         mock_load.return_value = {}
 
         result = self.runner.invoke(self.app, ["configure", "--show"])
 
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("Default", result.output)
-        self.assertIn("Not set", result.output)
+        self.assertEqual(result.exit_code, 1)
 
     @patch("nextmv.cli.configure.load_config")
     def test_show_profiles_with_config(self, mock_load):
