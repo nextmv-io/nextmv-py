@@ -2,6 +2,7 @@
 Unit tests for the nextmv configure command.
 """
 
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -28,6 +29,18 @@ class TestConfigureCommand(unittest.TestCase):
         self.app = app
         self.test_api_key = "test_api_key_12345"
         self.test_profile = "test_profile"
+
+        # Backup and clear NEXTMV_API_KEY env var if set, this is needed for
+        # tests that check its absence.
+        env_api_key = os.getenv("NEXTMV_API_KEY")
+        self.env_api_key = env_api_key
+        if env_api_key is not None:
+            del os.environ["NEXTMV_API_KEY"]
+
+    def tearDown(self):
+        # Restore NEXTMV_API_KEY env var if it was set.
+        if self.env_api_key is not None:
+            os.environ["NEXTMV_API_KEY"] = self.env_api_key
 
     def test_configure_no_args_shows_error(self):
         """Test that running configure without arguments shows an error."""
