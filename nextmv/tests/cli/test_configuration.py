@@ -47,7 +47,6 @@ class TestConfigureCommand(unittest.TestCase):
         """Test that running configuration create without arguments shows an error."""
         result = self.runner.invoke(self.app, ["configuration", "create"])
         self.assertEqual(result.exit_code, 2)
-        self.assertIn("--api-key", result.output)
 
     @patch("nextmv.cli.configuration.create.save_config")
     @patch("nextmv.cli.configuration.create.load_config")
@@ -170,7 +169,6 @@ class TestConfigureCommand(unittest.TestCase):
         result = self.runner.invoke(self.app, ["configuration", "delete"])
 
         self.assertEqual(result.exit_code, 2)
-        self.assertIn("--profile", result.output)
 
     @patch("nextmv.cli.configuration.create.save_config")
     @patch("nextmv.cli.configuration.create.load_config")

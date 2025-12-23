@@ -5,10 +5,11 @@ This module defines the configuration delete command for the Nextmv CLI.
 from typing import Annotated
 
 import typer
-from nextmv.cli.configuration.config import load_config, save_config
-from nextmv.cli.error import error
 from rich import print
 from rich.prompt import Confirm
+
+from nextmv.cli.configuration.config import load_config, save_config
+from nextmv.cli.error import error
 
 # Set up subcommand application.
 app = typer.Typer()

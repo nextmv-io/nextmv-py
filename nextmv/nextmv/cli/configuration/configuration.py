@@ -3,6 +3,7 @@ This module defines the configuration command tree for the Nextmv CLI.
 """
 
 import typer
+
 from nextmv.cli.configuration.create import app as create_app
 from nextmv.cli.configuration.delete import app as delete_app
 from nextmv.cli.configuration.list import app as list_app
