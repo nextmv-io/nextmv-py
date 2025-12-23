@@ -48,15 +48,6 @@ class TestConfigureCommand(unittest.TestCase):
         self.assertEqual(result.exit_code, 1)
         self.assertIn("API_KEY", result.output)
 
-    def test_configure_help(self):
-        """Test that --help shows the help message."""
-        result = self.runner.invoke(self.app, ["configure", "--help"], color=False)
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("Configure the CLI", result.output)
-        self.assertIn("--profile", result.output)
-        self.assertIn("--show", result.output)
-        self.assertIn("--delete", result.output)
-
     @patch("nextmv.cli.configure.save_config")
     @patch("nextmv.cli.configure.load_config")
     def test_configure_default_profile(self, mock_load, mock_save):

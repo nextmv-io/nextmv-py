@@ -7,7 +7,7 @@ This module is the main entry point for the Nextmv CLI application.
 import typer
 from rich import print
 
-from nextmv.cli.configure import GO_CLI_PATH, exists_go_cli, load_config, remove_go_cli
+from nextmv.cli.configure import GO_CLI_PATH, go_cli_exists, load_config, remove_go_cli
 from nextmv.cli.configure import app as configure_app
 from nextmv.cli.error import error
 from nextmv.cli.version import app as version_app
@@ -45,8 +45,8 @@ def handle_go_cli() -> None:
     remove it to avoid conflicts with the Python CLI.
     """
 
-    go_cli_exists = exists_go_cli()
-    if go_cli_exists:
+    exists = go_cli_exists()
+    if exists:
         delete = typer.confirm(
             f"Do you want to delete the deprecated Nextmv CLI at {GO_CLI_PATH} now?",
             default=True,

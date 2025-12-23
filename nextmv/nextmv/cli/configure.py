@@ -262,7 +262,7 @@ def delete_profile(config: dict[str, Any], profile: str | None = None) -> None:
     raise typer.Exit()
 
 
-def exists_go_cli() -> bool:
+def go_cli_exists() -> bool:
     """
     Check if the Go CLI is installed by looking for the 'nextmv' executable
     under the config dir
