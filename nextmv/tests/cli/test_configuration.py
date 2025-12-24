@@ -317,7 +317,7 @@ class TestRemoveGoCli(unittest.TestCase):
 class TestCheckConfigInPath(unittest.TestCase):
     """Tests for the check_config_in_path function."""
 
-    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.rich.print")
     @patch.dict(os.environ, {"PATH": f"/usr/bin{os.pathsep}{CONFIG_DIR}{os.pathsep}/usr/local/bin"})
     def test_check_config_in_path_prints_warning_when_in_path(self, mock_print):
         """Test that a warning is printed when CONFIG_DIR is in PATH."""
@@ -327,7 +327,7 @@ class TestCheckConfigInPath(unittest.TestCase):
         call_args = str(mock_print.call_args)
         self.assertIn("PATH", call_args)
 
-    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.rich.print")
     @patch.dict(os.environ, {"PATH": "/usr/bin:/usr/local/bin"})
     def test_check_config_in_path_no_warning_when_not_in_path(self, mock_print):
         """Test that no warning is printed when CONFIG_DIR is not in PATH."""
