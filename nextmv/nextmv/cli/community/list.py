@@ -136,6 +136,8 @@ def apps_list(manifest: dict[str, Any]) -> None:
 
     names = [app.get("name", "") for app in manifest.get("apps", [])]
     print("\n".join(names))
+
+
 def versions_table(manifest: dict[str, Any], app: str) -> None:
     """
     This function prints a table of versions for a specific community app.
@@ -184,7 +186,7 @@ def versions_list(manifest: dict[str, Any], app: str) -> None:
     for version in versions:
         versions_output += f"{version}\n"
 
-    print(versions_output.rstrip())
+    print("\n".join(app_obj.get("app_versions", [])))
 
 
 def download_file(

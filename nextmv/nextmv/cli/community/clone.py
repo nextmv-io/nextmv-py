@@ -2,7 +2,6 @@
 This module defines the community clone command for the Nextmv CLI.
 """
 
-import copy
 import os
 import shutil
 import tarfile
