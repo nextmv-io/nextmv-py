@@ -65,16 +65,16 @@ def list(
     manifest = download_manifest(profile=profile)
     if flat and app is None:
         apps_list(manifest)
-        typer.Exit()
+        raise typer.Exit()
     elif not flat and app is None:
         apps_table(manifest)
-        typer.Exit()
+        raise typer.Exit()
     elif flat and app is not None and app != "":
         versions_list(manifest, app)
-        typer.Exit()
+        raise typer.Exit()
     elif not flat and app is not None and app != "":
         versions_table(manifest, app)
-        typer.Exit()
+        raise typer.Exit()
 
 
 def download_manifest(profile: str | None = None) -> dict:
