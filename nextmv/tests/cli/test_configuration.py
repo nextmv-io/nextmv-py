@@ -261,7 +261,7 @@ class TestConfigConstants(unittest.TestCase):
 class TestGoCliExists(unittest.TestCase):
     """Tests for the go_cli_exists function."""
 
-    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.rich.print")
     @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "exists")
     def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path, mock_print):
@@ -288,7 +288,7 @@ class TestGoCliExists(unittest.TestCase):
 class TestRemoveGoCli(unittest.TestCase):
     """Tests for the remove_go_cli function."""
 
-    @patch("nextmv.cli.main.print")
+    @patch("nextmv.cli.main.rich.print")
     @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
