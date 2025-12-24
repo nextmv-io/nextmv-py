@@ -4,8 +4,8 @@ This module defines the configuration create command for the Nextmv CLI.
 
 from typing import Annotated
 
+import rich
 import typer
-from rich import print
 
 from nextmv.cli.configuration.config import (
     API_KEY_KEY,
@@ -59,10 +59,10 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Default configuration.
-        [green]nextmv configuration create --api-key NEXTMV_API_KEY[/green]
+        $ [green]nextmv configuration create --api-key NEXTMV_API_KEY[/green]
 
     - Configure a profile named [italic]hare[/italic].
-        [green]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/green]
+        $ [green]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/green]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -88,8 +88,8 @@ def create(
 
     save_config(config)
 
-    print(":white_check_mark: Configuration saved successfully.")
-    print(f"\t[bold]Profile[/bold]: {profile or 'Default'}")
-    print(f"\t[bold]API Key[/bold]: {obscure_api_key(api_key)}")
+    rich.print(":white_check_mark: Configuration saved successfully.")
+    rich.print(f"\t[bold]Profile[/bold]: {profile or 'Default'}")
+    rich.print(f"\t[bold]API Key[/bold]: {obscure_api_key(api_key)}")
     if endpoint != DEFAULT_ENDPOINT:
-        print(f"\t[bold]Endpoint[/bold]: {endpoint}")
+        rich.print(f"\t[bold]Endpoint[/bold]: {endpoint}")

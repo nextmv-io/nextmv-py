@@ -15,8 +15,8 @@ epilog of the Typer application defined below.
 
 import os
 
+import rich
 import typer
-from rich import print
 from rich.prompt import Confirm
 
 from nextmv.cli.community.community import app as community_app
@@ -70,7 +70,7 @@ def handle_go_cli() -> None:
         if delete:
             remove_go_cli()
         else:
-            print(
+            rich.print(
                 ":bulb: You can delete the [italic red]deprecated[/italic red] Nextmv CLI "
                 f"later by removing [italic]{GO_CLI_PATH}[/italic]. Make sure you also clean up your [code]PATH[/code]."
             )
@@ -109,7 +109,7 @@ def go_cli_exists() -> bool:
     # Check if the Go CLI executable exists
     exists = GO_CLI_PATH.exists()
     if exists:
-        print(
+        rich.print(
             ":construction: A [italic red]deprecated[/italic red] Nextmv CLI is installed at "
             f"[italic]{GO_CLI_PATH}[/italic]. You must delete it to avoid conflicts."
         )
@@ -126,7 +126,7 @@ def remove_go_cli() -> None:
 
     if GO_CLI_PATH.exists():
         GO_CLI_PATH.unlink()
-        print(f":white_check_mark: Deleted deprecated {GO_CLI_PATH}.")
+        rich.print(f":white_check_mark: Deleted deprecated {GO_CLI_PATH}.")
 
     check_config_in_path()
 
@@ -140,7 +140,7 @@ def check_config_in_path() -> None:
     config_dir_str = str(CONFIG_DIR)
 
     if config_dir_str in path_dirs:
-        print(
+        rich.print(
             f":construction: [italic]{CONFIG_DIR}[/italic] was found in your [code]PATH[/code]. "
             f"You should remove any entries related to [italic]{CONFIG_DIR}[/italic] from your [code]PATH[/code]."
         )

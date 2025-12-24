@@ -5,6 +5,7 @@ This module defines the community list command for the Nextmv CLI.
 from typing import Annotated, Any
 
 import requests
+import rich
 import typer
 import yaml
 from rich.console import Console
@@ -23,7 +24,12 @@ console = Console()
 def list(
     app: Annotated[
         str | None,
-        typer.Option("--app", "-a", help="The community app to list versions for.", metavar="COMMUNITY_APP"),
+        typer.Option(
+            "--app",
+            "-a",
+            help="The community app to list versions for.",
+            metavar="COMMUNITY_APP",
+        ),
     ] = None,
     flat: Annotated[bool, typer.Option("--flat", "-f", help="Flatten the list output.")] = False,
     profile: ProfileOption = None,
@@ -38,19 +44,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List the available community apps.
-        [green]nextmv community list[/green]
+        $ [green]nextmv community list[/green]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app.
-        [green]nextmv community list --app go-nextroute[/green]
+        $ [green]nextmv community list --app go-nextroute[/green]
 
     - List the names of the available community apps as a flat list.
-        [green]nextmv community list --flat[/green]
+        $ [green]nextmv community list --flat[/green]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app as a flat list.
-        [green]nextmv community list --app go-nextroute --flat[/green]
+        $ [green]nextmv community list --app go-nextroute --flat[/green]
 
     - List the available community apps using a profile named [magenta]hare[/magenta].
-        [green]nextmv community list --profile hare[/green]
+        $ [green]nextmv community list --profile hare[/green]
     """
 
     if app is not None and app == "":
@@ -148,11 +154,7 @@ def versions_table(manifest: dict[str, Any], app: str) -> None:
         The name of the community app.
     """
 
-    for manifest_app in manifest.get("apps", []):
-        if manifest_app.get("name", "") == app:
-            app_obj = manifest_app
-            break
-
+    app_obj = find_app(manifest, app)
     latest_version = app_obj.get("latest_app_version", "")
 
     # Add the latest version with indicator
@@ -181,12 +183,9 @@ def versions_list(manifest: dict[str, Any], app: str) -> None:
         The name of the community app.
     """
 
-    for manifest_app in manifest.get("apps", []):
-        if manifest_app.get("name", "") == app:
-            app_obj = manifest_app
-            break
-
+    app_obj = find_app(manifest, app)
     versions = app_obj.get("app_versions", [])
+
     versions_output = ""
     for version in versions:
         versions_output += f"{version}\n"
@@ -240,3 +239,31 @@ def download_file(
     )
 
     return download_response
+
+
+def find_app(manifest: dict[str, Any], app: str) -> dict[str, Any] | None:
+    """
+    Finds and returns a community app from the manifest by its name.
+
+    Parameters
+    ----------
+    manifest : dict[str, Any]
+        The community apps manifest.
+    app : str
+        The name of the community app to find.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        The community app dictionary if found, otherwise None.
+    """
+
+    for manifest_app in manifest.get("apps", []):
+        if manifest_app.get("name", "") == app:
+            return manifest_app
+
+    # We don't use error() here to allow printing something before exiting.
+    rich.print(f"[red]Error:[/red] Community app [magenta]{app}[/magenta] was not found. Here are the available apps:")
+    apps_table(manifest)
+
+    raise typer.Exit(code=1)
