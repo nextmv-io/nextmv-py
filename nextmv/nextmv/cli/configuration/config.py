@@ -61,13 +61,26 @@ def build_client(profile: str | None = None) -> Client:
     """
     Builds a `cloud.Client` using the API key and endpoint for the given
     profile. If no profile is given, the default profile is used. If either the
-    API key or endpoint is missing, an exception is raised. Is the config is
+    API key or endpoint is missing, an exception is raised. If the config is
     not available, an exception is raised.
 
     Parameters
     ----------
     profile : str | None
         The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    Client
+        A client configured with the API key and endpoint for the selected
+        profile or the default configuration.
+
+    Raises
+    ------
+    typer.Exit
+        If no configuration is found, if the requested profile does not exist,
+        or if the API key or endpoint (for either the selected profile or the
+        default configuration) is not set or is empty.
     """
 
     config = load_config()
