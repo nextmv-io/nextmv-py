@@ -1,5 +1,5 @@
+import rich
 import typer
-from rich import print
 
 
 def error(msg: str) -> None:
@@ -18,5 +18,5 @@ def error(msg: str) -> None:
         Exits the program with code 1.
     """
 
-    print(f"[red]Error:[/red] {msg}")
+    rich.print(f"[red]Error:[/red] {msg}")
     raise typer.Exit(code=1)
