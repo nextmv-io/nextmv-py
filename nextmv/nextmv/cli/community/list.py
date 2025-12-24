@@ -38,7 +38,7 @@ def list(
     List the available community apps
 
     Use the [code]--app[/code] flag to list that app's versions. Use the
-    [code]--flat[/code] flag to to flatten the list of names/versions. If you
+    [code]--flat[/code] flag to flatten the list of names/versions. If you
     want to clone a community app locally, use the [code]nextmv community clone[/code] command.
 
     [bold][underline]Examples[/underline][/bold]
