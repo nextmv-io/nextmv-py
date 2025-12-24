@@ -134,14 +134,8 @@ def apps_list(manifest: dict[str, Any]) -> None:
         The community apps manifest.
     """
 
-    apps = ""
-    for app in manifest.get("apps", []):
-        name = app.get("name", "")
-        apps += f"{name}\n"
-
-    print(apps.rstrip())
-
-
+    names = [app.get("name", "") for app in manifest.get("apps", [])]
+    print("\n".join(names))
 def versions_table(manifest: dict[str, Any], app: str) -> None:
     """
     This function prints a table of versions for a specific community app.
