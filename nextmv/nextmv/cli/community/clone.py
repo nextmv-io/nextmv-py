@@ -94,7 +94,7 @@ def clone(
 
         raise typer.Exit(code=1)
 
-    original_version = copy.deepcopy(version)
+    original_version = version
     if version == LATEST_VERSION:
         version = app_obj.get("latest_app_version")
 
