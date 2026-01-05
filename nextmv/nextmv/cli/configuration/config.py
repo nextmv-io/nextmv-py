@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from nextmv.cli.error import error
+from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
 # Some useful constants.
@@ -89,15 +90,15 @@ def build_client(profile: str | None = None) -> Client:
 
     if profile is not None:
         if profile not in config:
-            error(f"Profile [bold magenta]{profile}[/bold magenta] does not exist.")
+            error(f"Profile [magenta]{profile}[/magenta] does not exist.")
 
         api_key = config[profile].get(API_KEY_KEY)
         if api_key is None or api_key == "":
-            error(f"API key for profile [bold magenta]{profile}[/bold magenta] is not set or is empty.")
+            error(f"API key for profile [magenta]{profile}[/magenta] is not set or is empty.")
 
         endpoint = config[profile].get(ENDPOINT_KEY)
         if endpoint is None or endpoint == "":
-            error(f"Endpoint for profile [bold magenta]{profile}[/bold magenta] is not set or is empty.")
+            error(f"Endpoint for profile [magenta]{profile}[/magenta] is not set or is empty.")
     else:
         api_key = config.get(API_KEY_KEY)
         if api_key is None or api_key == "":
@@ -108,6 +109,40 @@ def build_client(profile: str | None = None) -> Client:
             error("Default endpoint is not set or is empty.")
 
     return Client(api_key=api_key, url=f"https://{endpoint}")
+
+
+def build_app(app_id: str, profile: str | None = None) -> Application:
+    """
+    Builds a `cloud.Application` using the given application ID and the API
+    key and endpoint for the given profile. If no profile is given, the default
+    profile is used. If the application does not exist, an exception is raised.
+
+    Parameters
+    ----------
+    app_id : str
+        The application ID.
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    Application
+        An application object for the given application ID.
+
+    Raises
+    ------
+    typer.Exit
+        If the application does not exist.
+    """
+    client = build_client(profile)
+    exists = Application.exists(client=client, id=app_id)
+    if not exists:
+        error(
+            f"Application with ID [magenta]{app_id}[/magenta] does not exist. "
+            "Use [code]nextmv cloud app create[/code] to create a new application."
+        )
+
+    return Application(client=client, id=app_id)
 
 
 def obscure_api_key(api_key: str) -> str:

@@ -19,6 +19,7 @@ import rich
 import typer
 from rich.prompt import Confirm
 
+from nextmv.cli.cloud.cloud import app as cloud_app
 from nextmv.cli.community.community import app as community_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.configuration.configuration import app as configuration_app
@@ -36,6 +37,7 @@ app = typer.Typer(
 
 # Register subcommands. The `name` parameter is required when the subcommand
 # module has a callback function defined.
+app.add_typer(cloud_app, name="cloud")
 app.add_typer(community_app, name="community")
 app.add_typer(configuration_app, name="configuration")
 app.add_typer(version_app)

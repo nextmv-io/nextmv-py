@@ -38,18 +38,18 @@ def delete(
     """
     config = load_config()
     if profile not in config:
-        error(f"Profile [bold magenta]{profile}[/bold magenta] does not exist.")
+        error(f"Profile [magenta]{profile}[/magenta] does not exist.")
 
     confirm = Confirm.ask(
-        f"Are you sure you want to delete profile [bold magenta]{profile}[/bold magenta]? This action cannot be undone",
+        f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone",
         default=False,
     )
 
     if not confirm:
-        rich.print(f":bulb: Profile [bold magenta]{profile}[/bold magenta] will not be deleted.")
+        rich.print(f":bulb: Profile [magenta]{profile}[/magenta] will not be deleted.")
         return
 
     del config[profile]
     save_config(config)
 
-    rich.print(f":white_check_mark: Profile [bold magenta]{profile}[/bold magenta] deleted successfully.")
+    rich.print(f":white_check_mark: Profile [magenta]{profile}[/magenta] deleted successfully.")

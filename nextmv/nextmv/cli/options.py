@@ -22,3 +22,17 @@ ProfileOption = Annotated[
         metavar="PROFILE_NAME",
     ),
 ]
+
+# app_id option - can be used in any command that requires an application ID.
+# Define it as follows in commands or callbacks, as necessary:
+# app_id: AppIDOption
+AppIDOption = Annotated[
+    str,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help="The Nextmv Cloud application ID to use for this action.",
+        envvar="NEXTMV_APP_ID",
+        metavar="APP_ID",
+    ),
+]
