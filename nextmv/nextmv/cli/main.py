@@ -19,10 +19,10 @@ import rich
 import typer
 from rich.prompt import Confirm
 
-from nextmv.cli.cloud.cloud import app as cloud_app
-from nextmv.cli.community.community import app as community_app
+from nextmv.cli.cloud import app as cloud_app
+from nextmv.cli.community import app as community_app
+from nextmv.cli.configuration import app as configuration_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
-from nextmv.cli.configuration.configuration import app as configuration_app
 from nextmv.cli.error import error
 from nextmv.cli.version import app as version_app
 

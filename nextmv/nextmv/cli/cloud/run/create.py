@@ -2,7 +2,11 @@
 This module defines the community clone command for the Nextmv CLI.
 """
 
-from typing import Annotated
+import json
+import sys
+import tarfile
+from pathlib import Path
+from typing import Annotated, Any
 
 import rich
 import typer
@@ -10,7 +14,9 @@ import typer
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.error import error
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
+from nextmv.output import OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS
 from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunResult, RunType, RunTypeConfiguration
 
@@ -85,8 +91,8 @@ def create(
         typer.Option(
             "--logs",
             "-l",
-            help="The location to stream the logs to (in addition to the terminal). "
-            "Activates tailing if not set. Automatically names file if defined without filename.",
+            help="The location to stream the logs to. They will also be streamed to [magenta]stdout[/magenta]. "
+            "Activates [code]--wait[/code] if not set.",
             metavar="LOGS_OUTPUT",
         ),
     ] = None,
@@ -122,8 +128,8 @@ def create(
         typer.Option(
             "--output",
             "-u",
-            help="The output location to use. File or directory depending on content type. "
-            "Activates polling if not set. Uses [magenta]stdout[/magenta] or a generated filename if not specified.",
+            help="The output location to use. A file or directory will be created depending on content type."
+            "Activates [code]--wait[/code] if not set.",
             metavar="OUTPUT_DATA",
         ),
     ] = None,
@@ -161,6 +167,16 @@ def create(
             metavar="TIMEOUT_SECONDS",
         ),
     ] = -1,
+    wait: Annotated[
+        bool,
+        typer.Option(
+            "--wait",
+            "-w",
+            help="Wait for the run to complete. Activates polling for the result and log streaming. "
+            "Run result is printed to [magenta]stdout[/magenta] for [magenta]json[/magenta], "
+            "to a directory for [magenta]multi-file[/magenta]. Logs are streamed to [magenta]stdout[/magenta].",
+        ),
+    ] = False,
     profile: ProfileOption = None,
 ) -> None:
     """
@@ -179,6 +195,10 @@ def create(
       to [code]''[/code] (empty string) has the same effect.
     - [green]<INSTANCE_ID>[/green]: uses the instance with the given ID.
     """
+
+    stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
+    if stdin is None and input is None:
+        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
 
     cloud_app = build_app(app_id, profile)
     config = build_config(
@@ -202,7 +222,7 @@ def create(
         instance_id = ""
 
     # Decide which method to use based on whether polling is needed.
-    should_poll = output is not None or logs is not None
+    should_poll = wait or output is not None or logs is not None
     method = cloud_app.new_run
     kwargs = {
         "instance_id": instance_id,
@@ -217,15 +237,23 @@ def create(
     else:
         kwargs["options"] = run_options
 
-    result = method(**kwargs)
-    if should_poll and isinstance(result, RunResult):
-        unserialized_res = result.to_dict()
-    elif not should_poll and isinstance(result, str):
-        unserialized_res = {"run_id": result}
-    else:
-        error("Unexpected result type received from run creation.")
+    # Resolve input (stdin, file, directory).
+    kwargs = resolve_input(
+        kwargs=kwargs,
+        stdin=stdin,
+        input=input,
+        cloud_app=cloud_app,
+    )
 
-    rich.print(unserialized_res)
+    # Actually create the run and resolve the result based on polling, output
+    # specification, etc.
+    result = method(**kwargs)
+    resolve_result(
+        should_poll=should_poll,
+        result=result,
+        output=output,
+        cloud_app=cloud_app,
+    )
 
 
 def build_config(
@@ -290,6 +318,8 @@ def build_config(
     if definition_id is not None:
         config.run_type.definition_id = definition_id
 
+    return config
+
 
 def build_run_options(options: list[str] | None) -> dict[str, str]:
     """
@@ -323,3 +353,115 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
             run_options[key] = value
 
     return run_options
+
+
+def resolve_input(
+    kwargs: dict[str, Any],
+    stdin: str | None,
+    input: str | None,
+    cloud_app: Application,
+) -> dict[str, Any]:
+    """
+    Resolves the input for the run creation. It handles stdin, file, and
+    directory inputs. It uploads the input to the cloud application if needed.
+
+    Parameters
+    ----------
+    kwargs : dict[str, Any]
+        The existing keyword arguments for the run creation.
+    stdin : str | None
+        The stdin input data, if provided.
+    input : str | None
+        The input path, if provided.
+    cloud_app : Application
+        The cloud application instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        The updated keyword arguments with the resolved input.
+    """
+
+    if stdin is not None:
+        # Handle the case where stdin is provided as JSON for a JSON app.
+        try:
+            input_data = json.loads(stdin)
+        except json.JSONDecodeError:
+            input_data = stdin
+
+        kwargs["input"] = input_data
+
+        return kwargs
+
+    input_path = Path(input)
+
+    # If the input is a file, we need to determine if it is a tar file or
+    # a regular file and upload it accordingly. If it is a regular file, we
+    # need to read its content.
+    if input_path.is_file():
+        upload_url = cloud_app.upload_url()
+        if tarfile.is_tarfile(input_path):
+            cloud_app.upload_large_input(input=None, upload_url=upload_url, tar_file=input_path)
+        else:
+            input_data = input_path.read_text()
+            cloud_app.upload_large_input(input=input_data, upload_url=upload_url)
+
+        kwargs["upload_id"] = upload_url.upload_id
+
+        return kwargs
+
+    # If the input is a directory, we give the path directly to the run method.
+    # Internally, the files will be tarred and uploaded.
+    if input_path.is_dir():
+        kwargs["input_dir_path"] = input
+        return kwargs
+
+    error(f"Input path [magenta]{input}[/magenta] does not exist.")
+
+
+def resolve_result(
+    should_poll: bool,
+    result: RunResult | str,
+    output: str | None,
+    cloud_app: Application,
+) -> None:
+    # Validate the combination of result type and polling.
+    if (should_poll and not isinstance(result, RunResult)) or (not should_poll and not isinstance(result, str)):
+        error(f"Unexpected result type ({type(result)}) and should_poll ({should_poll}) combination from run creation.")
+
+    # We handle the non-polling case first, which is simply returning the run
+    # ID.
+    if not should_poll and isinstance(result, str):
+        rich.print({"run_id": result})
+
+        return
+
+    # At this point, we know that we waited for the result and the type is a
+    # RunResult.
+    content_type = result.metadata.format.format_output.output_type
+
+    # Handle the case where output is embedded directly in the result: json and
+    # text.
+    if content_type in {OutputFormat.JSON, OutputFormat.TEXT}:
+        # If no output is specified, we print to stdout. Otherwise, we write
+        # to the specified output file.
+        if output is None:
+            rich.print(result.to_dict())
+        else:
+            with open(output, "w") as f:
+                json.dump(result.to_dict(), f, indent=2)
+                rich.print(f":white_check_mark: Run output written to [magenta]{output}[/magenta].")
+
+        return
+
+    # Finally, we know that the output is multi-file or csv-archive, which
+    # means we need to handle the output directory.
+    run_id = result.id
+    if output is None or output == "":
+        output = run_id
+
+    _ = cloud_app.run_result(run_id=run_id, output_dir_path=output)
+    rich.print(f":white_check_mark: Run outputs downloaded to [magenta]{output}[/magenta]. Here is the metadata:")
+    result_dict = result.to_dict()
+    del result_dict["output"]
+    rich.print(result_dict)
