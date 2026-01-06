@@ -4,6 +4,7 @@ This module defines the community clone command for the Nextmv CLI.
 
 from typing import Annotated
 
+import rich
 import typer
 
 from nextmv.cli.configuration.config import build_app
@@ -11,7 +12,7 @@ from nextmv.cli.error import error
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS
-from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
+from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunResult, RunType, RunTypeConfiguration
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -180,8 +181,91 @@ def create(
     """
 
     cloud_app = build_app(app_id, profile)
+    config = build_config(
+        run_type=run_type,
+        priority=priority,
+        no_queuing=no_queuing,
+        execution_class=execution_class,
+        content_type=content_type,
+        secret_collection_id=secret_collection_id,
+        integration_id=integration_id,
+        definition_id=definition_id,
+    )
+    run_options = build_run_options(options)
 
-    # Build the run configuration with the provided options.
+    # Build the polling options.
+    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options.max_duration = timeout
+
+    # Handles the default instance.
+    if instance_id == "default":
+        instance_id = ""
+
+    # Decide which method to use based on whether polling is needed.
+    should_poll = output is not None or logs is not None
+    method = cloud_app.new_run
+    kwargs = {
+        "instance_id": instance_id,
+        "name": name,
+        "description": description,
+        "configuration": config,
+    }
+    if should_poll:
+        method = cloud_app.new_run_with_result
+        kwargs["run_options"] = run_options
+        kwargs["polling_options"] = polling_options
+    else:
+        kwargs["options"] = run_options
+
+    result = method(**kwargs)
+    if should_poll and isinstance(result, RunResult):
+        unserialized_res = result.to_dict()
+    elif not should_poll and isinstance(result, str):
+        unserialized_res = {"run_id": result}
+    else:
+        error("Unexpected result type received from run creation.")
+
+    rich.print(unserialized_res)
+
+
+def build_config(
+    run_type: RunType,
+    priority: int,
+    no_queuing: bool,
+    execution_class: str | None,
+    content_type: InputFormat | None,
+    secret_collection_id: str | None,
+    integration_id: str | None,
+    definition_id: str | None,
+) -> RunConfiguration:
+    """
+    Builds the run configuration for the new run.
+
+    Parameters
+    ----------
+    run_type : RunType
+        The type of run to create.
+    priority : int
+        The priority of the run.
+    no_queuing : bool
+        Whether to disable queuing for the run.
+    execution_class : str | None
+        The execution class to use for the run, if applicable.
+    content_type : InputFormat | None
+        The content type of the run to create, if applicable.
+    secret_collection_id : str | None
+        The secret collection ID to use for the run, if applicable.
+    integration_id : str | None
+        The integration ID to use for the run, if applicable.
+    definition_id : str | None
+        The definition ID to use for the run, if applicable.
+
+    Returns
+    -------
+    RunConfiguration
+        The built run configuration.
+    """
+
     config = RunConfiguration(
         run_type=RunTypeConfiguration(
             run_type=RunType(run_type),
@@ -206,15 +290,24 @@ def create(
     if definition_id is not None:
         config.run_type.definition_id = definition_id
 
-    # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
-    polling_options.max_duration = timeout
 
-    # Handles the default instance.
-    if instance_id == "default":
-        instance_id = ""
+def build_run_options(options: list[str] | None) -> dict[str, str]:
+    """
+    Builds the run options for the new run. One can pass options by either
+    using the flag multiple times or by separating with commas in the same
+    flag. A combination of both is also possible.
 
-    # Builds the run options from the flag being used one or multiple times.
+    Parameters
+    ----------
+    options : list[str] | None
+        The list of run options as strings.
+
+    Returns
+    -------
+    dict[str, str]
+        The built run options.
+    """
+
     run_options = {}
     for opt in options or []:
         # It is possible to pass multiple options separated by commas. The
@@ -229,20 +322,4 @@ def create(
             key, value = key_value
             run_options[key] = value
 
-    # Decide which method to use based on whether polling is needed.
-    should_poll = output is not None or logs is not None
-    method = cloud_app.new_run
-    kwargs = {
-        "instance_id": instance_id,
-        "name": name,
-        "description": description,
-        "configuration": config,
-    }
-    if should_poll:
-        method = cloud_app.new_run_with_result
-        kwargs["run_options"] = run_options
-        kwargs["polling_options"] = polling_options
-    else:
-        kwargs["options"] = run_options
-
-    result = method(**kwargs)
+    return run_options
