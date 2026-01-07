@@ -34,6 +34,7 @@ from datetime import datetime
 from typing import Any
 
 import requests
+import rich
 
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
@@ -73,6 +74,7 @@ from nextmv.run import (
     RunInformation,
     RunLog,
     RunResult,
+    TimestampedRunLog,
     TrackedRun,
 )
 from nextmv.safe import safe_id, safe_name_and_id
@@ -2779,7 +2781,124 @@ class Application:
             method="GET",
             endpoint=f"{self.endpoint}/runs/{run_id}/logs",
         )
+
         return RunLog.from_dict(response.json())
+
+    def run_logs_with_polling(
+        self,
+        run_id: str,
+        verbose: bool = False,
+        rich_print: bool = False,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+    ) -> list[TimestampedRunLog]:
+        """
+        Get the logs of a run with polling.
+
+        Retrieves the logs of a run. This method polls for the logs until the
+        run finishes executing or the polling strategy is exhausted. It is the
+        "real-time" equivalent of the `run_logs` method. After the polling is
+        done, all the logs are returned sorted by timestamp. You can use the
+        `verbose` parameter to print the logs as they are obtained during the
+        polling process. You can also use the `rich_print` parameter to enable
+        rich printing for better formatting of the logs.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the logs for.
+        verbose : bool, default=False
+            Whether to print the logs as they are obtained during the polling
+            process.
+        rich_print : bool, default=False
+            Whether to use rich printing for better formatting of the logs.
+        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the run logs.
+
+        Returns
+        -------
+        list[TimestampedRunLog]
+            List of timestamped logs of the run.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the run does not complete after the polling strategy is
+            exhausted based on time duration.
+        RuntimeError
+            If the run does not complete after the polling strategy is
+            exhausted based on number of tries.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import PollingOptions
+        >>> # Create custom polling options
+        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
+        >>> # Get run logs with polling
+        >>> logs = app.run_logs_with_polling("run-123", polling_opts)
+        >>> for log in logs:
+        ...     print(f"[{log.timestamp}] {log.log}")
+        [2024-01-01T12:00:00Z] Starting optimization...
+        [2024-01-01T12:00:05Z] Found initial solution
+        ...
+        """
+
+        sleep_duration_hint = 0
+        logs = []
+        query_params = None
+
+        def polling_func() -> tuple[Any, bool]:
+            nonlocal sleep_duration_hint
+            nonlocal query_params
+
+            # Perform the actual request to the API.
+            response = self.client.request(
+                method="GET",
+                endpoint=f"{self.endpoint}/runs/{run_id}/logs/live",
+                query_params=query_params,
+            )
+            json_resp = response.json()
+
+            # Get the logs of the current request. Print them if verbose is
+            # enabled and append them to the overall logs.
+            for resp_log in json_resp.get("items", []):
+                log_entry = TimestampedRunLog.from_dict(resp_log)
+                if verbose:
+                    msg = f"[{log_entry.timestamp}] {log_entry.log}"
+                    if rich_print:
+                        rich.print(msg)
+                    else:
+                        print(msg)
+
+                logs.append(log_entry)
+
+            # We are done asking for logs if the run is in a final state.
+            status_v2 = StatusV2(json_resp.get("status_v2", "none"))
+            if status_v2 in {
+                StatusV2.succeeded,
+                StatusV2.failed,
+                StatusV2.canceled,
+            }:
+                return logs, True
+
+            # Store the server's hint for the next sleep duration.
+            sleep_duration_hint = json_resp.get("next_available_in_seconds", 0)
+
+            # Update the query parameters for the next request.
+            since = json_resp.get("next_page_token")
+            if since is not None:
+                query_params = {"since": since}
+
+            return logs, False
+
+        def sleep_func() -> float:
+            return sleep_duration_hint if sleep_duration_hint > 0 else 0
+
+        polling_options.sleep_duration_func = sleep_func
+        logs = poll(polling_options=polling_options, polling_func=polling_func)
+
+        return sorted(logs, key=lambda log: log.timestamp)
 
     def run_result(self, run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """

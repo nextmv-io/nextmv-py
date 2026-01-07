@@ -17,8 +17,8 @@ from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
 from nextmv.output import OutputFormat
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
-from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunResult, RunType, RunTypeConfiguration
+from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions
+from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -92,7 +92,7 @@ def create(
             "--logs",
             "-l",
             help="The location to stream the logs to. They will also be streamed to [magenta]stdout[/magenta]. "
-            "Activates [code]--wait[/code] if not set.",
+            "Activates [code]--tail[/code] if not set.",
             metavar="LOGS_OUTPUT",
         ),
     ] = None,
@@ -158,11 +158,18 @@ def create(
             metavar="SECRET_COLLECTION_ID",
         ),
     ] = None,
+    tail: Annotated[
+        bool,
+        typer.Option(
+            "--tail",
+            "-t",
+            help="Tail the logs until the run completes. Logs are streamed to [magenta]stdout[/magenta]. "
+            "Activates [code]--wait[/code] if not set.",
+        ),
+    ] = False,
     timeout: Annotated[
         int,
         typer.Option(
-            "--timeout",
-            "-t",
             help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
             metavar="TIMEOUT_SECONDS",
         ),
@@ -172,15 +179,28 @@ def create(
         typer.Option(
             "--wait",
             "-w",
-            help="Wait for the run to complete. Activates polling for the result and log streaming. "
+            help="Wait for the run to complete. Activates polling for the result. "
             "Run result is printed to [magenta]stdout[/magenta] for [magenta]json[/magenta], "
-            "to a directory for [magenta]multi-file[/magenta]. Logs are streamed to [magenta]stdout[/magenta].",
+            "to a directory for [magenta]multi-file[/magenta].",
         ),
     ] = False,
     profile: ProfileOption = None,
 ) -> None:
     """
     Create a new Nextmv Cloud application run.
+
+    Input for the run should be given through [magenta]stdin[/magenta] or the
+    [code]--input[/code] flag.
+
+    Use the [code]--wait[/code] flag to wait for the run to complete, polling
+    for results. Using the [code]--output[/code] flag will also activate
+    waiting, and allows you to specify a destination (file or dir) for the
+    output, depending on the content type.
+
+    Use the [code]--tail[/code] flag to stream logs to
+    [magenta]stdout[/magenta] until the run completes, polling for results.
+    Using the [code]--logs[/code] flag will also activate tailing, and allows
+    you to specify a file to write the logs to.
 
     An application run executes against a specific instance. An instance
     represents the combination of executable code and configuration. You can
@@ -189,19 +209,62 @@ def create(
 
     - [green]latest[/green]: uses the special [magenta]latest[/magenta]
       instance of the application. This corresponds to the latest pushed
-      executable.
+      executable. This is the default behavior.
     - [green]default[/green]: if the application has a [italic]default[/italic]
       instance configured, then it uses that instance. Setting the flag's value
       to [code]''[/code] (empty string) has the same effect.
     - [green]<INSTANCE_ID>[/green]: uses the instance with the given ID.
+
+    [bold][underline]Examples[/underline][/bold]
+
+    - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
+      and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+        $ [green]cat input.json | nextmv cloud run create --app-id hare-app[/green]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+        $ [green]nextmv cloud run create --app-id hare-app --input input.json[/green]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      Wait for the run to complete and print the result to [magenta]stdout[/magenta].
+        $ [green]nextmv cloud run create --app-id hare-app --input input.json --wait[/green]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      Tail the run's logs, waiting for the run to complete and print the result to [magenta]stdout[/magenta].
+        $ [green]nextmv cloud run create --app-id hare-app --input input.json --tail[/green]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
+        $ [green]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/green]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      Tail the run's logs, waiting for the run to complete, write the result to an [magenta]output.json[/magenta] file
+      and the logs to a [magenta]logs.log[/magenta] file.
+        $ [green]nextmv cloud run create --app-id hare-app --input input.json \\
+            --output output.json --logs logs.log[/green]
+
+    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
+        $ [green]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/green]
+
+    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
+      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
+      Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+        $ [green]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/green]
     """
 
+    # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and input is None:
         error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
 
+    # Instantiate the basic requirements to start a new run.
     cloud_app = build_app(app_id, profile)
-    config = build_config(
+    config = build_run_config(
         run_type=run_type,
         priority=priority,
         no_queuing=no_queuing,
@@ -221,42 +284,47 @@ def create(
     if instance_id == "default":
         instance_id = ""
 
-    # Decide which method to use based on whether polling is needed.
-    should_poll = wait or output is not None or logs is not None
-    method = cloud_app.new_run
-    kwargs = {
-        "instance_id": instance_id,
-        "name": name,
-        "description": description,
-        "configuration": config,
-    }
-    if should_poll:
-        method = cloud_app.new_run_with_result
-        kwargs["run_options"] = run_options
-        kwargs["polling_options"] = polling_options
-    else:
-        kwargs["options"] = run_options
-
-    # Resolve input (stdin, file, directory).
-    kwargs = resolve_input(
-        kwargs=kwargs,
+    # Start the run before deciding if we should poll or not.
+    input_kwarg = resolve_input_kwarg(
         stdin=stdin,
         input=input,
         cloud_app=cloud_app,
     )
+    run_id = cloud_app.new_run(
+        **input_kwarg,
+        instance_id=instance_id,
+        name=name,
+        description=description,
+        options=run_options,
+        configuration=config,
+    )
 
-    # Actually create the run and resolve the result based on polling, output
-    # specification, etc.
-    result = method(**kwargs)
-    resolve_result(
-        should_poll=should_poll,
-        result=result,
+    # If we don't need to poll at all we are done.
+    if not wait and not tail and output is None and logs is None:
+        rich.print({"run_id": run_id})
+
+        return
+
+    rich.print(f":white_check_mark: Run [magenta]{run_id}[/magenta] created.")
+
+    # Handle what happens after the run is created for logging and result
+    # retrieval.
+    handle_logging(
+        tail=tail,
+        logs=logs,
+        cloud_app=cloud_app,
+        run_id=run_id,
+        polling_options=polling_options,
+    )
+    handle_results(
         output=output,
         cloud_app=cloud_app,
+        run_id=run_id,
+        polling_options=polling_options,
     )
 
 
-def build_config(
+def build_run_config(
     run_type: RunType,
     priority: int,
     no_queuing: bool,
@@ -355,20 +423,18 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
     return run_options
 
 
-def resolve_input(
-    kwargs: dict[str, Any],
+def resolve_input_kwarg(
     stdin: str | None,
     input: str | None,
     cloud_app: Application,
 ) -> dict[str, Any]:
     """
-    Resolves the input for the run creation. It handles stdin, file, and
-    directory inputs. It uploads the input to the cloud application if needed.
+    Gets the keyword argument related to the input that is needed for the run
+    creation. It handles stdin, file, and directory inputs. It uploads the
+    input to the cloud application if needed.
 
     Parameters
     ----------
-    kwargs : dict[str, Any]
-        The existing keyword arguments for the run creation.
     stdin : str | None
         The stdin input data, if provided.
     input : str | None
@@ -379,7 +445,7 @@ def resolve_input(
     Returns
     -------
     dict[str, Any]
-        The updated keyword arguments with the resolved input.
+        The keyword argument with the resolved input.
     """
 
     if stdin is not None:
@@ -389,9 +455,7 @@ def resolve_input(
         except json.JSONDecodeError:
             input_data = stdin
 
-        kwargs["input"] = input_data
-
-        return kwargs
+        return {"input": input_data}
 
     input_path = Path(input)
 
@@ -406,39 +470,108 @@ def resolve_input(
             input_data = input_path.read_text()
             cloud_app.upload_large_input(input=input_data, upload_url=upload_url)
 
-        kwargs["upload_id"] = upload_url.upload_id
-
-        return kwargs
+        return {"upload_id": upload_url.upload_id}
 
     # If the input is a directory, we give the path directly to the run method.
     # Internally, the files will be tarred and uploaded.
     if input_path.is_dir():
-        kwargs["input_dir_path"] = input
-        return kwargs
+        return {"input_dir_path": input}
 
     error(f"Input path [magenta]{input}[/magenta] does not exist.")
 
 
-def resolve_result(
-    should_poll: bool,
-    result: RunResult | str,
-    output: str | None,
+def handle_logging(
+    tail: bool,
+    logs: str | None,
     cloud_app: Application,
+    run_id: str,
+    polling_options: PollingOptions,
 ) -> None:
-    # Validate the combination of result type and polling.
-    if (should_poll and not isinstance(result, RunResult)) or (not should_poll and not isinstance(result, str)):
-        error(f"Unexpected result type ({type(result)}) and should_poll ({should_poll}) combination from run creation.")
+    """
+    Handles the logging for the run creation command. It tails the logs
+    until the run completes if [code]--tail[/code] is specified or if
+    [code]--logs[/code] is specified. If [code]--logs[/code] is specified, it
+    writes the logs to the specified file.
 
-    # We handle the non-polling case first, which is simply returning the run
-    # ID.
-    if not should_poll and isinstance(result, str):
-        rich.print({"run_id": result})
+    Parameters
+    ----------
+    tail : bool
+        Whether to tail the logs until the run completes.
+    logs : str | None
+        The location to write the logs to, if specified.
+    cloud_app : Application
+        The cloud application instance.
+    run_id : str
+        The ID of the run.
+    polling_options : PollingOptions
+        The polling options to use for tailing the logs.
+    """
+
+    if not tail and logs is None:
+        rich.print(":hourglass_flowing_sand: Waiting for run to complete...")
 
         return
 
-    # At this point, we know that we waited for the result and the type is a
-    # RunResult.
-    content_type = result.metadata.format.format_output.output_type
+    # If logs tailing/fetching is enabled, use it as the polling strategy.
+    rich.print(":hourglass_flowing_sand: Tailing logs and waiting for run to complete...")
+    run_logs = cloud_app.run_logs_with_polling(
+        run_id=run_id,
+        verbose=True,
+        rich_print=True,
+        polling_options=polling_options,
+    )
+    if logs is not None:
+        log_path = Path(logs)
+        with log_path.open("w") as f:
+            for log_entry in run_logs:
+                f.write(log_entry.log)
+
+        rich.print(f":white_check_mark: Run logs written to [magenta]{logs}[/magenta].")
+
+
+def handle_results(
+    output: str | None,
+    cloud_app: Application,
+    run_id: str,
+    polling_options: PollingOptions,
+) -> None:
+    """
+    Handles retrieving and outputting the results from a completed run.
+
+    This function retrieves the run result based on the output format and either
+    prints it to stdout, writes it to a file, or downloads it to a directory
+    depending on the content type (JSON, TEXT, multi-file, or csv-archive).
+
+    Parameters
+    ----------
+    output : str | None
+        The location to write the output. For JSON/TEXT formats, this is a file
+        path. For multi-file/csv-archive formats, this is a directory path. If
+        None, JSON/TEXT output is printed to stdout and multi-file output uses
+        the run_id as the directory name.
+    cloud_app : Application
+        The cloud application instance.
+    run_id : str
+        The ID of the run to retrieve results for.
+    polling_options : PollingOptions
+        The polling options to use when waiting for the run to complete.
+    """
+
+    # Get the run metadata to determine how to operate with the output.
+    info = cloud_app.run_metadata(run_id=run_id)
+    content_type = info.metadata.format.format_output.output_type
+
+    # Get the run result, using output directory if needed.
+    kwargs = {
+        "run_id": run_id,
+        "polling_options": polling_options,
+    }
+    if content_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
+        if output is None or output == "":
+            output = run_id
+        kwargs["output_dir_path"] = output
+
+    run_result = cloud_app.run_result_with_polling(**kwargs)
 
     # Handle the case where output is embedded directly in the result: json and
     # text.
@@ -446,22 +579,17 @@ def resolve_result(
         # If no output is specified, we print to stdout. Otherwise, we write
         # to the specified output file.
         if output is None:
-            rich.print(result.to_dict())
+            rich.print(run_result.to_dict())
         else:
             with open(output, "w") as f:
-                json.dump(result.to_dict(), f, indent=2)
+                json.dump(run_result.to_dict(), f, indent=2)
                 rich.print(f":white_check_mark: Run output written to [magenta]{output}[/magenta].")
 
         return
 
-    # Finally, we know that the output is multi-file or csv-archive, which
+    # At this point, we know that the output is multi-file or csv-archive, which
     # means we need to handle the output directory.
-    run_id = result.id
-    if output is None or output == "":
-        output = run_id
-
-    _ = cloud_app.run_result(run_id=run_id, output_dir_path=output)
     rich.print(f":white_check_mark: Run outputs downloaded to [magenta]{output}[/magenta]. Here is the metadata:")
-    result_dict = result.to_dict()
+    result_dict = run_result.to_dict()
     del result_dict["output"]
     rich.print(result_dict)
