@@ -272,16 +272,17 @@ def poll(  # noqa: C901
                 # If we already reached the maximum, we don't want to further calculate the
                 # delay to avoid overflows.
                 delay = polling_options.max_delay
-                delay += random.uniform(0, polling_options.jitter)  # Add jitter.
             else:
                 delay = polling_options.delay  # Base
                 delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-                delay += random.uniform(0, polling_options.jitter)  # Add jitter.
 
             # We cannot exceed the max delay.
             if delay >= polling_options.max_delay:
                 max_reached = True
                 delay = polling_options.max_delay
+
+            # Add jitter.
+            delay += random.uniform(0, polling_options.jitter)
 
             sleep_duration = delay
         if polling_options.verbose:
