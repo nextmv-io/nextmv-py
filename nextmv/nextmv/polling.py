@@ -285,6 +285,7 @@ def poll(  # noqa: C901
             delay += random.uniform(0, polling_options.jitter)
 
             sleep_duration = delay
+
         if polling_options.verbose:
             log(f"polling | sleeping for duration: {sleep_duration}")
 
