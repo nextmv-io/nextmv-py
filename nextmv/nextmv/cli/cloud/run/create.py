@@ -27,41 +27,7 @@ app = typer.Typer()
 @app.command()
 def create(
     app_id: AppIDOption,
-    content_type: Annotated[
-        InputFormat | None,
-        typer.Option(
-            "--content-type",
-            "-c",
-            help="The content type of the run to create. Allowed values are: "
-            f"{[v.value for v in InputFormat.__members__.values()]}",
-            metavar="CONTENT_TYPE",
-        ),
-    ] = None,
-    definition_id: Annotated[
-        str | None,
-        typer.Option(
-            "--definition-id",
-            "-d",
-            help="The definition ID to use for the run. Required for certain run types like ensemble runs.",
-            metavar="DEFINITION_ID",
-        ),
-    ] = None,
-    description: Annotated[
-        str | None,
-        typer.Option(
-            help="An optional description for the new run.",
-            metavar="DESCRIPTION",
-        ),
-    ] = None,
-    execution_class: Annotated[
-        str | None,
-        typer.Option(
-            "--execution-class",
-            "-e",
-            help="The execution class to use for the run, if applicable.",
-            metavar="EXECUTION_CLASS",
-        ),
-    ] = None,
+    # Options for controlling input.
     input: Annotated[
         str | None,
         typer.Option(
@@ -70,22 +36,10 @@ def create(
             help="The input location to use. File or directory depending on content type. "
             "Uses [magenta]stdin[/magenta] if not defined.",
             metavar="INPUT_LOCATION",
+            rich_help_panel="Input control",
         ),
     ] = None,
-    instance_id: Annotated[
-        str | None,
-        typer.Option(
-            help="The instance ID to use for the run.",
-            metavar="INSTANCE_ID",
-        ),
-    ] = "latest",
-    integration_id: Annotated[
-        str | None,
-        typer.Option(
-            help="The integration ID to use for the run, if applicable.",
-            metavar="INTEGRATION_ID",
-        ),
-    ] = None,
+    # Options for controlling output.
     logs: Annotated[
         str | None,
         typer.Option(
@@ -95,33 +49,7 @@ def create(
             "Activates [code]--wait[/code] if not set. "
             "Use [code]--tail[/code] to stream logs to [magenta]stdout[/magenta].",
             metavar="LOGS_OUTPUT",
-        ),
-    ] = None,
-    name: Annotated[
-        str | None,
-        typer.Option(
-            "--name",
-            "-n",
-            help="An optional name for the new run.",
-            metavar="NAME",
-        ),
-    ] = None,
-    no_queuing: Annotated[
-        bool,
-        typer.Option(
-            "--no-queuing",
-            help="Do not queue run. Default is [magenta]False[/magenta], "
-            "meaning the run [italic]will[/italic] be queued.",
-        ),
-    ] = False,
-    options: Annotated[
-        list[str],
-        typer.Option(
-            "--options",
-            "-o",
-            help="Options passed to the run. Format: [magenta]key=value[/magenta]. "
-            "Pass multiple options by repeating the flag, or separating with commas.",
-            metavar="KEY=VALUE",
+            rich_help_panel="Output control",
         ),
     ] = None,
     output: Annotated[
@@ -133,31 +61,7 @@ def create(
             "A file or directory will be created depending on content type. "
             "Activates [code]--wait[/code] if not set.",
             metavar="OUTPUT_LOCATION",
-        ),
-    ] = None,
-    priority: Annotated[
-        int,
-        typer.Option(
-            help="The priority of the run. Priority is between 1 and 10, with 1 being the highest priority.",
-            metavar="PRIORITY",
-        ),
-    ] = 6,
-    run_type: Annotated[
-        RunType,
-        typer.Option(
-            "--run-type",
-            "-r",
-            help=f"The type of run to create. Allowed values are: {[v.value for v in RunType.__members__.values()]}",
-            metavar="RUN_TYPE",
-        ),
-    ] = RunType.STANDARD,
-    secret_collection_id: Annotated[
-        str | None,
-        typer.Option(
-            "--secret-collection-id",
-            "-s",
-            help="The secret collection ID to use for the run, if applicable.",
-            metavar="SECRET_COLLECTION_ID",
+            rich_help_panel="Output control",
         ),
     ] = None,
     tail: Annotated[
@@ -167,15 +71,9 @@ def create(
             "-t",
             help="Tail the logs until the run completes. Logs are streamed to [magenta]stdout[/magenta]. "
             "Activates [code]--wait[/code] if not set. Specify log output location with [code]--logs[/code].",
+            rich_help_panel="Output control",
         ),
     ] = False,
-    timeout: Annotated[
-        int,
-        typer.Option(
-            help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
-            metavar="TIMEOUT_SECONDS",
-        ),
-    ] = -1,
     wait: Annotated[
         bool,
         typer.Option(
@@ -184,8 +82,131 @@ def create(
             help="Wait for the run to complete. Activates polling for the result. "
             "Run result is printed to [magenta]stdout[/magenta] for [magenta]json[/magenta], "
             "to a directory for [magenta]multi-file[/magenta]. Specify output location with [code]--output[/code].",
+            rich_help_panel="Output control",
         ),
     ] = False,
+    # Options for run configuration.
+    content_type: Annotated[
+        InputFormat | None,
+        typer.Option(
+            "--content-type",
+            "-c",
+            help="The content type of the run to create. Allowed values are: "
+            f"{[v.value for v in InputFormat.__members__.values()]}",
+            metavar="CONTENT_TYPE",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    definition_id: Annotated[
+        str | None,
+        typer.Option(
+            "--definition-id",
+            "-d",
+            help="The definition ID to use for the run. Required for certain run types like ensemble runs.",
+            metavar="DEFINITION_ID",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    description: Annotated[
+        str | None,
+        typer.Option(
+            help="An optional description for the new run.",
+            metavar="DESCRIPTION",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    execution_class: Annotated[
+        str | None,
+        typer.Option(
+            "--execution-class",
+            "-e",
+            help="The execution class to use for the run, if applicable.",
+            metavar="EXECUTION_CLASS",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    instance_id: Annotated[
+        str | None,
+        typer.Option(
+            help="The instance ID to use for the run.",
+            metavar="INSTANCE_ID",
+            rich_help_panel="Run configuration",
+        ),
+    ] = "latest",
+    integration_id: Annotated[
+        str | None,
+        typer.Option(
+            help="The integration ID to use for the run, if applicable.",
+            metavar="INTEGRATION_ID",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="An optional name for the new run.",
+            metavar="NAME",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    no_queuing: Annotated[
+        bool,
+        typer.Option(
+            "--no-queuing",
+            help="Do not queue run. Default is [magenta]False[/magenta], "
+            "meaning the run [italic]will[/italic] be queued.",
+            rich_help_panel="Run configuration",
+        ),
+    ] = False,
+    options: Annotated[
+        list[str],
+        typer.Option(
+            "--options",
+            "-o",
+            help="Options passed to the run. Format: [magenta]key=value[/magenta]. "
+            "Pass multiple options by repeating the flag, or separating with commas.",
+            metavar="KEY=VALUE",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    priority: Annotated[
+        int,
+        typer.Option(
+            help="The priority of the run. Priority is between 1 and 10, with 1 being the highest priority.",
+            metavar="PRIORITY",
+            rich_help_panel="Run configuration",
+        ),
+    ] = 6,
+    run_type: Annotated[
+        RunType,
+        typer.Option(
+            "--run-type",
+            "-r",
+            help=f"The type of run to create. Allowed values are: {[v.value for v in RunType.__members__.values()]}",
+            metavar="RUN_TYPE",
+            rich_help_panel="Run configuration",
+        ),
+    ] = RunType.STANDARD,
+    secret_collection_id: Annotated[
+        str | None,
+        typer.Option(
+            "--secret-collection-id",
+            "-s",
+            help="The secret collection ID to use for the run, if applicable.",
+            metavar="SECRET_COLLECTION_ID",
+            rich_help_panel="Run configuration",
+        ),
+    ] = None,
+    timeout: Annotated[
+        int,
+        typer.Option(
+            help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
+            metavar="TIMEOUT_SECONDS",
+            rich_help_panel="Run configuration",
+        ),
+    ] = -1,
     profile: ProfileOption = None,
 ) -> None:
     """

@@ -14,6 +14,7 @@ epilog of the Typer application defined below.
 """
 
 import os
+from typing import Annotated
 
 import typer
 from rich.prompt import Confirm
@@ -24,6 +25,7 @@ from nextmv.cli.configuration import app as configuration_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.message import error, info, success, warning
 from nextmv.cli.version import app as version_app
+from nextmv.cli.version import version_callback
 
 # Main CLI application.
 app = typer.Typer(
@@ -32,6 +34,7 @@ app = typer.Typer(
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["--help", "-h"]},
     no_args_is_help=True,
+    invoke_without_command=True,
 )
 
 # Register subcommands. The `name` parameter is required when the subcommand
@@ -43,7 +46,18 @@ app.add_typer(version_app)
 
 
 @app.callback()
-def callback(ctx: typer.Context) -> None:
+def callback(
+    ctx: typer.Context,
+    version: Annotated[
+        bool | None,
+        typer.Option(
+            "--version",
+            "-v",
+            help="Show the current version of the Nextmv CLI.",
+            callback=version_callback,
+        ),
+    ] = None,
+) -> None:
     """
     Callback function that runs before any command. Useful for checks on the
     environment.
