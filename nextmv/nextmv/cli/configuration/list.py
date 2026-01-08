@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from nextmv.cli.configuration.config import API_KEY_KEY, ENDPOINT_KEY, load_config, obscure_api_key
-from nextmv.cli.error import error
+from nextmv.cli.message import error
 
 # Set up subcommand application.
 app = typer.Typer()

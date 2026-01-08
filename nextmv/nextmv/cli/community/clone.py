@@ -13,7 +13,7 @@ import rich
 import typer
 
 from nextmv.cli.community.list import download_file, download_manifest, find_app, versions_table
-from nextmv.cli.error import error
+from nextmv.cli.message import error, success
 from nextmv.cli.options import ProfileOption
 
 # Set up subcommand application.
@@ -134,8 +134,8 @@ def clone(
     # Remove the tarball after extraction
     os.remove(downloaded_object)
 
-    rich.print(
-        f":white_check_mark: Successfully cloned the [magenta]{app}[/magenta] community app, "
+    success(
+        f"Successfully cloned the [magenta]{app}[/magenta] community app, "
         f"using version [magenta]{original_version}[/magenta] in path: [magenta]{full_destination}[/magenta]."
     )
 

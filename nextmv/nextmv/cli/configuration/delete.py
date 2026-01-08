@@ -4,12 +4,11 @@ This module defines the configuration delete command for the Nextmv CLI.
 
 from typing import Annotated
 
-import rich
 import typer
 from rich.prompt import Confirm
 
 from nextmv.cli.configuration.config import load_config, save_config
-from nextmv.cli.error import error
+from nextmv.cli.message import error, info, success
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -38,18 +37,18 @@ def delete(
     """
     config = load_config()
     if profile not in config:
-        error(f"Profile [bold magenta]{profile}[/bold magenta] does not exist.")
+        error(f"Profile [magenta]{profile}[/magenta] does not exist.")
 
     confirm = Confirm.ask(
-        f"Are you sure you want to delete profile [bold magenta]{profile}[/bold magenta]? This action cannot be undone",
+        f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone",
         default=False,
     )
 
     if not confirm:
-        rich.print(f":bulb: Profile [bold magenta]{profile}[/bold magenta] will not be deleted.")
+        info(msg=f"Profile [magenta]{profile}[/magenta] will not be deleted.", emoji=":bulb:")
         return
 
     del config[profile]
     save_config(config)
 
-    rich.print(f":white_check_mark: Profile [bold magenta]{profile}[/bold magenta] deleted successfully.")
+    success(f"Profile [magenta]{profile}[/magenta] deleted successfully.")

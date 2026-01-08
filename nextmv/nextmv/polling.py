@@ -128,6 +128,14 @@ class PollingOptions:
     return True to stop the polling and False to continue. The function does
     not receive any arguments. The function is called before each poll.
     """
+    sleep_duration_func: Callable[[], float] | None = None
+    """
+    Optional function to calculate the sleep duration between polls. If provided,
+    this function will be called to determine how long to sleep instead of using
+    the default exponential backoff calculation. The function should return a
+    float representing the sleep duration in seconds. The function does not
+    receive any arguments and is called before each sleep.
+    """
 
 
 DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
@@ -255,23 +263,29 @@ def poll(  # noqa: C901
             )
 
         # Calculate the delay.
-        if max_reached:
-            # If we already reached the maximum, we don't want to further calculate the
-            # delay to avoid overflows.
-            delay = polling_options.max_delay
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+        if polling_options.sleep_duration_func is not None:
+            # Use the custom sleep duration function if provided.
+            sleep_duration = polling_options.sleep_duration_func()
         else:
-            delay = polling_options.delay  # Base
-            delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
-            delay += random.uniform(0, polling_options.jitter)  # Add jitter.
+            # Calculate delay using exponential backoff with jitter.
+            if max_reached:
+                # If we already reached the maximum, we don't want to further calculate the
+                # delay to avoid overflows.
+                delay = polling_options.max_delay
+            else:
+                delay = polling_options.delay  # Base
+                delay += polling_options.backoff * (2**ix)  # Add exponential backoff.
 
-        # We cannot exceed the max delay.
-        if delay >= polling_options.max_delay:
-            max_reached = True
-            delay = polling_options.max_delay
+            # We cannot exceed the max delay.
+            if delay >= polling_options.max_delay:
+                max_reached = True
+                delay = polling_options.max_delay
 
-        # Sleep for the calculated delay.
-        sleep_duration = delay
+            # Add jitter.
+            delay += random.uniform(0, polling_options.jitter)
+
+            sleep_duration = delay
+
         if polling_options.verbose:
             log(f"polling | sleeping for duration: {sleep_duration}")
 

@@ -1031,6 +1031,43 @@ class RunLog(BaseModel):
     """Log of the run."""
 
 
+class TimestampedRunLog(BaseModel):
+    """
+    Timestamped log entry of a run.
+
+    You can import the `TimestampedRunLog` class directly from `nextmv`:
+
+    ```python
+    from nextmv import TimestampedRunLog
+    ```
+
+    Parameters
+    ----------
+    timestamp : datetime
+        Timestamp of the log entry.
+    log : str
+        Log message.
+
+    Examples
+    --------
+    >>> from nextmv import TimestampedRunLog
+    >>> from datetime import datetime
+    >>> log_entry = TimestampedRunLog(
+    ...     timestamp=datetime(2023, 1, 1, 12, 0, 0),
+    ...     log="Optimization started"
+    ... )
+    >>> log_entry.timestamp
+    datetime.datetime(2023, 1, 1, 12, 0)
+    >>> log_entry.log
+    'Optimization started'
+    """
+
+    timestamp: datetime
+    """Timestamp of the log entry."""
+    log: str
+    """Log message."""
+
+
 class RunQueuing(BaseModel):
     """
     RunQueuing configuration for a run.
