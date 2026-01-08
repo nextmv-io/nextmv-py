@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.error import error
+from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
 
 # Set up subcommand application.

@@ -7,7 +7,7 @@ from typing import Any
 
 import yaml
 
-from nextmv.cli.error import error
+from nextmv.cli.message import error
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 

@@ -12,7 +12,7 @@ import rich
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.error import error
+from nextmv.cli.message import error, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
@@ -69,7 +69,7 @@ def create(
             "-i",
             help="The input location to use. File or directory depending on content type. "
             "Uses [magenta]stdin[/magenta] if not defined.",
-            metavar="INPUT_DATA",
+            metavar="INPUT_LOCATION",
         ),
     ] = None,
     instance_id: Annotated[
@@ -91,8 +91,9 @@ def create(
         typer.Option(
             "--logs",
             "-l",
-            help="The location to stream the logs to. They will also be streamed to [magenta]stdout[/magenta]. "
-            "Activates [code]--tail[/code] if not set.",
+            help="Waits for the run to complete and saves the logs to this location. "
+            "Activates [code]--wait[/code] if not set. "
+            "Use [code]--tail[/code] to stream logs to [magenta]stdout[/magenta].",
             metavar="LOGS_OUTPUT",
         ),
     ] = None,
@@ -128,9 +129,10 @@ def create(
         typer.Option(
             "--output",
             "-u",
-            help="The output location to use. A file or directory will be created depending on content type."
+            help="Waits for the run to complete and save the output to this location. "
+            "A file or directory will be created depending on content type. "
             "Activates [code]--wait[/code] if not set.",
-            metavar="OUTPUT_DATA",
+            metavar="OUTPUT_LOCATION",
         ),
     ] = None,
     priority: Annotated[
@@ -164,7 +166,7 @@ def create(
             "--tail",
             "-t",
             help="Tail the logs until the run completes. Logs are streamed to [magenta]stdout[/magenta]. "
-            "Activates [code]--wait[/code] if not set.",
+            "Activates [code]--wait[/code] if not set. Specify log output location with [code]--logs[/code].",
         ),
     ] = False,
     timeout: Annotated[
@@ -181,7 +183,7 @@ def create(
             "-w",
             help="Wait for the run to complete. Activates polling for the result. "
             "Run result is printed to [magenta]stdout[/magenta] for [magenta]json[/magenta], "
-            "to a directory for [magenta]multi-file[/magenta].",
+            "to a directory for [magenta]multi-file[/magenta]. Specify output location with [code]--output[/code].",
         ),
     ] = False,
     profile: ProfileOption = None,
@@ -305,21 +307,16 @@ def create(
 
         return
 
-    rich.print(f":white_check_mark: Run [magenta]{run_id}[/magenta] created.")
+    success(f"Run [magenta]{run_id}[/magenta] created.")
 
     # Handle what happens after the run is created for logging and result
     # retrieval.
-    handle_logging(
-        tail=tail,
+    handle_outputs(
+        cloud_app=cloud_app,
         logs=logs,
-        cloud_app=cloud_app,
-        run_id=run_id,
-        polling_options=polling_options,
-    )
-    handle_results(
         output=output,
-        cloud_app=cloud_app,
         run_id=run_id,
+        tail=tail,
         polling_options=polling_options,
     )
 
@@ -480,70 +477,30 @@ def resolve_input_kwarg(
     error(f"Input path [magenta]{input}[/magenta] does not exist.")
 
 
-def handle_logging(
-    tail: bool,
-    logs: str | None,
+def handle_outputs(
     cloud_app: Application,
+    logs: str | None,
+    output: str | None,
     run_id: str,
+    tail: bool,
     polling_options: PollingOptions,
 ) -> None:
     """
-    Handles the logging for the run creation command. It tails the logs
-    until the run completes if [code]--tail[/code] is specified or if
-    [code]--logs[/code] is specified. If [code]--logs[/code] is specified, it
-    writes the logs to the specified file.
+    Handles retrieving and outputting the results from a completed run. This
+    includes the logs.
+
+    This function retrieves the run result based on the output format and
+    either prints it to stdout, writes it to a file, or downloads it to a
+    directory depending on the content type (JSON, TEXT, multi-file, or
+    csv-archive). It also manages writing the run logs to a specified file if
+    requested.
 
     Parameters
     ----------
     tail : bool
         Whether to tail the logs until the run completes.
     logs : str | None
-        The location to write the logs to, if specified.
-    cloud_app : Application
-        The cloud application instance.
-    run_id : str
-        The ID of the run.
-    polling_options : PollingOptions
-        The polling options to use for tailing the logs.
-    """
-
-    if not tail and logs is None:
-        rich.print(":hourglass_flowing_sand: Waiting for run to complete...")
-
-        return
-
-    # If logs tailing/fetching is enabled, use it as the polling strategy.
-    rich.print(":hourglass_flowing_sand: Tailing logs and waiting for run to complete...")
-    run_logs = cloud_app.run_logs_with_polling(
-        run_id=run_id,
-        verbose=True,
-        rich_print=True,
-        polling_options=polling_options,
-    )
-    if logs is not None:
-        log_path = Path(logs)
-        with log_path.open("w") as f:
-            for log_entry in run_logs:
-                f.write(log_entry.log)
-
-        rich.print(f":white_check_mark: Run logs written to [magenta]{logs}[/magenta].")
-
-
-def handle_results(
-    output: str | None,
-    cloud_app: Application,
-    run_id: str,
-    polling_options: PollingOptions,
-) -> None:
-    """
-    Handles retrieving and outputting the results from a completed run.
-
-    This function retrieves the run result based on the output format and either
-    prints it to stdout, writes it to a file, or downloads it to a directory
-    depending on the content type (JSON, TEXT, multi-file, or csv-archive).
-
-    Parameters
-    ----------
+        The location to write the logs. If None, logs are not written to a file.
     output : str | None
         The location to write the output. For JSON/TEXT formats, this is a file
         path. For multi-file/csv-archive formats, this is a directory path. If
@@ -557,21 +514,51 @@ def handle_results(
         The polling options to use when waiting for the run to complete.
     """
 
+    # If logs tailing is enabled, use it as the polling strategy. We use the
+    # chance to gather the logs.
+    if tail:
+        info(msg="Tailing logs and waiting for the run to complete...", emoji=":hourglass_flowing_sand:")
+        run_logs = cloud_app.run_logs_with_polling(
+            run_id=run_id,
+            verbose=True,
+            rich_print=True,
+            polling_options=polling_options,
+        )
+    else:
+        info(msg="Waiting for the run to complete...", emoji=":hourglass_flowing_sand:")
+
     # Get the run metadata to determine how to operate with the output.
-    info = cloud_app.run_metadata(run_id=run_id)
-    content_type = info.metadata.format.format_output.output_type
+    run_info = cloud_app.run_metadata(run_id=run_id)
+    content_type = run_info.metadata.format.format_output.output_type
 
     # Get the run result, using output directory if needed.
     kwargs = {
         "run_id": run_id,
         "polling_options": polling_options,
     }
+
     if content_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
         if output is None or output == "":
             output = run_id
+
         kwargs["output_dir_path"] = output
 
     run_result = cloud_app.run_result_with_polling(**kwargs)
+
+    # If logs output is specified, write the logs to the specified file.
+    if logs is not None:
+        log_path = Path(logs)
+        if tail:
+            with log_path.open("w") as f:
+                for log_entry in run_logs:
+                    f.write(log_entry.log)
+
+        else:
+            run_logs = cloud_app.run_logs(run_id=run_id)
+            with log_path.open("w") as f:
+                f.write(run_logs.log)
+
+        success(f"Run logs written to [magenta]{logs}[/magenta].")
 
     # Handle the case where output is embedded directly in the result: json and
     # text.
@@ -583,13 +570,14 @@ def handle_results(
         else:
             with open(output, "w") as f:
                 json.dump(run_result.to_dict(), f, indent=2)
-                rich.print(f":white_check_mark: Run output written to [magenta]{output}[/magenta].")
+
+            success(f"Run output written to [magenta]{output}[/magenta].")
 
         return
 
     # At this point, we know that the output is multi-file or csv-archive, which
     # means we need to handle the output directory.
-    rich.print(f":white_check_mark: Run outputs downloaded to [magenta]{output}[/magenta]. Here is the metadata:")
+    success(f"Run outputs downloaded to [magenta]{output}[/magenta]. Here is the metadata:")
     result_dict = run_result.to_dict()
     del result_dict["output"]
     rich.print(result_dict)

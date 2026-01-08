@@ -27,6 +27,7 @@ import json
 import os
 import pathlib
 import shutil
+import sys
 import tarfile
 import tempfile
 from dataclasses import dataclass
@@ -2867,7 +2868,7 @@ class Application:
                 if verbose:
                     msg = f"[{log_entry.timestamp}] {log_entry.log}"
                     if rich_print:
-                        rich.print(msg)
+                        rich.print(msg, file=sys.stderr)
                     else:
                         print(msg)
 

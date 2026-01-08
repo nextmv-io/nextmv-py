@@ -4,7 +4,6 @@ This module defines the configuration create command for the Nextmv CLI.
 
 from typing import Annotated
 
-import rich
 import typer
 
 from nextmv.cli.configuration.config import (
@@ -15,7 +14,7 @@ from nextmv.cli.configuration.config import (
     obscure_api_key,
     save_config,
 )
-from nextmv.cli.error import error
+from nextmv.cli.message import error, info, success
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -88,8 +87,8 @@ def create(
 
     save_config(config)
 
-    rich.print(":white_check_mark: Configuration saved successfully.")
-    rich.print(f"\t[bold]Profile[/bold]: {profile or 'Default'}")
-    rich.print(f"\t[bold]API Key[/bold]: {obscure_api_key(api_key)}")
+    success("Configuration saved successfully.")
+    info(f"\t[bold]Profile[/bold]: {profile or 'Default'}")
+    info(f"\t[bold]API Key[/bold]: {obscure_api_key(api_key)}")
     if endpoint != DEFAULT_ENDPOINT:
-        rich.print(f"\t[bold]Endpoint[/bold]: {endpoint}")
+        info(f"\t[bold]Endpoint[/bold]: {endpoint}")
