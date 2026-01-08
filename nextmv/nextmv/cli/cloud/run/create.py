@@ -5,6 +5,7 @@ This module defines the community clone command for the Nextmv CLI.
 import json
 import sys
 import tarfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -339,6 +340,7 @@ def create(
         run_id=run_id,
         tail=tail,
         polling_options=polling_options,
+        result_callback=cloud_app.run_result_with_polling,
     )
 
 
@@ -555,7 +557,6 @@ def handle_outputs(
     # Get the run result, using output directory if needed.
     kwargs = {
         "run_id": run_id,
-        "polling_options": polling_options,
     }
 
     if content_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
@@ -564,7 +565,7 @@ def handle_outputs(
 
         kwargs["output_dir_path"] = output
 
-    run_result = cloud_app.run_result_with_polling(**kwargs)
+    run_result = result_callback(**kwargs)
 
     # If logs output is specified, write the logs to the specified file.
     if logs is not None:
