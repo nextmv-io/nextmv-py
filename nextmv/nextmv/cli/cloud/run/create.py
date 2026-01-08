@@ -222,7 +222,7 @@ def create(
 
     Use the [code]--tail[/code] flag to stream logs to
     [magenta]stdout[/magenta] until the run completes, polling for results.
-    Using the [code]--logs[/code] flag will also activate tailing, and allows
+    Using the [code]--logs[/code] flag will also activate waiting, and allows
     you to specify a file to write the logs to.
 
     An application run executes against a specific instance. An instance
@@ -265,7 +265,7 @@ def create(
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-      Tail the run's logs, waiting for the run to complete, write the result to an [magenta]output.json[/magenta] file
+      Wait for the run to complete, and write the result to an [magenta]output.json[/magenta] file
       and the logs to a [magenta]logs.log[/magenta] file.
         $ [green]nextmv cloud run create --app-id hare-app --input input.json \\
             --output output.json --logs logs.log[/green]
