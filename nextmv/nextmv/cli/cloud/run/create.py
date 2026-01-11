@@ -1,5 +1,5 @@
 """
-This module defines the community clone command for the Nextmv CLI.
+This module defines the cloud run create command for the Nextmv CLI.
 """
 
 import json
@@ -12,12 +12,13 @@ import rich
 import typer
 
 from nextmv.cli.cloud.run.get import handle_outputs
+from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, info, success
+from nextmv.cli.message import error, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
-from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions
+from nextmv.polling import DEFAULT_POLLING_OPTIONS
 from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
 
 # Set up subcommand application.
@@ -46,7 +47,7 @@ def create(
             "--logs",
             "-l",
             help="Waits for the run to complete and saves the logs to this location.",
-            metavar="LOGS_OUTPUT",
+            metavar="LOGS_LOCATION",
             rich_help_panel="Output control",
         ),
     ] = None,
@@ -345,6 +346,7 @@ def create(
         tail=tail,
         logs=logs,
         polling_options=polling_options,
+        file_output=True,
     )
     handle_outputs(
         cloud_app=cloud_app,
@@ -510,63 +512,3 @@ def resolve_input_kwarg(
         return {"input_dir_path": input}
 
     error(f"Input path [magenta]{input}[/magenta] does not exist.")
-
-
-def handle_logs(
-    cloud_app: Application,
-    run_id: str,
-    tail: bool,
-    logs: str | None,
-    polling_options: PollingOptions,
-) -> None:
-    """
-    Handle retrieving and outputting logs from a run.
-
-    If neither ``tail`` is True nor ``logs`` is specified, this function
-    returns early without doing anything. Otherwise, logs are retrieved and
-    optionally written to a file.
-
-    When ``tail`` is True, logs are streamed in real-time to stderr as the run
-    executes. When ``logs`` is specified (without tailing), the function waits
-    for the run to complete and then fetches all logs at once. In both cases,
-    if a ``logs`` file path is provided, the logs are persisted to that file.
-
-    Parameters
-    ----------
-    cloud_app : Application
-        The cloud application instance used to interact with the Nextmv Cloud
-        API.
-    run_id : str
-        The unique identifier of the run to retrieve logs for.
-    tail : bool
-        If True, streams logs in real-time to stderr as the run executes.
-    logs : str | None
-        The file path where logs should be written. If None, logs are only
-        displayed to stderr (when tailing) and not persisted to a file.
-    polling_options : PollingOptions
-        Configuration options for polling behavior, including timeout and
-        interval settings.
-    """
-
-    if tail:
-        info(msg="Tailing logs...", emoji=":hourglass_flowing_sand:")
-        fetched_logs = cloud_app.run_logs_with_polling(
-            run_id=run_id,
-            polling_options=polling_options,
-            verbose=True,
-            rich_print=True,
-        )
-        if logs is None:
-            return
-
-        log_content = "".join(log_entry.log for log_entry in fetched_logs)
-    elif logs is not None:
-        info(msg="Getting run logs...", emoji=":hourglass_flowing_sand:")
-        cloud_app.run_result_with_polling(run_id=run_id, polling_options=polling_options)
-        run_logs = cloud_app.run_logs(run_id=run_id)
-        log_content = run_logs.log
-    else:
-        return
-
-    Path(logs).write_text(log_content)
-    success(f"Run logs written to [magenta]{logs}[/magenta].")

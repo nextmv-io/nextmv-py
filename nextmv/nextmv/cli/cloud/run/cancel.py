@@ -1,5 +1,5 @@
 """
-This module defines the community clone command for the Nextmv CLI.
+This module defines the cloud run cancel command for the Nextmv CLI.
 """
 
 import rich
