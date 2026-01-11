@@ -687,6 +687,23 @@ class Metadata(BaseModel):
     statistics: dict[str, Any] | None = None
     """User defined statistics of the run."""
 
+    def run_is_finalized(self) -> bool:
+        """
+        Checks if the run has reached a finalized state.
+
+        Returns
+        -------
+        bool
+            True if the run status is one of `succeeded`, `failed`, or
+            `canceled`. False otherwise.
+        """
+
+        return self.status_v2 in {
+            StatusV2.succeeded,
+            StatusV2.failed,
+            StatusV2.canceled,
+        }
+
 
 class SyncedRun(BaseModel):
     """

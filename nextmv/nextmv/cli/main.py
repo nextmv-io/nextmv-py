@@ -87,7 +87,7 @@ def handle_go_cli() -> None:
         else:
             info(
                 msg="You can delete the [italic red]deprecated[/italic red] Nextmv CLI later by removing "
-                f"[italic]{GO_CLI_PATH}[/italic]. Make sure you also clean up your [code]PATH[/code].",
+                f"[magenta]{GO_CLI_PATH}[/magenta]. Make sure you also clean up your [code]PATH[/code].",
                 emoji=":bulb:",
             )
 
@@ -127,7 +127,7 @@ def go_cli_exists() -> bool:
     if exists:
         warning(
             "A [italic red]deprecated[/italic red] Nextmv CLI is installed at "
-            f"[italic]{GO_CLI_PATH}[/italic]. You must delete it to avoid conflicts."
+            f"[magenta]{GO_CLI_PATH}[/magenta]. You must delete it to avoid conflicts."
         )
 
     check_config_in_path()
@@ -157,6 +157,6 @@ def check_config_in_path() -> None:
 
     if config_dir_str in path_dirs:
         warning(
-            f"[italic]{CONFIG_DIR}[/italic] was found in your [code]PATH[/code]. "
-            f"You should remove any entries related to [italic]{CONFIG_DIR}[/italic] from your [code]PATH[/code]."
+            f"[magenta]{CONFIG_DIR}[/magenta] was found in your [code]PATH[/code]. "
+            f"You should remove any entries related to [magenta]{CONFIG_DIR}[/magenta] from your [code]PATH[/code]."
         )

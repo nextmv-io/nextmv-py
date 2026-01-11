@@ -2870,7 +2870,7 @@ class Application:
                     if rich_print:
                         rich.print(msg, file=sys.stderr)
                     else:
-                        print(msg)
+                        log(msg)
 
                 logs.append(log_entry)
 
@@ -2994,11 +2994,7 @@ class Application:
 
         def polling_func() -> tuple[Any, bool]:
             run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status_v2 in {
-                StatusV2.succeeded,
-                StatusV2.failed,
-                StatusV2.canceled,
-            }:
+            if run_information.metadata.run_is_finalized():
                 return run_information, True
 
             return None, False
