@@ -94,14 +94,14 @@ def info(msg: str, emoji: str | None = None) -> None:
     rich.print(msg, file=sys.stderr)
 
 
-def print_json(data: dict[str, Any]) -> None:
+def print_json(data: dict[str, Any] | list[dict[str, Any]]) -> None:
     """
-    Pretty-print a dictionary as JSON to stdout.
+    Pretty-print json-serializable data as JSON to stdout.
 
     Parameters
     ----------
-    data : dict[str, Any]
-        The dictionary data to print as JSON.
+    data : dict[str, Any] | list[dict[str, Any]]
+        The data to print as JSON.
     """
 
     rich.print_json(data=data)

@@ -2725,10 +2725,10 @@ class Application:
 
         # See whether we can attach the output directly or need to save to the given
         # directory
-        if run_information.metadata.format.format_output.output_type != OutputFormat.JSON:
+        if run_information.metadata.format.format_input.input_type != OutputFormat.JSON:
             if not output_dir_path or output_dir_path == "":
                 raise ValueError(
-                    "If the output format is not JSON, an output_dir_path must be provided.",
+                    "If the input format is not JSON, an output_dir_path must be provided.",
                 )
             if not os.path.exists(output_dir_path):
                 os.makedirs(output_dir_path, exist_ok=True)

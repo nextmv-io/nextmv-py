@@ -24,11 +24,11 @@ def cancel(
     [bold][underline]Examples[/underline][/bold]
 
     - Cancel the run with ID [magenta]burrow-123[/magenta] belonging to an app with ID [magenta]hare-app[/magenta].
-        $ [green]cat input.json | nextmv cloud run cancel --app-id hare-app --run-id burrow-123[/green]
+        $ [green]nextmv cloud run cancel --app-id hare-app --run-id burrow-123[/green]
 
     - Cancel the run with ID [magenta]burrow-123[/magenta] belonging to an app with ID [magenta]hare-app[/magenta].
       Use the profile named [magenta]hare[/magenta].
-        $ [green]cat input.json | nextmv cloud run cancel --app-id hare-app --run-id burrow-123 --profile hare[/green]
+        $ [green]nextmv cloud run cancel --app-id hare-app --run-id burrow-123 --profile hare[/green]
     """
 
     cloud_app = build_app(app_id, profile)
