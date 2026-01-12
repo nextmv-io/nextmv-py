@@ -2674,8 +2674,8 @@ class Application:
         run_id : str
             ID of the run to retrieve the input for.
         output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
+            Path to a directory where non-JSON input files will be saved. This
+            is required if the input is non-JSON. If the directory does not
             exist, it will be created. Uses the current directory by default.
 
         Returns
