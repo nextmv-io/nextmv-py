@@ -2723,7 +2723,7 @@ class Application:
             headers={"Content-Type": "application/json"},
         )
 
-        # See whether we can attach the output directly or need to save to the given
+        # See whether we can return the input directly or need to save to the given
         # directory
         if run_information.metadata.format.format_output.output_type != OutputFormat.JSON:
             if not output_dir_path or output_dir_path == "":
