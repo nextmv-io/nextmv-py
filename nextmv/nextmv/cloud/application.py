@@ -2674,8 +2674,8 @@ class Application:
         run_id : str
             ID of the run to retrieve the input for.
         output_dir_path : Optional[str], default="."
-            Path to a directory where non-JSON output files will be saved. This
-            is required if the output is non-JSON. If the directory does not
+            Path to a directory where non-JSON input files will be saved. This
+            is required if the input is non-JSON. If the directory does not
             exist, it will be created. Uses the current directory by default.
 
         Returns
@@ -2702,8 +2702,8 @@ class Application:
         large = False
         if (
             run_information.metadata.input_size > _MAX_RUN_SIZE
-            or run_information.metadata.format.format_output.output_type
-            in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}
+            or run_information.metadata.format.format_input.input_type
+            in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}
         ):
             query_params = {"format": "url"}
             large = True
@@ -2723,7 +2723,7 @@ class Application:
             headers={"Content-Type": "application/json"},
         )
 
-        # See whether we can attach the output directly or need to save to the given
+        # See whether we can return the input directly or need to save to the given
         # directory
         if run_information.metadata.format.format_input.input_type != OutputFormat.JSON:
             if not output_dir_path or output_dir_path == "":
@@ -2742,7 +2742,7 @@ class Application:
 
             return
 
-        # JSON output can be returned directly.
+        # JSON input can be returned directly.
         return download_response.json()
 
     def run_metadata(self, run_id: str) -> RunInformation:

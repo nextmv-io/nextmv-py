@@ -1,5 +1,5 @@
 """
-This module defines the cloud run logs command for the Nextmv CLI.
+This module defines the cloud run input command for the Nextmv CLI.
 """
 
 import json
@@ -61,7 +61,7 @@ def input(
 
     # If the input is multi-file, we need to provide an `output_dir_path` to
     # save the files to.
-    if run_info.metadata.format.format_output.output_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if run_info.metadata.format.format_input.input_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
         # If no output path is provided, use the run ID as the directory name.
         output = f"{run_id}-input" if output is None or output == "" else output
         cloud_app.run_input(run_id=run_id, output_dir_path=output)
