@@ -5,11 +5,10 @@ This module defines the cloud run get command for the Nextmv CLI.
 import json
 from typing import Annotated
 
-import rich
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, success
+from nextmv.cli.message import info, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.output import OutputFormat
@@ -30,7 +29,7 @@ def get(
             "-o",
             help="Waits for the run to complete and save the output to this location. "
             "A file or directory will be created depending on content type.",
-            metavar="OUTPUT_LOCATION",
+            metavar="OUTPUT_PATH",
         ),
     ] = None,
     timeout: Annotated[
@@ -53,7 +52,7 @@ def get(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get the result of a Nextmv Cloud application run.
+    Get the result (output) of a Nextmv Cloud application run.
 
     Use the [code]--wait[/code] flag to wait for the run to complete, polling
     for results. Using the [code]--output[/code] flag will also activate
@@ -161,7 +160,7 @@ def handle_outputs(
 
     # For MULTI_FILE and CSV_ARCHIVE, we need output_dir_path.
     if content_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
-        output_dir = output if output else run_id
+        output_dir = f"{run_id}-output" if output is None or output == "" else output
         kwargs["output_dir_path"] = output_dir
 
     # Always poll for results since we can't guarantee the run is done.
@@ -177,7 +176,7 @@ def handle_outputs(
     # Handle the case where output is embedded directly in the result: json and text.
     if content_type in {OutputFormat.JSON, OutputFormat.TEXT}:
         if output is None or output == "":
-            rich.print(run_result.to_dict())
+            print_json(run_result.to_dict())
         else:
             with open(output, "w") as f:
                 json.dump(run_result.to_dict(), f, indent=2)
@@ -197,4 +196,4 @@ def handle_outputs(
             "Here is the metadata."
         )
 
-    rich.print(result_dict)
+    print_json(result_dict)

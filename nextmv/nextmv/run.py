@@ -1449,8 +1449,8 @@ class TrackedRun:
     output : Output or dict[str, Any] or str, optional
         The output of the run being tracked. Please note that if the output
         format is JSON, then the output data must be JSON serializable. If both
-        `output` and `output_dir_path` are specified, the `output` is ignored, and
-        the files in the directory are used instead. Defaults to None.
+        `output` and `output_dir_path` are specified, the `output` is ignored,
+        and the files in the directory are used instead. Defaults to None.
     duration : int, optional
         The duration of the run being tracked, in milliseconds. This field is
         optional. Defaults to None.
@@ -1458,39 +1458,41 @@ class TrackedRun:
         An error message if the run failed. You should only specify this if the
         run failed (the `status` is `TrackedRunStatus.FAILED`), otherwise an
         exception will be raised. This field is optional. Defaults to None.
-    logs : list[str], optional
-        The logs of the run being tracked. Each element of the list is a line in
-        the log. This field is optional. Defaults to None.
+    logs : str or list[str], optional
+        The logs of the run being tracked. If the logs are provided as a list,
+        each element of the list is a line in the log. This field is optional.
+        Defaults to None.
     name : str, optional
         Optional name for the run being tracked. Defaults to None.
     description : str, optional
         Optional description for the run being tracked. Defaults to None.
     input_dir_path : str, optional
         Path to a directory containing input files. If specified, the calling
-        function will package the files in the directory into a tar file and upload
-        it as a large input. This is useful for non-JSON input formats, such as
-        when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `input` and
-        `input_dir_path` are specified, the `input` is ignored, and the files in
-        the directory are used instead. Defaults to None.
+        function will package the files in the directory into a tar file and
+        upload it as a large input. This is useful for non-JSON input formats,
+        such as when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both
+        `input` and `input_dir_path` are specified, the `input` is ignored, and
+        the files in the directory are used instead. Defaults to None.
     output_dir_path : str, optional
         Path to a directory containing output files. If specified, the calling
-        function will package the files in the directory into a tar file and upload
-        it as a large output. This is useful for non-JSON output formats, such as
-        when working with `CSV_ARCHIVE` or `MULTI_FILE`. If both `output` and
-        `output_dir_path` are specified, the `output` is ignored, and the files
-        are saved in the directory instead. Defaults to None.
+        function will package the files in the directory into a tar file and
+        upload it as a large output. This is useful for non-JSON output
+        formats, such as when working with `CSV_ARCHIVE` or `MULTI_FILE`. If
+        both `output` and `output_dir_path` are specified, the `output` is
+        ignored, and the files are saved in the directory instead. Defaults to
+        None.
     statistics : Statistics or dict[str, Any], optional
         Statistics of the run being tracked. Only use this field if you want to
-        track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
-        are working with `JSON` or `TEXT` output formats, this field will be
-        ignored, as the statistics are extracted directly from the `output`.
+        track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If
+        you are working with `JSON` or `TEXT` output formats, this field will
+        be ignored, as the statistics are extracted directly from the `output`.
         This field is optional. Defaults to None.
     assets : list[Asset or dict[str, Any]], optional
-        Assets associated with the run being tracked. Only use this field if you
-        want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output formats.
-        If you are working with `JSON` or `TEXT` output formats, this field will
-        be ignored, as the assets are extracted directly from the `output`.
-        This field is optional. Defaults to None.
+        Assets associated with the run being tracked. Only use this field if
+        you want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output
+        formats. If you are working with `JSON` or `TEXT` output formats, this
+        field will be ignored, as the assets are extracted directly from the
+        `output`. This field is optional. Defaults to None.
 
     Examples
     --------
@@ -1536,8 +1538,8 @@ class TrackedRun:
     ------
     ValueError
         If the status value is invalid, if an error message is provided for a
-        successful run, or if input/output formats are not JSON or
-        input/output dicts are not JSON serializable.
+        successful run, or if input/output formats are not JSON or input/output
+        dicts are not JSON serializable.
     """
 
     status: TrackedRunStatus
@@ -1562,8 +1564,8 @@ class TrackedRun:
     error: str | None = None
     """An error message if the run failed. You should only specify this if the
     run failed, otherwise an exception will be raised."""
-    logs: list[str] | None = None
-    """The logs of the run being tracked. Each element of the list is a line in
+    logs: str | list[str] | None = None
+    """The logs of the run being tracked. If a list, each element is a line in
     the log."""
     name: str | None = None
     """

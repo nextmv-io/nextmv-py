@@ -8,13 +8,12 @@ import tarfile
 from pathlib import Path
 from typing import Annotated, Any
 
-import rich
 import typer
 
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, success
+from nextmv.cli.message import error, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
@@ -34,9 +33,9 @@ def create(
         typer.Option(
             "--input",
             "-i",
-            help="The input location to use. File or directory depending on content type. "
+            help="The input path to use. File or directory depending on content type. "
             "Uses [magenta]stdin[/magenta] if not defined.",
-            metavar="INPUT_LOCATION",
+            metavar="INPUT_PATH",
             rich_help_panel="Input control",
         ),
     ] = None,
@@ -47,7 +46,7 @@ def create(
             "--logs",
             "-l",
             help="Waits for the run to complete and saves the logs to this location.",
-            metavar="LOGS_LOCATION",
+            metavar="LOGS_PATH",
             rich_help_panel="Output control",
         ),
     ] = None,
@@ -58,7 +57,7 @@ def create(
             "-u",
             help="Waits for the run to complete and save the output to this location. "
             "A file or directory will be created depending on content type. ",
-            metavar="OUTPUT_LOCATION",
+            metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
     ] = None,
@@ -290,7 +289,7 @@ def create(
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
-    if stdin is None and input is None:
+    if stdin is None and (input is None or input == ""):
         error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
@@ -332,7 +331,7 @@ def create(
 
     # If we don't need to poll at all we are done.
     if not wait and not tail and output is None and logs is None:
-        rich.print({"run_id": run_id})
+        print_json({"run_id": run_id})
 
         return
 
@@ -362,11 +361,11 @@ def build_run_config(
     run_type: RunType,
     priority: int,
     no_queuing: bool,
-    execution_class: str | None,
-    content_type: InputFormat | None,
-    secret_collection_id: str | None,
-    integration_id: str | None,
-    definition_id: str | None,
+    execution_class: str | None = None,
+    content_type: InputFormat | None = None,
+    secret_collection_id: str | None = None,
+    integration_id: str | None = None,
+    definition_id: str | None = None,
 ) -> RunConfiguration:
     """
     Builds the run configuration for the new run.

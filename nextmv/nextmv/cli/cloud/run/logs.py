@@ -29,7 +29,7 @@ def logs(
             "--output",
             "-o",
             help="Waits for the run to complete and saves the logs to this location.",
-            metavar="LOGS_LOCATION",
+            metavar="OUTPUT_PATH",
         ),
     ] = None,
     tail: Annotated[

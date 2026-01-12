@@ -1,9 +1,10 @@
 """
 The message module is used to print messages to the user with pre-defined
-formatting. User messages are always printed to stderr.
+formatting. Logging, in general, is always printed to stderr.
 """
 
 import sys
+from typing import Any
 
 import rich
 import typer
@@ -91,3 +92,16 @@ def info(msg: str, emoji: str | None = None) -> None:
         return
 
     rich.print(msg, file=sys.stderr)
+
+
+def print_json(data: dict[str, Any]) -> None:
+    """
+    Pretty-print a dictionary as JSON to stdout.
+
+    Parameters
+    ----------
+    data : dict[str, Any]
+        The dictionary data to print as JSON.
+    """
+
+    rich.print_json(data=data)
