@@ -1,5 +1,5 @@
 """
-This module defines the cloud run logs command for the Nextmv CLI.
+This module defines the cloud run list command for the Nextmv CLI.
 """
 
 import json
