@@ -2742,7 +2742,7 @@ class Application:
 
             return
 
-        # JSON output can be returned directly.
+        # JSON input can be returned directly.
         return download_response.json()
 
     def run_metadata(self, run_id: str) -> RunInformation:
