@@ -36,3 +36,17 @@ AppIDOption = Annotated[
         metavar="APP_ID",
     ),
 ]
+
+# run_id option - can be used in any command that requires a run ID.
+# Define it as follows in commands or callbacks, as necessary:
+# run_id: RunIDOption
+RunIDOption = Annotated[
+    str,
+    typer.Option(
+        "--run-id",
+        "-r",
+        help="The Nextmv Cloud run ID to use for this action.",
+        envvar="NEXTMV_RUN_ID",
+        metavar="RUN_ID",
+    ),
+]

@@ -2659,24 +2659,31 @@ class Application:
                 file.write(download_response.content)
             return None
 
-    def run_input(self, run_id: str) -> dict[str, Any]:
+    def run_input(self, run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | None:
         """
         Get the input of a run.
 
         Retrieves the input data that was used for a specific run. This method
         handles both small and large inputs automatically - if the input size
         exceeds the maximum allowed size, it will fetch the input from a
-        download URL.
+        download URL. If the content format of the run is `csv-archive` or
+        `multi-file`, then the `output_dir_path` parameter must be specified.
 
         Parameters
         ----------
         run_id : str
             ID of the run to retrieve the input for.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON input files will be saved. This
+            is required if the input is non-JSON. If the directory does not
+            exist, it will be created. Uses the current directory by default.
 
         Returns
         -------
-        dict[str, Any]
-            Input data of the run as a dictionary.
+        dict[str, Any] | None
+            Input data of the run as a dictionary. If the input format is
+            non-JSON (e.g., csv-archive or multi-file), the method returns None
+            after saving the input files to the specified `output_dir_path`.
 
         Raises
         ------
@@ -2693,7 +2700,11 @@ class Application:
 
         query_params = None
         large = False
-        if run_information.metadata.input_size > _MAX_RUN_SIZE:
+        if (
+            run_information.metadata.input_size > _MAX_RUN_SIZE
+            or run_information.metadata.format.format_input.input_type
+            in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}
+        ):
             query_params = {"format": "url"}
             large = True
 
@@ -2712,6 +2723,26 @@ class Application:
             headers={"Content-Type": "application/json"},
         )
 
+        # See whether we can return the input directly or need to save to the given
+        # directory
+        if run_information.metadata.format.format_input.input_type != OutputFormat.JSON:
+            if not output_dir_path or output_dir_path == "":
+                raise ValueError(
+                    "If the input format is not JSON, an output_dir_path must be provided.",
+                )
+            if not os.path.exists(output_dir_path):
+                os.makedirs(output_dir_path, exist_ok=True)
+
+            # Save .tar.gz file to a temp directory and extract contents to output_dir_path
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
+                with open(temp_tar_path, "wb") as f:
+                    f.write(download_response.content)
+                shutil.unpack_archive(temp_tar_path, output_dir_path)
+
+            return
+
+        # JSON input can be returned directly.
         return download_response.json()
 
     def run_metadata(self, run_id: str) -> RunInformation:
@@ -2870,7 +2901,7 @@ class Application:
                     if rich_print:
                         rich.print(msg, file=sys.stderr)
                     else:
-                        print(msg)
+                        log(msg)
 
                 logs.append(log_entry)
 
@@ -2994,11 +3025,7 @@ class Application:
 
         def polling_func() -> tuple[Any, bool]:
             run_information = self.run_metadata(run_id=run_id)
-            if run_information.metadata.status_v2 in {
-                StatusV2.succeeded,
-                StatusV2.failed,
-                StatusV2.canceled,
-            }:
+            if run_information.metadata.run_is_finalized():
                 return run_information, True
 
             return None, False

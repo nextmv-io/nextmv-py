@@ -60,7 +60,7 @@ def create(
     - Default configuration.
         $ [green]nextmv configuration create --api-key NEXTMV_API_KEY[/green]
 
-    - Configure a profile named [italic]hare[/italic].
+    - Configure a profile named [magenta]hare[/magenta].
         $ [green]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/green]
     """
 
