@@ -2702,8 +2702,8 @@ class Application:
         large = False
         if (
             run_information.metadata.input_size > _MAX_RUN_SIZE
-            or run_information.metadata.format.format_output.output_type
-            in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}
+            or run_information.metadata.format.format_input.input_type
+            in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}
         ):
             query_params = {"format": "url"}
             large = True
