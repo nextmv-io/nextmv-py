@@ -265,9 +265,10 @@ Use these Rich markup guidelines when formatting help text and messages.
   The link provided is <https://github.com/nextmv-io/community-apps>, and it will
   be applied to the text `nextmv-io/community-apps`.
 
-- Beyond `[magenta]` and `[green]`, the `[yellow]` color is the only other
-  acceptable color that can be used. Use it sparingly for emphasis or to
-  highlight special items (e.g., the default profile in a table).
+- Colors that can be used for highlighting (we limit colors to keep coloring consistent):
+  - `[magenta]`: variable, literals, etc. - mainly short technical things (see above).
+  - `[green]`: commands, etc. - longer technical things, or, as a type-contrast to magenta.
+  - `[yellow]`: emphasis, highlight of special items, etc. (use sparingly only).
 
 ## Command documentation
 
