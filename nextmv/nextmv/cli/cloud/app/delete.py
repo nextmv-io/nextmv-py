@@ -40,7 +40,7 @@ def delete(
         $ [green]nextmv cloud app delete --app-id hare-app[/green]
 
     - Delete the application with the ID [magenta]hare-app[/magenta] without confirmation prompt.
-        $ [green]nextmv cloud app delete --app-id hare-app --yes[/green
+        $ [green]nextmv cloud app delete --app-id hare-app --yes[/green]
     """
 
     if not yes:
