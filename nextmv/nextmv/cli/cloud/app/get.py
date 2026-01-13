@@ -43,7 +43,7 @@ def get(
 
     - Get the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
-        $ [green]nextmv cloud app get --app-id hare-app --output app.json
+        $ [green]nextmv cloud app get --app-id hare-app --output app.json[/green]
     """
 
     client = build_client(profile)
