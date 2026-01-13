@@ -3535,7 +3535,7 @@ class Application(BaseModel):
         if description is not None:
             payload["description"] = description
         if default_instance_id is not None:
-            payload["default_instance_id"] = default_instance_id
+            payload["default_instance"] = default_instance_id
         if default_experiment_instance is not None:
             payload["default_experiment_instance"] = default_experiment_instance
 
