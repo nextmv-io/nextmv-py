@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, info, print_json
+from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -257,7 +257,7 @@ def track(
     )
 
     # Actually track the run.
-    info(msg="Tracking run...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Tracking run...")
     run_id = cloud_app.track_run(
         tracked_run=tracked_run,
         instance_id=instance_id,

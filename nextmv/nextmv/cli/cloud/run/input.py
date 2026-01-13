@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.output import OutputFormat
 
@@ -53,7 +53,7 @@ def input(
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-    info(msg="Getting run input...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Getting run input...")
 
     # First get the content type to check what we should do with the input,
     # based on its format.

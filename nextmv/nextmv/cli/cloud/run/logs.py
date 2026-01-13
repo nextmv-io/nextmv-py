@@ -10,7 +10,7 @@ import rich
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, success
+from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions
@@ -139,7 +139,7 @@ def handle_logs(
     """
 
     if tail:
-        info(msg="Tailing logs...", emoji=":hourglass_flowing_sand:")
+        in_progress(msg="Tailing logs...")
         fetched_logs = cloud_app.run_logs_with_polling(
             run_id=run_id,
             polling_options=polling_options,
@@ -151,12 +151,12 @@ def handle_logs(
 
         log_content = "".join(log_entry.log for log_entry in fetched_logs)
     elif logs is not None and logs != "" and file_output:
-        info(msg="Getting run logs...", emoji=":hourglass_flowing_sand:")
+        in_progress(msg="Getting run logs...")
         cloud_app.run_result_with_polling(run_id=run_id, polling_options=polling_options)
         run_logs = cloud_app.run_logs(run_id=run_id)
         log_content = run_logs.log
     elif not file_output:
-        info(msg="Getting run logs...", emoji=":hourglass_flowing_sand:")
+        in_progress(msg="Getting run logs...")
         run_logs = cloud_app.run_logs(run_id=run_id)
         rich.print(run_logs.log, file=sys.stderr)
         return

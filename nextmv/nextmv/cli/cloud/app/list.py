@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.application import list_applications
 
@@ -45,7 +45,7 @@ def list(
     """
 
     client = build_client(profile)
-    info(msg="Listing applications...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Listing applications...")
 
     cloud_apps = list_applications(client)
     cloud_apps_dicts = [app.to_dict() for app in cloud_apps]

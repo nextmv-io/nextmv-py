@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 
 # Set up subcommand application.
@@ -52,7 +52,7 @@ def metadata(
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-    info(msg="Getting run metadata...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Getting run metadata...")
     run_info = cloud_app.run_metadata(run_id)
     info_dict = run_info.to_dict()
 

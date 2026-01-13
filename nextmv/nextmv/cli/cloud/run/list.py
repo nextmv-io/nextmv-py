@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -50,7 +50,7 @@ def list(
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-    info(msg="Listing app runs...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Listing app runs...")
     runs = cloud_app.list_runs()
     runs_dicts = [run.to_dict() for run in runs]
 

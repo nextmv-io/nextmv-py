@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.output import OutputFormat
@@ -165,7 +165,7 @@ def handle_outputs(
 
     # Always poll for results since we can't guarantee the run is done.
     # If the run is already complete, polling returns immediately.
-    info(msg="Getting run results...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Getting run results...")
     wait = wait or (output is not None and output != "")
     if wait:
         kwargs["polling_options"] = polling_options
