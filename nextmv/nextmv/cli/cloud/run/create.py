@@ -293,7 +293,7 @@ def create(
         error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
-    cloud_app = build_app(app_id, profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     config = build_run_config(
         run_type=run_type,
         priority=priority,

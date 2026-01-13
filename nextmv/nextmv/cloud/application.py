@@ -7,19 +7,15 @@ and inputs.
 
 Classes
 -------
-DownloadURL
-    Result of getting a download URL.
-PollingOptions
-    Options for polling when waiting for run results.
-UploadURL
-    Result of getting an upload URL.
+ApplicationType
+    Enumeration of application types in Nextmv Cloud.
 Application
     Class for interacting with applications in Nextmv Cloud.
 
 Functions
 ---------
-poll
-    Function to poll for results with configurable options.
+list_application
+    Function to list applications in Nextmv Cloud.
 """
 
 import io
@@ -30,12 +26,13 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 import requests
 import rich
+from pydantic import AliasChoices, Field
 
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
@@ -88,8 +85,45 @@ from nextmv.status import StatusV2
 _MAX_RUN_SIZE: int = 5 * 1024 * 1024
 
 
-@dataclass
-class Application:
+class ApplicationType(str, Enum):
+    """
+    Enumeration of application types in Nextmv Cloud.
+
+    You can import the `ApplicationType` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import ApplicationType
+    ```
+
+    Attributes
+    ----------
+    CUSTOM : str
+        Custom application type, which is the most common. Represents a standard
+        application that you can push code to.
+    SUBSCRIPTION : str
+        Subscription application type. You cannot push code to subscription
+        applications, but only subscribe to them through the marketplace.
+    PIPELINE : str
+        Pipeline application type that refers to workflows.
+    """
+
+    CUSTOM = "custom"
+    """
+    Custom application type, which is the most common. Represents a standard
+    application that you can push code to.
+    """
+    SUBSCRIPTION = "subscription"
+    """
+    Subscription application type. You cannot push code to subscription
+    applications, but only subscribe to them through the marketplace.
+    """
+    PIPELINE = "pipeline"
+    """
+    Pipeline application type that refers to workflows.
+    """
+
+
+class Application(BaseModel):
     """
     A published decision model that can be executed.
 
@@ -125,21 +159,44 @@ class Application:
     >>> instances = app.list_instances()
     """
 
-    client: Client
-    """Client to use for interacting with the Nextmv Cloud API."""
+    # Actual API attributes of an application.
     id: str
     """ID of the application."""
-
-    default_instance_id: str = None
+    name: str | None = None
+    """Name of the application."""
+    description: str | None = None
+    """Description of the application."""
+    type: ApplicationType | None = None
+    """Type of the application."""
+    default_instance_id: str | None = Field(
+        serialization_alias="default_instance",
+        validation_alias=AliasChoices("default_instance", "default_instance_id"),
+        default=None,
+    )
     """Default instance ID to use for submitting runs."""
-    endpoint: str = "v1/applications/{id}"
-    """Base endpoint for the application."""
-    experiments_endpoint: str = "{base}/experiments"
-    """Base endpoint for the experiments in the application."""
-    ensembles_endpoint: str = "{base}/ensembles"
-    """Base endpoint for managing the ensemble definitions in the application"""
+    default_experiment_instance: str | None = None
+    """Default experiment instance ID to use for experiments."""
+    subscription_id: str | None = None
+    """Subscription ID if the application is a subscription type."""
+    locked: bool = False
+    """Whether the application is locked."""
+    created_at: datetime | None = None
+    """Creation timestamp of the application."""
+    updated_at: datetime | None = None
+    """Last update timestamp of the application."""
 
-    def __post_init__(self):
+    # SDK-specific attributes for convenience when using methods.
+    client: Client = Field(exclude=True)
+    """Client to use for interacting with the Nextmv Cloud API."""
+    endpoint: str = Field(exclude=True, default="v1/applications/{id}")
+    """Base endpoint for the application."""
+    experiments_endpoint: str = Field(exclude=True, default="{base}/experiments")
+    """Base endpoint for the experiments in the application."""
+    ensembles_endpoint: str = Field(exclude=True, default="{base}/ensembles")
+    """Base endpoint for managing the ensemble definitions in the
+    application"""
+
+    def model_post_init(self, __context) -> None:
         """Initialize the endpoint and experiments_endpoint attributes.
 
         This method is automatically called after class initialization to
@@ -150,6 +207,39 @@ class Application:
         self.ensembles_endpoint = self.ensembles_endpoint.format(base=self.endpoint)
 
     @classmethod
+    def get(cls, client: Client, id: str) -> "Application":
+        """
+        Retrieve an application directly from Nextmv Cloud.
+
+        This function is useful if you want to populate an `Application` class
+        by fetching the attributes directly from Nextm Cloud.
+
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        id : str
+            ID of the application to retrieve.
+
+        Returns
+        -------
+        Application
+            The requested application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = client.request(
+            method="GET",
+            endpoint=f"v1/applications/{id}",
+        )
+
+        return cls.from_dict({"client": client} | response.json())
+
+    @classmethod
     def new(
         cls,
         client: Client,
@@ -158,6 +248,8 @@ class Application:
         description: str | None = None,
         is_workflow: bool | None = None,
         exist_ok: bool = False,
+        default_instance_id: str | None = None,
+        default_experiment_instance: str | None = None,
     ) -> "Application":
         """
         Create a new application directly in Nextmv Cloud.
@@ -180,6 +272,10 @@ class Application:
         exist_ok : bool, default=False
             If True and an application with the same ID already exists,
             return the existing application instead of creating a new one.
+        default_instance_id : str, optional
+            Default instance ID to use for submitting runs.
+        default_experiment_instance : str, optional
+            Default experiment instance ID to use for experiments.
 
         Returns
         -------
@@ -197,7 +293,12 @@ class Application:
             id = safe_id("app")
 
         if exist_ok and cls.exists(client=client, id=id):
-            return Application(client=client, id=id)
+            response = client.request(
+                method="GET",
+                endpoint=f"v1/applications/{id}",
+            )
+
+            return cls.from_dict({"client": client} | response.json())
 
         payload = {
             "name": name,
@@ -210,13 +311,19 @@ class Application:
         if is_workflow is not None:
             payload["is_pipeline"] = is_workflow
 
+        if default_instance_id is not None:
+            payload["default_instance"] = default_instance_id
+
+        if default_experiment_instance is not None:
+            payload["default_experiment_instance"] = default_experiment_instance
+
         response = client.request(
             method="POST",
             endpoint="v1/applications",
             payload=payload,
         )
 
-        return cls(client=client, id=response.json()["id"])
+        return cls.from_dict({"client": client} | response.json())
 
     def acceptance_test(self, acceptance_test_id: str) -> AcceptanceTest:
         """
@@ -2408,6 +2515,7 @@ class Application:
         verbose: bool = False,
         model: Model | None = None,
         model_configuration: ModelConfiguration | None = None,
+        rich_print: bool = False,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
@@ -2441,6 +2549,8 @@ class Application:
         model_configuration : Optional[ModelConfiguration], default=None
             Configuration for the Python-native model. Must be specified together
             with `model`.
+        rich_print : bool, default=False
+            Whether to use rich printing when verbose output is enabled.
 
         Returns
         -------
@@ -2518,7 +2628,10 @@ class Application:
         """
 
         if verbose:
-            log("💽 Starting build for Nextmv application.")
+            if rich_print:
+                rich.print(f":cd: Starting build for Nextmv application [magenta]{self.id}[/magenta].", file=sys.stderr)
+            else:
+                log("💽 Starting build for Nextmv application.")
 
         if app_dir is None or app_dir == "":
             app_dir = "."
@@ -2535,10 +2648,10 @@ class Application:
         if (model is None and model_configuration is not None) or (model is not None and model_configuration is None):
             raise ValueError("model and model_configuration must be provided together")
 
-        package._run_build_command(app_dir, manifest.build, verbose)
-        package._run_pre_push_command(app_dir, manifest.pre_push, verbose)
-        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose)
-        self.__update_app_binary(tar_file, manifest, verbose)
+        package._run_build_command(app_dir, manifest.build, verbose, rich_print)
+        package._run_pre_push_command(app_dir, manifest.pre_push, verbose, rich_print)
+        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose, rich_print)
+        self.__update_app_binary(tar_file, manifest, verbose, rich_print)
 
         try:
             shutil.rmtree(output_dir)
@@ -3381,6 +3494,59 @@ class Application:
             output_dir_path=output_dir_path,
         )
 
+    def update(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        default_instance_id: str | None = None,
+        default_experiment_instance: str | None = None,
+    ) -> "Application":
+        """
+        Update the application.
+
+        Parameters
+        ----------
+        name : Optional[str], default=None
+            Optional name of the application.
+        description : Optional[str], default=None
+            Optional description of the application.
+        default_instance_id : Optional[str], default=None
+            Optional default instance ID for the application.
+        default_experiment_instance : Optional[str], default=None
+            Optional default experiment instance ID for the application.
+
+        Returns
+        -------
+        Application
+            The updated application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        app = self.get(client=self.client, id=self.id)
+        app_dict = app.to_dict()
+        payload = app_dict
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if default_instance_id is not None:
+            payload["default_instance_id"] = default_instance_id
+        if default_experiment_instance is not None:
+            payload["default_experiment_instance"] = default_experiment_instance
+
+        response = self.client.request(
+            method="PUT",
+            endpoint=self.endpoint,
+            payload=payload,
+        )
+
+        return Application.from_dict({"client": self.client} | response.json())
+
     def update_batch_experiment(
         self,
         batch_experiment_id: str,
@@ -4081,11 +4247,15 @@ class Application:
         tar_file: str,
         manifest: Manifest,
         verbose: bool = False,
+        rich_print: bool = False,
     ) -> None:
         """Updates the application binary in Cloud."""
 
         if verbose:
-            log(f'🌟 Pushing to application: "{self.id}".')
+            if rich_print:
+                rich.print(f":star2: Pushing to application: [magenta]{self.id}[/magenta].", file=sys.stderr)
+            else:
+                log(f'🌟 Pushing to application: "{self.id}".')
 
         endpoint = f"{self.endpoint}/binary"
         response = self.client.request(
@@ -4109,17 +4279,18 @@ class Application:
         )
 
         if verbose:
-            log(f'💥️ Successfully pushed to application: "{self.id}".')
-            log(
-                json.dumps(
-                    {
-                        "app_id": self.id,
-                        "endpoint": self.client.url,
-                        "instance_url": f"{self.endpoint}/runs?instance_id=latest",
-                    },
-                    indent=2,
-                )
-            )
+            data = {
+                "app_id": self.id,
+                "endpoint": self.client.url,
+                "instance_url": f"{self.endpoint}/runs?instance_id=latest",
+            }
+
+            if rich_print:
+                rich.print(f":boom: Successfully pushed to application: [magenta]{self.id}[/magenta].", file=sys.stderr)
+                rich.print_json(data=data)
+            else:
+                log(f'💥️ Successfully pushed to application: "{self.id}".')
+                log(json.dumps(data, indent=2))
 
     def __console_url(self, run_id: str) -> str:
         """Auxiliary method to get the console URL for a run."""
@@ -4303,6 +4474,45 @@ class Application:
         configuration_dict = configuration.to_dict()
 
         return configuration_dict
+
+
+def list_applications(client: Client) -> list[Application]:
+    """
+    List all Nextmv Cloud applications.
+
+    You can import the `list_applications` function directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import list_applications
+    ```
+
+    Parameters
+    ----------
+    client : Client
+        The Nextmv Cloud client used to make API requests.
+
+    Returns
+    -------
+    list[Application]
+        A list of Nextmv Cloud applications.
+
+    Raises
+    -------
+    requests.HTTPError
+        If the response status code is not 2xx.
+    """
+
+    response = client.request(
+        method="GET",
+        endpoint="v1/applications",
+    )
+
+    applications = []
+    for app_data in response.json() or []:
+        app = Application.from_dict({"client": client} | app_data)
+        applications.append(app)
+
+    return applications
 
 
 def _is_not_exist_error(e: requests.HTTPError) -> bool:

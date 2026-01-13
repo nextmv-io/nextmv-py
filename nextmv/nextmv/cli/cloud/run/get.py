@@ -84,7 +84,7 @@ def get(
         $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123 --profile hare[/green]
     """
 
-    cloud_app = build_app(app_id, profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = DEFAULT_POLLING_OPTIONS

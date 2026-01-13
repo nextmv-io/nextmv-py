@@ -15,6 +15,7 @@ from nextmv.manifest import ManifestPythonModel as ManifestPythonModel
 from nextmv.manifest import ManifestRuntime as ManifestRuntime
 from nextmv.manifest import ManifestType as ManifestType
 from nextmv.polling import PollingOptions as PollingOptions
+from nextmv.polling import poll as poll
 from nextmv.run import ErrorLog as ErrorLog
 from nextmv.run import ExternalRunResult as ExternalRunResult
 from nextmv.run import Format as Format
@@ -56,7 +57,8 @@ from .account import Account as Account
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application
-from .application import poll as poll
+from .application import ApplicationType as ApplicationType
+from .application import list_applications as list_applications
 from .assets import RunAsset as RunAsset
 from .batch_experiment import BatchExperiment as BatchExperiment
 from .batch_experiment import BatchExperimentInformation as BatchExperimentInformation

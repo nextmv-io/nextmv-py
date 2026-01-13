@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json
+from nextmv.cli.message import error, info, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -228,7 +228,7 @@ def track(
         error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
-    cloud_app = build_app(app_id, profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     config = build_run_config(
         run_type=RunType.EXTERNAL,
         priority=6,
@@ -257,6 +257,7 @@ def track(
     )
 
     # Actually track the run.
+    info(msg="Tracking run...", emoji=":hourglass_flowing_sand:")
     run_id = cloud_app.track_run(
         tracked_run=tracked_run,
         instance_id=instance_id,
