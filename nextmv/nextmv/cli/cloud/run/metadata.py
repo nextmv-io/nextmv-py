@@ -51,7 +51,7 @@ def metadata(
         $ [green]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --profile hare[/green]
     """
 
-    cloud_app = build_app(app_id, profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     info(msg="Getting run metadata...", emoji=":hourglass_flowing_sand:")
     run_info = cloud_app.run_metadata(run_id)
     info_dict = run_info.to_dict()

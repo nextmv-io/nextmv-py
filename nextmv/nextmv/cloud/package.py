@@ -6,8 +6,11 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
+
+import rich
 
 from nextmv.logger import log
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
@@ -21,18 +24,19 @@ _MANDATORY_FILES_PER_TYPE = {
 }
 
 
-def _package(
+def _package(  # noqa: C901 # complexity attributed to printing.
     app_dir: str,
     manifest: Manifest,
     model: Model | None = None,
     model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
+    rich_print: bool = False,
 ) -> tuple[str, str]:
     """Package the app into a tarball."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
         if manifest.type == ManifestType.PYTHON:
-            __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose)
+            __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose, rich_print)
 
         found, missing, files = __find_files(app_dir, manifest.files)
         __confirm_mandatory_files(manifest, found)
@@ -55,7 +59,13 @@ def _package(
                 raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
 
         if verbose:
-            log(f'📋 Copied files listed in "{MANIFEST_FILE_NAME}" manifest.')
+            if rich_print:
+                rich.print(
+                    f":clipboard: Copied files listed in [magenta]{MANIFEST_FILE_NAME}[/magenta] manifest.",
+                    file=sys.stderr,
+                )
+            else:
+                log(f'📋 Copied files listed in "{MANIFEST_FILE_NAME}" manifest.')
 
         if manifest.type == ManifestType.PYTHON:
             _cleanup_python_model(app_dir, model_configuration, verbose)
@@ -66,9 +76,22 @@ def _package(
         if verbose:
             try:
                 size = __human_friendly_file_size(tar_file)
-                log(f"📦 Packaged application ({file_count_msg}, {size}).")
+                if rich_print:
+                    rich.print(
+                        ":package: Packaged application "
+                        f"([magenta]{file_count_msg}[/magenta], [magenta]{size}[/magenta]).",
+                        file=sys.stderr,
+                    )
+                else:
+                    log(f"📦 Packaged application ({file_count_msg}, {size}).")
             except Exception:
-                log(f"📦 Packaged application ({file_count_msg}).")
+                if rich_print:
+                    rich.print(
+                        f":package: Packaged application ([magenta]{file_count_msg}[/magenta]).",
+                        file=sys.stderr,
+                    )
+                else:
+                    log(f"📦 Packaged application ({file_count_msg}).")
 
         return tar_file, output_dir
 
@@ -77,6 +100,7 @@ def _run_build_command(
     app_dir: str,
     manifest_build: ManifestBuild | None = None,
     verbose: bool = False,
+    rich_print: bool = False,
 ) -> None:
     """Run the build command specified in the manifest."""
 
@@ -85,7 +109,12 @@ def _run_build_command(
 
     elements = manifest_build.command.split(" ")
     command_str = " ".join(elements)
-    log(f'🚧 Running build command: "{command_str}"')
+
+    if verbose:
+        if rich_print:
+            rich.print(f":construction: Running build command: [magenta]{command_str}[/magenta]", file=sys.stderr)
+        else:
+            log(f'🚧 Running build command: "{command_str}"')
     try:
         result = subprocess.run(
             elements,
@@ -120,6 +149,7 @@ def _run_pre_push_command(
     app_dir: str,
     pre_push_command: str | None = None,
     verbose: bool = False,
+    rich_print: bool = False,
 ) -> None:
     """Run the pre-push command specified in the manifest."""
 
@@ -129,7 +159,11 @@ def _run_pre_push_command(
     elements = _get_shell_command_elements(pre_push_command)
 
     command_str = " ".join(elements)
-    log(f'🔨 Running pre-push command: "{command_str}"')
+    if verbose:
+        if rich_print:
+            rich.print(f":hammer: Running pre-push command: [magenta]{command_str}[/magenta]", file=sys.stderr)
+        else:
+            log(f'🔨 Running pre-push command: "{command_str}"')
     try:
         result = subprocess.run(
             elements,
@@ -227,16 +261,23 @@ def __handle_python(
     model: Model | None = None,
     model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
+    rich_print: bool = False,
 ) -> None:
     """Handles the Python-specific packaging logic."""
 
     if model is not None and model_configuration is not None:
         if verbose:
-            log("🔮 Encoding Python model.")
+            if rich_print:
+                rich.print(":crystal_ball: Encoding Python model.", file=sys.stderr)
+            else:
+                log("🔮 Encoding Python model.")
         model.save(app_dir, model_configuration)
 
     if verbose:
-        log("🐍 Bundling Python dependencies.")
+        if rich_print:
+            rich.print(":snake: Bundling Python dependencies.", file=sys.stderr)
+        else:
+            log("🐍 Bundling Python dependencies.")
     __install_dependencies(manifest, app_dir, temp_dir)
 
 

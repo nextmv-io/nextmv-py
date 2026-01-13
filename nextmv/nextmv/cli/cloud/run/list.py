@@ -49,8 +49,8 @@ def list(
         $ [green]nextmv cloud run list --app-id hare-app --profile hare[/green]
     """
 
-    cloud_app = build_app(app_id, profile)
-    info(msg="Getting app runs...", emoji=":hourglass_flowing_sand:")
+    cloud_app = build_app(app_id=app_id, profile=profile)
+    info(msg="Listing app runs...", emoji=":hourglass_flowing_sand:")
     runs = cloud_app.list_runs()
     runs_dicts = [run.to_dict() for run in runs]
 

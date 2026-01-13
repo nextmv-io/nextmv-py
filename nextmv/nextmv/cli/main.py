@@ -35,6 +35,7 @@ app = typer.Typer(
     context_settings={"help_option_names": ["--help", "-h"]},
     no_args_is_help=True,
     invoke_without_command=True,
+    pretty_exceptions_show_locals=False,
 )
 
 # Register subcommands. The `name` parameter is required when the subcommand

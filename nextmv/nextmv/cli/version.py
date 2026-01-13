@@ -14,6 +14,11 @@ app = typer.Typer()
 def version() -> None:
     """
     Show the current version of the Nextmv CLI.
+
+    [bold][underline]Examples[/underline][/bold]
+
+    - Show the version.
+        $ [green]nextmv version[/green]
     """
 
     version_callback(True)
