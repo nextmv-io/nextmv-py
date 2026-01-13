@@ -212,7 +212,7 @@ class Application(BaseModel):
         Retrieve an application directly from Nextmv Cloud.
 
         This function is useful if you want to populate an `Application` class
-        by fetching the attributes directly from Nextm Cloud.
+        by fetching the attributes directly from Nextmv Cloud.
 
         Parameters
         ----------

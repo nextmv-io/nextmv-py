@@ -99,7 +99,7 @@ def update(
 
     if name is None and description is None and default_instance_id is None and default_experiment_instance is None:
         error(
-            "Provide at lease one option to update: [code]--name[/code], [code]--description[/code], "
+            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], "
             "[code]--default-instance-id[/code], or [code]--default-experiment-instance[/code]."
         )
 
@@ -117,7 +117,7 @@ def update(
         with open(output, "w") as f:
             json.dump(updated_app_dict, f, indent=2)
 
-        success(msg=f"Udpated application information saved to [magenta]{output}[/magenta].")
+        success(msg=f"Updated application information saved to [magenta]{output}[/magenta].")
 
         return
 
