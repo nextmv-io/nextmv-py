@@ -422,7 +422,7 @@ Consider the following guideline when declaring command options:
   The type hint is `str | None`, and the default value is `None`.
 
 - For `bool` options, always provide at least the long name, to avoid the
-  auto-populated `--no-` version of the option, given by Typer.
+  auto-populated `--no-...` version of the option, given by Typer.
 - `bool` options should have a default value of either `True` or `False`.
 - Use the `rich_help_panel` to organize commands that have a large number of
   options. Consider the `input` option of the `nextmv cloud run create`
