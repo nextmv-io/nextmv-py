@@ -117,7 +117,7 @@ def update(
         with open(output, "w") as f:
             json.dump(updated_app_dict, f, indent=2)
 
-        success(msg=f"Udpated application information saved to [magenta]{output}[/magenta].")
+        success(msg=f"Updated application information saved to [magenta]{output}[/magenta].")
 
         return
 
