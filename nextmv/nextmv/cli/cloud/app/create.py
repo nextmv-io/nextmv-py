@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import info, print_json
+from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.application import Application
 
@@ -128,9 +128,9 @@ def create(
 
     client = build_client(profile)
     if exist_ok:
-        info(msg="Creating or getting application...", emoji=":hourglass_flowing_sand:")
+        in_progress(msg="Creating or getting application...")
     else:
-        info(msg="Creating application...", emoji=":hourglass_flowing_sand:")
+        in_progress(msg="Creating application...")
 
     cloud_app = Application.new(
         client=client,

@@ -81,7 +81,7 @@ def handle_go_cli() -> None:
         delete = Confirm.ask(
             "Do you want to delete the [italic red]deprecated[/italic red] Nextmv CLI "
             f"at [magenta]{GO_CLI_PATH}[/magenta] now?",
-            default=True,
+            default=False,
         )
         if delete:
             remove_go_cli()

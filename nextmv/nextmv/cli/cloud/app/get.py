@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 
@@ -47,7 +47,7 @@ def get(
     """
 
     client = build_client(profile)
-    info(msg="Getting application...", emoji=":hourglass_flowing_sand:")
+    in_progress(msg="Getting application...")
 
     cloud_app = Application.get(
         client=client,

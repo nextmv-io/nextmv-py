@@ -21,20 +21,45 @@
 
 Welcome to `nextmv`, the general Python SDK for the Nextmv Platform.
 
-📖 To learn more about the `nextmv`, visit the [docs][docs].
+📖 To learn more about `nextmv`, visit the [docs][docs].
 
 ## Installation
 
-Requires Python `>=3.10`. Install using `pip`:
+Requires Python `>=3.10`. Install using the Python package manager of your
+choice:
+
+- `pip`
+
+    ```bash
+    pip install nextmv
+    ```
+
+- `pipx`
+
+    ```bash
+    pipx install nextmv
+    ```
+
+- `uv`
+
+    ```bash
+    uv tool install nextmv
+    ```
+
+Install all optional dependencies (recommended) by specifying `"nextmv[all]"`
+instead of just `"nextmv"`.
+
+## CLI
+
+The Nextmv CLI is installed automatically with the SDK. To verify installation,
+run:
 
 ```bash
-pip install nextmv
+nextmv --help
 ```
 
-Install all optional dependencies (recommended):
-
-```bash
-pip install "nextmv[all]"
-```
+If you are contributing to the CLI, please make sure you read the [CLI
+Contributing Guide][cli-contributing].
 
 [docs]: https://nextmv-py.docs.nextmv.io/en/latest/nextmv/
+[cli-contributing]: nextmv/cli/CONTRIBUTING.md

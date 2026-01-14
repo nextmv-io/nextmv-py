@@ -94,6 +94,20 @@ def info(msg: str, emoji: str | None = None) -> None:
     rich.print(msg, file=sys.stderr)
 
 
+def in_progress(msg: str) -> None:
+    """
+    Pretty-print an in-progress message with an hourglass emoji. Your message
+    should end with a period.
+
+    Parameters
+    ----------
+    msg : str
+        The in-progress message to display.
+    """
+
+    info(msg, emoji=":hourglass_flowing_sand:")
+
+
 def print_json(data: dict[str, Any] | list[dict[str, Any]]) -> None:
     """
     Pretty-print json-serializable data as JSON to stdout.
