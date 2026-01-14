@@ -36,19 +36,28 @@ each of these packages.
 
 ## Installation
 
-The library is hosted on [PyPI][nextmv-pypi]. Python `>=3.10` is required.
+The library is hosted on [PyPI][nextmv-pypi]. Python `>=3.10`. Install using
+the Python package manager of your choice:
 
-Install via `pip`:
+=== "`pip`"
 
-```bash
-pip install nextmv
-```
+    ```bash
+    pip install nextmv
+    ```
+=== "`pipx`"
 
-Install all optional dependencies (recommended):
+    ```bash
+    pipx install nextmv
+    ```
 
-```bash
-pip install "nextmv[all]"
-```
+=== "`uv`"
+
+    ```bash
+    uv tool install nextmv
+    ```
+
+Install all optional dependencies (recommended) by specifying `"nextmv[all]"`
+instead of just `"nextmv"`.
 
 ## Examples
 
