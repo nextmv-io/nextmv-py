@@ -15,7 +15,7 @@ Instance
 from datetime import datetime
 
 from nextmv.base_model import BaseModel
-from nextmv.run import RunQueuing
+from nextmv.run import Format, RunQueuing
 
 
 class InstanceConfiguration(BaseModel):
@@ -54,6 +54,9 @@ class InstanceConfiguration(BaseModel):
 
     execution_class: str | None = None
     """Execution class for the instance."""
+    format: Format | None = None
+    """Input format for the instance, if applicable. When configuring an
+    instance, only the `format.format_input` attribute is used."""
     options: dict | None = None
     """Options of the app that the instance uses."""
     secrets_collection_id: str | None = None
@@ -81,6 +84,10 @@ class InstanceConfiguration(BaseModel):
             raise ValueError(f"When integration_id is set, execution_class must be `{integration_val}` or None.")
 
         self.execution_class = integration_val
+
+        # Processes the format to ensure only format_input is set.
+        final_format = Format(format_input=self.format.format_input) if self.format else None
+        self.format = final_format
 
 
 class Instance(BaseModel):

@@ -7,9 +7,11 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import error, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
+from nextmv.input import InputFormat
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -41,7 +43,7 @@ def update(
         str | None,
         typer.Option(
             "--output",
-            "-o",
+            "-u",
             help="Saves the updated instance information to this location.",
             metavar="OUTPUT_PATH",
         ),
@@ -53,6 +55,74 @@ def update(
             "-v",
             help="Update the instance to use a different version.",
             metavar="VERSION_ID",
+        ),
+    ] = None,
+    # Options for updating the instance configuration.
+    content_type: Annotated[
+        InputFormat | None,
+        typer.Option(
+            "--content-type",
+            "-c",
+            help="The content type for the instance. Allowed values are: "
+            f"{[v.value for v in InputFormat.__members__.values()]}",
+            metavar="CONTENT_TYPE",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    execution_class: Annotated[
+        str | None,
+        typer.Option(
+            "--execution-class",
+            "-x",
+            help="The execution class to use for the instance.",
+            metavar="EXECUTION_CLASS",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    integration_id: Annotated[
+        str | None,
+        typer.Option(
+            help="The integration ID to use for the runs of the instance, if applicable.",
+            metavar="INTEGRATION_ID",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    no_queuing: Annotated[
+        bool | None,
+        typer.Option(
+            "--no-queuing",
+            help="Do not queue when running the instance.",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    options: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--options",
+            "-o",
+            help="Options to always use when running the instance. Format: [magenta]key=value[/magenta]. "
+            "Pass multiple options by repeating the flag, or separating with commas.",
+            metavar="KEY=VALUE",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    priority: Annotated[
+        int | None,
+        typer.Option(
+            help="The priority of the runs in the instance. "
+            "Priority is between 1 and 10, with 1 being the highest priority.",
+            metavar="PRIORITY",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
+    secret_collection_id: Annotated[
+        str | None,
+        typer.Option(
+            "--secret-collection-id",
+            "-s",
+            help="The secret collection ID to use for the instance, if applicable.",
+            metavar="SECRET_COLLECTION_ID",
+            rich_help_panel="Instance configuration",
         ),
     ] = None,
     profile: ProfileOption = None,
@@ -81,18 +151,47 @@ def update(
             --name "Production Instance" --output updated_instance.json[/green]
     """
 
-    if name is None and description is None and version_id is None:
+    # Check if any configuration options are provided
+    has_config_options = any(
+        [
+            content_type is not None,
+            execution_class is not None,
+            integration_id is not None,
+            no_queuing is not None,
+            options is not None,
+            priority is not None,
+            secret_collection_id is not None,
+        ]
+    )
+
+    if name is None and description is None and version_id is None and not has_config_options:
         error(
             "Provide at least one option to update: [code]--name[/code], [code]--description[/code], "
-            "or [code]--version-id[/code]."
+            "[code]--version-id[/code], or any [magenta]Instance configuration[/magenta] option."
         )
 
     cloud_app = build_app(app_id=app_id, profile=profile)
+
+    # Build configuration if any configuration options were provided.
+    configuration = None
+    if has_config_options:
+        instance_options = build_options(options)
+        configuration = build_config(
+            priority=priority,
+            no_queuing=no_queuing,
+            content_type=content_type,
+            execution_class=execution_class,
+            integration_id=integration_id,
+            options=instance_options,
+            secret_collection_id=secret_collection_id,
+        )
+
     updated_instance = cloud_app.update_instance(
         id=instance_id,
         name=name,
         description=description,
         version_id=version_id,
+        configuration=configuration,
     )
     success(
         f"Instance [magenta]{instance_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta]."

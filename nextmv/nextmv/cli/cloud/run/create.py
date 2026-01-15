@@ -439,6 +439,9 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
         The built run options.
     """
 
+    if options is None:
+        return None
+
     run_options = {}
     for opt in options or []:
         # It is possible to pass multiple options separated by commas. The

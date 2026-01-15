@@ -82,29 +82,6 @@ class TestInput(unittest.TestCase):
         self.assertEqual(input_data.data, "empanadas are life")
         self.assertIsNone(input_data.options)
 
-    def test_local_loader_csv_stdin(self):
-        sample_input = '"empanadas","are","life"\n1,2,3\n4,5,6'
-        input_loader = nextmv.LocalInputLoader()
-
-        with patch("sys.stdin", new=StringIO(sample_input)):
-            input_data = input_loader.load(
-                input_format=nextmv.InputFormat.CSV,
-                csv_configurations={
-                    "quoting": csv.QUOTE_NONNUMERIC,
-                },
-            )
-
-        self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.CSV)
-        self.assertEqual(
-            list(input_data.data),
-            [
-                {"empanadas": 1.0, "are": 2.0, "life": 3.0},
-                {"empanadas": 4.0, "are": 5.0, "life": 6.0},
-            ],
-        )
-        self.assertIsNone(input_data.options)
-
     def test_local_loader_with_options(self):
         sample_input = '{"empanadas": "are_life"}\n'
         options = nextmv.Options(nextmv.Option("foo", str, default="bar", required=False))
@@ -141,30 +118,6 @@ class TestInput(unittest.TestCase):
         self.assertIsInstance(input_data, nextmv.Input)
         self.assertEqual(input_data.input_format, nextmv.InputFormat.TEXT)
         self.assertEqual(input_data.data, "empanadas are life")
-        self.assertIsNone(input_data.options)
-
-    def test_local_loader_csv_file(self):
-        sample_input = '"empanadas","are","life"\n1,2,3\n4,5,6'
-        input_loader = nextmv.LocalInputLoader()
-
-        with patch("builtins.open", return_value=StringIO(sample_input)):
-            input_data = input_loader.load(
-                input_format=nextmv.InputFormat.CSV,
-                path="input.csv",
-                csv_configurations={
-                    "quoting": csv.QUOTE_NONNUMERIC,
-                },
-            )
-
-        self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.CSV)
-        self.assertEqual(
-            list(input_data.data),
-            [
-                {"empanadas": 1.0, "are": 2.0, "life": 3.0},
-                {"empanadas": 4.0, "are": 5.0, "life": 6.0},
-            ],
-        )
         self.assertIsNone(input_data.options)
 
     def test_local_loader_csv_archive_default_dir(self):

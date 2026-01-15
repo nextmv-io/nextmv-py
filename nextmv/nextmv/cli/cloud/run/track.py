@@ -31,7 +31,7 @@ def track(
             "-o",
             help="The output of the run being tracked. A file or directory depending on content type.",
             metavar="OUTPUT_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ],
     status: Annotated[
@@ -42,7 +42,7 @@ def track(
             help="Status of the tracked run. Allowed values are: "
             f"{[v.value for v in TrackedRunStatus.__members__.values()]}",
             metavar="STATUS",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ],
     assets: Annotated[
@@ -50,7 +50,7 @@ def track(
         typer.Option(
             help="The assets of the run being tracked. A [magenta]json[/magenta] file to read the assets from.",
             metavar="ASSETS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     content_type: Annotated[
@@ -61,7 +61,7 @@ def track(
             help="The content type of the run to track. Allowed values are: "
             f"{[v.value for v in InputFormat.__members__.values()]}",
             metavar="CONTENT_TYPE",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = InputFormat.JSON,
     description: Annotated[
@@ -69,7 +69,7 @@ def track(
         typer.Option(
             help="An optional description for the tracked run.",
             metavar="DESCRIPTION",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     duration: Annotated[
@@ -79,7 +79,7 @@ def track(
             "-d",
             help="The duration of the run being tracked, in milliseconds.",
             metavar="DURATION_MS",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = 0,
     error_msg: Annotated[
@@ -89,7 +89,7 @@ def track(
             "-e",
             help="An error message if the run being tracked failed.",
             metavar="ERROR_MESSAGE",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     input: Annotated[
@@ -100,7 +100,7 @@ def track(
             help="The input of the run being tracked. File or directory depending on content type. "
             "Uses [magenta]stdin[/magenta] if not defined.",
             metavar="INPUT_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     logs: Annotated[
@@ -110,7 +110,7 @@ def track(
             "-l",
             help="The logs of the run being tracked. A utf-8 encoded text file to read the logs from.",
             metavar="LOGS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     name: Annotated[
@@ -120,7 +120,7 @@ def track(
             "-n",
             help="An optional name for the tracked run.",
             metavar="NAME",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     statistics: Annotated[
@@ -128,7 +128,7 @@ def track(
         typer.Option(
             help="The statistics of the run being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     # Options for run configuration.

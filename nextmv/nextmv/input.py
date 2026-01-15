@@ -77,8 +77,6 @@ class InputFormat(str, Enum):
     """JSON format, utf-8 encoded."""
     TEXT = "text"
     """Text format, utf-8 encoded."""
-    CSV = "csv"
-    """CSV format, utf-8 encoded."""
     CSV_ARCHIVE = "csv-archive"
     """CSV archive format: multiple CSV files."""
     MULTI_FILE = "multi-file"
@@ -376,8 +374,6 @@ class Input:
        means that the data must be JSON-deserializable, which includes dicts and
        lists.
     - `InputFormat.TEXT`: the data is `str`, and it must be utf-8 encoded.
-    - `InputFormat.CSV`: the data is `list[dict[str, Any]]`, where each dict
-       represents a row in the CSV.
     - `InputFormat.CSV_ARCHIVE`: the data is `dict[str, list[dict[str, Any]]]`,
        where each key is the name of a CSV file and the value is a list of dicts
        representing the rows in that CSV file.
@@ -464,12 +460,6 @@ class Input:
             raise ValueError(
                 f"unsupported Input.data type: {type(self.data)} with "
                 "input_format InputFormat.TEXT, supported type is `str`"
-            )
-
-        elif self.input_format == InputFormat.CSV and not isinstance(self.data, list):
-            raise ValueError(
-                f"unsupported Input.data type: {type(self.data)} with "
-                "input_format InputFormat.CSV, supported type is `list`"
             )
 
         elif self.input_format == InputFormat.CSV_ARCHIVE and not isinstance(self.data, dict):
@@ -607,8 +597,6 @@ class LocalInputLoader(InputLoader):
     >>> loader = LocalInputLoader()
     >>> # Load JSON from stdin or file
     >>> input_obj = loader.load(input_format=InputFormat.JSON, path="data.json")
-    >>> # Load CSV from a file
-    >>> input_obj = loader.load(input_format=InputFormat.CSV, path="data.csv")
     """
 
     def _read_text(path: str, _) -> str:
@@ -672,7 +660,6 @@ class LocalInputLoader(InputLoader):
     STDIN_READERS = {
         InputFormat.JSON: lambda _: json.load(sys.stdin),
         InputFormat.TEXT: lambda _: sys.stdin.read().rstrip("\n"),
-        InputFormat.CSV: lambda csv_configurations: list(csv.DictReader(sys.stdin, **csv_configurations)),
     }
     """
     Dictionary of functions to read from standard input.
@@ -687,7 +674,7 @@ class LocalInputLoader(InputLoader):
     FILE_READERS = {
         InputFormat.JSON: _read_json,
         InputFormat.TEXT: _read_text,
-        InputFormat.CSV: _read_csv,
+        "CSV": _read_csv,
     }
     """
     Dictionary of functions to read from files.
@@ -706,23 +693,23 @@ class LocalInputLoader(InputLoader):
     ) -> Input:
         """
         Load the input data. The input data can be in various formats. For
-        `InputFormat.JSON`, `InputFormat.TEXT`, and `InputFormat.CSV`, the data
-        can be streamed from stdin or read from a file. When the `path`
-        argument is provided (and valid), the input data is read from the file
-        specified by `path`, otherwise, it is streamed from stdin. For
-        `InputFormat.CSV_ARCHIVE`, the input data is read from the directory
-        specified by `path`. If the `path` is not provided, the default
-        location `input` is used. The directory should contain one or more
-        files, where each file in the directory is a CSV file.
+        `InputFormat.JSON` and `InputFormat.TEXT`, the data can be streamed
+        from stdin or read from a file. When the `path` argument is provided
+        (and valid), the input data is read from the file specified by `path`,
+        otherwise, it is streamed from stdin. For `InputFormat.CSV_ARCHIVE`,
+        the input data is read from the directory specified by `path`. If the
+        `path` is not provided, the default location `input` is used. The
+        directory should contain one or more files, where each file in the
+        directory is a CSV file.
 
         The `Input` that is returned contains the `data` attribute. This data
         can be of different types, depending on the provided `input_format`:
 
         - `InputFormat.JSON`: the data is a `dict[str, Any]`.
         - `InputFormat.TEXT`: the data is a `str`.
-        - `InputFormat.CSV`: the data is a `list[dict[str, Any]]`.
-        - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`.
-          Each key is the name of the CSV file, minus the `.csv` extension.
+        - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str,
+          Any]]]`. Each key is the name of the CSV file, minus the `.csv`
+          extension.
         - `InputFormat.MULTI_FILE`: the data is a `dict[str, Any]`, where each
           key is the file name (with extension) and the value is the data read
           from the file. The data can be of any type, depending on the file
@@ -745,11 +732,11 @@ class LocalInputLoader(InputLoader):
             `input_format` is set to `InputFormat.MULTI_FILE`. Each `DataFile`
             instance should have a `name` (the file name with extension) and a
             `loader` function that reads the data from the file. The `loader`
-            function should accept the file path as its first argument and return
-            the data read from the file. The `loader` can also accept additional
-            positional and keyword arguments, which can be provided through the
-            `loader_args` and `loader_kwargs` attributes of the `DataFile`
-            instance.
+            function should accept the file path as its first argument and
+            return the data read from the file. The `loader` can also accept
+            additional positional and keyword arguments, which can be provided
+            through the `loader_args` and `loader_kwargs` attributes of the
+            `DataFile` instance.
 
         Returns
         -------
@@ -766,7 +753,7 @@ class LocalInputLoader(InputLoader):
         if csv_configurations is None:
             csv_configurations = {}
 
-        if input_format in [InputFormat.JSON, InputFormat.TEXT, InputFormat.CSV]:
+        if input_format in [InputFormat.JSON, InputFormat.TEXT]:
             data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
         elif input_format == InputFormat.CSV_ARCHIVE:
             data = self._load_archive(path=path, csv_configurations=csv_configurations)
@@ -785,7 +772,7 @@ class LocalInputLoader(InputLoader):
         self,
         csv_configurations: dict[str, Any] | None,
         path: str | None = None,
-        input_format: InputFormat | None = InputFormat.JSON,
+        input_format: InputFormat | str | None = InputFormat.JSON,
         use_file_reader: bool = False,
     ) -> dict[str, Any] | str | list[dict[str, Any]]:
         """
@@ -871,7 +858,7 @@ class LocalInputLoader(InputLoader):
                 stripped = file.removesuffix(csv_ext)
                 data[stripped] = self._load_utf8_encoded(
                     path=os.path.join(dir_path, file),
-                    input_format=InputFormat.CSV,
+                    input_format="CSV",
                     use_file_reader=True,
                     csv_configurations=csv_configurations,
                 )
@@ -1034,7 +1021,6 @@ def load(
 
     - `InputFormat.JSON`: the data is a `dict[str, Any]`
     - `InputFormat.TEXT`: the data is a `str`
-    - `InputFormat.CSV`: the data is a `list[dict[str, Any]]`
     - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`
         Each key is the name of the CSV file, minus the `.csv` extension.
     - `InputFormat.MULTI_FILE`: the data is a `dict[str, Any]`
@@ -1119,8 +1105,6 @@ def load(
     >>> from nextmv.input import load, InputFormat
     >>> # Load JSON from stdin
     >>> input_obj = load(input_format=InputFormat.JSON)
-    >>> # Load CSV from a file
-    >>> input_obj = load(input_format=InputFormat.CSV, path="data.csv")
     >>> # Load CSV archive from a directory
     >>> input_obj = load(input_format=InputFormat.CSV_ARCHIVE, path="input_dir")
     """
