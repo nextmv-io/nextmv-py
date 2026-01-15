@@ -2590,6 +2590,17 @@ class Application(BaseModel):
             with `model`.
         rich_print : bool, default=False
             Whether to use rich printing when verbose output is enabled.
+        no_version : bool, default=False
+            If True, do not create a new version after pushing the app.
+        version_id : Optional[str], default=None
+            ID of the version to create after pushing the app. If None, a unique
+            ID will be generated.
+        version_name : Optional[str], default=None
+            Name of the version to create after pushing the app. If None, a name
+            with a timestamp will be generated.
+        version_description : Optional[str], default=None
+            Description of the version to create after pushing the app. If None, a
+            generic description with a timestamp will be generated.
 
         Returns
         -------
