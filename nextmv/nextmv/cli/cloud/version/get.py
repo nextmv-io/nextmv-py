@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 
 # Set up subcommand application.
@@ -48,12 +48,7 @@ def get(
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting version...")
-
-    try:
-        version = cloud_app.version(version_id=version_id)
-    except Exception as e:
-        error(str(e))
-
+    version = cloud_app.version(version_id=version_id)
     version_dict = version.to_dict()
 
     if output is not None:

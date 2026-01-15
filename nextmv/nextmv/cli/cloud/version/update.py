@@ -73,16 +73,11 @@ def update(
         error("Provide at least one option to update: [code]--name[/code] or [code]--description[/code].")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-
-    try:
-        updated_version = cloud_app.update_version(
-            version_id=version_id,
-            name=name,
-            description=description,
-        )
-    except Exception as e:
-        error(str(e))
-
+    updated_version = cloud_app.update_version(
+        version_id=version_id,
+        name=name,
+        description=description,
+    )
     success(f"Version [magenta]{version_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta].")
     updated_version_dict = updated_version.to_dict()
 

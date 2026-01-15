@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json
+from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -88,14 +88,10 @@ def create(
     else:
         in_progress(msg="Creating version...")
 
-    try:
-        version = cloud_app.new_version(
-            id=version_id,
-            name=name,
-            description=description,
-            exist_ok=exist_ok,
-        )
-    except Exception as e:
-        error(str(e))
-
+    version = cloud_app.new_version(
+        id=version_id,
+        name=name,
+        description=description,
+        exist_ok=exist_ok,
+    )
     print_json(version.to_dict())

@@ -51,8 +51,8 @@ Documentation = "https://nextmv-py.docs.nextmv.io/en/latest/nextmv/"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 # TODO: Uncomment when CLI is ready for general rollout.
-# [project.scripts]
-# nextmv = "nextmv.cli.main:app"
+[project.scripts]
+nextmv = "nextmv.cli.main:main"
 
 [project.optional-dependencies]
 all = [

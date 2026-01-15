@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -46,11 +46,7 @@ def list(
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing versions...")
-    try:
-        versions = cloud_app.list_versions()
-    except Exception as e:
-        error(str(e))
-
+    versions = cloud_app.list_versions()
     versions_dicts = [version.to_dict() for version in versions]
 
     if output is not None:

@@ -8,7 +8,7 @@ import typer
 from rich.prompt import Confirm
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, info, success
+from nextmv.cli.message import info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 
 # Set up subcommand application.
@@ -56,12 +56,7 @@ def delete(
             return
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-
-    try:
-        cloud_app.delete_version(version_id=version_id)
-    except Exception as e:
-        error(str(e))
-
+    cloud_app.delete_version(version_id=version_id)
     success(
         f"Version [magenta]{version_id}[/magenta] deleted successfully from application [magenta]{app_id}[/magenta]."
     )
