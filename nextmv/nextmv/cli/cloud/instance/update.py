@@ -19,15 +19,6 @@ app = typer.Typer()
 def update(
     app_id: AppIDOption,
     instance_id: InstanceIDOption,
-    name: Annotated[
-        str | None,
-        typer.Option(
-            "--name",
-            "-n",
-            help="A new name for the instance.",
-            metavar="NAME",
-        ),
-    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -37,13 +28,13 @@ def update(
             metavar="DESCRIPTION",
         ),
     ] = None,
-    version_id: Annotated[
+    name: Annotated[
         str | None,
         typer.Option(
-            "--version-id",
-            "-v",
-            help="Update the instance to use a different version.",
-            metavar="VERSION_ID",
+            "--name",
+            "-n",
+            help="A new name for the instance.",
+            metavar="NAME",
         ),
     ] = None,
     output: Annotated[
@@ -53,6 +44,15 @@ def update(
             "-o",
             help="Saves the updated instance information to this location.",
             metavar="OUTPUT_PATH",
+        ),
+    ] = None,
+    version_id: Annotated[
+        str | None,
+        typer.Option(
+            "--version-id",
+            "-v",
+            help="Update the instance to use a different version.",
+            metavar="VERSION_ID",
         ),
     ] = None,
     profile: ProfileOption = None,

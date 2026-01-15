@@ -36,15 +36,6 @@ def create(
             metavar="APP_ID",
         ),
     ] = None,
-    default_instance_id: Annotated[
-        str | None,
-        typer.Option(
-            "--default-instance-id",
-            "-i",
-            help="An optional default instance ID for the application.",
-            metavar="DEFAULT_INSTANCE_ID",
-        ),
-    ] = None,
     default_experiment_instance: Annotated[
         str | None,
         typer.Option(
@@ -52,6 +43,15 @@ def create(
             "-x",
             help="An optional default experiment instance ID for the application.",
             metavar="DEFAULT_EXPERIMENT_INSTANCE",
+        ),
+    ] = None,
+    default_instance_id: Annotated[
+        str | None,
+        typer.Option(
+            "--default-instance-id",
+            "-i",
+            help="An optional default instance ID for the application.",
+            metavar="DEFAULT_INSTANCE_ID",
         ),
     ] = None,
     description: Annotated[

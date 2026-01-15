@@ -33,6 +33,14 @@ def create(
             metavar="NEXTMV_API_KEY",
         ),
     ],
+    endpoint: Annotated[  # Hidden because it is meant for internal use.
+        str | None,
+        typer.Option(
+            "--endpoint",
+            "-e",
+            hidden=True,
+        ),
+    ] = DEFAULT_ENDPOINT,
     profile: Annotated[  # Similar to nextmv.cli.options.ProfileOption but with different help text.
         str | None,
         typer.Option(
@@ -43,14 +51,6 @@ def create(
             metavar="PROFILE_NAME",
         ),
     ] = None,
-    endpoint: Annotated[  # Hidden because it is meant for internal use.
-        str | None,
-        typer.Option(
-            "--endpoint",
-            "-e",
-            hidden=True,
-        ),
-    ] = DEFAULT_ENDPOINT,
 ) -> None:
     """
     Create a new configuration or update an existing one.

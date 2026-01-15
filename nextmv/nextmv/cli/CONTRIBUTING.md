@@ -496,6 +496,14 @@ Consider the following guideline when declaring command options:
   to allow the user to save the output to a file. Consider the `nextmv cloud
   app list` command again. It has an `output` option that allows the user to
   save the list of applications to a file.
+- Always order command options alphabetically. Required options (without
+  default values) should be listed first, in alphabetical order. Optional
+  options (with default values) should follow, also in alphabetical order. When
+  using `rich_help_panel` to group options, maintain alphabetical order within
+  each panel. This ensures consistency across the CLI and makes it easier to
+  locate options in the code. An exception for this is the `profile` option, which
+  should always be the last option in the command's signature, for consistency
+  across the CLI.
 
 [typer]: https://typer.tiangolo.com
 [typer-learn]: https://typer.tiangolo.com/tutorial/
