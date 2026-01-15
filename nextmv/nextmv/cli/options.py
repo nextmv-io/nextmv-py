@@ -50,3 +50,17 @@ RunIDOption = Annotated[
         metavar="RUN_ID",
     ),
 ]
+
+# version_id option - can be used in any command that requires a version ID.
+# Define it as follows in commands or callbacks, as necessary:
+# version_id: VersionIDOption
+VersionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--version-id",
+        "-v",
+        help="The Nextmv Cloud version ID to use for this action.",
+        envvar="NEXTMV_VERSION_ID",
+        metavar="VERSION_ID",
+    ),
+]

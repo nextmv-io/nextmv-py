@@ -26,6 +26,7 @@ def error(msg: str) -> None:
         Exits the program with code 1.
     """
 
+    msg = msg.rstrip("\n")
     if not msg.endswith("."):
         msg += "."
 
@@ -44,6 +45,7 @@ def success(msg: str) -> None:
         The success message to display.
     """
 
+    msg = msg.rstrip("\n")
     if not msg.endswith("."):
         msg += "."
 
@@ -60,6 +62,7 @@ def warning(msg: str) -> None:
         The warning message to display.
     """
 
+    msg = msg.rstrip("\n")
     if not msg.endswith("."):
         msg += "."
 
@@ -84,6 +87,7 @@ def info(msg: str, emoji: str | None = None) -> None:
         `:hourglass_flowing_sand:`.
     """
 
+    msg = msg.rstrip("\n")
     if not msg.endswith("."):
         msg += "."
 

@@ -29,5 +29,9 @@ app.add_typer(track_app)
 def callback() -> None:
     """
     Create and manage Nextmv Cloud application runs.
+
+    A run represents the execution of a decision model within a Nextmv Cloud
+    application. Each run takes an input, processes it using the decision model,
+    and produces an output.
     """
     pass
