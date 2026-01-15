@@ -2722,14 +2722,12 @@ class Application(BaseModel):
             return
 
         now = datetime.now(timezone.utc)
-        now_id = now.strftime("%Y%m%d-%H%M%S")
-        now_display = now.strftime("%Y-%m-%dT%H:%M:%SZ")
         if version_id is None:
-            version_id = safe_id(prefix="version") + f"-{now_id}"
+            version_id = safe_id(prefix="version") + f"-{now.strftime('%Y%m%d-%H%M%S')}"
         if version_name is None:
-            version_name = f"Version pushed at {now_display}"
+            version_name = f"Version {version_id}"
         if version_description is None:
-            version_description = f"Version created automatically from push at {now_display}"
+            version_description = f"Version created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
         version = self.new_version(
             id=version_id,
