@@ -1,5 +1,5 @@
 """
-This module defines the cloud version delete command for the Nextmv CLI.
+This module defines the cloud instance delete command for the Nextmv CLI.
 """
 
 from typing import Annotated
@@ -9,7 +9,7 @@ from rich.prompt import Confirm
 
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import info, success
-from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
+from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,7 +18,7 @@ app = typer.Typer()
 @app.command()
 def delete(
     app_id: AppIDOption,
-    version_id: VersionIDOption,
+    instance_id: InstanceIDOption,
     yes: Annotated[
         bool,
         typer.Option(
@@ -30,33 +30,33 @@ def delete(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Deletes a Nextmv Cloud application version.
+    Deletes a Nextmv Cloud application instance.
 
     This action is permanent and cannot be undone. Use the [code]--yes[/code]
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Delete the version with the ID [magenta]v1[/magenta] from application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud version delete --app-id hare-app --version-id v1[/green]
+    - Delete the instance with the ID [magenta]prod[/magenta] from application [magenta]hare-app[/magenta].
+        $ [green]nextmv cloud instance delete --app-id hare-app --instance-id prod[/green]
 
-    - Delete the version without confirmation prompt.
-        $ [green]nextmv cloud version delete --app-id hare-app --version-id v1 --yes[/green]
+    - Delete the instance without confirmation prompt.
+        $ [green]nextmv cloud instance delete --app-id hare-app --instance-id prod --yes[/green]
     """
 
     if not yes:
         confirm = Confirm.ask(
-            f"Are you sure you want to delete version [magenta]{version_id}[/magenta] "
+            f"Are you sure you want to delete instance [magenta]{instance_id}[/magenta] "
             f"from application [magenta]{app_id}[/magenta]? This action cannot be undone.",
             default=False,
         )
 
         if not confirm:
-            info(msg=f"Version [magenta]{version_id}[/magenta] will not be deleted.", emoji=":bulb:")
+            info(msg=f"Instance [magenta]{instance_id}[/magenta] will not be deleted.", emoji=":bulb:")
             return
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-    cloud_app.delete_version(version_id=version_id)
+    cloud_app.delete_instance(instance_id=instance_id)
     success(
-        f"Version [magenta]{version_id}[/magenta] deleted successfully from application [magenta]{app_id}[/magenta]."
+        f"Instance [magenta]{instance_id}[/magenta] deleted successfully from application [magenta]{app_id}[/magenta]."
     )

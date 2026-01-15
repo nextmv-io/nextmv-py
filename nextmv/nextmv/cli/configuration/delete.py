@@ -53,7 +53,7 @@ def delete(
 
     if not yes:
         confirm = Confirm.ask(
-            f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone",
+            f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone.",
             default=False,
         )
 

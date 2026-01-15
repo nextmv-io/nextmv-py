@@ -659,6 +659,32 @@ class Application(BaseModel):
             endpoint=f"{self.ensembles_endpoint}/{ensemble_definition_id}",
         )
 
+    def delete_instance(self, instance_id: str) -> None:
+        """
+        Delete an instance.
+
+        Permanently removes the specified instance from the application.
+
+        Parameters
+        ----------
+        instance_id : str
+            ID of the instance to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_instance("prod-instance")  # Permanently deletes the instance
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/instances/{instance_id}",
+        )
+
     def delete_scenario_test(self, scenario_test_id: str) -> None:
         """
         Delete a scenario test.
@@ -1690,8 +1716,8 @@ class Application(BaseModel):
     def new_instance(
         self,
         version_id: str,
-        id: str,
-        name: str,
+        id: str | None = None,
+        name: str | None = None,
         description: str | None = None,
         configuration: InstanceConfiguration | None = None,
         exist_ok: bool = False,
@@ -1699,16 +1725,17 @@ class Application(BaseModel):
         """
         Create a new instance and associate it with a version.
 
-        This method creates a new instance associated with a specific version of the application.
-        Instances are configurations of an application version that can be executed.
+        This method creates a new instance associated with a specific version
+        of the application. Instances are configurations of an application
+        version that can be executed.
 
         Parameters
         ----------
         version_id : str
             ID of the version to associate the instance with.
-        id : str
+        id : str | None, default=None
             ID of the instance. Will be generated if not provided.
-        name : str
+        name : str | None, default=None
             Name of the instance. Will be generated if not provided.
         description : Optional[str], default=None
             Description of the instance.
@@ -1750,14 +1777,17 @@ class Application(BaseModel):
         if exist_ok and self.instance_exists(instance_id=id):
             return self.instance(instance_id=id)
 
+        if id is None:
+            id = safe_id(prefix="instance")
+        if name is None:
+            name = id
+
         payload = {
+            "id": id,
+            "name": name,
             "version_id": version_id,
         }
 
-        if id is not None:
-            payload["id"] = id
-        if name is not None:
-            payload["name"] = name
         if description is not None:
             payload["description"] = description
         if configuration is not None:
