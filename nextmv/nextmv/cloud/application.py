@@ -26,7 +26,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -2534,7 +2534,7 @@ class Application(BaseModel):
 
         return Version.from_dict(response.json())
 
-    def push(
+    def push(  # noqa: C901
         self,
         manifest: Manifest | None = None,
         app_dir: str | None = None,
@@ -2542,6 +2542,10 @@ class Application(BaseModel):
         model: Model | None = None,
         model_configuration: ModelConfiguration | None = None,
         rich_print: bool = False,
+        no_version: bool = False,
+        version_id: str | None = None,
+        version_name: str | None = None,
+        version_description: str | None = None,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
@@ -2558,6 +2562,15 @@ class Application(BaseModel):
         internal (or Python-native) strategy, where the app is actually a
         `nextmv.Model`. The model is encoded, some dependencies and
         accompanying files are packaged, and the app is pushed to Nextmv Cloud.
+
+        The default behavior of this function is to create a new application
+        version _after_ the app has been pushed. You can set the `no_version`
+        argument to `True` to skip this step. The `version_id`, `version_name`,
+        and `version_description` arguments can be used to customize the version
+        that is created. If the `version_id` is not specified, a randomly
+        generated ID will be used. If the `version_name` is not specified, a
+        generic name with a timestamp will be used. Lastly, if no description is
+        specified, then a generic description will also be used.
 
         Parameters
         ----------
@@ -2683,6 +2696,47 @@ class Application(BaseModel):
             shutil.rmtree(output_dir)
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
+
+        if no_version:
+            if verbose:
+                if rich_print:
+                    rich.print(
+                        f":white_check_mark: Push completed for Nextmv application [magenta]{self.id}[/magenta] "
+                        "without creating a new version.",
+                        file=sys.stderr,
+                    )
+                else:
+                    log("✅ Push completed without creating a new version for Nextmv application.")
+
+            return
+
+        now = datetime.now(timezone.utc)
+        now_id = now.strftime("%Y%m%d-%H%M%S")
+        now_display = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if version_id is None:
+            version_id = safe_id(prefix="version") + f"-{now_id}"
+        if version_name is None:
+            version_name = f"Version pushed at {now_display}"
+        if version_description is None:
+            version_description = f"Version created automatically from push at {now_display}"
+
+        version = self.new_version(
+            id=version_id,
+            name=version_name,
+            description=version_description,
+        )
+        version_dict = version.to_dict()
+
+        if verbose:
+            if rich_print:
+                rich.print(
+                    f":white_check_mark: Automatically created new version [magenta]{version.id}[/magenta].",
+                    file=sys.stderr,
+                )
+                rich.print_json(data=version_dict)
+            else:
+                log(f'✅ Automatically created new version "{version.id}".')
+                log(json.dumps(version_dict, indent=2))
 
     def list_assets(self, run_id: str) -> list[RunAsset]:
         """
