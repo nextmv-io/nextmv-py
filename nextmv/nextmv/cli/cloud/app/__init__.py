@@ -27,5 +27,9 @@ app.add_typer(update_app)
 def callback() -> None:
     """
     Create, manage, and push Nextmv Cloud applications.
+
+    A Nextmv application is an entity that contains a decision model as
+    executable code. An application can make a run by taking an input,
+    executing the decision model, and producing an output.
     """
     pass

@@ -707,6 +707,32 @@ class Application(BaseModel):
             endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
         )
 
+    def delete_version(self, version_id: str) -> None:
+        """
+        Delete a version.
+
+        Permanently removes the specified version from the application.
+
+        Parameters
+        ----------
+        version_id : str
+            ID of the version to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_version("v1.0.0")  # Permanently deletes the version
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/versions/{version_id}",
+        )
+
     def ensemble_definition(self, ensemble_definition_id: str) -> EnsembleDefinition:
         """
         Get an ensemble definition.
@@ -2432,7 +2458,7 @@ class Application(BaseModel):
         exist_ok: bool = False,
     ) -> Version:
         """
-        Create a new version using the current dev binary.
+        Create a new version using the latest pushed executable.
 
         This method creates a new version of the application using the current development
         binary. Application versions represent different iterations of your application's
@@ -3881,6 +3907,68 @@ class Application(BaseModel):
         )
 
         return SecretsCollectionSummary.from_dict(response.json())
+
+    def update_version(
+        self,
+        version_id: str,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> Version:
+        """
+        Update a version.
+
+        This method updates a specific version of the application. It mimics a
+        PATCH operation by allowing you to update only the name and/or description
+        fields while preserving all other fields.
+
+        Parameters
+        ----------
+        version_id : str
+            ID of the version to update.
+        name : Optional[str], default=None
+            Optional new name for the version.
+        description : Optional[str], default=None
+            Optional new description for the version.
+
+        Returns
+        -------
+        Version
+            The updated version object.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Update a version's name
+        >>> updated = app.update_version("v1.0.0", name="Version 1.0")
+        >>> print(updated.name)
+        'Version 1.0'
+
+        >>> # Update a version's description
+        >>> updated = app.update_version("v1.0.0", description="Initial release")
+        >>> print(updated.description)
+        'Initial release'
+        """
+
+        version = self.version(version_id=version_id)
+        version_dict = version.to_dict()
+        payload = version_dict
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="PUT",
+            endpoint=f"{self.endpoint}/versions/{version_id}",
+            payload=payload,
+        )
+
+        return Version.from_dict(response.json())
 
     def upload_large_input(
         self,

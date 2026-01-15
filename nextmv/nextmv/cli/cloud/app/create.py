@@ -84,10 +84,6 @@ def create(
     """
     Create a new Nextmv Cloud application.
 
-    A Nextmv application is an entity that contains a decision model as
-    executable code. An application can make a run by taking an input,
-    executing the decision model, and producing an output.
-
     Use the [code]--exist-ok[/code] flag to avoid errors when creating an
     application with an ID that already exists. This is useful for scripts that
     need to ensure an application exists without worrying about whether it was
