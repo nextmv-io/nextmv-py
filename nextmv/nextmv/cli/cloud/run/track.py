@@ -40,7 +40,7 @@ def track(
             "--status",
             "-s",
             help="Status of the tracked run. Allowed values are: "
-            f"{[v.value for v in TrackedRunStatus.__members__.values()]}",
+            f"[magenta]{[v.value for v in TrackedRunStatus.__members__.values()]}[/magenta].",
             metavar="STATUS",
             rich_help_panel="Tracked run configuration",
         ),

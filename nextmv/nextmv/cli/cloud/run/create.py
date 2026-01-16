@@ -181,7 +181,8 @@ def create(
         typer.Option(
             "--run-type",
             "-r",
-            help=f"The type of run to create. Allowed values are: {[v.value for v in RunType.__members__.values()]}",
+            help=f"The type of run to create. Allowed values are: "
+            f"[magenta]{[v.value for v in RunType.__members__.values()]}[/magenta].",
             metavar="RUN_TYPE",
             rich_help_panel="Run configuration",
         ),
