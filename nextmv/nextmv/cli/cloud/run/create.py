@@ -443,7 +443,7 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
         return None
 
     run_options = {}
-    for opt in options or []:
+    for opt in options:
         # It is possible to pass multiple options separated by commas. The
         # default way though is to use the flag multiple times to specify
         # different options.

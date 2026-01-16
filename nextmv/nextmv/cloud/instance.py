@@ -86,7 +86,10 @@ class InstanceConfiguration(BaseModel):
         self.execution_class = integration_val
 
         # Processes the format to ensure only format_input is set.
-        final_format = Format(format_input=self.format.format_input) if self.format else None
+        if self.format is not None and self.format.format_input is not None:
+            final_format = Format(format_input=self.format.format_input)
+        else:
+            final_format = None
         self.format = final_format
 
 
