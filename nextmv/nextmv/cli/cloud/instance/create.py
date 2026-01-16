@@ -59,14 +59,14 @@ def create(
         ),
     ] = None,
     # Options for configuring the instance.
-    content_type: Annotated[
+    content_format: Annotated[
         InputFormat | None,
         typer.Option(
-            "--content-type",
+            "--content-format",
             "-c",
-            help="The content type of the instance to create. Allowed values are: "
-            f"{[v.value for v in InputFormat.__members__.values()]}",
-            metavar="CONTENT_TYPE",
+            help="The content format of the instance to create. Allowed values are: "
+            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),
     ] = None,
@@ -177,7 +177,7 @@ def create(
     instance_config = build_config(
         priority=priority,
         no_queuing=no_queuing,
-        content_type=content_type,
+        content_format=content_format,
         execution_class=execution_class,
         integration_id=integration_id,
         options=instance_options,
@@ -235,7 +235,7 @@ def build_options(options: list[str] | None) -> dict[str, str] | None:
 def build_config(
     priority: int,
     no_queuing: bool,
-    content_type: InputFormat | None = None,
+    content_format: InputFormat | None = None,
     execution_class: str | None = None,
     integration_id: str | None = None,
     options: dict | None = None,
@@ -250,8 +250,8 @@ def build_config(
         The priority of the instance.
     no_queuing : bool
         Whether to disable queuing for the instance.
-    content_type : InputFormat | None
-        The content type for the instance, if applicable.
+    content_format : InputFormat | None
+        The content format for the instance, if applicable.
     execution_class : str | None
         The execution class to use for the instance, if applicable.
     integration_id : str | None
@@ -281,10 +281,10 @@ def build_config(
         config.secrets_collection_id = secret_collection_id
     if integration_id is not None:
         config.integration_id = integration_id
-    if content_type is not None:
+    if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_type),
+                input_type=InputFormat(content_format),
             ),
         )
 

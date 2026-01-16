@@ -58,14 +58,14 @@ def update(
         ),
     ] = None,
     # Options for updating the instance configuration.
-    content_type: Annotated[
+    content_format: Annotated[
         InputFormat | None,
         typer.Option(
-            "--content-type",
+            "--content-format",
             "-c",
-            help="The content type for the instance. Allowed values are: "
-            f"{[v.value for v in InputFormat.__members__.values()]}",
-            metavar="CONTENT_TYPE",
+            help="The content format for the instance. Allowed values are: "
+            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),
     ] = None,
@@ -162,7 +162,7 @@ def update(
     # Check if any configuration options are provided
     has_config_options = any(
         [
-            content_type is not None,
+            content_format is not None,
             execution_class is not None,
             integration_id is not None,
             no_queuing is not None,
@@ -187,7 +187,7 @@ def update(
         configuration = build_config(
             priority=priority,
             no_queuing=no_queuing,
-            content_type=content_type,
+            content_format=content_format,
             execution_class=execution_class,
             integration_id=integration_id,
             options=instance_options,
