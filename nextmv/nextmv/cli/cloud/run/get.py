@@ -153,13 +153,13 @@ def handle_outputs(
 
     # Get the run metadata to determine how to operate with the output.
     run_info = cloud_app.run_metadata(run_id=run_id)
-    content_type = run_info.metadata.format.format_output.output_type
+    content_format = run_info.metadata.format.format_output.output_type
 
     # Build kwargs for the result retrieval.
     kwargs = {"run_id": run_id}
 
     # For MULTI_FILE and CSV_ARCHIVE, we need output_dir_path.
-    if content_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if content_format not in {OutputFormat.JSON, OutputFormat.TEXT}:
         output_dir = f"{run_id}-output" if output is None or output == "" else output
         kwargs["output_dir_path"] = output_dir
 
@@ -174,7 +174,7 @@ def handle_outputs(
         run_result = cloud_app.run_result(**kwargs)
 
     # Handle the case where output is embedded directly in the result: json and text.
-    if content_type in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if content_format in {OutputFormat.JSON, OutputFormat.TEXT}:
         if output is None or output == "":
             print_json(run_result.to_dict())
         else:

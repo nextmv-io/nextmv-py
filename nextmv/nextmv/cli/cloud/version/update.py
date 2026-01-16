@@ -19,15 +19,6 @@ app = typer.Typer()
 def update(
     app_id: AppIDOption,
     version_id: VersionIDOption,
-    name: Annotated[
-        str | None,
-        typer.Option(
-            "--name",
-            "-n",
-            help="A new name for the version.",
-            metavar="NAME",
-        ),
-    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -35,6 +26,15 @@ def update(
             "-d",
             help="A new description for the version.",
             metavar="DESCRIPTION",
+        ),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="A new name for the version.",
+            metavar="NAME",
         ),
     ] = None,
     output: Annotated[

@@ -64,3 +64,17 @@ VersionIDOption = Annotated[
         metavar="VERSION_ID",
     ),
 ]
+
+# instance_id option - can be used in any command that requires an instance ID.
+# Define it as follows in commands or callbacks, as necessary:
+# instance_id: InstanceIDOption
+InstanceIDOption = Annotated[
+    str,
+    typer.Option(
+        "--instance-id",
+        "-i",
+        help="The Nextmv Cloud instance ID to use for this action.",
+        envvar="NEXTMV_INSTANCE_ID",
+        metavar="INSTANCE_ID",
+    ),
+]

@@ -17,15 +17,6 @@ app = typer.Typer()
 @app.command()
 def create(
     app_id: AppIDOption,
-    name: Annotated[
-        str | None,
-        typer.Option(
-            "--name",
-            "-n",
-            help="A name for the version. If a name is not provided, the version ID will be used as the name.",
-            metavar="NAME",
-        ),
-    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -43,6 +34,15 @@ def create(
             help="If a version with the given ID already exists, do not raise an error, and simply return it.",
         ),
     ] = False,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="A name for the version. If a name is not provided, the version ID will be used as the name.",
+            metavar="NAME",
+        ),
+    ] = None,
     version_id: Annotated[
         str | None,
         typer.Option(

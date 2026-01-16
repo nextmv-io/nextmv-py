@@ -31,7 +31,7 @@ def track(
             "-o",
             help="The output of the run being tracked. A file or directory depending on content type.",
             metavar="OUTPUT_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ],
     status: Annotated[
@@ -42,7 +42,7 @@ def track(
             help="Status of the tracked run. Allowed values are: "
             f"{[v.value for v in TrackedRunStatus.__members__.values()]}",
             metavar="STATUS",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ],
     assets: Annotated[
@@ -50,18 +50,18 @@ def track(
         typer.Option(
             help="The assets of the run being tracked. A [magenta]json[/magenta] file to read the assets from.",
             metavar="ASSETS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
-    content_type: Annotated[
+    content_format: Annotated[
         InputFormat | None,
         typer.Option(
-            "--content-type",
+            "--content-format",
             "-c",
-            help="The content type of the run to track. Allowed values are: "
-            f"{[v.value for v in InputFormat.__members__.values()]}",
-            metavar="CONTENT_TYPE",
-            rich_help_panel="Tracked run control",
+            help="The content format of the run to track. Allowed values are: "
+            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            metavar="CONTENT_FORMAT",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = InputFormat.JSON,
     description: Annotated[
@@ -69,7 +69,7 @@ def track(
         typer.Option(
             help="An optional description for the tracked run.",
             metavar="DESCRIPTION",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     duration: Annotated[
@@ -79,7 +79,7 @@ def track(
             "-d",
             help="The duration of the run being tracked, in milliseconds.",
             metavar="DURATION_MS",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = 0,
     error_msg: Annotated[
@@ -89,7 +89,7 @@ def track(
             "-e",
             help="An error message if the run being tracked failed.",
             metavar="ERROR_MESSAGE",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     input: Annotated[
@@ -100,7 +100,7 @@ def track(
             help="The input of the run being tracked. File or directory depending on content type. "
             "Uses [magenta]stdin[/magenta] if not defined.",
             metavar="INPUT_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     logs: Annotated[
@@ -110,7 +110,7 @@ def track(
             "-l",
             help="The logs of the run being tracked. A utf-8 encoded text file to read the logs from.",
             metavar="LOGS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     name: Annotated[
@@ -120,7 +120,7 @@ def track(
             "-n",
             help="An optional name for the tracked run.",
             metavar="NAME",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     statistics: Annotated[
@@ -128,7 +128,7 @@ def track(
         typer.Option(
             help="The statistics of the run being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
-            rich_help_panel="Tracked run control",
+            rich_help_panel="Tracked run configuration",
         ),
     ] = None,
     # Options for run configuration.
@@ -233,7 +233,7 @@ def track(
         run_type=RunType.EXTERNAL,
         priority=6,
         no_queuing=False,
-        content_type=content_type,
+        content_format=content_format,
     )
 
     # Handles the default instance.
@@ -249,7 +249,7 @@ def track(
         description=description,
         stdin=stdin,
         input=input,
-        content_type=content_type,
+        content_format=content_format,
         output=output,
         assets=assets,
         logs=logs,
@@ -275,7 +275,7 @@ def build_tracked_run_input(
     description: str | None,
     stdin: str | None,
     input: str | None,
-    content_type: InputFormat,
+    content_format: InputFormat,
     output: str,
     assets: str | None = None,
     logs: str | None = None,
@@ -304,8 +304,8 @@ def build_tracked_run_input(
         The input provided via stdin, if any.
     input : str | None
         The input file or directory path, if any.
-    content_type : InputFormat
-        The content type of the input (json or text).
+    content_format : InputFormat
+        The content format of the input (json or text).
     output : str
         The output file or directory path.
     assets : str | None
@@ -326,12 +326,12 @@ def build_tracked_run_input(
         tracked_run=tracked_run,
         stdin=stdin,
         input=input,
-        content_type=content_type,
+        content_format=content_format,
     )
     tracked_run = resolve_output(
         tracked_run=tracked_run,
         output=output,
-        content_type=content_type,
+        content_format=content_format,
     )
 
     # Handle the assets, which should be a JSON file.
@@ -365,7 +365,7 @@ def resolve_input(
     tracked_run: TrackedRun,
     stdin: str | None,
     input: str | None,
-    content_type: InputFormat,
+    content_format: InputFormat,
 ) -> TrackedRun:
     """
     Resolves the input for the tracked run, either from stdin or from a
@@ -379,8 +379,8 @@ def resolve_input(
         The input provided via stdin, if any.
     input : str | None
         The input file or directory path, if any.
-    content_type : InputFormat
-        The content type of the input (json or text).
+    content_format : InputFormat
+        The content format of the input (json or text).
 
     Returns
     -------
@@ -391,20 +391,20 @@ def resolve_input(
         # Handle the case where stdin is provided as JSON for a JSON app.
         try:
             input_data = json.loads(stdin)
-            if content_type != InputFormat.JSON:
+            if content_format != InputFormat.JSON:
                 error(
                     "Input provided via [magenta]stdin[/magenta] is [magenta]json[/magenta], "
-                    f"but the specified content type is {content_type.value}. "
-                    "[code]--content-type[/code] should be set to [magenta]json[/magenta]."
+                    f"but the specified content format is {content_format.value}. "
+                    "[code]--content-format[/code] should be set to [magenta]json[/magenta]."
                 )
 
         except json.JSONDecodeError:
             input_data = stdin
-            if content_type != InputFormat.TEXT:
+            if content_format != InputFormat.TEXT:
                 error(
                     "Input provided via [magenta]stdin[/magenta] is [magenta]text[/magenta], "
-                    f"but the specified content type is {content_type.value}. "
-                    "[code]--content-type[/code] should be set to [magenta]text[/magenta]."
+                    f"but the specified content format is {content_format.value}. "
+                    "[code]--content-format[/code] should be set to [magenta]text[/magenta]."
                 )
 
         tracked_run.input = input_data
@@ -416,7 +416,7 @@ def resolve_input(
     input_path = Path(input)
 
     if input_path.is_file():
-        if content_type == InputFormat.JSON:
+        if content_format == InputFormat.JSON:
             try:
                 with input_path.open("r") as f:
                     input_data = json.load(f)
@@ -428,14 +428,14 @@ def resolve_input(
             except json.JSONDecodeError as e:
                 error(f"Failed to parse input file [magenta]{input}[/magenta] as [magenta]json[/magenta]: {e}.")
 
-        elif content_type == InputFormat.TEXT:
+        elif content_format == InputFormat.TEXT:
             input_data = input_path.read_text()
             tracked_run.input = input_data
 
             return tracked_run
 
         else:
-            error(f"Unsupported content type [magenta]{content_type.value}[/magenta] for file input.")
+            error(f"Unsupported content format [magenta]{content_format.value}[/magenta] for file input.")
 
     # If the input is a directory, we give the path directly to the run method.
     # Internally, the files will be tarred and uploaded.
@@ -450,7 +450,7 @@ def resolve_input(
 def resolve_output(
     tracked_run: TrackedRun,
     output: str,
-    content_type: InputFormat,
+    content_format: InputFormat,
 ) -> TrackedRun:
     """
     Resolves the output for the tracked run.
@@ -461,8 +461,8 @@ def resolve_output(
         The tracked run to set the output for.
     output : str
         The output file or directory path.
-    content_type : InputFormat
-        The content type of the output (json or text).
+    content_format : InputFormat
+        The content format of the output (json or text).
 
     Returns
     -------
@@ -472,7 +472,7 @@ def resolve_output(
 
     output_path = Path(output)
     if output_path.is_file():
-        if content_type == InputFormat.JSON:
+        if content_format == InputFormat.JSON:
             try:
                 with output_path.open("r") as f:
                     output_data = json.load(f)
@@ -484,14 +484,14 @@ def resolve_output(
             except json.JSONDecodeError as e:
                 error(f"Failed to parse output file [magenta]{output}[/magenta] as [magenta]json[/magenta]: {e}.")
 
-        elif content_type == InputFormat.TEXT:
+        elif content_format == InputFormat.TEXT:
             output_data = output_path.read_text()
             tracked_run.output = output_data
 
             return tracked_run
 
         else:
-            error(f"Unsupported content type [magenta]{content_type.value}[/magenta] for file output.")
+            error(f"Unsupported content type [magenta]{content_format.value}[/magenta] for file output.")
 
     # If the output is a directory, we give the path directly to the run method.
     # Internally, the files will be downloaded and extracted.

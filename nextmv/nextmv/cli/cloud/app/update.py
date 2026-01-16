@@ -18,13 +18,13 @@ app = typer.Typer()
 @app.command()
 def update(
     app_id: AppIDOption,
-    name: Annotated[
+    default_experiment_instance: Annotated[
         str | None,
         typer.Option(
-            "--name",
-            "-n",
-            help="A new name for the application.",
-            metavar="NAME",
+            "--default-experiment-instance",
+            "-x",
+            help="A new default experiment instance ID for the application.",
+            metavar="DEFAULT_EXPERIMENT_INSTANCE",
         ),
     ] = None,
     default_instance_id: Annotated[
@@ -36,15 +36,6 @@ def update(
             metavar="DEFAULT_INSTANCE_ID",
         ),
     ] = None,
-    default_experiment_instance: Annotated[
-        str | None,
-        typer.Option(
-            "--default-experiment-instance",
-            "-x",
-            help="A new default experiment instance ID for the application.",
-            metavar="DEFAULT_EXPERIMENT_INSTANCE",
-        ),
-    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -52,6 +43,15 @@ def update(
             "-d",
             help="A new description for the application.",
             metavar="DESCRIPTION",
+        ),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="A new name for the application.",
+            metavar="NAME",
         ),
     ] = None,
     output: Annotated[

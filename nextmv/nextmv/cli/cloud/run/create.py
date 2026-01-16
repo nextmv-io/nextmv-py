@@ -83,14 +83,14 @@ def create(
         ),
     ] = False,
     # Options for run configuration.
-    content_type: Annotated[
+    content_format: Annotated[
         InputFormat | None,
         typer.Option(
-            "--content-type",
+            "--content-format",
             "-c",
-            help="The content type of the run to create. Allowed values are: "
-            f"{[v.value for v in InputFormat.__members__.values()]}",
-            metavar="CONTENT_TYPE",
+            help="The content format of the run to create. Allowed values are: "
+            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            metavar="CONTENT_FORMAT",
             rich_help_panel="Run configuration",
         ),
     ] = None,
@@ -299,7 +299,7 @@ def create(
         priority=priority,
         no_queuing=no_queuing,
         execution_class=execution_class,
-        content_type=content_type,
+        content_format=content_format,
         secret_collection_id=secret_collection_id,
         integration_id=integration_id,
         definition_id=definition_id,
@@ -362,7 +362,7 @@ def build_run_config(
     priority: int,
     no_queuing: bool,
     execution_class: str | None = None,
-    content_type: InputFormat | None = None,
+    content_format: InputFormat | None = None,
     secret_collection_id: str | None = None,
     integration_id: str | None = None,
     definition_id: str | None = None,
@@ -380,8 +380,8 @@ def build_run_config(
         Whether to disable queuing for the run.
     execution_class : str | None
         The execution class to use for the run, if applicable.
-    content_type : InputFormat | None
-        The content type of the run to create, if applicable.
+    content_format : InputFormat | None
+        The content format of the run to create, if applicable.
     secret_collection_id : str | None
         The secret collection ID to use for the run, if applicable.
     integration_id : str | None
@@ -406,10 +406,10 @@ def build_run_config(
     )
     if execution_class is not None:
         config.execution_class = execution_class
-    if content_type is not None:
+    if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_type),
+                input_type=InputFormat(content_format),
             ),
         )
     if secret_collection_id is not None:
@@ -439,8 +439,11 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
         The built run options.
     """
 
+    if options is None:
+        return None
+
     run_options = {}
-    for opt in options or []:
+    for opt in options:
         # It is possible to pass multiple options separated by commas. The
         # default way though is to use the flag multiple times to specify
         # different options.
