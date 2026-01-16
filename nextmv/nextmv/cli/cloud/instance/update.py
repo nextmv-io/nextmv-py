@@ -149,6 +149,14 @@ def update(
     - Update an instance and save the updated information to a [magenta]updated_instance.json[/magenta] file.
         $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
             --name "Production Instance" --output updated_instance.json[/green]
+
+    - Update an instance's execution class and priority.
+        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --execution-class 6c9500mb870s --priority 1[/green]
+
+    - Update an instance's runtime options.
+        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --options max_duration=30 --options timeout=60[/green]
     """
 
     # Check if any configuration options are provided

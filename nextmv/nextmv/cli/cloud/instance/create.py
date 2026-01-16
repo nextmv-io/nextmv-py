@@ -11,7 +11,7 @@ from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 from nextmv.cloud.instance import InstanceConfiguration
 from nextmv.input import InputFormat
-from nextmv.run import Format, RunQueuing
+from nextmv.run import Format, FormatInput, RunQueuing
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -154,6 +154,14 @@ def create(
     - Create an instance, or get it if it already exists.
         $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
             --instance-id prod --exist-ok[/green]
+
+    - Create an instance with configuration options.
+        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --execution-class 6c9500mb870s --priority 1[/green]
+
+    - Create an instance with runtime options.
+        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --options max_duration=30 --options timeout=60[/green]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
@@ -275,7 +283,9 @@ def build_config(
         config.integration_id = integration_id
     if content_type is not None:
         config.format = Format(
-            format_input=InputFormat(content_type),
+            format_input=FormatInput(
+                input_type=InputFormat(content_type),
+            ),
         )
 
     return config
