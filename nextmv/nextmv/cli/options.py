@@ -78,3 +78,17 @@ InstanceIDOption = Annotated[
         metavar="INSTANCE_ID",
     ),
 ]
+
+# secrets_collection_id option - can be used in any command that requires a secrets collection ID.
+# Define it as follows in commands or callbacks, as necessary:
+# secrets_collection_id: SecretsCollectionIDOption
+SecretsCollectionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--secrets-collection-id",
+        "-s",
+        help="The Nextmv Cloud secrets collection ID to use for this action.",
+        envvar="NEXTMV_SECRETS_COLLECTION_ID",
+        metavar="SECRETS_COLLECTION_ID",
+    ),
+]

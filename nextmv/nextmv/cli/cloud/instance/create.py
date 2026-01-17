@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 from nextmv.cloud.instance import InstanceConfiguration
 from nextmv.input import InputFormat
@@ -64,8 +64,7 @@ def create(
         typer.Option(
             "--content-format",
             "-c",
-            help="The content format of the instance to create. Allowed values are: "
-            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            help=f"The content format of the instance to create. Allowed values are: {enum_values(InputFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),

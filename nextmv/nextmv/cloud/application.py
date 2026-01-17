@@ -2396,8 +2396,8 @@ class Application(BaseModel):
     def new_secrets_collection(
         self,
         secrets: list[Secret],
-        id: str,
-        name: str,
+        id: str | None = None,
+        name: str | None = None,
         description: str | None = None,
     ) -> SecretsCollectionSummary:
         """
@@ -2405,18 +2405,22 @@ class Application(BaseModel):
 
         This method creates a new secrets collection with the provided secrets.
         A secrets collection is a group of key-value pairs that can be used by
-        your application instances during execution. If no secrets are provided,
-        a ValueError is raised.
+        your application instances during execution. If no secrets are
+        provided, a ValueError is raised. If the `id` or `name` parameters are
+        not provided, they will be generated based on a unique ID.
 
         Parameters
         ----------
         secrets : list[Secret]
             List of secrets to use for the secrets collection. Each secret
-            should be an instance of the Secret class containing a key and value.
-        id : str
-            ID of the secrets collection.
-        name : str
-            Name of the secrets collection.
+            should be an instance of the Secret class containing a key and
+            value.
+        id : str | None, default=None
+            ID of the secrets collection. If not provided, a unique ID will be
+            generated.
+        name : str | None, default=None
+            Name of the secrets collection. If not provided, the ID will be
+            used.
         description : Optional[str], default=None
             Description of the secrets collection.
 
@@ -2461,14 +2465,17 @@ class Application(BaseModel):
         if len(secrets) == 0:
             raise ValueError("secrets must be provided")
 
+        if id is None or id == "":
+            id = safe_id(prefix="secrets")
+        if name is None or name == "":
+            name = id
+
         payload = {
+            "id": id,
+            "name": name,
             "secrets": [secret.to_dict() for secret in secrets],
         }
 
-        if id is not None:
-            payload["id"] = id
-        if name is not None:
-            payload["name"] = name
         if description is not None:
             payload["description"] = description
 
