@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.secrets import Secret, SecretType
 
@@ -26,7 +26,7 @@ def create(
             help="Secrets to configure in the app. Data should be valid [magenta]json[/magenta]. "
             "Pass multiple secrets by repeating the flag, or providing a list of objects. "
             "Allowed values for [magenta]type[/magenta] are: "
-            f"[magenta]{[v.value for v in SecretType.__members__.values()]}[/magenta]. "
+            f"{enum_values(SecretType)}. "
             "Object format: [magenta]{'type': type, 'location': location, 'value': value}[/magenta].",
             metavar="SECRETS",
         ),

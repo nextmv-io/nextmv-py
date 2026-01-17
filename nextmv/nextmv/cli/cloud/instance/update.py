@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json, success
+from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
 from nextmv.input import InputFormat
 
@@ -63,8 +63,7 @@ def update(
         typer.Option(
             "--content-format",
             "-c",
-            help="The content format for the instance. Allowed values are: "
-            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            help=f"The content format for the instance. Allowed values are: {enum_values(InputFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),

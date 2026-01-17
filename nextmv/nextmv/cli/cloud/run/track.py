@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -39,8 +39,7 @@ def track(
         typer.Option(
             "--status",
             "-s",
-            help="Status of the tracked run. Allowed values are: "
-            f"[magenta]{[v.value for v in TrackedRunStatus.__members__.values()]}[/magenta].",
+            help=f"Status of the tracked run. Allowed values are: {enum_values(TrackedRunStatus)}.",
             metavar="STATUS",
             rich_help_panel="Tracked run configuration",
         ),
@@ -58,8 +57,7 @@ def track(
         typer.Option(
             "--content-format",
             "-c",
-            help="The content format of the run to track. Allowed values are: "
-            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            help=f"The content format of the run to track. Allowed values are: {enum_values(InputFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Tracked run configuration",
         ),

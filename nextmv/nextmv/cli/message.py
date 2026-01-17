@@ -4,6 +4,7 @@ formatting. Logging, in general, is always printed to stderr.
 """
 
 import sys
+from enum import Enum
 from typing import Any
 
 import rich
@@ -123,3 +124,30 @@ def print_json(data: dict[str, Any] | list[dict[str, Any]]) -> None:
     """
 
     rich.print_json(data=data)
+
+
+def enum_values(enum_class: Enum) -> str:
+    """
+    Get a nicely formatted string of the values of an Enum class, using commas
+    and an oxford comma.
+
+    Parameters
+    ----------
+    enum_class : Enum
+        The Enum class to get the values from.
+
+    Returns
+    -------
+    str
+        A nicely formatted string of the values of the Enum class.
+    """
+
+    values = [f"[magenta]{member.value}[/magenta]" for member in enum_class]
+    if len(values) == 0:
+        return ""
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return " and ".join(values)
+
+    return ", ".join(values[:-1]) + ", and " + values[-1]

@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.cloud.secrets.create import build_secrets
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json, success
+from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SecretsCollectionIDOption
 from nextmv.cloud.secrets import SecretType
 
@@ -56,7 +56,7 @@ def update(
             help="Secrets to configure in the app. Data should be valid [magenta]json[/magenta]. "
             "Pass multiple secrets by repeating the flag, or providing a list of objects. "
             "Allowed values for [magenta]type[/magenta] are: "
-            f"[magenta]{[v.value for v in SecretType.__members__.values()]}[/magenta]. "
+            f"{enum_values(SecretType)}. "
             "Object format: [magenta]{'type': type, 'location': location, 'value': value}[/magenta]. "
             "This will replace all existing secrets in the collection.",
             metavar="SECRETS",

@@ -13,7 +13,7 @@ import typer
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json, success
+from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
@@ -88,8 +88,7 @@ def create(
         typer.Option(
             "--content-format",
             "-c",
-            help="The content format of the run to create. Allowed values are: "
-            f"[magenta]{[v.value for v in InputFormat.__members__.values()]}[/magenta].",
+            help=f"The content format of the run to create. Allowed values are: {enum_values(InputFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Run configuration",
         ),
@@ -181,8 +180,7 @@ def create(
         typer.Option(
             "--run-type",
             "-r",
-            help=f"The type of run to create. Allowed values are: "
-            f"[magenta]{[v.value for v in RunType.__members__.values()]}[/magenta].",
+            help=f"The type of run to create. Allowed values are: {enum_values(RunType)}.",
             metavar="RUN_TYPE",
             rich_help_panel="Run configuration",
         ),
