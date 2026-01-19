@@ -149,8 +149,7 @@ def resolve_data_kwarg(stdin: str | None, input: str | None, cloud_app: Applicat
         if tarfile.is_tarfile(input_path):
             return {"tar_file": str(input_path)}
 
-        with open(input_path) as f:
-            input_data = f.read()
+        input_data = input_path.read_text()
 
         return {"data": input_data}
 
