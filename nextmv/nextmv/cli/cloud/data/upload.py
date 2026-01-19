@@ -1,5 +1,5 @@
 """
-This module defines the cloud instance create command for the Nextmv CLI.
+This module defines the cloud data upload command for the Nextmv CLI.
 """
 
 import json
