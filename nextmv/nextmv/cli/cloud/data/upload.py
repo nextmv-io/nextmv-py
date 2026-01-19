@@ -75,23 +75,24 @@ def upload(
 
     - Upload data from [magenta]stdin[/magenta] for application
       [magenta]hare-app[/magenta].
-        $ [green]echo '{"key": "value"}' | nextmv cloud upload --app-id hare-app --upload-url <URL>[/green]
+        $ [green]echo '{"key": "value"}' | nextmv cloud data upload --app-id hare-app --upload-url <URL>[/green]
 
     - Upload data from a [magenta]JSON[/magenta] file.
-        $ [green]nextmv cloud upload --app-id hare-app --upload-url <URL> --input data.json[/green]
+        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json[/green]
 
     - Upload data from a [magenta]text[/magenta] file.
-        $ [green]nextmv cloud upload --app-id hare-app --upload-url <URL> --input data.txt[/green]
+        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.txt[/green]
 
     - Upload [magenta]multi-file[/magenta] data from a directory.
-        $ [green]nextmv cloud upload --app-id hare-app --upload-url <URL> --input ./data_directory[/green]
+        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input ./data_directory[/green]
 
     - Upload [magenta]multi-file[/magenta] data from a
       [magenta].tar.gz[/magenta] file.
-        $ [green]nextmv cloud upload --app-id hare-app --upload-url <URL> --input data.tar.gz[/green]
+        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.tar.gz[/green]
 
     - Upload data using a specific profile.
-        $ [green]nextmv cloud upload --app-id hare-app --upload-url <URL> --input data.json --profile production[/green]
+        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json \\
+            --profile production[/green]
     """
 
     # Validate that input is provided.
