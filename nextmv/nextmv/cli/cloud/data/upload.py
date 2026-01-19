@@ -65,7 +65,7 @@ def upload(
       the data. Use with the [magenta]json[/magenta], and
       [magenta]text[/magenta] content formats.
     - [green]<DIR_PATH>[/green]: path to a [magenta]directory[/magenta]
-      containing  data files. Use with the [magenta]multi-file[/magenta]
+      containing data files. Use with the [magenta]multi-file[/magenta]
       content format.
     - [green]<.tar.gz_PATH>[/green]: path to a [magenta].tar.gz[/magenta] file
       containing tarred data files. Use with the [magenta]multi-file[/magenta]
