@@ -29,6 +29,7 @@ import requests
 import rich
 from pydantic import AliasChoices, Field
 
+from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
@@ -626,6 +627,69 @@ class Application(
 
         return Application.from_dict({"client": self.client} | response.json())
 
+    def upload_data(
+        self,
+        upload_url: UploadURL | str,
+        data: dict[str, Any] | str | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        tar_file: str | None = None,
+    ) -> None:
+        """
+        Upload data to the provided upload URL.
+
+        This method allows uploading data (either a dictionary or string)
+        to a pre-signed URL. If the data is a dictionary, it will be converted to
+        a JSON string before upload.
+
+        Parameters
+        ----------
+        upload_url : UploadURL | str
+            Upload URL object containing the pre-signed URL to use for
+            uploading. If it is a string, it will be used directly as the
+            pre-signed URL.
+        data : Optional[Union[dict[str, Any], str]]
+            Data to upload. Can be either a dictionary that will be
+            converted to JSON, or a pre-formatted JSON string.
+        json_configurations : Optional[dict[str, Any]], default=None
+            Optional configurations for JSON serialization. If provided, these
+            configurations will be used when serializing the data via
+            `json.dumps`.
+        tar_file : Optional[str], default=None
+            If provided, this will be used to upload a tar file instead of
+            a JSON string or dictionary. This is useful for uploading large
+            files that are already packaged as a tarball.
+
+        Returns
+        -------
+        None
+            This method doesn't return anything.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> # Upload a dictionary as JSON
+        >>> data = {"locations": [...], "vehicles": [...]}
+        >>> url = app.upload_url()
+        >>> app.upload_data(data=data, upload_url=url)
+        >>>
+        >>> # Upload a pre-formatted JSON string
+        >>> json_str = '{"locations": [...], "vehicles": [...]}'
+        >>> app.upload_data(data=json_str, upload_url=url)
+        """
+
+        if data is not None and isinstance(data, dict):
+            data = deflated_serialize_json(data, json_configurations=json_configurations)
+
+        self.client.upload_to_presigned_url(
+            url=upload_url.upload_url if isinstance(upload_url, UploadURL) else upload_url,
+            data=data,
+            tar_file=tar_file,
+        )
+
     def upload_large_input(
         self,
         input: dict[str, Any] | str | None,
@@ -634,6 +698,9 @@ class Application(
         tar_file: str | None = None,
     ) -> None:
         """
+        !!! warning
+            `upload_large_input` is deprecated, use `upload_data` instead.
+
         Upload large input data to the provided upload URL.
 
         This method allows uploading large input data (either a dictionary or string)
@@ -678,12 +745,15 @@ class Application(
         >>> app.upload_large_input(input=json_str, upload_url=url)
         """
 
-        if input is not None and isinstance(input, dict):
-            input = deflated_serialize_json(input, json_configurations=json_configurations)
+        deprecated(
+            name="Application.upload_large_input",
+            reason="`upload_large_input` is deprecated, use `upload_data` instead",
+        )
 
-        self.client.upload_to_presigned_url(
-            url=upload_url.upload_url,
+        self.upload_data(
             data=input,
+            upload_url=upload_url,
+            json_configurations=json_configurations,
             tar_file=tar_file,
         )
 
@@ -711,7 +781,7 @@ class Application(
         >>> # Get an upload URL and upload large input data
         >>> upload_url = app.upload_url()
         >>> large_input = {"locations": [...], "vehicles": [...]}
-        >>> app.upload_large_input(input=large_input, upload_url=upload_url)
+        >>> app.upload_data(data=large_input, upload_url=upload_url)
         """
 
         response = self.client.request(

@@ -244,7 +244,7 @@ class ApplicationRunMixin:
             argument instead. This argument takes precedence over the `input`.
             If `input_dir_path` is specified, this function looks for files in that
             directory and tars them, to later be uploaded using the
-            `upload_large_input` method. If both the `input_dir_path` and `input`
+            `upload_data` method. If both the `input_dir_path` and `input`
             arguments are provided, the `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
@@ -261,7 +261,7 @@ class ApplicationRunMixin:
             directly.
 
             In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
+            `upload_data` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -329,7 +329,7 @@ class ApplicationRunMixin:
             if not os.path.isdir(input_dir_path):
                 raise ValueError(f"Path {input_dir_path} is not a directory.")
 
-            tar_file = self.__package_inputs(input_dir_path)
+            tar_file = self._package_inputs(input_dir_path)
 
         input_data = self.__extract_input_data(input)
 
@@ -340,7 +340,7 @@ class ApplicationRunMixin:
         upload_id_used = upload_id is not None
         if self.__upload_url_required(upload_id_used, input_size, tar_file, input):
             upload_url = self.upload_url()
-            self.upload_large_input(input=input_data, upload_url=upload_url, tar_file=tar_file)
+            self.upload_data(data=input_data, upload_url=upload_url, tar_file=tar_file)
             upload_id = upload_url.upload_id
             upload_id_used = True
 
@@ -426,7 +426,7 @@ class ApplicationRunMixin:
             argument instead. This argument takes precedence over the `input`.
             If `input_dir_path` is specified, this function looks for files in that
             directory and tars them, to later be uploaded using the
-            `upload_large_input` method. If both the `input_dir_path` and `input`
+            `upload_data` method. If both the `input_dir_path` and `input`
             arguments are provided, the `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
@@ -443,7 +443,7 @@ class ApplicationRunMixin:
             directly.
 
             In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
+            `upload_data` method.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -987,7 +987,7 @@ class ApplicationRunMixin:
             if not os.path.isdir(input_dir_path):
                 raise ValueError(f"Path {input_dir_path} is not a directory.")
 
-            input_tar_file = self.__package_inputs(input_dir_path)
+            input_tar_file = self._package_inputs(input_dir_path)
 
         # Handle the case where the input is uploaded as Input or a dict.
         upload_input = tracked_run.input
@@ -995,7 +995,7 @@ class ApplicationRunMixin:
             upload_input = tracked_run.input.data
 
         # Actually uploads de input.
-        self.upload_large_input(input=upload_input, upload_url=url_input, tar_file=input_tar_file)
+        self.upload_data(data=upload_input, upload_url=url_input, tar_file=input_tar_file)
 
         # Get the URL to upload the output to.
         url_output = self.upload_url()
@@ -1011,7 +1011,7 @@ class ApplicationRunMixin:
             if not os.path.isdir(output_dir_path):
                 raise ValueError(f"Path {output_dir_path} is not a directory.")
 
-            output_tar_file = self.__package_inputs(output_dir_path)
+            output_tar_file = self._package_inputs(output_dir_path)
 
         # Handle the case where the output is uploaded as Output or a dict.
         upload_output = tracked_run.output
@@ -1019,7 +1019,7 @@ class ApplicationRunMixin:
             upload_output = tracked_run.output.to_dict()
 
         # Actually uploads the output.
-        self.upload_large_input(input=upload_output, upload_url=url_output, tar_file=output_tar_file)
+        self.upload_data(data=upload_output, upload_url=url_output, tar_file=output_tar_file)
 
         # Create the external run result and appends logs if required.
         external_result = ExternalRunResult(
@@ -1031,7 +1031,7 @@ class ApplicationRunMixin:
         # Handle the stderr logs if provided.
         if tracked_run.logs is not None:
             url_stderr = self.upload_url()
-            self.upload_large_input(input=tracked_run.logs_text(), upload_url=url_stderr)
+            self.upload_data(data=tracked_run.logs_text(), upload_url=url_stderr)
             external_result.error_upload_id = url_stderr.upload_id
 
         if tracked_run.error is not None and tracked_run.error != "":
@@ -1051,7 +1051,7 @@ class ApplicationRunMixin:
                 raise ValueError("tracked_run.statistics must be either a `Statistics` or `dict` object")
 
             url_stats = self.upload_url()
-            self.upload_large_input(input=stats_dict, upload_url=url_stats)
+            self.upload_data(data=stats_dict, upload_url=url_stats)
             external_result.statistics_upload_id = url_stats.upload_id
 
         # Handle the assets upload if provided.
@@ -1075,7 +1075,7 @@ class ApplicationRunMixin:
                 raise ValueError("tracked_run.assets must be either a `list[Asset]`, `list[dict]`, or `dict` object")
 
             url_assets = self.upload_url()
-            self.upload_large_input(input=assets_dict, upload_url=url_assets)
+            self.upload_data(data=assets_dict, upload_url=url_assets)
             external_result.assets_upload_id = url_assets.upload_id
 
         return self.new_run(
@@ -1149,6 +1149,40 @@ class ApplicationRunMixin:
             polling_options=polling_options,
             output_dir_path=output_dir_path,
         )
+
+    def _package_inputs(self: "Application", dir_path: str) -> str:
+        """
+        This is an auxiliary function for packaging the inputs found in the
+        provided `dir_path`. All the files found in the directory are tarred and
+        g-zipped. This function returns the tar file path that contains the
+        packaged inputs.
+        """
+
+        # Create a temporary directory for the output
+        output_dir = tempfile.mkdtemp(prefix="nextmv-inputs-out-")
+
+        # Define the output tar file name and path
+        tar_filename = "inputs.tar.gz"
+        tar_file_path = os.path.join(output_dir, tar_filename)
+
+        # Create the tar.gz file
+        with tarfile.open(tar_file_path, "w:gz") as tar:
+            for root, _, files in os.walk(dir_path):
+                for file in files:
+                    if file == tar_filename:
+                        continue
+
+                    file_path = os.path.join(root, file)
+
+                    # Skip directories, only process files
+                    if os.path.isdir(file_path):
+                        continue
+
+                    # Create relative path for the archive
+                    arcname = os.path.relpath(file_path, start=dir_path)
+                    tar.add(file_path, arcname=arcname)
+
+        return tar_file_path
 
     def __run_result(
         self: "Application",
@@ -1245,40 +1279,6 @@ class ApplicationRunMixin:
         """Auxiliary method to get the console URL for a run."""
 
         return f"{self.client.console_url}/app/{self.id}/run/{run_id}?view=details"
-
-    def __package_inputs(self: "Application", dir_path: str) -> str:
-        """
-        This is an auxiliary function for packaging the inputs found in the
-        provided `dir_path`. All the files found in the directory are tarred and
-        g-zipped. This function returns the tar file path that contains the
-        packaged inputs.
-        """
-
-        # Create a temporary directory for the output
-        output_dir = tempfile.mkdtemp(prefix="nextmv-inputs-out-")
-
-        # Define the output tar file name and path
-        tar_filename = "inputs.tar.gz"
-        tar_file_path = os.path.join(output_dir, tar_filename)
-
-        # Create the tar.gz file
-        with tarfile.open(tar_file_path, "w:gz") as tar:
-            for root, _, files in os.walk(dir_path):
-                for file in files:
-                    if file == tar_filename:
-                        continue
-
-                    file_path = os.path.join(root, file)
-
-                    # Skip directories, only process files
-                    if os.path.isdir(file_path):
-                        continue
-
-                    # Create relative path for the archive
-                    arcname = os.path.relpath(file_path, start=dir_path)
-                    tar.add(file_path, arcname=arcname)
-
-        return tar_file_path
 
     def __upload_url_required(
         self: "Application",

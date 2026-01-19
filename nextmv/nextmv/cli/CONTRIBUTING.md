@@ -434,7 +434,7 @@ Consider the following guideline when declaring command options:
       typer.Option(
           "--input",
           "-i",
-          help="The input path to use. File or directory depending on content type. "
+          help="The input path to use. File or directory depending on content format. "
           "Uses [magenta]stdin[/magenta] if not defined.",
           metavar="INPUT_PATH",
           rich_help_panel="Input control",

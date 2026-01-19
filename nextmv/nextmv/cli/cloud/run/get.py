@@ -28,7 +28,7 @@ def get(
             "--output",
             "-o",
             help="Waits for the run to complete and save the output to this location. "
-            "A file or directory will be created depending on content type.",
+            "A file or directory will be created depending on content format.",
             metavar="OUTPUT_PATH",
         ),
     ] = None,

@@ -29,7 +29,7 @@ def track(
         typer.Option(
             "--output",
             "-o",
-            help="The output of the run being tracked. A file or directory depending on content type.",
+            help="The output of the run being tracked. A file or directory depending on content format.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Tracked run configuration",
         ),
@@ -95,7 +95,7 @@ def track(
         typer.Option(
             "--input",
             "-i",
-            help="The input of the run being tracked. File or directory depending on content type. "
+            help="The input of the run being tracked. File or directory depending on content format. "
             "Uses [magenta]stdin[/magenta] if not defined.",
             metavar="INPUT_PATH",
             rich_help_panel="Tracked run configuration",

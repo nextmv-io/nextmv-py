@@ -820,7 +820,7 @@ class ApplicationBatchMixin:
             managed_inputs = []
             for data in scenario.scenario_input.scenario_input_data:
                 upload_url = self.upload_url()
-                self.upload_large_input(input=data, upload_url=upload_url)
+                self.upload_data(data=data, upload_url=upload_url)
                 name, id = safe_name_and_id(prefix="man-input", entity_id=scenario_id)
                 managed_input = self.new_managed_input(
                     id=id,

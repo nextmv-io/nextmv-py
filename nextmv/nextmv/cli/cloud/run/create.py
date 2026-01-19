@@ -33,8 +33,9 @@ def create(
         typer.Option(
             "--input",
             "-i",
-            help="The input path to use. File or directory depending on content type. "
-            "Uses [magenta]stdin[/magenta] if not defined.",
+            help="The input path to use. File or directory depending on content format. "
+            "Uses [magenta]stdin[/magenta] if not defined. "
+            "Can be a [magenta].tar.gz[/magenta] file for multi-file content format.",
             metavar="INPUT_PATH",
             rich_help_panel="Input control",
         ),
@@ -56,7 +57,7 @@ def create(
             "--output",
             "-u",
             help="Waits for the run to complete and save the output to this location. "
-            "A file or directory will be created depending on content type. ",
+            "A file or directory will be created depending on content format. ",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -209,7 +210,21 @@ def create(
     Create a new Nextmv Cloud application run.
 
     Input for the run should be given through [magenta]stdin[/magenta] or the
-    [code]--input[/code] flag.
+    [code]--input[/code] flag. When using the [code]--input[/code] flag, the
+    value can be one of the following:
+
+    - [green]<FILE_PATH>[/green]: path to a [magenta]file[/magenta] containing
+      the input data. Use with the [magenta]json[/magenta], and
+      [magenta]text[/magenta] content formats.
+    - [green]<DIR_PATH>[/green]: path to a [magenta]directory[/magenta]
+      containing the input data files. Use with the
+      [magenta]multi-file[/magenta] content format.
+    - [green]<.tar.gz_PATH>[/green]: path to a [magenta].tar.gz[/magenta] file
+      containing tarred input data files. Use with the
+      [magenta]multi-file[/magenta] content format.
+
+    The CLI determines how to send the input to the application based on the
+    value.
 
     Use the [code]--wait[/code] flag to wait for the run to complete, polling
     for results. Using the [code]--output[/code] flag will also activate
@@ -500,10 +515,10 @@ def resolve_input_kwarg(
     if input_path.is_file():
         upload_url = cloud_app.upload_url()
         if tarfile.is_tarfile(input_path):
-            cloud_app.upload_large_input(input=None, upload_url=upload_url, tar_file=input_path)
+            cloud_app.upload_data(data=None, upload_url=upload_url, tar_file=input_path)
         else:
             input_data = input_path.read_text()
-            cloud_app.upload_large_input(input=input_data, upload_url=upload_url)
+            cloud_app.upload_data(data=input_data, upload_url=upload_url)
 
         return {"upload_id": upload_url.upload_id}
 

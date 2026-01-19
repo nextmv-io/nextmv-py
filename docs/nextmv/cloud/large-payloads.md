@@ -22,7 +22,7 @@ You can use the following methods to handle large payloads:
 
 * [`Application.upload_url`][application-upload-url]: This method returns a
       temporary, pre-signed URL to which you can upload a file.
-* [`Application.upload_large_input`][application-upload-large-input]: This
+* [`Application.upload_data`][application-upload-data]: This
       method takes the actual data and uploads it to the pre-signed URL.
 
 Here is an example of how to use these methods.
@@ -46,7 +46,7 @@ app = Application(client=client, id="<YOUR-APP-ID>")
 upload_url = app.upload_url()
 
 # Upload the input.
-app.upload_large_input(input=input, upload_url=upload_url)
+app.upload_data(data=input, upload_url=upload_url)
 
 # Make a run.
 run_id = app.new_run(
@@ -79,4 +79,4 @@ nextmv.write(download_response)
 
 [large-payloads-image]: ../../../images/large_file_run_overview.png
 [application-upload-url]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_url
-[application-upload-large-input]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_large_input
+[application-upload-data]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_data

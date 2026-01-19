@@ -104,7 +104,7 @@ methods you can use that were not covered in this guide:
 * `run_result`: gets the result of a run.
 * `run_result_with_polling`: gets the result of a run with polling.
 * `update_instance`: updates an instance.
-* `upload_large_input`: uploads a large input.
+* `upload_data`: uploads data that is large or multiple files.
 * `upload_url`: gets the URL for uploading.
 * `version`: gets a version.
 
