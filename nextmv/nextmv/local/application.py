@@ -256,8 +256,7 @@ class Application:
             `nextmv.InputFormat.MULTI_FILE`, you should use the
             `input_dir_path` argument instead. This argument takes precedence
             over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them, to later be
-            uploaded using the `upload_large_input` method. If both the
+            looks for files in that directory and tars them. If both the
             `input_dir_path` and `input` arguments are provided, the `input`
             is ignored.
 
@@ -273,9 +272,6 @@ class Application:
 
             When working with JSON or text data, use the `input` argument
             directly.
-
-            In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
         name: Optional[str]
             Name of the local run.
         description: Optional[str]
@@ -399,8 +395,7 @@ class Application:
             `nextmv.InputFormat.MULTI_FILE`, you should use the
             `input_dir_path` argument instead. This argument takes precedence
             over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them, to later be
-            uploaded using the `upload_large_input` method. If both the
+            looks for files in that directory and tars them. If both the
             `input_dir_path` and `input` arguments are provided, the `input` is
             ignored.
 
@@ -416,9 +411,6 @@ class Application:
 
             When working with JSON or text data, use the `input` argument
             directly.
-
-            In general, if an input is too large, it will be uploaded with the
-            `upload_large_input` method.
         name: Optional[str]
             Name of the local run.
         description: Optional[str]

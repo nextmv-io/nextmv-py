@@ -81,7 +81,7 @@ class ApplicationManagedInputMixin:
         managed input:
 
         1. Specifying the `upload_id` parameter. You may use the `upload_url`
-           method to obtain the upload ID and the `upload_large_input` method
+           method to obtain the upload ID and the `upload_data` method
            to upload the data to it.
         2. Specifying the `run_id` parameter. The managed input will be
            created from the run specified by the `run_id` parameter.
