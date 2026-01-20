@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import error, in_progress, print_json
+from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.account import Account
 
@@ -66,9 +66,6 @@ def create(
         $ [green]nextmv cloud account create --name "Whiskers Warehouse" \\
             --admins "thumper@forestmail.com,flopsy@warren.io"[/green]
     """
-
-    if len(admins) == 0:
-        error("At least one admin email must be provided to create an account.")
 
     cloud_client = build_client(profile)
     in_progress(msg="Creating account...")

@@ -126,7 +126,9 @@ class Queue(BaseModel):
 
     Examples
     --------
-    >>> account = Account(client=Client(api_key="your-api-key"))
+    >>> from nextmv.cloud import Client, Account
+    >>> client = Client(api_key="your-api-key")
+    >>> account = Account.get(client=client, account_id="your-account-id")
     >>> queue = account.queue()
     >>> print(f"Number of runs in queue: {len(queue.runs)}")
     Number of runs in queue: 5
@@ -150,7 +152,10 @@ class AccountMember(BaseModel):
     from nextmv.cloud import AccountMember
     ```
 
-    Parameters
+    Represents an individual member of an organization in Nextmv Cloud,
+    including their role and invitation status.
+
+    Attributes
     ----------
     email : str | None
         Email of the account member.
@@ -158,6 +163,16 @@ class AccountMember(BaseModel):
         Role of the account member.
     pending_invite : bool | None
         Whether the member has a pending invite.
+
+    Examples
+    --------
+    >>> member = AccountMember.from_dict({
+    ...     "email": "peter.rabbit@carrotexpress.com",
+    ...     "role": "admin",
+    ...     "pending_invite": False
+    ... })
+    >>> print(f"{member.email} - {member.role}")
+    peter.rabbit@carrotexpress.com - admin
     """
 
     email: str | None = None
@@ -178,30 +193,42 @@ class Account(BaseModel):
 
     You can import the `Account` class directly from `cloud`:
 
-    ```python from nextmv.cloud import Account ```
+    ```python
+    from nextmv.cloud import Account
+    ```
 
     This class provides access to account-level operations in the Nextmv Cloud,
     such as retrieving the queue of runs.
+
+    Note: It is recommended to use `Account.get()` or `Account.new()`
+    instead of direct initialization to ensure proper setup.
 
     Parameters
     ----------
     client : Client
         Client to use for interacting with the Nextmv Cloud API.
-    endpoint : str, optional
-        Base endpoint for the account, by default "v1/account"
-
-    Attributes
-    ----------
-    client : Client
-        Client to use for interacting with the Nextmv Cloud API.
-    endpoint : str
-        Base endpoint for the account.
+    account_id : str, optional
+        ID of the account (organization).
+    name : str, optional
+        Name of the account (organization).
+    members : list[AccountMember], optional
+        List of members in the account (organization).
+    account_endpoint : str, default="v1/account"
+        Base endpoint for the account (SDK-specific).
+    organization_endpoint : str, default="v1/organization/{organization_id}"
+        Base endpoint for organization operations (SDK-specific).
 
     Examples
     --------
     >>> from nextmv.cloud import Client, Account
     >>> client = Client(api_key="your-api-key")
-    >>> account = Account(client=client)
+    >>> # Retrieve an existing account
+    >>> account = Account.get(client=client, account_id="your-account-id")
+    >>> print(f"Account name: {account.name}")
+    Account name: Bunny Logistics
+    >>> # Create a new account
+    >>> new_account = Account.new(client=client, name="Hare Delivery Co", admins=["admin@example.com"])
+    >>> # Get the queue of runs
     >>> queue = account.queue()
     >>> print(f"Number of runs in queue: {len(queue.runs)}")
     Number of runs in queue: 3
@@ -227,11 +254,13 @@ class Account(BaseModel):
     organization_endpoint: str = Field(exclude=True, default="v1/organization/{organization_id}")
 
     def model_post_init(self, __context) -> None:
-        """Initialize the endpoint and experiments_endpoint attributes.
+        """
+        Initialize the organization_endpoint attribute.
 
         This method is automatically called after class initialization to
-        format the endpoint and experiments_endpoint URLs with the application ID.
+        format the organization_endpoint URL with the account ID.
         """
+
         self.organization_endpoint = self.organization_endpoint.format(organization_id=self.account_id)
 
     @classmethod
@@ -258,6 +287,16 @@ class Account(BaseModel):
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client, Account
+        >>> client = Client(api_key="your-api-key")
+        >>> account = Account.get(client=client, account_id="bunny-logistics")
+        >>> print(f"Account: {account.name}")
+        Account: Bunny Logistics
+        >>> print(f"Members: {len(account.members)}")
+        Members: 3
         """
 
         response = client.request(
@@ -359,7 +398,9 @@ class Account(BaseModel):
 
         Examples
         --------
-        >>> account = Account(client=Client(api_key="your-api-key"))
+        >>> from nextmv.cloud import Client, Account
+        >>> client = Client(api_key="your-api-key")
+        >>> account = Account.get(client=client, account_id="your-account-id")
         >>> queue = account.queue()
         >>> for run in queue.runs:
         ...     print(f"Run {run.id}: {run.name} - Status: {run.status_v2}")
@@ -391,18 +432,25 @@ class Account(BaseModel):
         ------
         requests.HTTPError
             If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client, Account
+        >>> client = Client(api_key="your-api-key")
+        >>> account = Account.get(client=client, account_id="bunny-logistics")
+        >>> updated_account = account.update(name="Bunny Express Logistics")
+        >>> print(updated_account.name)
+        Bunny Express Logistics
         """
 
-        account = self.get(client=self.client, id=self.id)
+        account = self.get(client=self.client, account_id=self.account_id)
         account_dict = account.to_dict()
-        payload = account_dict
-
-        if name is not None:
-            payload["name"] = name
+        payload = account_dict.copy()
+        payload["name"] = name
 
         response = self.client.request(
             method="PUT",
-            endpoint=self.account_endpoint,
+            endpoint=self.organization_endpoint,
             payload=payload,
         )
 

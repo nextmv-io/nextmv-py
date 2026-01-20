@@ -680,7 +680,7 @@ class Application(
 
         app = self.get(client=self.client, id=self.id)
         app_dict = app.to_dict()
-        payload = app_dict
+        payload = app_dict.copy()
 
         if name is not None:
             payload["name"] = name

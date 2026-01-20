@@ -262,7 +262,7 @@ class ApplicationInstanceMixin:
         # Get the instance as it currently exsits.
         instance = self.instance(id)
         instance_dict = instance.to_dict()
-        payload = instance_dict
+        payload = instance_dict.copy()
 
         if name is not None:
             payload["name"] = name

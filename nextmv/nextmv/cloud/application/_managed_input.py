@@ -211,7 +211,7 @@ class ApplicationManagedInputMixin:
 
         managed_input = self.managed_input(managed_input_id)
         managed_input_dict = managed_input.to_dict()
-        payload = managed_input_dict
+        payload = managed_input_dict.copy()
 
         if name is not None:
             payload["name"] = name

@@ -206,7 +206,7 @@ class ApplicationVersionMixin:
 
         version = self.version(version_id=version_id)
         version_dict = version.to_dict()
-        payload = version_dict
+        payload = version_dict.copy()
 
         if name is not None:
             payload["name"] = name
