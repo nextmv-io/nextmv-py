@@ -15,8 +15,9 @@ Account
     The Nextmv Platform account with API access methods.
 """
 
-from dataclasses import dataclass
 from datetime import datetime
+
+from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
@@ -24,7 +25,8 @@ from nextmv.status import Status, StatusV2
 
 
 class QueuedRun(BaseModel):
-    """A run that is pending to be executed in the account.
+    """
+    A run that is pending to be executed in the account.
 
     You can import the `QueuedRun` class directly from `cloud`:
 
@@ -104,7 +106,8 @@ class QueuedRun(BaseModel):
 
 
 class Queue(BaseModel):
-    """A queue is a list of runs that are pending to be executed, or currently
+    """
+    A queue is a list of runs that are pending to be executed, or currently
     being executed, in the account.
 
     You can import the `Queue` class directly from `cloud`:
@@ -137,17 +140,47 @@ class Queue(BaseModel):
     """List of runs in the queue."""
 
 
-@dataclass
-class Account:
-    """The Nextmv Platform account.
+class AccountMember(BaseModel):
+    """
+    A member of a Nextmv Cloud account (organization).
+
+    You can import the `AccountMember` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import AccountMember
+    ```
+
+    Parameters
+    ----------
+    email : str | None
+        Email of the account member.
+    role : str | None
+        Role of the account member.
+    pending_invite : bool | None
+        Whether the member has a pending invite.
+    """
+
+    email: str | None = None
+    """Email of the account member."""
+    role: str | None = None
+    """Role of the account member."""
+    pending_invite: bool | None = None
+    """Whether the member has a pending invite."""
+
+
+class Account(BaseModel):
+    """
+    The Nextmv Cloud account (organization).
+
+    To handle managed accounts, SSO must be configured for your organization.
+    Please contact [Nextmv support](https://www.nextmv.io/contact) for
+    assistance.
 
     You can import the `Account` class directly from `cloud`:
 
-    ```python
-    from nextmv.cloud import Account
-    ```
+    ```python from nextmv.cloud import Account ```
 
-    This class provides access to account-level operations in the Nextmv Platform,
+    This class provides access to account-level operations in the Nextmv Cloud,
     such as retrieving the queue of runs.
 
     Parameters
@@ -174,14 +207,142 @@ class Account:
     Number of runs in queue: 3
     """
 
-    client: Client
-    """Client to use for interacting with the Nextmv Cloud API."""
+    # Actual API attributes of an account.
+    account_id: str | None = Field(
+        serialization_alias="id",
+        validation_alias=AliasChoices("id", "account_id"),
+        default=None,
+    )
+    """ID of the account (organization)."""
+    name: str | None = None
+    """Name of the account (organization)."""
+    members: list[AccountMember] | None = None
+    """List of members in the account (organization)."""
 
-    endpoint: str = "v1/account"
+    # SDK-specific attributes for convenience when using methods.
+    client: Client = Field(exclude=True)
+    """Client to use for interacting with the Nextmv Cloud API."""
+    account_endpoint: str = Field(exclude=True, default="v1/account")
     """Base endpoint for the account."""
+    organization_endpoint: str = Field(exclude=True, default="v1/organization/{organization_id}")
+
+    def model_post_init(self, __context) -> None:
+        """Initialize the endpoint and experiments_endpoint attributes.
+
+        This method is automatically called after class initialization to
+        format the endpoint and experiments_endpoint URLs with the application ID.
+        """
+        self.organization_endpoint = self.organization_endpoint.format(organization_id=self.account_id)
+
+    @classmethod
+    def get(cls, client: Client, account_id: str) -> "Account":
+        """
+        Retrieve an account directly from Nextmv Cloud.
+
+        This function is useful if you want to populate an `Account` class
+        by fetching the attributes directly from Nextmv Cloud.
+
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        account_id : str
+            ID of the account to retrieve.
+
+        Returns
+        -------
+        Account
+            The requested account.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        response = client.request(
+            method="GET",
+            endpoint=f"v1/organization/{account_id}",
+        )
+
+        return cls.from_dict({"client": client} | response.json())
+
+    @classmethod
+    def new(
+        cls,
+        client: Client,
+        name: str,
+        admins: list[str],
+    ) -> "Account":
+        """
+        Create a new account (organization) directly in Nextmv Cloud.
+
+        To create managed accounts, SSO must be configured for your
+        organization. Please contact [Nextmv
+        support](https://www.nextmv.io/contact) for assistance.
+
+        Parameters
+        ----------
+        client : Client
+            Client to use for interacting with the Nextmv Cloud API.
+        name : str
+            Name of the new account.
+        admins : list[str]
+            List of admin user emails for the new account.
+
+        Returns
+        -------
+        Account
+            The newly created account.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client
+        >>> client = Client(api_key="your-api-key")
+        >>> account = Account.new(client=client, name="My New Account", admins=["admin@example.com"])
+        """
+
+        if len(admins) == 0:
+            raise ValueError("at least one admin email must be provided to create an account")
+
+        payload = {
+            "name": name,
+            "admins": admins,
+        }
+
+        response = client.request(
+            method="POST",
+            endpoint="v1/organization",
+            payload=payload,
+        )
+
+        return cls.from_dict({"client": client} | response.json())
+
+    def delete(self) -> None:
+        """
+        Delete the account.
+
+        Permanently removes the account (organization) from Nextmv Cloud. You
+        must have the administrator role on that account in order to delete it.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> account.delete()  # Permanently deletes the account
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=self.organization_endpoint,
+        )
 
     def queue(self) -> Queue:
-        """Get the queue of runs in the account.
+        """
+        Get the queue of runs in the account.
 
         Retrieves the current list of runs that are pending or being executed
         in the Nextmv account.
@@ -207,7 +368,42 @@ class Account:
         """
         response = self.client.request(
             method="GET",
-            endpoint=self.endpoint + "/queue",
+            endpoint=self.account_endpoint + "/queue",
         )
 
         return Queue.from_dict(response.json())
+
+    def update(self, name: str) -> "Account":
+        """
+        Update the account.
+
+        Parameters
+        ----------
+        name : str
+            Name of the account.
+
+        Returns
+        -------
+        Account
+            The updated account.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        account = self.get(client=self.client, id=self.id)
+        account_dict = account.to_dict()
+        payload = account_dict
+
+        if name is not None:
+            payload["name"] = name
+
+        response = self.client.request(
+            method="PUT",
+            endpoint=self.account_endpoint,
+            payload=payload,
+        )
+
+        return Account.from_dict({"client": self.client} | response.json())

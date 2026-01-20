@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from nextmv.cli.message import error
+from nextmv.cloud.account import Account
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
@@ -143,6 +144,34 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
         )
 
     return Application(client=client, id=app_id)
+
+
+def build_account(account_id: str | None = None, profile: str | None = None) -> Account:
+    """
+    Builds a `cloud.Account` using the API key and endpoint for the given
+    profile. If no profile is given, the default profile is used.
+
+    Parameters
+    ----------
+    account_id : str | None
+        The account ID. If None, no account ID is set.
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    Account
+        An account object for the configured profile.
+
+    Raises
+    ------
+    typer.Exit
+        If the configuration is invalid or missing.
+    """
+
+    client = build_client(profile)
+
+    return Account(account_id=account_id, client=client)
 
 
 def obscure_api_key(api_key: str) -> str:

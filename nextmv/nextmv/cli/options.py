@@ -106,3 +106,17 @@ ManagedInputIDOption = Annotated[
         metavar="MANAGED_INPUT_ID",
     ),
 ]
+
+# account_id option - can be used in any command that requires an account ID.
+# Define it as follows in commands or callbacks, as necessary:
+# account_id: AccountIDOption
+AccountIDOption = Annotated[
+    str,
+    typer.Option(
+        "--account-id",
+        "-a",
+        help="The Nextmv Cloud account ID to use for this action.",
+        envvar="NEXTMV_ACCOUNT_ID",
+        metavar="ACCOUNT_ID",
+    ),
+]

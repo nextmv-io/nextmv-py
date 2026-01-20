@@ -33,6 +33,7 @@ from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
+from nextmv.cloud.account import Queue
 from nextmv.cloud.application._acceptance import ApplicationAcceptanceMixin
 from nextmv.cloud.application._batch_scenario import ApplicationBatchMixin
 from nextmv.cloud.application._ensemble import ApplicationEnsembleMixin
@@ -114,25 +115,51 @@ class Application(
     interact with the application, run it with different inputs, manage versions,
     instances, experiments, and more.
 
+    Note: It is recommended to use `Application.get()` or `Application.new()`
+    instead of direct initialization to ensure proper setup.
+
     Parameters
     ----------
     client : Client
         Client to use for interacting with the Nextmv Cloud API.
     id : str
         ID of the application.
-    default_instance_id : str, default=None
+    name : str, optional
+        Name of the application.
+    description : str, optional
+        Description of the application.
+    type : ApplicationType, optional
+        Type of the application (CUSTOM, SUBSCRIPTION, or PIPELINE).
+    default_instance_id : str, optional
         Default instance ID to use for submitting runs.
+    default_experiment_instance : str, optional
+        Default experiment instance ID to use for experiments.
+    subscription_id : str, optional
+        Subscription ID if the application is a subscription type.
+    locked : bool, default=False
+        Whether the application is locked.
+    created_at : datetime, optional
+        Creation timestamp of the application.
+    updated_at : datetime, optional
+        Last update timestamp of the application.
     endpoint : str, default="v1/applications/{id}"
-        Base endpoint for the application.
+        Base endpoint for the application (SDK-specific).
     experiments_endpoint : str, default="{base}/experiments"
-        Base endpoint for the experiments in the application.
+        Base endpoint for experiments (SDK-specific).
+    ensembles_endpoint : str, default="{base}/ensembles"
+        Base endpoint for ensembles (SDK-specific).
 
     Examples
     --------
     >>> from nextmv.cloud import Client, Application
     >>> client = Client(api_key="your-api-key")
-    >>> app = Application(client=client, id="your-app-id")
-    >>> # Retrieve app information
+    >>> # Retrieve an existing application
+    >>> app = Application.get(client=client, id="your-app-id")
+    >>> print(f"Application name: {app.name}")
+    Application name: My Application
+    >>> # Create a new application
+    >>> new_app = Application.new(client=client, name="My New App", id="my-new-app")
+    >>> # List application instances
     >>> instances = app.list_instances()
     """
 
@@ -573,6 +600,51 @@ class Application(
             else:
                 log(f'✅ Automatically created new version "{version.id}".')
                 log(json.dumps(version_dict, indent=2))
+
+    def runs_queue(self) -> Queue:
+        """
+        Get the queue of runs in the application.
+
+        Retrieves the current list of runs that are pending or being executed
+        in the Nextmv application.
+
+        Returns
+        -------
+        Queue
+            Queue of runs in the application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import Client, Application
+        >>> client = Client(api_key="your-api-key")
+        >>> app = Application.get(client=client, id="your-app-id")
+        >>> queue = app.runs_queue()
+        >>> for run in queue.runs:
+        ...     print(f"Run {run.id}: {run.name} - Status: {run.status_v2}")
+        Run run-123: Daily Optimization - Status: RUNNING
+        Run run-456: Weekly Planning - Status: QUEUED
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint="v1/account/queue",
+        )
+
+        queue = Queue.from_dict(response.json())
+
+        runs = []
+        for run in queue.runs:
+            if run.application_id == self.id:
+                runs.append(run)
+
+        queue.runs = runs
+
+        return queue
 
     def update(
         self,
