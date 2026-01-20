@@ -5,6 +5,7 @@ Application mixin for managing app ensembles.
 from typing import TYPE_CHECKING
 
 from nextmv.cloud.ensemble import EnsembleDefinition, EvaluationRule, RunGroup
+from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
     from . import Application
@@ -104,9 +105,9 @@ class ApplicationEnsembleMixin:
 
     def new_ensemble_defintion(
         self: "Application",
-        id: str,
         run_groups: list[RunGroup],
         rules: list[EvaluationRule],
+        id: str | None = None,
         name: str | None = None,
         description: str | None = None,
     ) -> EnsembleDefinition:
@@ -115,22 +116,25 @@ class ApplicationEnsembleMixin:
 
         Parameters
         ----------
-        id: str
-            ID of the ensemble defintion.
         run_groups: list[RunGroup]
             Information to facilitate the execution of child runs.
         rules: list[EvaluationRule]
             Information to facilitate the selection of
             a result for the ensemble run from child runs.
+        id: str | None, default=None
+            ID of the ensemble definition. If not provided, a unique ID will be
+            generated with the prefix 'ensemble-'.
         name: Optional[str]
-            Name of the ensemble definition.
+            Name of the ensemble definition. If not provided, the ID will be used.
         description: Optional[str]
-            Description of the ensemble definition.
+            Description of the ensemble definition. If not provided, the name will be used.
         """
 
-        if name is None:
+        if id is None or id == "":
+            id = safe_id(prefix="ensemble")
+        if name is None or name == "":
             name = id
-        if description is None:
+        if description is None or description == "":
             description = name
 
         payload = {

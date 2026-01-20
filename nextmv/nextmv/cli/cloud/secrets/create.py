@@ -119,9 +119,6 @@ def create(
             --secrets '{"type": "file", "location": "config/app.conf", "value": "server=prod\\nport=8080"}'[/green]
     """
 
-    if len(secrets) == 0:
-        error("No secrets provided. Use [code]--secrets[/code] to provide secrets in [magenta]json[/magenta] format.")
-
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating secrets collection...")
 
