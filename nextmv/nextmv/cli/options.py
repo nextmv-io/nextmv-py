@@ -92,3 +92,17 @@ SecretsCollectionIDOption = Annotated[
         metavar="SECRETS_COLLECTION_ID",
     ),
 ]
+
+# managed_input_id option - can be used in any command that requires a managed input ID.
+# Define it as follows in commands or callbacks, as necessary:
+# managed_input_id: ManagedInputIDOption
+ManagedInputIDOption = Annotated[
+    str,
+    typer.Option(
+        "--managed-input-id",
+        "-m",
+        help="The Nextmv Cloud managed input ID to use for this action.",
+        envvar="NEXTMV_MANAGED_INPUT_ID",
+        metavar="MANAGED_INPUT_ID",
+    ),
+]

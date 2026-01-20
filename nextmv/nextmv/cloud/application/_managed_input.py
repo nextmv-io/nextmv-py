@@ -8,6 +8,7 @@ from nextmv.cloud.input_set import ManagedInput
 from nextmv.input import InputFormat
 from nextmv.output import OutputFormat
 from nextmv.run import Format, FormatInput, FormatOutput
+from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
     from . import Application
@@ -17,6 +18,32 @@ class ApplicationManagedInputMixin:
     """
     Mixin class for handling app managed inputs within an application.
     """
+
+    def delete_managed_input(self: "Application", managed_input_id: str) -> None:
+        """
+        Delete a managed input.
+
+        Permanently removes the specified managed input from the application.
+
+        Parameters
+        ----------
+        managed_input_id : str
+            ID of the managed input to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_managed_input("inp_123456789")  # Permanently deletes the managed input
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
+        )
 
     def list_managed_inputs(self: "Application") -> list[ManagedInput]:
         """
@@ -69,8 +96,8 @@ class ApplicationManagedInputMixin:
 
     def new_managed_input(
         self: "Application",
-        id: str,
-        name: str,
+        id: str | None = None,
+        name: str | None = None,
         description: str | None = None,
         upload_id: str | None = None,
         run_id: str | None = None,
@@ -90,17 +117,17 @@ class ApplicationManagedInputMixin:
 
         Parameters
         ----------
-        id: str
-            ID of the managed input.
-        name: str
-            Name of the managed input.
-        description: Optional[str]
+        id: Optional[str], default=None
+            ID of the managed input. Will be generated if not provided.
+        name: Optional[str], default=None
+            Name of the managed input. Will be generated if not provided.
+        description: Optional[str], default=None
             Optional description of the managed input.
-        upload_id: Optional[str]
+        upload_id: Optional[str], default=None
             ID of the upload to use for the managed input.
-        run_id: Optional[str]
+        run_id: Optional[str], default=None
             ID of the run to use for the managed input.
-        format: Optional[Format]
+        format: Optional[Format], default=None
             Format of the managed input. Default will be formatted as `JSON`.
 
         Returns
@@ -119,6 +146,11 @@ class ApplicationManagedInputMixin:
 
         if upload_id is None and run_id is None:
             raise ValueError("Either upload_id or run_id must be specified")
+
+        if id is None:
+            id = safe_id(prefix="managed-input")
+        if name is None:
+            name = id
 
         payload = {
             "id": id,
