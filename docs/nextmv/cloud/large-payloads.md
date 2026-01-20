@@ -2,7 +2,7 @@
 
 !!! tip
 
-    When using the [`Application.new_run`](./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run) or [`Application.new_run_with_result`](./reference/application.md#nextmv.nextmv.cloud.application.Application.new_run_with_result) methods, input size is automatically handled by the SDK.
+    When using the [`Application.new_run`](./reference/application.md#nextmv.nextmv.cloud.application._run.ApplicationRunMixin.new_run) or [`Application.new_run_with_result`](./reference/application.md#nextmv.nextmv.cloud.application._run.ApplicationRunMixin.new_run_with_result) methods, input size is automatically handled by the SDK.
     You may skip this tutorial if you are using these methods.
 
 When submitting a new run and retrieving the run's results, there are size

@@ -61,7 +61,7 @@ nav:
           - Reference:
               - acceptance_test.py: nextmv/cloud/reference/acceptance_test.md
               - account.py: nextmv/cloud/reference/account.md
-              - application.py: nextmv/cloud/reference/application.md
+              - application: nextmv/cloud/reference/application.md
               - batch_experiment.py: nextmv/cloud/reference/batch_experiment.md
               - client.py: nextmv/cloud/reference/client.md
               - ensemble.py: nextmv/cloud/reference/ensemble.md
