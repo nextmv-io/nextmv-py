@@ -65,6 +65,20 @@ VersionIDOption = Annotated[
     ),
 ]
 
+# input_set_id option - can be used in any command that requires an input set ID.
+# Define it as follows in commands or callbacks, as necessary:
+# input_set_id: InputSetIDOption
+InputSetIDOption = Annotated[
+    str,
+    typer.Option(
+        "--input-set-id",
+        "-s",
+        help="The Nextmv Cloud input set ID to use for this action.",
+        envvar="NEXTMV_INPUT_SET_ID",
+        metavar="INPUT_SET_ID",
+    ),
+]
+
 # instance_id option - can be used in any command that requires an instance ID.
 # Define it as follows in commands or callbacks, as necessary:
 # instance_id: InstanceIDOption
@@ -76,20 +90,6 @@ InstanceIDOption = Annotated[
         help="The Nextmv Cloud instance ID to use for this action.",
         envvar="NEXTMV_INSTANCE_ID",
         metavar="INSTANCE_ID",
-    ),
-]
-
-# secrets_collection_id option - can be used in any command that requires a secrets collection ID.
-# Define it as follows in commands or callbacks, as necessary:
-# secrets_collection_id: SecretsCollectionIDOption
-SecretsCollectionIDOption = Annotated[
-    str,
-    typer.Option(
-        "--secrets-collection-id",
-        "-s",
-        help="The Nextmv Cloud secrets collection ID to use for this action.",
-        envvar="NEXTMV_SECRETS_COLLECTION_ID",
-        metavar="SECRETS_COLLECTION_ID",
     ),
 ]
 
@@ -174,5 +174,19 @@ ScenarioTestIDOption = Annotated[
         help="The Nextmv Cloud scenario test ID to use for this action.",
         envvar="NEXTMV_SCENARIO_TEST_ID",
         metavar="SCENARIO_TEST_ID",
+    ),
+]
+
+# secrets_collection_id option - can be used in any command that requires a secrets collection ID.
+# Define it as follows in commands or callbacks, as necessary:
+# secrets_collection_id: SecretsCollectionIDOption
+SecretsCollectionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--secrets-collection-id",
+        "-s",
+        help="The Nextmv Cloud secrets collection ID to use for this action.",
+        envvar="NEXTMV_SECRETS_COLLECTION_ID",
+        metavar="SECRETS_COLLECTION_ID",
     ),
 ]
