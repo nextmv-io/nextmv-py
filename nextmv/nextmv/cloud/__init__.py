@@ -54,6 +54,7 @@ from .acceptance_test import ResultStatistics as ResultStatistics
 from .acceptance_test import StatisticType as StatisticType
 from .acceptance_test import ToleranceType as ToleranceType
 from .account import Account as Account
+from .account import AccountMember as AccountMember
 from .account import Queue as Queue
 from .account import QueuedRun as QueuedRun
 from .application import Application as Application

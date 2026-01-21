@@ -189,9 +189,17 @@ class ApplicationRunMixin:
 
         return [RunAsset.from_dict(asset) for asset in assets_data]
 
-    def list_runs(self: "Application") -> list[Run]:
+    def list_runs(self: "Application", status: StatusV2 | None = None) -> list[Run]:
         """
         List all runs.
+
+        You can use the optional `status` parameter to filter runs by their
+        status. Is not provided, all runs are returned.
+
+        Parameters
+        ----------
+        status : StatusV2 | None
+            Optional status to filter runs by.
 
         Returns
         -------
@@ -209,7 +217,17 @@ class ApplicationRunMixin:
             endpoint=f"{self.endpoint}/runs",
         )
 
-        return [Run.from_dict(run) for run in response.json().get("runs", [])]
+        runs = []
+        for resp_run in response.json().get("runs", []):
+            run = Run.from_dict(resp_run)
+            if status is None:
+                runs.append(run)
+                continue
+
+            if run.status_v2 == status:
+                runs.append(run)
+
+        return runs
 
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self: "Application",

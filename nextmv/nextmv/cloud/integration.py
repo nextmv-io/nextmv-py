@@ -429,7 +429,7 @@ class Integration(BaseModel):
 
         integration = self.get(client=self.client, integration_id=self.integration_id)
         integration_dict = integration.to_dict()
-        payload = integration_dict
+        payload = integration_dict.copy()
 
         if name is not None:
             payload["name"] = name

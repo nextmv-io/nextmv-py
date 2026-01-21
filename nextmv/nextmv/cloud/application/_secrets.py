@@ -267,7 +267,7 @@ class ApplicationSecretsMixin:
 
         collection = self.secrets_collection(secrets_collection_id)
         collection_dict = collection.to_dict()
-        payload = collection_dict
+        payload = collection_dict.copy()
 
         if name is not None:
             payload["name"] = name
