@@ -193,7 +193,7 @@ def create(
     run_groups_list = build_run_groups(run_groups)
     rules_list = build_rules(rules)
 
-    ensemble_definition = cloud_app.new_ensemble_defintion(
+    ensemble_definition = cloud_app.new_ensemble_definition(
         run_groups=run_groups_list,
         rules=rules_list,
         id=ensemble_definition_id,

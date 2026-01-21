@@ -5,6 +5,7 @@ Application mixin for managing app ensembles.
 from typing import TYPE_CHECKING
 
 from nextmv.cloud.ensemble import EnsembleDefinition, EvaluationRule, RunGroup
+from nextmv.deprecated import deprecated
 from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
@@ -105,6 +106,48 @@ class ApplicationEnsembleMixin:
 
     def new_ensemble_defintion(
         self: "Application",
+        id: str,
+        run_groups: list[RunGroup],
+        rules: list[EvaluationRule],
+        name: str | None = None,
+        description: str | None = None,
+    ) -> EnsembleDefinition:
+        """
+        !!! warning
+            `new_ensemble_defintion` is deprecated, use `new_ensemble_definition` instead.
+
+        Create a new ensemble definition.
+
+        Parameters
+        ----------
+        id: str
+            ID of the ensemble defintion.
+        run_groups: list[RunGroup]
+            Information to facilitate the execution of child runs.
+        rules: list[EvaluationRule]
+            Information to facilitate the selection of
+            a result for the ensemble run from child runs.
+        name: Optional[str]
+            Name of the ensemble definition.
+        description: Optional[str]
+            Description of the ensemble definition.
+        """
+
+        deprecated(
+            name="new_ensemble_defintion",
+            reason="`Application.new_ensemble_defintion` is deprecated, use `new_ensemble_definition` instead",
+        )
+
+        return self.new_ensemble_definition(
+            run_groups=run_groups,
+            rules=rules,
+            id=id,
+            name=name,
+            description=description,
+        )
+
+    def new_ensemble_definition(
+        self: "Application",
         run_groups: list[RunGroup],
         rules: list[EvaluationRule],
         id: str | None = None,
@@ -129,6 +172,12 @@ class ApplicationEnsembleMixin:
         description: Optional[str]
             Description of the ensemble definition. If not provided, the name will be used.
         """
+
+        if len(run_groups) == 0:
+            raise ValueError("at least one run group must be defined to create an ensemble definition")
+
+        if len(rules) == 0:
+            raise ValueError("at least one evaluation rule must be defined to create an ensemble definition")
 
         if id is None or id == "":
             id = safe_id(prefix="ensemble")
