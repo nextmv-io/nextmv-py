@@ -8,8 +8,9 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import enum_values, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.status import StatusV2
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -27,6 +28,15 @@ def list(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    status: Annotated[
+        StatusV2 | None,
+        typer.Option(
+            "--status",
+            "-s",
+            help=f"Filter runs by their status. Allowed values are: {enum_values(StatusV2)}.",
+            metavar="STATUS",
+        ),
+    ] = None,
     profile: ProfileOption = None,
 ) -> None:
     """
@@ -34,6 +44,8 @@ def list(
 
     By default, the list of runs is fetched and printed to [magenta]stdout[/magenta].
     Use the [code]--output[/code] flag to save the list to a file.
+
+    You can use the optional [code]--status[/code] flag to filter runs by their status.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -47,11 +59,14 @@ def list(
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta].
       Use the profile named [magenta]hare[/magenta].
         $ [green]nextmv cloud run list --app-id hare-app --profile hare[/green]
+
+    - Get the list of [magenta]queued[/magenta] runs for an app with ID [magenta]hare-app[/magenta].
+        $ [green]nextmv cloud run list --app-id hare-app --status queued[/green]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
-    runs = cloud_app.list_runs()
+    runs = cloud_app.list_runs(status=status)
     runs_dicts = [run.to_dict() for run in runs]
 
     if output is not None:
