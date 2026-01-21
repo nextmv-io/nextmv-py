@@ -33,7 +33,6 @@ from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud import package
-from nextmv.cloud.account import Queue
 from nextmv.cloud.application._acceptance import ApplicationAcceptanceMixin
 from nextmv.cloud.application._batch_scenario import ApplicationBatchMixin
 from nextmv.cloud.application._ensemble import ApplicationEnsembleMixin
@@ -600,48 +599,6 @@ class Application(
             else:
                 log(f'✅ Automatically created new version "{version.id}".')
                 log(json.dumps(version_dict, indent=2))
-
-    def run_queue(self) -> Queue:
-        """
-        Get the run queue for this application.
-
-        Returns
-        -------
-        Queue
-            A Queue object containing only the runs associated with this
-            application. Each run in the queue includes information about its
-            status, submission time, and other metadata.
-
-        Raises
-        ------
-        requests.HTTPError
-            If the response status code is not 2xx.
-
-        Examples
-        --------
-        >>> app = Application.get(client=client, id="my-app")
-        >>> queue = app.run_queue()
-        >>> print(f"Number of queued runs: {len(queue.runs)}")
-        Number of queued runs: 3
-        >>> for run in queue.runs:
-        ...     print(f"Run ID: {run.id}, Status: {run.status}")
-        Run ID: run-123, Status: queued
-        Run ID: run-456, Status: running
-        Run ID: run-789, Status: queued
-        """
-
-        response = self.client.request(
-            method="GET",
-            endpoint="v1/account/queue",
-        )
-        queue = Queue.from_dict(response.json())
-
-        runs = []
-        for run in queue.runs:
-            if run.application_id == self.id:
-                runs.append(run)
-
-        return Queue(runs=runs)
 
     def update(
         self,

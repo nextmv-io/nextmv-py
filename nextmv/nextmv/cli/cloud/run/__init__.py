@@ -11,7 +11,6 @@ from nextmv.cli.cloud.run.input import app as input_app
 from nextmv.cli.cloud.run.list import app as list_app
 from nextmv.cli.cloud.run.logs import app as logs_app
 from nextmv.cli.cloud.run.metadata import app as metadata_app
-from nextmv.cli.cloud.run.queue import app as queue_app
 from nextmv.cli.cloud.run.track import app as track_app
 
 # Set up subcommand application.
@@ -23,7 +22,6 @@ app.add_typer(input_app)
 app.add_typer(list_app)
 app.add_typer(logs_app)
 app.add_typer(metadata_app)
-app.add_typer(queue_app)
 app.add_typer(track_app)
 
 
