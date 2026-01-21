@@ -107,6 +107,20 @@ ManagedInputIDOption = Annotated[
     ),
 ]
 
+# ensemble_definition_id option - can be used in any command that requires an ensemble definition ID.
+# Define it as follows in commands or callbacks, as necessary:
+# ensemble_definition_id: EnsembleDefinitionIDOption
+EnsembleDefinitionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--ensemble-definition-id",
+        "-e",
+        help="The Nextmv Cloud ensemble definition ID to use for this action.",
+        envvar="NEXTMV_ENSEMBLE_DEFINITION_ID",
+        metavar="ENSEMBLE_DEFINITION_ID",
+    ),
+]
+
 # account_id option - can be used in any command that requires an account ID.
 # Define it as follows in commands or callbacks, as necessary:
 # account_id: AccountIDOption
