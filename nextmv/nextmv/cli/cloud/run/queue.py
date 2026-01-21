@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_account
+from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import AppIDOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,6 +17,7 @@ app = typer.Typer()
 
 @app.command()
 def queue(
+    app_id: AppIDOption,
     output: Annotated[
         str | None,
         typer.Option(
@@ -29,23 +30,23 @@ def queue(
     profile: ProfileOption = None,
 ) -> None:
     """
-    List current queued runs within the Nextmv Cloud account (organization).
+    List current queued runs within the Nextmv Cloud application.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - List all queued runs.
-        $ [green]nextmv cloud run queue[/green]
+    - List all queued runs of an application with ID [magenta]hare-app[/magenta].
+        $ [green]nextmv cloud run queue --app-id hare-app[/green]
 
     - List all queued runs using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run queue --profile hare[/green]
+        $ [green]nextmv cloud run queue --app-id hare-app --profile hare[/green]
 
     - List all queued runs and save the information to a [magenta]queue.json[/magenta] file.
-        $ [green]nextmv cloud run queue --output queue.json[/green]
+        $ [green]nextmv cloud run queue --app-id hare-app --output queue.json[/green]
     """
 
-    cloud_account = build_account(profile=profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting runs queue...")
-    queue = cloud_account.queue()
+    queue = cloud_app.run_queue()
     queue_dict = queue.to_dict()
 
     if output is not None:
