@@ -32,23 +32,26 @@ class TestInputSetCreateCommand(unittest.TestCase):
             "inputs": [],
         }
 
+    @patch("nextmv.cli.cloud.input_set.create.safe_id")
     @patch("nextmv.cli.cloud.input_set.create.build_client")
-    def test_create_minimal(self, mock_build_client):
+    def test_create_minimal(self, mock_build_client, mock_safe_id):
         """Test creating an input set with minimal options."""
         mock_client = Mock()
         mock_response = Mock()
         mock_response.json.return_value = self.sample_response
         mock_client.request.return_value = mock_response
         mock_build_client.return_value = mock_client
+        mock_safe_id.return_value = "input-set-generated"
 
         result = self.runner.invoke(self.app, ["--app-id", "my-app", "--name", "My Input Set"])
 
         self.assertEqual(result.exit_code, 0)
         mock_build_client.assert_called_once_with(None)
+        mock_safe_id.assert_called_once_with("input-set")
         mock_client.request.assert_called_once_with(
             method="POST",
             endpoint="/v1/applications/my-app/experiments/inputsets",
-            payload={"name": "My Input Set"},
+            payload={"id": "input-set-generated", "name": "My Input Set"},
         )
 
     @patch("nextmv.cli.cloud.input_set.create.build_client")
@@ -153,6 +156,47 @@ class TestInputSetCreateCommand(unittest.TestCase):
         result = self.runner.invoke(self.app, ["--app-id", "my-app"])
 
         self.assertNotEqual(result.exit_code, 0)
+
+    @patch("nextmv.cli.cloud.input_set.create.build_client")
+    def test_create_with_inputs_json(self, mock_build_client):
+        """Test creating an input set with --inputs JSON option."""
+        mock_client = Mock()
+        mock_response = Mock()
+        mock_response.json.return_value = self.sample_response
+        mock_client.request.return_value = mock_response
+        mock_build_client.return_value = mock_client
+
+        inputs_json = '{"input-1":{"name":"Input 1","description":"First input"},"input-2":{"name":"Input 2"}}'
+
+        result = self.runner.invoke(
+            self.app,
+            [
+                "--app-id",
+                "my-app",
+                "--name",
+                "My Input Set",
+                "--input-set-id",
+                "custom-id",
+                "--inputs",
+                inputs_json,
+            ],
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        # Verify the inputs are transformed to the expected format
+        call_args = mock_client.request.call_args
+        payload = call_args.kwargs["payload"]
+        self.assertIn("inputs", payload)
+        # The inputs should be transformed from dict to list format
+        expected_inputs = [
+            {"id": "input-1", "name": "Input 1", "description": "First input"},
+            {"id": "input-2", "name": "Input 2"},
+        ]
+        # Sort both lists for comparison since dict ordering may vary
+        self.assertEqual(
+            sorted(payload["inputs"], key=lambda x: x["id"]),
+            sorted(expected_inputs, key=lambda x: x["id"]),
+        )
 
 
 class TestInputSetGetCommand(unittest.TestCase):
@@ -490,6 +534,45 @@ class TestInputSetUpdateCommand(unittest.TestCase):
         )
 
         self.assertNotEqual(result.exit_code, 0)
+
+    @patch("nextmv.cli.cloud.input_set.update.build_client")
+    def test_update_with_inputs_json(self, mock_build_client):
+        """Test updating an input set with --inputs JSON option."""
+        mock_client = Mock()
+        mock_response = Mock()
+        mock_response.json.return_value = self.sample_response
+        mock_client.request.return_value = mock_response
+        mock_build_client.return_value = mock_client
+
+        inputs_json = '{"input-1":{"name":"Updated Input 1"},"input-2":{"name":"Updated Input 2","description":"New desc"}}'
+
+        result = self.runner.invoke(
+            self.app,
+            [
+                "--app-id",
+                "my-app",
+                "--input-set-id",
+                "input-set-123",
+                "--inputs",
+                inputs_json,
+            ],
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        # Verify the inputs are transformed to the expected format
+        call_args = mock_client.request.call_args
+        payload = call_args.kwargs["payload"]
+        self.assertIn("inputs", payload)
+        # The inputs should be transformed from dict to list format
+        expected_inputs = [
+            {"id": "input-1", "name": "Updated Input 1"},
+            {"id": "input-2", "name": "Updated Input 2", "description": "New desc"},
+        ]
+        # Sort both lists for comparison since dict ordering may vary
+        self.assertEqual(
+            sorted(payload["inputs"], key=lambda x: x["id"]),
+            sorted(expected_inputs, key=lambda x: x["id"]),
+        )
 
 
 class TestCloudCommand(unittest.TestCase):
