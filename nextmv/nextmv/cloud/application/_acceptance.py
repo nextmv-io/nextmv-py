@@ -400,6 +400,9 @@ class ApplicationAcceptanceMixin:
         'Updated Test Name'
         """
 
+        if (name is None or name == "") and (description is None or description == ""):
+            raise ValueError("at least one of name or description must be provided for update")
+
         payload = {}
 
         if name is not None:

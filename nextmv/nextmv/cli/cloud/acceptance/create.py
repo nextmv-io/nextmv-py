@@ -386,4 +386,11 @@ def build_metrics(metrics: list[str]) -> list[Metric]:
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             error(f"Invalid metric format: [magenta]{metric_str}[/magenta]. Error: {e}")
 
+    if not metrics_list:
+        error(
+            "No valid metrics were provided. Please specify at least one metric with "
+            "[magenta]field[/magenta], [magenta]metric_type[/magenta], "
+            "[magenta]params[/magenta], and [magenta]statistic[/magenta] fields."
+        )
+
     return metrics_list
