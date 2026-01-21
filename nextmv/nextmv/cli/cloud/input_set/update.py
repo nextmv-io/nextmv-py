@@ -41,7 +41,7 @@ def update(
         str | None,
         typer.Option(
             "--inputs",
-            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"input1", "description":"input1 description"}}\'',
+            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"fur", "description":"ball"}}\'',
             metavar="INPUTS",
         ),
     ] = None,
@@ -86,9 +86,7 @@ def update(
     """
 
     if name is None and description is None and inputs is None:
-        error(
-            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], or [code]--inputs[/code]."
-        )
+        error("Provide at least one option: [code]--name[/code], [code]--description[/code], or [code]--inputs[/code].")
 
     client = build_client(profile)
     in_progress(msg="Updating input set...")

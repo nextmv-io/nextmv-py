@@ -92,7 +92,7 @@ def create(
         str | None,
         typer.Option(
             "--inputs",
-            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"input1", "description":"input1 description"}}\'',
+            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"fur", "description":"ball"}}\'',
             metavar="INPUTS",
         ),
     ] = None,
