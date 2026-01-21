@@ -10,6 +10,7 @@ import typer
 from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.safe import safe_id
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -87,6 +88,14 @@ def create(
             metavar="LIMIT",
         ),
     ] = None,
+    inputs: Annotated[
+        str | None,
+        typer.Option(
+            "--inputs",
+            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"input1", "description":"input1 description"}}\'',
+            metavar="INPUTS",
+        ),
+    ] = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -102,41 +111,47 @@ def create(
     Create a new input set for experiments.
 
     An input set is a collection of inputs that can be reused across multiple
-    experiments. You can create an input set from historical runs by specifying
-    run IDs, or by filtering runs based on instance ID and time range.
+    experiments. You must use one of the following methods to specify the inputs:
+
+    1. [code]--run-ids[/code]: Create from a list of existing run IDs.
+
+    2. [code]--inputs[/code]: Create from existing managed inputs in the application.
+
+    3. [code]--instance-id[/code] with [code]--start-time[/code] and [code]--end-time[/code]:
+       Create from instance runs matching the time range criteria.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Create an input set with a name.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set"[/green]
-
-    - Create an input set from specific runs.
+    - Create an input set from specific runs. A random ID will be generated.
         $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
             --run-ids "run-1,run-2,run-3"[/green]
 
+    - Create an input set with a specific ID.
+        $ [green]nextmv cloud input-set create --app-id my-app --input-set-id my-input-set \\
+            --name "My Input Set" --run-ids "run-1,run-2,run-3"[/green]
+
+    - Create an input set using existing managed inputs.
+        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
+            --inputs '{"input-1":{"name":"input1", "description":"input1 description"}}'[/green]
+
     - Create an input set from runs within a time range.
         $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
-            --start-time "2024-01-01T00:00:00Z" --end-time "2024-01-31T23:59:59Z"[/green]
-
-    - Create an input set from a specific instance with a limit.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
-            --instance-id my-instance --limit 10[/green]
-
-    - Create an input set with an ID and description.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
-            --input-set-id my-input-set --description "Input set for testing"[/green]
+            --instance-id my-instance --start-time "2024-01-01T00:00:00Z" \\
+            --end-time "2024-01-31T23:59:59Z"[/green]
     """
 
     client = build_client(profile)
     in_progress(msg="Creating input set...")
 
+    # Generate a random ID if not provided
+    if input_set_id is None:
+        input_set_id = safe_id("input-set")
+
     # Build the request payload
     payload: dict = {
+        "id": input_set_id,
         "name": name,
     }
-
-    if input_set_id is not None:
-        payload["id"] = input_set_id
 
     if description is not None:
         payload["description"] = description
@@ -155,6 +170,12 @@ def create(
 
     if limit is not None:
         payload["maximum_runs"] = limit
+
+    if inputs is not None:
+        # Transform from {"id": {"name": "...", "description": "..."}} format
+        # to [{"id": "...", "name": "...", "description": "..."}] format
+        inputs_dict = json.loads(inputs)
+        payload["inputs"] = [{"id": k, **v} for k, v in inputs_dict.items()]
 
     response = client.request(
         method="POST",

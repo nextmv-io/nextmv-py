@@ -37,6 +37,14 @@ def update(
             metavar="DESCRIPTION",
         ),
     ] = None,
+    inputs: Annotated[
+        str | None,
+        typer.Option(
+            "--inputs",
+            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"input1", "description":"input1 description"}}\'',
+            metavar="INPUTS",
+        ),
+    ] = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -52,7 +60,7 @@ def update(
     Update an existing input set.
 
     This command updates the metadata of an existing input set. You can update
-    the name and/or description of the input set.
+    the name, description, and/or inputs of the input set.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -64,6 +72,10 @@ def update(
         $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
             --description "Updated description"[/green]
 
+    - Update an input set's inputs.
+        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
+            --inputs '{"input-1":{"name":"input1", "description":"input1 description"}}'[/green]
+
     - Update both name and description.
         $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
             --name "New Name" --description "Updated description"[/green]
@@ -73,8 +85,10 @@ def update(
             --name "New Name" --output updated-input-set.json[/green]
     """
 
-    if name is None and description is None:
-        error("Provide at least one option to update: [code]--name[/code] or [code]--description[/code].")
+    if name is None and description is None and inputs is None:
+        error(
+            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], or [code]--inputs[/code]."
+        )
 
     client = build_client(profile)
     in_progress(msg="Updating input set...")
@@ -87,6 +101,12 @@ def update(
 
     if description is not None:
         payload["description"] = description
+
+    if inputs is not None:
+        # Transform from {"id": {"name": "...", "description": "..."}} format
+        # to [{"id": "...", "name": "...", "description": "..."}] format
+        inputs_dict = json.loads(inputs)
+        payload["inputs"] = [{"id": k, **v} for k, v in inputs_dict.items()]
 
     response = client.request(
         method="PUT",
