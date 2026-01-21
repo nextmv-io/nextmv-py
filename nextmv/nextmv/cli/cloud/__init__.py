@@ -4,6 +4,7 @@ This module defines the cloud command tree for the Nextmv CLI.
 
 import typer
 
+from nextmv.cli.cloud.acceptance import app as acceptance_app
 from nextmv.cli.cloud.account import app as account_app
 from nextmv.cli.cloud.app import app as app_app
 from nextmv.cli.cloud.data import app as data_app
@@ -17,6 +18,7 @@ from nextmv.cli.cloud.version import app as version_app
 
 # Set up subcommand application.
 app = typer.Typer()
+app.add_typer(acceptance_app, name="acceptance")
 app.add_typer(account_app, name="account")
 app.add_typer(app_app, name="app")
 app.add_typer(data_app, name="data")

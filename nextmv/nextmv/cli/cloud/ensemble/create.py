@@ -261,7 +261,10 @@ def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
                 run_groups_list.append(run_group)
 
             else:
-                error(f"Invalid run group format: [magenta]{run_group_str}[/magenta]. Expected JSON object or array.")
+                error(
+                    f"Invalid run group format: [magenta]{run_group_str}[/magenta]. "
+                    "Expected [magenta]json[/magenta] object or array."
+                )
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             error(f"Invalid run group format: [magenta]{run_group_str}[/magenta]. Error: {e}")
@@ -305,7 +308,10 @@ def build_rules(rules: list[str]) -> list[EvaluationRule]:
                 rules_list.append(rule)
 
             else:
-                error(f"Invalid rule format: [magenta]{rule_str}[/magenta]. Expected JSON object or array.")
+                error(
+                    f"Invalid rule format: [magenta]{rule_str}[/magenta]. "
+                    "Expected [magenta]json[/magenta] object or array."
+                )
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             error(f"Invalid rule format: [magenta]{rule_str}[/magenta]. Error: {e}")

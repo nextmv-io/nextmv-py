@@ -195,7 +195,10 @@ def build_secrets(secrets: list[str]) -> list[Secret]:
                 secrets_list.append(secret)
 
             else:
-                error(f"Invalid secret format: [magenta]{secret_str}[/magenta]. Expected JSON object or array.")
+                error(
+                    f"Invalid secret format: [magenta]{secret_str}[/magenta]. "
+                    "Expected [magenta]json[/magenta] object or array."
+                )
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             error(f"Invalid secret format: [magenta]{secret_str}[/magenta]. Error: {e}")
