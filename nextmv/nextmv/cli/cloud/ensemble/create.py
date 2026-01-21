@@ -87,7 +87,8 @@ def create(
     [bold]Run Groups[/bold] specify how child runs are executed:
     - [magenta]id[/magenta]: Unique identifier for the run group.
     - [magenta]instance_id[/magenta]: The instance to execute runs on.
-    - [magenta]options[/magenta] (optional): Runtime options/parameters.
+    - [magenta]options[/magenta] (optional): Runtime options/parameters. Options should be provded as a
+        [magenta]json[/magenta] object, with [magenta]string[/magenta] key-value pairs.
     - [magenta]repetitions[/magenta] (optional): Number of times to repeat the run.
 
     [bold]Evaluation Rules[/bold] determine the best result:
