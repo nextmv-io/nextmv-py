@@ -942,20 +942,21 @@ class AcceptanceTest(BaseModel):
     """Name of the acceptance test."""
     description: str
     """Description of the acceptance test."""
-    app_id: str
-    """ID of the app that owns the acceptance test."""
-    experiment_id: str
-    """ID of the batch experiment underlying in the acceptance test."""
-    control: ComparisonInstance
-    """Control instance of the acceptance test."""
-    candidate: ComparisonInstance
-    """Candidate instance of the acceptance test."""
-    metrics: list[Metric]
-    """Metrics of the acceptance test."""
     created_at: datetime
     """Creation date of the acceptance test."""
     updated_at: datetime
     """Last update date of the acceptance test."""
+
+    app_id: str | None = None
+    """ID of the app that owns the acceptance test."""
+    experiment_id: str | None = None
+    """ID of the batch experiment underlying in the acceptance test."""
+    control: ComparisonInstance | None = None
+    """Control instance of the acceptance test."""
+    candidate: ComparisonInstance | None = None
+    """Candidate instance of the acceptance test."""
+    metrics: list[Metric] | None = None
+    """Metrics of the acceptance test."""
     status: ExperimentStatus | None = ExperimentStatus.UNKNOWN
     """Status of the acceptance test."""
     results: AcceptanceTestResults | None = None

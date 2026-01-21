@@ -134,3 +134,17 @@ AccountIDOption = Annotated[
         metavar="ACCOUNT_ID",
     ),
 ]
+
+# acceptance_test_id option - can be used in any command that requires an acceptance test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# acceptance_test_id: AcceptanceTestIDOption
+AcceptanceTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--acceptance-test-id",
+        "-t",
+        help="The Nextmv Cloud acceptance test ID to use for this action.",
+        envvar="NEXTMV_ACCEPTANCE_TEST_ID",
+        metavar="ACCEPTANCE_TEST_ID",
+    ),
+]

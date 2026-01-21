@@ -159,13 +159,13 @@ class ApplicationAcceptanceMixin:
 
         return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response.json()]
 
-    def new_acceptance_test(
+    def new_acceptance_test(  # noqa: C901
         self: "Application",
         candidate_instance_id: str,
         baseline_instance_id: str,
         id: str,
         metrics: list[Metric | dict[str, Any]],
-        name: str,
+        name: str | None = None,
         input_set_id: str | None = None,
         description: str | None = None,
     ) -> AcceptanceTest:
@@ -189,8 +189,8 @@ class ApplicationAcceptanceMixin:
             ID of the acceptance test.
         metrics : list[Union[Metric, dict[str, Any]]]
             List of metrics to use for the acceptance test.
-        name : str
-            Name of the acceptance test.
+        name : Optional[str], default=None
+            Name of the acceptance test. If not provided, the ID will be used as the name.
         input_set_id : Optional[str], default=None
             ID of the input set to use for the underlying batch experiment,
             in case it hasn't been started.
@@ -209,6 +209,9 @@ class ApplicationAcceptanceMixin:
         ValueError
             If the batch experiment ID does not match the acceptance test ID.
         """
+
+        if name is None or name == "":
+            name = id
 
         if input_set_id is None:
             try:
@@ -282,7 +285,7 @@ class ApplicationAcceptanceMixin:
         baseline_instance_id: str,
         id: str,
         metrics: list[Metric | dict[str, Any]],
-        name: str,
+        name: str | None = None,
         input_set_id: str | None = None,
         description: str | None = None,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
@@ -303,8 +306,8 @@ class ApplicationAcceptanceMixin:
             ID of the acceptance test.
         metrics : list[Union[Metric, dict[str, Any]]]
             List of metrics to use for the acceptance test.
-        name : str
-            Name of the acceptance test.
+        name : Optional[str], default=None
+            Name of the acceptance test. If not provided, the ID will be used as the name.
         input_set_id : Optional[str], default=None
             ID of the input set to use for the underlying batch experiment,
             in case it hasn't been started.
@@ -357,3 +360,57 @@ class ApplicationAcceptanceMixin:
             acceptance_test_id=acceptance_test.id,
             polling_options=polling_options,
         )
+
+    def update_acceptance_test(
+        self: "Application",
+        acceptance_test_id: str,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> AcceptanceTest:
+        """
+        Update an acceptance test.
+
+        Parameters
+        ----------
+        acceptance_test_id : str
+            ID of the acceptance test to update.
+        name : Optional[str], default=None
+            Optional name of the acceptance test.
+        description : Optional[str], default=None
+            Optional description of the acceptance test.
+
+        Returns
+        -------
+        AcceptanceTest
+            The updated acceptance test.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> test = app.update_acceptance_test(
+        ...     acceptance_test_id="test-123",
+        ...     name="Updated Test Name",
+        ...     description="Updated description"
+        ... )
+        >>> print(test.name)
+        'Updated Test Name'
+        """
+
+        payload = {}
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.experiments_endpoint}/acceptance/{acceptance_test_id}",
+            payload=payload,
+        )
+
+        return AcceptanceTest.from_dict(response.json())
