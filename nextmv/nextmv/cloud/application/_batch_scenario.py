@@ -16,7 +16,7 @@ from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import Run
-from nextmv.safe import safe_name_and_id
+from nextmv.safe import safe_id, safe_name_and_id
 
 if TYPE_CHECKING:
     from . import Application
@@ -254,9 +254,9 @@ class ApplicationBatchMixin:
 
         return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
 
-    def new_batch_experiment(
+    def new_batch_experiment(  # noqa: C901
         self: "Application",
-        name: str,
+        name: str | None = None,
         input_set_id: str | None = None,
         instance_ids: list[str] | None = None,
         description: str | None = None,
@@ -270,13 +270,13 @@ class ApplicationBatchMixin:
 
         Parameters
         ----------
-        name: str
-            Name of the batch experiment.
-        input_set_id: str
+        name: Optional[str]
+            Name of the batch experiment. If not provided, the ID will be used as the name.
+        input_set_id: str | None
             ID of the input set to use for the batch experiment.
         instance_ids: list[str]
-            List of instance IDs to use for the batch experiment.
             This argument is deprecated, use `runs` instead.
+            List of instance IDs to use for the batch experiment.
         description: Optional[str]
             Optional description of the batch experiment.
         id: Optional[str]
@@ -303,7 +303,16 @@ class ApplicationBatchMixin:
             If the response status code is not 2xx.
         """
 
+        # Generate ID if not provided
+        if id is None:
+            id = safe_id("batch")
+
+        # Use ID as name if name not provided
+        if name is None:
+            name = id
+
         payload = {
+            "id": id,
             "name": name,
         }
         if input_set_id is not None:
@@ -315,8 +324,6 @@ class ApplicationBatchMixin:
             payload["runs"] = payload_runs
         if description is not None:
             payload["description"] = description
-        if id is not None:
-            payload["id"] = id
         if option_sets is not None:
             payload["option_sets"] = option_sets
         if runs is not None:
@@ -337,7 +344,7 @@ class ApplicationBatchMixin:
 
     def new_batch_experiment_with_result(
         self: "Application",
-        name: str,
+        name: str | None = None,
         input_set_id: str | None = None,
         instance_ids: list[str] | None = None,
         description: str | None = None,
@@ -357,8 +364,8 @@ class ApplicationBatchMixin:
 
         Parameters
         ----------
-        name: str
-            Name of the batch experiment.
+        name: Optional[str]
+            Name of the batch experiment. If not provided, the ID will be used as the name.
         input_set_id: str
             ID of the input set to use for the batch experiment.
         instance_ids: list[str]

@@ -17,7 +17,7 @@ from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
+from nextmv.polling import default_polling_options
 from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
 
 # Set up subcommand application.
@@ -158,7 +158,7 @@ def create(
         ),
     ] = False,
     options: Annotated[
-        list[str],
+        list[str] | None,
         typer.Option(
             "--options",
             "-o",
@@ -321,7 +321,7 @@ def create(
     run_options = build_run_options(options)
 
     # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
     # Handles the default instance.

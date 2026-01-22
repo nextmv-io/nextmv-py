@@ -78,6 +78,10 @@ def update(
         name=name,
         description=description,
     )
+    success(
+        f"Acceptance test [magenta]{acceptance_test_id}[/magenta] updated successfully "
+        f"in application [magenta]{app_id}[/magenta]."
+    )
 
     acceptance_test_dict = acceptance_test.to_dict()
 

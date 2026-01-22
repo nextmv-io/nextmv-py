@@ -223,7 +223,9 @@ class BatchExperimentRun(BaseModel):
     Parameters
     ----------
     input_id : str
-        ID of the input used for the experiment.
+        ID of the input used for the experiment. If a managed input is used,
+        this should be the ID of the managed input. If `input_set_id` is provided
+        for the run, this should be the ID of an input within that input set.
     option_set : str
         Option set used for the experiment. Defaults to None.
     instance_id : str, optional

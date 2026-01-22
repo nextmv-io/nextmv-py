@@ -131,6 +131,10 @@ def update(
         description=description,
         secrets=secrets_list,
     )
+    success(
+        f"Secrets collection [magenta]{secrets_collection_id}[/magenta] updated successfully "
+        f"in application [magenta]{app_id}[/magenta]."
+    )
 
     if output is not None:
         with open(output, "w") as f:

@@ -11,7 +11,7 @@ from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.acceptance_test import Comparison, Metric, MetricToleranceType, MetricType, StatisticType
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
+from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -31,9 +31,9 @@ app = typer.Typer()
     experiment.
 
     Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    complete, polling for results. Use the [code]--output[/code] flag to
+    specify a destination file for the output obtained. Please note that using
+    the [code]--output[/code] flag will not activate waiting by itself.
 
     [bold][underline]Metrics[/underline][/bold]
 
@@ -244,7 +244,7 @@ def create(
         typer.Option(
             "--output",
             "-o",
-            help="Waits for the acceptance test to complete and saves the results to this location.",
+            help="Save the acceptance test output to this location.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -275,14 +275,11 @@ def create(
     metrics_list = build_metrics(metrics)
 
     # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
-    # Determine if we should wait
-    should_wait = wait or (output is not None and output != "")
-
     # Create the acceptance test
-    if should_wait:
+    if wait:
         in_progress(msg="Creating acceptance test and waiting for results...")
         acceptance_test = cloud_app.new_acceptance_test_with_result(
             candidate_instance_id=candidate_instance_id,
