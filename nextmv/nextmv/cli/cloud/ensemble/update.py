@@ -87,6 +87,10 @@ def update(
         name=name,
         description=description,
     )
+    success(
+        f"Ensemble definition [magenta]{ensemble_definition_id}[/magenta] updated successfully "
+        f"in application [magenta]{app_id}[/magenta]."
+    )
 
     if output is not None:
         with open(output, "w") as f:

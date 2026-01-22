@@ -27,7 +27,7 @@ def create(
             "Pass multiple secrets by repeating the flag, or providing a list of objects. "
             "Allowed values for [magenta]type[/magenta] are: "
             f"{enum_values(SecretType)}. "
-            "Object format: [magenta]{'type': type, 'location': location, 'value': value}[/magenta].",
+            "Object format: [green]{'type': type, 'location': location, 'value': value}[/green].",
             metavar="SECRETS",
         ),
     ],

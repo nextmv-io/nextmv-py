@@ -31,9 +31,8 @@ app = typer.Typer()
     experiment.
 
     Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    complete, polling for results. Use the [code]--output[/code] flag to
+    specify a destination file for the results.
 
     [bold][underline]Metrics[/underline][/bold]
 
@@ -244,7 +243,7 @@ def create(
         typer.Option(
             "--output",
             "-o",
-            help="Waits for the acceptance test to complete and saves the results to this location.",
+            help="Save the acceptance test results to this location.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -278,11 +277,8 @@ def create(
     polling_options = DEFAULT_POLLING_OPTIONS
     polling_options.max_duration = timeout
 
-    # Determine if we should wait
-    should_wait = wait or (output is not None and output != "")
-
     # Create the acceptance test
-    if should_wait:
+    if wait:
         in_progress(msg="Creating acceptance test and waiting for results...")
         acceptance_test = cloud_app.new_acceptance_test_with_result(
             candidate_instance_id=candidate_instance_id,

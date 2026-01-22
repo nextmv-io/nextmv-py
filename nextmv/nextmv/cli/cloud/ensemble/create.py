@@ -15,7 +15,157 @@ from nextmv.cloud.ensemble import EvaluationRule, RuleObjective, RuleTolerance, 
 app = typer.Typer()
 
 
-@app.command()
+@app.command(
+    # AVOID USING THE HELP PARAMETER WITH TYPER COMMAND DECORATOR. For
+    # consistency, commands should be documented using docstrings. We were
+    # forced to use help here to work around f-string limitations in
+    # docstrings.
+    help=f"""
+    Create a new Nextmv Cloud ensemble definition.
+
+    An ensemble definition coordinates the execution of multiple child runs for
+    an application and determines the optimal result from those runs. Each
+    ensemble definition contains run groups and evaluation rules.
+
+    [bold][underline]Run Groups[/underline][/bold]
+
+    Run groups are provided as [magenta]json[/magenta] objects using the
+    [code]--run-groups[/code] flag. Each run group specifies how child runs
+    are executed.
+
+    You can provide run groups in three ways:
+    - A single run group as a [magenta]json[/magenta] object.
+    - Multiple run groups by repeating the [code]--run-groups[/code] flag.
+    - Multiple run groups as a [magenta]json[/magenta] array in a single [code]--run-groups[/code] flag.
+
+    Each run group must have the following fields:
+    - [magenta]id[/magenta]: Unique identifier for the run group (required).
+    - [magenta]instance_id[/magenta]: The instance to execute runs on (required).
+    - [magenta]options[/magenta]: Runtime options/parameters (optional). Options should be provided as a
+      [magenta]json[/magenta] object with [magenta]string[/magenta] key-value pairs.
+    - [magenta]repetitions[/magenta]: Number of times to repeat the run (optional).
+
+    Object format:
+    [green]{{
+        "id": "rg1",
+        "instance_id": "inst-123",
+        "options": {{"param": "value"}},
+        "repetitions": 5
+    }}[/green]
+
+    [bold][underline]Evaluation Rules[/underline][/bold]
+
+    Evaluation rules are provided as [magenta]json[/magenta] objects using the
+    [code]--rules[/code] flag. Each rule determines how to evaluate and select
+    the best result from the child runs.
+
+    You can provide rules in three ways:
+    - A single rule as a [magenta]json[/magenta] object.
+    - Multiple rules by repeating the [code]--rules[/code] flag.
+    - Multiple rules as a [magenta]json[/magenta] array in a single [code]--rules[/code] flag.
+
+    Each rule must have the following fields:
+    - [magenta]id[/magenta]: Unique identifier for the rule (required).
+    - [magenta]statistics_path[/magenta]: JSONPath to the metric (e.g., [magenta]$.result.value[/magenta]) (required).
+    - [magenta]objective[/magenta]: Objective for the evaluation (required).
+      Allowed values: {enum_values(RuleObjective)}.
+    - [magenta]tolerance[/magenta]: Object with the following fields (required):
+        - [magenta]value[/magenta]: Tolerance value (float).
+        - [magenta]type[/magenta]: Tolerance type. Allowed values: {enum_values(RuleToleranceType)}.
+    - [magenta]index[/magenta]: Evaluation order - lower indices evaluated first (required).
+
+    Object format:
+    [green]{{
+        "id": "rule1",
+        "statistics_path": "$.result.value",
+        "objective": "minimize",
+        "tolerance": {{"value": 0.1, "type": "relative"}},
+        "index": 0
+    }}[/green]
+
+    [bold][underline]Examples[/underline][/bold]
+
+    - Create an ensemble definition with a single run group and rule.
+        $ [green]RUN_GROUP='{{
+            "id": "rg1",
+            "instance_id": "inst-123"
+        }}'
+        RULE='{{
+            "id": "rule1",
+            "statistics_path": "$.result.value",
+            "objective": "minimize",
+            "tolerance": {{"value": 0.1, "type": "relative"}},
+            "index": 0
+        }}'
+        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
+
+    - Create with multiple run groups by repeating the flag.
+        $ [green]RUN_GROUP_1='{{
+            "id": "rg1",
+            "instance_id": "inst-123"
+        }}'
+        RUN_GROUP_2='{{
+            "id": "rg2",
+            "instance_id": "inst-456",
+            "options": {{"param": "value"}}
+        }}'
+        RULE='{{
+            "id": "rule1",
+            "statistics_path": "$.result.value",
+            "objective": "minimize",
+            "tolerance": {{"value": 0.1, "type": "relative"}},
+            "index": 0
+        }}'
+        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP_1" --run-groups "$RUN_GROUP_2" \\
+            --rules "$RULE"[/green]
+
+    - Create with multiple items in a single JSON array.
+        $ [green]RUN_GROUPS='[
+            {{"id": "rg1", "instance_id": "inst-123"}},
+            {{"id": "rg2", "instance_id": "inst-456"}}
+        ]'
+        RULES='[{{
+            "id": "rule1",
+            "statistics_path": "$.result.value",
+            "objective": "minimize",
+            "tolerance": {{"value": 0.1, "type": "relative"}},
+            "index": 0
+        }}]'
+        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUPS" --rules "$RULES"[/green]
+
+    - Create with custom ID, name, and description.
+        $ [green]RUN_GROUP='{{
+            "id": "rg1",
+            "instance_id": "inst-123"
+        }}'
+        RULE='{{
+            "id": "rule1",
+            "statistics_path": "$.result.value",
+            "objective": "minimize",
+            "tolerance": {{"value": 0.1, "type": "relative"}},
+            "index": 0
+        }}'
+        nextmv cloud ensemble create --app-id hare-app \\
+            --ensemble-definition-id prod-ensemble --name "Production Ensemble" \\
+            --description "Production ensemble with multiple solvers" \\
+            --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
+
+    - Create with run group repetitions.
+        $ [green]RUN_GROUP='{{
+            "id": "rg1",
+            "instance_id": "inst-123",
+            "repetitions": 5
+        }}'
+        RULE='{{
+            "id": "rule1",
+            "statistics_path": "$.result.value",
+            "objective": "minimize",
+            "tolerance": {{"value": 0.1, "type": "relative"}},
+            "index": 0
+        }}'
+        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
+    """
+)
 def create(
     app_id: AppIDOption,
     run_groups: Annotated[
@@ -25,9 +175,7 @@ def create(
             "-r",
             help="Run groups to configure for the ensemble. Data should be valid [magenta]json[/magenta]. "
             "Pass multiple run groups by repeating the flag, or providing a list of objects. "
-            "Object format: [magenta]{'id': id, 'instance_id': instance_id, "
-            "'options': options, 'repetitions': repetitions}[/magenta]. "
-            "The [magenta]options[/magenta] and [magenta]repetitions[/magenta] fields are optional.",
+            "See command help for details on run group formatting.",
             metavar="RUN_GROUPS",
         ),
     ],
@@ -38,12 +186,7 @@ def create(
             "-u",
             help="Evaluation rules to configure for the ensemble. Data should be valid [magenta]json[/magenta]. "
             "Pass multiple rules by repeating the flag, or providing a list of objects. "
-            "Allowed values for [magenta]objective[/magenta] are: "
-            f"{enum_values(RuleObjective)}. "
-            "Allowed values for [magenta]tolerance.type[/magenta] are: "
-            f"{enum_values(RuleToleranceType)}. "
-            "Object format: [magenta]{'id': id, 'statistics_path': path, 'objective': objective, "
-            "'tolerance': {'value': value, 'type': type}, 'index': index}[/magenta].",
+            "See command help for details on rule formatting.",
             metavar="RULES",
         ),
     ],
@@ -77,116 +220,6 @@ def create(
     ] = None,
     profile: ProfileOption = None,
 ) -> None:
-    """
-    Create a new Nextmv Cloud ensemble definition.
-
-    An ensemble definition coordinates the execution of multiple child runs for
-    an application and determines the optimal result from those runs. Each
-    ensemble definition contains run groups and evaluation rules.
-
-    [bold]Run Groups[/bold] specify how child runs are executed:
-    - [magenta]id[/magenta]: Unique identifier for the run group.
-    - [magenta]instance_id[/magenta]: The instance to execute runs on.
-    - [magenta]options[/magenta] (optional): Runtime options/parameters. Options should be provded as a
-        [magenta]json[/magenta] object, with [magenta]string[/magenta] key-value pairs.
-    - [magenta]repetitions[/magenta] (optional): Number of times to repeat the run.
-
-    [bold]Evaluation Rules[/bold] determine the best result:
-    - [magenta]id[/magenta]: Unique identifier for the rule.
-    - [magenta]statistics_path[/magenta]: JSONPath to the metric (e.g., [magenta]$.result.value[/magenta]).
-    - [magenta]objective[/magenta]: Either [magenta]maximize[/magenta] or [magenta]minimize[/magenta].
-    - [magenta]tolerance[/magenta]: Object with [magenta]value[/magenta] (float) and [magenta]type[/magenta]
-      ([magenta]absolute[/magenta] or [magenta]relative[/magenta]).
-    - [magenta]index[/magenta]: Evaluation order (lower indices evaluated first).
-
-    You can provide run groups and rules in three ways:
-    - A single object as [magenta]json[/magenta].
-    - Multiple objects by repeating the flag.
-    - Multiple objects as a [magenta]json[/magenta] array in a single flag.
-
-    [bold][underline]Examples[/underline][/bold]
-
-    - Create an ensemble definition with a single run group and rule.
-        $ [green]RUN_GROUP='{
-            "id": "rg1",
-            "instance_id": "inst-123"
-        }'
-        RULE='{
-            "id": "rule1",
-            "statistics_path": "$.result.value",
-            "objective": "minimize",
-            "tolerance": {"value": 0.1, "type": "relative"},
-            "index": 0
-        }'
-        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
-
-    - Create with multiple run groups by repeating the flag.
-        $ [green]RUN_GROUP_1='{
-            "id": "rg1",
-            "instance_id": "inst-123"
-        }'
-        RUN_GROUP_2='{
-            "id": "rg2",
-            "instance_id": "inst-456",
-            "options": {"param": "value"}
-        }'
-        RULE='{
-            "id": "rule1",
-            "statistics_path": "$.result.value",
-            "objective": "minimize",
-            "tolerance": {"value": 0.1, "type": "relative"},
-            "index": 0
-        }'
-        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP_1" --run-groups "$RUN_GROUP_2" \\
-            --rules "$RULE"[/green]
-
-    - Create with multiple items in a single JSON array.
-        $ [green]RUN_GROUPS='[
-            {"id": "rg1", "instance_id": "inst-123"},
-            {"id": "rg2", "instance_id": "inst-456"}
-        ]'
-        RULES='[{
-            "id": "rule1",
-            "statistics_path": "$.result.value",
-            "objective": "minimize",
-            "tolerance": {"value": 0.1, "type": "relative"},
-            "index": 0
-        }]'
-        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUPS" --rules "$RULES"[/green]
-
-    - Create with custom ID, name, and description.
-        $ [green]RUN_GROUP='{
-            "id": "rg1",
-            "instance_id": "inst-123"
-        }'
-        RULE='{
-            "id": "rule1",
-            "statistics_path": "$.result.value",
-            "objective": "minimize",
-            "tolerance": {"value": 0.1, "type": "relative"},
-            "index": 0
-        }'
-        nextmv cloud ensemble create --app-id hare-app \\
-            --ensemble-definition-id prod-ensemble --name "Production Ensemble" \\
-            --description "Production ensemble with multiple solvers" \\
-            --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
-
-    - Create with run group repetitions.
-        $ [green]RUN_GROUP='{
-            "id": "rg1",
-            "instance_id": "inst-123",
-            "repetitions": 5
-        }'
-        RULE='{
-            "id": "rule1",
-            "statistics_path": "$.result.value",
-            "objective": "minimize",
-            "tolerance": {"value": 0.1, "type": "relative"},
-            "index": 0
-        }'
-        nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP" --rules "$RULE"[/green]
-    """
-
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating ensemble definition...")
 

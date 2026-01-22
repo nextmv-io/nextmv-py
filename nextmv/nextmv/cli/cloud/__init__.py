@@ -7,6 +7,7 @@ import typer
 from nextmv.cli.cloud.acceptance import app as acceptance_app
 from nextmv.cli.cloud.account import app as account_app
 from nextmv.cli.cloud.app import app as app_app
+from nextmv.cli.cloud.batch import app as batch_app
 from nextmv.cli.cloud.data import app as data_app
 from nextmv.cli.cloud.ensemble import app as ensemble_app
 from nextmv.cli.cloud.instance import app as instance_app
@@ -21,6 +22,7 @@ app = typer.Typer()
 app.add_typer(acceptance_app, name="acceptance")
 app.add_typer(account_app, name="account")
 app.add_typer(app_app, name="app")
+app.add_typer(batch_app, name="batch")
 app.add_typer(data_app, name="data")
 app.add_typer(ensemble_app, name="ensemble")
 app.add_typer(instance_app, name="instance")
