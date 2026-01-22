@@ -53,6 +53,7 @@ from .output import write as write
 from .output import write_local as write_local
 from .polling import DEFAULT_POLLING_OPTIONS as DEFAULT_POLLING_OPTIONS
 from .polling import PollingOptions as PollingOptions
+from .polling import default_polling_options as default_polling_options
 from .polling import poll as poll
 from .run import ErrorLog as ErrorLog
 from .run import ExternalRunResult as ExternalRunResult

@@ -11,7 +11,7 @@ from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.batch_experiment import BatchExperimentRun
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
+from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -76,7 +76,7 @@ def create(
         typer.Option(
             "--output",
             "-o",
-            help="Save the batch experiment results to this location.",
+            help="Save the batch experiment output to this location.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -122,7 +122,8 @@ def create(
 
     Use the [code]--wait[/code] flag to wait for the batch experiment to
     complete, polling for results. Use the [code]--output[/code] flag to
-    specify a destination file for the results.
+    specify a destination file for the output obtained. Please note that using
+    the [code]--output[/code] flag will not activate waiting by itself.
 
     [bold][underline]Runs[/underline][/bold]
 
@@ -254,7 +255,7 @@ def create(
     option_sets_dict = build_option_sets(option_sets)
 
     # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
     # Create the batch experiment
@@ -417,7 +418,7 @@ def _process_single_run(run_data: dict, run_str: str) -> BatchExperimentRun:
 
     Returns
     -------
-    BatchExperimentRun]
+    BatchExperimentRun
         Processed run.
     """
     _validate_run_fields(run_data, run_str)

@@ -140,11 +140,35 @@ class PollingOptions:
 
 DEFAULT_POLLING_OPTIONS: PollingOptions = PollingOptions()
 """
+!!! warning
+    `DEFAULT_POLLING_OPTIONS` is a mutable global variable. Use the `default_polling_options`
+    function to obtain a fresh instance of `PollingOptions` with default settings.
+
 Default polling options to use when polling for a run result. This constant
 provides the default values for `PollingOptions` used across the module.
-Using these defaults is recommended for most use cases unless specific timing
-needs are required.
 """
+
+
+def default_polling_options() -> PollingOptions:
+    """
+    Returns a new instance of PollingOptions with default settings.
+
+    This function can be used to obtain a fresh set of default polling options
+    that can be modified as needed without affecting the global defaults.
+
+    You can import the `default_polling_options` function directly from `nextmv`:
+
+    ```python
+    from nextmv import default_polling_options
+    ```
+
+    Returns
+    -------
+    PollingOptions
+        A new instance of PollingOptions with default values.
+    """
+
+    return PollingOptions()
 
 
 def poll(  # noqa: C901

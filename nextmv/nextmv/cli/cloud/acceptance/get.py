@@ -10,7 +10,7 @@ import typer
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
+from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -75,7 +75,7 @@ def get(
     cloud_app = build_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
     # Determine if we should wait

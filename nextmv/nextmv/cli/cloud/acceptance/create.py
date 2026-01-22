@@ -11,7 +11,7 @@ from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.acceptance_test import Comparison, Metric, MetricToleranceType, MetricType, StatisticType
-from nextmv.polling import DEFAULT_POLLING_OPTIONS
+from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -32,7 +32,8 @@ app = typer.Typer()
 
     Use the [code]--wait[/code] flag to wait for the acceptance test to
     complete, polling for results. Use the [code]--output[/code] flag to
-    specify a destination file for the results.
+    specify a destination file for the output obtained. Please note that using
+    the [code]--output[/code] flag will not activate waiting by itself.
 
     [bold][underline]Metrics[/underline][/bold]
 
@@ -243,7 +244,7 @@ def create(
         typer.Option(
             "--output",
             "-o",
-            help="Save the acceptance test results to this location.",
+            help="Save the acceptance test output to this location.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -274,7 +275,7 @@ def create(
     metrics_list = build_metrics(metrics)
 
     # Build the polling options.
-    polling_options = DEFAULT_POLLING_OPTIONS
+    polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
     # Create the acceptance test
