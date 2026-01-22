@@ -34,6 +34,7 @@ def create(
             "--input-set-id",
             "-s",
             help="An optional ID for the input set. If not provided, a random ID will be generated.",
+            envvar="NEXTMV_INPUT_SET_ID",
             metavar="INPUT_SET_ID",
         ),
     ] = None,
@@ -56,9 +57,10 @@ def create(
         ),
     ] = None,
     run_ids: Annotated[
-        str | None,
+        list[str],
         typer.Option(
             "--run-ids",
+            "-r",
             help="Comma-separated list of run IDs to include in the input set (max 20).",
             metavar="RUN_IDS",
         ),
@@ -159,8 +161,8 @@ def create(
     if instance_id is not None:
         payload["instance_id"] = instance_id
 
-    if run_ids is not None:
-        payload["run_ids"] = [r.strip() for r in run_ids.split(",")]
+    if run_ids:
+        payload["run_ids"] = [r.strip() for r in run_ids]
 
     if start_time is not None:
         payload["start_time"] = start_time
