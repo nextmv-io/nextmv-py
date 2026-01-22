@@ -158,7 +158,7 @@ def create(
         ),
     ] = False,
     options: Annotated[
-        list[str],
+        list[str] | None,
         typer.Option(
             "--options",
             "-o",
