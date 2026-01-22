@@ -87,7 +87,7 @@ def create(
             help="Maximum number of runs to include (default: 20, max: 20).",
             metavar="LIMIT",
         ),
-    ] = None,
+    ] = 20,
     inputs: Annotated[
         str | None,
         typer.Option(
