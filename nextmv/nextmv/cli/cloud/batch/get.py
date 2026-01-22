@@ -19,7 +19,7 @@ app = typer.Typer()
 @app.command()
 def get(
     app_id: AppIDOption,
-    batch_id: BatchExperimentIDOption,
+    batch_experiment_id: BatchExperimentIDOption,
     output: Annotated[
         str | None,
         typer.Option(
@@ -59,17 +59,17 @@ def get(
 
     - Get the batch experiment with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-id carrot-optimization[/green]
+        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id carrot-optimization[/green]
 
     - Get the batch experiment and wait for it to complete if necessary.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-id bunny-hop-test --wait[/green]
+        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id bunny-hop-test --wait[/green]
 
     - Get the batch experiment and save the results to a file.
-        $ [green]nextmv cloud batch get --app-id hare-app \\
-            --batch-id warren-planning --output results.json[/green]
+        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id warren-planning \\
+            --output results.json[/green]
 
     - Get the batch experiment using a specific profile.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-id lettuce-routes --profile prod[/green]
+        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/green]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
@@ -84,11 +84,11 @@ def get(
     in_progress(msg="Getting batch experiment...")
     if should_wait:
         batch_experiment = cloud_app.batch_experiment_with_polling(
-            batch_id=batch_id,
+            batch_id=batch_experiment_id,
             polling_options=polling_options,
         )
     else:
-        batch_experiment = cloud_app.batch_experiment(batch_id=batch_id)
+        batch_experiment = cloud_app.batch_experiment(batch_id=batch_experiment_id)
 
     batch_experiment_dict = batch_experiment.to_dict()
 
@@ -98,6 +98,7 @@ def get(
             json.dump(batch_experiment_dict, f, indent=2)
 
         success(msg=f"Batch experiment results saved to [magenta]{output}[/magenta].")
+
         return
 
     print_json(batch_experiment_dict)

@@ -187,12 +187,12 @@ def handle_outputs(
 
     # At this point, we know that the output is multi-file or csv-archive.
     result_dict = run_result.to_dict()
-    if "output" in result_dict and run_info.metadata.run_is_finalized():
+    if "output" in result_dict and run_result.metadata.run_is_finalized():
         del result_dict["output"]
         success(f"Run outputs downloaded to [magenta]{output_dir}[/magenta]. Here is the metadata.")
     else:
         success(
-            f"Run is not finalized (status: [magenta]{run_info.metadata.status_v2.value}[/magenta]). "
+            f"Run is not finalized (status: [magenta]{run_result.metadata.status_v2.value}[/magenta]). "
             "Here is the metadata."
         )
 

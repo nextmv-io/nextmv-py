@@ -57,6 +57,7 @@ def list(
             json.dump(batch_experiments_dict, f, indent=2)
 
         success(msg=f"Batch experiments list saved to [magenta]{output}[/magenta].")
+
         return
 
     print_json(batch_experiments_dict)

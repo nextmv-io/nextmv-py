@@ -18,7 +18,7 @@ app = typer.Typer()
 @app.command()
 def delete(
     app_id: AppIDOption,
-    batch_id: BatchExperimentIDOption,
+    batch_experiment_id: BatchExperimentIDOption,
     yes: Annotated[
         bool,
         typer.Option(
@@ -40,29 +40,29 @@ def delete(
 
     - Delete the batch experiment with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch delete --app-id hare-app --batch-id hop-analysis[/green]
+        $ [green]nextmv cloud batch delete --app-id hare-app --batch-experiment-id hop-analysis[/green]
 
     - Delete the batch experiment without confirmation prompt.
-        $ [green]nextmv cloud batch delete --app-id hare-app --batch-id carrot-routes --yes[/green]
+        $ [green]nextmv cloud batch delete --app-id hare-app --batch-experiment-id carrot-routes --yes[/green]
     """
 
     if not yes:
         confirm = Confirm.ask(
-            f"Are you sure you want to delete batch experiment [magenta]{batch_id}[/magenta] "
+            f"Are you sure you want to delete batch experiment [magenta]{batch_experiment_id}[/magenta] "
             f"from application [magenta]{app_id}[/magenta]? This action cannot be undone.",
             default=False,
         )
 
         if not confirm:
             info(
-                msg=f"Batch experiment [magenta]{batch_id}[/magenta] will not be deleted.",
+                msg=f"Batch experiment [magenta]{batch_experiment_id}[/magenta] will not be deleted.",
                 emoji=":bulb:",
             )
             return
 
     cloud_app = build_app(app_id=app_id, profile=profile)
-    cloud_app.delete_batch_experiment(batch_id=batch_id)
+    cloud_app.delete_batch_experiment(batch_id=batch_experiment_id)
     success(
-        f"Batch experiment [magenta]{batch_id}[/magenta] deleted successfully "
+        f"Batch experiment [magenta]{batch_experiment_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."
     )
