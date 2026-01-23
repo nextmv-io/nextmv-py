@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.safe import safe_id
 
@@ -28,6 +28,14 @@ def create(
             metavar="NAME",
         ),
     ],
+    exist_ok: Annotated[
+        bool,
+        typer.Option(
+            "--exist-ok",
+            "-e",
+            help="If an input set with the given ID already exists, do not raise an error, and simply return it.",
+        ),
+    ] = False,
     input_set_id: Annotated[
         str | None,
         typer.Option(
@@ -98,15 +106,6 @@ def create(
             metavar="INPUTS",
         ),
     ] = None,
-    output: Annotated[
-        str | None,
-        typer.Option(
-            "--output",
-            "-o",
-            help="Saves the input set information to this location.",
-            metavar="OUTPUT_PATH",
-        ),
-    ] = None,
     profile: ProfileOption = None,
 ) -> None:
     """
@@ -143,13 +142,15 @@ def create(
     """
 
     client = build_client(profile)
-    in_progress(msg="Creating input set...")
+    if exist_ok:
+        in_progress(msg="Creating or getting input set...")
+    else:
+        in_progress(msg="Creating input set...")
 
-    # Generate a random ID if not provided
+    # Generate a random input set ID if one is not provided.
     if input_set_id is None:
         input_set_id = safe_id("input-set")
 
-    # Build the request payload
     payload: dict = {
         "id": input_set_id,
         "name": name,
@@ -185,13 +186,5 @@ def create(
         payload=payload,
     )
     input_set_data = response.json()
-
-    if output is not None:
-        with open(output, "w") as f:
-            json.dump(input_set_data, f, indent=2)
-
-        success(msg=f"Input set information saved to [magenta]{output}[/magenta].")
-
-        return
 
     print_json(input_set_data)
