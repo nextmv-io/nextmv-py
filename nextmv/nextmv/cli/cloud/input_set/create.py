@@ -65,7 +65,7 @@ def create(
         ),
     ] = None,
     run_ids: Annotated[
-        list[str],
+        list[str] | None,
         typer.Option(
             "--run-ids",
             "-r",
@@ -102,7 +102,7 @@ def create(
         str | None,
         typer.Option(
             "--inputs",
-            help="Inputs for the input set . Data should be valid [magenta]json[/magenta]. Object format: [magenta]{'input_id': {'name': 'name', 'description': 'description'}}[/magenta].",
+            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object format: [magenta]{'input_id': {'name': 'name', 'description': 'description'}}[/magenta].",
             metavar="INPUTS",
         ),
     ] = None,
@@ -162,7 +162,7 @@ def create(
     if instance_id is not None:
         payload["instance_id"] = instance_id
 
-    if run_ids:
+    if run_ids is not None:
         payload["run_ids"] = [r.strip() for r in run_ids]
 
     if start_time is not None:
