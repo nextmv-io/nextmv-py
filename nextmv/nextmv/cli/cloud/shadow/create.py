@@ -36,8 +36,10 @@ def create(
         typer.Option(
             "--termination-maximum-runs",
             "-m",
-            help="Maximum number of runs for the shadow test termination condition. Must be at least 1.",
+            help="Maximum number of runs for the shadow test termination condition.",
             metavar="TERMINATION_MAXIMUM_RUNS",
+            min=1,
+            max=300,
         ),
     ],
     description: Annotated[
@@ -75,7 +77,7 @@ def create(
             "-r",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="Scheduled time for shadow test start in [magenta]RFC 3339[/magenta] format. "
-            "Example: [magenta]'2024-01-01T00:00:00Z'[/magenta]",
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="START_TIME",
         ),
     ] = None,
@@ -85,7 +87,7 @@ def create(
             "--termination-time",
             "-t",
             help="Scheduled time for shadow test end in [magenta]RFC 3339[/magenta] format. "
-            "Example: [magenta]'2024-01-01T00:00:00Z'[/magenta]",
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             metavar="TERMINATION_TIME",
         ),

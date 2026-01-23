@@ -91,10 +91,10 @@ class SwitchbackPlan(BaseModel):
 
     Parameters
     ----------
-    interval_duration_seconds : int
-        Duration of each interval in seconds.
-    total_intervals : int
-        Total number of intervals in the switchback test.
+    start : datetime, optional
+        Start time of the switchback test.
+    units : list[SwitchbackPlanUnit], optional
+        List of switchback plan units.
     """
 
     start: datetime | None = None
@@ -151,7 +151,10 @@ class SwitchbackTestMetadata(BaseModel):
     """The current status of the switchback test."""
 
 
-class SwitchbackTest(SwitchbackTestMetadata):
+# This class uses some fields defined in SwitchbackTestMetadata. We are not
+# using inheritance to help the user understand the full structure when using
+# tools like intellisense.
+class SwitchbackTest(BaseModel):
     """
     A Nextmv Cloud switchback test definition.
 
@@ -167,16 +170,50 @@ class SwitchbackTest(SwitchbackTestMetadata):
 
     Parameters
     ----------
+    switchback_test_id : str, optional
+        The unique identifier of the switchback test.
+    name : str, optional
+        Name of the switchback test.
+    description : str, optional
+        Description of the switchback test.
+    app_id : str, optional
+        ID of the application to which the switchback test belongs.
+    created_at : datetime, optional
+        Creation date of the switchback test.
+    updated_at : datetime, optional
+        Last update date of the switchback test.
+    status : ExperimentStatus, optional
+        The current status of the switchback test.
+    started_at : datetime, optional
+        Start date of the switchback test, if applicable.
     completed_at : datetime, optional
         Completion date of the switchback test, if applicable.
     comparison : TestComparisonSingle, optional
         Test comparison defined in the switchback test.
-    start_events : StartEvents, optional
-        Start events for the switchback test.
-    termination_events : TerminationEvents, optional
-        Termination events for the switchback test.
+    plan : SwitchbackPlan, optional
+        Switchback plan defining the intervals and instance switching.
+    runs : list[Run], optional
+        List of runs in the switchback test.
     """
 
+    switchback_test_id: str | None = Field(
+        serialization_alias="id",
+        validation_alias=AliasChoices("id", "switchback_test_id"),
+        default=None,
+    )
+    """The unique identifier of the switchback test."""
+    name: str | None = None
+    """Name of the switchback test."""
+    description: str | None = None
+    """Description of the switchback test."""
+    app_id: str | None = None
+    """ID of the application to which the switchback test belongs."""
+    created_at: datetime | None = None
+    """Creation date of the switchback test."""
+    updated_at: datetime | None = None
+    """Last update date of the switchback test."""
+    status: ExperimentStatus | None = None
+    """The current status of the switchback test."""
     started_at: datetime | None = None
     """Start date of the switchback test, if applicable."""
     completed_at: datetime | None = None

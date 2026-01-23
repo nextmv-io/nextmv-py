@@ -21,11 +21,9 @@ def stop(
     """
     Stops a Nextmv Cloud switchback test.
 
-    Before stopping a switchback test, it must be in a started state. You may
-    use the [code]nextmv cloud switchback start[/code] command to start a
-    switchback test. Alternatively, define a [code]--start[/code] when using
-    the [code]nextmv cloud switchback create[/code] command to have the
-    switchback test start automatically at a specific time.
+    Before stopping a switchback test, it must be in a started state. Experiments
+    in a [magenta]draft[/magenta] state, that haven't started, can be deleted
+    with the [code]nextmv cloud switchback delete[/code] command.
 
     [bold][underline]Examples[/underline][/bold]
 

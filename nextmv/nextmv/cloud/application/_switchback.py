@@ -172,9 +172,11 @@ class ApplicationSwitchbackMixin:
         comparison : TestComparisonSingle
             Comparison defining the baseline and candidate instances.
         unit_duration_minutes : float
-            Duration of each interval in minutes.
+            Duration of each interval in minutes. The value must be between 1
+            and 10080.
         units : int
-            Total number of intervals in the switchback test.
+            Total number of intervals in the switchback test. The value must be
+            between 1 and 1000.
         switchback_test_id : Optional[str], default=None
             Optional ID for the switchback test. Will be generated if not
             provided.
@@ -197,6 +199,12 @@ class ApplicationSwitchbackMixin:
             If the response status code is not 2xx.
         """
 
+        if unit_duration_minutes < 1 or unit_duration_minutes > 10080:
+            raise ValueError("unit_duration_minutes must be between 1 and 10080")
+
+        if units < 1 or units > 1000:
+            raise ValueError("units must be between 1 and 1000")
+
         # Generate ID if not provided
         if switchback_test_id is None:
             switchback_test_id = safe_id("switchback")
@@ -206,7 +214,7 @@ class ApplicationSwitchbackMixin:
             name = switchback_test_id
 
         payload = {
-            "id": id,
+            "id": switchback_test_id,
             "name": name,
             "comparison": comparison,
             "generate_random_plan": {

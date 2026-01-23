@@ -208,7 +208,7 @@ class ApplicationShadowMixin:
             name = shadow_test_id
 
         payload = {
-            "id": id,
+            "id": shadow_test_id,
             "name": name,
             "comparisons": comparisons,
             "termination_events": termination_events.to_dict(),

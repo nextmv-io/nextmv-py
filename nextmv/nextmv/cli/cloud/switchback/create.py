@@ -44,6 +44,8 @@ def create(
             "-u",
             help="Duration of each interval in minutes.",
             metavar="UNIT_DURATION_MINUTES",
+            min=1,
+            max=10080,
         ),
     ],
     units: Annotated[
@@ -53,6 +55,8 @@ def create(
             "-t",
             help="Total number of intervals in the switchback test.",
             metavar="UNITS",
+            min=1,
+            max=1000,
         ),
     ],
     description: Annotated[
@@ -90,7 +94,7 @@ def create(
             "-r",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="Scheduled time for switchback test start in [magenta]RFC 3339[/magenta] format. "
-            "Example: [magenta]'2024-01-01T00:00:00Z'[/magenta]",
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="START",
         ),
     ] = None,

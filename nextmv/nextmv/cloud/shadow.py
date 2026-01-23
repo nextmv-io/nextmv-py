@@ -90,7 +90,7 @@ class TerminationEvents(BaseModel):
 
     maximum_runs: int
     """
-    Maximum number of runs for the test. Min should be 1, max should be 300.
+    Maximum number of runs for the test. Value must be between 1 and 300.
     """
     time: datetime | None = None
     """
@@ -99,8 +99,8 @@ class TerminationEvents(BaseModel):
     """
 
     def model_post_init(self, __context):
-        if self.maximum_runs < 1:
-            raise ValueError("maximum_runs must be at least 1")
+        if self.maximum_runs < 1 or self.maximum_runs > 300:
+            raise ValueError("maximum_runs must be between 1 and 300")
 
 
 class ShadowTestMetadata(BaseModel):
@@ -151,7 +151,10 @@ class ShadowTestMetadata(BaseModel):
     """The current status of the shadow test."""
 
 
-class ShadowTest(ShadowTestMetadata):
+# This class uses some fields defined in ShadowTestMetadata. We are not
+# using inheritance to help the user understand the full structure when using
+# tools like intellisense.
+class ShadowTest(BaseModel):
     """
     A Nextmv Cloud shadow test definition.
 
@@ -166,6 +169,20 @@ class ShadowTest(ShadowTestMetadata):
 
     Parameters
     ----------
+    shadow_test_id : str, optional
+        The unique identifier of the shadow test.
+    name : str, optional
+        Name of the shadow test.
+    description : str, optional
+        Description of the shadow test.
+    app_id : str, optional
+        ID of the application to which the shadow test belongs.
+    created_at : datetime, optional
+        Creation date of the shadow test.
+    updated_at : datetime, optional
+        Last update date of the shadow test.
+    status : ExperimentStatus, optional
+        The current status of the shadow test.
     completed_at : datetime, optional
         Completion date of the shadow test, if applicable.
     comparisons : list[TestComparison], optional
@@ -174,8 +191,30 @@ class ShadowTest(ShadowTestMetadata):
         Start events for the shadow test.
     termination_events : TerminationEvents, optional
         Termination events for the shadow test.
+    grouped_distributional_summaries : list[dict[str, Any]], optional
+        Grouped distributional summaries of the shadow test.
+    runs : list[Run], optional
+        List of runs in the shadow test.
     """
 
+    shadow_test_id: str | None = Field(
+        serialization_alias="id",
+        validation_alias=AliasChoices("id", "shadow_test_id"),
+        default=None,
+    )
+    """The unique identifier of the shadow test."""
+    name: str | None = None
+    """Name of the shadow test."""
+    description: str | None = None
+    """Description of the shadow test."""
+    app_id: str | None = None
+    """ID of the application to which the shadow test belongs."""
+    created_at: datetime | None = None
+    """Creation date of the shadow test."""
+    updated_at: datetime | None = None
+    """Last update date of the shadow test."""
+    status: ExperimentStatus | None = None
+    """The current status of the shadow test."""
     completed_at: datetime | None = None
     """Completion date of the shadow test, if applicable."""
     comparisons: list[TestComparison] | None = None

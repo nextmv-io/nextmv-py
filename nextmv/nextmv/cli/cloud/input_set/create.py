@@ -73,7 +73,7 @@ def create(
             "--start-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="Start time for filtering runs in [magenta]RFC 3339[/magenta] format. "
-            "Example: [magenta]'2024-01-01T00:00:00Z'[/magenta]",
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="START_TIME",
         ),
     ] = None,
@@ -83,7 +83,7 @@ def create(
             "--end-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="End time for filtering runs in [magenta]RFC 3339[/magenta] format. "
-            "Example: [magenta]'2024-01-01T00:00:00Z'[/magenta]",
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="END_TIME",
         ),
     ] = None,

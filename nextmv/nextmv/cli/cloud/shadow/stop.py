@@ -21,11 +21,9 @@ def stop(
     """
     Stops a Nextmv Cloud shadow test.
 
-    Before stopping a shadow test, it must be in a started state. You may
-    use the [code]nextmv cloud shadow start[/code] command to start
-    a shadow test. Alternatively, define a [code]--start-time[/code] when using
-    the [code]nextmv cloud shadow create[/code] command to have the shadow test
-    start automatically at a specific time.
+    Before stopping a shadow test, it must be in a started state. Experiments
+    in a [magenta]draft[/magenta] state, that haven't started, can be deleted
+    with the [code]nextmv cloud shadow delete[/code] command.
 
     [bold][underline]Examples[/underline][/bold]
 
