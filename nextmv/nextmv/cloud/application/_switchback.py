@@ -147,7 +147,7 @@ class ApplicationSwitchbackMixin:
     def new_switchback_test(
         self: "Application",
         comparison: TestComparisonSingle,
-        unit_duration_minuites: float,
+        unit_duration_minutes: float,
         units: int,
         switchback_test_id: str | None = None,
         name: str | None = None,
@@ -171,7 +171,7 @@ class ApplicationSwitchbackMixin:
         ----------
         comparison : TestComparisonSingle
             Comparison defining the baseline and candidate instances.
-        unit_duration_minuites : float
+        unit_duration_minutes : float
             Duration of each interval in minutes.
         units : int
             Total number of intervals in the switchback test.
@@ -209,7 +209,10 @@ class ApplicationSwitchbackMixin:
             "id": id,
             "name": name,
             "comparison": comparison,
-            "generate_random_plan": {"unit_duration_minutes": unit_duration_minuites, "units": units},
+            "generate_random_plan": {
+                "unit_duration_minutes": unit_duration_minutes,
+                "units": units,
+            },
         }
 
         if description is not None:

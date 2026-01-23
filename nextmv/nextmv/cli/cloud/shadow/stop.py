@@ -29,15 +29,15 @@ def stop(
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Start the shadow test with the ID [magenta]hop-analysis[/magenta] from application
+    - Stop the shadow test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud shadow start --app-id hare-app --shadow-test-id hop-analysis[/green]
+        $ [green]nextmv cloud shadow stop --app-id hare-app --shadow-test-id hop-analysis[/green]
     """
 
-    in_progress(msg="Starting shadow test...")
+    in_progress(msg="Stopping shadow test...")
     cloud_app = build_app(app_id=app_id, profile=profile)
-    cloud_app.start_shadow_test(shadow_test_id=shadow_test_id)
+    cloud_app.stop_shadow_test(shadow_test_id=shadow_test_id)
     success(
-        f"Shadow test [magenta]{shadow_test_id}[/magenta] started successfully "
+        f"Shadow test [magenta]{shadow_test_id}[/magenta] stopped successfully "
         f"in application [magenta]{app_id}[/magenta]."
     )

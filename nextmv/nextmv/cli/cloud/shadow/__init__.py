@@ -1,5 +1,5 @@
 """
-This module defines the cloud batch command tree for the Nextmv CLI.
+This module defines the cloud shadow command tree for the Nextmv CLI.
 """
 
 import typer

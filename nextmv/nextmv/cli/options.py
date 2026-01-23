@@ -204,3 +204,17 @@ ShadowTestIDOption = Annotated[
         metavar="SHADOW_TEST_ID",
     ),
 ]
+
+# switchback_test_id option - can be used in any command that requires a switchback test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# switchback_test_id: SwitchbackTestIDOption
+SwitchbackTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--switchback-test-id",
+        "-s",
+        help="The Nextmv Cloud switchback test ID to use for this action.",
+        envvar="NEXTMV_SWITCHBACK_TEST_ID",
+        metavar="SWITCHBACK_TEST_ID",
+    ),
+]

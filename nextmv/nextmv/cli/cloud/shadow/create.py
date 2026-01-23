@@ -115,7 +115,7 @@ def create(
     control over when the shadow test should terminate, after said number of
     runs. Alternatively, you may specify the [code]--termination-time[/code]
     option or use the [code]nextmv cloud shadow stop[/code] command to stop the
-    test
+    test.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -168,7 +168,7 @@ def create(
     except json.JSONDecodeError as e:
         error(f"Invalid comparisons format: [magenta]{comparisons}[/magenta]. Error: {e}")
 
-    in_progress(msg="Creating shadow test...")
+    in_progress(msg="Creating shadow test in draft mode...")
     shadow_test = cloud_app.new_shadow_test(
         comparisons=comparisons_dict,
         termination_events=TerminationEvents(
