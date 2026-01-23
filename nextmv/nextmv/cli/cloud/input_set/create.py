@@ -3,7 +3,7 @@ This module defines the cloud input-set create command for the Nextmv CLI.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 import typer

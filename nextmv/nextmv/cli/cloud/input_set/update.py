@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
+from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InputSetIDOption, ProfileOption
+from nextmv.cloud.input_set import ManagedInput
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -41,7 +42,8 @@ def update(
         str | None,
         typer.Option(
             "--inputs",
-            help='Inputs for the input set as JSON. Format: \'{"input-1":{"name":"fur", "description":"ball"}}\'',
+            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
+            "format: [magenta][{'id': 'id', 'name': 'name', 'description': 'description'}][/magenta].",
             metavar="INPUTS",
         ),
     ] = None,
@@ -74,7 +76,7 @@ def update(
 
     - Update an input set's inputs.
         $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
-            --inputs '{"input-1":{"name":"input1", "description":"input1 description"}}'[/green]
+            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/green]
 
     - Update both name and description.
         $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
@@ -88,39 +90,34 @@ def update(
     if name is None and description is None and inputs is None:
         error("Provide at least one option: [code]--name[/code], [code]--description[/code], or [code]--inputs[/code].")
 
-    client = build_client(profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating input set...")
 
-    # Build the request payload
-    payload: dict = {}
-
-    if name is not None:
-        payload["name"] = name
-
-    if description is not None:
-        payload["description"] = description
-
+    managed_inputs = []
     if inputs is not None:
-        # Transform from {"id": {"name": "...", "description": "..."}} format
-        # to [{"id": "...", "name": "...", "description": "..."}] format
-        inputs_dict = json.loads(inputs)
-        payload["inputs"] = [{"id": k, **v} for k, v in inputs_dict.items()]
+        for d in json.loads(inputs):
+            i = ManagedInput.from_dict(d)
+            if i is None:
+                error(f"[magenta]{d}[/magenta] is not a valid [yellow]ManagedInput[/yellow]")
+            managed_inputs.append(i)
 
-    response = client.request(
-        method="PUT",
-        endpoint=f"/v1/applications/{app_id}/experiments/inputsets/{input_set_id}",
-        payload=payload,
+    updated_input_set = cloud_app.update_input_set(
+        id=input_set_id,
+        name=name,
+        description=description,
+        inputs=managed_inputs,
     )
-    input_set_data = response.json()
+    success(
+        f"Input set [magenta]{input_set_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta]."
+    )
+    updated_input_set_dict = updated_input_set.to_dict()
 
-    success(f"Input set [magenta]{input_set_id}[/magenta] updated successfully.")
-
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
-            json.dump(input_set_data, f, indent=2)
+            json.dump(updated_input_set_dict, f, indent=2)
 
         success(msg=f"Updated input set information saved to [magenta]{output}[/magenta].")
 
         return
 
-    print_json(input_set_data)
+    print_json(updated_input_set_dict)

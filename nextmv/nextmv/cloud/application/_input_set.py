@@ -129,7 +129,7 @@ class ApplicationInputSetMixin:
         start_time: Optional[datetime]
             Start time of the input set. This is used to filter the runs
             associated with the input set.
-        inputs: Optional[list[ExperimentInput]]
+        inputs: Optional[list[ManagedInput]]
             List of inputs to use for the input set. This is used to create
             the input set from a list of inputs that are already available in
             the application.
@@ -167,6 +167,60 @@ class ApplicationInputSetMixin:
         response = self.client.request(
             method="POST",
             endpoint=f"{self.experiments_endpoint}/inputsets",
+            payload=payload,
+        )
+
+        return InputSet.from_dict(response.json())
+
+    def update_input_set(
+        self: "Application",
+        id: str,
+        name: str | None = None,
+        description: str | None = None,
+        inputs: list[ManagedInput] | None = None,
+    ) -> InputSet:
+        """
+        Update an input set.
+
+        Parameters
+        ----------
+        id : str
+            ID of the input set to update.
+        name : Optional[str], default=None
+            Optional name of the input set.
+        description : Optional[str], default=None
+            Optional description of the input set.
+        inputs: Optional[list[ManagedInput]]
+            List of inputs to use for the input set. This is used to create
+            the input set from a list of inputs that are already available in
+            the application.
+
+        Returns
+        -------
+        Instance
+            The updated instance.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        # Get the input set as it currently exsits.
+        input_set = self.input_set(id)
+        input_set_dict = input_set.to_dict()
+        payload = input_set_dict.copy()
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if inputs is not None:
+            payload["inputs"] = [input.to_dict() for input in inputs]
+
+        response = self.client.request(
+            method="PUT",
+            endpoint=f"{self.experiments_endpoint}/inputsets/{id}",
             payload=payload,
         )
 
