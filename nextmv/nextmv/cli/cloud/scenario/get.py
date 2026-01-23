@@ -48,7 +48,7 @@ def get(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get a Nextmv Cloud scenario test.
+    Get a Nextmv Cloud scenario test, including its runs.
 
     Use the [code]--wait[/code] flag to wait for the scenario test to
     complete, polling for results. Using the [code]--output[/code] flag will

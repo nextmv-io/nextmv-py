@@ -88,15 +88,19 @@ class TerminationEvents(BaseModel):
         Scheduled time for the test to terminate.
     """
 
+    maximum_runs: int
+    """
+    Maximum number of runs for the test. Min should be 1, max should be 300.
+    """
     time: datetime | None = None
     """
     Scheduled time for the test to terminate. A zero value means no
     limit.
     """
-    maximum_runs: int | None = None
-    """
-    Maximum number of runs for the test. Min should be 1, max should be 300.
-    """
+
+    def model_post_init(self, __context):
+        if self.maximum_runs < 1:
+            raise ValueError("maximum_runs must be at least 1")
 
 
 class ShadowTestMetadata(BaseModel):

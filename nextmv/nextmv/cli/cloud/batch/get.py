@@ -48,7 +48,7 @@ def get(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get a Nextmv Cloud batch experiment.
+    Get a Nextmv Cloud batch experiment, including its runs.
 
     Use the [code]--wait[/code] flag to wait for the batch experiment to
     complete, polling for results. Using the [code]--output[/code] flag will

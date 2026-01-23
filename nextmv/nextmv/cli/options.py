@@ -190,3 +190,17 @@ SecretsCollectionIDOption = Annotated[
         metavar="SECRETS_COLLECTION_ID",
     ),
 ]
+
+# shadow_test_id option - can be used in any command that requires a shadow test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# shadow_test_id: ShadowTestIDOption
+ShadowTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--shadow-test-id",
+        "-s",
+        help="The Nextmv Cloud shadow test ID to use for this action.",
+        envvar="NEXTMV_SHADOW_TEST_ID",
+        metavar="SHADOW_TEST_ID",
+    ),
+]
