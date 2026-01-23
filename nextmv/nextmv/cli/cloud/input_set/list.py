@@ -49,7 +49,7 @@ def list(
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing input sets...")
-    input_sets = cloud_app.list_instances()
+    input_sets = cloud_app.list_input_sets()
     input_sets_dicts = [input_set.to_dict() for input_set in input_sets]
 
     if output is not None and output != "":
