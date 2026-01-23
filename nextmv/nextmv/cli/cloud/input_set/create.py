@@ -86,7 +86,7 @@ def create(
         typer.Option(
             "--limit",
             "-l",
-            help="Maximum number of runs to include (default: 20, max: 20).",
+            help="Maximum number of runs to include (max: [magenta]20[/magenta]).",
             metavar="LIMIT",
         ),
     ] = 20,
