@@ -70,6 +70,8 @@ nav:
               - integration.py: nextmv/cloud/reference/integration.md
               - scenario.py: nextmv/cloud/reference/scenario.md
               - secrets.py: nextmv/cloud/reference/secrets.md
+              - shadow.py: nextmv/cloud/reference/shadow.md
+              - switchback.py: nextmv/cloud/reference/switchback.md
               - url.py: nextmv/cloud/reference/url.md
               - version.py: nextmv/cloud/reference/version.md
   - nextmv-gurobipy:
