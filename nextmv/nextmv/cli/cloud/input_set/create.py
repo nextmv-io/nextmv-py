@@ -102,7 +102,8 @@ def create(
         str | None,
         typer.Option(
             "--inputs",
-            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object format: [magenta]{'input_id': {'name': 'name', 'description': 'description'}}[/magenta].",
+            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
+            "format: [magenta]{'input_id': {'name': 'name', 'description': 'description'}}[/magenta].",
             metavar="INPUTS",
         ),
     ] = None,
