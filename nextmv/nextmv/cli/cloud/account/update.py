@@ -59,7 +59,7 @@ def update(
     success(f"Account [magenta]{account_id}[/magenta] updated successfully.")
     updated_account_dict = updated_account.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(updated_account_dict, f, indent=2)
 

@@ -1,5 +1,5 @@
 """
-This module defines the cloud batch create command for the Nextmv CLI.
+This module defines the cloud scenario create command for the Nextmv CLI.
 """
 
 import json
@@ -274,7 +274,7 @@ def create(
 
     cloud_app = build_app(app_id=app_id, profile=profile)
 
-    # Build the runs list from the CLI options
+    # Build the scenario list from the CLI options
     scenario_list = build_scenarios(scenarios)
 
     scenario_id = cloud_app.new_scenario_test(
@@ -297,7 +297,7 @@ def create(
     polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
-    in_progress(msg="Getting batch experiment results...")
+    in_progress(msg="Getting scenario test results...")
     scenario_test = cloud_app.scenario_test_with_polling(
         scenario_test_id=scenario_id,
         polling_options=polling_options,
@@ -374,13 +374,13 @@ def _process_scenario_list(scenario_data: list, scenario_str: str) -> list[Scena
     list[Scenario]
         List of processed Scenario objects.
     """
-    from nextmv.cloud.scenario import Scenario
 
     processed_scenarios = []
     for ix, item in enumerate(scenario_data):
         _validate_scenario_fields(item, scenario_str, ix)
         scenario = Scenario.from_dict(item)
         processed_scenarios.append(scenario)
+
     return processed_scenarios
 
 
@@ -400,9 +400,9 @@ def _process_single_scenario(scenario_data: dict, scenario_str: str) -> "Scenari
     Scenario
         Processed Scenario object.
     """
-    from nextmv.cloud.scenario import Scenario
 
     _validate_scenario_fields(scenario_data, scenario_str)
+
     return Scenario.from_dict(scenario_data)
 
 

@@ -81,7 +81,7 @@ def update(
     success(f"Version [magenta]{version_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta].")
     updated_version_dict = updated_version.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(updated_version_dict, f, indent=2)
 

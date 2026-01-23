@@ -49,7 +49,7 @@ def list(
     collections = cloud_app.list_secrets_collections()
     collections_dicts = [collection.to_dict() for collection in collections]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(collections_dicts, f, indent=2)
 

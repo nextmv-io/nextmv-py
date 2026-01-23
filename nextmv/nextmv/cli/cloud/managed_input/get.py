@@ -52,7 +52,7 @@ def get(
     managed_input = cloud_app.managed_input(managed_input_id=managed_input_id)
     managed_input_dict = managed_input.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(managed_input_dict, f, indent=2)
 

@@ -91,7 +91,7 @@ def get(
 
     scenario_test_dict = scenario_test.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(scenario_test_dict, f, indent=2)
 

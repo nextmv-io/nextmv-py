@@ -55,7 +55,7 @@ def get(
     collection = cloud_app.secrets_collection(secrets_collection_id=secrets_collection_id)
     collection_dict = collection.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(collection_dict, f, indent=2)
 

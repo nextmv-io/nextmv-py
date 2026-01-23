@@ -69,7 +69,7 @@ def list(
     runs = cloud_app.list_runs(status=status)
     runs_dicts = [run.to_dict() for run in runs]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(runs_dicts, f, indent=2)
 

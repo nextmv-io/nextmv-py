@@ -56,7 +56,7 @@ def metadata(
     batch_metadata = cloud_app.batch_experiment_metadata(batch_id=batch_experiment_id)
     batch_metadata_dict = batch_metadata.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(batch_metadata_dict, f, indent=2)
 

@@ -52,7 +52,7 @@ def list(
     scenario_tests = cloud_app.list_scenario_tests()
     scenario_tests_dict = [exp.to_dict() for exp in scenario_tests]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(scenario_tests_dict, f, indent=2)
 

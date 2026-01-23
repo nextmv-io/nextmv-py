@@ -49,7 +49,7 @@ def list(
     managed_inputs = cloud_app.list_managed_inputs()
     managed_inputs_dicts = [managed_input.to_dict() for managed_input in managed_inputs]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(managed_inputs_dicts, f, indent=2)
 

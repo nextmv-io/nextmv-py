@@ -52,7 +52,7 @@ def list(
     acceptance_tests = cloud_app.list_acceptance_tests()
     acceptance_tests_dict = [test.to_dict() for test in acceptance_tests]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(acceptance_tests_dict, f, indent=2)
 

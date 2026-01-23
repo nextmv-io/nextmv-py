@@ -56,7 +56,7 @@ def metadata(
     run_info = cloud_app.run_metadata(run_id)
     info_dict = run_info.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(info_dict, f, indent=2)
 

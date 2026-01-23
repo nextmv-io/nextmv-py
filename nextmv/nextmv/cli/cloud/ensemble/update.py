@@ -92,7 +92,7 @@ def update(
         f"in application [magenta]{app_id}[/magenta]."
     )
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(ensemble_definition.to_dict(), f, indent=2)
 

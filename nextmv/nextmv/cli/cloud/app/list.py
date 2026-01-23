@@ -50,7 +50,7 @@ def list(
     cloud_apps = list_applications(client)
     cloud_apps_dicts = [app.to_dict() for app in cloud_apps]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(cloud_apps_dicts, f, indent=2)
 

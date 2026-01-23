@@ -385,7 +385,7 @@ class ApplicationBatchMixin:
             Type of the batch experiment. This is used to determine the
             experiment type. The default value is "batch". If you want to
             create a scenario test, set this to "scenario".
-        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+        polling_options : PollingOptions, default=DEFAULT_POLLING_OPTIONS
             Options to use when polling for the batch experiment result.
 
         Returns
@@ -577,7 +577,7 @@ class ApplicationBatchMixin:
             repetition means that the test will be repeated once, i.e.: it
             will be executed twice. 2 repetitions equals 3 executions, so on,
             and so forth.
-        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+        polling_options : PollingOptions, default=DEFAULT_POLLING_OPTIONS
             Options to use when polling for the scenario test result.
 
         Returns
@@ -692,7 +692,7 @@ class ApplicationBatchMixin:
         ----------
         scenario_test_id : str
             ID of the scenario test to retrieve.
-        polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
+        polling_options : PollingOptions, default=DEFAULT_POLLING_OPTIONS
             Options to use when polling for the scenario test result.
 
         Returns

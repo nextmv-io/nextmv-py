@@ -56,7 +56,7 @@ def metadata(
     scenario_metadata = cloud_app.scenario_test_metadata(scenario_test_id=scenario_test_id)
     scenario_metadata_dict = scenario_metadata.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(scenario_metadata_dict, f, indent=2)
 
