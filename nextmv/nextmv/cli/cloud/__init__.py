@@ -10,6 +10,7 @@ from nextmv.cli.cloud.app import app as app_app
 from nextmv.cli.cloud.batch import app as batch_app
 from nextmv.cli.cloud.data import app as data_app
 from nextmv.cli.cloud.ensemble import app as ensemble_app
+from nextmv.cli.cloud.input_set import app as input_set_app
 from nextmv.cli.cloud.instance import app as instance_app
 from nextmv.cli.cloud.managed_input import app as managed_input_app
 from nextmv.cli.cloud.run import app as run_app
@@ -26,6 +27,7 @@ app.add_typer(app_app, name="app")
 app.add_typer(batch_app, name="batch")
 app.add_typer(data_app, name="data")
 app.add_typer(ensemble_app, name="ensemble")
+app.add_typer(input_set_app, name="input-set")
 app.add_typer(instance_app, name="instance")
 app.add_typer(managed_input_app, name="managed-input")
 app.add_typer(run_app, name="run")
