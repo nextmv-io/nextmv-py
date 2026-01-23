@@ -49,7 +49,7 @@ def list(
     instances = cloud_app.list_instances()
     instances_dicts = [instance.to_dict() for instance in instances]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(instances_dicts, f, indent=2)
 

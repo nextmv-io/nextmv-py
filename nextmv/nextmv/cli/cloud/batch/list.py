@@ -52,11 +52,12 @@ def list(
     batch_experiments = cloud_app.list_batch_experiments()
     batch_experiments_dict = [exp.to_dict() for exp in batch_experiments]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(batch_experiments_dict, f, indent=2)
 
         success(msg=f"Batch experiments list saved to [magenta]{output}[/magenta].")
+
         return
 
     print_json(batch_experiments_dict)

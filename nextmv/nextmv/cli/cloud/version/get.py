@@ -51,7 +51,7 @@ def get(
     version = cloud_app.version(version_id=version_id)
     version_dict = version.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(version_dict, f, indent=2)
 

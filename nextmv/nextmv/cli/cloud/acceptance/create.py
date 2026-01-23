@@ -31,9 +31,9 @@ app = typer.Typer()
     experiment.
 
     Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Use the [code]--output[/code] flag to
-    specify a destination file for the output obtained. Please note that using
-    the [code]--output[/code] flag will not activate waiting by itself.
+    complete, polling for results. Using the [code]--output[/code] flag will
+    also activate waiting, and allows you to specify a destination file for the
+    results.
 
     [bold][underline]Metrics[/underline][/bold]
 
@@ -109,7 +109,7 @@ app = typer.Typer()
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC1" --metrics "$METRIC2" --input-set-id input-set-123[/green]
 
-    - Create with multiple metrics in a single JSON array.
+    - Create with multiple metrics in a single [magenta]json[/magenta] array.
         $ [green]METRICS='[
             {{
                 "field": "solution.objective",
@@ -148,7 +148,7 @@ app = typer.Typer()
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC" --input-set-id input-set-123 --wait[/green]
 
-    - Create an acceptance test and save the results to a file.
+    - Create an acceptance test and save the results to a file, waiting for completion.
         $ [green]METRIC='{{
             "field": "solution.objective",
             "metric_type": "direct-comparison",
@@ -165,6 +165,7 @@ app = typer.Typer()
 )
 def create(
     app_id: AppIDOption,
+    # Options for acceptance test configuration.
     acceptance_test_id: Annotated[
         str,
         typer.Option(
@@ -239,12 +240,13 @@ def create(
             rich_help_panel="Acceptance test configuration",
         ),
     ] = None,
+    # Options for controlling output.
     output: Annotated[
         str | None,
         typer.Option(
             "--output",
             "-o",
-            help="Save the acceptance test output to this location.",
+            help="Waits for the test to complete and saves the results to this location.",
             metavar="OUTPUT_PATH",
             rich_help_panel="Output control",
         ),
@@ -274,37 +276,34 @@ def create(
     # Build the metrics list from the CLI options
     metrics_list = build_metrics(metrics)
 
+    new_test = cloud_app.new_acceptance_test(
+        candidate_instance_id=candidate_instance_id,
+        baseline_instance_id=baseline_instance_id,
+        id=acceptance_test_id,
+        metrics=metrics_list,
+        name=name,
+        input_set_id=input_set_id,
+        description=description,
+    )
+    acceptance_id = new_test.id
+
+    # If we don't need to poll at all we are done.
+    if not wait and (output is None or output == ""):
+        print_json({"acceptance_test_id": acceptance_id})
+
+        return
+
+    success(f"Acceptance test [magenta]{acceptance_id}[/magenta] created.")
+
     # Build the polling options.
     polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
-    # Create the acceptance test
-    if wait:
-        in_progress(msg="Creating acceptance test and waiting for results...")
-        acceptance_test = cloud_app.new_acceptance_test_with_result(
-            candidate_instance_id=candidate_instance_id,
-            baseline_instance_id=baseline_instance_id,
-            id=acceptance_test_id,
-            metrics=metrics_list,
-            name=name,
-            input_set_id=input_set_id,
-            description=description,
-            polling_options=polling_options,
-        )
-        success(msg=f"Acceptance test [magenta]{acceptance_test.id}[/magenta] completed.")
-
-    else:
-        in_progress(msg="Creating acceptance test...")
-        acceptance_test = cloud_app.new_acceptance_test(
-            candidate_instance_id=candidate_instance_id,
-            baseline_instance_id=baseline_instance_id,
-            id=acceptance_test_id,
-            metrics=metrics_list,
-            name=name,
-            input_set_id=input_set_id,
-            description=description,
-        )
-
+    in_progress(msg="Getting acceptance test results...")
+    acceptance_test = cloud_app.acceptance_test_with_polling(
+        acceptance_test_id=acceptance_id,
+        polling_options=polling_options,
+    )
     acceptance_test_dict = acceptance_test.to_dict()
 
     # Handle output
@@ -313,6 +312,7 @@ def create(
             json.dump(acceptance_test_dict, f, indent=2)
 
         success(msg=f"Acceptance test results saved to [magenta]{output}[/magenta].")
+
         return
 
     print_json(acceptance_test_dict)

@@ -51,7 +51,7 @@ def get(
     instance = cloud_app.instance(instance_id=instance_id)
     instance_dict = instance.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(instance_dict, f, indent=2)
 

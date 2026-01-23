@@ -205,7 +205,7 @@ def update(
     )
     updated_instance_dict = updated_instance.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(updated_instance_dict, f, indent=2)
 

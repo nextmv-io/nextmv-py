@@ -98,6 +98,7 @@ def get(
             json.dump(acceptance_test_dict, f, indent=2)
 
         success(msg=f"Acceptance test results saved to [magenta]{output}[/magenta].")
+
         return
 
     print_json(acceptance_test_dict)

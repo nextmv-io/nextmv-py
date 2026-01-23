@@ -54,7 +54,7 @@ def get(
     ensemble_definition = cloud_app.ensemble_definition(ensemble_definition_id=ensemble_definition_id)
     ensemble_definition_dict = ensemble_definition.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(ensemble_definition_dict, f, indent=2)
 

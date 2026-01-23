@@ -1,5 +1,5 @@
 """
-This module defines the cloud batch get command for the Nextmv CLI.
+This module defines the cloud scenario get command for the Nextmv CLI.
 """
 
 import json
@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -19,13 +19,13 @@ app = typer.Typer()
 @app.command()
 def get(
     app_id: AppIDOption,
-    batch_experiment_id: BatchExperimentIDOption,
+    scenario_test_id: ScenarioTestIDOption,
     output: Annotated[
         str | None,
         typer.Option(
             "--output",
             "-o",
-            help="Waits for the batch experiment to complete and saves the results to this location.",
+            help="Waits for the scenario test to complete and saves the results to this location.",
             metavar="OUTPUT_PATH",
         ),
     ] = None,
@@ -41,37 +41,36 @@ def get(
         typer.Option(
             "--wait",
             "-w",
-            help="Wait for the batch experiment to complete. Results are printed to [magenta]stdout[/magenta]. "
+            help="Wait for the scenario test to complete. Results are printed to [magenta]stdout[/magenta]. "
             "Specify output location with [code]--output[/code].",
         ),
     ] = False,
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get a Nextmv Cloud batch experiment.
+    Get a Nextmv Cloud scenario test.
 
-    Use the [code]--wait[/code] flag to wait for the batch experiment to
+    Use the [code]--wait[/code] flag to wait for the scenario test to
     complete, polling for results. Using the [code]--output[/code] flag will
     also activate waiting, and allows you to specify a destination file for the
     results.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Get the batch experiment with ID [magenta]carrot-optimization[/magenta] from application
+    - Get the scenario test with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id carrot-optimization[/green]
+        $ [green]nextmv cloud scenario get --app-id hare-app --scenario-test-id carrot-optimization[/green]
 
-    - Get the batch experiment and wait for it to complete if necessary.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id bunny-hop-test --wait[/green]
+    - Get the scenario test and wait for it to complete if necessary.
+        $ [green]nextmv cloud scenario get --app-id hare-app --scenario-test-id bunny-hop-test --wait[/green]
 
-    - Get the batch experiment and save the results to a file.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id warren-planning \\
+    - Get the scenario test and save the results to a file.
+        $ [green]nextmv cloud scenario get --app-id hare-app --scenario-test-id warren-planning \\
             --output results.json[/green]
 
-    - Get the batch experiment using a specific profile.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/green]
+    - Get the scenario test using a specific profile.
+        $ [green]nextmv cloud scenario get --app-id hare-app --scenario-test-id lettuce-routes --profile prod[/green]
     """
-
     cloud_app = build_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
@@ -81,24 +80,23 @@ def get(
     # Determine if we should wait
     should_wait = wait or (output is not None and output != "")
 
-    in_progress(msg="Getting batch experiment...")
+    in_progress(msg="Getting scenario test...")
     if should_wait:
-        batch_experiment = cloud_app.batch_experiment_with_polling(
-            batch_id=batch_experiment_id,
+        scenario_test = cloud_app.scenario_test_with_polling(
+            scenario_test_id=scenario_test_id,
             polling_options=polling_options,
         )
     else:
-        batch_experiment = cloud_app.batch_experiment(batch_id=batch_experiment_id)
+        scenario_test = cloud_app.scenario_test(scenario_test_id=scenario_test_id)
 
-    batch_experiment_dict = batch_experiment.to_dict()
+    scenario_test_dict = scenario_test.to_dict()
 
-    # Handle output
     if output is not None and output != "":
         with open(output, "w") as f:
-            json.dump(batch_experiment_dict, f, indent=2)
+            json.dump(scenario_test_dict, f, indent=2)
 
-        success(msg=f"Batch experiment results saved to [magenta]{output}[/magenta].")
+        success(msg=f"Scenario test results saved to [magenta]{output}[/magenta].")
 
         return
 
-    print_json(batch_experiment_dict)
+    print_json(scenario_test_dict)

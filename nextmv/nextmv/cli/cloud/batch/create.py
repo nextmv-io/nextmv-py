@@ -20,14 +20,15 @@ app = typer.Typer()
 @app.command()
 def create(
     app_id: AppIDOption,
-    batch_id: Annotated[
+    # Options for batch experiment configuration.
+    batch_experiment_id: Annotated[
         str | None,
         typer.Option(
-            "--batch-id",
+            "--batch-experiment-id",
             "-b",
             help="ID for the batch experiment. Will be generated if not provided.",
-            envvar="NEXTMV_BATCH_ID",
-            metavar="BATCH_ID",
+            envvar="NEXTMV_BATCH_EXPERIMENT_ID",
+            metavar="BATCH_EXPERIMENT_ID",
             rich_help_panel="Batch experiment configuration",
         ),
     ] = None,
@@ -71,16 +72,6 @@ def create(
             rich_help_panel="Batch experiment configuration",
         ),
     ] = None,
-    output: Annotated[
-        str | None,
-        typer.Option(
-            "--output",
-            "-o",
-            help="Save the batch experiment output to this location.",
-            metavar="OUTPUT_PATH",
-            rich_help_panel="Output control",
-        ),
-    ] = None,
     runs: Annotated[
         list[str] | None,
         typer.Option(
@@ -91,6 +82,17 @@ def create(
             "See command help for details on run formatting.",
             metavar="RUNS",
             rich_help_panel="Batch experiment configuration",
+        ),
+    ] = None,
+    # Options for controlling output.
+    output: Annotated[
+        str | None,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Waits for the experiment to complete and saves the results to this location.",
+            metavar="OUTPUT_PATH",
+            rich_help_panel="Output control",
         ),
     ] = None,
     timeout: Annotated[
@@ -121,9 +123,9 @@ def create(
     version, and optional configuration options.
 
     Use the [code]--wait[/code] flag to wait for the batch experiment to
-    complete, polling for results. Use the [code]--output[/code] flag to
-    specify a destination file for the output obtained. Please note that using
-    the [code]--output[/code] flag will not activate waiting by itself.
+    complete, polling for results. Using the [code]--output[/code] flag will
+    also activate waiting, and allows you to specify a destination file for the
+    results.
 
     [bold][underline]Runs[/underline][/bold]
 
@@ -179,7 +181,7 @@ def create(
             "input_id": "carrot-patch-a",
             "instance_id": "warren-planner-v1"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-id bunny-hop-test \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id bunny-hop-test \\
             --name "Spring Meadow Routes" --input-set-id spring-gardens --runs "$RUN"[/green]
 
     - Create with multiple runs by repeating the flag.
@@ -191,11 +193,11 @@ def create(
             "input_id": "lettuce-field-2",
             "instance_id": "hop-optimizer"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-id lettuce-routes \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id lettuce-routes \\
             --name "Lettuce Delivery Optimization" --input-set-id veggie-gardens \\
             --runs "$RUN1" --runs "$RUN2"[/green]
 
-    - Create with multiple runs in a single JSON array.
+    - Create with multiple runs in a single [magenta]json[/magenta] array.
         $ [green]RUNS='[
             {
                 "input_id": "warren-zone-a",
@@ -206,7 +208,7 @@ def create(
                 "version_id": "tunnel-planner-v3"
             }
         ]'
-        nextmv cloud batch create --app-id hare-app --batch-id warren-expansion \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id warren-expansion \\
             --name "Warren Construction Plans" --input-set-id burrow-sites --runs "$RUNS"[/green]
 
     - Create a batch experiment and wait for it to complete.
@@ -214,16 +216,16 @@ def create(
             "input_id": "carrot-harvest",
             "instance_id": "foraging-route"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-id harvest-time \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id harvest-time \\
             --name "Autumn Carrot Collection" --input-set-id harvest-season \\
             --runs "$RUN" --wait[/green]
 
-    - Create a batch experiment and save the results to a file.
+    - Create a batch experiment and save the results to a file, waiting for completion.
         $ [green]RUN='{
             "input_id": "predator-zones",
             "instance_id": "safe-hopper"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-id safety-analysis \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id safety-analysis \\
             --name "Fox Avoidance Routes" --input-set-id danger-zones \\
             --runs "$RUN" --output bunny-safety-results.json[/green]
 
@@ -242,10 +244,11 @@ def create(
             "fast-hops": {"max_speed": "10", "caution_level": "low"},
             "careful-hops": {"max_speed": "5", "caution_level": "high"}
         }'
-        nextmv cloud batch create --app-id hare-app --batch-id hop-comparison \\
+        nextmv cloud batch create --app-id hare-app --batch-experiment-id hop-comparison \\
             --name "Speed vs Safety Analysis" --input-set-id garden-paths \\
             --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/green]
     """
+
     cloud_app = build_app(app_id=app_id, profile=profile)
 
     # Build the runs list from the CLI options
@@ -254,36 +257,32 @@ def create(
     # Build the option sets from the CLI options
     option_sets_dict = build_option_sets(option_sets)
 
+    batch_id = cloud_app.new_batch_experiment(
+        id=batch_experiment_id,
+        name=name,
+        runs=runs_list,
+        description=description,
+        input_set_id=input_set_id,
+        option_sets=option_sets_dict,
+    )
+
+    # If we don't need to poll at all we are done.
+    if not wait and (output is None or output == ""):
+        print_json({"batch_experiment_id": batch_id})
+
+        return
+
+    success(f"Batch experiment [magenta]{batch_id}[/magenta] created.")
+
     # Build the polling options.
     polling_options = default_polling_options()
     polling_options.max_duration = timeout
 
-    # Create the batch experiment
-    if wait:
-        in_progress(msg="Creating batch experiment and waiting for results...")
-        batch_experiment = cloud_app.new_batch_experiment_with_result(
-            id=batch_id,
-            name=name,
-            runs=runs_list,
-            description=description,
-            input_set_id=input_set_id,
-            option_sets=option_sets_dict,
-            polling_options=polling_options,
-        )
-        success(msg=f"Batch experiment [magenta]{batch_experiment.id}[/magenta] completed.")
-
-    else:
-        in_progress(msg="Creating batch experiment...")
-        batch_experiment_id = cloud_app.new_batch_experiment(
-            id=batch_id,
-            name=name,
-            runs=runs_list,
-            description=description,
-            input_set_id=input_set_id,
-            option_sets=option_sets_dict,
-        )
-        batch_experiment = cloud_app.batch_experiment(batch_id=batch_experiment_id)
-
+    in_progress(msg="Getting batch experiment results...")
+    batch_experiment = cloud_app.batch_experiment_with_polling(
+        batch_id=batch_id,
+        polling_options=polling_options,
+    )
     batch_experiment_dict = batch_experiment.to_dict()
 
     # Handle output
@@ -443,13 +442,13 @@ def _validate_run_fields(run_data: dict, run_str: str, index: int | None = None)
     if run_data.get("input_id") is None:
         error(
             f"Invalid run format {location}"
-            f"[magenta]{run_str}[/magenta]. Each run must have "
+            f"[magenta]{run_str}[/magenta]. Each run must have an "
             "[magenta]input_id[/magenta] field."
         )
 
     if run_data.get("instance_id") is None and run_data.get("version_id") is None:
         error(
             f"Invalid run format {location}"
-            f"[magenta]{run_str}[/magenta]. Each run must have either "
+            f"[magenta]{run_str}[/magenta]. Each run must have either an "
             "[magenta]instance_id[/magenta] or [magenta]version_id[/magenta] field."
         )

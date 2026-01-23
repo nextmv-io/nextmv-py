@@ -85,7 +85,7 @@ def update(
 
     acceptance_test_dict = acceptance_test.to_dict()
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(acceptance_test_dict, f, indent=2)
 

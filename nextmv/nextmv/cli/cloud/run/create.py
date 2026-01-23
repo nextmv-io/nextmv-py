@@ -320,10 +320,6 @@ def create(
     )
     run_options = build_run_options(options)
 
-    # Build the polling options.
-    polling_options = default_polling_options()
-    polling_options.max_duration = timeout
-
     # Handles the default instance.
     if instance_id == "default":
         instance_id = ""
@@ -350,6 +346,10 @@ def create(
         return
 
     success(f"Run [magenta]{run_id}[/magenta] created.")
+
+    # Build the polling options.
+    polling_options = default_polling_options()
+    polling_options.max_duration = timeout
 
     # Handle what happens after the run is created for logging and result
     # retrieval.

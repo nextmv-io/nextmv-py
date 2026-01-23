@@ -49,7 +49,7 @@ def list(
     versions = cloud_app.list_versions()
     versions_dicts = [version.to_dict() for version in versions]
 
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(versions_dicts, f, indent=2)
 

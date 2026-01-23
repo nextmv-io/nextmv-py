@@ -155,10 +155,24 @@ AcceptanceTestIDOption = Annotated[
 BatchExperimentIDOption = Annotated[
     str,
     typer.Option(
-        "--batch-id",
+        "--batch-experiment-id",
         "-b",
         help="The Nextmv Cloud batch experiment ID to use for this action.",
-        envvar="NEXTMV_BATCH_ID",
-        metavar="BATCH_ID",
+        envvar="NEXTMV_BATCH_EXPERIMENT_ID",
+        metavar="BATCH_EXPERIMENT_ID",
+    ),
+]
+
+# scenario_test_id option - can be used in any command that requires a scenario test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# scenario_test_id: ScenarioTestIDOption
+ScenarioTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--scenario-test-id",
+        "-i",
+        help="The Nextmv Cloud scenario test ID to use for this action.",
+        envvar="NEXTMV_SCENARIO_TEST_ID",
+        metavar="SCENARIO_TEST_ID",
     ),
 ]
