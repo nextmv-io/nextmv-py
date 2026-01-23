@@ -31,18 +31,19 @@ def get(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get an input set by ID.
+    Get an Nextmv Cloud input set.
 
     This command retrieves the details of an existing input set, including
     its name, description, and the list of inputs it contains.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Get an input set.
-        $ [green]nextmv cloud input-set get --app-id my-app --input-set-id my-input-set[/green]
+    - Get an input set with the ID [magenta]hare-input-set[/magenta].
+        $ [green]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set[/green]
 
-    - Get an input set and save to a file.
-        $ [green]nextmv cloud input-set get --app-id my-app --input-set-id my-input-set \\
+    - Get an input set with the ID [magenta]hare-input-set[/magenta] and save
+      the information to a [magenta]input-set.json[/magenta] file.
+        $ [green]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set \\
             --output input-set.json[/green]
     """
 

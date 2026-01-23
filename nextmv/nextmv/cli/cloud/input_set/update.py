@@ -57,32 +57,32 @@ def update(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Update an existing input set.
+    Updates a Nextmv Cloud input set.
 
     This command updates the metadata of an existing input set. You can update
-    the name, description, and/or inputs of the input set.
+    the name, description, or inputs of the input set.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Update an input set's name.
-        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
-            --name "New Name"[/green]
+        $ [green]nextmv cloud input-set update --app-id hare-app \\
+            --input-set-id hare-input-set --name "New Name"[/green]
 
     - Update an input set's description.
-        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
-            --description "Updated description"[/green]
+        $ [green]nextmv cloud input-set update --app-id hare-app \\
+            --input-set-id hare-input-set --description "Updated description"[/green]
 
     - Update an input set's inputs.
-        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
+        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
             --inputs '{"input-1":{"name":"input1", "description":"input1 description"}}'[/green]
 
     - Update both name and description.
-        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
+        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
             --name "New Name" --description "Updated description"[/green]
 
     - Update and save to a file.
-        $ [green]nextmv cloud input-set update --app-id my-app --input-set-id my-input-set \\
-            --name "New Name" --output updated-input-set.json[/green]
+        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
+            --name "New Name" --output updated_input_set.json[/green]
     """
 
     if name is None and description is None and inputs is None:

@@ -110,10 +110,15 @@ def create(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Create a new input set for experiments.
+    Create a new Nextmv Cloud input set for experiments.
 
     An input set is a collection of inputs that can be reused across multiple
-    experiments. You must use one of the following methods to specify the inputs:
+    experiments.
+
+    Use the [code]--exist-ok[/code] flag to avoid errors when creating an
+    input set with an ID that already exists. This is useful for scripts that
+    need to ensure an instance exists without worrying about whether it was
+    created previously.
 
     1. [code]--run-ids[/code]: Create from a list of existing run IDs.
 
@@ -124,21 +129,22 @@ def create(
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Create an input set from specific runs. A random ID will be generated.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
-            --run-ids "run-1,run-2,run-3"[/green]
+    - Create an input set for application [magenta]hare-app[/magenta] from runs.
+      A random input set ID will be generated if one is not provided.
+        $ [green]nextmv cloud input-set create --app-id hare-app \\
+            --name "Hare Input Set" --run-ids "run-1,run-2,run-3"[/green]
 
     - Create an input set with a specific ID.
-        $ [green]nextmv cloud input-set create --app-id my-app --input-set-id my-input-set \\
-            --name "My Input Set" --run-ids "run-1,run-2,run-3"[/green]
+        $ [green]nextmv cloud input-set create --app-id hare-app --input-set-id hare-input-set \\
+            --name "Hare Input Set" --run-ids "run-1,run-2,run-3"[/green]
 
     - Create an input set using existing managed inputs.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
+        $ [green]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
             --inputs '{"input-1":{"name":"input1", "description":"input1 description"}}'[/green]
 
-    - Create an input set from runs within a time range.
-        $ [green]nextmv cloud input-set create --app-id my-app --name "My Input Set" \\
-            --instance-id my-instance --start-time "2024-01-01T00:00:00Z" \\
+    - Create an input set from runs using a specific instance and time range.
+        $ [green]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
+            --instance-id hare-instance --start-time "2024-01-01T00:00:00Z" \\
             --end-time "2024-01-31T23:59:59Z"[/green]
     """
 

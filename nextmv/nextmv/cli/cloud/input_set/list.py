@@ -30,21 +30,21 @@ def list(
     profile: ProfileOption = None,
 ) -> None:
     """
-    List all input sets for an application.
+    List all input sets of a Nextmv Cloud application.
 
-    This command retrieves all input sets that have been created for the
-    specified application.
+    This command retrieves all input sets that exist for a given Nextmv Cloud
+    application.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - List all input sets for an application.
-        $ [green]nextmv cloud input-set list --app-id my-app[/green]
+    - List all input sets of application [magenta]hare-app[/magenta].
+        $ [green]nextmv cloud input-set list --app-id hare-app[/green]
 
-    - List all input sets and save to a file.
-        $ [green]nextmv cloud input-set list --app-id my-app --output input-sets.json[/green]
+    - List all input sets using the profile named [magenta]hare[/magenta].
+        $ [green]nextmv cloud input-set list --app-id hare-app --profile hare[/green]
 
-    - List input sets using a specific profile.
-        $ [green]nextmv cloud input-set list --app-id my-app --profile my-profile[/green]
+    - List all input sets and save the information to a [magenta]input-sets.json[/magenta] file.
+        $ [green]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/green]
     """
 
     client = build_client(profile)
