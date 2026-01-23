@@ -544,7 +544,8 @@ class TestInputSetUpdateCommand(unittest.TestCase):
         mock_client.request.return_value = mock_response
         mock_build_client.return_value = mock_client
 
-        inputs_json = '{"input-1":{"name":"Updated Input 1"},"input-2":{"name":"Updated Input 2","description":"New desc"}}'
+        inputs_json = '{"input-1":{"name":"Updated Input 1"},'
+        '"input-2":{"name":"Updated Input 2","description":"New desc"}}'
 
         result = self.runner.invoke(
             self.app,
