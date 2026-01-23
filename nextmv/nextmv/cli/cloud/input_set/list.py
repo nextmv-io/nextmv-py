@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
+from nextmv.cli.configuration.config import build_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -47,21 +47,17 @@ def list(
         $ [green]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/green]
     """
 
-    client = build_client(profile)
+    cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing input sets...")
+    input_sets = cloud_app.list_instances()
+    input_sets_dicts = [input_set.to_dict() for input_set in input_sets]
 
-    response = client.request(
-        method="GET",
-        endpoint=f"/v1/applications/{app_id}/experiments/inputsets",
-    )
-    input_sets_data = response.json()
-
-    if output is not None:
+    if output is not None and output != "":
         with open(output, "w") as f:
-            json.dump(input_sets_data, f, indent=2)
+            json.dump(input_sets_dicts, f, indent=2)
 
-        success(msg=f"Input set list saved to [magenta]{output}[/magenta].")
+        success(msg=f"Input set list information saved to [magenta]{output}[/magenta].")
 
         return
 
-    print_json(input_sets_data)
+    print_json(input_sets_dicts)
