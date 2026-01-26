@@ -67,7 +67,7 @@ def create(
     A secrets collection is a group of key-value pairs that can be used by
     your application instances during execution. Each collection can contain
     up to 20 secrets. Secrets are provided as JSON objects using the
-    [code]--secrets[/code] flag.
+    --secrets flag.
 
     Each secret must include three fields:
     - [magenta]type[/magenta]: Either [magenta]env[/magenta] or [magenta]file[/magenta],
@@ -80,10 +80,10 @@ def create(
 
     You can provide secrets in three ways:
     - A single secret as a [magenta]json[/magenta] object.
-    - Multiple secrets by repeating the [code]--secrets[/code] flag.
-    - Multiple secrets as a [magenta]json[/magenta] array in a single [code]--secrets[/code] flag.
+    - Multiple secrets by repeating the --secrets flag.
+    - Multiple secrets as a [magenta]json[/magenta] array in a single --secrets flag.
 
-    The [code]--secrets-collection-id[/code] and [code]--name[/code] are optional.
+    The --secrets-collection-id and --name are optional.
     If not provided, they will be automatically generated.
 
     [bold][underline]Examples[/underline][/bold]

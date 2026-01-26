@@ -37,9 +37,9 @@ def list(
     """
     List the available community apps
 
-    Use the [code]--app[/code] flag to list that app's versions. Use the
-    [code]--flat[/code] flag to flatten the list of names/versions. If you
-    want to clone a community app locally, use the [code]nextmv community clone[/code] command.
+    Use the --app flag to list that app's versions. Use the --flat flag to
+    flatten the list of names/versions. If you want to clone a community app
+    locally, use the [code]nextmv community clone[/code] command.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -60,7 +60,7 @@ def list(
     """
 
     if app is not None and app == "":
-        error("The [code]--app[/code] flag cannot be an empty string.")
+        error("The --app flag cannot be an empty string.")
 
     manifest = download_manifest(profile=profile)
     if flat and app is None:

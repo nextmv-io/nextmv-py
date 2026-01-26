@@ -35,7 +35,7 @@ def input(
     Get the input of a Nextmv Cloud application run.
 
     By default, the input is fetched and printed to [magenta]stdout[/magenta].
-    Use the [code]--output[/code] flag to save the input to a file.
+    Use the --output flag to save the input to a file.
 
     [bold][underline]Examples[/underline][/bold]
 

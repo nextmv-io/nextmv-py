@@ -45,8 +45,8 @@ def create(
     Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link] for assistance.
 
     At least one administrator email address must be provided. Multiple
-    administrators can be specified by repeating the [code]--admins[/code] flag
-    or by separating email addresses with commas.
+    administrators can be specified by repeating the --admins flag or by
+    separating email addresses with commas.
 
     [bold][underline]Examples[/underline][/bold]
 

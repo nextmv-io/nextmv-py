@@ -53,9 +53,9 @@ def clone(
     Clone a community app locally.
 
     By default, the [magenta]latest[/magenta] version will be used. You can
-    specify a version with the [code]--version[/code] flag, and customize the
-    output directory with the [code]--directory[/code] flag. If you want to
-    list the available apps, use the [code]nextmv community list[/code] command.
+    specify a version with the --version flag, and customize the output
+    directory with the --directory flag. If you want to list the available
+    apps, use the [code]nextmv community list[/code] command.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -81,7 +81,7 @@ def clone(
     app_obj = find_app(manifest, app)
 
     if version is not None and version == "":
-        error("The [code]--version[/code] flag cannot be an empty string.")
+        error("The --version flag cannot be an empty string.")
 
     if not app_has_version(app_obj, version):
         # We don't use error() here to allow printing something before exiting.

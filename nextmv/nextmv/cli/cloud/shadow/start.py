@@ -23,8 +23,8 @@ def start(
 
     Before starting a shadow test, it must be created in draft state. You may
     use the [code]nextmv cloud shadow create[/code] command to create a new
-    shadow test. Alternatively, define a [code]--start-time[/code] when using
-    the [code]nextmv cloud shadow create[/code] command to have the shadow test
+    shadow test. Alternatively, define a --start-time when using the
+    [code]nextmv cloud shadow create[/code] command to have the shadow test
     start automatically at a specific time.
 
     [bold][underline]Examples[/underline][/bold]

@@ -23,9 +23,9 @@ def start(
 
     Before starting a switchback test, it must be created in draft state. You
     may use the [code]nextmv cloud switchback create[/code] command to create a
-    new switchback test. Alternatively, define a [code]--start[/code] when
-    using the [code]nextmv cloud switchback create[/code] command to have the
-    switchback test start automatically at a specific time.
+    new switchback test. Alternatively, define a --start when using the
+    [code]nextmv cloud switchback create[/code] command to have the switchback
+    test start automatically at a specific time.
 
     [bold][underline]Examples[/underline][/bold]
 

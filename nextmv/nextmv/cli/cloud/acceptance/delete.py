@@ -32,9 +32,9 @@ def delete(
     """
     Deletes a Nextmv Cloud acceptance test.
 
-    This action is permanent and cannot be undone. The underlying batch experiment
-    and associated data will also be deleted. Use the [code]--yes[/code] flag to skip
-    the confirmation prompt.
+    This action is permanent and cannot be undone. The underlying batch
+    experiment and associated data will also be deleted. Use the --yes flag to
+    skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 

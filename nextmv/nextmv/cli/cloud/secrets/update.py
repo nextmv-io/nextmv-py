@@ -71,11 +71,11 @@ def update(
     secrets collection. When updating secrets, all existing secrets will be
     replaced with the new ones provided.
 
-    Secrets are provided as JSON objects using the [code]--secrets[/code] flag,
+    Secrets are provided as JSON objects using the --secrets flag,
     following the same format as the create command. You can provide secrets as:
     - A single secret as a JSON object
-    - Multiple secrets by repeating the [code]--secrets[/code] flag
-    - Multiple secrets as a JSON array in a single [code]--secrets[/code] flag
+    - Multiple secrets by repeating the --secrets flag
+    - Multiple secrets as a JSON array in a single --secrets flag
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -113,10 +113,7 @@ def update(
     """
 
     if name is None and description is None and secrets is None:
-        error(
-            "Provide at least one option to update: "
-            "[code]--name[/code], [code]--description[/code], or [code]--secrets[/code]."
-        )
+        error("Provide at least one option to update: --name, --description, or --secrets.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
 

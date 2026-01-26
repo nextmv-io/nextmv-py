@@ -103,12 +103,12 @@ def create(
     """
     Create a new Nextmv Cloud switchback test in draft mode.
 
-    The test will alternate between the [code]--baseline-instance-id[/code] and
-    [code]--candidate-instance-id[/code] over specified time intervals.
+    The test will alternate between the --baseline-instance-id and
+    --candidate-instance-id over specified time intervals.
 
-    You may specify the [code]--start[/code] option to make the switchback
-    test start at a specific time. Alternatively, you may use the
-    [code]nextmv cloud switchback start[/code] command to start the test.
+    You may specify the --start option to make the switchback test start at a
+    specific time. Alternatively, you may use the [code]nextmv cloud switchback
+    start[/code] command to start the test.
 
     Use the [code]nextmv cloud switchback stop[/code] command to stop the test.
 

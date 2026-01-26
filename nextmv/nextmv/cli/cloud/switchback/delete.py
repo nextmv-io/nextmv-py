@@ -33,7 +33,7 @@ def delete(
     Deletes a Nextmv Cloud switchback test.
 
     This action is permanent and cannot be undone. The switchback test and all
-    associated data, including runs, will be deleted. Use the [code]--yes[/code]
+    associated data, including runs, will be deleted. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]

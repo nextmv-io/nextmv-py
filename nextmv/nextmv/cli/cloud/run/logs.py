@@ -38,7 +38,7 @@ def logs(
             "--tail",
             "-t",
             help="Tail the logs until the run completes. Logs are streamed to [magenta]stderr[/magenta]. "
-            "Specify log output location with [code]--output[/code].",
+            "Specify log output location with --output.",
         ),
     ] = False,
     timeout: Annotated[
@@ -54,10 +54,9 @@ def logs(
     Get the logs of a Nextmv Cloud application run.
 
     By default, the logs are fetched and printed to [magenta]stderr[/magenta].
-    Use the [code]--tail[/code] flag to stream logs to
-    [magenta]stderr[/magenta] until the run completes. Using the
-    [code]--output[/code] flag will also activate waiting, and allows you to
-    specify a file to write the logs to.
+    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
+    run completes. Using the --output flag will also activate waiting, and
+    allows you to specify a file to write the logs to.
 
     [bold][underline]Examples[/underline][/bold]
 

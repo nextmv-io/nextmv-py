@@ -42,7 +42,7 @@ def get(
             "--wait",
             "-w",
             help="Wait for the acceptance test to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
         ),
     ] = False,
     profile: ProfileOption = None,
@@ -50,10 +50,9 @@ def get(
     """
     Get a Nextmv Cloud acceptance test.
 
-    Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    Use the --wait flag to wait for the acceptance test to complete, polling
+    for results. Using the --output flag will also activate waiting, and allows
+    you to specify a destination file for the results.
 
     [bold][underline]Examples[/underline][/bold]
 

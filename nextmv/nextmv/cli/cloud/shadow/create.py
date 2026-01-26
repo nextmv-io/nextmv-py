@@ -97,11 +97,10 @@ def create(
     """
     Create a new Nextmv Cloud shadow test in draft mode.
 
-    Use the [code]--comparisons[/code] option to define how to set up instance
-    comparisons. The value should be valid [magenta]json[/magenta]. The keys of
-    the comparisons object are the baseline instance IDs, and the values
-    are the candidate lists of instance IDs to compare against the respective
-    baseline.
+    Use the --comparisons option to define how to set up instance comparisons.
+    The value should be valid [magenta]json[/magenta]. The keys of the
+    comparisons object are the baseline instance IDs, and the values are the
+    candidate lists of instance IDs to compare against the respective baseline.
 
     Here is an example comparisons object:
     [green]{
@@ -109,15 +108,14 @@ def create(
         "baseline-instance-2": ["candidate-instance-3"]
     }[/green]
 
-    You may specify the [code]--start-time[/code] option to make the shadow
-    test start at a specific time. Alternatively, you may use the
-    [code]nextmv cloud shadow start[/code] command to start the test.
+    You may specify the --start-time option to make the shadow test start at a
+    specific time. Alternatively, you may use the [code]nextmv cloud shadow
+    start[/code] command to start the test.
 
-    The [code]--termination-maximum-runs[/code] option is required and provides
-    control over when the shadow test should terminate, after said number of
-    runs. Alternatively, you may specify the [code]--termination-time[/code]
-    option or use the [code]nextmv cloud shadow stop[/code] command to stop the
-    test.
+    The --termination-maximum-runs option is required and provides control over
+    when the shadow test should terminate, after said number of runs.
+    Alternatively, you may specify the --termination-time option or use the
+    [code]nextmv cloud shadow stop[/code] command to stop the test.
 
     [bold][underline]Examples[/underline][/bold]
 

@@ -27,24 +27,22 @@ app = typer.Typer()
 
     The acceptance test is based on a batch experiment. If the batch experiment
     with the same ID already exists, it will be reused. Otherwise, you must
-    provide the [code]--input-set-id[/code] option to create a new batch
-    experiment.
+    provide the --input-set-id option to create a new batch experiment.
 
-    Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    Use the --wait flag to wait for the acceptance test to complete, polling
+    for results. Using the --output flag will also activate waiting, and allows
+    you to specify a destination file for the results.
 
     [bold][underline]Metrics[/underline][/bold]
 
     Metrics are provided as [magenta]json[/magenta] objects using the
-    [code]--metrics[/code] flag. Each metric defines how to compare the
+    --metrics flag. Each metric defines how to compare the
     candidate and baseline instances.
 
     You can provide metrics in three ways:
     - A single metric as a [magenta]json[/magenta] object.
-    - Multiple metrics by repeating the [code]--metrics[/code] flag.
-    - Multiple metrics as a [magenta]json[/magenta] array in a single [code]--metrics[/code] flag.
+    - Multiple metrics by repeating the --metrics flag.
+    - Multiple metrics as a [magenta]json[/magenta] array in a single --metrics flag.
 
     Each metric must have the following fields:
     - [magenta]field[/magenta]: Field of the metric to measure (e.g., "solution.objective").
@@ -265,7 +263,7 @@ def create(
             "--wait",
             "-w",
             help="Wait for the acceptance test to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,

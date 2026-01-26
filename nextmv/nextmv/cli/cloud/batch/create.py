@@ -109,7 +109,7 @@ def create(
             "--wait",
             "-w",
             help="Wait for the batch experiment to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -122,21 +122,19 @@ def create(
     configurations. Each run is defined by a combination of input, instance or
     version, and optional configuration options.
 
-    Use the [code]--wait[/code] flag to wait for the batch experiment to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    Use the --wait flag to wait for the batch experiment to complete, polling
+    for results. Using the --output flag will also activate waiting, and allows
+    you to specify a destination file for the results.
 
     [bold][underline]Runs[/underline][/bold]
 
-    Runs are provided as [magenta]json[/magenta] objects using the
-    [code]--runs[/code] flag. Each run defines what input, instance/version,
-    and configuration to use.
+    Runs are provided as [magenta]json[/magenta] objects using the --runs flag.
+    Each run defines what input, instance/version, and configuration to use.
 
     You can provide runs in three ways:
     - A single run as a [magenta]json[/magenta] object.
-    - Multiple runs by repeating the [code]--runs[/code] flag.
-    - Multiple runs as a [magenta]json[/magenta] array in a single [code]--runs[/code] flag.
+    - Multiple runs by repeating the --runs flag.
+    - Multiple runs as a [magenta]json[/magenta] array in a single --runs flag.
 
     Each run must have the following fields:
     - [magenta]input_id[/magenta]: ID of the input to use for this run
@@ -146,7 +144,7 @@ def create(
     - [magenta]instance_id[/magenta] OR [magenta]version_id[/magenta]: Either an instance ID or
       version ID must be provided (at least one required).
     - [magenta]option_set[/magenta]: ID of the option set to use (optional).
-      Make sure to define the option sets using the [code]--option-sets[/code] flag.
+      Make sure to define the option sets using the --option-sets flag.
     - [magenta]input_set_id[/magenta]: ID of the input set (optional).
     - [magenta]scenario_id[/magenta]: Scenario ID if part of a scenario test (optional).
     - [magenta]repetition[/magenta]: Repetition number (optional).
@@ -162,7 +160,7 @@ def create(
     [bold][underline]Option Sets[/underline][/bold]
 
     Option sets are provided as a [magenta]json[/magenta] object using the
-    [code]--option-sets[/code] flag. Option sets define named collections of
+    --option-sets flag. Option sets define named collections of
     runtime options that can be referenced by runs.
 
     The option sets object is a dictionary where keys are option set IDs and

@@ -30,13 +30,12 @@ app = typer.Typer()
     [bold][underline]Run Groups[/underline][/bold]
 
     Run groups are provided as [magenta]json[/magenta] objects using the
-    [code]--run-groups[/code] flag. Each run group specifies how child runs
-    are executed.
+    --run-groups flag. Each run group specifies how child runs are executed.
 
     You can provide run groups in three ways:
     - A single run group as a [magenta]json[/magenta] object.
-    - Multiple run groups by repeating the [code]--run-groups[/code] flag.
-    - Multiple run groups as a [magenta]json[/magenta] array in a single [code]--run-groups[/code] flag.
+    - Multiple run groups by repeating the --run-groups flag.
+    - Multiple run groups as a [magenta]json[/magenta] array in a single --run-groups flag.
 
     Each run group must have the following fields:
     - [magenta]id[/magenta]: Unique identifier for the run group (required).
@@ -56,13 +55,13 @@ app = typer.Typer()
     [bold][underline]Evaluation Rules[/underline][/bold]
 
     Evaluation rules are provided as [magenta]json[/magenta] objects using the
-    [code]--rules[/code] flag. Each rule determines how to evaluate and select
-    the best result from the child runs.
+    --rules flag. Each rule determines how to evaluate and select the best
+    result from the child runs.
 
     You can provide rules in three ways:
     - A single rule as a [magenta]json[/magenta] object.
-    - Multiple rules by repeating the [code]--rules[/code] flag.
-    - Multiple rules as a [magenta]json[/magenta] array in a single [code]--rules[/code] flag.
+    - Multiple rules by repeating the --rules flag.
+    - Multiple rules as a [magenta]json[/magenta] array in a single --rules flag.
 
     Each rule must have the following fields:
     - [magenta]id[/magenta]: Unique identifier for the rule (required).

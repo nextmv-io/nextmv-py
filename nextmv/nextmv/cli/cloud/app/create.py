@@ -84,14 +84,13 @@ def create(
     """
     Create a new Nextmv Cloud application.
 
-    Use the [code]--exist-ok[/code] flag to avoid errors when creating an
-    application with an ID that already exists. This is useful for scripts that
-    need to ensure an application exists without worrying about whether it was
-    created previously.
+    Use the --exist-ok flag to avoid errors when creating an application with
+    an ID that already exists. This is useful for scripts that need to ensure
+    an application exists without worrying about whether it was created
+    previously.
 
-    An application can be marked as a workflow using the
-    [code]--is-workflow[/code] flag. Workflows allow for more complex
-    decision-making processes by leveraging
+    An application can be marked as a workflow using the --is-workflow flag.
+    Workflows allow for more complex decision-making processes by leveraging
     [link=https://github.com/nextmv-io/nextpipe][bold]Nextpipe[/bold][/link] to
     orchestrate multiple decision models.
 

@@ -33,7 +33,7 @@ def delete(
 
     You must have the [magenta]administrator[/magenta] role on that account in order to delete it.
 
-    This action is permanent and cannot be undone. Use the [code]--yes[/code]
+    This action is permanent and cannot be undone. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]

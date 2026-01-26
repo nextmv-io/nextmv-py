@@ -78,7 +78,7 @@ def update(
     """
 
     if name is None and description is None:
-        error("Provide at least one option to update: [code]--name[/code] or [code]--description[/code].")
+        error("Provide at least one option to update: --name or --description.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
 

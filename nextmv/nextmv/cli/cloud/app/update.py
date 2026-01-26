@@ -99,8 +99,8 @@ def update(
 
     if name is None and description is None and default_instance_id is None and default_experiment_instance is None:
         error(
-            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], "
-            "[code]--default-instance-id[/code], or [code]--default-experiment-instance[/code]."
+            "Provide at least one option to update: --name, --description, "
+            "--default-instance-id, or --default-experiment-instance."
         )
 
     cloud_app = build_app(app_id=app_id, profile=profile)

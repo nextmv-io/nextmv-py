@@ -88,7 +88,7 @@ def update(
     """
 
     if name is None and description is None and inputs is None:
-        error("Provide at least one option: [code]--name[/code], [code]--description[/code], or [code]--inputs[/code].")
+        error("Provide at least one option: --name, --description, or --inputs.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating input set...")

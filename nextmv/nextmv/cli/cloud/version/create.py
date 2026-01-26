@@ -58,10 +58,9 @@ def create(
     """
     Create a new Nextmv Cloud application version.
 
-    Use the [code]--exist-ok[/code] flag to avoid errors when creating a
-    version with an ID that already exists. This is useful for scripts that
-    need to ensure a version exists without worrying about whether it was
-    created previously.
+    Use the --exist-ok flag to avoid errors when creating a version with an ID
+    that already exists. This is useful for scripts that need to ensure a
+    version exists without worrying about whether it was created previously.
 
     [bold][underline]Examples[/underline][/bold]
 

@@ -65,7 +65,7 @@ def create(
     """
 
     if profile is not None and profile.strip().lower() == "default":
-        error("[code]default[/code] is a reserved profile name.")
+        error("[magenta]default[/magenta] is a reserved profile name.")
 
     endpoint = str(endpoint)
     if endpoint.startswith("https://"):

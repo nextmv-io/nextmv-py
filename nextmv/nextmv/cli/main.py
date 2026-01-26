@@ -20,6 +20,7 @@ from typing import Annotated
 import rich
 import typer
 from rich.prompt import Confirm
+from typer import rich_utils
 
 from nextmv.cli.cloud import app as cloud_app
 from nextmv.cli.community import app as community_app
@@ -28,6 +29,9 @@ from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.message import error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
+
+# Disable dim text for the extended help of commands.
+rich_utils.STYLE_HELPTEXT = ""
 
 # Main CLI application.
 app = typer.Typer(

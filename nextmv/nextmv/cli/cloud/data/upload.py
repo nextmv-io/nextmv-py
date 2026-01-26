@@ -52,14 +52,14 @@ def upload(
     is used for starting new runs, tracking runs, performing experiments, and
     more.
 
-    The [code]--upload-url[/code] flag is required to specify the pre-signed
+    The --upload-url flag is required to specify the pre-signed
     upload URL. It can be obtained using the [code]nextmv cloud upload
     create[/code] command. Use the [magenta].upload_url[/magenta] field from
     the command output.
 
     The data input should be given through [magenta]stdin[/magenta] or the
-    [code]--input[/code] flag. When using the [code]--input[/code] flag, the
-    value can be one of the following:
+    --input flag. When using the --input flag, the value can be one of the
+    following:
 
     - [green]<FILE_PATH>[/green]: path to a [magenta]file[/magenta] containing
       the data. Use with the [magenta]json[/magenta], and
@@ -98,7 +98,7 @@ def upload(
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     data_kwarg = resolve_data_kwarg(

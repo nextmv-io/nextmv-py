@@ -100,7 +100,7 @@ def create(
             "--wait",
             "-w",
             help="Wait for the scenario test to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -112,21 +112,21 @@ def create(
     A scenario test allows you to run multiple scenarios with different inputs,
     instances/versions, and configurations in a single test.
 
-    Use the [code]--wait[/code] flag to wait for the scenario test to complete,
-    polling for results. Using the [code]--output[/code] flag will also
+    Use the --wait flag to wait for the scenario test to complete,
+    polling for results. Using the --output flag will also
     activate waiting, and allows you to specify a destination file for the
     results.
 
     [bold][underline]Scenarios[/underline][/bold]
 
     Scenarios are provided as [magenta]json[/magenta] objects using the
-    [code]--scenarios[/code] flag. Each scenario defines the configuration for
-    a scenario test execution.
+    --scenarios flag. Each scenario defines the configuration for a scenario
+    test execution.
 
     You can provide scenarios in three ways:
     - A single scenario as a [magenta]json[/magenta] object.
-    - Multiple scenarios by repeating the [code]--scenarios[/code] flag.
-    - Multiple scenarios as a [magenta]json[/magenta] array in a single [code]--scenarios[/code] flag.
+    - Multiple scenarios by repeating the --scenarios flag.
+    - Multiple scenarios as a [magenta]json[/magenta] array in a single --scenarios flag.
 
     Each scenario must have the following fields:
     - [magenta]instance_id[/magenta]: ID of the instance to use for this scenario (required).

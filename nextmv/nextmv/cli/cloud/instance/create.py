@@ -131,10 +131,9 @@ def create(
     """
     Create a new Nextmv Cloud application instance.
 
-    Use the [code]--exist-ok[/code] flag to avoid errors when creating an
-    instance with an ID that already exists. This is useful for scripts that
-    need to ensure an instance exists without worrying about whether it was
-    created previously.
+    Use the --exist-ok flag to avoid errors when creating an instance with an
+    ID that already exists. This is useful for scripts that need to ensure an
+    instance exists without worrying about whether it was created previously.
 
     [bold][underline]Examples[/underline][/bold]
 

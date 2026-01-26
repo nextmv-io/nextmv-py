@@ -173,8 +173,8 @@ def update(
 
     if name is None and description is None and version_id is None and not has_config_options:
         error(
-            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], "
-            "[code]--version-id[/code], or any [magenta]Instance configuration[/magenta] option."
+            "Provide at least one option to update: --name, --description, "
+            "--version-id, or any [magenta]Instance configuration[/magenta] option."
         )
 
     cloud_app = build_app(app_id=app_id, profile=profile)

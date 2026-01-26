@@ -46,7 +46,7 @@ def get(
             "-w",
             help="Wait for the run to complete. Run result is printed to [magenta]stdout[/magenta] for "
             "[magenta]json[/magenta], to a dir for [magenta]multi-file[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
         ),
     ] = False,
     profile: ProfileOption = None,
@@ -54,8 +54,8 @@ def get(
     """
     Get the result (output) of a Nextmv Cloud application run.
 
-    Use the [code]--wait[/code] flag to wait for the run to complete, polling
-    for results. Using the [code]--output[/code] flag will also activate
+    Use the --wait flag to wait for the run to complete, polling
+    for results. Using the --output flag will also activate
     waiting, and allows you to specify a destination (file or dir) for the
     output, depending on the content type.
 

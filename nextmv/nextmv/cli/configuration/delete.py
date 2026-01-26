@@ -36,7 +36,7 @@ def delete(
     ] = False,
 ) -> None:
     """
-    Delete a profile from the configuration. Use the [code]--yes[/code]
+    Delete a profile from the configuration. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]

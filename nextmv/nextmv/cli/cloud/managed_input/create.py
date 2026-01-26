@@ -62,8 +62,7 @@ def create(
         typer.Option(
             "--run-id",
             "-r",
-            help="ID of the run to use for the managed input. "
-            "Either [code]--upload-id[/code] or [code]--run-id[/code] must be specified.",
+            help="ID of the run to use for the managed input. Either --upload-id or --run-id must be specified.",
             envvar="NEXTMV_RUN_ID",
             metavar="RUN_ID",
         ),
@@ -73,8 +72,7 @@ def create(
         typer.Option(
             "--upload-id",
             "-u",
-            help="ID of the upload to use for the managed input. "
-            "Either [code]--upload-id[/code] or [code]--run-id[/code] must be specified.",
+            help="ID of the upload to use for the managed input. Either --upload-id or --run-id must be specified.",
             metavar="UPLOAD_ID",
         ),
     ] = None,
@@ -84,8 +82,8 @@ def create(
     Create a new Nextmv Cloud application managed input.
 
     A managed input can be created from either an upload or a run. Use the
-    [code]--upload-id[/code] flag to create from an upload, or the
-    [code]--run-id[/code] flag to create from a run output.
+    --upload-id flag to create from an upload, or the --run-id flag to create
+    from a run output.
 
     You can get an upload ID by using the [code]nextmv cloud upload
     create[/code] command. The [magenta].upload_id[/magenta] field in the
@@ -118,8 +116,8 @@ def create(
 
     if upload_id is None and run_id is None:
         error(
-            "Either [code]--upload-id[/code] or [code]--run-id[/code] must be specified. "
-            "Use [code]nextmv cloud upload create[/code] to create an upload first, "
+            "Either --upload-id or --run-id must be specified. "
+            "Use nextmv cloud upload create to create an upload first, "
             "or specify an existing run ID."
         )
 

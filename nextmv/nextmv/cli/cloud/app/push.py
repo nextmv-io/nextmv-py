@@ -80,18 +80,17 @@ def push(
     """
     Push (deploy) a Nextmv application to Nextmv Cloud.
 
-    Use the [code]--app-dir[/code] option to specify the path to your
-    application's root directory. By default, the current working directory is
-    used.
+    Use the --app-dir option to specify the path to your application's root
+    directory. By default, the current working directory is used.
 
-    You can also provide a custom manifest file using the [code]--manifest[/code]
-    option. If not provided, the CLI will look for a file named [magenta]app.yaml[/magenta]
-    in the application's root.
+    You can also provide a custom manifest file using the --manifest option. If
+    not provided, the CLI will look for a file named
+    [magenta]app.yaml[/magenta] in the application's root.
 
     The default behavior of this command is to create a new application version
     [italic]after[/italic] the app has been pushed. You can use the
-    [code]--no-version[/code] option to skip this step. The
-    [code]--version-...[/code] options allow you to customize the attributes of
+    --no-version option to skip this step. The --version-id, --version-name,
+    and --version-description options allow you to customize the attributes of
     the version that is created. If any of these options are not provided,
     automatically generated values will be used.
 

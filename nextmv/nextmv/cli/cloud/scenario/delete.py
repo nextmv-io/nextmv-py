@@ -33,7 +33,7 @@ def delete(
     Deletes a Nextmv Cloud scenario test.
 
     This action is permanent and cannot be undone. The scenario test and all
-    associated data will be deleted. Use the [code]--yes[/code] flag to skip
+    associated data will be deleted. Use the --yes flag to skip
     the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]

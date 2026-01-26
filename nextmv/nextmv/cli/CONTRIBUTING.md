@@ -204,7 +204,7 @@ Use these Rich markup guidelines when formatting help text and messages.
 - When talking about a command, or a command option, use the `[code]` `[/code]`
   tags. Take this example from the help menu of the `cloud/app/delete.py` file.
   In the command help, when referring to the `--yes` option, we use
-  `[code]--yes[/code]` to format it as code.
+  `--yes` to format it as code.
 
   ```python
   @app.command()
@@ -223,7 +223,7 @@ Use these Rich markup guidelines when formatting help text and messages.
       """
       Deletes a Nextmv Cloud application.
 
-      This action is permanent and cannot be undone. Use the [code]--yes[/code]
+      This action is permanent and cannot be undone. Use the --yes
       flag to skip the confirmation prompt.
 
       [bold][underline]Examples[/underline][/bold]

@@ -68,7 +68,7 @@ def create(
             "--tail",
             "-t",
             help="Tail the logs until the run completes. Logs are streamed to [magenta]stderr[/magenta]. "
-            "Specify log output location with [code]--logs[/code].",
+            "Specify log output location with --logs.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -79,7 +79,7 @@ def create(
             "-w",
             help="Wait for the run to complete. Run result is printed to [magenta]stdout[/magenta] for "
             "[magenta]json[/magenta], to a dir for [magenta]multi-file[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -210,8 +210,8 @@ def create(
     Create a new Nextmv Cloud application run.
 
     Input for the run should be given through [magenta]stdin[/magenta] or the
-    [code]--input[/code] flag. When using the [code]--input[/code] flag, the
-    value can be one of the following:
+    --input flag. When using the --input flag, the value can be one of the
+    following:
 
     - [green]<FILE_PATH>[/green]: path to a [magenta]file[/magenta] containing
       the input data. Use with the [magenta]json[/magenta], and
@@ -226,27 +226,26 @@ def create(
     The CLI determines how to send the input to the application based on the
     value.
 
-    Use the [code]--wait[/code] flag to wait for the run to complete, polling
-    for results. Using the [code]--output[/code] flag will also activate
-    waiting, and allows you to specify a destination (file or dir) for the
-    output, depending on the content type.
+    Use the --wait flag to wait for the run to complete, polling for results.
+    Using the --output flag will also activate waiting, and allows you to
+    specify a destination (file or dir) for the output, depending on the
+    content type.
 
-    Use the [code]--tail[/code] flag to stream logs to
-    [magenta]stderr[/magenta] until the run completes. Using the
-    [code]--logs[/code] flag will also activate waiting, and allows you to
-    specify a file to write the logs to.
+    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
+    run completes. Using the --logs flag will also activate waiting, and allows
+    you to specify a file to write the logs to.
 
     An application run executes against a specific instance. An instance
     represents the combination of executable code and configuration. You can
-    specify the instance with the [code]--instance-id[/code] flag. These are
-    the possible values for this flag:
+    specify the instance with the --instance-id flag. These are the possible
+    values for this flag:
 
     - [green]latest[/green]: uses the special [magenta]latest[/magenta]
       instance of the application. This corresponds to the latest pushed
       executable. This is the default behavior.
     - [green]default[/green]: if the application has a [italic]default[/italic]
       instance configured, then it uses that instance. Setting the flag's value
-      to [code]''[/code] (empty string) has the same effect.
+      to [magenta]''[/magenta] (empty string) has the same effect.
     - [green]<INSTANCE_ID>[/green]: uses the instance with the given ID.
 
     [bold][underline]Examples[/underline][/bold]
@@ -304,7 +303,7 @@ def create(
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app = build_app(app_id=app_id, profile=profile)

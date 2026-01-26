@@ -34,7 +34,7 @@ def metadata(
     Get the metadata of a Nextmv Cloud application run.
 
     By default, the metadata is fetched and printed to [magenta]stdout[/magenta].
-    Use the [code]--output[/code] flag to save the metadata to a file.
+    Use the --output flag to save the metadata to a file.
 
     [bold][underline]Examples[/underline][/bold]
 

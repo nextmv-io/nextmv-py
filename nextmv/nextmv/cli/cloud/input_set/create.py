@@ -113,11 +113,9 @@ def create(
     An input set is a collection of inputs that can be reused across multiple
     experiments.
 
-    1. [code]--run-ids[/code]: Create from a list of existing run IDs.
-
-    2. [code]--inputs[/code]: Create from existing managed inputs in the application.
-
-    3. [code]--instance-id[/code] with [code]--start-time[/code] and [code]--end-time[/code]:
+    1. --run-ids: Create from a list of existing run IDs.
+    2. --inputs: Create from existing managed inputs in the application.
+    3. --instance-id with --start-time and --end-time:
        Create from instance runs matching the time range criteria.
 
     [bold][underline]Examples[/underline][/bold]
