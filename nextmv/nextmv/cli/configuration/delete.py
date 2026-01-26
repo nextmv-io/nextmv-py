@@ -5,9 +5,9 @@ This module defines the configuration delete command for the Nextmv CLI.
 from typing import Annotated
 
 import typer
-from rich.prompt import Confirm
 
 from nextmv.cli.configuration.config import load_config, save_config
+from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, info, success
 
 # Set up subcommand application.
@@ -36,8 +36,9 @@ def delete(
     ] = False,
 ) -> None:
     """
-    Delete a profile from the configuration. Use the --yes
-    flag to skip the confirmation prompt.
+    Delete a profile from the configuration.
+
+    Use the --yes flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -52,9 +53,8 @@ def delete(
         error(f"Profile [magenta]{profile}[/magenta] does not exist.")
 
     if not yes:
-        confirm = Confirm.ask(
+        confirm = get_confirmation(
             f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone.",
-            default=False,
         )
 
         if not confirm:

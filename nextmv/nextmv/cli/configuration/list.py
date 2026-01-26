@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from nextmv.cli.configuration.config import API_KEY_KEY, ENDPOINT_KEY, load_config, obscure_api_key
+from nextmv.cli.configuration.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys, obscure_api_key
 from nextmv.cli.message import error
 
 # Set up subcommand application.
@@ -38,7 +38,7 @@ def list() -> None:
 
     for k, v in config.items():
         # Skip default configuration.
-        if k in {API_KEY_KEY, ENDPOINT_KEY}:
+        if k in non_profile_keys():
             continue
 
         profile = {

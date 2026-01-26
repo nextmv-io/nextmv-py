@@ -173,23 +173,27 @@ guidelines:
 
 ## Confirmation prompts
 
-For destructive actions (like deletions), use `rich.prompt.Confirm.ask()` to
-ask for user confirmation before proceeding. Follow these guidelines:
+For destructive actions (like deletions), use the `get_confirmation()` method to
+ask for user confirmation before proceeding. The method is available from the
+`cli/confirm.py` file. This method already handles sensible values used for
+getting a confirmation from a user and more importantly, it times out if a user
+does not respond within a certain time frame. Additionally, it handles
+non-interactive sessions by defaulting to `False` if no input can be provided.
 
-- The confirmation message should use `[magenta]` for the variable being
+When using confirmation prompts, follow these guidelines:
+
+- The confirmation message should use `[magenta]` for the variable/s being
   affected.
-- Set `default=False` for safety, so the user must explicitly confirm.
-- Provide a `--yes` / `-y` flag to skip the confirmation prompt, useful for
-  non-interactive sessions.
+- Provide a `--yes` / `-y` flag to skip the confirmation prompt where possible,
+  useful for non-interactive sessions.
 - If the user declines, call `info()` with the `:bulb:` emoji and return early.
 
 Consider the `nextmv cloud app delete` command:
 
 ```python
 if not yes:
-    confirm = Confirm.ask(
-        f"Are you sure you want to delete application [magenta]{app_id}[/magenta]? This action cannot be undone",
-        default=False,
+    confirm = get_confirmation(
+        f"Are you sure you want to delete application [magenta]{app_id}[/magenta]? This action cannot be undone.",
     )
 
     if not confirm:

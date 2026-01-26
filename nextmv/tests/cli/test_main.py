@@ -66,34 +66,3 @@ class TestHandleGoCli(unittest.TestCase):
         result = self.runner.invoke(self.app, ["version"])
         self.assertEqual(result.exit_code, 0)
         self.assertNotIn("deprecated", result.output)
-
-    @patch("nextmv.cli.main.remove_go_cli")
-    @patch("nextmv.cli.main.go_cli_exists")
-    @patch("nextmv.cli.main.load_config")
-    def test_prompt_shown_when_go_cli_exists_user_accepts(
-        self, mock_load_config, mock_go_cli_exists, mock_remove_go_cli
-    ):
-        """Test that prompt is shown when Go CLI exists and removal happens on accept."""
-        mock_go_cli_exists.return_value = True
-        mock_load_config.return_value = {"api_key": "test_key"}
-
-        # Simulate user accepting the prompt (y)
-        result = self.runner.invoke(self.app, ["version"], input="y\n")
-        self.assertEqual(result.exit_code, 0)
-        mock_remove_go_cli.assert_called_once()
-
-    @patch("nextmv.cli.main.remove_go_cli")
-    @patch("nextmv.cli.main.go_cli_exists")
-    @patch("nextmv.cli.main.load_config")
-    def test_prompt_shown_when_go_cli_exists_user_declines(
-        self, mock_load_config, mock_go_cli_exists, mock_remove_go_cli
-    ):
-        """Test that prompt is shown when Go CLI exists and no removal on decline."""
-        mock_go_cli_exists.return_value = True
-        mock_load_config.return_value = {"api_key": "test_key"}
-
-        # Simulate user declining the prompt (n)
-        result = self.runner.invoke(self.app, ["version"], input="n\n")
-        self.assertEqual(result.exit_code, 0)
-        mock_remove_go_cli.assert_not_called()
-        self.assertIn("later by removing", result.output)

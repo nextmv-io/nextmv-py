@@ -5,9 +5,9 @@ This module defines the cloud switchback delete command for the Nextmv CLI.
 from typing import Annotated
 
 import typer
-from rich.prompt import Confirm
 
 from nextmv.cli.configuration.config import build_app
+from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
 
@@ -47,10 +47,9 @@ def delete(
     """
 
     if not yes:
-        confirm = Confirm.ask(
+        confirm = get_confirmation(
             f"Are you sure you want to delete switchback test [magenta]{switchback_test_id}[/magenta] "
             f"from application [magenta]{app_id}[/magenta]? This action cannot be undone.",
-            default=False,
         )
 
         if not confirm:
