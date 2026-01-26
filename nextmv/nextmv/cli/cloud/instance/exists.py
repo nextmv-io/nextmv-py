@@ -27,10 +27,10 @@ def exists(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the instance with the ID [magenta]prod[/magenta] exists in application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud instance exists --app-id hare-app --instance-id prod[/green]
+        $ [dim]nextmv cloud instance exists --app-id hare-app --instance-id prod[/dim]
 
     - Check if the instance exists using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud instance exists --app-id hare-app --instance-id prod --profile hare[/green]
+        $ [dim]nextmv cloud instance exists --app-id hare-app --instance-id prod --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

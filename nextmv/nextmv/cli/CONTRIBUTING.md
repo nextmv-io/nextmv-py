@@ -197,14 +197,63 @@ if not yes:
         return
 ```
 
-## Formatting
+## Formatting, colors, and styles
 
-Use these Rich markup guidelines when formatting help text and messages.
+Use these Rich markup colors/styles when formatting help text and messages.
+These are the main colors/styles that can be used for highlighting/contrast (we
+limit colors to keep coloring consistent):
 
-- When talking about a command, or a command option, use the `[code]` `[/code]`
-  tags. Take this example from the help menu of the `cloud/app/delete.py` file.
-  In the command help, when referring to the `--yes` option, we use
-  `[code]--yes[/code]` to format it as code.
+- `[code]`: commands. CLI related variables. - technical things that are CLI
+  commands.
+- `[magenta]`: variable names, values, literals, etc. - mainly short technical things.
+- `[dim]`: examples. - longer technical things.
+- `[yellow]`: emphasis, highlight of special items, type contrast to
+  `[magenta]`. Use sparingly only.
+
+In any case, the best advice is to follow existing examples in the codebase to
+maintain consistency.
+
+Here are some guidelines for when to use each formatting style.
+
+- When talking about a command use the `[code]` `[/code]` tags. Consider the
+  help message of the `cloud/shadow/stop.py` file. We tell the user they can
+  delete an experiment with the `nextmv cloud shadow delete` command. The
+  formatting of that command is done using the `[code]` `[/code]` tags:
+
+  ```python
+  @app.command()
+  def stop(
+      app_id: AppIDOption,
+      shadow_test_id: ShadowTestIDOption,
+      profile: ProfileOption = None,
+  ) -> None:
+      """
+      Stops a Nextmv Cloud shadow test.
+
+      Before stopping a shadow test, it must be in a started state. Experiments
+      in a [magenta]draft[/magenta] state, that haven't started, can be deleted
+      with the [code]nextmv cloud shadow delete[/code] command.
+
+      [bold][underline]Examples[/underline][/bold]
+
+      - Stop the shadow test with the ID [magenta]hop-analysis[/magenta] from application
+        [magenta]hare-app[/magenta].
+          $ [dim]nextmv cloud shadow stop --app-id hare-app --shadow-test-id hop-analysis[/dim]
+      """
+
+      in_progress(msg="Stopping shadow test...")
+      cloud_app = build_app(app_id=app_id, profile=profile)
+      cloud_app.stop_shadow_test(shadow_test_id=shadow_test_id)
+      success(
+          f"Shadow test [magenta]{shadow_test_id}[/magenta] stopped successfully "
+          f"in application [magenta]{app_id}[/magenta]."
+      )
+  ```
+
+- When talking about a command option, there is no formatting needed. Typer
+  automatically adds coloring to options in the help menu. Take this example
+  from the help menu of the `cloud/app/delete.py` file. In the command help,
+  when referring to the `--yes` option:
 
   ```python
   @app.command()
@@ -223,16 +272,16 @@ Use these Rich markup guidelines when formatting help text and messages.
       """
       Deletes a Nextmv Cloud application.
 
-      This action is permanent and cannot be undone. Use the [code]--yes[/code]
+      This action is permanent and cannot be undone. Use the --yes
       flag to skip the confirmation prompt.
 
       [bold][underline]Examples[/underline][/bold]
 
       - Delete the application with the ID [magenta]hare-app[/magenta].
-          $ [green]nextmv cloud app delete --app-id hare-app[/green]
+          $ [dim]nextmv cloud app delete --app-id hare-app[/dim]
 
       - Delete the application with the ID [magenta]hare-app[/magenta] without confirmation prompt.
-          $ [green]nextmv cloud app delete --app-id hare-app --yes[/green]
+          $ [dim]nextmv cloud app delete --app-id hare-app --yes[/dim]
       """
   ```
 
@@ -245,6 +294,12 @@ Use these Rich markup guidelines when formatting help text and messages.
   ```python
   error(f"Input path [magenta]{input}[/magenta] does not exist.")
   ```
+
+- When talking about longer technical things, like examples for a command
+  usage, or examples of a JSON object, use the `[dim]` `[/dim]` tags. Consider
+  the examples section of the `cloud/app/delete.py` file above. The example
+  commands are formatted using the `[dim]` `[/dim]` tags. The `[dim]` tag is
+  discussed in more detail in the command documentation section below.
 
 - Links to URLs should be formatted using the `[link=URL_LINK][bold]
   [/bold][/link]` tags. Consider the main help message of the `nextmv
@@ -264,11 +319,6 @@ Use these Rich markup guidelines when formatting help text and messages.
 
   The link provided is <https://github.com/nextmv-io/community-apps>, and it will
   be applied to the text `nextmv-io/community-apps`.
-
-- Colors that can be used for highlighting (we limit colors to keep coloring consistent):
-  - `[magenta]`: variable, literals, etc. - mainly short technical things (see above).
-  - `[green]`: commands, etc. - longer technical things, or, as a type-contrast to magenta.
-  - `[yellow]`: emphasis, highlight of special items, etc. (use sparingly only).
 
 ## Command documentation
 
@@ -316,11 +366,11 @@ to use it.
       [bold][underline]Examples[/underline][/bold]
 
       - Get the application with the ID [magenta]hare-app[/magenta].
-          $ [green]nextmv cloud app get --app-id hare-app[/green]
+          $ [dim]nextmv cloud app get --app-id hare-app[/dim]
 
       - Get the application with the ID [magenta]hare-app[/magenta] and save the information to an
         [magenta]app.json[/magenta] file.
-          $ [green]nextmv cloud app get --app-id hare-app --output app.json[/green]
+          $ [dim]nextmv cloud app get --app-id hare-app --output app.json[/dim]
       """
 
       client = build_client(profile)
@@ -353,11 +403,10 @@ to use it.
 
   - The examples section is fenced with the `[bold][underline]
     [/underline][/bold]` tags.
-
   - Each example is listed as a bullet, using a hyphen (`-`).
   - Each example has a short description, followed by the command itself in a
     new line, with 4 spaces of indentation in comparison to where the hyphen is.
-  - The command itself should be formatted using the `[green]` `[/green]` tags.
+  - The command itself should be formatted using the `[dim]` `[/dim]` tags.
   - The command should start with a dollar sign (`$`), followed by a space, and
     then the actual command.
   - When an example command is too long, use a double backslash (`\\`) for line
@@ -366,8 +415,8 @@ to use it.
 
     ```text
     - Create an application with an ID and description.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --description "An application for routing hares"[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --description "An application for routing hares"[/dim]
     ```
 
 ## Command options

@@ -58,28 +58,27 @@ def create(
     """
     Create a new Nextmv Cloud application version.
 
-    Use the [code]--exist-ok[/code] flag to avoid errors when creating a
-    version with an ID that already exists. This is useful for scripts that
-    need to ensure a version exists without worrying about whether it was
-    created previously.
+    Use the --exist-ok flag to avoid errors when creating a version with an ID
+    that already exists. This is useful for scripts that need to ensure a
+    version exists without worrying about whether it was created previously.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create a version for application [magenta]hare-app[/magenta]. A random ID will be generated.
-        $ [green]nextmv cloud version create --app-id hare-app[/green]
+        $ [dim]nextmv cloud version create --app-id hare-app[/dim]
 
     - Create a version with a specific name.
-        $ [green]nextmv cloud version create --app-id hare-app --name "v1.0.0"[/green]
+        $ [dim]nextmv cloud version create --app-id hare-app --name "v1.0.0"[/dim]
 
     - Create a version with a specific ID.
-        $ [green]nextmv cloud version create --app-id hare-app --version-id v1[/green]
+        $ [dim]nextmv cloud version create --app-id hare-app --version-id v1[/dim]
 
     - Create a version with a name and description.
-        $ [green]nextmv cloud version create --app-id hare-app --name "v1.0.0" \\
-            --description "Initial release with routing optimization"[/green]
+        $ [dim]nextmv cloud version create --app-id hare-app --name "v1.0.0" \\
+            --description "Initial release with routing optimization"[/dim]
 
     - Create a version, or get it if it already exists.
-        $ [green]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/green]
+        $ [dim]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

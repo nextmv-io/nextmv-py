@@ -73,7 +73,7 @@ def create(
             "--start-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="Start time for filtering runs in [magenta]RFC 3339[/magenta] format. "
-            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
+            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
             metavar="START_TIME",
         ),
     ] = None,
@@ -83,7 +83,7 @@ def create(
             "--end-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="End time for filtering runs in [magenta]RFC 3339[/magenta] format. "
-            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
+            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
             metavar="END_TIME",
         ),
     ] = None,
@@ -101,7 +101,7 @@ def create(
         typer.Option(
             "--inputs",
             help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
-            "format: [green][{'id': 'id', 'name': 'name', 'description': 'description'}][/green].",
+            "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
             metavar="INPUTS",
         ),
     ] = None,
@@ -113,32 +113,30 @@ def create(
     An input set is a collection of inputs that can be reused across multiple
     experiments.
 
-    1. [code]--run-ids[/code]: Create from a list of existing run IDs.
-
-    2. [code]--inputs[/code]: Create from existing managed inputs in the application.
-
-    3. [code]--instance-id[/code] with [code]--start-time[/code] and [code]--end-time[/code]:
+    1. --run-ids: Create from a list of existing run IDs.
+    2. --inputs: Create from existing managed inputs in the application.
+    3. --instance-id with --start-time and --end-time:
        Create from instance runs matching the time range criteria.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create an input set for application [magenta]hare-app[/magenta] from runs.
       A random input set ID will be generated if one is not provided.
-        $ [green]nextmv cloud input-set create --app-id hare-app \\
-            --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/green]
+        $ [dim]nextmv cloud input-set create --app-id hare-app \\
+            --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/dim]
 
     - Create an input set with a specific ID.
-        $ [green]nextmv cloud input-set create --app-id hare-app --input-set-id hare-input-set \\
-            --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/green]
+        $ [dim]nextmv cloud input-set create --app-id hare-app --input-set-id hare-input-set \\
+            --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/dim]
 
     - Create an input set using existing managed inputs.
-        $ [green]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
-            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/green]
+        $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
+            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Create an input set from runs using a specific instance and time range.
-        $ [green]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
+        $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
             --instance-id hare-instance --start-time "2024-01-01T00:00:00Z" \\
-            --end-time "2024-01-31T23:59:59Z"[/green]
+            --end-time "2024-01-31T23:59:59Z"[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

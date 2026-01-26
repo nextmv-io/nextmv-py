@@ -39,12 +39,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get an input set with the ID [magenta]hare-input-set[/magenta].
-        $ [green]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set[/green]
+        $ [dim]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set[/dim]
 
     - Get an input set with the ID [magenta]hare-input-set[/magenta] and save
       the information to a [magenta]input-set.json[/magenta] file.
-        $ [green]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set \\
-            --output input-set.json[/green]
+        $ [dim]nextmv cloud input-set get --app-id hare-app --input-set-id hare-input-set \\
+            --output input-set.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

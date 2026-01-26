@@ -57,17 +57,17 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of an acceptance test.
-        $ [green]nextmv cloud acceptance update --app-id hare-app \\
-            --acceptance-test-id test-123 --name "Updated Test Name"[/green]
+        $ [dim]nextmv cloud acceptance update --app-id hare-app \\
+            --acceptance-test-id test-123 --name "Updated Test Name"[/dim]
 
     - Update the description of an acceptance test.
-        $ [green]nextmv cloud acceptance update --app-id hare-app \\
-            --acceptance-test-id test-123 --description "Updated description"[/green]
+        $ [dim]nextmv cloud acceptance update --app-id hare-app \\
+            --acceptance-test-id test-123 --description "Updated description"[/dim]
 
     - Update both name and description and save the result.
-        $ [green]nextmv cloud acceptance update --app-id hare-app \\
+        $ [dim]nextmv cloud acceptance update --app-id hare-app \\
             --acceptance-test-id test-123 --name "New Name" \\
-            --description "New description" --output updated-test.json[/green]
+            --description "New description" --output updated-test.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

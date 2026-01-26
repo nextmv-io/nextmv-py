@@ -33,17 +33,17 @@ def delete(
     Deletes a Nextmv Cloud batch experiment.
 
     This action is permanent and cannot be undone. The batch experiment and all
-    associated data, including runs, will be deleted. Use the [code]--yes[/code]
+    associated data, including runs, will be deleted. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the batch experiment with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch delete --app-id hare-app --batch-experiment-id hop-analysis[/green]
+        $ [dim]nextmv cloud batch delete --app-id hare-app --batch-experiment-id hop-analysis[/dim]
 
     - Delete the batch experiment without confirmation prompt.
-        $ [green]nextmv cloud batch delete --app-id hare-app --batch-experiment-id carrot-routes --yes[/green]
+        $ [dim]nextmv cloud batch delete --app-id hare-app --batch-experiment-id carrot-routes --yes[/dim]
     """
 
     if not yes:

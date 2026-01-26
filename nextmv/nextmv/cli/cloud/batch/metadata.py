@@ -41,14 +41,14 @@ def metadata(
 
     - Get metadata for batch experiment [magenta]bunny-warren-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id bunny-warren-optimization[/green]
+        $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id bunny-warren-optimization[/dim]
 
     - Get metadata and save to a file.
-        $ [green]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id lettuce-delivery \\
-            --output metadata.json[/green]
+        $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id lettuce-delivery \\
+            --output metadata.json[/dim]
 
     - Get metadata using a specific profile.
-        $ [green]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id hop-schedule --profile prod[/green]
+        $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id hop-schedule --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

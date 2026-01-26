@@ -143,87 +143,86 @@ def track(
     """
     Track an external run as a Nextmv Cloud application run.
 
-    Please see the help of the [code]--content-type[/code] option for details
-    on valid content types.
+    Please see the help of the --content-type option for details on valid
+    content types.
 
     If the content type is [magenta]json[/magenta] or [magenta]text[/magenta],
     then input for the run can be given through [magenta]stdin[/magenta]. The
-    [code]--input[/code] option allows you to specify a file or directory path
-    for the input, instead of using [magenta]stdin[/magenta]. In the case of
+    --input option allows you to specify a file or directory path for the
+    input, instead of using [magenta]stdin[/magenta]. In the case of
     [magenta]multi-file[/magenta] content type, the input must be given through
-    a directory specified via the [code]--input[/code] option.
+    a directory specified via the --input option.
 
-    The [code]--output[/code] option allows you to specify a file or directory
-    path for the output of the run. The behavior depends on the content type.
-    If the content type is [magenta]json[/magenta] or [magenta]text[/magenta],
-    then a file path must be provided. If the content type is
+    The --output option allows you to specify a file or directory path for the
+    output of the run. The behavior depends on the content type. If the content
+    type is [magenta]json[/magenta] or [magenta]text[/magenta], then a file
+    path must be provided. If the content type is
     [magenta]multi-file[/magenta], then a directory path must be provided.
 
     Run logs, assets, and statistics can be provided via files using the
-    [code]--logs[/code], [code]--assets[/code], and [code]--statistics[/code]
-    options, respectively. Assets and statistics must be provided as
-    [magenta]json[/magenta] files, while logs must be provided as a utf-8
-    encoded text file.
+    --logs, --assets, and --statistics options, respectively. Assets and
+    statistics must be provided as [magenta]json[/magenta] files, while logs
+    must be provided as a utf-8 encoded text file.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run via [magenta]stdin[/magenta]
       input, for an app with ID [magenta]hare-app[/magenta].
-        $ [green]cat input.json | nextmv cloud run track --app-id hare-app --status succeeded[/green]
+        $ [dim]cat input.json | nextmv cloud run track --app-id hare-app --status succeeded[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with input from an
       [magenta]input.json[/magenta] file and output from an
       [magenta]output.json[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run including logs from a
       [magenta]logs.log[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --logs logs.log[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --logs logs.log[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with assets and statistics
       from [magenta]json[/magenta] files, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --assets assets.json --statistics statistics.json[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --assets assets.json --statistics statistics.json[/dim]
 
     - Track a [magenta]failed[/magenta] run with an error message, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
-            --error-msg "Solver timed out"[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
+            --error-msg "Solver timed out"[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]text[/magenta] run with text content type,
       for an app with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.txt \\
-            --output output.txt --content-type text[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.txt \\
+            --output output.txt --content-type text[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]multi-file[/magenta] run from an
       [magenta]inputs[/magenta] directory with output to an
       [magenta]outputs[/magenta] directory, for an app with ID
       [magenta]hare-app[/magenta], using the [magenta]default[/magenta]
       instance.
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input inputs \\
-            --output outputs --content-type multi-file --instance-id default[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input inputs \\
+            --output outputs --content-type multi-file --instance-id default[/dim]
 
     - Track a [magenta]successful[/magenta] run with a name, description, and duration, for an app
       with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --name "Production run" --description "Weekly optimization" --duration 5000[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --name "Production run" --description "Weekly optimization" --duration 5000[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with all available options,
       for an app with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --logs logs.log --assets assets.json --statistics statistics.json \\
-                --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/green]
+                --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/dim]
     """
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app = build_app(app_id=app_id, profile=profile)
@@ -393,7 +392,7 @@ def resolve_input(
                 error(
                     "Input provided via [magenta]stdin[/magenta] is [magenta]json[/magenta], "
                     f"but the specified content format is {content_format.value}. "
-                    "[code]--content-format[/code] should be set to [magenta]json[/magenta]."
+                    "--content-format should be set to [magenta]json[/magenta]."
                 )
 
         except json.JSONDecodeError:
@@ -402,7 +401,7 @@ def resolve_input(
                 error(
                     "Input provided via [magenta]stdin[/magenta] is [magenta]text[/magenta], "
                     f"but the specified content format is {content_format.value}. "
-                    "[code]--content-format[/code] should be set to [magenta]text[/magenta]."
+                    "--content-format should be set to [magenta]text[/magenta]."
                 )
 
         tracked_run.input = input_data

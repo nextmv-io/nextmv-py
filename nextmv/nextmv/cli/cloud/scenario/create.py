@@ -100,7 +100,7 @@ def create(
             "--wait",
             "-w",
             help="Wait for the scenario test to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -112,21 +112,21 @@ def create(
     A scenario test allows you to run multiple scenarios with different inputs,
     instances/versions, and configurations in a single test.
 
-    Use the [code]--wait[/code] flag to wait for the scenario test to complete,
-    polling for results. Using the [code]--output[/code] flag will also
+    Use the --wait flag to wait for the scenario test to complete,
+    polling for results. Using the --output flag will also
     activate waiting, and allows you to specify a destination file for the
     results.
 
     [bold][underline]Scenarios[/underline][/bold]
 
     Scenarios are provided as [magenta]json[/magenta] objects using the
-    [code]--scenarios[/code] flag. Each scenario defines the configuration for
-    a scenario test execution.
+    --scenarios flag. Each scenario defines the configuration for a scenario
+    test execution.
 
     You can provide scenarios in three ways:
     - A single scenario as a [magenta]json[/magenta] object.
-    - Multiple scenarios by repeating the [code]--scenarios[/code] flag.
-    - Multiple scenarios as a [magenta]json[/magenta] array in a single [code]--scenarios[/code] flag.
+    - Multiple scenarios by repeating the --scenarios flag.
+    - Multiple scenarios as a [magenta]json[/magenta] array in a single --scenarios flag.
 
     Each scenario must have the following fields:
     - [magenta]instance_id[/magenta]: ID of the instance to use for this scenario (required).
@@ -142,7 +142,7 @@ def create(
         - [magenta]values[/magenta]: List of values for the configuration option.
 
     Example object format:
-    [green]{
+    [dim]{
         "instance_id": "bunny-hopper-v2",
         "scenario_input": {
             "scenario_input_type": "input_set",
@@ -157,12 +157,12 @@ def create(
                 "values": ["optimized", "balanced", "safe"]
             }
         ]
-    }[/green]
+    }[/dim]
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create a scenario test with a single scenario.
-        $ [green]SCENARIO='{
+        $ [dim]SCENARIO='{
             "instance_id": "warren-planner-v1",
             "scenario_input": {
                 "scenario_input_type": "input_set",
@@ -172,10 +172,10 @@ def create(
                 }
             }
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Spring Meadow Routes" --scenarios "$SCENARIO"[/green]
+        nextmv cloud scenario create --app-id hare-app --name "Spring Meadow Routes" --scenarios "$SCENARIO"[/dim]
 
     - Create with multiple scenarios by repeating the flag.
-        $ [green]SCENARIO1='{
+        $ [dim]SCENARIO1='{
             "instance_id": "hop-optimizer",
             "scenario_input": {
                 "scenario_input_type": "input_set",
@@ -196,10 +196,10 @@ def create(
             }
         }'
         nextmv cloud scenario create --app-id hare-app --name "Lettuce Delivery Optimization" \\
-            --scenarios "$SCENARIO1" --scenarios "$SCENARIO2"[/green]
+            --scenarios "$SCENARIO1" --scenarios "$SCENARIO2"[/dim]
 
     - Create with multiple scenarios in a single [magenta]json[/magenta] array.
-        $ [green]SCENARIOS='[
+        $ [dim]SCENARIOS='[
             {
                 "instance_id": "burrow-builder",
                 "scenario_input": {
@@ -222,10 +222,10 @@ def create(
             }
         ]'
         nextmv cloud scenario create --app-id hare-app --name "Warren Construction Plans" \\
-            --scenarios "$SCENARIOS"[/green]
+            --scenarios "$SCENARIOS"[/dim]
 
     - Create a scenario test and wait for it to complete.
-        $ [green]SCENARIO='{
+        $ [dim]SCENARIO='{
             "instance_id": "foraging-route",
             "scenario_input": {
                 "scenario_input_type": "input_set",
@@ -236,10 +236,10 @@ def create(
             }
         }'
         nextmv cloud scenario create --app-id hare-app --name "Autumn Carrot Collection" --scenarios "$SCENARIO" \\
-            --wait[/green]
+            --wait[/dim]
 
     - Create a scenario test and save the results to a file, waiting for completion.
-        $ [green]SCENARIO='{
+        $ [dim]SCENARIO='{
             "instance_id": "safe-hopper",
             "scenario_input": {
                 "scenario_input_type": "input_set",
@@ -250,10 +250,10 @@ def create(
             }
         }'
         nextmv cloud scenario create --app-id hare-app --name "Fox Avoidance Routes" --scenarios "$SCENARIO" \\
-            --output bunny-safety-results.json[/green]
+            --output bunny-safety-results.json[/dim]
 
     - Create a scenario test with configuration options.
-        $ [green]SCENARIO='{
+        $ [dim]SCENARIO='{
             "instance_id": "hop-optimizer",
             "scenario_input": {
                 "scenario_input_type": "input_set",
@@ -269,7 +269,7 @@ def create(
                 }
             ]
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/green]
+        nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

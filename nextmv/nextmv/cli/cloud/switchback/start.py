@@ -23,15 +23,15 @@ def start(
 
     Before starting a switchback test, it must be created in draft state. You
     may use the [code]nextmv cloud switchback create[/code] command to create a
-    new switchback test. Alternatively, define a [code]--start[/code] when
-    using the [code]nextmv cloud switchback create[/code] command to have the
-    switchback test start automatically at a specific time.
+    new switchback test. Alternatively, define a --start when using the
+    [code]nextmv cloud switchback create[/code] command to have the switchback
+    test start automatically at a specific time.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Start the switchback test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud switchback start --app-id hare-app --switchback-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud switchback start --app-id hare-app --switchback-test-id hop-analysis[/dim]
     """
 
     in_progress(msg="Starting switchback test...")

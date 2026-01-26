@@ -32,18 +32,18 @@ def delete(
     """
     Deletes a Nextmv Cloud acceptance test.
 
-    This action is permanent and cannot be undone. The underlying batch experiment
-    and associated data will also be deleted. Use the [code]--yes[/code] flag to skip
-    the confirmation prompt.
+    This action is permanent and cannot be undone. The underlying batch
+    experiment and associated data will also be deleted. Use the --yes flag to
+    skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the acceptance test with the ID [magenta]test-cotton-tail[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail[/green]
+        $ [dim]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail[/dim]
 
     - Delete the acceptance test without confirmation prompt.
-        $ [green]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail --yes[/green]
+        $ [dim]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail --yes[/dim]
     """
 
     if not yes:

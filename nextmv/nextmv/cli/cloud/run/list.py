@@ -43,25 +43,25 @@ def list(
     Get the list of runs for a Nextmv Cloud application.
 
     By default, the list of runs is fetched and printed to [magenta]stdout[/magenta].
-    Use the [code]--output[/code] flag to save the list to a file.
+    Use the --output flag to save the list to a file.
 
-    You can use the optional [code]--status[/code] flag to filter runs by their status.
+    You can use the optional --status flag to filter runs by their status.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta]. List is printed to [magenta]stdout[/magenta].
-        $ [green]nextmv cloud run list --app-id hare-app[/green]
+        $ [dim]nextmv cloud run list --app-id hare-app[/dim]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta]. Save the list to a
       [magenta]runs.json[/magenta] file.
-        $ [green]nextmv cloud run list --app-id hare-app --output runs.json[/green]
+        $ [dim]nextmv cloud run list --app-id hare-app --output runs.json[/dim]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta].
       Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run list --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud run list --app-id hare-app --profile hare[/dim]
 
     - Get the list of [magenta]queued[/magenta] runs for an app with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run list --app-id hare-app --status queued[/green]
+        $ [dim]nextmv cloud run list --app-id hare-app --status queued[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

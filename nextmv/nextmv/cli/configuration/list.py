@@ -22,7 +22,7 @@ def list() -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Show current configuration and all profiles.
-        $ [green]nextmv configuration list[/green]
+        $ [dim]nextmv configuration list[/dim]
     """
 
     config = load_config()

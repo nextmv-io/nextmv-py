@@ -42,7 +42,7 @@ def get(
             "--wait",
             "-w",
             help="Wait for the acceptance test to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
         ),
     ] = False,
     profile: ProfileOption = None,
@@ -50,26 +50,25 @@ def get(
     """
     Get a Nextmv Cloud acceptance test.
 
-    Use the [code]--wait[/code] flag to wait for the acceptance test to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    Use the --wait flag to wait for the acceptance test to complete, polling
+    for results. Using the --output flag will also activate waiting, and allows
+    you to specify a destination file for the results.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Get the acceptance test with ID [magenta]test-123[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123[/dim]
 
     - Get the acceptance test and wait for it to complete if necessary.
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --wait[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --wait[/dim]
 
     - Get the acceptance test and save the results to a file.
-        $ [green]nextmv cloud acceptance get --app-id hare-app \\
-            --acceptance-test-id test-123 --output results.json[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app \\
+            --acceptance-test-id test-123 --output results.json[/dim]
 
     - Get the acceptance test using a specific profile.
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

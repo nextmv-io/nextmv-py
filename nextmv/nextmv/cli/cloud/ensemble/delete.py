@@ -32,17 +32,17 @@ def delete(
     """
     Deletes a Nextmv Cloud ensemble definition.
 
-    This action is permanent and cannot be undone. Use the [code]--yes[/code]
+    This action is permanent and cannot be undone. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the ensemble definition with the ID [magenta]prod-ensemble[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble[/green]
+        $ [dim]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble[/dim]
 
     - Delete the ensemble definition without confirmation prompt.
-        $ [green]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble --yes[/green]
+        $ [dim]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble --yes[/dim]
     """
 
     if not yes:

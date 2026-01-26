@@ -33,16 +33,16 @@ def delete(
 
     You must have the [magenta]administrator[/magenta] role on that account in order to delete it.
 
-    This action is permanent and cannot be undone. Use the [code]--yes[/code]
+    This action is permanent and cannot be undone. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the account with the ID [magenta]bunnies-account[/magenta].
-        $ [green]nextmv cloud account delete --account-id bunnies-account[/green]
+        $ [dim]nextmv cloud account delete --account-id bunnies-account[/dim]
 
     - Delete the account without confirmation prompt.
-        $ [green]nextmv cloud account delete --account-id bunnies-account --yes[/green]
+        $ [dim]nextmv cloud account delete --account-id bunnies-account --yes[/dim]
     """
 
     if not yes:

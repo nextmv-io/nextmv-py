@@ -32,17 +32,17 @@ def delete(
     """
     Deletes a Nextmv Cloud secrets collection.
 
-    This action is permanent and cannot be undone. Use the [code]--yes[/code]
+    This action is permanent and cannot be undone. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the secrets collection with the ID [magenta]api-keys[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys[/green]
+        $ [dim]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys[/dim]
 
     - Delete the secrets collection without confirmation prompt.
-        $ [green]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys --yes[/green]
+        $ [dim]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys --yes[/dim]
     """
 
     if not yes:

@@ -39,12 +39,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the managed input with the ID [magenta]inp_123456789[/magenta] from application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud managed-input get --app-id hare-app --managed-input-id inp_123456789[/green]
+        $ [dim]nextmv cloud managed-input get --app-id hare-app --managed-input-id inp_123456789[/dim]
 
     - Get the managed input with the ID [magenta]inp_123456789[/magenta] and save the information to a
       [magenta]managed_input.json[/magenta] file.
-        $ [green]nextmv cloud managed-input get --app-id hare-app --managed-input-id inp_123456789 \
-            --output managed_input.json[/green]
+        $ [dim]nextmv cloud managed-input get --app-id hare-app --managed-input-id inp_123456789 \
+            --output managed_input.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

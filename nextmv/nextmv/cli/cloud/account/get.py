@@ -39,11 +39,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the account with the ID [magenta]bunny-logistics[/magenta].
-        $ [green]nextmv cloud account get --account-id bunny-logistics[/green]
+        $ [dim]nextmv cloud account get --account-id bunny-logistics[/dim]
 
     - Get the account with the ID [magenta]cottontail-couriers[/magenta] and save the information to an
       [magenta]account.json[/magenta] file.
-        $ [green]nextmv cloud account get --account-id cottontail-couriers --output account.json[/green]
+        $ [dim]nextmv cloud account get --account-id cottontail-couriers --output account.json[/dim]
     """
 
     client = build_client(profile)

@@ -39,11 +39,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the instance with the ID [magenta]prod[/magenta] from application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud instance get --app-id hare-app --instance-id prod[/green]
+        $ [dim]nextmv cloud instance get --app-id hare-app --instance-id prod[/dim]
 
     - Get the instance with the ID [magenta]prod[/magenta] and save the information to a
       [magenta]instance.json[/magenta] file.
-        $ [green]nextmv cloud instance get --app-id hare-app --instance-id prod --output instance.json[/green]
+        $ [dim]nextmv cloud instance get --app-id hare-app --instance-id prod --output instance.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

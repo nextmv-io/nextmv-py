@@ -35,13 +35,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all managed inputs of application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud managed-input list --app-id hare-app[/green]
+        $ [dim]nextmv cloud managed-input list --app-id hare-app[/dim]
 
     - List all managed inputs using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud managed-input list --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud managed-input list --app-id hare-app --profile hare[/dim]
 
     - List all managed inputs and save the information to a [magenta]managed_inputs.json[/magenta] file.
-        $ [green]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/green]
+        $ [dim]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

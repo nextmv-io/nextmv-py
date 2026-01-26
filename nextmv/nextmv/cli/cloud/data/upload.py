@@ -52,22 +52,22 @@ def upload(
     is used for starting new runs, tracking runs, performing experiments, and
     more.
 
-    The [code]--upload-url[/code] flag is required to specify the pre-signed
+    The --upload-url flag is required to specify the pre-signed
     upload URL. It can be obtained using the [code]nextmv cloud upload
     create[/code] command. Use the [magenta].upload_url[/magenta] field from
     the command output.
 
     The data input should be given through [magenta]stdin[/magenta] or the
-    [code]--input[/code] flag. When using the [code]--input[/code] flag, the
-    value can be one of the following:
+    --input flag. When using the --input flag, the value can be one of the
+    following:
 
-    - [green]<FILE_PATH>[/green]: path to a [magenta]file[/magenta] containing
+    - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
       the data. Use with the [magenta]json[/magenta], and
       [magenta]text[/magenta] content formats.
-    - [green]<DIR_PATH>[/green]: path to a [magenta]directory[/magenta]
+    - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
       containing data files. Use with the [magenta]multi-file[/magenta]
       content format.
-    - [green]<.tar.gz_PATH>[/green]: path to a [magenta].tar.gz[/magenta] file
+    - [yellow]<.tar.gz PATH>[/yellow]: path to a [magenta].tar.gz[/magenta] file
       containing tarred data files. Use with the [magenta]multi-file[/magenta]
       content format.
 
@@ -75,30 +75,30 @@ def upload(
 
     - Upload data from [magenta]stdin[/magenta] for application
       [magenta]hare-app[/magenta].
-        $ [green]echo '{"key": "value"}' | nextmv cloud data upload --app-id hare-app --upload-url <URL>[/green]
+        $ [dim]echo '{"key": "value"}' | nextmv cloud data upload --app-id hare-app --upload-url <URL>[/dim]
 
     - Upload data from a [magenta]JSON[/magenta] file.
-        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json[/green]
+        $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json[/dim]
 
     - Upload data from a [magenta]text[/magenta] file.
-        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.txt[/green]
+        $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.txt[/dim]
 
     - Upload [magenta]multi-file[/magenta] data from a directory.
-        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input ./data_directory[/green]
+        $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input ./data_directory[/dim]
 
     - Upload [magenta]multi-file[/magenta] data from a
       [magenta].tar.gz[/magenta] file.
-        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.tar.gz[/green]
+        $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.tar.gz[/dim]
 
     - Upload data using a specific profile.
-        $ [green]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json \\
-            --profile production[/green]
+        $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json \\
+            --profile production[/dim]
     """
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     data_kwarg = resolve_data_kwarg(

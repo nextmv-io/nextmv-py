@@ -68,7 +68,7 @@ def create(
             "--tail",
             "-t",
             help="Tail the logs until the run completes. Logs are streamed to [magenta]stderr[/magenta]. "
-            "Specify log output location with [code]--logs[/code].",
+            "Specify log output location with --logs.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -79,7 +79,7 @@ def create(
             "-w",
             help="Wait for the run to complete. Run result is printed to [magenta]stdout[/magenta] for "
             "[magenta]json[/magenta], to a dir for [magenta]multi-file[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -210,101 +210,100 @@ def create(
     Create a new Nextmv Cloud application run.
 
     Input for the run should be given through [magenta]stdin[/magenta] or the
-    [code]--input[/code] flag. When using the [code]--input[/code] flag, the
-    value can be one of the following:
+    --input flag. When using the --input flag, the value can be one of the
+    following:
 
-    - [green]<FILE_PATH>[/green]: path to a [magenta]file[/magenta] containing
+    - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
       the input data. Use with the [magenta]json[/magenta], and
       [magenta]text[/magenta] content formats.
-    - [green]<DIR_PATH>[/green]: path to a [magenta]directory[/magenta]
+    - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
       containing the input data files. Use with the
       [magenta]multi-file[/magenta] content format.
-    - [green]<.tar.gz_PATH>[/green]: path to a [magenta].tar.gz[/magenta] file
+    - [yellow]<.tar.gz PATH>[/yellow]: path to a [magenta].tar.gz[/magenta] file
       containing tarred input data files. Use with the
       [magenta]multi-file[/magenta] content format.
 
     The CLI determines how to send the input to the application based on the
     value.
 
-    Use the [code]--wait[/code] flag to wait for the run to complete, polling
-    for results. Using the [code]--output[/code] flag will also activate
-    waiting, and allows you to specify a destination (file or dir) for the
-    output, depending on the content type.
+    Use the --wait flag to wait for the run to complete, polling for results.
+    Using the --output flag will also activate waiting, and allows you to
+    specify a destination (file or dir) for the output, depending on the
+    content type.
 
-    Use the [code]--tail[/code] flag to stream logs to
-    [magenta]stderr[/magenta] until the run completes. Using the
-    [code]--logs[/code] flag will also activate waiting, and allows you to
-    specify a file to write the logs to.
+    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
+    run completes. Using the --logs flag will also activate waiting, and allows
+    you to specify a file to write the logs to.
 
     An application run executes against a specific instance. An instance
     represents the combination of executable code and configuration. You can
-    specify the instance with the [code]--instance-id[/code] flag. These are
-    the possible values for this flag:
+    specify the instance with the --instance-id flag. These are the possible
+    values for this flag:
 
-    - [green]latest[/green]: uses the special [magenta]latest[/magenta]
+    - [yellow]latest[/yellow]: uses the special [magenta]latest[/magenta]
       instance of the application. This corresponds to the latest pushed
       executable. This is the default behavior.
-    - [green]default[/green]: if the application has a [italic]default[/italic]
+    - [yellow]default[/yellow]: if the application has a [italic]default[/italic]
       instance configured, then it uses that instance. Setting the flag's value
-      to [code]''[/code] (empty string) has the same effect.
-    - [green]<INSTANCE_ID>[/green]: uses the instance with the given ID.
+      to [magenta]''[/magenta] (empty string) has the same effect.
+    - [yellow]<INSTANCE_ID>[/yellow]: uses the instance with the given ID.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
       and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [green]cat input.json | nextmv cloud run create --app-id hare-app[/green]
+        $ [dim]cat input.json | nextmv cloud run create --app-id hare-app[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json --wait[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --wait[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json --tail[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and submit a run to an app with
       ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance. Wait for the run to complete. Tail
       the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
       Write the result to an [magenta]output.json[/magenta] file.
-        $ [green]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
-            --output output.json [/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
+            --output output.json [/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-        $ [green]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
       Wait for the run to complete, and save the results to the default location (a directory named after the run ID).
-        $ [green]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
-        $ [green]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/green]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
     """
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the [code]--input[/code] flag or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app = build_app(app_id=app_id, profile=profile)

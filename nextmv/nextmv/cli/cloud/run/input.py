@@ -35,21 +35,21 @@ def input(
     Get the input of a Nextmv Cloud application run.
 
     By default, the input is fetched and printed to [magenta]stdout[/magenta].
-    Use the [code]--output[/code] flag to save the input to a file.
+    Use the --output flag to save the input to a file.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Input is printed to [magenta]stdout[/magenta].
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the input to a [magenta]input.json[/magenta] file.
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123 --output input.json[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123 --output input.json[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123 --profile hare[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

@@ -46,7 +46,7 @@ def get(
             "-w",
             help="Wait for the run to complete. Run result is printed to [magenta]stdout[/magenta] for "
             "[magenta]json[/magenta], to a dir for [magenta]multi-file[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
         ),
     ] = False,
     profile: ProfileOption = None,
@@ -54,8 +54,8 @@ def get(
     """
     Get the result (output) of a Nextmv Cloud application run.
 
-    Use the [code]--wait[/code] flag to wait for the run to complete, polling
-    for results. Using the [code]--output[/code] flag will also activate
+    Use the --wait flag to wait for the run to complete, polling
+    for results. Using the --output flag will also activate
     waiting, and allows you to specify a destination (file or dir) for the
     output, depending on the content type.
 
@@ -63,25 +63,25 @@ def get(
 
     - Get the results of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123[/green]
+        $ [dim]nextmv cloud run get --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the results of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Wait for the run to complete if necessary.
-        $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123 --wait[/green]
+        $ [dim]nextmv cloud run get --app-id hare-app --run-id burrow-123 --wait[/dim]
 
     - Get the results of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. The app is a [magenta]json[/magenta] app.
       Save the results to a [magenta]results.json[/magenta] file.
-        $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123 --output results.json[/green]
+        $ [dim]nextmv cloud run get --app-id hare-app --run-id burrow-123 --output results.json[/dim]
 
     - Get the results of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. The app is a [magenta]multi-file[/magenta] app.
       Save the results to the [magenta]results[/magenta] dir.
-        $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123 --output results[/green]
+        $ [dim]nextmv cloud run get --app-id hare-app --run-id burrow-123 --output results[/dim]
 
     - Get the results of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run get --app-id hare-app --run-id burrow-123 --profile hare[/green]
+        $ [dim]nextmv cloud run get --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

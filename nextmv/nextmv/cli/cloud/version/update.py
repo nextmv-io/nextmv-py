@@ -54,23 +54,23 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update a version's name.
-        $ [green]nextmv cloud version update --app-id hare-app --version-id v1 --name "Version 1.0"[/green]
+        $ [dim]nextmv cloud version update --app-id hare-app --version-id v1 --name "Version 1.0"[/dim]
 
     - Update a version's description.
-        $ [green]nextmv cloud version update --app-id hare-app --version-id v1 \\
-            --description "Initial stable release"[/green]
+        $ [dim]nextmv cloud version update --app-id hare-app --version-id v1 \\
+            --description "Initial stable release"[/dim]
 
     - Update a version's name and description at once.
-        $ [green]nextmv cloud version update --app-id hare-app --version-id v1 \\
-            --name "Version 1.0" --description "Initial stable release"[/green]
+        $ [dim]nextmv cloud version update --app-id hare-app --version-id v1 \\
+            --name "Version 1.0" --description "Initial stable release"[/dim]
 
     - Update a version and save the updated information to a [magenta]updated_version.json[/magenta] file.
-        $ [green]nextmv cloud version update --app-id hare-app --version-id v1 \\
-            --name "Version 1.0" --output updated_version.json[/green]
+        $ [dim]nextmv cloud version update --app-id hare-app --version-id v1 \\
+            --name "Version 1.0" --output updated_version.json[/dim]
     """
 
     if name is None and description is None:
-        error("Provide at least one option to update: [code]--name[/code] or [code]--description[/code].")
+        error("Provide at least one option to update: --name or --description.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     updated_version = cloud_app.update_version(

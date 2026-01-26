@@ -74,33 +74,33 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update an application's name.
-        $ [green]nextmv cloud app update --app-id hare-app --name "New Hare App"[/green]
+        $ [dim]nextmv cloud app update --app-id hare-app --name "New Hare App"[/dim]
 
     - Update an application's description.
-        $ [green]nextmv cloud app update --app-id hare-app --name "Hare App" \\
-            --description "An updated description for routing hares"[/green]
+        $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
+            --description "An updated description for routing hares"[/dim]
 
     - Update an application's default instance ID.
-        $ [green]nextmv cloud app update --app-id hare-app --name "Hare App" \\
-            --default-instance-id burrow[/green]
+        $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
+            --default-instance-id burrow[/dim]
 
     - Update an application's default experiment instance.
-        $ [green]nextmv cloud app update --app-id hare-app --name "Hare App" \\
-            --default-experiment-instance experiment-v1[/green]
+        $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
+            --default-experiment-instance experiment-v1[/dim]
 
     - Update multiple application properties at once.
-        $ [green]nextmv cloud app update --app-id hare-app --name "Hare App" \\
+        $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
             --description "Updated description" --default-instance-id burrow \\
-            --default-experiment-instance experiment-v1[/green]
+            --default-experiment-instance experiment-v1[/dim]
 
     - Update an application and save the updated information to an [magenta]updated_app.json[/magenta] file.
-        $ [green]nextmv cloud app update --app-id hare-app --name "New Hare App" --output updated_app.json[/green]
+        $ [dim]nextmv cloud app update --app-id hare-app --name "New Hare App" --output updated_app.json[/dim]
     """
 
     if name is None and description is None and default_instance_id is None and default_experiment_instance is None:
         error(
-            "Provide at least one option to update: [code]--name[/code], [code]--description[/code], "
-            "[code]--default-instance-id[/code], or [code]--default-experiment-instance[/code]."
+            "Provide at least one option to update: --name, --description, "
+            "--default-instance-id, or --default-experiment-instance."
         )
 
     cloud_app = build_app(app_id=app_id, profile=profile)

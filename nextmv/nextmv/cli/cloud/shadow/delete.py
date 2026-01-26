@@ -33,17 +33,17 @@ def delete(
     Deletes a Nextmv Cloud shadow test.
 
     This action is permanent and cannot be undone. The shadow test and all
-    associated data, including runs, will be deleted. Use the [code]--yes[/code]
+    associated data, including runs, will be deleted. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the shadow test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud shadow delete --app-id hare-app --shadow-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud shadow delete --app-id hare-app --shadow-test-id hop-analysis[/dim]
 
     - Delete the shadow test without confirmation prompt.
-        $ [green]nextmv cloud shadow delete --app-id hare-app --shadow-test-id carrot-routes --yes[/green]
+        $ [dim]nextmv cloud shadow delete --app-id hare-app --shadow-test-id carrot-routes --yes[/dim]
     """
 
     if not yes:

@@ -32,16 +32,16 @@ def delete(
     """
     Deletes a Nextmv Cloud application version.
 
-    This action is permanent and cannot be undone. Use the [code]--yes[/code]
+    This action is permanent and cannot be undone. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the version with the ID [magenta]v1[/magenta] from application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud version delete --app-id hare-app --version-id v1[/green]
+        $ [dim]nextmv cloud version delete --app-id hare-app --version-id v1[/dim]
 
     - Delete the version without confirmation prompt.
-        $ [green]nextmv cloud version delete --app-id hare-app --version-id v1 --yes[/green]
+        $ [dim]nextmv cloud version delete --app-id hare-app --version-id v1 --yes[/dim]
     """
 
     if not yes:

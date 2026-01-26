@@ -41,13 +41,13 @@ def get(
 
     - Get the secrets collection with the ID [magenta]api-keys[/magenta] from
       application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud secrets get --app-id hare-app \\
-        --secrets-collection-id api-keys[/green]
+        $ [dim]nextmv cloud secrets get --app-id hare-app \\
+        --secrets-collection-id api-keys[/dim]
 
     - Get the secrets collection with the ID [magenta]api-keys[/magenta] and
       save the information to a [magenta]secrets.json[/magenta] file.
-        $ [green]nextmv cloud secrets get --app-id hare-app \\
-            --secrets-collection-id api-keys --output secrets.json[/green]
+        $ [dim]nextmv cloud secrets get --app-id hare-app \\
+            --secrets-collection-id api-keys --output secrets.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

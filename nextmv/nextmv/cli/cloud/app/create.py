@@ -84,42 +84,41 @@ def create(
     """
     Create a new Nextmv Cloud application.
 
-    Use the [code]--exist-ok[/code] flag to avoid errors when creating an
-    application with an ID that already exists. This is useful for scripts that
-    need to ensure an application exists without worrying about whether it was
-    created previously.
+    Use the --exist-ok flag to avoid errors when creating an application with
+    an ID that already exists. This is useful for scripts that need to ensure
+    an application exists without worrying about whether it was created
+    previously.
 
-    An application can be marked as a workflow using the
-    [code]--is-workflow[/code] flag. Workflows allow for more complex
-    decision-making processes by leveraging
+    An application can be marked as a workflow using the --is-workflow flag.
+    Workflows allow for more complex decision-making processes by leveraging
     [link=https://github.com/nextmv-io/nextpipe][bold]Nextpipe[/bold][/link] to
     orchestrate multiple decision models.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create an application with the name [magenta]Hare App[/magenta]. A random ID will be generated.
-        $ [green]nextmv cloud app create --name "Hare App"[/green]
+        $ [dim]nextmv cloud app create --name "Hare App"[/dim]
 
     - Create an application with the specific ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app[/dim]
 
     - Create an application with an ID and description.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --description "An application for routing hares"[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --description "An application for routing hares"[/dim]
 
     - Create an application, or get it if it already exists.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok[/dim]
 
     - Create a workflow application.
-        $ [green]nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow[/green]
+        $ [dim]nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow[/dim]
 
     - Create an application with a default instance ID.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --default-instance-id burrow[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --default-instance-id burrow[/dim]
 
     - Create an application with a default experiment instance.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --default-experiment-instance experiment-v1[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --default-experiment-instance experiment-v1[/dim]
     """
 
     client = build_client(profile)

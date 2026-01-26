@@ -33,17 +33,17 @@ def delete(
     Deletes a Nextmv Cloud switchback test.
 
     This action is permanent and cannot be undone. The switchback test and all
-    associated data, including runs, will be deleted. Use the [code]--yes[/code]
+    associated data, including runs, will be deleted. Use the --yes
     flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the switchback test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud switchback delete --app-id hare-app --switchback-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud switchback delete --app-id hare-app --switchback-test-id hop-analysis[/dim]
 
     - Delete the switchback test without confirmation prompt.
-        $ [green]nextmv cloud switchback delete --app-id hare-app --switchback-test-id carrot-routes --yes[/green]
+        $ [dim]nextmv cloud switchback delete --app-id hare-app --switchback-test-id carrot-routes --yes[/dim]
     """
 
     if not yes:

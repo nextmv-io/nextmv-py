@@ -109,7 +109,7 @@ def create(
             "--wait",
             "-w",
             help="Wait for the batch experiment to complete. Results are printed to [magenta]stdout[/magenta]. "
-            "Specify output location with [code]--output[/code].",
+            "Specify output location with --output.",
             rich_help_panel="Output control",
         ),
     ] = False,
@@ -122,21 +122,19 @@ def create(
     configurations. Each run is defined by a combination of input, instance or
     version, and optional configuration options.
 
-    Use the [code]--wait[/code] flag to wait for the batch experiment to
-    complete, polling for results. Using the [code]--output[/code] flag will
-    also activate waiting, and allows you to specify a destination file for the
-    results.
+    Use the --wait flag to wait for the batch experiment to complete, polling
+    for results. Using the --output flag will also activate waiting, and allows
+    you to specify a destination file for the results.
 
     [bold][underline]Runs[/underline][/bold]
 
-    Runs are provided as [magenta]json[/magenta] objects using the
-    [code]--runs[/code] flag. Each run defines what input, instance/version,
-    and configuration to use.
+    Runs are provided as [magenta]json[/magenta] objects using the --runs flag.
+    Each run defines what input, instance/version, and configuration to use.
 
     You can provide runs in three ways:
     - A single run as a [magenta]json[/magenta] object.
-    - Multiple runs by repeating the [code]--runs[/code] flag.
-    - Multiple runs as a [magenta]json[/magenta] array in a single [code]--runs[/code] flag.
+    - Multiple runs by repeating the --runs flag.
+    - Multiple runs as a [magenta]json[/magenta] array in a single --runs flag.
 
     Each run must have the following fields:
     - [magenta]input_id[/magenta]: ID of the input to use for this run
@@ -146,46 +144,46 @@ def create(
     - [magenta]instance_id[/magenta] OR [magenta]version_id[/magenta]: Either an instance ID or
       version ID must be provided (at least one required).
     - [magenta]option_set[/magenta]: ID of the option set to use (optional).
-      Make sure to define the option sets using the [code]--option-sets[/code] flag.
+      Make sure to define the option sets using the --option-sets flag.
     - [magenta]input_set_id[/magenta]: ID of the input set (optional).
     - [magenta]scenario_id[/magenta]: Scenario ID if part of a scenario test (optional).
     - [magenta]repetition[/magenta]: Repetition number (optional).
 
     Object format:
-    [green]{
+    [dim]{
         "input_id": "meadow-input-a1",
         "instance_id": "bunny-hopper-v2",
         "option_set": "speed-optimized",
         "input_set_id": "spring-gardens"
-    }[/green]
+    }[/dim]
 
     [bold][underline]Option Sets[/underline][/bold]
 
     Option sets are provided as a [magenta]json[/magenta] object using the
-    [code]--option-sets[/code] flag. Option sets define named collections of
+    --option-sets flag. Option sets define named collections of
     runtime options that can be referenced by runs.
 
     The option sets object is a dictionary where keys are option set IDs and
     values are dictionaries of string key-value pairs representing the options.
 
     Object format:
-    [green]{
+    [dim]{
         "speed-optimized": {"timeout": "30", "algorithm": "fast"},
         "quality-focused": {"timeout": "300", "algorithm": "thorough"}
-    }[/green]
+    }[/dim]
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create a batch experiment with a single run.
-        $ [green]RUN='{
+        $ [dim]RUN='{
             "input_id": "carrot-patch-a",
             "instance_id": "warren-planner-v1"
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id bunny-hop-test \\
-            --name "Spring Meadow Routes" --input-set-id spring-gardens --runs "$RUN"[/green]
+            --name "Spring Meadow Routes" --input-set-id spring-gardens --runs "$RUN"[/dim]
 
     - Create with multiple runs by repeating the flag.
-        $ [green]RUN1='{
+        $ [dim]RUN1='{
             "input_id": "lettuce-field-1",
             "instance_id": "hop-optimizer"
         }'
@@ -195,10 +193,10 @@ def create(
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id lettuce-routes \\
             --name "Lettuce Delivery Optimization" --input-set-id veggie-gardens \\
-            --runs "$RUN1" --runs "$RUN2"[/green]
+            --runs "$RUN1" --runs "$RUN2"[/dim]
 
     - Create with multiple runs in a single [magenta]json[/magenta] array.
-        $ [green]RUNS='[
+        $ [dim]RUNS='[
             {
                 "input_id": "warren-zone-a",
                 "instance_id": "burrow-builder"
@@ -209,28 +207,28 @@ def create(
             }
         ]'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id warren-expansion \\
-            --name "Warren Construction Plans" --input-set-id burrow-sites --runs "$RUNS"[/green]
+            --name "Warren Construction Plans" --input-set-id burrow-sites --runs "$RUNS"[/dim]
 
     - Create a batch experiment and wait for it to complete.
-        $ [green]RUN='{
+        $ [dim]RUN='{
             "input_id": "carrot-harvest",
             "instance_id": "foraging-route"
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id harvest-time \\
             --name "Autumn Carrot Collection" --input-set-id harvest-season \\
-            --runs "$RUN" --wait[/green]
+            --runs "$RUN" --wait[/dim]
 
     - Create a batch experiment and save the results to a file, waiting for completion.
-        $ [green]RUN='{
+        $ [dim]RUN='{
             "input_id": "predator-zones",
             "instance_id": "safe-hopper"
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id safety-analysis \\
             --name "Fox Avoidance Routes" --input-set-id danger-zones \\
-            --runs "$RUN" --output bunny-safety-results.json[/green]
+            --runs "$RUN" --output bunny-safety-results.json[/dim]
 
     - Create a batch experiment with option sets.
-        $ [green]RUN1='{
+        $ [dim]RUN1='{
             "input_id": "garden-route-1",
             "instance_id": "hop-optimizer",
             "option_set": "fast-hops"
@@ -246,7 +244,7 @@ def create(
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id hop-comparison \\
             --name "Speed vs Safety Analysis" --input-set-id garden-paths \\
-            --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/green]
+            --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)
