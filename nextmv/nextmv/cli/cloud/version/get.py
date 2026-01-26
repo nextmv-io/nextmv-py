@@ -39,11 +39,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the version with the ID [magenta]v1[/magenta] from application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud version get --app-id hare-app --version-id v1[/green]
+        $ [dim]nextmv cloud version get --app-id hare-app --version-id v1[/dim]
 
     - Get the version with the ID [magenta]v1[/magenta] and save the information to a
       [magenta]version.json[/magenta] file.
-        $ [green]nextmv cloud version get --app-id hare-app --version-id v1 --output version.json[/green]
+        $ [dim]nextmv cloud version get --app-id hare-app --version-id v1 --output version.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

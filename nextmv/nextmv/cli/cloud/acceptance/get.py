@@ -58,17 +58,17 @@ def get(
 
     - Get the acceptance test with ID [magenta]test-123[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123[/dim]
 
     - Get the acceptance test and wait for it to complete if necessary.
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --wait[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --wait[/dim]
 
     - Get the acceptance test and save the results to a file.
-        $ [green]nextmv cloud acceptance get --app-id hare-app \\
-            --acceptance-test-id test-123 --output results.json[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app \\
+            --acceptance-test-id test-123 --output results.json[/dim]
 
     - Get the acceptance test using a specific profile.
-        $ [green]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/green]
+        $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

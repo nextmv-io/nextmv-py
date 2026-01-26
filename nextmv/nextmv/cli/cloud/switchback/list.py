@@ -38,13 +38,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all switchback tests for application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud switchback list --app-id hare-app[/green]
+        $ [dim]nextmv cloud switchback list --app-id hare-app[/dim]
 
     - List all switchback tests and save to a file.
-        $ [green]nextmv cloud switchback list --app-id hare-app --output tests.json[/green]
+        $ [dim]nextmv cloud switchback list --app-id hare-app --output tests.json[/dim]
 
     - List all switchback tests using a specific profile.
-        $ [green]nextmv cloud switchback list --app-id hare-app --profile prod[/green]
+        $ [dim]nextmv cloud switchback list --app-id hare-app --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

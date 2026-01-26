@@ -29,7 +29,7 @@ def stop(
 
     - Stop the shadow test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud shadow stop --app-id hare-app --shadow-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud shadow stop --app-id hare-app --shadow-test-id hop-analysis[/dim]
     """
 
     in_progress(msg="Stopping shadow test...")

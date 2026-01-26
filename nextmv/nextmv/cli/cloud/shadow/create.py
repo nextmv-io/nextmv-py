@@ -27,7 +27,7 @@ def create(
             "-c",
             help="Object mapping baseline instance IDs to a list of comparison instance IDs. "
             "Data should be valid [magenta]json[/magenta]. "
-            "Object format: [green]{'baseline_id1': ['comparison_id1', 'comparison_id2'], 'baseline_id2': ...}[/green]",
+            "Object format: [dim]{'baseline_id1': ['comparison_id1', 'comparison_id2'], 'baseline_id2': ...}[/dim]",
             metavar="COMPARISONS",
         ),
     ],
@@ -77,7 +77,7 @@ def create(
             "-r",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             help="Scheduled time for shadow test start in [magenta]RFC 3339[/magenta] format. "
-            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
+            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
             metavar="START_TIME",
         ),
     ] = None,
@@ -87,7 +87,7 @@ def create(
             "--termination-time",
             "-t",
             help="Scheduled time for shadow test end in [magenta]RFC 3339[/magenta] format. "
-            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
+            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
             metavar="TERMINATION_TIME",
         ),
@@ -103,10 +103,10 @@ def create(
     candidate lists of instance IDs to compare against the respective baseline.
 
     Here is an example comparisons object:
-    [green]{
+    [dim]{
         "baseline-instance-1": ["candidate-instance-1", "candidate-instance-2"],
         "baseline-instance-2": ["candidate-instance-3"]
-    }[/green]
+    }[/dim]
 
     You may specify the --start-time option to make the shadow test start at a
     specific time. Alternatively, you may use the [code]nextmv cloud shadow
@@ -119,18 +119,18 @@ def create(
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Create a shadow test with a baseline and two candidate instances:
-        $ [green]COMPARISONS='{
+    - Create a shadow test with a baseline and two candidate instances.
+        $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears",
                 "speedy-cottontail"
             ]
         }'
         nextmv cloud shadow create --app-id hare-app --shadow-test-id bunny-hop-shadow --name "Bunny Hop Showdown" \\
-            --comparisons "$COMPARISONS" --termination-maximum-runs 100[/green]
+            --comparisons "$COMPARISONS" --termination-maximum-runs 100[/dim]
 
-    - Create a shadow test with multiple baselines and candidates:
-        $ [green]COMPARISONS='{
+    - Create a shadow test with multiple baselines and candidates.
+        $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"
             ],
@@ -139,26 +139,26 @@ def create(
             ]
         }'
         nextmv cloud shadow create --app-id hare-app --shadow-test-id warren-race --name "Warren Race Test" \\
-            --comparisons "$COMPARISONS" --termination-maximum-runs 50[/green]
+            --comparisons "$COMPARISONS" --termination-maximum-runs 50[/dim]
 
-    - Create a shadow test with a scheduled start and termination time:
-        $ [green]COMPARISONS='{
+    - Create a shadow test with a scheduled start and termination time.
+        $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"
             ]
         }'
         nextmv cloud shadow create --app-id hare-app --shadow-test-id sunrise-hop --name "Sunrise Hop Test" \\
             --comparisons "$COMPARISONS" --start-time '2026-01-23T10:00:00Z' \\
-            --termination-time '2026-01-23T18:00:00Z' --termination-maximum-runs 20[/green]
+            --termination-time '2026-01-23T18:00:00Z' --termination-maximum-runs 20[/dim]
 
-    - Create a shadow test with a description:
-        $ [green]COMPARISONS='{
+    - Create a shadow test with a description.
+        $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"
             ]
         }'
         nextmv cloud shadow create --app-id hare-app --shadow-test-id carrot-compare --name "Carrot Comparison" \\
-            --description "Testing cool bunnies" --comparisons "$COMPARISONS" --termination-maximum-runs 10[/green]
+            --description "Testing cool bunnies" --comparisons "$COMPARISONS" --termination-maximum-runs 10[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

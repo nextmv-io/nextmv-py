@@ -39,11 +39,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the application with the ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud app get --app-id hare-app[/green]
+        $ [dim]nextmv cloud app get --app-id hare-app[/dim]
 
     - Get the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
-        $ [green]nextmv cloud app get --app-id hare-app --output app.json[/green]
+        $ [dim]nextmv cloud app get --app-id hare-app --output app.json[/dim]
     """
 
     client = build_client(profile)

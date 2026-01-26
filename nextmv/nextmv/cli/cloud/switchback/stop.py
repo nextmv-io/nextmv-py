@@ -29,7 +29,7 @@ def stop(
 
     - Stop the switchback test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud switchback stop --app-id hare-app --switchback-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud switchback stop --app-id hare-app --switchback-test-id hop-analysis[/dim]
     """
 
     in_progress(msg="Stopping switchback test...")

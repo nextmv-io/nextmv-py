@@ -27,11 +27,11 @@ def exists(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the application with the ID [magenta]hare-app[/magenta] exists.
-        $ [green]nextmv cloud app exists --app-id hare-app[/green]
+        $ [dim]nextmv cloud app exists --app-id hare-app[/dim]
 
     - Check if the application with the ID [magenta]hare-app[/magenta] exists.
       Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud app exists --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud app exists --app-id hare-app --profile hare[/dim]
     """
 
     client = build_client(profile)

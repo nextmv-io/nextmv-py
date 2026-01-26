@@ -23,10 +23,10 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an upload URL for application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud upload create --app-id hare-app[/green]
+        $ [dim]nextmv cloud upload create --app-id hare-app[/dim]
 
     - Create an upload URL for application [magenta]hare-app[/magenta] using profile [magenta]hare[/magenta].
-        $ [green]nextmv cloud upload create --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud upload create --app-id hare-app --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

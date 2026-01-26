@@ -35,13 +35,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all applications.
-        $ [green]nextmv cloud app list[/green]
+        $ [dim]nextmv cloud app list[/dim]
 
     - List all applications using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud app list --profile hare[/green]
+        $ [dim]nextmv cloud app list --profile hare[/dim]
 
     - List all applications and save the information to an [magenta]apps.json[/magenta] file.
-        $ [green]nextmv cloud app list --output apps.json[/green]
+        $ [dim]nextmv cloud app list --output apps.json[/dim]
     """
 
     client = build_client(profile)

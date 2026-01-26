@@ -43,7 +43,7 @@ def update(
         typer.Option(
             "--inputs",
             help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
-            "format: [green][{'id': 'id', 'name': 'name', 'description': 'description'}][/green].",
+            "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
             metavar="INPUTS",
         ),
     ] = None,
@@ -67,24 +67,24 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update an input set's name.
-        $ [green]nextmv cloud input-set update --app-id hare-app \\
-            --input-set-id hare-input-set --name "New Name"[/green]
+        $ [dim]nextmv cloud input-set update --app-id hare-app \\
+            --input-set-id hare-input-set --name "New Name"[/dim]
 
     - Update an input set's description.
-        $ [green]nextmv cloud input-set update --app-id hare-app \\
-            --input-set-id hare-input-set --description "Updated description"[/green]
+        $ [dim]nextmv cloud input-set update --app-id hare-app \\
+            --input-set-id hare-input-set --description "Updated description"[/dim]
 
     - Update an input set's inputs.
-        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
-            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/green]
+        $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
+            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Update both name and description.
-        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
-            --name "New Name" --description "Updated description"[/green]
+        $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
+            --name "New Name" --description "Updated description"[/dim]
 
     - Update and save to a file.
-        $ [green]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
-            --name "New Name" --output updated_input_set.json[/green]
+        $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
+            --name "New Name" --output updated_input_set.json[/dim]
     """
 
     if name is None and description is None and inputs is None:

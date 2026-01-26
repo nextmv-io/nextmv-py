@@ -138,28 +138,28 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an instance for application [magenta]hare-app[/magenta] version [magenta]v1[/magenta].
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 --instance-id prod[/green]
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 --instance-id prod[/dim]
 
     - Create an instance with a specific name.
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
-            --instance-id prod --name "Production Instance"[/green]
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --name "Production Instance"[/dim]
 
     - Create an instance with a name and description.
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 \\
             --instance-id prod --name "Production Instance" \\
-            --description "Instance for production routing jobs"[/green]
+            --description "Instance for production routing jobs"[/dim]
 
     - Create an instance, or get it if it already exists.
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
-            --instance-id prod --exist-ok[/green]
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --exist-ok[/dim]
 
     - Create an instance with configuration options.
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
-            --instance-id prod --execution-class 6c9500mb870s --priority 1[/green]
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --execution-class 6c9500mb870s --priority 1[/dim]
 
     - Create an instance with runtime options.
-        $ [green]nextmv cloud instance create --app-id hare-app --version-id v1 \\
-            --instance-id prod --options max_duration=30 --options timeout=60[/green]
+        $ [dim]nextmv cloud instance create --app-id hare-app --version-id v1 \\
+            --instance-id prod --options max_duration=30 --options timeout=60[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

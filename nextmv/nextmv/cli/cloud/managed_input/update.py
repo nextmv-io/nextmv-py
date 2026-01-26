@@ -54,20 +54,20 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update a managed input's name.
-        $ [green]nextmv cloud managed-input update --app-id hare-app \
-            --managed-input-id inp_123456789 --name "Updated Test Input"[/green]
+        $ [dim]nextmv cloud managed-input update --app-id hare-app \
+            --managed-input-id inp_123456789 --name "Updated Test Input"[/dim]
 
     - Update a managed input's description.
-        $ [green]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
-            --description "Updated test case for validation"[/green]
+        $ [dim]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
+            --description "Updated test case for validation"[/dim]
 
     - Update a managed input's name and description at once.
-        $ [green]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
-            --name "Updated Test Input" --description "Updated test case for validation"[/green]
+        $ [dim]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
+            --name "Updated Test Input" --description "Updated test case for validation"[/dim]
 
     - Update a managed input and save the updated information to a [magenta]updated_managed_input.json[/magenta] file.
-        $ [green]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
-            --name "Updated Test Input" --output updated_managed_input.json[/green]
+        $ [dim]nextmv cloud managed-input update --app-id hare-app --managed-input-id inp_123456789 \\
+            --name "Updated Test Input" --output updated_managed_input.json[/dim]
     """
 
     if name is None and description is None:

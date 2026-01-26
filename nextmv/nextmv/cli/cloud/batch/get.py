@@ -59,17 +59,17 @@ def get(
 
     - Get the batch experiment with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id carrot-optimization[/green]
+        $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id carrot-optimization[/dim]
 
     - Get the batch experiment and wait for it to complete if necessary.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id bunny-hop-test --wait[/green]
+        $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id bunny-hop-test --wait[/dim]
 
     - Get the batch experiment and save the results to a file.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id warren-planning \\
-            --output results.json[/green]
+        $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id warren-planning \\
+            --output results.json[/dim]
 
     - Get the batch experiment using a specific profile.
-        $ [green]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/green]
+        $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

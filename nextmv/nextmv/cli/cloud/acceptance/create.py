@@ -55,7 +55,7 @@ app = typer.Typer()
     - [magenta]statistic[/magenta]: Statistical method. Allowed values: {enum_values(StatisticType)}.
 
     Object format:
-    [green]{{
+    [dim]{{
         "field": "field",
         "metric_type": "type",
         "params": {{
@@ -66,12 +66,12 @@ app = typer.Typer()
             }}
         }},
         "statistic": "statistic"
-    }}[/green]
+    }}[/dim]
 
     [bold][underline]Examples[/underline][/bold]
 
     - Create an acceptance test with a single metric.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "solution.objective",
             "metric_type": "direct-comparison",
             "params": {{
@@ -82,10 +82,10 @@ app = typer.Typer()
         }}'
         nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
-            --metrics "$METRIC" --input-set-id input-set-123[/green]
+            --metrics "$METRIC" --input-set-id input-set-123[/dim]
 
     - Create with multiple metrics by repeating the flag.
-        $ [green]METRIC1='{{
+        $ [dim]METRIC1='{{
             "field": "solution.objective",
             "metric_type": "direct-comparison",
             "params": {{
@@ -105,10 +105,10 @@ app = typer.Typer()
         }}'
         nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
-            --metrics "$METRIC1" --metrics "$METRIC2" --input-set-id input-set-123[/green]
+            --metrics "$METRIC1" --metrics "$METRIC2" --input-set-id input-set-123[/dim]
 
     - Create with multiple metrics in a single [magenta]json[/magenta] array.
-        $ [green]METRICS='[
+        $ [dim]METRICS='[
             {{
                 "field": "solution.objective",
                 "metric_type": "direct-comparison",
@@ -130,10 +130,10 @@ app = typer.Typer()
         ]'
         nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
-            --metrics "$METRICS" --input-set-id input-set-123[/green]
+            --metrics "$METRICS" --input-set-id input-set-123[/dim]
 
     - Create an acceptance test and wait for it to complete.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "solution.objective",
             "metric_type": "direct-comparison",
             "params": {{
@@ -144,10 +144,10 @@ app = typer.Typer()
         }}'
         nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
-            --metrics "$METRIC" --input-set-id input-set-123 --wait[/green]
+            --metrics "$METRIC" --input-set-id input-set-123 --wait[/dim]
 
     - Create an acceptance test and save the results to a file, waiting for completion.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "solution.objective",
             "metric_type": "direct-comparison",
             "params": {{
@@ -158,7 +158,7 @@ app = typer.Typer()
         }}'
         nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
-            --metrics "$METRIC" --input-set-id input-set-123 --output results.json[/green]
+            --metrics "$METRIC" --input-set-id input-set-123 --output results.json[/dim]
     """
 )
 def create(

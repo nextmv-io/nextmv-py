@@ -97,29 +97,29 @@ def push(
     [bold][underline]Examples[/underline][/bold]
 
     - Push an application, with ID [magenta]hare-app[/magenta], from the current directory.
-        $ [green]nextmv cloud app push --app-id hare-app[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app[/dim]
 
     - Push an application, with ID [magenta]hare-app[/magenta], from the [magenta]./my-app[/magenta] directory.
-        $ [green]nextmv cloud app push --app-id hare-app --app-dir ./my-app[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app --app-dir ./my-app[/dim]
 
     - Push an application, with ID [magenta]hare-app[/magenta], using a custom manifest file.
-        $ [green]nextmv cloud app push --app-id hare-app --manifest ./custom-manifest.yaml[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app --manifest ./custom-manifest.yaml[/dim]
 
     - Push an application, with ID [magenta]hare-app[/magenta], from a specific
       [magenta]./my-app[/magenta] directory with a custom manifest under [magenta]./custom-manifest.yaml[/magenta].
-        $ [green]nextmv cloud app push --app-id hare-app --app-dir ./my-app \\
-            --manifest ./custom-manifest.yaml[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app --app-dir ./my-app \\
+            --manifest ./custom-manifest.yaml[/dim]
 
     - Push an application without creating a new version.
-        $ [green]nextmv cloud app push --app-id hare-app --no-version[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app --no-version[/dim]
 
     - Push an application with a custom version ID.
-        $ [green]nextmv cloud app push --app-id hare-app --version-id v1.0.0[/green]
+        $ [dim]nextmv cloud app push --app-id hare-app --version-id v1.0.0[/dim]
 
     - Push an application with custom version ID, name, and description.
-        $ [green]nextmv cloud app push --app-id hare-app --version-id v1.0.0 \\
+        $ [dim]nextmv cloud app push --app-id hare-app --version-id v1.0.0 \\
             --version-name "Release 1.0.0" \\
-            --version-description "First stable release"[/green]
+            --version-description "First stable release"[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

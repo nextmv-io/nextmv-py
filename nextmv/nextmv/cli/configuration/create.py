@@ -58,10 +58,10 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Default configuration.
-        $ [green]nextmv configuration create --api-key NEXTMV_API_KEY[/green]
+        $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY[/dim]
 
     - Configure a profile named [magenta]hare[/magenta].
-        $ [green]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/green]
+        $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":

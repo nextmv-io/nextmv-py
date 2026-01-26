@@ -18,7 +18,7 @@ def version() -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Show the version.
-        $ [green]nextmv version[/green]
+        $ [dim]nextmv version[/dim]
     """
 
     version_callback(True)

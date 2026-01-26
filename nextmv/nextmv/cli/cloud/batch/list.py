@@ -38,13 +38,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all batch experiments for application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud batch list --app-id hare-app[/green]
+        $ [dim]nextmv cloud batch list --app-id hare-app[/dim]
 
     - List all batch experiments and save to a file.
-        $ [green]nextmv cloud batch list --app-id hare-app --output experiments.json[/green]
+        $ [dim]nextmv cloud batch list --app-id hare-app --output experiments.json[/dim]
 
     - List all batch experiments using a specific profile.
-        $ [green]nextmv cloud batch list --app-id hare-app --profile prod[/green]
+        $ [dim]nextmv cloud batch list --app-id hare-app --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

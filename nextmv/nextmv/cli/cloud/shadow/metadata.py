@@ -41,14 +41,14 @@ def metadata(
 
     - Get metadata for shadow test [magenta]bunny-warren-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id bunny-warren-optimization[/green]
+        $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id bunny-warren-optimization[/dim]
 
     - Get metadata and save to a file.
-        $ [green]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id lettuce-delivery \\
-            --output metadata.json[/green]
+        $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id lettuce-delivery \\
+            --output metadata.json[/dim]
 
     - Get metadata using a specific profile.
-        $ [green]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id hop-schedule --profile prod[/green]
+        $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id hop-schedule --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

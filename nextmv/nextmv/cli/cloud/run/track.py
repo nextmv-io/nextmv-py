@@ -168,55 +168,55 @@ def track(
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run via [magenta]stdin[/magenta]
       input, for an app with ID [magenta]hare-app[/magenta].
-        $ [green]cat input.json | nextmv cloud run track --app-id hare-app --status succeeded[/green]
+        $ [dim]cat input.json | nextmv cloud run track --app-id hare-app --status succeeded[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with input from an
       [magenta]input.json[/magenta] file and output from an
       [magenta]output.json[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run including logs from a
       [magenta]logs.log[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --logs logs.log[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --logs logs.log[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with assets and statistics
       from [magenta]json[/magenta] files, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --assets assets.json --statistics statistics.json[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --assets assets.json --statistics statistics.json[/dim]
 
     - Track a [magenta]failed[/magenta] run with an error message, for an app with ID
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
-            --error-msg "Solver timed out"[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
+            --error-msg "Solver timed out"[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]text[/magenta] run with text content type,
       for an app with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.txt \\
-            --output output.txt --content-type text[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.txt \\
+            --output output.txt --content-type text[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]multi-file[/magenta] run from an
       [magenta]inputs[/magenta] directory with output to an
       [magenta]outputs[/magenta] directory, for an app with ID
       [magenta]hare-app[/magenta], using the [magenta]default[/magenta]
       instance.
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input inputs \\
-            --output outputs --content-type multi-file --instance-id default[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input inputs \\
+            --output outputs --content-type multi-file --instance-id default[/dim]
 
     - Track a [magenta]successful[/magenta] run with a name, description, and duration, for an app
       with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --name "Production run" --description "Weekly optimization" --duration 5000[/green]
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+            --output output.json --name "Production run" --description "Weekly optimization" --duration 5000[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with all available options,
       for an app with ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
+        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --logs logs.log --assets assets.json --statistics statistics.json \\
-                --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/green]
+                --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/dim]
     """
 
     # Validate that input is provided.

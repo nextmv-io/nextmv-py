@@ -37,10 +37,10 @@ def get(
 
     - Get the shadow test with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud shadow get --app-id hare-app --shadow-test-id carrot-optimization[/green]
+        $ [dim]nextmv cloud shadow get --app-id hare-app --shadow-test-id carrot-optimization[/dim]
 
     - Get the shadow test using a specific profile.
-        $ [green]nextmv cloud shadow get --app-id hare-app --shadow-test-id lettuce-routes --profile prod[/green]
+        $ [dim]nextmv cloud shadow get --app-id hare-app --shadow-test-id lettuce-routes --profile prod[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

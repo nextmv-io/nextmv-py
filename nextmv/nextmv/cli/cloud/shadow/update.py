@@ -57,17 +57,17 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of a shadow test.
-        $ [green]nextmv cloud shadow update --app-id hare-app --shadow-test-id carrot-feast \\
-            --name "Spring Carrot Harvest"[/green]
+        $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id carrot-feast \\
+            --name "Spring Carrot Harvest"[/dim]
 
     - Update the description of a shadow test.
-        $ [green]nextmv cloud shadow update --app-id hare-app --shadow-test-id bunny-hop-routes \\
-            --description "Optimizing hop paths through the meadow"[/green]
+        $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id bunny-hop-routes \\
+            --description "Optimizing hop paths through the meadow"[/dim]
 
     - Update both name and description and save the result.
-        $ [green]nextmv cloud shadow update --app-id hare-app --shadow-test-id lettuce-delivery \\
+        $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id lettuce-delivery \\
             --name "Warren Lettuce Express" --description "Fast lettuce delivery to all burrows" \\
-            --output updated-shadow-test.json[/green]
+            --output updated-shadow-test.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

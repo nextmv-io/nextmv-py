@@ -38,13 +38,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all input sets of application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud input-set list --app-id hare-app[/green]
+        $ [dim]nextmv cloud input-set list --app-id hare-app[/dim]
 
     - List all input sets using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud input-set list --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud input-set list --app-id hare-app --profile hare[/dim]
 
     - List all input sets and save the information to a [magenta]input-sets.json[/magenta] file.
-        $ [green]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/green]
+        $ [dim]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

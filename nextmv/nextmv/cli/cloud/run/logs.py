@@ -62,23 +62,23 @@ def logs(
 
     - Get the logs of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Logs are printed to [magenta]stderr[/magenta].
-        $ [green]nextmv cloud run logs --app-id hare-app --run-id burrow-123[/green]
+        $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the logs of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Tail the logs until the run completes.
-        $ [green]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --tail[/green]
+        $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --tail[/dim]
 
     - Get the logs of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the logs to a [magenta]logs.log[/magenta] file.
-        $ [green]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --output logs.log[/green]
+        $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --output logs.log[/dim]
 
     - Get the logs of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Tail the logs and save them to a [magenta]logs.log[/magenta] file.
-        $ [green]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --tail --output logs.log[/green]
+        $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --tail --output logs.log[/dim]
 
     - Get the logs of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --profile hare[/green]
+        $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

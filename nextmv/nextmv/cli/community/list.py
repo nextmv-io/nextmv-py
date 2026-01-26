@@ -44,19 +44,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List the available community apps.
-        $ [green]nextmv community list[/green]
+        $ [dim]nextmv community list[/dim]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app.
-        $ [green]nextmv community list --app go-nextroute[/green]
+        $ [dim]nextmv community list --app go-nextroute[/dim]
 
     - List the names of the available community apps as a flat list.
-        $ [green]nextmv community list --flat[/green]
+        $ [dim]nextmv community list --flat[/dim]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app as a flat list.
-        $ [green]nextmv community list --app go-nextroute --flat[/green]
+        $ [dim]nextmv community list --app go-nextroute --flat[/dim]
 
     - List the available community apps using a profile named [magenta]hare[/magenta].
-        $ [green]nextmv community list --profile hare[/green]
+        $ [dim]nextmv community list --profile hare[/dim]
     """
 
     if app is not None and app == "":

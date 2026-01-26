@@ -58,23 +58,23 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of an ensemble definition.
-        $ [green]nextmv cloud ensemble update --app-id hare-app \\
-            --ensemble-definition-id prod-ensemble --name "Updated Production Ensemble"[/green]
+        $ [dim]nextmv cloud ensemble update --app-id hare-app \\
+            --ensemble-definition-id prod-ensemble --name "Updated Production Ensemble"[/dim]
 
     - Update the description of an ensemble definition.
-        $ [green]nextmv cloud ensemble update --app-id hare-app \\
+        $ [dim]nextmv cloud ensemble update --app-id hare-app \\
             --ensemble-definition-id prod-ensemble \\
-            --description "Updated ensemble for production workloads"[/green]
+            --description "Updated ensemble for production workloads"[/dim]
 
     - Update both name and description.
-        $ [green]nextmv cloud ensemble update --app-id hare-app \\
+        $ [dim]nextmv cloud ensemble update --app-id hare-app \\
             --ensemble-definition-id prod-ensemble --name "Production Ensemble v2" \\
-            --description "Enhanced ensemble configuration for production"[/green]
+            --description "Enhanced ensemble configuration for production"[/dim]
 
     - Update and save the result to a file.
-        $ [green]nextmv cloud ensemble update --app-id hare-app \\
+        $ [dim]nextmv cloud ensemble update --app-id hare-app \\
             --ensemble-definition-id prod-ensemble --name "New Name" \\
-            --description "New Description" --output updated.json[/green]
+            --description "New Description" --output updated.json[/dim]
     """
 
     if name is None and description is None:

@@ -41,15 +41,15 @@ def input(
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Input is printed to [magenta]stdout[/magenta].
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the input to a [magenta]input.json[/magenta] file.
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123 --output input.json[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123 --output input.json[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud run input --app-id hare-app --run-id burrow-123 --profile hare[/green]
+        $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

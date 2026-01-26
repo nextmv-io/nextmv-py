@@ -35,13 +35,13 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all versions of application [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud version list --app-id hare-app[/green]
+        $ [dim]nextmv cloud version list --app-id hare-app[/dim]
 
     - List all versions using the profile named [magenta]hare[/magenta].
-        $ [green]nextmv cloud version list --app-id hare-app --profile hare[/green]
+        $ [dim]nextmv cloud version list --app-id hare-app --profile hare[/dim]
 
     - List all versions and save the information to a [magenta]versions.json[/magenta] file.
-        $ [green]nextmv cloud version list --app-id hare-app --output versions.json[/green]
+        $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
     """
 
     cloud_app = build_app(app_id=app_id, profile=profile)

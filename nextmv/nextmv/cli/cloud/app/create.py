@@ -97,28 +97,28 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an application with the name [magenta]Hare App[/magenta]. A random ID will be generated.
-        $ [green]nextmv cloud app create --name "Hare App"[/green]
+        $ [dim]nextmv cloud app create --name "Hare App"[/dim]
 
     - Create an application with the specific ID [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app[/dim]
 
     - Create an application with an ID and description.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --description "An application for routing hares"[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --description "An application for routing hares"[/dim]
 
     - Create an application, or get it if it already exists.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok[/dim]
 
     - Create a workflow application.
-        $ [green]nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow[/green]
+        $ [dim]nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow[/dim]
 
     - Create an application with a default instance ID.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --default-instance-id burrow[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --default-instance-id burrow[/dim]
 
     - Create an application with a default experiment instance.
-        $ [green]nextmv cloud app create --name "Hare App" --app-id hare-app \\
-            --default-experiment-instance experiment-v1[/green]
+        $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
+            --default-experiment-instance experiment-v1[/dim]
     """
 
     client = build_client(profile)

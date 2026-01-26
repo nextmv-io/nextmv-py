@@ -132,30 +132,30 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update an instance's name.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod --name "Production Instance"[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod --name "Production Instance"[/dim]
 
     - Update an instance's description.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
-            --description "Instance for production routing jobs"[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --description "Instance for production routing jobs"[/dim]
 
     - Update an instance to use a different version.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod --version-id v2[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod --version-id v2[/dim]
 
     - Update an instance's name and description at once.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
-            --name "Production Instance" --description "Instance for production routing jobs"[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --name "Production Instance" --description "Instance for production routing jobs"[/dim]
 
     - Update an instance and save the updated information to a [magenta]updated_instance.json[/magenta] file.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
-            --name "Production Instance" --output updated_instance.json[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --name "Production Instance" --output updated_instance.json[/dim]
 
     - Update an instance's execution class and priority.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
-            --execution-class 6c9500mb870s --priority 1[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --execution-class 6c9500mb870s --priority 1[/dim]
 
     - Update an instance's runtime options.
-        $ [green]nextmv cloud instance update --app-id hare-app --instance-id prod \\
-            --options max_duration=30 --options timeout=60[/green]
+        $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
+            --options max_duration=30 --options timeout=60[/dim]
     """
 
     # Check if any configuration options are provided

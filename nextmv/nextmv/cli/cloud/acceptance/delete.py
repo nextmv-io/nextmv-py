@@ -40,10 +40,10 @@ def delete(
 
     - Delete the acceptance test with the ID [magenta]test-cotton-tail[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail[/green]
+        $ [dim]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail[/dim]
 
     - Delete the acceptance test without confirmation prompt.
-        $ [green]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail --yes[/green]
+        $ [dim]nextmv cloud acceptance delete --app-id hare-app --acceptance-test-id test-cotton-tail --yes[/dim]
     """
 
     if not yes:

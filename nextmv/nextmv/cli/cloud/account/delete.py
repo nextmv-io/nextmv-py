@@ -39,10 +39,10 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the account with the ID [magenta]bunnies-account[/magenta].
-        $ [green]nextmv cloud account delete --account-id bunnies-account[/green]
+        $ [dim]nextmv cloud account delete --account-id bunnies-account[/dim]
 
     - Delete the account without confirmation prompt.
-        $ [green]nextmv cloud account delete --account-id bunnies-account --yes[/green]
+        $ [dim]nextmv cloud account delete --account-id bunnies-account --yes[/dim]
     """
 
     if not yes:

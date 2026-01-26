@@ -40,10 +40,10 @@ def delete(
 
     - Delete the scenario test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
-        $ [green]nextmv cloud scenario delete --app-id hare-app --scenario-test-id hop-analysis[/green]
+        $ [dim]nextmv cloud scenario delete --app-id hare-app --scenario-test-id hop-analysis[/dim]
 
     - Delete the scenario test without confirmation prompt.
-        $ [green]nextmv cloud scenario delete --app-id hare-app --scenario-test-id carrot-routes --yes[/green]
+        $ [dim]nextmv cloud scenario delete --app-id hare-app --scenario-test-id carrot-routes --yes[/dim]
     """
 
     if not yes:
