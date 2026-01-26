@@ -43,7 +43,7 @@ def update(
         typer.Option(
             "--inputs",
             help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
-            "format: [magenta][{'id': 'id', 'name': 'name', 'description': 'description'}][/magenta].",
+            "format: [green][{'id': 'id', 'name': 'name', 'description': 'description'}][/green].",
             metavar="INPUTS",
         ),
     ] = None,

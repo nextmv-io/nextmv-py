@@ -190,3 +190,31 @@ SecretsCollectionIDOption = Annotated[
         metavar="SECRETS_COLLECTION_ID",
     ),
 ]
+
+# shadow_test_id option - can be used in any command that requires a shadow test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# shadow_test_id: ShadowTestIDOption
+ShadowTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--shadow-test-id",
+        "-s",
+        help="The Nextmv Cloud shadow test ID to use for this action.",
+        envvar="NEXTMV_SHADOW_TEST_ID",
+        metavar="SHADOW_TEST_ID",
+    ),
+]
+
+# switchback_test_id option - can be used in any command that requires a switchback test ID.
+# Define it as follows in commands or callbacks, as necessary:
+# switchback_test_id: SwitchbackTestIDOption
+SwitchbackTestIDOption = Annotated[
+    str,
+    typer.Option(
+        "--switchback-test-id",
+        "-s",
+        help="The Nextmv Cloud switchback test ID to use for this action.",
+        envvar="NEXTMV_SWITCHBACK_TEST_ID",
+        metavar="SWITCHBACK_TEST_ID",
+    ),
+]

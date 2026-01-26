@@ -41,6 +41,8 @@ from nextmv.cloud.application._instance import ApplicationInstanceMixin
 from nextmv.cloud.application._managed_input import ApplicationManagedInputMixin
 from nextmv.cloud.application._run import ApplicationRunMixin
 from nextmv.cloud.application._secrets import ApplicationSecretsMixin
+from nextmv.cloud.application._shadow import ApplicationShadowMixin
+from nextmv.cloud.application._switchback import ApplicationSwitchbackMixin
 from nextmv.cloud.application._utils import _is_not_exist_error
 from nextmv.cloud.application._version import ApplicationVersionMixin
 from nextmv.cloud.client import Client
@@ -100,6 +102,8 @@ class Application(
     ApplicationVersionMixin,
     ApplicationInputSetMixin,
     ApplicationManagedInputMixin,
+    ApplicationShadowMixin,
+    ApplicationSwitchbackMixin,
 ):
     """
     A published decision model that can be executed.

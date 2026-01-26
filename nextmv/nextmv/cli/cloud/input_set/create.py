@@ -72,7 +72,8 @@ def create(
         typer.Option(
             "--start-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
-            help="Start time for filtering runs. (example: [magenta]'2024-01-01T00:00:00Z'[/magenta])",
+            help="Start time for filtering runs in [magenta]RFC 3339[/magenta] format. "
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="START_TIME",
         ),
     ] = None,
@@ -81,7 +82,8 @@ def create(
         typer.Option(
             "--end-time",
             formats=["%Y-%m-%dT%H:%M:%S%z"],
-            help="End time for filtering runs. (example: [magenta]'2024-01-01T00:00:00Z'[/magenta])",
+            help="End time for filtering runs in [magenta]RFC 3339[/magenta] format. "
+            "Object format: [green]'2024-01-01T00:00:00Z'[/green]",
             metavar="END_TIME",
         ),
     ] = None,
@@ -99,7 +101,7 @@ def create(
         typer.Option(
             "--inputs",
             help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
-            "format: [magenta][{'id': 'id', 'name': 'name', 'description': 'description'}][/magenta].",
+            "format: [green][{'id': 'id', 'name': 'name', 'description': 'description'}][/green].",
             metavar="INPUTS",
         ),
     ] = None,

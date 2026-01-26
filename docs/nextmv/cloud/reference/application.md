@@ -46,6 +46,14 @@ These mixins extend the `Application` class with specific capabilities.
 
 ::: nextmv.nextmv.cloud.application._secrets
 
+### Shadow Test Management
+
+::: nextmv.nextmv.cloud.application._shadow
+
+### Switchback Test Management
+
+::: nextmv.nextmv.cloud.application._switchback
+
 ### Version Management
 
 ::: nextmv.nextmv.cloud.application._version

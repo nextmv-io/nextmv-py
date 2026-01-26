@@ -90,6 +90,16 @@ from .secrets import Secret as Secret
 from .secrets import SecretsCollection as SecretsCollection
 from .secrets import SecretsCollectionSummary as SecretsCollectionSummary
 from .secrets import SecretType as SecretType
+from .shadow import ShadowTest as ShadowTest
+from .shadow import ShadowTestMetadata as ShadowTestMetadata
+from .shadow import StartEvents as StartEvents
+from .shadow import TerminationEvents as TerminationEvents
+from .shadow import TestComparison as TestComparison
+from .switchback import SwitchbackPlan as SwitchbackPlan
+from .switchback import SwitchbackPlanUnit as SwitchbackPlanUnit
+from .switchback import SwitchbackTest as SwitchbackTest
+from .switchback import SwitchbackTestMetadata as SwitchbackTestMetadata
+from .switchback import TestComparisonSingle as TestComparisonSingle
 from .url import DownloadURL as DownloadURL
 from .url import UploadURL as UploadURL
 from .version import Version as Version
