@@ -96,13 +96,13 @@ def create(
             metavar="MAXIMUM_RUNS",
         ),
     ] = 20,
-    inputs: Annotated[
+    managed_inputs: Annotated[
         str | None,
         typer.Option(
-            "--inputs",
-            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
+            "--managed-inputs",
+            help="Managed inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
             "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
-            metavar="INPUTS",
+            metavar="MANAGED_INPUTS",
         ),
     ] = None,
     profile: ProfileOption = None,
@@ -114,7 +114,7 @@ def create(
     experiments.
 
     1. --run-ids: Create from a list of existing run IDs.
-    2. --inputs: Create from existing managed inputs in the application.
+    2. --managed-inputs: Create from existing managed inputs in the application.
     3. --instance-id with --start-time and --end-time:
        Create from instance runs matching the time range criteria.
 
@@ -131,7 +131,7 @@ def create(
 
     - Create an input set using existing managed inputs.
         $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
-            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
+            --managed-inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Create an input set from runs using a specific instance and time range.
         $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
@@ -147,8 +147,8 @@ def create(
         input_set_id = safe_id("input-set")
 
     managed_inputs = []
-    if inputs is not None:
-        for d in json.loads(inputs):
+    if managed_inputs is not None:
+        for d in json.loads(managed_inputs):
             i = ManagedInput.from_dict(d)
             if i is None:
                 error(f"[magenta]{d}[/magenta] is not a valid [yellow]ManagedInput[/yellow]")
