@@ -48,7 +48,7 @@ def get_confirmation(msg: str, timeout: int = 30) -> bool:
         return result_queue.get(timeout=float(timeout))
 
     except queue.Empty:
-        print("\n", file=sys.stderr)
+        print("", file=sys.stderr)
         info(
             msg=f"No response received within [magenta]{timeout}s[/magenta], assuming no ([magenta]n[/magenta]).",
             emoji=":bulb:",
