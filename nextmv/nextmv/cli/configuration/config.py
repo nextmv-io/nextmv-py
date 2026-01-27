@@ -7,7 +7,8 @@ from typing import Any
 
 import yaml
 
-from nextmv.cli.message import error
+from nextmv.cli.confirm import get_confirmation
+from nextmv.cli.message import error, success, warning
 from nextmv.cloud.account import Account
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
@@ -161,13 +162,21 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
     """
     client = build_client(profile)
     exists = Application.exists(client=client, id=app_id)
-    if not exists:
+    if exists:
+        return Application(client=client, id=app_id)
+
+    warning(f"Application with ID [magenta]{app_id}[/magenta] does not exist.")
+    should_create = get_confirmation(f"Do you want to create a new application with ID [magenta]{app_id}[/magenta]?")
+    if not should_create:
         error(
-            f"Application with ID [magenta]{app_id}[/magenta] does not exist. "
-            "Use [code]nextmv cloud app create[/code] to create a new application."
+            f"Application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "
+            "Use [code]nextmv cloud app create[/code] to create a new app."
         )
 
-    return Application(client=client, id=app_id)
+    app = Application.new(client=client, id=app_id, name=app_id)
+    success(f"Application with ID and name [magenta]{app_id}[/magenta] created successfully.")
+
+    return app
 
 
 def build_account(account_id: str | None = None, profile: str | None = None) -> Account:
