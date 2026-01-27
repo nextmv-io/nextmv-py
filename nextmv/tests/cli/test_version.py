@@ -1,8 +1,9 @@
 import unittest
 
+from typer.testing import CliRunner
+
 from nextmv.__about__ import __version__
 from nextmv.cli.main import app
-from typer.testing import CliRunner
 
 
 class TestVersion(unittest.TestCase):

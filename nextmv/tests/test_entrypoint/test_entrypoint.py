@@ -8,6 +8,7 @@ import unittest
 from nextmv.model import _cleanup_mlflow_db
 
 import nextmv
+import nextmv.cloud
 
 
 class SimpleDecisionModel(nextmv.Model):

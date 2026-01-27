@@ -111,7 +111,7 @@ def extract_coordinates(coords, all_coords) -> None:
       like Polygons and MultiPolygons
     """
     if isinstance(coords, list):
-        if len(coords) == 2 and isinstance(coords[0], (int, float)) and isinstance(coords[1], (int, float)):
+        if len(coords) == 2 and isinstance(coords[0], int | float) and isinstance(coords[1], int | float):
             # This is a coordinate pair [lon, lat]
             all_coords.append(coords)
         else:

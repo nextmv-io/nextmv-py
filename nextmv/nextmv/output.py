@@ -18,7 +18,7 @@ Series
 SeriesData
     Data container for multiple series of data points.
 Statistics
-    Deprecated: Use metrics instead. Complete statistics container for a 
+    Deprecated: Use metrics instead. Complete statistics container for a
     solution, including run metrics and result data.
 Metrics
     Metrics container for a solution.
@@ -982,7 +982,7 @@ class Output:
     """
     statistics: Statistics | dict[str, Any] | None = None
     """
-    Deprecated: Use Metrics instead. 
+    Deprecated: Use Metrics instead.
     Statistics of the solution. These statistics can be of type `Statistics` or a
     simple dictionary. If the statistics are of type `Statistics`, they will be
     serialized to a dictionary using the `to_dict` method. If they are a
@@ -990,7 +990,7 @@ class Output:
     """
     metrics: dict[str, Any] | None = None
     """
-    Metrics of the solution. These metrics should be provided as a simple or 
+    Metrics of the solution. These metrics should be provided as a simple or
     nested dictionary.
     """
     csv_configurations: dict[str, Any] | None = None
@@ -1115,14 +1115,14 @@ class Output:
             raise TypeError(
                 f"unsupported statistics type: {type(self.statistics)}, supported types are `Statistics` or `dict`"
             )
-        
+
         if self.metrics is None:
             metrics = None
         elif isinstance(self.metrics, dict):
             metrics = self.metrics
         else:
             raise TypeError(f"unsupported metrics type: {type(self.metrics)}, supported type is `dict`")
-        
+
 
         # Assets need to end up as a list of dicts, so we achieve that based on
         # the type of each asset in the list.
@@ -1145,7 +1145,7 @@ class Output:
             "solution": self.solution if self.solution is not None else {},
             ASSETS_KEY: assets,
         }
-        
+
         # Only include statistics in output if it's not None
         if statistics is not None:
             output_dict[STATISTICS_KEY] = statistics

@@ -1,9 +1,8 @@
 import os
 import unittest
 
-from nextmv.model import _cleanup_python_model
-
 import nextmv
+from nextmv.model import _cleanup_python_model
 
 
 class ModelForTesting(nextmv.Model):
