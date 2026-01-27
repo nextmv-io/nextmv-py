@@ -97,8 +97,10 @@ def clone(
     if version == LATEST_VERSION:
         version = app_obj.get("latest_app_version")
 
-    destination = directory
-    if directory is None or directory == "":
+    # Clean and normalize directory path in an OS-independent way
+    if directory is not None and directory != "":
+        destination = os.path.normpath(directory)
+    else:
         destination = app
 
     full_destination = get_valid_path(destination, os.stat)
