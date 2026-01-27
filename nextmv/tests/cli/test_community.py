@@ -501,7 +501,8 @@ class TestCommunityCloneCommand(unittest.TestCase):
                         result = self.runner.invoke(self.app, ["--app", "go-nextroute", "--directory", "/custom/path"])
 
                         self.assertEqual(result.exit_code, 0)
-                        mock_get_valid_path.assert_called_once_with("/custom/path", os.stat)
+                        expected_path = os.path.join(os.sep, "custom", "path")
+                        mock_get_valid_path.assert_called_once_with(expected_path, os.stat)
 
 
 class TestAppHasVersion(unittest.TestCase):
