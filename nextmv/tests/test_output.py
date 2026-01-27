@@ -8,9 +8,9 @@ from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
-from nextmv.base_model import BaseModel
 
 import nextmv
+from nextmv.base_model import BaseModel
 
 
 class TestOutput(unittest.TestCase):

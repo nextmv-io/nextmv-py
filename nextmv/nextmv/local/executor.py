@@ -60,12 +60,12 @@ from nextmv.local.local import (
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.manifest import Manifest, ManifestType
 from nextmv.output import (
-    ASSETS_KEY, 
-    OUTPUTS_KEY, 
-    SOLUTIONS_KEY, 
-    STATISTICS_KEY,
+    ASSETS_KEY,
     METRICS_KEY,
-    Asset, 
+    OUTPUTS_KEY,
+    SOLUTIONS_KEY,
+    STATISTICS_KEY,
+    Asset,
     OutputFormat,
     VisualSchema,
 )

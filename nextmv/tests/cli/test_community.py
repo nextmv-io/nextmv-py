@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, Mock, mock_open, patch
 
+from typer.testing import CliRunner
+
 from nextmv.cli.community import app as community_app
 from nextmv.cli.community.clone import app as clone_app
 from nextmv.cli.community.clone import app_has_version, download_object, get_valid_path
@@ -20,7 +22,6 @@ from nextmv.cli.community.list import (
     versions_list,
     versions_table,
 )
-from typer.testing import CliRunner
 
 
 class TestCommunityListCommand(unittest.TestCase):

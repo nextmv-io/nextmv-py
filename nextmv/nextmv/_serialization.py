@@ -90,7 +90,7 @@ def _custom_serial(obj: Any) -> str:
         If the object type is not supported for serialization.
     """
 
-    if isinstance(obj, (datetime.datetime, datetime.date)):
+    if isinstance(obj, datetime.datetime | datetime.date):
         return obj.isoformat()
 
     raise TypeError(f"Type {type(obj)} not serializable")
