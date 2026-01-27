@@ -29,7 +29,7 @@ def delete(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Deletes an account within your organization.
+    Deletes an account within your SSO-enabled organization.
 
     You must have the [magenta]administrator[/magenta] role on that account in order to delete it.
 
