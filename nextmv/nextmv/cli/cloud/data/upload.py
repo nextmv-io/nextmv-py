@@ -45,7 +45,7 @@ def upload(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Upload data for Nextmv Cloud application runs.
+    Upload data for Nextmv Cloud application components.
 
     When data is too large, or is not in a text-based content format, you can
     use this command to upload information for a Nextmv Cloud application. Data

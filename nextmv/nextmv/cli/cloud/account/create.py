@@ -39,7 +39,7 @@ def create(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Create a new Nextmv Cloud account.
+    Create a new Nextmv Cloud account in your organization.
 
     To create managed accounts, SSO must be configured for your organization.
     Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link] for assistance.

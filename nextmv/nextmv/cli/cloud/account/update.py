@@ -39,7 +39,7 @@ def update(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Updates a Nextmv Cloud account.
+    Updates information of a Nextmv Cloud account.
 
     This command allows you to update the name of an existing account.
 
