@@ -31,7 +31,7 @@ def error(msg: str) -> None:
     if not msg.endswith("."):
         msg += "."
 
-    rich.print(f"[red]Error:[/red] {msg}", file=sys.stderr)
+    rich.print(f":x: [red]Error:[/red] {msg}", file=sys.stderr)
 
     raise typer.Exit(code=1)
 
@@ -67,7 +67,7 @@ def warning(msg: str) -> None:
     if not msg.endswith("."):
         msg += "."
 
-    rich.print(f":construction: {msg}", file=sys.stderr)
+    rich.print(f":construction: [yellow] Warning:[/yellow] {msg}", file=sys.stderr)
 
 
 def info(msg: str, emoji: str | None = None) -> None:

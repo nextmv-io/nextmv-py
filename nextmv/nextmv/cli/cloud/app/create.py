@@ -17,15 +17,6 @@ app = typer.Typer()
 
 @app.command()
 def create(
-    name: Annotated[
-        str,
-        typer.Option(
-            "--name",
-            "-n",
-            help="A name for the application.",
-            metavar="NAME",
-        ),
-    ],
     app_id: Annotated[
         str | None,
         typer.Option(
@@ -79,6 +70,15 @@ def create(
             help="Whether the application is a workflow.",
         ),
     ] = False,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="An optional name for the application. If not provided, the application ID will be used as the name.",
+            metavar="NAME",
+        ),
+    ] = None,
     profile: ProfileOption = None,
 ) -> None:
     """

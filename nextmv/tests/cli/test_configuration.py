@@ -18,7 +18,7 @@ from nextmv.cli.configuration.config import (
     obscure_api_key,
     save_config,
 )
-from nextmv.cli.main import app, check_config_in_path, go_cli_exists, remove_go_cli
+from nextmv.cli.main import app, go_cli_exists, remove_go_cli
 from typer.testing import CliRunner
 
 
@@ -129,8 +129,9 @@ class TestConfigureCommand(unittest.TestCase):
 
     @patch("nextmv.cli.configuration.delete.save_config")
     @patch("nextmv.cli.configuration.delete.load_config")
-    @patch("rich.prompt.Confirm.ask", return_value=True)
-    def test_delete_profile(self, mock_confirm, mock_load, mock_save):
+    @patch("nextmv.cli.configuration.delete.get_confirmation", return_value=True)
+    @patch("sys.stdin.isatty", return_value=True)
+    def test_delete_profile(self, mock_isatty, mock_confirm, mock_load, mock_save):
         """Test deleting a profile."""
         mock_load.return_value = {
             API_KEY_KEY: "default_key",
@@ -262,78 +263,48 @@ class TestGoCliExists(unittest.TestCase):
     """Tests for the go_cli_exists function."""
 
     @patch("nextmv.cli.main.warning")
-    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "exists")
-    def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_check_path, mock_warning):
+    def test_go_cli_exists_returns_true_when_file_exists(self, mock_exists, mock_warning):
         """Test that go_cli_exists returns True when the Go CLI file exists."""
         mock_exists.return_value = True
 
         result = go_cli_exists()
 
         self.assertTrue(result)
-        mock_check_path.assert_called_once()
 
-    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "exists")
-    def test_go_cli_exists_returns_false_when_file_not_exists(self, mock_exists, mock_check_path):
+    def test_go_cli_exists_returns_false_when_file_not_exists(self, mock_exists):
         """Test that go_cli_exists returns False when the Go CLI file does not exist."""
         mock_exists.return_value = False
 
         result = go_cli_exists()
 
         self.assertFalse(result)
-        mock_check_path.assert_called_once()
 
 
 class TestRemoveGoCli(unittest.TestCase):
     """Tests for the remove_go_cli function."""
 
     @patch("nextmv.cli.main.success")
-    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
-    def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_check_path, mock_success):
+    def test_remove_go_cli_deletes_file_when_exists(self, mock_exists, mock_unlink, mock_success):
         """Test that remove_go_cli deletes the file when it exists."""
         mock_exists.return_value = True
 
         remove_go_cli()
 
         mock_unlink.assert_called_once()
-        mock_check_path.assert_called_once()
 
-    @patch("nextmv.cli.main.check_config_in_path")
     @patch.object(Path, "unlink")
     @patch.object(Path, "exists")
-    def test_remove_go_cli_does_not_delete_when_not_exists(self, mock_exists, mock_unlink, mock_check_path):
+    def test_remove_go_cli_does_not_delete_when_not_exists(self, mock_exists, mock_unlink):
         """Test that remove_go_cli does not attempt to delete when file does not exist."""
         mock_exists.return_value = False
 
         remove_go_cli()
 
         mock_unlink.assert_not_called()
-        mock_check_path.assert_called_once()
-
-
-class TestCheckConfigInPath(unittest.TestCase):
-    """Tests for the check_config_in_path function."""
-
-    @patch("nextmv.cli.main.warning")
-    @patch.dict(os.environ, {"PATH": f"/usr/bin{os.pathsep}{CONFIG_DIR}{os.pathsep}/usr/local/bin"})
-    def test_check_config_in_path_prints_warning_when_in_path(self, mock_warning):
-        """Test that a warning is printed when CONFIG_DIR is in PATH."""
-        check_config_in_path()
-
-        mock_warning.assert_called_once()
-        call_args = str(mock_warning.call_args)
-        self.assertIn("PATH", call_args)
-
-    @patch("nextmv.cli.main.warning")
-    @patch.dict(os.environ, {"PATH": "/usr/bin:/usr/local/bin"})
-    def test_check_config_in_path_no_warning_when_not_in_path(self, mock_warning):
-        """Test that no warning is printed when CONFIG_DIR is not in PATH."""
-        check_config_in_path()
-
-        mock_warning.assert_not_called()
 
 
 class TestGoCliPath(unittest.TestCase):

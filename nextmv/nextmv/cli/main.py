@@ -13,19 +13,18 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
-import os
 import sys
 from typing import Annotated
 
 import rich
 import typer
-from rich.prompt import Confirm
 from typer import rich_utils
 
 from nextmv.cli.cloud import app as cloud_app
 from nextmv.cli.community import app as community_app
 from nextmv.cli.configuration import app as configuration_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
+from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
@@ -70,6 +69,15 @@ def callback(
     environment.
     """
 
+    # Skip checks for help commands.
+    if "--help" in sys.argv or "-h" in sys.argv:
+        return
+
+    # Skip checks for certain commands.
+    ignored_commands = {"configuration", "version"}
+    if ctx.invoked_subcommand in ignored_commands:
+        return
+
     handle_go_cli()
     handle_config_existence(ctx)
 
@@ -84,19 +92,21 @@ def handle_go_cli() -> None:
 
     exists = go_cli_exists()
     if exists:
-        delete = Confirm.ask(
+        delete = get_confirmation(
             "Do you want to delete the [italic red]deprecated[/italic red] Nextmv CLI "
-            f"at [magenta]{GO_CLI_PATH}[/magenta] now?",
-            default=False,
+            f"at [magenta]{GO_CLI_PATH}[/magenta] now?"
         )
         if delete:
             remove_go_cli()
-        else:
-            info(
-                msg="You can delete the [italic red]deprecated[/italic red] Nextmv CLI later by removing "
-                f"[magenta]{GO_CLI_PATH}[/magenta]. Make sure you also clean up your [code]PATH[/code].",
-                emoji=":bulb:",
-            )
+            return
+
+        info(
+            msg="You can delete the [italic red]deprecated[/italic red] Nextmv CLI later by removing "
+            f"[magenta]{GO_CLI_PATH}[/magenta]. "
+            "Make sure you also clean up your [code]PATH[/code], "
+            f"by removing references to [magenta]{CONFIG_DIR}[/magenta] from it.",
+            emoji=":bulb:",
+        )
 
 
 def handle_config_existence(ctx: typer.Context) -> None:
@@ -108,10 +118,6 @@ def handle_config_existence(ctx: typer.Context) -> None:
     ctx : typer.Context
         The Typer context object.
     """
-
-    ignored_commands = {"configuration", "version"}
-    if ctx.invoked_subcommand in ignored_commands:
-        return
 
     config = load_config()
     if config == {}:
@@ -134,10 +140,8 @@ def go_cli_exists() -> bool:
     if exists:
         warning(
             "A [italic red]deprecated[/italic red] Nextmv CLI is installed at "
-            f"[magenta]{GO_CLI_PATH}[/magenta]. You must delete it to avoid conflicts."
+            f"[magenta]{GO_CLI_PATH}[/magenta]. You should delete it to avoid conflicts."
         )
-
-    check_config_in_path()
 
     return exists
 
@@ -150,23 +154,6 @@ def remove_go_cli() -> None:
     if GO_CLI_PATH.exists():
         GO_CLI_PATH.unlink()
         success(f"Deleted deprecated [magenta]{GO_CLI_PATH}[/magenta].")
-
-    check_config_in_path()
-
-
-def check_config_in_path() -> None:
-    """
-    Check if the configuration directory is in the PATH and notify the user.
-    """
-
-    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
-    config_dir_str = str(CONFIG_DIR)
-
-    if config_dir_str in path_dirs:
-        warning(
-            f"[magenta]{CONFIG_DIR}[/magenta] was found in your [code]PATH[/code]. "
-            f"You should remove any entries related to [magenta]{CONFIG_DIR}[/magenta] from your [code]PATH[/code]."
-        )
 
 
 def main() -> None:
