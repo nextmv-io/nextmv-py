@@ -173,12 +173,11 @@ guidelines:
 
 ## Confirmation prompts
 
-For destructive actions (like deletions), use the `get_confirmation()` method to
-ask for user confirmation before proceeding. The method is available from the
-`cli/confirm.py` file. This method already handles sensible values used for
-getting a confirmation from a user and more importantly, it times out if a user
-does not respond within a certain time frame. Additionally, it handles
-non-interactive sessions by defaulting to `False` if no input can be provided.
+For destructive actions (like deletions), use the `get_confirmation()` method
+to ask for user confirmation before proceeding. The method is available from
+the `cli/confirm.py` file. This method already handles sensible values used for
+getting a confirmation from a user. Additionally, it handles non-interactive
+sessions by defaulting to `False` if no input can be provided.
 
 When using confirmation prompts, follow these guidelines:
 
