@@ -59,6 +59,18 @@ def save_config(config: dict[str, Any]) -> None:
         yaml.safe_dump(config, file)
 
 
+def non_profile_keys() -> set[str]:
+    """
+    Returns the set of keys that are not profile names in the configuration.
+
+    Returns
+    -------
+    set[str]
+        The set of non-profile keys.
+    """
+    return {API_KEY_KEY, ENDPOINT_KEY}
+
+
 def build_client(profile: str | None = None) -> Client:
     """
     Builds a `cloud.Client` using the API key and endpoint for the given
@@ -91,23 +103,35 @@ def build_client(profile: str | None = None) -> Client:
 
     if profile is not None:
         if profile not in config:
-            error(f"Profile [magenta]{profile}[/magenta] does not exist.")
+            error(
+                f"Profile [magenta]{profile}[/magenta] does not exist. "
+                "Create it using [code]nextmv configuration create[/code] with the --profile option."
+            )
 
         api_key = config[profile].get(API_KEY_KEY)
         if api_key is None or api_key == "":
-            error(f"API key for profile [magenta]{profile}[/magenta] is not set or is empty.")
+            error(
+                f"API key for profile [magenta]{profile}[/magenta] is not set or is empty. "
+                "Set it using [code]nextmv configuration create[/code] with the --profile and --api-key options."
+            )
 
         endpoint = config[profile].get(ENDPOINT_KEY)
         if endpoint is None or endpoint == "":
-            error(f"Endpoint for profile [magenta]{profile}[/magenta] is not set or is empty.")
+            error(
+                f"Endpoint for profile [magenta]{profile}[/magenta] is not set or is empty. "
+                "Please run [code]nextmv configuration create[/code]."
+            )
     else:
         api_key = config.get(API_KEY_KEY)
         if api_key is None or api_key == "":
-            error("Default API key is not set or is empty.")
+            error(
+                "Default API key is not set or is empty. "
+                "Please run [code]nextmv configuration create[/code] with the --api-key option."
+            )
 
         endpoint = config.get(ENDPOINT_KEY)
         if endpoint is None or endpoint == "":
-            error("Default endpoint is not set or is empty.")
+            error("Default endpoint is not set or is empty. Please run [code]nextmv configuration create[/code].")
 
     return Client(api_key=api_key, url=f"https://{endpoint}")
 
