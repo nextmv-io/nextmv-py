@@ -8,9 +8,9 @@ destinations.
 Classes
 -------
 RunStatistics
-    Statistics about a general run.
+    Deprecated: Statistics about a general run.
 ResultStatistics
-    Statistics about a specific result.
+    Deprecated: Statistics about a specific result.
 DataPoint
     A data point representing a 2D coordinate.
 Series
@@ -18,7 +18,10 @@ Series
 SeriesData
     Data container for multiple series of data points.
 Statistics
-    Complete statistics container for a solution, including run metrics and result data.
+    Deprecated: Use metrics instead. Complete statistics container for a 
+    solution, including run metrics and result data.
+Metrics
+    Metrics container for a solution.
 OutputFormat
     Enumeration of supported output formats.
 SolutionFile
@@ -46,7 +49,9 @@ Attributes
 ASSETS_KEY : str
     Assets key constant used for identifying assets in the run output.
 STATISTICS_KEY : str
-    Statistics key constant used for identifying statistics in the run output.
+    Deprecated: Use METRICS_KEY instead. Statistics key constant used for identifying statistics in the run output.
+METRICS_KEY : str
+    Metrics key constant used for identifying metrics in the run output.
 SOLUTIONS_KEY : str
     Solutions key constant used for identifying solutions in the run output.
 OUTPUTS_KEY : str
@@ -75,7 +80,11 @@ Assets key constant used for identifying assets in the run output.
 """
 STATISTICS_KEY = "statistics"
 """
-Statistics key constant used for identifying statistics in the run output.
+Deprecated: Use METRICS_KEY instead. Statistics key constant used for identifying statistics in the run output.
+"""
+METRICS_KEY = "metrics"
+"""
+Metrics key constant used for identifying metrics in the run output.
 """
 SOLUTIONS_KEY = "solutions"
 """
@@ -89,7 +98,7 @@ Outputs key constant used for identifying outputs in the run output.
 
 class RunStatistics(BaseModel):
     """
-    Statistics about a general run.
+    Deprecated: Statistics about a general run.
 
     You can import the `RunStatistics` class directly from `nextmv`:
 
@@ -129,7 +138,7 @@ class RunStatistics(BaseModel):
 
 class ResultStatistics(BaseModel):
     """
-    Statistics about a specific result.
+    Deprecated: Statistics about a specific result.
 
     You can import the `ResultStatistics` class directly from `nextmv`:
 
@@ -169,7 +178,7 @@ class ResultStatistics(BaseModel):
 
 class DataPoint(BaseModel):
     """
-    A data point representing a 2D coordinate.
+    Deprecated: A data point representing a 2D coordinate.
 
     You can import the `DataPoint` class directly from `nextmv`:
 
@@ -202,7 +211,7 @@ class DataPoint(BaseModel):
 
 class Series(BaseModel):
     """
-    A series of data points for visualization or analysis.
+    Deprecated: A series of data points for visualization or analysis.
 
     You can import the `Series` class directly from `nextmv`:
 
@@ -236,7 +245,7 @@ class Series(BaseModel):
 
 class SeriesData(BaseModel):
     """
-    Data container for multiple series of data points.
+    Deprecated: Data container for multiple series of data points.
 
     You can import the `SeriesData` class directly from `nextmv`:
 
@@ -271,6 +280,9 @@ class SeriesData(BaseModel):
 
 class Statistics(BaseModel):
     """
+    !!! warning
+    `Statistics` is deprecated, use `Metrics` instead.
+
     Complete statistics container for a solution, including run metrics and
     result data.
 
@@ -877,7 +889,9 @@ class Output:
         The solution to the decision problem. The type must match the
         `output_format`. Default is None.
     statistics : Optional[Union[Statistics, dict[str, Any]]], optional
-        Statistics of the solution. Default is None.
+        Deprecated: Use Metrics instead. Statistics of the solution. Default is None.
+    metrics : Optional[dict[str, Any]], optional
+        Metrics of the solution. Default is None.
     csv_configurations : Optional[dict[str, Any]], optional
         Configuration for writing CSV files. Default is None.
     json_configurations : Optional[dict[str, Any]], optional
@@ -916,17 +930,16 @@ class Output:
     Examples
     --------
     >>> from nextmv.output import Output, OutputFormat, Statistics, RunStatistics
-    >>> run_stats = RunStatistics(duration=30.0, iterations=100)
-    >>> stats = Statistics(run=run_stats)
+    >>> metrics = {"duration": 30.0, "iterations": 100}
     >>> solution = {"routes": [{"vehicle": 1, "stops": [1, 2, 3]}, {"vehicle": 2, "stops": [4, 5]}]}
     >>> output = Output(
     ...     output_format=OutputFormat.JSON,
     ...     solution=solution,
-    ...     statistics=stats,
+    ...     metrics=metrics,
     ...     json_configurations={"indent": 4}
     ... )
     >>> output_dict = output.to_dict()
-    >>> "solution" in output_dict and "statistics" in output_dict
+    >>> "solution" in output_dict and "metrics" in output_dict
     True
     """
 
@@ -969,11 +982,16 @@ class Output:
     """
     statistics: Statistics | dict[str, Any] | None = None
     """
+    Deprecated: Use Metrics instead. 
     Statistics of the solution. These statistics can be of type `Statistics` or a
     simple dictionary. If the statistics are of type `Statistics`, they will be
     serialized to a dictionary using the `to_dict` method. If they are a
-    dictionary, they will be used as is. If the statistics are not provided, an
-    empty dictionary will be used.
+    dictionary, they will be used as is.
+    """
+    metrics: dict[str, Any] | None = None
+    """
+    Metrics of the solution. These metrics should be provided as a simple or 
+    nested dictionary.
     """
     csv_configurations: dict[str, Any] | None = None
     """
@@ -1088,7 +1106,7 @@ class Output:
         # Statistics need to end up as a dict, so we achieve that based on the
         # type of statistics that were used to create the class.
         if self.statistics is None:
-            statistics = {}
+            statistics = None
         elif isinstance(self.statistics, Statistics):
             statistics = self.statistics.to_dict()
         elif isinstance(self.statistics, dict):
@@ -1097,6 +1115,14 @@ class Output:
             raise TypeError(
                 f"unsupported statistics type: {type(self.statistics)}, supported types are `Statistics` or `dict`"
             )
+        
+        if self.metrics is None:
+            metrics = None
+        elif isinstance(self.metrics, dict):
+            metrics = self.metrics
+        else:
+            raise TypeError(f"unsupported metrics type: {type(self.metrics)}, supported type is `dict`")
+        
 
         # Assets need to end up as a list of dicts, so we achieve that based on
         # the type of each asset in the list.
@@ -1117,9 +1143,15 @@ class Output:
         output_dict = {
             "options": options,
             "solution": self.solution if self.solution is not None else {},
-            STATISTICS_KEY: statistics,
             ASSETS_KEY: assets,
         }
+        
+        # Only include statistics in output if it's not None
+        if statistics is not None:
+            output_dict[STATISTICS_KEY] = statistics
+
+        if metrics is not None:
+            output_dict[METRICS_KEY] = metrics
 
         # Add the auxiliary configurations to the output dictionary if they are
         # defined and not empty.
@@ -1193,9 +1225,9 @@ class LocalOutputWriter(OutputWriter):
 
     Examples
     --------
-    >>> from nextmv.output import LocalOutputWriter, Output, Statistics
+    >>> from nextmv.output import LocalOutputWriter, Output, Metrics
     >>> writer = LocalOutputWriter()
-    >>> output = Output(solution={"result": 42}, statistics=Statistics())
+    >>> output = Output(solution={"result": 42}, metrics={"time": 1.23})
     >>> # Write to stdout
     >>> writer.write(output, path=None)
     >>> # Write to a file

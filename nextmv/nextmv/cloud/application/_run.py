@@ -21,7 +21,15 @@ from nextmv.cloud.url import DownloadURL
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
+from nextmv.output import (
+    ASSETS_KEY, 
+    STATISTICS_KEY, 
+    METRICS_KEY, 
+    Asset, 
+    Output, 
+    OutputFormat, 
+    Statistics,
+)
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
