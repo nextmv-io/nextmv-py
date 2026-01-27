@@ -250,7 +250,7 @@ class Application(
     def new(
         cls,
         client: Client,
-        name: str,
+        name: str | None = None,
         id: str | None = None,
         description: str | None = None,
         is_workflow: bool | None = None,
@@ -268,13 +268,13 @@ class Application(
         ----------
         client : Client
             Client to use for interacting with the Nextmv Cloud API.
-        name : str
-            Name of the application.
-        id : str, optional
+        name : str | None = None
+            Name of the application. Uses the ID as the name if not provided.
+        id : str | None = None
             ID of the application. Will be generated if not provided.
-        description : str, optional
+        description : str | None = None
             Description of the application.
-        is_workflow : bool, optional
+        is_workflow : bool | None = None
             Whether the application is a Decision Workflow.
         exist_ok : bool, default=False
             If True and an application with the same ID already exists,
@@ -296,7 +296,7 @@ class Application(
         >>> app = Application.new(client=client, name="My New App", id="my-app")
         """
 
-        if id is None:
+        if id is None or id == "":
             id = safe_id("app")
 
         if exist_ok and cls.exists(client=client, id=id):
@@ -306,6 +306,9 @@ class Application(
             )
 
             return cls.from_dict({"client": client} | response.json())
+
+        if name is None or name == "":
+            name = id
 
         payload = {
             "name": name,
