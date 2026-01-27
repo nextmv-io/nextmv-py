@@ -31,7 +31,7 @@ def get(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Get a Nextmv Cloud account.
+    Get the information of a Nextmv Cloud account.
 
     This command is useful to get the attributes of an existing Nextmv Cloud
     account by its ID.

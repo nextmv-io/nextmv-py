@@ -14,7 +14,7 @@ app.add_typer(upload_app)
 @app.callback()
 def callback() -> None:
     """
-    Upload data for Nextmv Cloud application runs.
+    Upload data for Nextmv Cloud application components.
 
     When data is too large (exceeds [magenta]5 MiB[/magenta]), or you are
     working with the [magenta]multi-file[/magenta] content format, you can use
