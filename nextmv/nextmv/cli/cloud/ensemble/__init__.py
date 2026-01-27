@@ -7,6 +7,7 @@ import typer
 from nextmv.cli.cloud.ensemble.create import app as create_app
 from nextmv.cli.cloud.ensemble.delete import app as delete_app
 from nextmv.cli.cloud.ensemble.get import app as get_app
+from nextmv.cli.cloud.ensemble.list import app as list_app
 from nextmv.cli.cloud.ensemble.update import app as update_app
 
 # Set up subcommand application.
@@ -14,6 +15,7 @@ app = typer.Typer()
 app.add_typer(create_app)
 app.add_typer(delete_app)
 app.add_typer(get_app)
+app.add_typer(list_app)
 app.add_typer(update_app)
 
 
