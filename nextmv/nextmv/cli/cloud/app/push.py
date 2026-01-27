@@ -265,7 +265,7 @@ def _handle_version_instance_creation(
     instance_id: str | None,
     instance_name: str | None,
     instance_description: str | None,
-) -> tuple[Instance, bool]:
+) -> tuple[Instance | None, bool]:
     if auto_create_no:
         info(
             msg="--auto-create-no activated, will not create a new version and instance.",
