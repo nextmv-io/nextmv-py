@@ -204,7 +204,7 @@ class ApplicationShadowMixin:
             shadow_test_id = safe_id("shadow")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = shadow_test_id
 
         payload = {

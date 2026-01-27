@@ -308,7 +308,7 @@ class ApplicationBatchMixin:
             id = safe_id("batch")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = id
 
         payload = {
@@ -485,7 +485,7 @@ class ApplicationBatchMixin:
             id = safe_id("scenario")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = id
 
         scenarios_by_id = _scenarios_by_id(scenarios)

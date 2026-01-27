@@ -141,7 +141,7 @@ class ApplicationVersionMixin:
         if id is None or id == "":
             id = safe_id(prefix="version")
 
-        if name is None:
+        if name is None or name == "":
             name = id
 
         payload = {

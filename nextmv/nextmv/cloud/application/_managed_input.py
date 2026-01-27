@@ -149,7 +149,7 @@ class ApplicationManagedInputMixin:
 
         if id is None or id == "":
             id = safe_id(prefix="managed-input")
-        if name is None:
+        if name is None or name == "":
             name = id
 
         payload = {
