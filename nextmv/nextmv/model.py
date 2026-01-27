@@ -195,7 +195,7 @@ class Model:
     ...         return nextmv.Output(
     ...             options=input.options,
     ...             solution=nextroute_output.solutions[0].to_dict(),
-    ...             statistics=nextroute_output.statistics.to_dict(),
+    ...             metrics=nextroute_output.metrics.to_dict(),
     ...         )
     """
 
@@ -234,7 +234,7 @@ class Model:
         ...     return Output(
         ...         options=input.options,
         ...         solution=result,
-        ...         statistics={"processing_time": 0.5}
+        ...         metrics={"processing_time": 0.5}
         ...     )
         """
 

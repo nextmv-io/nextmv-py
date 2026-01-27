@@ -434,6 +434,9 @@ class RunInfoStatistics(BaseModel):
     """List of statistics indicators."""
 
 
+RunInfoMetrics = RunInfoStatistics
+
+
 class OptionsSummaryItem(BaseModel):
     """
     Summary item for options used in a run.
@@ -529,7 +532,9 @@ class Run(BaseModel):
     experiment_id : str, optional
         ID of the experiment associated with the run. Defaults to None.
     statistics : RunInfoStatistics, optional
-        Statistics of the run. Defaults to None.
+        Deprecated: Statistics of the run. Defaults to None.
+    metrics: RunInfoMetrics, optional
+        Metrics of the run. Defaults to None.
     input_id : str, optional
         ID of the input associated with the run. Defaults to None.
     option_set : str, optional
@@ -603,7 +608,9 @@ class Run(BaseModel):
     experiment_id: str | None = None
     """ID of the experiment associated with the run."""
     statistics: RunInfoStatistics | None = None
-    """Statistics of the run."""
+    """Deprecated: Statistics of the run."""
+    metrics: RunInfoMetrics | None = None
+    """Metrics of the run."""
     input_id: str | None = None
     """ID of the input associated with the run."""
     option_set: str | None = None
@@ -677,7 +684,9 @@ class Metadata(BaseModel):
     status_v2: StatusV2
     """Status of the run."""
     statistics: dict[str, Any] | None = None
-    """User defined statistics of the run."""
+    """Deprecated: User defined statistics of the run."""
+    metrics: dict[str, Any] | None = None
+    """User defined metrics of the run."""
 
     def run_is_finalized(self) -> bool:
         """
