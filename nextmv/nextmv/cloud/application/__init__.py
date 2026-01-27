@@ -46,7 +46,9 @@ from nextmv.cloud.application._switchback import ApplicationSwitchbackMixin
 from nextmv.cloud.application._utils import _is_not_exist_error
 from nextmv.cloud.application._version import ApplicationVersionMixin
 from nextmv.cloud.client import Client
+from nextmv.cloud.instance import Instance
 from nextmv.cloud.url import UploadURL
+from nextmv.cloud.version import Version
 from nextmv.logger import log
 from nextmv.manifest import Manifest
 from nextmv.model import Model, ModelConfiguration
@@ -296,6 +298,9 @@ class Application(
         >>> app = Application.new(client=client, name="My New App", id="my-app")
         """
 
+        if exist_ok and (id is None or id == ""):
+            raise ValueError("If exist_ok is True, id must be provided")
+
         if id is None or id == "":
             id = safe_id("app")
 
@@ -402,10 +407,14 @@ class Application(
         model: Model | None = None,
         model_configuration: ModelConfiguration | None = None,
         rich_print: bool = False,
-        no_version: bool = False,
+        auto_create: bool = False,
         version_id: str | None = None,
         version_name: str | None = None,
         version_description: str | None = None,
+        instance_id: str | None = None,
+        instance_name: str | None = None,
+        instance_description: str | None = None,
+        update_default_instance: bool = False,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
@@ -423,14 +432,16 @@ class Application(
         `nextmv.Model`. The model is encoded, some dependencies and
         accompanying files are packaged, and the app is pushed to Nextmv Cloud.
 
-        The default behavior of this function is to create a new application
-        version _after_ the app has been pushed. You can set the `no_version`
-        argument to `True` to skip this step. The `version_id`, `version_name`,
-        and `version_description` arguments can be used to customize the version
-        that is created. If the `version_id` is not specified, a randomly
-        generated ID will be used. If the `version_name` is not specified, a
-        generic name with a timestamp will be used. Lastly, if no description is
-        specified, then a generic description will also be used.
+        By default, this function only pushes the app. If you want to
+        automatically create a new version and instance after pushing, set
+        `auto_create=True`. The `version_id`, `version_name`, and
+        `version_description` arguments allow you to customize the new version
+        that is created. If not specified, defaults will be generated (random
+        ID, timestamped name/description). Similarly, `instance_id`,
+        `instance_name`, and `instance_description` can be used to customize
+        the new instance. If `update_default_instance` is True, the
+        application's default instance will be updated to the newly created
+        instance.
 
         Parameters
         ----------
@@ -450,21 +461,30 @@ class Application(
             with `model`.
         rich_print : bool, default=False
             Whether to use rich printing when verbose output is enabled.
-        no_version : bool, default=False
-            If True, do not create a new version after pushing the app.
+        auto_create : bool, default=False
+            If True, automatically create a new version and instance after
+            pushing the app.
         version_id : Optional[str], default=None
             ID of the version to create after pushing the app. If None, a unique
             ID will be generated.
         version_name : Optional[str], default=None
-            Name of the version to create after pushing the app. If None, a name
-            with a timestamp will be generated.
+            Name of the version to create after pushing the app. If None, a
+            name will be generated.
         version_description : Optional[str], default=None
             Description of the version to create after pushing the app. If None, a
             generic description with a timestamp will be generated.
-
-        Returns
-        -------
-        None
+        instance_id : Optional[str], default=None
+            ID of the instance to create after pushing the app. If None, a unique
+            ID will be generated.
+        instance_name : Optional[str], default=None
+            Name of the instance to create after pushing the app. If None, a
+            name will be generated.
+        instance_description : Optional[str], default=None
+            Description of the instance to create after pushing the app. If None,
+            a generic description with a timestamp will be generated.
+        update_default_instance : bool, default=False
+            If True, update the application's default instance to the newly
+            created instance.
 
         Raises
         ------
@@ -568,44 +588,43 @@ class Application(
         except OSError as e:
             raise Exception(f"error deleting output directory: {e}") from e
 
-        if no_version:
-            if verbose:
-                if rich_print:
-                    rich.print(
-                        f":white_check_mark: Push completed for Nextmv application [magenta]{self.id}[/magenta] "
-                        "without creating a new version.",
-                        file=sys.stderr,
-                    )
-                else:
-                    log("✅ Push completed without creating a new version for Nextmv application.")
-
+        if not auto_create:
             return
-
-        now = datetime.now(timezone.utc)
-        if version_id is None:
-            version_id = safe_id(prefix="version") + f"-{now.strftime('%Y%m%d-%H%M%S')}"
-        if version_name is None:
-            version_name = f"Version {version_id}"
-        if version_description is None:
-            version_description = f"Version created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-
-        version = self.new_version(
-            id=version_id,
-            name=version_name,
-            description=version_description,
-        )
-        version_dict = version.to_dict()
 
         if verbose:
             if rich_print:
                 rich.print(
-                    f":white_check_mark: Automatically created new version [magenta]{version.id}[/magenta].",
+                    f":hourglass_flowing_sand: Push completed for Nextmv application [magenta]{self.id}[/magenta], "
+                    "creating a new version and instance...",
                     file=sys.stderr,
                 )
-                rich.print_json(data=version_dict)
             else:
-                log(f'✅ Automatically created new version "{version.id}".')
-                log(json.dumps(version_dict, indent=2))
+                log("⌛️ Push completed for the Nextmv application, creating a new version and instance...")
+
+        now = datetime.now(timezone.utc)
+        version = self.__version_on_push(
+            now=now,
+            version_id=version_id,
+            version_name=version_name,
+            version_description=version_description,
+            verbose=verbose,
+            rich_print=rich_print,
+        )
+        instance = self.__instance_on_push(
+            now=now,
+            version_id=version.id,
+            instance_id=instance_id,
+            instance_name=instance_name,
+            instance_description=instance_description,
+            verbose=verbose,
+            rich_print=rich_print,
+        )
+        self.__update_on_push(
+            instance=instance,
+            update_default_instance=update_default_instance,
+            verbose=verbose,
+            rich_print=rich_print,
+        )
 
     def update(
         self,
@@ -921,6 +940,120 @@ class Application(
             else:
                 log(f'💥️ Successfully pushed to application: "{self.id}".')
                 log(json.dumps(data, indent=2))
+
+    def __version_on_push(
+        self,
+        now: datetime,
+        version_id: str | None = None,
+        version_name: str | None = None,
+        version_description: str | None = None,
+        verbose: bool = False,
+        rich_print: bool = False,
+    ) -> Version:
+        if version_description is None or version_description == "":
+            version_description = f"Version created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+
+        version = self.new_version(
+            id=version_id,
+            name=version_name,
+            description=version_description,
+        )
+        version_dict = version.to_dict()
+
+        if not verbose:
+            return version
+
+        if rich_print:
+            rich.print(
+                f":white_check_mark: Automatically created new version [magenta]{version.id}[/magenta].",
+                file=sys.stderr,
+            )
+            rich.print_json(data=version_dict)
+
+            return version
+
+        log(f'✅ Automatically created new version "{version.id}".')
+        log(json.dumps(version_dict, indent=2))
+
+        return version
+
+    def __instance_on_push(
+        self,
+        now: datetime,
+        version_id: str,
+        instance_id: str | None = None,
+        instance_name: str | None = None,
+        instance_description: str | None = None,
+        verbose: bool = False,
+        rich_print: bool = False,
+    ) -> Instance:
+        if instance_description is None or instance_description == "":
+            instance_description = f"Instance created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+
+        instance = self.new_instance(
+            version_id=version_id,
+            id=instance_id,
+            name=instance_name,
+            description=instance_description,
+        )
+        instance_dict = instance.to_dict()
+
+        if not verbose:
+            return instance
+
+        if rich_print:
+            rich.print(
+                f":white_check_mark: Automatically created new instance [magenta]{instance.id}[/magenta] "
+                f"using version [magenta]{version_id}[/magenta].",
+                file=sys.stderr,
+            )
+            rich.print_json(data=instance_dict)
+
+            return instance
+
+        log(f'✅ Automatically created new instance "{instance.id}" using version "{version_id}".')
+        log(json.dumps(instance_dict, indent=2))
+
+        return instance
+
+    def __update_on_push(
+        self,
+        instance: Instance,
+        update_default_instance: bool = False,
+        verbose: bool = False,
+        rich_print: bool = False,
+    ) -> None:
+        if not update_default_instance:
+            return
+
+        if verbose:
+            if rich_print:
+                rich.print(
+                    f":hourglass_flowing_sand: Updating default instance for app [magenta]{self.id}[/magenta]...",
+                    file=sys.stderr,
+                )
+            else:
+                log("⌛️ Updating default instance for the Nextmv application...")
+
+        updated_app = self.update(default_instance_id=instance.id)
+        if not verbose:
+            return
+
+        if rich_print:
+            rich.print(
+                f":white_check_mark: Updated default instance to "
+                f"[magenta]{updated_app.default_instance_id}[/magenta] for application "
+                f"[magenta]{self.id}[/magenta].",
+                file=sys.stderr,
+            )
+            rich.print_json(data=updated_app.to_dict())
+
+            return
+
+        log(
+            f'✅ Updated default instance to "{updated_app.default_instance_id}" for application "{self.id}".',
+        )
+        log(json.dumps(updated_app.to_dict(), indent=2))
 
 
 def list_applications(client: Client) -> list[Application]:

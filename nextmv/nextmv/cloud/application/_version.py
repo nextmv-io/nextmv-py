@@ -132,14 +132,15 @@ class ApplicationVersionMixin:
         ... )
         """
 
-        if exist_ok and id is None:
+        if exist_ok and (id is None or id == ""):
             raise ValueError("If exist_ok is True, id must be provided")
 
         if exist_ok and self.version_exists(version_id=id):
             return self.version(version_id=id)
 
-        if id is None:
+        if id is None or id == "":
             id = safe_id(prefix="version")
+
         if name is None:
             name = id
 

@@ -153,7 +153,7 @@ def remove_go_cli() -> None:
 
     if GO_CLI_PATH.exists():
         GO_CLI_PATH.unlink()
-        success(f"Deleted deprecated [magenta]{GO_CLI_PATH}[/magenta].")
+        success(f"Deleted [italic red]deprecated[/italic red] [magenta]{GO_CLI_PATH}[/magenta].")
 
 
 def main() -> None:

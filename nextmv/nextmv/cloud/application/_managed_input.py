@@ -147,7 +147,7 @@ class ApplicationManagedInputMixin:
         if upload_id is None and run_id is None:
             raise ValueError("Either upload_id or run_id must be specified")
 
-        if id is None:
+        if id is None or id == "":
             id = safe_id(prefix="managed-input")
         if name is None:
             name = id
