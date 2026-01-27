@@ -38,13 +38,13 @@ def update(
             metavar="DESCRIPTION",
         ),
     ] = None,
-    inputs: Annotated[
+    managed_inputs: Annotated[
         str | None,
         typer.Option(
-            "--inputs",
-            help="Inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
+            "--managed-inputs",
+            help="Managed inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
             "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
-            metavar="INPUTS",
+            metavar="MANAGED_INPUTS",
         ),
     ] = None,
     output: Annotated[
@@ -62,7 +62,7 @@ def update(
     Updates a Nextmv Cloud input set.
 
     This command updates the metadata of an existing input set. You can update
-    the name, description, or inputs of the input set.
+    the name, description, or managed inputs of the input set.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -74,9 +74,9 @@ def update(
         $ [dim]nextmv cloud input-set update --app-id hare-app \\
             --input-set-id hare-input-set --description "Updated description"[/dim]
 
-    - Update an input set's inputs.
+    - Update an input set's managed inputs.
         $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
-            --inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
+            --managed-inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Update both name and description.
         $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
@@ -87,25 +87,25 @@ def update(
             --name "New Name" --output updated_input_set.json[/dim]
     """
 
-    if name is None and description is None and inputs is None:
-        error("Provide at least one option: --name, --description, or --inputs.")
+    if name is None and description is None and managed_inputs is None:
+        error("Provide at least one option: --name, --description, or --managed-inputs.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating input set...")
 
-    managed_inputs = []
-    if inputs is not None:
-        for d in json.loads(inputs):
+    managed_input_list = []
+    if managed_inputs is not None:
+        for d in json.loads(managed_inputs):
             i = ManagedInput.from_dict(d)
             if i is None:
                 error(f"[magenta]{d}[/magenta] is not a valid [yellow]ManagedInput[/yellow]")
-            managed_inputs.append(i)
+            managed_input_list.append(i)
 
     updated_input_set = cloud_app.update_input_set(
         id=input_set_id,
         name=name,
         description=description,
-        inputs=managed_inputs,
+        inputs=managed_input_list,
     )
     success(
         f"Input set [magenta]{input_set_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta]."
