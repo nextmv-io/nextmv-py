@@ -324,7 +324,7 @@ def _handle_version_instance_creation(
 def _handle_instance_update(
     cloud_app: Application,
     app_id: str,
-    instance: Instance,
+    instance: Instance | None,
     should_update: bool,
     update_default_instance_yes: bool,
     update_default_instance_no: bool,
