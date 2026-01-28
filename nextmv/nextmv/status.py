@@ -2,65 +2,15 @@
 Provides status enums for Nextmv application runs.
 
 This module defines enumerations for representing the status of a run in a
-Nextmv application. It includes a deprecated `Status` enum and the current
-`StatusV2` enum.
+Nextmv application.
 
 Classes
 -------
-Status
-    Deprecated status of a run.
 StatusV2
     Represents the status of a run.
 """
 
 from enum import Enum
-
-
-class Status(str, Enum):
-    """
-    !!! warning
-        `Status` is deprecated, use `StatusV2` instead.
-
-    Status of a run.
-
-    You can import the `Status` class directly from `nextmv`:
-
-    ```python
-    from nextmv import Status
-    ```
-
-    This enum represents the possible states of a run. It is deprecated and
-    `StatusV2` should be used for new implementations.
-
-    Attributes
-    ----------
-    failed : str
-        Run failed.
-    running : str
-        Run is running.
-    succeeded : str
-        Run succeeded.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import Status
-    >>> current_status = Status.running
-    >>> if current_status == Status.succeeded:
-    ...     print("Run completed successfully.")
-    ... elif current_status == Status.failed:
-    ...     print("Run failed.")
-    ... else:
-    ...     print(f"Run is currently {current_status.value}.")
-    Run is currently running.
-
-    """
-
-    failed = "failed"
-    """Run failed."""
-    running = "running"
-    """Run is running."""
-    succeeded = "succeeded"
-    """Run succeeded."""
 
 
 class StatusV2(str, Enum):

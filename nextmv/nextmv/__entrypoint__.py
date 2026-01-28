@@ -10,13 +10,12 @@ human to use it during local development. It is the standard way in which a
 from mlflow.pyfunc import load_model
 
 import nextmv
-from nextmv import cloud
 
 
 def main() -> None:
     """Entry point for the program."""
 
-    manifest = cloud.Manifest.from_yaml(".")
+    manifest = nextmv.Manifest.from_yaml(".")
 
     # Load the options from the manifest.
     options = manifest.extract_options()

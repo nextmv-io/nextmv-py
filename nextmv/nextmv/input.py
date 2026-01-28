@@ -38,7 +38,6 @@ from enum import Enum
 from typing import Any
 
 from nextmv._serialization import serialize_json
-from nextmv.deprecated import deprecated
 from nextmv.options import Options
 
 INPUTS_KEY = "inputs"
@@ -939,57 +938,6 @@ class LocalInputLoader(InputLoader):
             data[key] = d
 
         return data
-
-
-def load_local(
-    input_format: InputFormat | None = InputFormat.JSON,
-    options: Options | None = None,
-    path: str | None = None,
-    csv_configurations: dict[str, Any] | None = None,
-) -> Input:
-    """
-    !!! warning
-        `load_local` is deprecated, use `load` instead.
-
-    Load input data from local sources.
-
-    This is a convenience function for instantiating a `LocalInputLoader`
-    and calling its `load` method.
-
-    Parameters
-    ----------
-    input_format : InputFormat, optional
-        Format of the input data. Default is `InputFormat.JSON`.
-    options : Options, optional
-        Options for loading the input data.
-    path : str, optional
-        Path to the input data.
-    csv_configurations : dict[str, Any], optional
-        Configurations for loading CSV files. Custom kwargs for
-        Python's `csv.DictReader`.
-
-    Returns
-    -------
-    Input
-        The loaded input data in an Input object.
-
-    Raises
-    ------
-    ValueError
-        If the path is invalid or data format is incorrect.
-
-    See Also
-    --------
-    load : The recommended function to use instead.
-    """
-
-    deprecated(
-        name="load_local",
-        reason="`load_local` is deprecated, use `load` instead",
-    )
-
-    loader = LocalInputLoader()
-    return loader.load(input_format, options, path, csv_configurations)
 
 
 _LOCAL_INPUT_LOADER = LocalInputLoader()

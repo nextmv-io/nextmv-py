@@ -53,7 +53,7 @@ from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.input import Input, InputFormat
 from nextmv.output import Asset, Output, OutputFormat, Statistics
-from nextmv.status import Status, StatusV2
+from nextmv.status import StatusV2
 
 
 def run_duration(start: datetime | float, end: datetime | float) -> int:
@@ -520,8 +520,6 @@ class Run(BaseModel):
         Class name for the execution of a job.
     runtime : str
         Runtime environment for the run.
-    status : Status
-        Deprecated, use status_v2 instead.
     status_v2 : StatusV2
         Status of the run.
     queuing_priority : int, optional
@@ -598,8 +596,6 @@ class Run(BaseModel):
     status_v2: StatusV2
     """Status of the run."""
 
-    status: Status | None = None
-    """Deprecated, use status_v2 instead."""
     queuing_priority: int | None = None
     """Priority of the run in the queue."""
     queuing_disabled: bool | None = None
@@ -656,8 +652,6 @@ class Metadata(BaseModel):
         Size of the output in bytes.
     format : Format
         Format of the input and output of the run.
-    status : Status
-        Deprecated: use status_v2.
     status_v2 : StatusV2
         Status of the run.
     """
@@ -682,8 +676,6 @@ class Metadata(BaseModel):
     """Format of the input and output of the run."""
     status_v2: StatusV2
     """Status of the run."""
-    status: Status | None = None
-    """Deprecated: use status_v2."""
     statistics: dict[str, Any] | None = None
     """User defined statistics of the run."""
 
@@ -867,7 +859,6 @@ class RunInformation(BaseModel):
             run_type=RunTypeConfiguration(),  # Default empty configuration
             execution_class="",  # Not available in RunInformation
             runtime="",  # Not available in RunInformation
-            status=self.metadata.status,
             status_v2=self.metadata.status_v2,
             # Optional fields that are not available in RunInformation
             queuing_priority=None,
