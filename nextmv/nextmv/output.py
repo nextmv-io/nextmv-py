@@ -66,7 +66,6 @@ from pydantic import AliasChoices, Field
 
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
-from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
 
@@ -1516,67 +1515,6 @@ class LocalOutputWriter(OutputWriter):
             output_dict=output_dict,
             path=path,
         )
-
-
-def write_local(
-    output: Output | dict[str, Any],
-    path: str | None = None,
-    skip_stdout_reset: bool = False,
-) -> None:
-    """
-    !!! warning
-        `write_local` is deprecated, use `write` instead.
-
-    Write the output to the local filesystem or stdout.
-
-    This is a convenience function for instantiating a `LocalOutputWriter` and
-    calling its `write` method.
-
-    Parameters
-    ----------
-    output : Union[Output, dict[str, Any]]
-        Output data to write. Can be an Output object or a dictionary.
-    path : str, optional
-        Path to write the output data to. The interpretation depends on the
-        output format:
-
-        - For `OutputFormat.JSON`: File path for the JSON output. If None or
-          empty, writes to stdout.
-        - For `OutputFormat.CSV_ARCHIVE`: Directory path for CSV files. If None
-          or empty, writes to a directory named "output" in the current working
-          directory.
-    skip_stdout_reset : bool, optional
-        Skip resetting stdout before writing the output data. Default is False.
-
-    Raises
-    ------
-    ValueError
-        If the Output.output_format is not supported.
-    TypeError
-        If the output is of an unsupported type.
-
-    Notes
-    -----
-    This function detects if stdout was redirected and resets it to avoid
-    unexpected behavior. If you want to skip this behavior, set the
-    skip_stdout_reset parameter to True.
-
-    Examples
-    --------
-    >>> from nextmv.output import write_local, Output
-    >>> # Write JSON to a file
-    >>> write_local(Output(solution={"result": 42}), path="result.json")
-    >>> # Write JSON to stdout
-    >>> write_local({"simple": "data"})
-    """
-
-    deprecated(
-        name="write_local",
-        reason="`write_local` is deprecated, use `write` instead",
-    )
-
-    writer = LocalOutputWriter()
-    writer.write(output, path, skip_stdout_reset)
 
 
 _LOCAL_OUTPUT_WRITER = LocalOutputWriter()

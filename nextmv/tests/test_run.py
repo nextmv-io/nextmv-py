@@ -13,7 +13,7 @@ from nextmv.run import (
     RunTypeConfiguration,
     run_duration,
 )
-from nextmv.status import Status, StatusV2
+from nextmv.status import StatusV2
 
 
 class TestRunDuration(unittest.TestCase):
@@ -46,7 +46,6 @@ class TestRunInformationToRun(unittest.TestCase):
             output_size=2048.0,
             format=Format(format_input=FormatInput(), format_output=FormatOutput()),
             status_v2=StatusV2.succeeded,
-            status=Status.succeeded,
         )
 
         # Create a RunInformation instance
@@ -79,7 +78,6 @@ class TestRunInformationToRun(unittest.TestCase):
         self.assertEqual(run.application_id, self.metadata.application_id)
         self.assertEqual(run.application_instance_id, self.metadata.application_instance_id)
         self.assertEqual(run.application_version_id, self.metadata.application_version_id)
-        self.assertEqual(run.status, self.metadata.status)
         self.assertEqual(run.status_v2, self.metadata.status_v2)
 
     def test_to_run_default_values(self):
@@ -111,7 +109,7 @@ class TestRunInformationToRun(unittest.TestCase):
         self.assertIsNone(run.input_set_id)
 
     def test_to_run_with_minimal_metadata(self):
-        """Test transformation with minimal metadata (only status without deprecated status)."""
+        """Test transformation with minimal metadata."""
         minimal_metadata = Metadata(
             application_id="app-minimal",
             application_instance_id="instance-minimal",
@@ -123,7 +121,6 @@ class TestRunInformationToRun(unittest.TestCase):
             output_size=1024.0,
             format=Format(format_input=FormatInput(), format_output=FormatOutput()),
             status_v2=StatusV2.failed,
-            status=Status.failed,  # Add required status field
         )
 
         run_info_minimal = RunInformation(
@@ -140,7 +137,6 @@ class TestRunInformationToRun(unittest.TestCase):
         self.assertEqual(run.id, "run-minimal")
         self.assertEqual(run.application_id, "app-minimal")
         self.assertEqual(run.status_v2, StatusV2.failed)
-        self.assertEqual(run.status, Status.failed)  # Status is now provided
 
     def test_to_run_preserves_datetime_objects(self):
         """Test that datetime objects are properly preserved during transformation."""
@@ -177,12 +173,6 @@ class TestRunInformationToRun(unittest.TestCase):
         for status_v2 in status_values:
             with self.subTest(status_v2=status_v2):
                 # Map StatusV2 to Status for compatibility
-                status_mapping = {
-                    StatusV2.succeeded: Status.succeeded,
-                    StatusV2.failed: Status.failed,
-                    StatusV2.running: Status.running,
-                    StatusV2.queued: Status.running,  # Map queued to running since Status doesn't have queued
-                }
                 metadata = Metadata(
                     application_id="app-test",
                     application_instance_id="instance-test",
@@ -194,7 +184,6 @@ class TestRunInformationToRun(unittest.TestCase):
                     output_size=512.0,
                     format=Format(format_input=FormatInput(), format_output=FormatOutput()),
                     status_v2=status_v2,
-                    status=status_mapping[status_v2],
                 )
 
                 run_info = RunInformation(

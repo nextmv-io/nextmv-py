@@ -63,7 +63,7 @@ class TestEntrypoint(unittest.TestCase):
         destination = os.path.join(os.path.dirname(__file__), self.TWO_DIRS_UP)
         model.save(destination, model_configuration)
 
-        manifest = nextmv.cloud.Manifest.from_model_configuration(model_configuration)
+        manifest = nextmv.Manifest.from_model_configuration(model_configuration)
         manifest.to_yaml(dirpath=destination)
 
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)

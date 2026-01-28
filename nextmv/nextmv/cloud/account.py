@@ -21,7 +21,7 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
-from nextmv.status import Status, StatusV2
+from nextmv.status import StatusV2
 
 
 class QueuedRun(BaseModel):
@@ -57,8 +57,6 @@ class QueuedRun(BaseModel):
         ID of the application version used for the run.
     execution_class : str
         Execution class used for the run.
-    status : Status
-        Deprecated: use status_v2.
     status_v2 : StatusV2
         Status of the run.
 
@@ -74,7 +72,6 @@ class QueuedRun(BaseModel):
     ...     "application_instance_id": "appins-123456",
     ...     "application_version_id": "appver-123456",
     ...     "execution_class": "standard",
-    ...     "status": "RUNNING",
     ...     "status_v2": "RUNNING"
     ... })
     >>> print(queued_run.name)
@@ -99,8 +96,6 @@ class QueuedRun(BaseModel):
     """ID of the application version used for the run."""
     execution_class: str
     """Execution class used for the run."""
-    status: Status
-    """Deprecated: use status_v2."""
     status_v2: StatusV2
     """Status of the run."""
 

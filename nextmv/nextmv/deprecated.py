@@ -1,4 +1,5 @@
-"""Utilities for handling deprecated functionality within the Nextmv Python SDK.
+"""
+Utilities for handling deprecated functionality within the Nextmv Python SDK.
 
 This module provides tools to mark functions, methods, or features as deprecated,
 emitting appropriate warnings to users. These warnings inform users that the
@@ -13,7 +14,8 @@ import warnings
 
 
 def deprecated(name: str, reason: str) -> None:
-    """Mark functionality as deprecated with a warning message.
+    """
+    Mark functionality as deprecated with a warning message.
 
     This function emits a DeprecationWarning when called, indicating that
     the functionality will be removed in a future release.
@@ -40,7 +42,7 @@ def deprecated(name: str, reason: str) -> None:
 
     warnings.simplefilter("always", DeprecationWarning)
     warnings.warn(
-        f"{name}: {reason}. This functionality will be removed in a future release",
+        f"{name}: {reason}. This functionality will be removed in the next major release.",
         category=DeprecationWarning,
         stacklevel=2,
     )

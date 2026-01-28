@@ -10,7 +10,6 @@ from nextmv.cloud.batch_experiment import (
     BatchExperimentMetadata,
     BatchExperimentRun,
     ExperimentStatus,
-    to_runs,
 )
 from nextmv.cloud.input_set import InputSet, ManagedInput
 from nextmv.cloud.scenario import Scenario, ScenarioInputType, _option_sets, _scenarios_by_id
@@ -258,7 +257,6 @@ class ApplicationBatchMixin:
         self: "Application",
         name: str | None = None,
         input_set_id: str | None = None,
-        instance_ids: list[str] | None = None,
         description: str | None = None,
         id: str | None = None,
         option_sets: dict[str, dict[str, str]] | None = None,
@@ -274,9 +272,6 @@ class ApplicationBatchMixin:
             Name of the batch experiment. If not provided, the ID will be used as the name.
         input_set_id: str | None
             ID of the input set to use for the batch experiment.
-        instance_ids: list[str]
-            This argument is deprecated, use `runs` instead.
-            List of instance IDs to use for the batch experiment.
         description: Optional[str]
             Optional description of the batch experiment.
         id: Optional[str]
@@ -317,11 +312,6 @@ class ApplicationBatchMixin:
         }
         if input_set_id is not None:
             payload["input_set_id"] = input_set_id
-        if instance_ids is not None:
-            input_set = self.input_set(input_set_id)
-            runs = to_runs(instance_ids, input_set)
-            payload_runs = [run.to_dict() for run in runs]
-            payload["runs"] = payload_runs
         if description is not None:
             payload["description"] = description
         if option_sets is not None:
@@ -346,7 +336,6 @@ class ApplicationBatchMixin:
         self: "Application",
         name: str | None = None,
         input_set_id: str | None = None,
-        instance_ids: list[str] | None = None,
         description: str | None = None,
         id: str | None = None,
         option_sets: dict[str, dict[str, str]] | None = None,
@@ -368,9 +357,6 @@ class ApplicationBatchMixin:
             Name of the batch experiment. If not provided, the ID will be used as the name.
         input_set_id: str
             ID of the input set to use for the batch experiment.
-        instance_ids: list[str]
-            List of instance IDs to use for the batch experiment. This argument
-            is deprecated, use `runs` instead.
         description: Optional[str]
             Optional description of the batch experiment.
         id: Optional[str]
@@ -402,7 +388,6 @@ class ApplicationBatchMixin:
         batch_id = self.new_batch_experiment(
             name=name,
             input_set_id=input_set_id,
-            instance_ids=instance_ids,
             description=description,
             id=id,
             option_sets=option_sets,

@@ -13,7 +13,7 @@ StatisticType : Enum
     Type of statistical process for collapsing multiple values of a metric.
 Comparison : Enum
     Comparison operators to use for comparing two metrics.
-ToleranceType : Enum
+MetricToleranceType : Enum
     Type of tolerance used for a metric.
 ExperimentStatus : Enum
     Status of an acceptance test experiment.
@@ -46,7 +46,6 @@ from enum import Enum
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.batch_experiment import ExperimentStatus
-from nextmv.deprecated import deprecated
 
 
 class MetricType(str, Enum):
@@ -210,69 +209,6 @@ class Comparison(str, Enum):
     """Less than or equal to metric type."""
     not_equal_to = "ne"
     """Not equal to metric type."""
-
-
-class ToleranceType(str, Enum):
-    """
-    !!! warning
-        `ToleranceType` is deprecated, use `MetricToleranceType` instead.
-
-    Type of tolerance used for a metric.
-
-    You can import the `ToleranceType` class directly from `cloud`:
-
-    ```python
-    from nextmv.cloud import ToleranceType
-    ```
-
-    This enumeration defines the different types of tolerances that can be used
-    when comparing metrics in acceptance tests.
-
-    Attributes
-    ----------
-    undefined : str
-        Undefined tolerance type (empty string).
-    absolute : str
-        Absolute tolerance type, using a fixed value.
-    relative : str
-        Relative tolerance type, using a percentage.
-
-    Examples
-    --------
-    >>> from nextmv.cloud import ToleranceType
-    >>> tol_type = ToleranceType.absolute
-    >>> tol_type
-    <ToleranceType.absolute: 'absolute'>
-    """
-
-    undefined = ""
-    """ToleranceType is deprecated, please use MetricToleranceType instead.
-    Undefined tolerance type."""
-    absolute = "absolute"
-    """ToleranceType is deprecated, please use MetricToleranceType instead.
-    Absolute tolerance type."""
-    relative = "relative"
-    """ToleranceType is deprecated, please use MetricToleranceType instead.
-    Relative tolerance type."""
-
-
-# Override __getattribute__ to emit deprecation warnings when enum values are accessed
-_original_getattribute = ToleranceType.__class__.__getattribute__
-
-
-def _deprecated_getattribute(cls, name: str):
-    # Only emit deprecation warning if this is specifically the ToleranceType class
-    if cls is ToleranceType and name in ("undefined", "absolute", "relative"):
-        deprecated(
-            f"ToleranceType.{name}",
-            "ToleranceType is deprecated and will be removed in a future version. "
-            "Please use MetricToleranceType instead",
-        )
-
-    return _original_getattribute(cls, name)
-
-
-ToleranceType.__class__.__getattribute__ = _deprecated_getattribute
 
 
 class MetricToleranceType(str, Enum):
