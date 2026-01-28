@@ -194,15 +194,15 @@ class ApplicationInstanceMixin:
         'Production Instance'
         """
 
-        if exist_ok and id is None:
+        if exist_ok and (id is None or id == ""):
             raise ValueError("If exist_ok is True, id must be provided")
 
         if exist_ok and self.instance_exists(instance_id=id):
             return self.instance(instance_id=id)
 
-        if id is None:
+        if id is None or id == "":
             id = safe_id(prefix="instance")
-        if name is None:
+        if name is None or name == "":
             name = id
 
         payload = {

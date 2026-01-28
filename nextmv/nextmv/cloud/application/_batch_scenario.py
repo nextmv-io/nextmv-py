@@ -304,11 +304,11 @@ class ApplicationBatchMixin:
         """
 
         # Generate ID if not provided
-        if id is None:
+        if id is None or id == "":
             id = safe_id("batch")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = id
 
         payload = {
@@ -481,11 +481,11 @@ class ApplicationBatchMixin:
             raise ValueError("At least one scenario must be provided")
 
         # Generate ID if not provided
-        if id is None:
+        if id is None or id == "":
             id = safe_id("scenario")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = id
 
         scenarios_by_id = _scenarios_by_id(scenarios)

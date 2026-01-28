@@ -210,7 +210,7 @@ class ApplicationSwitchbackMixin:
             switchback_test_id = safe_id("switchback")
 
         # Use ID as name if name not provided
-        if name is None:
+        if name is None or name == "":
             name = switchback_test_id
 
         payload = {

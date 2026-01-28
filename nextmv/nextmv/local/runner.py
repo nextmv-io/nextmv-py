@@ -204,7 +204,7 @@ def new_run(
     if description is None:
         description = f"Local run created at {created_at.isoformat().replace('+00:00', 'Z')}"
 
-    if name is None:
+    if name is None or name == "":
         name = f"local run {run_id}"
 
     information = RunInformation(
