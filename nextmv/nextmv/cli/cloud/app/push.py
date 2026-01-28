@@ -2,17 +2,18 @@
 This module defines the cloud app push command for the Nextmv CLI.
 """
 
+import sys
 from datetime import datetime, timezone
 from typing import Annotated
 
 import typer
+from rich.prompt import Prompt
 
 from nextmv.cli.configuration.config import build_app
 from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, in_progress, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
-from nextmv.cloud.instance import Instance
 from nextmv.manifest import Manifest
 
 # Set up subcommand application.
@@ -40,109 +41,48 @@ def push(
             metavar="MANIFEST_PATH",
         ),
     ] = None,
-    # Options for unsupervised prompts.
-    auto_create_yes: Annotated[
-        bool,
-        typer.Option(
-            "--auto-create-yes",
-            "-cy",
-            help="Create a new version and instance after push. "
-            "Skips confirmation prompt with [magenta]yes[/magenta]. Useful for non-interactive sessions.",
-            rich_help_panel="Automatic creation and updating",
-        ),
-    ] = False,
-    auto_create_no: Annotated[
-        bool,
-        typer.Option(
-            "--auto-create-no",
-            "-cn",
-            help="Do not create a new version and instance after push. "
-            "Skips confirmation prompt with [magenta]no[/magenta]. Useful for non-interactive sessions.",
-            rich_help_panel="Automatic creation and updating",
-        ),
-    ] = False,
-    update_default_instance_yes: Annotated[
-        bool,
-        typer.Option(
-            "--update-default-instance-yes",
-            "-uy",
-            help="Update the default instance of the app after version/instance creation. "
-            "Skips confirmation prompt with [magenta]yes[/magenta]. "
-            "Useful for non-interactive sessions. Activates --auto-create-yes.",
-            rich_help_panel="Automatic creation and updating",
-        ),
-    ] = False,
-    update_default_instance_no: Annotated[
-        bool,
-        typer.Option(
-            "--update-default-instance-no",
-            "-un",
-            help="Do not update the default instance of the app after version/instance creation. "
-            "Skips confirmation prompt with [magenta]no[/magenta]. "
-            "Useful for non-interactive sessions. Activates --auto-create-yes.",
-            rich_help_panel="Automatic creation and updating",
-        ),
-    ] = False,
-    # Options for version creation.
+    # Options for version control.
     version_id: Annotated[
         str | None,
         typer.Option(
             "--version-id",
-            help="Custom version ID when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
-            rich_help_panel="Version control",
+            "-v",
+            help="Custom ID for version creation after app push. Automatically generated if not provided. "
+            "Activates --version-yes.",
             metavar="VERSION_ID",
-        ),
-    ] = None,
-    version_description: Annotated[
-        str | None,
-        typer.Option(
-            "--version-description",
-            help="Custom version description when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
             rich_help_panel="Version control",
-            metavar="VERSION_DESCRIPTION",
         ),
     ] = None,
-    version_name: Annotated[
-        str | None,
+    version_yes: Annotated[
+        bool,
         typer.Option(
-            "--version-name",
-            help="Custom version name when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
+            "--version-yes",
+            "-y",
+            help="Create a new version after push. Skips confirmation prompt. Useful for non-interactive sessions.",
             rich_help_panel="Version control",
-            metavar="VERSION_NAME",
         ),
-    ] = None,
-    # Options for instance creation.
-    instance_id: Annotated[
+    ] = False,
+    # Options for instance control.
+    create_instance_id: Annotated[
         str | None,
         typer.Option(
-            "--instance-id",
-            help="Custom instance ID when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
+            "--create-instance-id",
+            "-c",
+            help="Link the newly created version to a [yellow]new[/yellow] instance with this ID. "
+            "Skips prompt to provide an instance ID. Useful for non-interactive sessions.",
+            metavar="CREATE_INSTANCE_ID",
             rich_help_panel="Instance control",
-            metavar="INSTANCE_ID",
         ),
     ] = None,
-    instance_description: Annotated[
+    update_instance_id: Annotated[
         str | None,
         typer.Option(
-            "--instance-description",
-            help="Custom instance description when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
+            "--update-instance-id",
+            "-u",
+            help="Link the newly created version to an [yellow]existing[/yellow] instance with this ID. "
+            "Skips prompt to provide an instance ID. Useful for non-interactive sessions.",
+            metavar="UPDATE_INSTANCE_ID",
             rich_help_panel="Instance control",
-            metavar="INSTANCE_DESCRIPTION",
-        ),
-    ] = None,
-    instance_name: Annotated[
-        str | None,
-        typer.Option(
-            "--instance-name",
-            help="Custom instance name when pushing the application. Automatically generated if not provided. "
-            "Activates --auto-create-yes.",
-            rich_help_panel="Instance control",
-            metavar="INSTANCE_NAME",
         ),
     ] = None,
     profile: ProfileOption = None,
@@ -157,23 +97,13 @@ def push(
     not provided, the CLI will look for a file named
     [magenta]app.yaml[/magenta] in the application's root.
 
-
     By default, this command only pushes the app. After the push, you will be
-    prompted to create a new version and instance. Use --auto-create-yes to
-    automatically create a new version and instance (skipping the prompt), or
-    --auto-create-no to skip creation.
-
-    The --version-id, --version-name, and --version-description options allow
-    you to customize the new version. The --instance-id, --instance-name, and
-    --instance-description options allow you to customize the new instance. If
-    any of these options are provided, --auto-create-yes is automatically
-    activated.
-
-    After version/instance creation, you will be prompted to set the new
-    instance as the default. Use --update-default-instance-yes to automatically
-    update the default instance (skipping the prompt), or
-    --update-default-instance-no to skip updating. Providing either of these
-    options automatically activates --auto-create-yes.
+    prompted to create a new version. If a new version is created, you will be
+    prompted to link it to an instance. If the instance exists, you will be
+    asked if you want to update it. If it doesn't, you will be asked to create
+    it. You can use the following flags to skip the prompts, useful in
+    non-interactive sessions like in a CI/CD pipeline: --version-yes,
+    --version-id, --create-instance-id, and --update-instance-id.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -186,40 +116,42 @@ def push(
     - Push an application, with ID [magenta]hare-app[/magenta], using a custom manifest file.
         $ [dim]nextmv cloud app push --app-id hare-app --manifest ./custom-manifest.yaml[/dim]
 
-    - Push an application, with ID [magenta]hare-app[/magenta], from a specific [magenta]./my-app[/magenta] directory
-      with a custom manifest.
-        $ [dim]nextmv cloud app push --app-id hare-app --app-dir ./my-app --manifest ./custom-manifest.yaml[/dim]
+    - Push and automatically create a new version (no prompt):
+        $ [dim]nextmv cloud app push --app-id hare-app --version-yes[/dim]
 
-    - Push and automatically create a new version and instance (no prompt).
-        $ [dim]nextmv cloud app push --app-id hare-app --auto-create-yes[/dim]
-
-    - Push and skip version/instance creation (no prompt).
-        $ [dim]nextmv cloud app push --app-id hare-app --auto-create-no[/dim]
-
-    - Push and automatically create a new version and instance, then set the new instance as default (no prompts).
-        $ [dim]nextmv cloud app push --app-id hare-app --auto-create-yes --update-default-instance-yes[/dim]
-
-    - Push and create a new version with a custom version ID (auto-create is activated).
+    - Push and create a new version with a custom version ID (no prompt).
         $ [dim]nextmv cloud app push --app-id hare-app --version-id v1.0.0[/dim]
 
-    - Push with custom version and instance attributes, and set the new instance as default (all prompts skipped).
-        $ [dim]nextmv cloud app push --app-id hare-app \\
-            --version-id v1.0.0 \\
-            --version-name "Release 1.0.0" \\
-            --version-description "First stable release" \\
-            --instance-id inst-1 \\
-            --instance-name "Production Instance" \\
-            --instance-description "Main deployment" \\
-            --update-default-instance-yes[/dim]
+    - Push and create a new version, then link it to a new instance with a specific ID (no prompt):
+        $ [dim]nextmv cloud app push --app-id hare-app --version-yes --create-instance-id inst-1[/dim]
+
+    - Push and create a new version, then link it to an existing instance (no prompt):
+        $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
     """
 
-    if auto_create_yes and auto_create_no:
-        error("Cannot specify both --auto-create-yes and --auto-create-no.")
-
-    if update_default_instance_yes and update_default_instance_no:
-        error("Cannot specify both --update-default-instance-yes and --update-default-instance-no.")
+    # We cannot create and update an instance at the same time.
+    update_defined = update_instance_id is not None and update_instance_id != ""
+    create_defined = create_instance_id is not None and create_instance_id != ""
+    if update_defined and create_defined:
+        error("Cannot use --update-instance-id and --create-instance-id at the same time.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
+
+    # We cannot update an instance that does not exist.
+    if update_defined and not cloud_app.instance_exists(instance_id=update_instance_id):
+        error(
+            f"Used option --update-instance-id but the instance {update_instance_id} does not exist. "
+            "Use --create-instance-id instead."
+        )
+
+    # We cannot create an instance that already exists.
+    if create_defined and cloud_app.instance_exists(instance_id=create_instance_id):
+        error(
+            f"Used option --create-instance-id but the instance {create_instance_id} already exists. "
+            "Use --update-instance-id instead."
+        )
+
+    # Do the normal push first.
     loaded_manifest = Manifest.from_yaml(dirpath=manifest) if manifest is not None and manifest != "" else None
     cloud_app.push(
         manifest=loaded_manifest,
@@ -228,134 +160,292 @@ def push(
         rich_print=True,
     )
 
-    instance, should_update = _handle_version_instance_creation(
+    now = datetime.now(timezone.utc)
+    version_id, should_continue = _handle_version_creation(
         cloud_app=cloud_app,
         app_id=app_id,
-        auto_create_yes=auto_create_yes,
-        auto_create_no=auto_create_no,
-        update_default_instance_yes=update_default_instance_yes,
-        update_default_instance_no=update_default_instance_no,
         version_id=version_id,
-        version_name=version_name,
-        version_description=version_description,
-        instance_id=instance_id,
-        instance_name=instance_name,
-        instance_description=instance_description,
+        version_yes=version_yes,
+        now=now,
     )
-    _handle_instance_update(
+    if not should_continue:
+        return
+
+    # If the override for updating an instance was used, we update the instance
+    # and we are done.
+    if update_defined:
+        info("Used option --update-instance-id to link version to existing instance.", emoji=":bulb:")
+        _update_instance(
+            cloud_app=cloud_app,
+            app_id=app_id,
+            version_id=version_id,
+            instance_id=update_instance_id,
+        )
+
+        return
+
+    # If the override for creating a new instance was used, we create the
+    # instance and we are done.
+    if create_defined:
+        info("Used option --create-instance-id to link version to new instance.", emoji=":bulb:")
+        _create_instance(
+            cloud_app=cloud_app,
+            app_id=app_id,
+            version_id=version_id,
+            instance_id=create_instance_id,
+            now=now,
+        )
+
+        return
+
+    # If no overrides are used, we handle instance prompting.
+    _handle_instance_prompting(
         cloud_app=cloud_app,
         app_id=app_id,
-        instance=instance,
-        should_update=should_update,
-        update_default_instance_yes=update_default_instance_yes,
-        update_default_instance_no=update_default_instance_no,
+        version_id=version_id,
+        now=now,
     )
 
 
-def _handle_version_instance_creation(
+def _handle_version_creation(
     cloud_app: Application,
     app_id: str,
-    auto_create_yes: bool,
-    auto_create_no: bool,
-    update_default_instance_yes: bool,
-    update_default_instance_no: bool,
     version_id: str | None,
-    version_name: str | None,
-    version_description: str | None,
-    instance_id: str | None,
-    instance_name: str | None,
-    instance_description: str | None,
-) -> tuple[Instance | None, bool]:
-    if auto_create_no:
+    version_yes: bool,
+    now: datetime,
+) -> tuple[str, bool]:
+    """
+    Handle the logic for version creation after pushing an application.
+
+    If a version ID is provided and exists, it is used directly. If not, the user is prompted (unless auto-confirmed)
+    to create a new version. If confirmed, a new version is created with an automatic description.
+
+    Parameters
+    ----------
+    cloud_app : Application
+        The cloud application object to interact with Nextmv Cloud.
+    app_id : str
+        The application ID.
+    version_id : str or None
+        The version ID to use or check for existence. If None or empty, a new version may be created.
+    version_yes : bool
+        Whether to skip the prompt and auto-create a new version.
+    now : datetime
+        The current datetime, used for version description.
+
+    Returns
+    -------
+    tuple[str, bool]
+        A tuple containing the version ID (empty string if not created) and a boolean indicating
+        whether to continue with subsequent steps (True if a version is selected or created, False otherwise).
+    """
+
+    # If the user provides a version, and it exists, we use it directly and we
+    # are done.
+    if version_id is not None and version_id != "":
+        exists = cloud_app.version_exists(version_id=version_id)
+        if exists:
+            error(
+                f"Version [magenta]{version_id}[/magenta] already exists for application [magenta]{app_id}[/magenta]."
+            )
+
+            return "", False
+
         info(
-            msg="--auto-create-no activated, will not create a new version and instance.",
+            msg=f"Version [magenta]{version_id}[/magenta] does not exist. A new version will be created.",
             emoji=":bulb:",
         )
-        return None, False
 
-    # Determine if we need to create a new version and instance based on the options provided.
-    version_provided = version_id is not None or version_name is not None or version_description is not None
-    instance_provided = instance_id is not None or instance_name is not None or instance_description is not None
-    if version_provided or instance_provided or update_default_instance_yes or update_default_instance_no:
-        auto_create_yes = True
+        version_yes = True  # Activate auto-confirm since user provided a version ID.
 
-    if not auto_create_yes:
+    # If we are not auto-confirming version creation, ask the user.
+    if not version_yes:
         should_create = get_confirmation(
-            f"Do you want to create a new version and instance for application [magenta]{app_id}[/magenta] now?"
+            msg=f"Do you want to create a new version [magenta]{app_id}[/magenta] now?",
+            default=True,
         )
 
+        # If the user does not want to create a new version, we are done.
         if not should_create:
             info(
-                msg="Will not create a new version and instance.",
+                msg="Will not create a new version.",
                 emoji=":bulb:",
             )
-            return None, False
+            return "", False
 
-    in_progress("Creating a new version and instance...")
-    now = datetime.now(timezone.utc)
-
-    if version_description is None or version_description == "":
-        version_description = f"Version created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-
+    # Create a new version if either the user confirms by prompt or by using
+    # the flag.
+    in_progress("Creating a new version...")
+    version_description = f"Version created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
     version = cloud_app.new_version(
         id=version_id,
-        name=version_name,
         description=version_description,
     )
-    success(f"New version [magenta]{version.id}[/magenta] created for application [magenta]{app_id}[/magenta].")
+    version_id = version.id
+    success(f"New version [magenta]{version_id}[/magenta] created for application [magenta]{app_id}[/magenta].")
 
-    if instance_description is None or instance_description == "":
-        instance_description = f"Instance created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-
-    instance = cloud_app.new_instance(
-        version_id=version.id,
-        id=instance_id,
-        name=instance_name,
-        description=instance_description,
-    )
-    success(
-        f"New instance [magenta]{instance.id}[/magenta] created using version [magenta]{version.id}[/magenta] "
-        f"for application [magenta]{app_id}[/magenta]."
-    )
-
-    return instance, True
+    return version_id, True
 
 
-def _handle_instance_update(
+def _handle_instance_prompting(
     cloud_app: Application,
     app_id: str,
-    instance: Instance | None,
-    should_update: bool,
-    update_default_instance_yes: bool,
-    update_default_instance_no: bool,
+    version_id: str,
+    now: datetime,
 ) -> None:
-    if instance is None or not should_update:
+    """
+    Handle interactive prompting for linking a version to an instance after a push.
+
+    In interactive terminals, prompts the user to link the new version to an existing or new instance.
+    If the terminal is non-interactive, skips prompting. Handles both updating existing instances and creating new ones.
+
+    Parameters
+    ----------
+    cloud_app : Application
+        The cloud application object to interact with Nextmv Cloud.
+    app_id : str
+        The application ID.
+    version_id : str
+        The version ID to link to an instance.
+    now : datetime
+        The current datetime, used for instance description if a new instance is created.
+    """
+
+    # If this is not an interactive terminal, do not ask for instance linking,
+    # to avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        info(
+            msg="Non-interactive terminal detected. Skipping instance linking.",
+            emoji=":bulb:",
+        )
+
         return
 
-    if update_default_instance_no:
+    # Prompt the user for an instance ID to link the new version to.
+    instance_id = Prompt.ask(
+        f"Do you want to link version [magenta]{version_id}[/magenta] to an instance? If so, enter the instance ID. "
+        "Leave blank to abort",
+        case_sensitive=False,
+    )
+    if instance_id == "":
         info(
-            msg="--update-default-instance-no activated, will not update the default instance.",
+            msg="No instance ID provided. Skipping instance linking.",
             emoji=":bulb:",
         )
         return
 
-    if not update_default_instance_yes:
+    # Based on whether the instance exists or not, ask the user if they want to
+    # update or create it.
+    exists = cloud_app.instance_exists(instance_id=instance_id)
+
+    # If the instance exists, ask if we want to update it.
+    if exists:
         should_update = get_confirmation(
-            f"Do you want to set instance [magenta]{instance.id}[/magenta] as the default instance for "
-            f"application [magenta]{app_id}[/magenta]?"
+            msg=f"Instance [magenta]{instance_id}[/magenta] exists. "
+            f"Do you want to link it to version [magenta]{version_id}[/magenta]?",
+            default=True,
         )
 
         if not should_update:
             info(
-                msg=f"Default instance for application [magenta]{app_id}[/magenta] not updated.",
+                msg=f"Will not update instance [magenta]{instance_id}[/magenta].",
                 emoji=":bulb:",
             )
             return
 
-    in_progress(
-        f"Updating default instance for application [magenta]{app_id}[/magenta] to [magenta]{instance.id}[/magenta]..."
+        _update_instance(
+            cloud_app=cloud_app,
+            app_id=app_id,
+            version_id=version_id,
+            instance_id=instance_id,
+        )
+
+        return
+
+    # If the instance does not exist, ask if we want to create it.
+    should_create = get_confirmation(
+        msg=f"Instance [magenta]{instance_id}[/magenta] does not exist. "
+        f"Do you want to create it using version [magenta]{version_id}[/magenta]?",
+        default=True,
     )
-    cloud_app.update(default_instance_id=instance.id)
+
+    if not should_create:
+        info(
+            msg=f"Will not create instance [magenta]{instance_id}[/magenta].",
+            emoji=":bulb:",
+        )
+        return
+
+    _create_instance(
+        cloud_app=cloud_app,
+        app_id=app_id,
+        version_id=version_id,
+        instance_id=instance_id,
+        now=now,
+    )
+
+
+def _update_instance(
+    cloud_app: Application,
+    app_id: str,
+    version_id: str,
+    instance_id: str,
+) -> None:
+    """
+    Update an existing instance to use a new version.
+
+    Parameters
+    ----------
+    cloud_app : Application
+        The cloud application object to interact with Nextmv Cloud.
+    app_id : str
+        The application ID.
+    version_id : str
+        The version ID to link to the instance.
+    instance_id : str
+        The instance ID to update.
+    """
+
+    in_progress(f"Updating instance [magenta]{instance_id}[/magenta] to use version [magenta]{version_id}[/magenta]...")
+    cloud_app.update_instance(id=instance_id, version_id=version_id)
     success(
-        f"Default instance for application [magenta]{app_id}[/magenta] updated to [magenta]{instance.id}[/magenta].",
+        f"Instance [magenta]{instance_id}[/magenta] updated to use version [magenta]{version_id}[/magenta] "
+        f"for application [magenta]{app_id}[/magenta]."
+    )
+
+
+def _create_instance(
+    cloud_app: Application,
+    app_id: str,
+    version_id: str,
+    instance_id: str,
+    now: datetime,
+) -> None:
+    """
+    Create a new instance linked to a specific version.
+
+    Parameters
+    ----------
+    cloud_app : Application
+        The cloud application object to interact with Nextmv Cloud.
+    app_id : str
+        The application ID.
+    version_id : str
+        The version ID to link to the new instance.
+    instance_id : str
+        The instance ID to create.
+    now : datetime
+        The current datetime, used for the instance description.
+    """
+
+    in_progress(f"Creating a new instance with ID [magenta]{instance_id}[/magenta]...")
+    instance_description = f"Instance created automatically from push at {now.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+    instance = cloud_app.new_instance(
+        version_id=version_id,
+        id=instance_id,
+        description=instance_description,
+    )
+    success(
+        f"New instance [magenta]{instance.id}[/magenta] created using version [magenta]{version_id}[/magenta] "
+        f"for application [magenta]{app_id}[/magenta]."
     )
