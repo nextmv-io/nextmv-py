@@ -10,6 +10,8 @@ from nextmv.model import _cleanup_mlflow_db
 import nextmv
 import nextmv.cloud
 
+import nextmv
+
 
 class SimpleDecisionModel(nextmv.Model):
     def solve(self, input: nextmv.Input) -> nextmv.Output:

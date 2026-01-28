@@ -6,7 +6,6 @@ import unittest
 from unittest.mock import Mock, patch
 
 import yaml
-
 from nextmv.input import Input, InputFormat
 from nextmv.local.application import Application
 from nextmv.local.local import NEXTMV_DIR, RUNS_KEY

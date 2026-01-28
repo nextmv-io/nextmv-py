@@ -5,9 +5,8 @@ Unit tests for the nextmv CLI main module.
 import unittest
 from unittest.mock import patch
 
-from typer.testing import CliRunner
-
 from nextmv.cli.main import app
+from typer.testing import CliRunner
 
 
 class TestCallback(unittest.TestCase):
