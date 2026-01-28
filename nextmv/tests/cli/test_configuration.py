@@ -7,8 +7,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from typer.testing import CliRunner
-
 from nextmv.cli.configuration.config import (
     API_KEY_KEY,
     CONFIG_DIR,
@@ -21,6 +19,7 @@ from nextmv.cli.configuration.config import (
     save_config,
 )
 from nextmv.cli.main import app, go_cli_exists, remove_go_cli
+from typer.testing import CliRunner
 
 
 class TestConfigureCommand(unittest.TestCase):

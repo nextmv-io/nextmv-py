@@ -5,8 +5,9 @@ import subprocess
 import sys
 import unittest
 
-import nextmv
 import nextmv.cloud
+
+import nextmv
 
 
 class SimpleDecisionModel(nextmv.Model):
