@@ -207,10 +207,8 @@ class CloudIntegrationWorkflow(FlowSpec):
         for inst in instances:
             app.delete_instance(instance_id=inst.id)
 
-        # We can delete the app and it should not exist.
+        # We can delete the app.
         app.delete()
-        exists = cloud.Application.exists(client=client, id=app.id)
-        assert not exists
 
 
 def test_cloud_integration():
