@@ -695,7 +695,7 @@ class Options:
             help=argparse.SUPPRESS,
             default="1",
         )
-        args = parser.parse_args()
+        args, _ = parser.parse_known_args()
 
         for arg in vars(args):
             if arg == "fff" or arg == "f":
