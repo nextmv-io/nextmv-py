@@ -10,7 +10,7 @@ from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.local.application import Application
-from nextmv.local.registry import read_local_registry
+from nextmv.local.registry import delete_registry_entry, read_local_registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -68,4 +68,5 @@ def delete(
 
     # Delete the app.
     app.delete()
+    delete_registry_entry(app_id)
     success(f"Application [magenta]{app_id}[/magenta] deleted successfully.")

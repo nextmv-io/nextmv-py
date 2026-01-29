@@ -7,7 +7,6 @@ import shutil
 import tarfile
 import tempfile
 from collections.abc import Callable
-from time import strftime
 from typing import Annotated
 
 import rich
@@ -17,6 +16,7 @@ from nextmv.cli.community.list import download_file, download_manifest, find_app
 from nextmv.cli.message import error, success
 from nextmv.cli.options import ProfileOption
 from nextmv.local.registry import AppEntry, add_registry_entry
+from nextmv.safe import safe_id
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -141,7 +141,7 @@ def clone(
     # Register as a local app.
     add_registry_entry(
         AppEntry(
-            app_id=f"{app}-{strftime('%Y%m%d-%H%M%S')}",
+            app_id=safe_id(app),
             path=os.path.abspath(full_destination),
         ),
     )
