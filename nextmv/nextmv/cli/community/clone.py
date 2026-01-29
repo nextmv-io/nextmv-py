@@ -142,7 +142,7 @@ def clone(
     add_registry_entry(
         AppEntry(
             app_id=f"{app}-{strftime('%Y%m%d-%H%M%S')}",
-            path=full_destination,
+            path=os.path.abspath(full_destination),
         ),
     )
 
