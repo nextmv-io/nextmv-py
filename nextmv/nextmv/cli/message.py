@@ -29,10 +29,7 @@ def message(msg: str, emoji: str | None = None) -> None:
         `:hourglass_flowing_sand:`.
     """
 
-    msg = msg.rstrip("\n")
-    if not msg.endswith("."):
-        msg += "."
-
+    msg = _format(msg)
     if emoji:
         rich.print(f"{emoji} {msg}", file=sys.stderr)
         return
@@ -91,10 +88,7 @@ def warning(msg: str) -> None:
         The warning message to display.
     """
 
-    msg = msg.rstrip("\n")
-    if not msg.endswith("."):
-        msg += "."
-
+    msg = _format(msg)
     rich.print(f":construction: [yellow] Warning:[/yellow] {msg}", file=sys.stderr)
 
 
@@ -114,10 +108,7 @@ def error(msg: str) -> None:
         Exits the program with code 1.
     """
 
-    msg = msg.rstrip("\n")
-    if not msg.endswith("."):
-        msg += "."
-
+    msg = _format(msg)
     rich.print(f":x: [red]Error:[/red] {msg}", file=sys.stderr)
 
     raise typer.Exit(code=1)
@@ -161,3 +152,19 @@ def enum_values(enum_class: Enum) -> str:
         return " and ".join(values)
 
     return ", ".join(values[:-1]) + ", and " + values[-1]
+
+
+def _format(msg: str) -> str:
+    """
+    Format a message to ensure it ends with a period.
+
+    Parameters
+    ----------
+    msg : str
+        The message to format.
+    """
+    msg = msg.rstrip("\n")
+    if not msg.endswith("."):
+        msg += "."
+
+    return msg

@@ -161,7 +161,7 @@ guidelines:
   - `error`: prints an error and raises an exception. Use for critical issues
     and to return early from commands.
 - For printing `JSON` information, use the `print_json` function in the
-  `messages.py` file to print JSON output. This ensures consistent formatting
+  `message.py` file to print JSON output. This ensures consistent formatting
   across the CLI.
 - Emojis should be formatted according to [Rich's emoji guide][rich-emoji].
   They are strings enclosed in colons, e.g. `:rocket:`, `:boom:`,
@@ -174,9 +174,9 @@ guidelines:
   ```
 
 - When showing the values of an `Enum`, use the `enum_values` function in the
-  `messages.py` file which will give a nicely colored, comma-separated list of the
-  enum values. Consider the following example, were we get the allowed values
-  for the `InputFormat` class.
+  `message.py` file which will give a nicely colored, comma-separated list of
+  the enum values. Consider the following example, where we get the allowed
+  values for the `InputFormat` class.
 
   ```python
       content_format: Annotated[
