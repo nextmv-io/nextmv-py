@@ -200,6 +200,9 @@ class CloudIntegrationWorkflow(FlowSpec):
         # We can delete the version.
         app.delete_version(version_id=version.id)
 
+        # Reset the default instnace.
+        app.update(default_instance_id="latest")
+
         # We can delete the instances.
         for inst in instances:
             app.delete_instance(instance_id=inst.id)
