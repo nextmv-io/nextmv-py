@@ -80,7 +80,7 @@ dev = [
     "folium>=0.20.0",
     "plotly>=6.0.1",
     "pytest>=9.0.2",
-    "nextpipe>=0.5.0",
+    "nextpipe>=0.6.0.dev0",
 ]
 
 [tool.hatch.version]
