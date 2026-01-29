@@ -570,18 +570,18 @@ class CloudIntegrationWorkflow(FlowSpec):
         # We can list acceptance tests.
         acceptance_tests = app.list_acceptance_tests()
         assert len(acceptance_tests) >= 1
-        acceptance_test_ids = {a.acceptance_test_id for a in acceptance_tests}
-        assert acceptance.acceptance_test_id in acceptance_test_ids
+        acceptance_test_ids = {a.id for a in acceptance_tests}
+        assert acceptance.id in acceptance_test_ids
 
         # We can get an acceptance test.
-        acceptance = app.acceptance_test(acceptance_test_id=acceptance.acceptance_test_id)
+        acceptance = app.acceptance_test(acceptance_test_id=acceptance.id)
         assert acceptance is not None
 
         # We can update an acceptance test.
         name = "Hoppy Acceptance & Light"
         description = "An acceptance test for hoppy bunnies"
         acceptance = app.update_acceptance_test(
-            acceptance_test_id=acceptance.acceptance_test_id,
+            acceptance_test_id=acceptance.id,
             name=name,
             description=description,
         )
@@ -589,7 +589,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert acceptance.description == description
 
         # We can delete an acceptance test.
-        app.delete_acceptance_test(acceptance_test_id=acceptance.acceptance_test_id)
+        app.delete_acceptance_test(acceptance_test_id=acceptance.id)
 
     @needs(predecessors=[init_app, community_push])
     @step
@@ -651,6 +651,80 @@ class CloudIntegrationWorkflow(FlowSpec):
         # We can delete a secrets collection.
         app.delete_secrets_collection(secrets_collection_id=summary.collection_id)
 
+    @needs(predecessors=[init_app, instances])
+    @step
+    def ensembles(app: cloud.Application, instances: tuple[cloud.Instance, cloud.Instance]) -> None:
+        """
+        Performs ensemble operations.
+
+        Parameters
+        ----------
+        app : cloud.Application
+            The application to perform ensemble operations on.
+        instances : tuple[cloud.Instance, cloud.Instance]
+            The instances to use for the ensemble definition.
+        """
+
+        inst1, _ = instances
+
+        # We can create an ensemble definition.
+        definition = app.new_ensemble_definition(
+            run_groups=[
+                cloud.RunGroup(
+                    id="run-group-1",
+                    instance_id=inst1.id,
+                ),
+            ],
+            rules=[
+                cloud.EvaluationRule(
+                    id="eval-rule-1",
+                    statistics_path="result.value",
+                    objective=cloud.RuleObjective.MAXIMIZE,
+                    tolerance=cloud.RuleTolerance(
+                        value=0.01,
+                        type=cloud.RuleToleranceType.ABSOLUTE,
+                    ),
+                    index=0,
+                ),
+            ],
+        )
+
+        # We can get an ensemble definition.
+        definition = app.ensemble_definition(ensemble_definition_id=definition.id)
+        assert definition is not None
+
+        # We can list ensemble definitions.
+        definitions = app.list_ensemble_definitions()
+        assert len(definitions) >= 1
+        definition_ids = {d.id for d in definitions}
+        assert definition.id in definition_ids
+
+        # We can update an ensemble definition.
+        name = "Bunny Ensemble"
+        description = "Ensemble for bunny runs"
+        definition = app.update_ensemble_definition(
+            id=definition.id,
+            name=name,
+            description=description,
+        )
+        assert definition.name == name
+        assert definition.description == description
+
+        # We can start an ensemble run.
+        input_data = {"name": "world", "radius": 6378, "distance": 147.6}
+        app.new_run(
+            input=input_data,
+            configuration=nextmv.RunConfiguration(
+                run_type=nextmv.RunTypeConfiguration(
+                    run_type=nextmv.RunType.ENSEMBLE,
+                    definition_id=definition.id,
+                ),
+            ),
+        )
+
+        # We can delete an ensemble definition.
+        app.delete_ensemble_definition(ensemble_definition_id=definition.id)
+
     # For this step, all other steps are predecessors to make sure there are no
     # on-going processes before cleanup.
     @needs(
@@ -665,6 +739,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             switchback_tests,
             acceptance_tests,
             secrets,
+            ensembles,
         ]
     )
     @step
@@ -678,6 +753,8 @@ class CloudIntegrationWorkflow(FlowSpec):
         __unused3,
         __unused4,
         __unused5,
+        __unused6,
+        __unused7,
     ) -> None:
         """Performs cleanup operations."""
 

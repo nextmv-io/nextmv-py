@@ -45,6 +45,8 @@ class TestComparisonSingle(BaseModel):
         ID of the candidate instance for comparison.
     """
 
+    __test__ = False  # Prevents pytest from collecting this class as a test case
+
     baseline_instance_id: str
     """ID of the baseline instance for comparison."""
     candidate_instance_id: str
