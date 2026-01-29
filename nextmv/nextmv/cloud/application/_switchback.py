@@ -5,6 +5,7 @@ Application mixin for managing switchback tests.
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from nextmv.cloud.shadow import StopIntent
 from nextmv.cloud.switchback import SwitchbackTest, SwitchbackTestMetadata, TestComparisonSingle
 from nextmv.run import Run
 from nextmv.safe import safe_id
@@ -257,7 +258,7 @@ class ApplicationSwitchbackMixin:
             endpoint=f"{self.experiments_endpoint}/switchback/{switchback_test_id}/start",
         )
 
-    def stop_switchback_test(self: "Application", switchback_test_id: str) -> None:
+    def stop_switchback_test(self: "Application", switchback_test_id: str, intent: StopIntent) -> None:
         """
         Stop a switchback test. The test should already have started before using
         this method.
@@ -267,15 +268,23 @@ class ApplicationSwitchbackMixin:
         switchback_test_id : str
             ID of the switchback test to stop.
 
+        intent : StopIntent
+            Intent for stopping the switchback test.
+
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
         """
 
+        payload = {
+            "intent": intent.value,
+        }
+
         _ = self.client.request(
             method="PUT",
             endpoint=f"{self.experiments_endpoint}/switchback/{switchback_test_id}/stop",
+            payload=payload,
         )
 
     def update_switchback_test(

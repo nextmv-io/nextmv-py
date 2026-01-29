@@ -4,7 +4,7 @@ Application mixin for managing shadow tests.
 
 from typing import TYPE_CHECKING
 
-from nextmv.cloud.shadow import ShadowTest, ShadowTestMetadata, StartEvents, TerminationEvents
+from nextmv.cloud.shadow import ShadowTest, ShadowTestMetadata, StartEvents, StopIntent, TerminationEvents
 from nextmv.run import Run
 from nextmv.safe import safe_id
 
@@ -248,7 +248,7 @@ class ApplicationShadowMixin:
             endpoint=f"{self.experiments_endpoint}/shadow/{shadow_test_id}/start",
         )
 
-    def stop_shadow_test(self: "Application", shadow_test_id: str) -> None:
+    def stop_shadow_test(self: "Application", shadow_test_id: str, intent: StopIntent) -> None:
         """
         Stop a shadow test. The test should already have started before using
         this method.
@@ -257,16 +257,22 @@ class ApplicationShadowMixin:
         ----------
         shadow_test_id : str
             ID of the shadow test to stop.
-
+        intent : StopIntent
+            Intent for stopping the shadow test.
         Raises
         ------
         requests.HTTPError
             If the response status code is not 2xx.
         """
 
+        payload = {
+            "intent": intent.value,
+        }
+
         _ = self.client.request(
             method="PUT",
             endpoint=f"{self.experiments_endpoint}/shadow/{shadow_test_id}/stop",
+            payload=payload,
         )
 
     def update_shadow_test(

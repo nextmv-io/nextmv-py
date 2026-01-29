@@ -58,6 +58,7 @@ from .secrets import SecretType as SecretType
 from .shadow import ShadowTest as ShadowTest
 from .shadow import ShadowTestMetadata as ShadowTestMetadata
 from .shadow import StartEvents as StartEvents
+from .shadow import StopIntent as StopIntent
 from .shadow import TerminationEvents as TerminationEvents
 from .shadow import TestComparison as TestComparison
 from .switchback import SwitchbackPlan as SwitchbackPlan
