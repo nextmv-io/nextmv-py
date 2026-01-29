@@ -9,6 +9,7 @@ import requests
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
 from nextmv.cloud.batch_experiment import BatchExperimentRun, ExperimentStatus
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
+from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
     from . import Application
@@ -163,8 +164,8 @@ class ApplicationAcceptanceMixin:
         self: "Application",
         candidate_instance_id: str,
         baseline_instance_id: str,
-        id: str,
         metrics: list[Metric | dict[str, Any]],
+        id: str | None = None,
         name: str | None = None,
         input_set_id: str | None = None,
         description: str | None = None,
@@ -185,8 +186,8 @@ class ApplicationAcceptanceMixin:
             ID of the candidate instance.
         baseline_instance_id : str
             ID of the baseline instance.
-        id : str
-            ID of the acceptance test.
+        id : str | None, default=None
+            ID of the acceptance test. Will be generated if not provided.
         metrics : list[Union[Metric, dict[str, Any]]]
             List of metrics to use for the acceptance test.
         name : Optional[str], default=None
@@ -210,6 +211,11 @@ class ApplicationAcceptanceMixin:
             If the batch experiment ID does not match the acceptance test ID.
         """
 
+        # Generate ID if not provided
+        if id is None or id == "":
+            id = safe_id("acceptance")
+
+        # Use ID as name if name not provided
         if name is None or name == "":
             name = id
 
@@ -265,11 +271,10 @@ class ApplicationAcceptanceMixin:
             "metrics": payload_metrics,
             "experiment_id": batch_experiment_id,
             "name": name,
+            "id": id,
         }
         if description is not None:
             payload["description"] = description
-        if id is not None:
-            payload["id"] = id
 
         response = self.client.request(
             method="POST",
@@ -283,8 +288,8 @@ class ApplicationAcceptanceMixin:
         self: "Application",
         candidate_instance_id: str,
         baseline_instance_id: str,
-        id: str,
         metrics: list[Metric | dict[str, Any]],
+        id: str | None = None,
         name: str | None = None,
         input_set_id: str | None = None,
         description: str | None = None,
@@ -302,8 +307,8 @@ class ApplicationAcceptanceMixin:
             ID of the candidate instance.
         baseline_instance_id : str
             ID of the baseline instance.
-        id : str
-            ID of the acceptance test.
+        id : str | None, default=None
+            ID of the acceptance test. Will be generated if not provided.
         metrics : list[Union[Metric, dict[str, Any]]]
             List of metrics to use for the acceptance test.
         name : Optional[str], default=None

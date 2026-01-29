@@ -447,9 +447,10 @@ class CloudIntegrationWorkflow(FlowSpec):
         # We can delete a shadow test.
         app.delete_shadow_test(shadow_test_id=shadow_test.shadow_test_id)
 
-    @needs(predecessors=[init_app, instances])
+    # We make switchback a successor of shadow tests to reuse the instances.
+    @needs(predecessors=[init_app, instances, shadow_tests])
     @step
-    def switchback_tests(app: cloud.Application, instances: tuple[cloud.Instance, cloud.Instance]) -> None:
+    def switchback_tests(app: cloud.Application, instances: tuple[cloud.Instance, cloud.Instance], __unused) -> None:
         """
         Performs switchback test operations.
 
@@ -467,7 +468,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         switchback_test = app.new_switchback_test(
             comparison=TestComparisonSingle(
                 baseline_instance_id=inst1.id,
-                treatment_instance_id=inst2.id,
+                candidate_instance_id=inst2.id,
             ),
             unit_duration_minutes=1,
             units=1,
@@ -522,6 +523,134 @@ class CloudIntegrationWorkflow(FlowSpec):
         # We can delete a switchback test.
         app.delete_switchback_test(switchback_test_id=switchback_test.switchback_test_id)
 
+    @needs(predecessors=[init_app, instances, input_sets])
+    @step
+    def acceptance_tests(
+        app: cloud.Application,
+        instances: tuple[cloud.Instance, cloud.Instance],
+        input_set: cloud.InputSet,
+    ) -> None:
+        """
+        Performs acceptance test operations.
+
+        Parameters
+        ----------
+        app : cloud.Application
+            The application to perform acceptance test operations on.
+        instances : tuple[cloud.Instance, cloud.Instance]
+            The instances to use for the acceptance test.
+        input_set : cloud.InputSet
+            The input set to use for the acceptance test.
+        """
+
+        inst1, inst2 = instances
+
+        # We can create an acceptance test.
+        acceptance = app.new_acceptance_test_with_result(
+            baseline_instance_id=inst1.id,
+            candidate_instance_id=inst2.id,
+            metrics=[
+                cloud.Metric(
+                    field="result.value",
+                    metric_type=cloud.MetricType.direct_comparison,
+                    params=cloud.MetricParams(
+                        operator=cloud.Comparison.equal_to,
+                        tolerance=cloud.MetricTolerance(
+                            type=cloud.MetricToleranceType.absolute,
+                            value=0.01,
+                        ),
+                    ),
+                    statistic=cloud.StatisticType.mean,
+                ),
+            ],
+            input_set_id=input_set.id,
+        )
+        assert acceptance is not None
+
+        # We can list acceptance tests.
+        acceptance_tests = app.list_acceptance_tests()
+        assert len(acceptance_tests) >= 1
+        acceptance_test_ids = {a.acceptance_test_id for a in acceptance_tests}
+        assert acceptance.acceptance_test_id in acceptance_test_ids
+
+        # We can get an acceptance test.
+        acceptance = app.acceptance_test(acceptance_test_id=acceptance.acceptance_test_id)
+        assert acceptance is not None
+
+        # We can update an acceptance test.
+        name = "Hoppy Acceptance & Light"
+        description = "An acceptance test for hoppy bunnies"
+        acceptance = app.update_acceptance_test(
+            acceptance_test_id=acceptance.acceptance_test_id,
+            name=name,
+            description=description,
+        )
+        assert acceptance.name == name
+        assert acceptance.description == description
+
+        # We can delete an acceptance test.
+        app.delete_acceptance_test(acceptance_test_id=acceptance.acceptance_test_id)
+
+    @needs(predecessors=[init_app, community_push])
+    @step
+    def secrets(app: cloud.Application, __unused) -> None:
+        """
+        Performs secret operations.
+
+        Parameters
+        ----------
+        app : cloud.Application
+            The application to perform secret operations on.
+        """
+
+        # We can create a secrets collection.
+        secrets = [
+            cloud.Secret(
+                secret_type=cloud.SecretType.ENV,
+                location="BURROW_ENTRANCE",
+                value="Make 2 lefts and a hop forward",
+            )
+        ]
+        summary = app.new_secrets_collection(
+            secrets=secrets,
+        )
+
+        # We can get a secrets collection.
+        collection = app.secrets_collection(secrets_collection_id=summary.collection_id)
+        assert collection is not None
+        assert len(collection.secrets) == 1
+        assert collection.secrets[0].location == secrets[0].location
+        assert collection.secrets[0].value == secrets[0].value
+
+        # We can list secret collections.
+        collections = app.list_secrets_collections()
+        assert len(collections) >= 1
+        collection_ids = {c.collection_id for c in collections}
+        assert summary.collection_id in collection_ids
+
+        # We can update a secrets collection.
+        name = "Bunny Secrets"
+        description = "Secrets for bunny application"
+        summary = app.update_secrets_collection(
+            secrets_collection_id=summary.collection_id,
+            name=name,
+            description=description,
+        )
+        assert summary.name == name
+        assert summary.description == description
+
+        # We can start a run using the secrets collection.
+        input_data = {"name": "world", "radius": 6378, "distance": 147.6}
+        app.new_run(
+            input=input_data,
+            configuration=nextmv.RunConfiguration(
+                secrets_collection_id=summary.collection_id,
+            ),
+        )
+
+        # We can delete a secrets collection.
+        app.delete_secrets_collection(secrets_collection_id=summary.collection_id)
+
     # For this step, all other steps are predecessors to make sure there are no
     # on-going processes before cleanup.
     @needs(
@@ -534,6 +663,8 @@ class CloudIntegrationWorkflow(FlowSpec):
             scenario_tests,
             shadow_tests,
             switchback_tests,
+            acceptance_tests,
+            secrets,
         ]
     )
     @step
@@ -546,6 +677,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         __unused2,
         __unused3,
         __unused4,
+        __unused5,
     ) -> None:
         """Performs cleanup operations."""
 

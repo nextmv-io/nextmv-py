@@ -217,7 +217,7 @@ class ApplicationSwitchbackMixin:
         payload = {
             "id": switchback_test_id,
             "name": name,
-            "comparison": comparison,
+            "comparison": comparison.to_dict(),
             "generate_random_plan": {
                 "unit_duration_minutes": unit_duration_minutes,
                 "units": units,
