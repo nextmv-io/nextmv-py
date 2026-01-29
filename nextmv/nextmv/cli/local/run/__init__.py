@@ -1,0 +1,37 @@
+"""
+This module defines the local run command tree for the Nextmv CLI.
+"""
+
+import typer
+
+from nextmv.cli.local.run.cancel import app as cancel_app
+from nextmv.cli.local.run.create import app as create_app
+from nextmv.cli.local.run.get import app as get_app
+from nextmv.cli.local.run.input import app as input_app
+from nextmv.cli.local.run.list import app as list_app
+from nextmv.cli.local.run.logs import app as logs_app
+from nextmv.cli.local.run.metadata import app as metadata_app
+from nextmv.cli.local.run.visuals import app as visuals_app
+
+# Set up subcommand application.
+app = typer.Typer()
+app.add_typer(cancel_app)
+app.add_typer(create_app)
+app.add_typer(get_app)
+app.add_typer(input_app)
+app.add_typer(list_app)
+app.add_typer(logs_app)
+app.add_typer(metadata_app)
+app.add_typer(visuals_app)
+
+
+@app.callback()
+def callback() -> None:
+    """
+    Create and manage Nextmv Local application runs.
+
+    A run represents the execution of a decision model within a Nextmv Local
+    application. Each run takes an input, processes it using the decision model,
+    and produces an output.
+    """
+    pass

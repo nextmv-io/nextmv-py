@@ -57,6 +57,11 @@ DEFAULT_INPUT_JSON_FILE = "input.json"
 """
 Constant for the default input JSON file name.
 """
+REGISTRY_FILE = "registry.yml"
+"""
+Constant for the local registry file name. This file stores information about the apps on
+the local machine. It is located in the Nextmv directory in the user's home directory.
+"""
 
 
 def calculate_files_size(run_dir: str, run_id: str, dir_path: str, metadata_key: str) -> None:

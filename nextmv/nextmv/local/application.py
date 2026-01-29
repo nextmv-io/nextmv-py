@@ -129,6 +129,24 @@ class Application:
             return
 
     @classmethod
+    def from_path(cls, src: str) -> "Application":
+        """
+        Load an application from a given source path.
+
+        Parameters
+        ----------
+        src : str
+            Source path of the application.
+
+        Returns
+        -------
+        Application
+            The loaded application instance.
+        """
+
+        return cls(src=src)
+
+    @classmethod
     def initialize(
         cls,
         src: str | None = None,
@@ -191,6 +209,40 @@ class Application:
             src=app_src,
             description=description,
         )
+
+    def delete(self) -> None:
+        """
+        Delete the local application.
+
+        This method deletes the application by removing its source directory
+        from the local file system. Use with caution, as this action is
+        irreversible.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the application's source directory does not exist.
+        """
+
+        if not os.path.exists(self.src):
+            raise FileNotFoundError(f"Application source directory does not exist: {self.src}")
+
+        shutil.rmtree(self.src)
+
+    def exists(self) -> bool:
+        """
+        Check if the local application exists.
+
+        This method checks if the application's source directory exists in the
+        local file system.
+
+        Returns
+        -------
+        bool
+            True if the application exists, False otherwise.
+        """
+
+        return os.path.exists(self.src)
 
     def list_runs(self) -> list[Run]:
         """
