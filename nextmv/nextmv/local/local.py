@@ -57,7 +57,7 @@ DEFAULT_INPUT_JSON_FILE = "input.json"
 """
 Constant for the default input JSON file name.
 """
-REGISTRY_FILE = "registry.yml"
+REGISTRY_FILE = "registry.yaml"
 """
 Constant for the local registry file name. This file stores information about the apps on
 the local machine. It is located in the Nextmv directory in the user's home directory.

@@ -24,7 +24,6 @@ create_app_from_registry_entry
 
 import os
 import pathlib
-from dataclasses import dataclass
 
 import yaml
 
@@ -32,7 +31,6 @@ from nextmv.base_model import BaseModel
 from nextmv.local.local import NEXTMV_DIR, REGISTRY_FILE
 
 
-@dataclass
 class AppEntry(BaseModel):
     """
     Represents an entry in the local app registry.
@@ -63,7 +61,6 @@ class AppEntry(BaseModel):
     """
 
 
-@dataclass
 class Registry(BaseModel):
     """
     Represents the local app registry.
@@ -87,6 +84,81 @@ class Registry(BaseModel):
     A list of locally registered Nextmv applications.
     """
 
+    @classmethod
+    def from_yaml(cls) -> "Registry":
+        """
+        Load a Registry from a YAML file.
+
+        The YAML file is expected to be located at `$HOME/.nextmv/registry.yaml`.
+
+        Returns
+        -------
+        Registry
+            The loaded registry.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the `registry.yaml` file is not found in the expected location.
+        yaml.YAMLError
+            If there is an error parsing the YAML file.
+
+        Examples
+        --------
+        Assuming an `registry.yaml` file exists in `$HOME/.nextmv/` with the following content:
+
+        ```yaml
+        apps:
+          - app_id: "app-123"
+        ```
+
+        >>> from nextmv import Registry
+        >>> # registry = Registry.from_yaml()  # This would load the registry from the YAML file
+        >>> # assert isinstance(registry, Registry)
+        """
+        reg_path = get_registry_path()
+
+        # If no registry file exists yet, create an empty registry.
+        if not os.path.exists(reg_path):
+            empty_registry = cls(apps=[])
+            empty_registry.to_yaml()
+            return empty_registry
+
+        # Load and parse the YAML file.
+        with open(reg_path) as file:
+            raw_manifest = yaml.safe_load(file)
+        return cls.from_dict(raw_manifest)
+
+    def to_yaml(self) -> None:
+        """
+        Write the registry to a YAML file.
+
+        The registry will be written to `$HOME/.nextmv/registry.yaml`.
+
+        Raises
+        ------
+        IOError
+            If there is an error writing the file.
+        yaml.YAMLError
+            If there is an error serializing the registry to YAML.
+
+        Examples
+        --------
+        >>> from nextmv import Registry
+        >>> registry = Registry(apps=[])
+        >>> # registry.to_yaml()  # This would write the registry to the YAML file
+        """
+
+        with open(get_registry_path(), "w") as file:
+            yaml.dump(
+                self.to_dict(),
+                file,
+                sort_keys=False,
+                default_flow_style=False,
+                indent=2,
+                width=120,
+            )
+
 
 def get_registry_path() -> str:
     """
@@ -104,41 +176,6 @@ def get_registry_path() -> str:
     return registry_path
 
 
-def _load_registry() -> Registry:
-    """
-    Loads the local registry from the config directory.
-
-    Returns
-    -------
-    Registry
-        The local app registry.
-    """
-    reg_path = get_registry_path()
-    if not os.path.exists(reg_path):
-        return Registry(apps=[])
-
-    with open(reg_path) as f:
-        data = yaml.safe_load(f)
-
-    if data is None:
-        return Registry(apps=[])
-    return data
-
-
-def _save_registry(registry: Registry) -> None:
-    """
-    Saves the local registry to the config directory.
-
-    Parameters
-    ----------
-    registry : Registry
-        The local app registry to save.
-    """
-    reg_path = get_registry_path()
-    with open(reg_path, "w") as f:
-        yaml.safe_dump(registry, f)
-
-
 def read_local_registry() -> Registry:
     """
     Retrieve an instance of the LocalRegistry.
@@ -148,7 +185,7 @@ def read_local_registry() -> Registry:
     Registry
         The local app registry.
     """
-    return _load_registry()
+    return Registry.from_yaml()
 
 
 def add_registry_entry(entry: AppEntry) -> None:
@@ -160,12 +197,12 @@ def add_registry_entry(entry: AppEntry) -> None:
     entry : RegistryEntry
         The registry entry to add.
     """
-    registry = _load_registry()
+    registry = Registry.from_yaml()
     if any(app.app_id == entry.app_id for app in registry.apps):
         # Ignore duplicate entries.
         return
     registry.apps.append(entry)
-    _save_registry(registry)
+    registry.to_yaml()
 
 
 def delete_registry_entry(app_id: str) -> None:
@@ -177,6 +214,6 @@ def delete_registry_entry(app_id: str) -> None:
     app_id : str
         The ID of the application to remove from the registry.
     """
-    registry = _load_registry()
+    registry = Registry.from_yaml()
     registry.apps = [entry for entry in registry.apps if entry.app_id != app_id]
-    _save_registry(registry)
+    registry.to_yaml()

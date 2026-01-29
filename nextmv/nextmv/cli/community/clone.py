@@ -7,6 +7,7 @@ import shutil
 import tarfile
 import tempfile
 from collections.abc import Callable
+from time import strftime
 from typing import Annotated
 
 import rich
@@ -15,6 +16,7 @@ import typer
 from nextmv.cli.community.list import download_file, download_manifest, find_app, versions_table
 from nextmv.cli.message import error, success
 from nextmv.cli.options import ProfileOption
+from nextmv.local.registry import AppEntry, add_registry_entry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -135,6 +137,14 @@ def clone(
 
     # Remove the tarball after extraction
     os.remove(downloaded_object)
+
+    # Register as a local app.
+    add_registry_entry(
+        AppEntry(
+            app_id=f"{app}-{strftime('%Y%m%d-%H%M%S')}",
+            path=full_destination,
+        ),
+    )
 
     success(
         f"Successfully cloned the [magenta]{app}[/magenta] community app, "
