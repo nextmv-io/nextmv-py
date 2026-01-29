@@ -152,12 +152,14 @@ guidelines:
 - We embrace the use of emojis. They make the CLI friendlier and more
   approachable.
 - The `message.py` file contains helper functions for printing messages, like:
-  - `error`: prints an error and raises an exception.
-  - `success`: prints a success message.
-  - `warning`: prints a warning message.
-  - `in_progress`: prints an in-progress message.
-  - `info`: prints an informational message. You can give it an emoji for the
-    message. The other commands have fixed emojis.
+  - `message`: prints a message. You can give it an emoji for the message. The
+    other commands have fixed emojis.
+  - `info`: prints an informational message. Use for neutral messages.
+  - `in_progress`: prints an in-progress message. Use before executing an action.
+  - `success`: prints a success message. Use after successfully completing an action.
+  - `warning`: prints a warning message. Use for non-critical issues.
+  - `error`: prints an error and raises an exception. Use for critical issues
+    and to return early from commands.
 - For printing `JSON` information, use the `print_json` function in the
   `messages.py` file to print JSON output. This ensures consistent formatting
   across the CLI.
@@ -169,6 +171,24 @@ guidelines:
 
   ```python
   success(f"Application [magenta]{app_id}[/magenta] deleted successfully.")
+  ```
+
+- When showing the values of an `Enum`, use the `enum_values` function in the
+  `messages.py` file which will give a nicely colored, comma-separated list of the
+  enum values. Consider the following example, were we get the allowed values
+  for the `InputFormat` class.
+
+  ```python
+      content_format: Annotated[
+        InputFormat | None,
+        typer.Option(
+            "--content-format",
+            "-c",
+            help=f"The content format for the instance. Allowed values are: {enum_values(InputFormat)}.",
+            metavar="CONTENT_FORMAT",
+            rich_help_panel="Instance configuration",
+        ),
+    ] = None,
   ```
 
 ## Confirmation prompts
@@ -185,7 +205,7 @@ When using confirmation prompts, follow these guidelines:
   affected.
 - Provide a `--yes` / `-y` flag to skip the confirmation prompt where possible,
   useful for non-interactive sessions.
-- If the user declines, call `info()` with the `:bulb:` emoji and return early.
+- If the user declines, call `info()` and return early.
 
 Consider the `nextmv cloud app delete` command:
 
@@ -196,7 +216,7 @@ if not yes:
     )
 
     if not confirm:
-        info(msg=f"Application [magenta]{app_id}[/magenta] will not be deleted.", emoji=":bulb:")
+        info(f"Application [magenta]{app_id}[/magenta] will not be deleted.")
         return
 ```
 
@@ -377,7 +397,7 @@ to use it.
       """
 
       client = build_client(profile)
-      info(msg="Getting application...", emoji=":hourglass_flowing_sand:")
+      in_progress("Getting application...")
 
       cloud_app = Application.get(
           client=client,
@@ -389,7 +409,7 @@ to use it.
           with open(output, "w") as f:
               json.dump(cloud_app_dict, f, indent=2)
 
-          success(msg=f"Application information saved to [magenta]{output}[/magenta].")
+          success(f"Application information saved to [magenta]{output}[/magenta].")
 
           return
 

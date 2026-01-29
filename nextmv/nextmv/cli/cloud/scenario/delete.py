@@ -53,10 +53,7 @@ def delete(
         )
 
         if not confirm:
-            info(
-                msg=f"Scenario test [magenta]{scenario_test_id}[/magenta] will not be deleted.",
-                emoji=":bulb:",
-            )
+            info(f"Scenario test [magenta]{scenario_test_id}[/magenta] will not be deleted.")
             return
 
     cloud_app = build_app(app_id=app_id, profile=profile)

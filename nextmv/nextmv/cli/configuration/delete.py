@@ -58,7 +58,7 @@ def delete(
         )
 
         if not confirm:
-            info(msg=f"Profile [magenta]{profile}[/magenta] will not be deleted.", emoji=":bulb:")
+            info(f"Profile [magenta]{profile}[/magenta] will not be deleted.")
             return
 
     del config[profile]
