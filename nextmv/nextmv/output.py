@@ -1123,7 +1123,11 @@ class Output:
         else:
             raise TypeError(f"unsupported metrics type: {type(self.metrics)}, supported type is `dict`")
 
-
+        # if both metrics and statistics are None, set statistics to an 
+        # empty dict for backward compatibility
+        if statistics is None and metrics is None:
+            statistics = {}
+            
         # Assets need to end up as a list of dicts, so we achieve that based on
         # the type of each asset in the list.
         assets = []

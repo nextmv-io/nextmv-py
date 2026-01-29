@@ -175,6 +175,7 @@ class TestManifest(unittest.TestCase):
                         "statistics": "my-outputs/statistics.json",
                         "assets": "my-outputs/assets.json",
                         "solutions": "my-outputs/solutions",
+                        "metrics": "my-outputs/metrics.json",
                     },
                 },
             },
