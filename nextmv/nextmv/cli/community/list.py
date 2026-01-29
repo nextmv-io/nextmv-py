@@ -2,18 +2,18 @@
 This module defines the community list command for the Nextmv CLI.
 """
 
-from typing import Annotated, Any
+from typing import Annotated
 
-import requests
 import rich
 import typer
-import yaml
 from rich.console import Console
 from rich.table import Table
 
 from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
+from nextmv.cloud.community import CommunityApp, list_community_apps
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -62,96 +62,73 @@ def list(
     if app is not None and app == "":
         error("The --app flag cannot be an empty string.")
 
-    manifest = download_manifest(profile=profile)
+    client = build_client(profile)
     if flat and app is None:
-        apps_list(manifest)
+        _apps_list(client)
         raise typer.Exit()
     elif not flat and app is None:
-        apps_table(manifest)
+        _apps_table(client)
         raise typer.Exit()
     elif flat and app is not None and app != "":
-        versions_list(manifest, app)
+        _versions_list(client, app)
         raise typer.Exit()
     elif not flat and app is not None and app != "":
-        versions_table(manifest, app)
+        _versions_table(client, app)
         raise typer.Exit()
 
 
-def download_manifest(profile: str | None = None) -> dict:
+def _apps_table(client: Client) -> None:
     """
-    Downloads and returns the community apps manifest.
+    This function prints a table of community apps.
 
     Parameters
     ----------
-    profile : str | None
-        The profile name to use. If None, the default profile is used.
-
-    Returns
-    -------
-    dict
-        The community apps manifest as a dictionary.
-
-    Raises
-    requests.HTTPError
-        If the response status code is not 2xx.
+    client : Client
+        The Nextmv Cloud client to use for the request.
     """
 
-    response = download_file(directory="community-apps", file="manifest.yml", profile=profile)
-    manifest = yaml.safe_load(response.text)
-
-    return manifest
-
-
-def apps_table(manifest: dict[str, Any]) -> None:
-    """
-    This function prints a table of community apps from the manifest.
-
-    Parameters
-    ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
-    """
-
+    apps = list_community_apps(client)
     table = Table("Name", "Type", "Latest", "Description", border_style="cyan", header_style="cyan")
-    for app in manifest.get("apps", []):
+    for app in apps:
         table.add_row(
-            app.get("name", ""),
-            app.get("type", ""),
-            app.get("latest_app_version", ""),
-            app.get("description", ""),
+            app.name,
+            app.app_type,
+            app.latest_app_version if app.latest_app_version is not None else "",
+            app.description,
         )
 
     console.print(table)
 
 
-def apps_list(manifest: dict[str, Any]) -> None:
+def _apps_list(client: Client) -> None:
     """
-    This function prints a flat list of community app names from the manifest.
+    This function prints a flat list of community app names.
 
     Parameters
     ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
+    client : Client
+        The Nextmv Cloud client to use for the request.
     """
 
-    names = [app.get("name", "") for app in manifest.get("apps", [])]
+    apps = list_community_apps(client)
+    names = [app.name for app in apps]
     print("\n".join(names))
 
 
-def versions_table(manifest: dict[str, Any], app: str) -> None:
+def _versions_table(client: Client, app: str) -> None:
     """
     This function prints a table of versions for a specific community app.
 
     Parameters
     ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
+    client : Client
+        The Nextmv Cloud client to use for the request.
     app : str
         The name of the community app.
     """
 
-    app_obj = find_app(manifest, app)
-    latest_version = app_obj.get("latest_app_version", "")
+    comm_app = _find_app(client, app)
+    latest_version = comm_app.latest_app_version if comm_app.latest_app_version is not None else ""
 
     # Add the latest version with indicator
     table = Table("Version", "Latest?", border_style="cyan", header_style="cyan")
@@ -159,7 +136,7 @@ def versions_table(manifest: dict[str, Any], app: str) -> None:
     table.add_row("", "")  # Empty row to separate latest from others.
 
     # Add all other versions (excluding the latest)
-    versions = app_obj.get("app_versions", [])
+    versions = comm_app.app_versions if comm_app.app_versions is not None else []
     for version in versions:
         if version != latest_version:
             table.add_row(version, "")
@@ -167,99 +144,52 @@ def versions_table(manifest: dict[str, Any], app: str) -> None:
     console.print(table)
 
 
-def versions_list(manifest: dict[str, Any], app: str) -> None:
+def _versions_list(client: Client, app: str) -> None:
     """
     This function prints a flat list of versions for a specific community app.
 
     Parameters
     ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
+    client : Client
+        The Nextmv Cloud client to use for the request.
     app : str
         The name of the community app.
     """
 
-    app_obj = find_app(manifest, app)
-    versions = app_obj.get("app_versions", [])
+    comm_app = _find_app(client, app)
+    versions = comm_app.app_versions if comm_app.app_versions is not None else []
 
     versions_output = ""
     for version in versions:
         versions_output += f"{version}\n"
 
-    print("\n".join(app_obj.get("app_versions", [])))
+    print("\n".join(versions_output))
 
 
-def download_file(
-    directory: str,
-    file: str,
-    profile: str | None = None,
-) -> requests.Response:
-    """
-    Gets a file from an internal bucket and return it.
-
-    Parameters
-    ----------
-    directory : str
-        The directory in the bucket where the file is located.
-    file : str
-        The name of the file to download.
-    profile : str | None
-        The profile name to use. If None, the default profile is used.
-
-    Returns
-    -------
-    requests.Response
-        The response object containing the file data.
-
-    Raises
-    requests.HTTPError
-        If the response status code is not 2xx.
-    """
-
-    client = build_client(profile)
-
-    # Request the download URL for the file.
-    response = client.request(
-        method="GET",
-        endpoint="v0/internal/tools",
-        headers=client.headers | {"request-source": "cli"},  # Pass `client.headers` to preserve auth.
-        query_params={"file": f"{directory}/{file}"},
-    )
-
-    # Use the URL obtained to download the file.
-    body = response.json()
-    download_response = client.request(
-        method="GET",
-        endpoint=body.get("url"),
-        headers={"Content-Type": "application/json"},
-    )
-
-    return download_response
-
-
-def find_app(manifest: dict[str, Any], app: str) -> dict[str, Any] | None:
+def _find_app(client: Client, app: str) -> CommunityApp | None:
     """
     Finds and returns a community app from the manifest by its name.
 
     Parameters
     ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
+    client : Client
+        The Nextmv Cloud client to use for the request.
     app : str
         The name of the community app to find.
 
     Returns
     -------
-    dict[str, Any] | None
-        The community app dictionary if found, otherwise None.
+    CommunityApp | None
+        The community app if found, otherwise None.
     """
 
-    for manifest_app in manifest.get("apps", []):
-        if manifest_app.get("name", "") == app:
-            return manifest_app
+    comm_apps = list_community_apps(client)
+    for comm_app in comm_apps:
+        if comm_app.name == app:
+            return comm_app
 
     # We don't use error() here to allow printing something before exiting.
     rich.print(f"[red]Error:[/red] Community app [magenta]{app}[/magenta] was not found. Here are the available apps:")
-    apps_table(manifest)
+    _apps_table(client)
 
     raise typer.Exit(code=1)

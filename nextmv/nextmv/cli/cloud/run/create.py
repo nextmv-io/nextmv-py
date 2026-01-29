@@ -129,7 +129,7 @@ def create(
             metavar="INSTANCE_ID",
             rich_help_panel="Run configuration",
         ),
-    ] = "latest",
+    ] = None,
     integration_id: Annotated[
         str | None,
         typer.Option(
@@ -240,12 +240,11 @@ def create(
     specify the instance with the --instance-id flag. These are the possible
     values for this flag:
 
+    - [yellow]unspecified[/yellow]: Run against the default instance of the
+      application. When an application is created, the default instance is [magenta]latest[/magenta].
     - [yellow]latest[/yellow]: uses the special [magenta]latest[/magenta]
       instance of the application. This corresponds to the latest pushed
-      executable. This is the default behavior.
-    - [yellow]default[/yellow]: if the application has a [italic]default[/italic]
-      instance configured, then it uses that instance. Setting the flag's value
-      to [magenta]''[/magenta] (empty string) has the same effect.
+      executable.
     - [yellow]<INSTANCE_ID>[/yellow]: uses the instance with the given ID.
 
     [bold][underline]Examples[/underline][/bold]
@@ -318,10 +317,6 @@ def create(
         definition_id=definition_id,
     )
     run_options = build_run_options(options)
-
-    # Handles the default instance.
-    if instance_id == "default":
-        instance_id = ""
 
     # Start the run before deciding if we should poll or not.
     input_kwarg = resolve_input_kwarg(

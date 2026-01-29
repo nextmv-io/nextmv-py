@@ -10,16 +10,16 @@ from unittest.mock import MagicMock, Mock, mock_open, patch
 from nextmv.cli.community import app as community_app
 from nextmv.cli.community.clone import app as clone_app
 from nextmv.cli.community.clone import app_has_version, download_object, get_valid_path
-from nextmv.cli.community.list import app as list_app
 from nextmv.cli.community.list import (
-    apps_list,
-    apps_table,
+    _apps_list,
+    _apps_table,
+    _find_app,
+    _versions_list,
+    _versions_table,
     download_file,
     download_manifest,
-    find_app,
-    versions_list,
-    versions_table,
 )
+from nextmv.cli.community.list import app as list_app
 from typer.testing import CliRunner
 
 
@@ -169,7 +169,7 @@ class TestAppsTable(unittest.TestCase):
             ]
         }
 
-        apps_table(manifest)
+        _apps_table(manifest)
 
         # Verify console.print was called
         self.assertEqual(mock_console.print.call_count, 1)
@@ -183,7 +183,7 @@ class TestAppsTable(unittest.TestCase):
         """Test that apps_table handles empty manifest."""
         manifest = {"apps": []}
 
-        apps_table(manifest)
+        _apps_table(manifest)
 
         self.assertEqual(mock_console.print.call_count, 1)
 
@@ -202,7 +202,7 @@ class TestAppsList(unittest.TestCase):
             ]
         }
 
-        apps_list(manifest)
+        _apps_list(manifest)
 
         mock_print.assert_called_once_with("app1\napp2\napp3")
 
@@ -211,7 +211,7 @@ class TestAppsList(unittest.TestCase):
         """Test that apps_list handles empty manifest."""
         manifest = {"apps": []}
 
-        apps_list(manifest)
+        _apps_list(manifest)
 
         mock_print.assert_called_once_with("")
 
@@ -232,7 +232,7 @@ class TestVersionsTable(unittest.TestCase):
             ]
         }
 
-        versions_table(manifest, "test-app")
+        _versions_table(manifest, "test-app")
 
         self.assertEqual(mock_console.print.call_count, 1)
         table = mock_console.print.call_args[0][0]
@@ -248,7 +248,7 @@ class TestVersionsTable(unittest.TestCase):
             "app_versions": ["v1.0.0"],
         }
 
-        versions_table({}, "test-app")
+        _versions_table({}, "test-app")
 
         mock_find_app.assert_called_once_with({}, "test-app")
 
@@ -268,7 +268,7 @@ class TestVersionsList(unittest.TestCase):
             ]
         }
 
-        versions_list(manifest, "test-app")
+        _versions_list(manifest, "test-app")
 
         mock_print.assert_called_once_with("v2.0.0\nv1.5.0\nv1.0.0")
 
@@ -278,7 +278,7 @@ class TestVersionsList(unittest.TestCase):
         """Test that versions_list calls find_app."""
         mock_find_app.return_value = {"app_versions": ["v1.0.0"]}
 
-        versions_list({}, "test-app")
+        _versions_list({}, "test-app")
 
         mock_find_app.assert_called_once_with({}, "test-app")
 
@@ -338,7 +338,7 @@ class TestFindApp(unittest.TestCase):
 
     def test_find_app_returns_correct_app(self):
         """Test that find_app returns the correct app."""
-        result = find_app(self.manifest, "app2")
+        result = _find_app(self.manifest, "app2")
 
         self.assertEqual(result["name"], "app2")
         self.assertEqual(result["description"], "Second app")
@@ -350,7 +350,7 @@ class TestFindApp(unittest.TestCase):
         from typer import Exit
 
         with self.assertRaises(Exit) as context:
-            find_app(self.manifest, "nonexistent-app")
+            _find_app(self.manifest, "nonexistent-app")
 
         self.assertEqual(context.exception.exit_code, 1)
         mock_rich_print.assert_called_once()
