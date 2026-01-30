@@ -18,6 +18,8 @@ deployed to Nextmv Cloud for execution.
 import logging
 import os
 import shutil
+import sqlite3
+import time
 import warnings
 from dataclasses import dataclass
 from typing import Any
@@ -421,9 +423,7 @@ def _cleanup_python_model(
     if os.path.exists(model_path):
         shutil.rmtree(model_path)
 
-    mlflow_db_path = os.path.join(model_dir, "mlflow.db")
-    if os.path.exists(mlflow_db_path):
-        os.remove(mlflow_db_path)
+    _cleanup_mlflow_db(model_dir)
 
     requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
     if os.path.exists(requirements_file):
@@ -435,3 +435,36 @@ def _cleanup_python_model(
 
     if verbose:
         log("🧹 Cleaned up Python model artifacts.")
+
+
+def _cleanup_mlflow_db(model_dir: str) -> None:
+    """
+    Clean up the mlflow.db file created during model packaging.
+
+    Parameters
+    ----------
+    model_dir : str
+        The directory where the model was saved.
+    """
+    mlflow_db_path = os.path.join(model_dir, "mlflow.db")
+    if not os.path.exists(mlflow_db_path):
+        return
+
+    # Try to close any open SQLite connections and retry deletion
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            # Attempt to connect and close to release any locks
+            try:
+                conn = sqlite3.connect(mlflow_db_path)
+                conn.close()
+            except Exception:
+                pass
+            os.remove(mlflow_db_path)
+            break
+
+        except PermissionError:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)
+            else:
+                raise
