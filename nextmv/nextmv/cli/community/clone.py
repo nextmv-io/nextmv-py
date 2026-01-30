@@ -270,5 +270,3 @@ def download_object(file: str, path: str, output_dir: str, output_file: str, pro
         f.write(response.content)
 
     return file_name
-    return file_name
-    return file_name

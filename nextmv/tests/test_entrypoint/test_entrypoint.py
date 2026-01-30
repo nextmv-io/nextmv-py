@@ -5,7 +5,7 @@ import subprocess
 import sys
 import unittest
 
-import nextmv.cloud
+from nextmv.model import _cleanup_mlflow_db
 
 import nextmv
 
@@ -37,11 +37,14 @@ class TestEntrypoint(unittest.TestCase):
         filenames = [
             self._file_name("main.py", self.TWO_DIRS_UP),
             self._file_name("app.yaml", self.TWO_DIRS_UP),
-            self._file_name("mlflow.db", self.TWO_DIRS_UP),
         ]
 
         for filename in filenames:
-            os.remove(filename)
+            if os.path.exists(filename):
+                os.remove(filename)
+
+        # Use robust cleanup for mlflow.db
+        _cleanup_mlflow_db(self.TWO_DIRS_UP)
 
         shutil.rmtree(self._file_name(self.MODEL_NAME, self.TWO_DIRS_UP))
 
