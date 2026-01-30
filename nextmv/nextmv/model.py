@@ -344,6 +344,9 @@ class Model:
 
         _cleanup_python_model(model_dir, configuration, verbose=False)
 
+        # Removing this seems to make the "apps from models" experience once
+        # again. I am not removing it entirely because we might want to
+        # re-introduce it later on.
         # signature = None
         # if configuration.options is not None:
         #     options_dict = configuration.options.to_dict()
@@ -359,7 +362,7 @@ class Model:
             path=model_path,  # Customize the name of the model location.
             infer_code_paths=True,  # Makes the imports portable.
             python_model=MLFlowModel(),
-            # signature=signature,  # Allows us to work with our own `Options` class.
+            # signature=signature,  # Please see comment above about keeping this in case we need to go back.
         )
 
         # Create an auxiliary requirements file with the model dependencies.
