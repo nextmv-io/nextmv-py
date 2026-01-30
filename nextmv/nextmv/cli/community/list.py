@@ -163,10 +163,10 @@ def _versions_list(client: Client, app: str) -> None:
     for version in versions:
         versions_output += f"{version}\n"
 
-    print("\n".join(versions_output))
+    print(versions_output.rstrip("\n"))
 
 
-def _find_app(client: Client, app: str) -> CommunityApp | None:
+def _find_app(client: Client, app: str) -> CommunityApp:
     """
     Finds and returns a community app from the manifest by its name.
 
@@ -179,8 +179,13 @@ def _find_app(client: Client, app: str) -> CommunityApp | None:
 
     Returns
     -------
-    CommunityApp | None
-        The community app if found, otherwise None.
+    CommunityApp
+        The community app if found.
+
+    Raises
+    ------
+    ValueError
+        If the community app is not found.
     """
 
     comm_apps = list_community_apps(client)

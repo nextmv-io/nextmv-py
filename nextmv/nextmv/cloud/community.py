@@ -121,8 +121,8 @@ def list_community_apps(client: Client) -> list[CommunityApp]:
 
     Parameters
     ----------
-    manifest : dict[str, Any]
-        The community apps manifest.
+    client : Client
+        The Nextmv Cloud client to use for the request.
 
     Returns
     -------
@@ -372,7 +372,7 @@ def _get_valid_path(path: str, stat_fn: Callable[[str], os.stat_result], ending:
 
     Raises
     ------
-    Exception
+    RuntimeError
         If an unexpected error occurs during path validation
     """
     base_name = os.path.basename(path)
@@ -416,7 +416,7 @@ def _get_valid_path(path: str, stat_fn: Callable[[str], os.stat_result], ending:
             raise RuntimeError(f"An unexpected error occurred while validating the path: {path} ") from e
 
 
-def _find_app(client: Client, app: str) -> CommunityApp | None:
+def _find_app(client: Client, app: str) -> CommunityApp:
     """
     Finds and returns a community app from the manifest by its name.
 
@@ -429,8 +429,13 @@ def _find_app(client: Client, app: str) -> CommunityApp | None:
 
     Returns
     -------
-    CommunityApp | None
-        The community app if found, otherwise None.
+    CommunityApp
+        The community app if found.
+
+    Raises
+    ------
+    ValueError
+        If the community app is not found.
     """
 
     comm_apps = list_community_apps(client)

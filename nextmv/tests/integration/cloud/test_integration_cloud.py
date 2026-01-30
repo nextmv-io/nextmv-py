@@ -2,7 +2,6 @@ import os
 import tempfile
 from datetime import datetime, timedelta, timezone
 
-from nextmv.cloud.switchback import TestComparisonSingle
 from nextmv.safe import safe_id
 from nextpipe import FlowSpec, needs, step
 
@@ -329,7 +328,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         app : cloud.Application
             The application to perform scenario test operations on.
         input_set : cloud.InputSet
-            The input set to use for the scenario test.e created batch experiment.
+            The input set to use for the scenario test.
         """
 
         inst1, _ = instances
@@ -372,8 +371,6 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can delete a scenario test.
         app.delete_scenario_test(scenario_test_id=test1.id)
-
-        return test1
 
     @needs(predecessors=[init_app, instances])
     @step
@@ -466,7 +463,7 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can start a switchback test in draft mode.
         switchback_test = app.new_switchback_test(
-            comparison=TestComparisonSingle(
+            comparison=cloud.TestComparisonSingle(
                 baseline_instance_id=inst1.id,
                 candidate_instance_id=inst2.id,
             ),
