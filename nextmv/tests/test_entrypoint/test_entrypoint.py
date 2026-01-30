@@ -5,7 +5,7 @@ import subprocess
 import sys
 import unittest
 
-import nextmv.cloud
+from nextmv.model import _cleanup_mlflow_db
 
 import nextmv
 
@@ -40,35 +40,37 @@ class TestEntrypoint(unittest.TestCase):
         ]
 
         for filename in filenames:
-            os.remove(filename)
+            if os.path.exists(filename):
+                os.remove(filename)
+
+        # Use robust cleanup for mlflow.db
+        _cleanup_mlflow_db(self.TWO_DIRS_UP)
 
         shutil.rmtree(self._file_name(self.MODEL_NAME, self.TWO_DIRS_UP))
-        shutil.rmtree(self._file_name("mlruns", self.TWO_DIRS_UP))
 
     def test_entrypoint(self):
         """
         Test that the __entrypoint__.py script runs successfully by mimicking
         the unpacking of an app and running the main script. We are using a
-        sample nextroute app that is already pickled with mlflow in the
-        "nextroute_model" directory.
+        simple decision model for this test.
         """
 
-        model = SimpleDecisionModel()
+        destination = os.path.join(os.path.dirname(__file__), self.TWO_DIRS_UP)
         options = nextmv.Options(nextmv.Option("param1", str, ""))
-
         model_configuration = nextmv.ModelConfiguration(
             name=self.MODEL_NAME,
             options=options,
         )
-        destination = os.path.join(os.path.dirname(__file__), self.TWO_DIRS_UP)
-        model.save(destination, model_configuration)
 
         manifest = nextmv.Manifest.from_model_configuration(model_configuration)
         manifest.to_yaml(dirpath=destination)
 
-        main_file = self._file_name("main.py", self.TWO_DIRS_UP)
+        model = SimpleDecisionModel()
+        model.save(destination, model_configuration)
 
+        main_file = self._file_name("main.py", self.TWO_DIRS_UP)
         args = [sys.executable, main_file]
+
         try:
             result = subprocess.run(
                 args,
