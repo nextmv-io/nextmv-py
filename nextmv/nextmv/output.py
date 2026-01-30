@@ -1310,12 +1310,17 @@ class LocalOutputWriter(OutputWriter):
         if hasattr(output, "json_configurations") and output.json_configurations is not None:
             json_configurations = output.json_configurations
 
-        serialized = serialize_json(
-            {
+        output_json = {
                 "options": output_dict.get("options", {}),
-                STATISTICS_KEY: output_dict.get(STATISTICS_KEY, {}),
+                METRICS_KEY: output_dict.get(METRICS_KEY, {}),
                 ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
-            },
+            }
+        
+        if STATISTICS_KEY in output_dict:
+            output_json[STATISTICS_KEY] = output_dict.get(STATISTICS_KEY, {})
+
+        serialized = serialize_json(
+            output_json,
             json_configurations=json_configurations,
         )
         print(serialized, file=sys.stdout)
@@ -1381,6 +1386,12 @@ class LocalOutputWriter(OutputWriter):
             json_configurations=json_configurations,
             output_dict=output_dict,
             element_key=STATISTICS_KEY,
+        )
+        self._write_multi_file_element(
+            parent_dir=dir_path,
+            json_configurations=json_configurations,
+            output_dict=output_dict,
+            element_key=METRICS_KEY,
         )
         self._write_multi_file_element(
             parent_dir=dir_path,
