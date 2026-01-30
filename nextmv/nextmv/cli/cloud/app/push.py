@@ -182,7 +182,7 @@ def push(
     # If the override for updating an instance was used, we update the instance
     # and we are done.
     if update_defined:
-        info("Used option --update-instance-id to link version to existing instance.", emoji=":bulb:")
+        info("Used option --update-instance-id to link version to existing instance.")
         _update_instance(
             cloud_app=cloud_app,
             app_id=app_id,
@@ -195,7 +195,7 @@ def push(
     # If the override for creating a new instance was used, we create the
     # instance and we are done.
     if create_defined:
-        info("Used option --create-instance-id to link version to new instance.", emoji=":bulb:")
+        info("Used option --create-instance-id to link version to new instance.")
         _create_instance(
             cloud_app=cloud_app,
             app_id=app_id,
@@ -251,11 +251,7 @@ def _handle_version_creation(
     # If the user provides a version, and it exists, we use it directly and we
     # are done.
     if version_id is not None and version_id != "":
-        info(
-            msg=f"Version [magenta]{version_id}[/magenta] does not exist. A new version will be created.",
-            emoji=":bulb:",
-        )
-
+        info(f"Version [magenta]{version_id}[/magenta] does not exist. A new version will be created.")
         version_yes = True  # Activate auto-confirm since user provided a version ID.
 
     # If we are not auto-confirming version creation, ask the user.
@@ -267,10 +263,7 @@ def _handle_version_creation(
 
         # If the user does not want to create a new version, we are done.
         if not should_create:
-            info(
-                msg="Will not create a new version.",
-                emoji=":bulb:",
-            )
+            info("Will not create a new version.")
             return "", False
 
     # Create a new version if either the user confirms by prompt or by using
@@ -314,10 +307,7 @@ def _handle_instance_prompting(
     # If this is not an interactive terminal, do not ask for instance linking,
     # to avoid hanging indefinitely waiting for a user response.
     if not sys.stdin.isatty():
-        info(
-            msg="Non-interactive terminal detected. Skipping instance linking.",
-            emoji=":bulb:",
-        )
+        info("Non-interactive terminal detected. Skipping instance linking.")
 
         return
 
@@ -328,10 +318,7 @@ def _handle_instance_prompting(
         case_sensitive=False,
     )
     if instance_id == "":
-        info(
-            msg="No instance ID provided. Skipping instance linking.",
-            emoji=":bulb:",
-        )
+        info("No instance ID provided. Skipping instance linking.")
         return
 
     # Based on whether the instance exists or not, ask the user if they want to
@@ -347,10 +334,7 @@ def _handle_instance_prompting(
         )
 
         if not should_update:
-            info(
-                msg=f"Will not update instance [magenta]{instance_id}[/magenta].",
-                emoji=":bulb:",
-            )
+            info(f"Will not update instance [magenta]{instance_id}[/magenta].")
             return
 
         _update_instance(
@@ -370,10 +354,7 @@ def _handle_instance_prompting(
     )
 
     if not should_create:
-        info(
-            msg=f"Will not create instance [magenta]{instance_id}[/magenta].",
-            emoji=":bulb:",
-        )
+        info(f"Will not create instance [magenta]{instance_id}[/magenta].")
         return
 
     _create_instance(

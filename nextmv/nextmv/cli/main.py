@@ -101,11 +101,10 @@ def handle_go_cli() -> None:
             return
 
         info(
-            msg="You can delete the [italic red]deprecated[/italic red] Nextmv CLI later by removing "
+            "You can delete the [italic red]deprecated[/italic red] Nextmv CLI later by removing "
             f"[magenta]{GO_CLI_PATH}[/magenta]. "
             "Make sure you also clean up your [code]PATH[/code], "
-            f"by removing references to [magenta]{CONFIG_DIR}[/magenta] from it.",
-            emoji=":bulb:",
+            f"by removing references to [magenta]{CONFIG_DIR}[/magenta] from it."
         )
 
 

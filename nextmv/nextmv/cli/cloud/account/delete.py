@@ -51,7 +51,7 @@ def delete(
         )
 
         if not confirm:
-            info(msg=f"Account [magenta]{account_id}[/magenta] will not be deleted.", emoji=":bulb:")
+            info(f"Account [magenta]{account_id}[/magenta] will not be deleted.")
             return
 
     cloud_account = build_account(account_id=account_id, profile=profile)

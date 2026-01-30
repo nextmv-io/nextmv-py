@@ -14,7 +14,7 @@ from nextmv.cli.configuration.config import (
     obscure_api_key,
     save_config,
 )
-from nextmv.cli.message import error, info, success
+from nextmv.cli.message import error, message, success
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -88,7 +88,7 @@ def create(
     save_config(config)
 
     success("Configuration saved successfully.")
-    info(f"\t[bold]Profile[/bold]: {profile or 'Default'}")
-    info(f"\t[bold]API Key[/bold]: {obscure_api_key(api_key)}")
+    message(f"\t[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]")
+    message(f"\t[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]")
     if endpoint != DEFAULT_ENDPOINT:
-        info(f"\t[bold]Endpoint[/bold]: {endpoint}")
+        message(f"\t[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]")
