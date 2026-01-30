@@ -1,7 +1,7 @@
-name: python test
+name: unit tests
 on: [push]
 jobs:
-  python-test:
+  test:
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
@@ -39,5 +39,5 @@ jobs:
         working-directory: ./${{ matrix.package }}
 
       - name: unit tests
-        run: python -m unittest
+        run: pytest --ignore=tests/integration
         working-directory: ./${{ matrix.package }}

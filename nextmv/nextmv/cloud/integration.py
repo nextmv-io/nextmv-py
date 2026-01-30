@@ -225,12 +225,12 @@ class Integration(BaseModel):
     def new(  # noqa: C901
         cls,
         client: Client,
-        name: str,
         integration_type: IntegrationType | str,
         exec_types: list[ManifestType | str],
         provider: IntegrationProvider | str,
         provider_config: dict[str, Any],
         integration_id: str | None = None,
+        name: str | None = None,
         description: str | None = None,
         is_global: bool = False,
         application_ids: list[str] | None = None,
@@ -243,8 +243,6 @@ class Integration(BaseModel):
         ----------
         client : Client
             Client to use for interacting with the Nextmv Cloud API.
-        name : str
-            The name of the integration.
         integration_type : IntegrationType | str
             The type of the integration. Please refer to the `IntegrationType`
             enum for possible values.
@@ -259,6 +257,9 @@ class Integration(BaseModel):
         integration_id : str, optional
             The unique identifier of the integration. If not provided,
             it will be generated automatically.
+        name : str | None, optional
+            The name of the integration. If not provided, the integration ID
+            will be used as the name.
         description : str, optional
             An optional description of the integration.
         is_global : bool, optional, default=False
@@ -302,8 +303,10 @@ class Integration(BaseModel):
         elif not is_global and application_ids is None:
             raise ValueError("A non-global integration must have specific application IDs.")
 
-        if integration_id is None:
+        if integration_id is None or integration_id == "":
             integration_id = safe_id("integration")
+        if name is None or name == "":
+            name = integration_id
 
         if exist_ok:
             try:
