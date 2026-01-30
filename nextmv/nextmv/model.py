@@ -451,7 +451,7 @@ def _cleanup_mlflow_db(model_dir: str) -> None:
         return
 
     # Try to close any open SQLite connections and retry deletion
-    max_retries = 20
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             # Attempt to connect and close to release any locks
