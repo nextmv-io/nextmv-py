@@ -451,7 +451,7 @@ def _cleanup_mlflow_db(model_dir: str) -> None:
         return
 
     # Try to close any open SQLite connections and retry deletion
-    max_retries = 5
+    max_retries = 20
     for attempt in range(max_retries):
         try:
             # Attempt to connect and close to release any locks
@@ -462,9 +462,9 @@ def _cleanup_mlflow_db(model_dir: str) -> None:
                 pass
             os.remove(mlflow_db_path)
             break
-
         except PermissionError:
             if attempt < max_retries - 1:
                 time.sleep(0.5)
             else:
-                raise
+                log(f"Could not delete {mlflow_db_path} after {max_retries} retries due to file lock.")
+                break
