@@ -635,7 +635,7 @@ class ApplicationRunMixin:
                 temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
                 with open(temp_tar_path, "wb") as f:
                     f.write(download_response.content)
-                shutil.unpack_archive(temp_tar_path, output_dir_path)
+                shutil.unpack_archive(temp_tar_path, output_dir_path, filter=None)
 
             return
 
@@ -1287,7 +1287,7 @@ class ApplicationRunMixin:
                 temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
                 with open(temp_tar_path, "wb") as f:
                     f.write(download_response.content)
-                shutil.unpack_archive(temp_tar_path, output_dir_path)
+                shutil.unpack_archive(temp_tar_path, output_dir_path, filter=None)
         else:
             result.output = download_response.json()
 

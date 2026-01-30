@@ -119,7 +119,7 @@ def clone(
     # Extract the tarball to a temporary directory to handle nested structure
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(downloaded_object, "r:gz") as tar:
-            tar.extractall(path=temp_dir)
+            tar.extractall(path=temp_dir, filter=None)
 
         # Find the extracted directory (typically the app name)
         extracted_items = os.listdir(temp_dir)
@@ -269,4 +269,5 @@ def download_object(file: str, path: str, output_dir: str, output_file: str, pro
     with open(file_name, "wb") as f:
         f.write(response.content)
 
+    return file_name
     return file_name

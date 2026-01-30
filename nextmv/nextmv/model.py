@@ -84,6 +84,9 @@ def _custom_showwarning(message, category, filename, lineno, file=None, line=Non
     if "mlflow/pyfunc/__init__.py" in filename:
         return
 
+    if "/mlflow/tracing/provider.py" in filename:
+        return
+
     _original_showwarning(message, category, filename, lineno, file, line)
 
 
@@ -288,7 +291,6 @@ class Model:
             ) from e
 
         finally:
-            from mlflow.models import infer_signature
             from mlflow.pyfunc import PythonModel, save_model
 
         class MLFlowModel(PythonModel):
@@ -342,12 +344,13 @@ class Model:
 
         _cleanup_python_model(model_dir, configuration, verbose=False)
 
-        signature = None
-        if configuration.options is not None:
-            options_dict = configuration.options.to_dict()
-            signature = infer_signature(
-                params=options_dict,
-            )
+        # signature = None
+        # if configuration.options is not None:
+        #     options_dict = configuration.options.to_dict()
+        #     signature = infer_signature(
+        #         model_input={},
+        #         params=options_dict,
+        #     )
 
         # We use mlflow to save the model to the local filesystem, to be able to
         # load it later on.
@@ -356,7 +359,7 @@ class Model:
             path=model_path,  # Customize the name of the model location.
             infer_code_paths=True,  # Makes the imports portable.
             python_model=MLFlowModel(),
-            signature=signature,  # Allows us to work with our own `Options` class.
+            # signature=signature,  # Allows us to work with our own `Options` class.
         )
 
         # Create an auxiliary requirements file with the model dependencies.
@@ -415,9 +418,9 @@ def _cleanup_python_model(
     if os.path.exists(model_path):
         shutil.rmtree(model_path)
 
-    mlruns_path = os.path.join(model_dir, "mlruns")
-    if os.path.exists(mlruns_path):
-        shutil.rmtree(mlruns_path)
+    mlflow_db_path = os.path.join(model_dir, "mlflow.db")
+    if os.path.exists(mlflow_db_path):
+        os.remove(mlflow_db_path)
 
     requirements_file = os.path.join(model_dir, _REQUIREMENTS_FILE)
     if os.path.exists(requirements_file):
