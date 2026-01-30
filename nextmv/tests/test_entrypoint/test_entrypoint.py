@@ -28,14 +28,14 @@ class TestEntrypoint(unittest.TestCase):
 
         # Copy the entrypoint.
         src = self._file_name("__entrypoint__.py", os.path.join(self.TWO_DIRS_UP, "nextmv"))
-        dst = self._file_name("main.py", self.TWO_DIRS_UP)
+        dst = self._file_name("main_model.py", self.TWO_DIRS_UP)
         shutil.copy(src, dst)
 
     def tearDown(self):
         """Removes the newly created main script elements."""
 
         filenames = [
-            self._file_name("main.py", self.TWO_DIRS_UP),
+            self._file_name("main_model.py", self.TWO_DIRS_UP),
             self._file_name("app.yaml", self.TWO_DIRS_UP),
         ]
 

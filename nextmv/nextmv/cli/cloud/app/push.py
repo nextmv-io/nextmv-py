@@ -129,26 +129,34 @@ def push(
         $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
     """
 
+    cloud_app = build_app(app_id=app_id, profile=profile)
+
+    # If a version already exists, we cannot create it.
+    if version_id is not None and version_id != "":
+        exists = cloud_app.version_exists(version_id=version_id)
+        if exists:
+            error(
+                f"Version [magenta]{version_id}[/magenta] already exists for application [magenta]{app_id}[/magenta]."
+            )
+
     # We cannot create and update an instance at the same time.
     update_defined = update_instance_id is not None and update_instance_id != ""
     create_defined = create_instance_id is not None and create_instance_id != ""
     if update_defined and create_defined:
         error("Cannot use --update-instance-id and --create-instance-id at the same time.")
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
-
     # We cannot update an instance that does not exist.
     if update_defined and not cloud_app.instance_exists(instance_id=update_instance_id):
         error(
-            f"Used option --update-instance-id but the instance {update_instance_id} does not exist. "
-            "Use --create-instance-id instead."
+            f"Used option --update-instance-id but the instance [magenta]{update_instance_id}[/magenta] "
+            "does not exist. Use --create-instance-id instead."
         )
 
     # We cannot create an instance that already exists.
     if create_defined and cloud_app.instance_exists(instance_id=create_instance_id):
         error(
-            f"Used option --create-instance-id but the instance {create_instance_id} already exists. "
-            "Use --update-instance-id instead."
+            f"Used option --create-instance-id but the instance [magenta]{create_instance_id}[/magenta] "
+            "already exists. Use --update-instance-id instead."
         )
 
     # Do the normal push first.
@@ -243,22 +251,13 @@ def _handle_version_creation(
     # If the user provides a version, and it exists, we use it directly and we
     # are done.
     if version_id is not None and version_id != "":
-        exists = cloud_app.version_exists(version_id=version_id)
-        if exists:
-            error(
-                f"Version [magenta]{version_id}[/magenta] already exists for application [magenta]{app_id}[/magenta]."
-            )
-
-            return "", False
-
         info(f"Version [magenta]{version_id}[/magenta] does not exist. A new version will be created.")
-
         version_yes = True  # Activate auto-confirm since user provided a version ID.
 
     # If we are not auto-confirming version creation, ask the user.
     if not version_yes:
         should_create = get_confirmation(
-            msg=f"Do you want to create a new version [magenta]{app_id}[/magenta] now?",
+            msg=f"Do you want to create a new version for application [magenta]{app_id}[/magenta] now?",
             default=True,
         )
 
