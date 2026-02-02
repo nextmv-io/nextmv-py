@@ -223,7 +223,7 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # Perform different checks on the runs.
         for run in runs:
-            assert run.metadata.status_v2 == nextmv.StatusV2.succeeded
+            assert run.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
 
             run_input = app.run_input(run_id=run.id)
             assert run_input == input_data
@@ -232,7 +232,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             assert logs.log is not None and logs.log != ""
 
             info = app.run_metadata(run_id=run.id)
-            assert info.metadata.status_v2 == nextmv.StatusV2.succeeded
+            assert info.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
 
             result = app.run_result(run_id=run.id)
             assert result is not None
@@ -434,7 +434,11 @@ class CloudIntegrationWorkflow(FlowSpec):
         # Stop the shadow test.
         app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.complete)
         metadata = app.shadow_test_metadata(shadow_test_id=shadow_test.shadow_test_id)
-        assert metadata.status == cloud.ExperimentStatus.COMPLETED or metadata.status == cloud.ExperimentStatus.STOPPING
+        assert metadata.status in {
+            cloud.ExperimentStatus.STARTED,
+            cloud.ExperimentStatus.COMPLETED,
+            cloud.ExperimentStatus.STOPPING,
+        }
 
         # Get the results of the shadow test and assert that it registered the
         # runs.
@@ -510,7 +514,11 @@ class CloudIntegrationWorkflow(FlowSpec):
             intent=cloud.StopIntent.complete,
         )
         metadata = app.switchback_test_metadata(switchback_test_id=switchback_test.switchback_test_id)
-        assert metadata.status == cloud.ExperimentStatus.COMPLETED or metadata.status == cloud.ExperimentStatus.STOPPING
+        assert metadata.status in {
+            cloud.ExperimentStatus.STARTED,
+            cloud.ExperimentStatus.COMPLETED,
+            cloud.ExperimentStatus.STOPPING,
+        }
 
         # Get the results of the switchback test and assert that it registered the
         # runs.

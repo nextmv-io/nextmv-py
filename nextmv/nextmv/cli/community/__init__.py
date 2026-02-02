@@ -9,8 +9,8 @@ from nextmv.cli.community.list import app as list_app
 
 # Set up subcommand application.
 app = typer.Typer()
-app.add_typer(list_app)
 app.add_typer(clone_app)
+app.add_typer(list_app)
 
 
 @app.callback()
