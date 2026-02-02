@@ -234,9 +234,10 @@ class CloudIntegrationWorkflow(FlowSpec):
             info = app.run_metadata(run_id=run.id)
             assert info.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
 
-            result = app.run_result(run_id=run.id)
-            assert result is not None
-            assert result.output is not None and result.output != {}
+            if info.metadata.status_v2 == nextmv.StatusV2.succeeded:
+                result = app.run_result(run_id=run.id)
+                assert result is not None
+                assert result.output is not None and result.output != {}
 
         # We can list runs.
         run_list = app.list_runs()
