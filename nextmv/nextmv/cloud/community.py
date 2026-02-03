@@ -32,9 +32,9 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
+from nextmv.local.registry import AppEntry, add_registry_entry
 from nextmv.logger import log
-from nextmv.nextmv.local.registry import AppEntry, add_registry_entry
-from nextmv.nextmv.safe import safe_id
+from nextmv.safe import safe_id
 
 # Helpful constants.
 LATEST_VERSION = "latest"
