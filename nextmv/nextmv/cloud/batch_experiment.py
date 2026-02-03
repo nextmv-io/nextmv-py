@@ -30,7 +30,9 @@ class ExperimentStatus(str, Enum):
 
     You can import the `ExperimentStatus` class directly from `cloud`:
 
-    ```python from nextmv.cloud import ExperimentStatus ```
+    ```python
+    from nextmv.cloud import ExperimentStatus
+    ```
 
     This enum represents the comprehensive set of possible states for an
     experiment in Nextmv Cloud.

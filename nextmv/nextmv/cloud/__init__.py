@@ -30,6 +30,9 @@ from .batch_experiment import BatchExperimentRun as BatchExperimentRun
 from .batch_experiment import ExperimentStatus as ExperimentStatus
 from .client import Client as Client
 from .client import get_size as get_size
+from .community import CommunityApp as CommunityApp
+from .community import clone_community_app as clone_community_app
+from .community import list_community_apps as list_community_apps
 from .ensemble import EnsembleDefinition as EnsembleDefinition
 from .ensemble import EvaluationRule as EvaluationRule
 from .ensemble import RuleObjective as RuleObjective
@@ -55,6 +58,7 @@ from .secrets import SecretType as SecretType
 from .shadow import ShadowTest as ShadowTest
 from .shadow import ShadowTestMetadata as ShadowTestMetadata
 from .shadow import StartEvents as StartEvents
+from .shadow import StopIntent as StopIntent
 from .shadow import TerminationEvents as TerminationEvents
 from .shadow import TestComparison as TestComparison
 from .switchback import SwitchbackPlan as SwitchbackPlan

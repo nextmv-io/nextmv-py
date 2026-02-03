@@ -19,6 +19,7 @@ ShadowTest
 """
 
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from pydantic import AliasChoices, Field
@@ -227,3 +228,27 @@ class ShadowTest(BaseModel):
     """Grouped distributional summaries of the shadow test."""
     runs: list[Run] | None = None
     """List of runs in the shadow test."""
+
+
+class StopIntent(str, Enum):
+    """
+    Intent for stopping a shadow test.
+
+    You can import the `StopIntent` class directly from `cloud`:
+
+    ```python
+    from nextmv.cloud import StopIntent
+    ```
+
+    Attributes
+    ----------
+    complete : str
+        The test is marked as complete.
+    cancel : str
+        The test is canceled.
+    """
+
+    complete = "complete"
+    """The test is marked as complete."""
+    cancel = "cancel"
+    """The test is canceled."""

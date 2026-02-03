@@ -60,4 +60,5 @@ dev = [
     "scikit-learn>=1.6.1",
     "nextmv>=0.25.0",
     "pydantic>=2.5.2",
+    "pytest>=9.0.2",
 ]

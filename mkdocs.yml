@@ -64,6 +64,7 @@ nav:
               - application: nextmv/cloud/reference/application.md
               - batch_experiment.py: nextmv/cloud/reference/batch_experiment.md
               - client.py: nextmv/cloud/reference/client.md
+              - community.py: nextmv/cloud/reference/community.md
               - ensemble.py: nextmv/cloud/reference/ensemble.md
               - input_set.py: nextmv/cloud/reference/input_set.md
               - instance.py: nextmv/cloud/reference/instance.md

@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from nextmv.cloud.input_set import InputSet, ManagedInput
+from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
     from . import Application
@@ -15,6 +16,32 @@ class ApplicationInputSetMixin:
     """
     Mixin class for managing app input sets within an application.
     """
+
+    def delete_input_set(self: "Application", input_set_id: str) -> None:
+        """
+        Delete an input set.
+
+        Deletes an input set along with all the associated information.
+
+        Parameters
+        ----------
+        input_set_id : str
+            ID of the input set to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_input_set("input-set-123")
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.experiments_endpoint}/inputsets/{input_set_id}",
+        )
 
     def input_set(self: "Application", input_set_id: str) -> InputSet:
         """
@@ -81,8 +108,8 @@ class ApplicationInputSetMixin:
 
     def new_input_set(
         self: "Application",
-        id: str,
-        name: str,
+        id: str | None = None,
+        name: str | None = None,
         description: str | None = None,
         end_time: datetime | None = None,
         instance_id: str | None = None,
@@ -107,10 +134,11 @@ class ApplicationInputSetMixin:
 
         Parameters
         ----------
-        id: str
-            ID of the input set
-        name: str
-            Name of the input set.
+        id: str | None = None
+            ID of the input set, will be generated if not provided.
+        name: str | None = None
+            Name of the input set. If not provided, the ID will be used as
+            the name.
         description: Optional[str]
             Optional description of the input set.
         end_time: Optional[datetime]
@@ -144,6 +172,14 @@ class ApplicationInputSetMixin:
         requests.HTTPError
             If the response status code is not 2xx.
         """
+
+        # Generate ID if not provided
+        if id is None or id == "":
+            id = safe_id("input-set")
+
+        # Use ID as name if name not provided
+        if name is None or name == "":
+            name = id
 
         payload = {
             "id": id,
