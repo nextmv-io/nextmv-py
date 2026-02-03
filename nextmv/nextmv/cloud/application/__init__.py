@@ -121,10 +121,8 @@ class Application(
     Note: It is recommended to use `Application.get()` or `Application.new()`
     instead of direct initialization to ensure proper setup.
 
-    Parameters
+    Attributes
     ----------
-    client : Client
-        Client to use for interacting with the Nextmv Cloud API.
     id : str
         ID of the application.
     name : str, optional
@@ -145,12 +143,19 @@ class Application(
         Creation timestamp of the application.
     updated_at : datetime, optional
         Last update timestamp of the application.
+    client : Client
+        Client to use for interacting with the Nextmv Cloud API. This is an
+        SDK-specific attribute and it is not part of the API representation of
+        an application.
     endpoint : str, default="v1/applications/{id}"
-        Base endpoint for the application (SDK-specific).
+        Base endpoint for the application. This is an SDK-specific attribute
+        and it is not part of the API representation of an application.
     experiments_endpoint : str, default="{base}/experiments"
-        Base endpoint for experiments (SDK-specific).
+        Base endpoint for experiments. This is an SDK-specific attribute and it
+        is not part of the API representation of an application.
     ensembles_endpoint : str, default="{base}/ensembles"
-        Base endpoint for ensembles (SDK-specific).
+        Base endpoint for ensembles. This is an SDK-specific attribute and it
+        is not part of the API representation of an application.
 
     Examples
     --------

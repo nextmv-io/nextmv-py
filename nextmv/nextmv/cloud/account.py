@@ -188,30 +188,32 @@ class Account(BaseModel):
 
     You can import the `Account` class directly from `cloud`:
 
-    ```python
-    from nextmv.cloud import Account
-    ```
+    ```python from nextmv.cloud import Account ```
 
     This class provides access to account-level operations in the Nextmv Cloud,
     such as retrieving the queue of runs.
 
-    Note: It is recommended to use `Account.get()` or `Account.new()`
-    instead of direct initialization to ensure proper setup.
+    Note: It is recommended to use `Account.get()` or `Account.new()` instead
+    of direct initialization to ensure proper setup.
 
-    Parameters
+    Attributes
     ----------
-    client : Client
-        Client to use for interacting with the Nextmv Cloud API.
     account_id : str, optional
         ID of the account (organization).
     name : str, optional
         Name of the account (organization).
     members : list[AccountMember], optional
         List of members in the account (organization).
+    client : Client
+        Client to use for interacting with the Nextmv Cloud API. This is an
+        SDK-specific attribute and it is not part of the API representation of
+        an account.
     account_endpoint : str, default="v1/account"
-        Base endpoint for the account (SDK-specific).
+        Base endpoint for the account. This is an SDK-specific attribute and it
+        is not part of the API representation of an account.
     organization_endpoint : str, default="v1/organization/{organization_id}"
-        Base endpoint for organization operations (SDK-specific).
+        Base endpoint for organization operations. This is an SDK-specific
+        attribute and it is not part of the API representation of an account.
 
     Examples
     --------

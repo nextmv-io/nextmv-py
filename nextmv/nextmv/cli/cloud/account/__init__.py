@@ -20,9 +20,11 @@ app.add_typer(update_app)
 @app.callback()
 def callback() -> None:
     """
-    Manage SSO for your Nextmv Cloud account (organization).
+    Manage your Nextmv Cloud account (organization).
 
-    Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link]
-    for assistance configuring SSO for your organization.
+    Please contact [link=https://www.nextmv.io/contact][bold]Nextmv
+    support[/bold][/link] for assistance configuring SSO for your organization.
+    You may use the [code]nextmv cloud sso[/code] command tree to manage the
+    SSO configuration for your organization.
     """
     pass
