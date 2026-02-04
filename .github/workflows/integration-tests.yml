@@ -16,6 +16,7 @@ jobs:
     env:
       PACKAGE: nextmv
       NEXTMV_API_KEY: ${{ secrets.API_KEY_PROD }}
+      UV_SYSTEM_PYTHON: 1
     steps:
       - name: git clone
         uses: actions/checkout@v6
