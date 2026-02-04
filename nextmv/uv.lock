@@ -1484,6 +1484,7 @@ dev = [
     { name = "nextpipe" },
     { name = "openpyxl" },
     { name = "pandas" },
+    { name = "pip" },
     { name = "plotly" },
     { name = "pydantic" },
     { name = "pytest" },
@@ -1491,6 +1492,7 @@ dev = [
     { name = "requests" },
     { name = "ruff" },
     { name = "twine" },
+    { name = "typer" },
     { name = "urllib3" },
 ]
 
@@ -1516,6 +1518,7 @@ dev = [
     { name = "nextpipe", specifier = ">=0.6.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pip", specifier = ">=26.0" },
     { name = "plotly", specifier = ">=6.0.1" },
     { name = "pydantic", specifier = ">=2.5.2" },
     { name = "pytest", specifier = ">=9.0.2" },
@@ -1523,6 +1526,7 @@ dev = [
     { name = "requests", specifier = ">=2.31.0" },
     { name = "ruff", specifier = ">=0.1.7" },
     { name = "twine", specifier = ">=4.0.2" },
+    { name = "typer", specifier = ">=0.20.1" },
     { name = "urllib3", specifier = ">=2.1.0" },
 ]
 

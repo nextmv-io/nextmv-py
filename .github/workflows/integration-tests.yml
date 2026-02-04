@@ -16,7 +16,6 @@ jobs:
     env:
       PACKAGE: nextmv
       NEXTMV_API_KEY: ${{ secrets.API_KEY_PROD }}
-      UV_SYSTEM_PYTHON: 1
     steps:
       - name: git clone
         uses: actions/checkout@v6
@@ -26,7 +25,6 @@ jobs:
         with:
           version: "0.9.29"
           python-version: ${{ matrix.python-version }}
-          activate-environment: true
 
       - name: install the project
         run: uv sync --locked --dev
