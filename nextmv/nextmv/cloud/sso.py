@@ -70,7 +70,7 @@ class SSOConfiguration(BaseModel):
     # SDK-specific attributes for convenience when using methods.
     client: Client = Field(exclude=True)
     """Client to use for interacting with the Nextmv Cloud API."""
-    sso_endpoint: str = Field(exclude=True, default="/v1/enterprise/sso")
+    sso_endpoint: str = Field(exclude=True, default="v1/enterprise/sso")
 
     @classmethod
     def get(cls, client: Client) -> "SSOConfiguration":
