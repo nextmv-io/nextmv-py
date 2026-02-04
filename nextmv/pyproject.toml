@@ -54,6 +54,7 @@ Repository = "https://github.com/nextmv-io/nextmv-py"
 [project.scripts]
 nextmv = "nextmv.cli.main:main"
 
+# Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
 all = [
     "folium>=0.20.0",
@@ -62,6 +63,9 @@ all = [
 notebook = [
     "mlflow>= 3.9.0",
 ]
+
+[dependency-groups]
+# Dependencies for development and testing.
 dev = [
     "build>=1.0.3",
     "pydantic>=2.5.2",
