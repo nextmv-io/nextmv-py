@@ -33,8 +33,8 @@ jobs:
       - name: handle nextmv dependency
         if: ${{ matrix.package != 'nextmv' }}
         run: |
-          uv pip uninstall nextmv -- -y
-          uv pip install ../nextmv -- -e
+          uv pip uninstall -y nextmv
+          uv pip install -e ../nextmv
         working-directory: ./${{ matrix.package }}
 
       - name: unit tests
