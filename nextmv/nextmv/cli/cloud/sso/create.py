@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_client
-from nextmv.cli.message import in_progress, print_json
+from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.sso import SSOConfiguration
 
@@ -61,7 +61,9 @@ def create(
     Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link] for assistance.
 
     You must provide either a metadata URL or a metadata document. The metadata
-    document contains the SAML configuration details from your identity provider.
+    document contains the SAML configuration details from your identity
+    provider. You can use the [code]nextmv cloud sso get[/code] to get the
+    newly-created configuration after running this command.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -87,11 +89,11 @@ def create(
     cloud_client = build_client(profile)
     in_progress(msg="Creating configuration...")
 
-    configuration = SSOConfiguration.new(
+    SSOConfiguration.new(
         client=cloud_client,
         allow_non_domain_users=allow_non_domain_users,
         enabled=enabled,
         metadata_url=metadata_url,
         metadata_document=metadata_document,
     )
-    print_json(configuration.to_dict())
+    success("SSO configuration created successfully.")

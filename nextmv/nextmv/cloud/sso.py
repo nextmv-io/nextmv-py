@@ -96,7 +96,7 @@ class SSOConfiguration(BaseModel):
 
         response = client.request(
             method="GET",
-            endpoint=cls.sso_endpoint,
+            endpoint="v1/enterprise/sso",
         )
 
         return cls.from_dict({"client": client} | response.json())
@@ -109,10 +109,13 @@ class SSOConfiguration(BaseModel):
         enabled: bool | None = None,
         metadata_url: str | None = None,
         metadata_document: str | None = None,
-    ) -> "SSOConfiguration":
+    ) -> None:
         """
         Create a new SSO configuration for the current Nextmv Cloud
         organization (account).
+
+        This method does not return the created configuration. To retrieve
+        the configuration after creation, use the `get` method.
 
         Parameters
         ----------
@@ -128,11 +131,6 @@ class SSOConfiguration(BaseModel):
         metadata_document : str, optional
             The SSO metadata document as a string.
 
-        Returns
-        -------
-        SSOConfiguration
-            The newly created SSO configuration for the organization (account).
-
         Raises
         ------
         requests.HTTPError
@@ -146,13 +144,11 @@ class SSOConfiguration(BaseModel):
             "metadata_document": metadata_document,
         }
 
-        response = client.request(
+        client.request(
             method="POST",
-            endpoint=cls.sso_endpoint,
-            json=payload,
+            endpoint="v1/enterprise/sso",
+            payload=payload,
         )
-
-        return cls.from_dict({"client": client} | response.json())
 
     def delete(self) -> None:
         """
@@ -204,13 +200,15 @@ class SSOConfiguration(BaseModel):
         self,
         metadata_url: str | None = None,
         metadata_document: str | None = None,
-    ) -> "SSOConfiguration":
+    ) -> None:
         """
         Update the SSO configuration for the current Nextmv Cloud
         organization (account).
 
-        If you wish to enable or disable SSO, please use the `enable` and
-        `disable` methods instead.
+        This method does not return the updated configuration. To retrieve the
+        configuration after updating, use the `get` method. If you wish to
+        enable or disable SSO, please use the `enable` and `disable` methods
+        instead.
 
         Parameters
         ----------
@@ -218,11 +216,6 @@ class SSOConfiguration(BaseModel):
             The URL to the SSO metadata document.
         metadata_document : str, optional
             The SSO metadata document as a string.
-
-        Returns
-        -------
-        SSOConfiguration
-            The updated SSO configuration for the organization (account).
 
         Raises
         ------
@@ -239,10 +232,8 @@ class SSOConfiguration(BaseModel):
         if metadata_document is not None and metadata_document != "":
             payload["metadata_document"] = metadata_document
 
-        response = self.client.request(
+        self.client.request(
             method="PUT",
             endpoint=self.sso_endpoint,
-            json=payload,
+            payload=payload,
         )
-
-        return self.from_dict({"client": self.client} | response.json())

@@ -19,6 +19,7 @@ from datetime import datetime
 
 from pydantic import AliasChoices, Field
 
+from nextmv import deprecated
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
 from nextmv.status import StatusV2
@@ -378,6 +379,9 @@ class Account(BaseModel):
 
     def queue(self) -> Queue:
         """
+        !!! warning
+            `Account.queue` is deprecated, use `Application.list_runs` with `status=StatusV2.queued` instead.
+
         Get the queue of runs in the account.
 
         Retrieves the current list of runs that are pending or being executed
@@ -404,6 +408,11 @@ class Account(BaseModel):
         Run run-123: Daily Optimization - Status: RUNNING
         Run run-456: Weekly Planning - Status: QUEUED
         """
+        deprecated(
+            name="Account.queue",
+            reason="`Account.queue` is deprecated, use `Application.list_runs` with `status=StatusV2.queued` instead",
+        )
+
         response = self.client.request(
             method="GET",
             endpoint=self.account_endpoint + "/queue",
