@@ -21,6 +21,7 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "typer>=0.20.1",
+    "pip>=26.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
