@@ -18,26 +18,25 @@ jobs:
         package: ["nextmv", "nextmv-gurobipy", "nextmv-scikit-learn"]
     steps:
       - name: git clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: install uv
+        uses: astral-sh/setup-uv@v7
         with:
+          version: "0.9.29"
           python-version: ${{ matrix.python-version }}
 
-      - name: install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .[dev]
+      - name: install the project
+        run: uv sync --locked --dev
         working-directory: ./${{ matrix.package }}
 
       - name: handle nextmv dependency
         if: ${{ matrix.package != 'nextmv' }}
         run: |
-          pip uninstall -y nextmv
-          pip install -e ../nextmv
+          uv pip uninstall -y nextmv
+          uv pip install -e ../nextmv
         working-directory: ./${{ matrix.package }}
 
       - name: unit tests
-        run: pytest --ignore=tests/integration
+        run: uv run pytest --ignore=tests/integration
         working-directory: ./${{ matrix.package }}
