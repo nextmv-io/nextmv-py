@@ -25,6 +25,7 @@ jobs:
         with:
           version: "0.9.29"
           python-version: ${{ matrix.python-version }}
+          activate-environment: true
 
       - name: install the project
         run: uv sync --locked --dev
