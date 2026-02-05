@@ -1316,7 +1316,7 @@ class ApplicationRunMixin:
 
         return configuration_dict
 
-    def __handle_tracked_run_input(self: "Application", tracked_run: TrackedRun) -> str | None:
+    def __handle_tracked_run_input(self: "Application", tracked_run: TrackedRun) -> str:
         # Get the URL to upload the input to.
         url_input = self.upload_url()
 
