@@ -2,6 +2,7 @@
 This module defines the cloud sso create command for the Nextmv CLI.
 """
 
+import sys
 from typing import Annotated
 
 import typer
@@ -48,7 +49,7 @@ def create(
         typer.Option(
             "--metadata-document",
             "-d",
-            help="The SSO metadata document as a string.",
+            help="The SSO metadata document as a string or a path to a file containing the document.",
             metavar="METADATA_DOCUMENT",
         ),
     ] = None,
@@ -60,10 +61,15 @@ def create(
     SSO must be configured to enable managed accounts in your organization.
     Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link] for assistance.
 
-    You must provide either a metadata URL or a metadata document. The metadata
-    document contains the SAML configuration details from your identity
-    provider. You can use the [code]nextmv cloud sso get[/code] to get the
-    newly-created configuration after running this command.
+    You must use either the --metadata-url or --metadata-document option. When
+    working with the metadata document, you have three options:
+
+    - Pipe the document into the command via [magenta]stdin[/magenta].
+    - Provide the document as a string with --metadata-document.
+    - Provide a path to a file containing the document with --metadata-document.
+
+    You can use the [code]nextmv cloud sso get[/code] to get the newly-created
+    configuration after running this command.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -81,10 +87,17 @@ def create(
     - Create SSO configuration using a metadata document string.
         $ [dim]nextmv cloud sso create --metadata-document "<EntityDescriptor ...</EntityDescriptor>"[/dim]
 
+    - Create SSO configuration using a metadata document file.
+        $ [dim]nextmv cloud sso create --metadata-document "/path/to/metadata_document.xml"[/dim]
+
     - Create SSO configuration using the profile named [magenta]hare[/magenta].
         $ [dim]nextmv cloud sso create --metadata-url "https://sso.cottontailcouriers.net/metadata" \\
             --profile hare[/dim]
     """
+
+    stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
+    if stdin is not None:
+        metadata_document = stdin
 
     cloud_client = build_client(profile)
     in_progress(msg="Creating configuration...")

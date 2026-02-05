@@ -12,6 +12,8 @@ SSOConfiguration
     delete SSO configurations.
 """
 
+from pathlib import Path
+
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
@@ -137,6 +139,8 @@ class SSOConfiguration(BaseModel):
             If the response status code is not 2xx.
         """
 
+        metadata_document = __resolve_metadata_document(metadata_document)
+
         payload = {
             "allow_non_domain_users": allow_non_domain_users,
             "enabled": enabled,
@@ -230,6 +234,7 @@ class SSOConfiguration(BaseModel):
         if metadata_url is not None and metadata_url != "":
             payload["metadata_url"] = metadata_url
         if metadata_document is not None and metadata_document != "":
+            metadata_document = __resolve_metadata_document(metadata_document)
             payload["metadata_document"] = metadata_document
 
         self.client.request(
@@ -237,3 +242,36 @@ class SSOConfiguration(BaseModel):
             endpoint=self.sso_endpoint,
             payload=payload,
         )
+
+
+def __resolve_metadata_document(metadata_document: str | None = None) -> str | None:
+    """
+    Resolve the SSO metadata document from a string or a file path.
+
+    Parameters
+    ----------
+    metadata_document : str, optional
+        The SSO metadata document as a string or a path to a file containing
+        the document.
+
+    Returns
+    -------
+    str, optional
+        The SSO metadata document as a string, or `None` if not provided.
+
+    Raises
+    ------
+    RuntimeError
+        If the metadata document is a file path and the file cannot be read.
+    """
+    if metadata_document is None or metadata_document == "":
+        return None
+
+    meta_path = Path(metadata_document)
+    if meta_path.is_file():
+        try:
+            return meta_path.read_text()
+        except (OSError, UnicodeDecodeError) as e:
+            raise RuntimeError(f"Failed to read metadata document from file {meta_path}: {e}") from e
+
+    return metadata_document
