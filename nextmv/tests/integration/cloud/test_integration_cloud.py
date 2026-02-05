@@ -433,7 +433,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             _ = app.new_run_with_result(input=input_data, instance_id=inst1.id)
 
         # Stop the shadow test.
-        app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.complete)
+        app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.COMPLETE)
         metadata = app.shadow_test_metadata(shadow_test_id=shadow_test.shadow_test_id)
         assert metadata.status in {
             cloud.ExperimentStatus.STARTED,
@@ -512,7 +512,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         # Stop the switchback test.
         app.stop_switchback_test(
             switchback_test_id=switchback_test.switchback_test_id,
-            intent=cloud.StopIntent.complete,
+            intent=cloud.StopIntent.COMPLETE,
         )
         metadata = app.switchback_test_metadata(switchback_test_id=switchback_test.switchback_test_id)
         assert metadata.status in {

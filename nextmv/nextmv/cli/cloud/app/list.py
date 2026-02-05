@@ -48,7 +48,7 @@ def list(
     in_progress(msg="Listing applications...")
 
     cloud_apps = list_applications(client)
-    cloud_apps_dicts = [app.to_dict() for app in cloud_apps]
+    cloud_apps_dicts = [cloud_app.to_dict() for cloud_app in cloud_apps]
 
     if output is not None and output != "":
         with open(output, "w") as f:

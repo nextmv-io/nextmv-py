@@ -248,7 +248,7 @@ class StopIntent(str, Enum):
         The test is canceled.
     """
 
-    complete = "complete"
+    COMPLETE = "complete"
     """The test is marked as complete."""
-    cancel = "cancel"
+    CANCEL = "cancel"
     """The test is canceled."""
