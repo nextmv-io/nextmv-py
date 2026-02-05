@@ -935,7 +935,7 @@ class ApplicationRunMixin:
             output_dir_path=output_dir_path,
         )
 
-    def track_run(  # noqa: C901
+    def track_run(
         self: "Application",
         tracked_run: TrackedRun,
         instance_id: str | None = None,
@@ -991,113 +991,37 @@ class ApplicationRunMixin:
         >>> run_id = app.track_run(tracked_run)
         """
 
-        # Get the URL to upload the input to.
-        url_input = self.upload_url()
+        input_upload_id = self.__handle_tracked_run_input(tracked_run)
 
-        # Handle the case where the input is being uploaded as files. We need
-        # to tar them.
-        input_tar_file = ""
-        input_dir_path = tracked_run.input_dir_path
-        if input_dir_path is not None and input_dir_path != "":
-            if not os.path.exists(input_dir_path):
-                raise ValueError(f"Directory {input_dir_path} does not exist.")
-
-            if not os.path.isdir(input_dir_path):
-                raise ValueError(f"Path {input_dir_path} is not a directory.")
-
-            input_tar_file = self._package_inputs(input_dir_path)
-
-        # Handle the case where the input is uploaded as Input or a dict.
-        upload_input = tracked_run.input
-        if upload_input is not None and isinstance(tracked_run.input, Input):
-            upload_input = tracked_run.input.data
-
-        # Actually uploads de input.
-        self.upload_data(data=upload_input, upload_url=url_input, tar_file=input_tar_file)
-
-        # Get the URL to upload the output to.
-        url_output = self.upload_url()
-
-        # Handle the case where the output is being uploaded as files. We need
-        # to tar them.
-        output_tar_file = ""
-        output_dir_path = tracked_run.output_dir_path
-        if output_dir_path is not None and output_dir_path != "":
-            if not os.path.exists(output_dir_path):
-                raise ValueError(f"Directory {output_dir_path} does not exist.")
-
-            if not os.path.isdir(output_dir_path):
-                raise ValueError(f"Path {output_dir_path} is not a directory.")
-
-            output_tar_file = self._package_inputs(output_dir_path)
-
-        # Handle the case where the output is uploaded as Output or a dict.
-        upload_output = tracked_run.output
-        if upload_output is not None and isinstance(tracked_run.output, Output):
-            upload_output = tracked_run.output.to_dict()
-
-        # Actually uploads the output.
-        self.upload_data(data=upload_output, upload_url=url_output, tar_file=output_tar_file)
-
-        # Create the external run result and appends logs if required.
+        # Create the external run result and we add properties to it as required.
         external_result = ExternalRunResult(
-            output_upload_id=url_output.upload_id,
             status=tracked_run.status.value,
             execution_duration=tracked_run.duration,
         )
 
-        # Handle the stderr logs if provided.
-        if tracked_run.logs is not None:
-            url_stderr = self.upload_url()
-            self.upload_data(data=tracked_run.logs_text(), upload_url=url_stderr)
-            external_result.error_upload_id = url_stderr.upload_id
+        output_upload_id = self.__handle_tracked_output(tracked_run)
+        if output_upload_id is not None:
+            external_result.output_upload_id = output_upload_id
+
+        logs_upload_id = self.__handle_tracked_run_logs(tracked_run)
+        if logs_upload_id is not None:
+            external_result.error_upload_id = logs_upload_id
 
         if tracked_run.error is not None and tracked_run.error != "":
             external_result.error_message = tracked_run.error
 
         # Handle the statistics upload if provided.
-        stats = tracked_run.statistics
-        if stats is not None:
-            if isinstance(stats, Statistics):
-                stats_dict = stats.to_dict()
-                stats_dict = {STATISTICS_KEY: stats_dict}
-            elif isinstance(stats, dict):
-                stats_dict = stats
-                if STATISTICS_KEY not in stats_dict:
-                    stats_dict = {STATISTICS_KEY: stats_dict}
-            else:
-                raise ValueError("tracked_run.statistics must be either a `Statistics` or `dict` object")
-
-            url_stats = self.upload_url()
-            self.upload_data(data=stats_dict, upload_url=url_stats)
-            external_result.statistics_upload_id = url_stats.upload_id
+        stats_upload_id = self.__handle_tracked_run_statistics(tracked_run)
+        if stats_upload_id is not None:
+            external_result.statistics_upload_id = stats_upload_id
 
         # Handle the assets upload if provided.
-        assets = tracked_run.assets
-        if assets is not None:
-            if isinstance(assets, list):
-                assets_list = []
-                for ix, asset in enumerate(assets):
-                    if isinstance(asset, Asset):
-                        assets_list.append(asset.to_dict())
-                    elif isinstance(asset, dict):
-                        assets_list.append(asset)
-                    else:
-                        raise ValueError(f"tracked_run.assets, index {ix} must be an `Asset` or `dict` object")
-                assets_dict = {ASSETS_KEY: assets_list}
-            elif isinstance(assets, dict):
-                assets_dict = assets
-                if ASSETS_KEY not in assets_dict:
-                    assets_dict = {ASSETS_KEY: assets_dict}
-            else:
-                raise ValueError("tracked_run.assets must be either a `list[Asset]`, `list[dict]`, or `dict` object")
-
-            url_assets = self.upload_url()
-            self.upload_data(data=assets_dict, upload_url=url_assets)
-            external_result.assets_upload_id = url_assets.upload_id
+        assets_upload_id = self.__handle_tracked_run_assets(tracked_run)
+        if assets_upload_id is not None:
+            external_result.assets_upload_id = assets_upload_id
 
         return self.new_run(
-            upload_id=url_input.upload_id,
+            upload_id=input_upload_id,
             external_result=external_result,
             instance_id=instance_id,
             name=tracked_run.name,
@@ -1391,3 +1315,118 @@ class ApplicationRunMixin:
         configuration_dict = configuration.to_dict()
 
         return configuration_dict
+
+    def __handle_tracked_run_input(self: "Application", tracked_run: TrackedRun) -> str | None:
+        # Get the URL to upload the input to.
+        url_input = self.upload_url()
+
+        # Handle the case where the input is being uploaded as files. We need
+        # to tar them.
+        input_tar_file = ""
+        input_dir_path = tracked_run.input_dir_path
+        if input_dir_path is not None and input_dir_path != "":
+            if not os.path.exists(input_dir_path):
+                raise ValueError(f"Directory {input_dir_path} does not exist.")
+
+            if not os.path.isdir(input_dir_path):
+                raise ValueError(f"Path {input_dir_path} is not a directory.")
+
+            input_tar_file = self._package_inputs(input_dir_path)
+
+        # Handle the case where the input is uploaded as Input or a dict.
+        upload_input = tracked_run.input
+        if upload_input is not None and isinstance(tracked_run.input, Input):
+            upload_input = tracked_run.input.data
+
+        # Actually uploads the input.
+        self.upload_data(data=upload_input, upload_url=url_input, tar_file=input_tar_file)
+
+        return url_input.upload_id
+
+    def __handle_tracked_output(self: "Application", tracked_run: TrackedRun) -> str | None:
+        if (tracked_run.output_dir_path is None or tracked_run.output_dir_path == "") and (
+            tracked_run.output is None or not tracked_run.output
+        ):
+            return None
+
+        # Get the URL to upload the output to.
+        url_output = self.upload_url()
+
+        # Handle the case where the output is being uploaded as files. We need
+        # to tar them.
+        output_tar_file = ""
+        output_dir_path = tracked_run.output_dir_path
+        if output_dir_path is not None and output_dir_path != "":
+            if not os.path.exists(output_dir_path):
+                raise ValueError(f"Directory {output_dir_path} does not exist.")
+
+            if not os.path.isdir(output_dir_path):
+                raise ValueError(f"Path {output_dir_path} is not a directory.")
+
+            output_tar_file = self._package_inputs(output_dir_path)
+
+        # Handle the case where the output is uploaded as Output or a dict.
+        upload_output = tracked_run.output
+        if upload_output is not None and isinstance(tracked_run.output, Output):
+            upload_output = tracked_run.output.to_dict()
+
+        # Actually uploads the output.
+        self.upload_data(data=upload_output, upload_url=url_output, tar_file=output_tar_file)
+
+        return url_output.upload_id
+
+    def __handle_tracked_run_logs(self: "Application", tracked_run: TrackedRun) -> str | None:
+        if tracked_run.logs is None or not tracked_run.logs:
+            return None
+
+        url_stderr = self.upload_url()
+        self.upload_data(data=tracked_run.logs_text(), upload_url=url_stderr)
+
+        return url_stderr.upload_id
+
+    def __handle_tracked_run_statistics(self: "Application", tracked_run: TrackedRun) -> str | None:
+        if tracked_run.statistics is None or not tracked_run.statistics:
+            return None
+
+        stats = tracked_run.statistics
+        if isinstance(stats, Statistics):
+            stats_dict = stats.to_dict()
+            stats_dict = {STATISTICS_KEY: stats_dict}
+        elif isinstance(stats, dict):
+            stats_dict = stats
+            if STATISTICS_KEY not in stats_dict:
+                stats_dict = {STATISTICS_KEY: stats_dict}
+        else:
+            raise ValueError("tracked_run.statistics must be either a `Statistics` or `dict` object")
+
+        url_stats = self.upload_url()
+        self.upload_data(data=stats_dict, upload_url=url_stats)
+
+        return url_stats.upload_id
+
+    def __handle_tracked_run_assets(self: "Application", tracked_run: TrackedRun) -> str | None:
+        if tracked_run.assets is None:
+            return None
+
+        assets = tracked_run.assets
+        if isinstance(assets, list):
+            assets_list = []
+            for ix, asset in enumerate(assets):
+                if isinstance(asset, Asset):
+                    assets_list.append(asset.to_dict())
+                elif isinstance(asset, dict):
+                    assets_list.append(asset)
+                else:
+                    raise ValueError(f"tracked_run.assets, index {ix} must be an `Asset` or `dict` object")
+            assets_dict = {ASSETS_KEY: assets_list}
+        elif isinstance(assets, dict):
+            assets_dict = assets
+            if ASSETS_KEY not in assets_dict:
+                assets_dict = {ASSETS_KEY: assets_dict}
+        else:
+            raise ValueError("tracked_run.assets must be either a `list[Asset]`, `list[dict]`, or `dict` object")
+
+        url_assets = self.upload_url()
+        self.upload_data(data=assets_dict, upload_url=url_assets)
+
+        return url_assets.upload_id

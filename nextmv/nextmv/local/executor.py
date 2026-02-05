@@ -451,7 +451,7 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
     if result.returncode != 0:
         status = StatusV2.failed.value
         # Truncate error message so that Cloud does not complain.
-        error = (result.stderr.strip().replace("\n", " ") if result.stderr else "unknown error")[:60]
+        error = "Run failed, please check logs for details."
 
     # Update the run info file.
     info["metadata"]["duration"] = duration
