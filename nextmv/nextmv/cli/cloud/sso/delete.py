@@ -30,10 +30,9 @@ def delete(
     """
     Deletes the SSO configuration.
 
-    You must have the [magenta]administrator[/magenta] role on the organization in order to delete it.
-
-    This action is permanent and cannot be undone. Use the --yes
-    flag to skip the confirmation prompt.
+    You must have the [magenta]administrator[/magenta] role on the organization
+    in order to delete it. Use the --yes flag to skip the confirmation prompt.
+    You can create a new SSO configuration again with [code]nextmv cloud sso create[/code].
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -46,7 +45,8 @@ def delete(
 
     if not yes:
         confirm = get_confirmation(
-            "Are you sure you want to delete the sso configuration? This action cannot be undone.",
+            "Are you sure you want to delete the sso configuration? "
+            "You can create it again with [code]nextmv cloud sso create[/code].",
         )
 
         if not confirm:
@@ -55,4 +55,4 @@ def delete(
 
     sso_config = build_sso_config(profile)
     sso_config.delete()
-    success("SSO configuration has been deleted.")
+    success("SSO configuration has been deleted. You can create it again with [code]nextmv cloud sso create[/code].")
