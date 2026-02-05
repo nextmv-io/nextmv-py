@@ -42,7 +42,10 @@ def create(
     Create a new Nextmv Cloud account in your organization.
 
     To create managed accounts, SSO must be configured for your organization.
-    Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link] for assistance.
+    Please contact [link=https://www.nextmv.io/contact][bold]Nextmv
+    support[/bold][/link] for assistance. You may use the [code]nextmv cloud
+    sso[/code] command tree to manage the SSO configuration for your
+    organization.
 
     At least one administrator email address must be provided. Multiple
     administrators can be specified by repeating the --admins flag or by

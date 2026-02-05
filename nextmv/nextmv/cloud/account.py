@@ -19,6 +19,7 @@ from datetime import datetime
 
 from pydantic import AliasChoices, Field
 
+from nextmv import deprecated
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
 from nextmv.status import StatusV2
@@ -188,30 +189,32 @@ class Account(BaseModel):
 
     You can import the `Account` class directly from `cloud`:
 
-    ```python
-    from nextmv.cloud import Account
-    ```
+    ```python from nextmv.cloud import Account ```
 
     This class provides access to account-level operations in the Nextmv Cloud,
     such as retrieving the queue of runs.
 
-    Note: It is recommended to use `Account.get()` or `Account.new()`
-    instead of direct initialization to ensure proper setup.
+    Note: It is recommended to use `Account.get()` or `Account.new()` instead
+    of direct initialization to ensure proper setup.
 
-    Parameters
+    Attributes
     ----------
-    client : Client
-        Client to use for interacting with the Nextmv Cloud API.
     account_id : str, optional
         ID of the account (organization).
     name : str, optional
         Name of the account (organization).
     members : list[AccountMember], optional
         List of members in the account (organization).
+    client : Client
+        Client to use for interacting with the Nextmv Cloud API. This is an
+        SDK-specific attribute and it is not part of the API representation of
+        an account.
     account_endpoint : str, default="v1/account"
-        Base endpoint for the account (SDK-specific).
+        Base endpoint for the account. This is an SDK-specific attribute and it
+        is not part of the API representation of an account.
     organization_endpoint : str, default="v1/organization/{organization_id}"
-        Base endpoint for organization operations (SDK-specific).
+        Base endpoint for organization operations. This is an SDK-specific
+        attribute and it is not part of the API representation of an account.
 
     Examples
     --------
@@ -376,6 +379,9 @@ class Account(BaseModel):
 
     def queue(self) -> Queue:
         """
+        !!! warning
+            `Account.queue` is deprecated, use `Application.list_runs` with `status=StatusV2.queued` instead.
+
         Get the queue of runs in the account.
 
         Retrieves the current list of runs that are pending or being executed
@@ -402,6 +408,11 @@ class Account(BaseModel):
         Run run-123: Daily Optimization - Status: RUNNING
         Run run-456: Weekly Planning - Status: QUEUED
         """
+        deprecated(
+            name="Account.queue",
+            reason="`Account.queue` is deprecated, use `Application.list_runs` with `status=StatusV2.queued` instead",
+        )
+
         response = self.client.request(
             method="GET",
             endpoint=self.account_endpoint + "/queue",

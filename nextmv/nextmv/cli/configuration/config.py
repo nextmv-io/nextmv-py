@@ -12,6 +12,7 @@ from nextmv.cli.message import error, success, warning
 from nextmv.cloud.account import Account
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
+from nextmv.cloud.sso import SSOConfiguration
 
 # Some useful constants.
 CONFIG_DIR = Path.home() / ".nextmv"
@@ -205,6 +206,32 @@ def build_account(account_id: str | None = None, profile: str | None = None) -> 
     client = build_client(profile)
 
     return Account(account_id=account_id, client=client)
+
+
+def build_sso_config(profile: str | None = None) -> SSOConfiguration:
+    """
+    Builds a `cloud.SSOConfiguration` using the API key and endpoint for the given
+    profile. If no profile is given, the default profile is used.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    SSOConfiguration
+        An SSOConfiguration object for the configured profile.
+
+    Raises
+    ------
+    typer.Exit
+        If the configuration is invalid or missing.
+    """
+
+    client = build_client(profile)
+
+    return SSOConfiguration(client=client)
 
 
 def obscure_api_key(api_key: str) -> str:
