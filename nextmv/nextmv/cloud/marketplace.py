@@ -1,3 +1,29 @@
+"""
+Marketplace module for interacting with Nextmv Marketplace.
+
+This module provides functionality to interact with the Nextmv Marketplace,
+including marketplace application management, versioning, and subscription
+management.
+
+Classes
+-------
+MarketplaceState
+    Enumeration of marketplace application states.
+MarketplaceVersion
+    A marketplace application version in Nextmv Cloud.
+MarketplaceApplication
+    A marketplace application in Nextmv Cloud.
+MarketplaceSubscription
+    A marketplace subscription in Nextmv Cloud.
+
+Functions
+---------
+list_marketplace_applications
+    List all marketplace applications.
+list_marketplace_subscriptions
+    List all marketplace subscriptions.
+"""
+
 from datetime import datetime
 from enum import Enum
 
