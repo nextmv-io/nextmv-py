@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_sso_config
-from nextmv.cli.message import success
+from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import ProfileOption
 
 # Set up subcommand application.
@@ -53,5 +53,6 @@ def update(
     """
 
     sso_config = build_sso_config(profile)
+    in_progress(msg="Updating SSO configuration...")
     sso_config.update(metadata_url=metadata_url, metadata_document=metadata_document)
     success("SSO configuration updated successfully.")
