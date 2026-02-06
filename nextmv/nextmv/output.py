@@ -1314,7 +1314,7 @@ class LocalOutputWriter(OutputWriter):
                 "options": output_dict.get("options", {}),
                 ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
             }
-        
+
         if STATISTICS_KEY in output_dict:
             output_json[STATISTICS_KEY] = output_dict.get(STATISTICS_KEY, {})
 

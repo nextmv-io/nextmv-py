@@ -5,10 +5,8 @@ import subprocess
 import sys
 import unittest
 
-from nextmv.model import _cleanup_mlflow_db
-
-import nextmv
 import nextmv.cloud
+from nextmv.model import _cleanup_mlflow_db
 
 import nextmv
 

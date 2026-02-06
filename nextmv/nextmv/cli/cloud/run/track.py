@@ -368,7 +368,7 @@ def build_tracked_run_input(
                 tracked_run.statistics = json.load(f)
         except json.JSONDecodeError as e:
             error(f"Failed to parse statistics file [magenta]{statistics}[/magenta] as [magenta]json[/magenta]: {e}.")
-    
+
     # Handle the metrics, which should be a JSON file.
     if metrics is not None and metrics != "":
         try:
