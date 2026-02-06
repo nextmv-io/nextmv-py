@@ -574,8 +574,7 @@ def process_run_metrics(
         return
 
     with open(os.path.join(metrics_dst, metrics_file), "w") as f:
-        metrics = {METRICS_KEY: stdout_output[METRICS_KEY]}
-        json.dump(metrics, f, indent=2)
+        json.dump(stdout_output[METRICS_KEY], f, indent=2)
 
 def process_run_statistics(
     temp_run_outputs_dir: str,
@@ -773,6 +772,7 @@ def process_run_solutions(
             original_src_dir=src,
             exclusion_dirs=[
                 os.path.join(outputs_dir, STATISTICS_KEY),
+                os.path.join(outputs_dir, METRICS_KEY),
                 os.path.join(outputs_dir, ASSETS_KEY),
                 os.path.join(run_dir, INPUTS_KEY),
             ],

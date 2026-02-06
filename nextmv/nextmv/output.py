@@ -1312,12 +1312,14 @@ class LocalOutputWriter(OutputWriter):
 
         output_json = {
                 "options": output_dict.get("options", {}),
-                METRICS_KEY: output_dict.get(METRICS_KEY, {}),
                 ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
             }
         
         if STATISTICS_KEY in output_dict:
             output_json[STATISTICS_KEY] = output_dict.get(STATISTICS_KEY, {})
+
+        if METRICS_KEY in output_dict:
+            output_json[METRICS_KEY] = output_dict.get(METRICS_KEY, {})
 
         serialized = serialize_json(
             output_json,

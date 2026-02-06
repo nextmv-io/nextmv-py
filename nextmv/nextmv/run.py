@@ -1360,9 +1360,11 @@ class ExternalRunResult(BaseModel):
     """Duration of the run, in milliseconds."""
     statistics_upload_id: str | None = None
     """
-    ID of the statistics upload. Use this field when working with `CSV_ARCHIVE`
-    or `MULTI_FILE` output formats.
+    Deprecated: Use metrics_upload_id instead. ID of the statistics upload.
+    Use this field for `MULTI_FILE` output formats.
     """
+    metrics_upload_id: str | None = None
+    """ID of the metrics upload. Use this field for `MULTI_FILE` output formats."""
     assets_upload_id: str | None = None
     """
     ID of the assets upload. Use this field when working with `CSV_ARCHIVE`
@@ -1482,11 +1484,18 @@ class TrackedRun:
         ignored, and the files are saved in the directory instead. Defaults to
         None.
     statistics : Statistics or dict[str, Any], optional
-        Statistics of the run being tracked. Only use this field if you want to
-        track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If
-        you are working with `JSON` or `TEXT` output formats, this field will
-        be ignored, as the statistics are extracted directly from the `output`.
-        This field is optional. Defaults to None.
+        Deprecated: Use metrics. Statistics of the run being tracked. Only use
+        this field if you want to track statistics for `CSV_ARCHIVE` or
+        `MULTI_FILE` output formats. If you are working with `JSON` or `TEXT`
+        output formats, this field will be ignored, as the statistics are
+        extracted directly from the `output`. This field is optional.
+        Defaults to None.
+    metrics: dict[str, Any], optional
+        Metrics of the run being tracked. Only use this field if you want to
+        track metrics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+        are working with `JSON` or `TEXT` output formats, this field will be
+        ignored, as the metrics are extracted directly from the `output`. This
+        field is optional. Defaults to None.
     assets : list[Asset or dict[str, Any]], optional
         Assets associated with the run being tracked. Only use this field if
         you want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output
@@ -1595,10 +1604,18 @@ class TrackedRun:
     """
     statistics: Statistics | dict[str, Any] | None = None
     """
-    Statistics of the run being tracked. Only use this field if you want to
-    track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+    Deprecated: Use metrics. Statistics of the run being tracked. Only use this
+    field if you want to track statistics for `CSV_ARCHIVE` or `MULTI_FILE`
+    output formats. If you are working with `JSON` or `TEXT` output formats,
+    this field will be ignored, as the statistics are extracted directly
+    from the `output`.
+    """
+    metrics: dict[str, Any] | None = None
+    """
+    Metrics of the run being tracked. Only use this field if you want to
+    track metrics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
     are working with `JSON` or `TEXT` output formats, this field will be
-    ignored, as the statistics are extracted directly from the `output`.
+    ignored, as the metrics are extracted directly from the `output`.
     """
     assets: list[Asset | dict[str, Any]] | None = None
     """

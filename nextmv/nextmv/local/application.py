@@ -35,7 +35,14 @@ from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest, default_python_manifest
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
+from nextmv.output import (
+    ASSETS_KEY, 
+    METRICS_KEY, 
+    OUTPUTS_KEY, 
+    SOLUTIONS_KEY, 
+    STATISTICS_KEY, 
+    OutputFormat
+)
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ErrorLog,
@@ -1118,6 +1125,13 @@ class Application:
             if os.path.exists(stats_file_path):
                 with open(stats_file_path) as f:
                     tracked_run.statistics = json.load(f)
+
+        # Resolve the metrics 
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            metrics_file_path = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
+            if os.path.exists(metrics_file_path):
+                with open(metrics_file_path) as f:
+                    tracked_run.metrics = json.load(f)
 
         # Resolve the assets according to their type and presence. If working
         # with JSON, the assets should be resolved from the output.
