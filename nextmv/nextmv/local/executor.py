@@ -585,7 +585,7 @@ def process_run_statistics(
 ) -> None:
     """
     !!! warning
-    `process_run_statistics` is deprecated, use `process_run_metrics` instead.
+        `process_run_statistics` is deprecated, use `process_run_metrics` instead.
 
     Processes the statistics of the run. Checks for an outputs/statistics folder
     or custom statistics file location from manifest. If found, copies to run
