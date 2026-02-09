@@ -217,10 +217,10 @@ def build_marketplace_app(app_id: str, partner_id: str, profile: str | None = No
             partner_id=partner_id,
             app_id=app_id,
         )
-    except Exception:
+    except Exception as e:
         error(
-            f"Marketplace application with ID [magenta]{app_id}[/magenta] "
-            f"and partner ID [magenta]{partner_id}[/magenta] does not exist. "
+            f"There was an issue retrieving the Marketplace application with ID [magenta]{app_id}[/magenta] "
+            f"and partner ID [magenta]{partner_id}[/magenta]: {e}. "
             "Use [code]nextmv cloud marketplace app create[/code] to create a new app."
         )
 
@@ -253,8 +253,11 @@ def build_marketplace_subscription(subscription_id: str, profile: str | None = N
     client = build_client(profile)
     try:
         return MarketplaceSubscription.get(client=client, subscription_id=subscription_id)
-    except Exception:
-        error(f"Marketplace subscription with ID [magenta]{subscription_id}[/magenta] does not exist.")
+    except Exception as e:
+        error(
+            "There was an issue retrieving the Marketplace subscription "
+            f"with ID [magenta]{subscription_id}[/magenta]: {e}"
+        )
 
 
 def build_account(account_id: str | None = None, profile: str | None = None) -> Account:

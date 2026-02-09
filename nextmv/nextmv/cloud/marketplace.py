@@ -424,15 +424,15 @@ class MarketplaceApplication(BaseModel):
         app_dict = app.to_dict()
         payload = app_dict.copy()
 
-        if title:
+        if title is not None:
             payload["title"] = title
-        if description:
+        if description is not None:
             payload["description"] = description
-        if categories:
+        if categories is not None:
             payload["categories"] = categories
-        if features:
+        if features is not None:
             payload["features"] = features
-        if state:
+        if state is not None:
             payload["state"] = state
 
         response = self.client.request(
@@ -574,7 +574,7 @@ class MarketplaceSubscription(BaseModel):
         The name of the partner that created the marketplace application.
     app_title : str
         The title of the marketplace application.
-    subscription_date : datetime | None
+    subscription_date : str | None
         The date and time when the marketplace subscription was created.
     client : Client
         Client to use for interacting with the Nextmv Cloud API. This is an

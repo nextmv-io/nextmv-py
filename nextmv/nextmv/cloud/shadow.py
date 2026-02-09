@@ -242,9 +242,9 @@ class StopIntent(str, Enum):
 
     Attributes
     ----------
-    complete : str
+    COMPLETE : str
         The test is marked as complete.
-    cancel : str
+    CANCEL : str
         The test is canceled.
     """
 

@@ -70,7 +70,7 @@ def update(
         typer.Option(
             "--title",
             "-t",
-            help="The title of the application to create.",
+            help="The title of the application to update.",
             metavar="TITLE",
         ),
     ] = None,
@@ -101,11 +101,11 @@ def update(
 
     - Update the state of a marketplace application.
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
-            --app-id marketplace-hare --state published[/dim]
+            --app-id marketplace-hare --state released[/dim]
 
     - Update multiple fields and save the result to a file.
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
-            --app-id marketplace-hare --title "New Title" --state published \\
+            --app-id marketplace-hare --title "New Title" --state released \\
             --output app.json[/dim]
     """
 

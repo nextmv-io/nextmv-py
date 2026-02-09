@@ -19,7 +19,7 @@ app = typer.Typer()
 @app.command()
 def list(
     partner_id: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--partner-id",
             "-n",

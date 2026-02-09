@@ -23,7 +23,7 @@ def list(
         typer.Option(
             "--output",
             "-o",
-            help="Saves the app list information to this location.",
+            help="Saves the subscription list information to this location.",
             metavar="OUTPUT_PATH",
         ),
     ] = None,
@@ -47,8 +47,8 @@ def list(
     client = build_client(profile)
     in_progress(msg="Listing subscriptions...")
 
-    subcriptions = list_marketplace_subscriptions(client)
-    subscriptions_dicts = [sub.to_dict() for sub in subcriptions]
+    subscriptions = list_marketplace_subscriptions(client)
+    subscriptions_dicts = [sub.to_dict() for sub in subscriptions]
 
     if output is not None and output != "":
         with open(output, "w") as f:
