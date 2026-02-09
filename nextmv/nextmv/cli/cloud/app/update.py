@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json, success
+from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -104,6 +104,7 @@ def update(
         )
 
     cloud_app = build_app(app_id=app_id, profile=profile)
+    in_progress(msg="Updating application...")
     updated_app = cloud_app.update(
         name=name,
         description=description,

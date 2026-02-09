@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
 from nextmv.input import InputFormat
 
@@ -28,6 +28,13 @@ def update(
             "-d",
             help="A new description for the instance.",
             metavar="DESCRIPTION",
+        ),
+    ] = None,
+    locked: Annotated[
+        bool | None,
+        typer.Option(
+            "--locked/--unlocked",
+            help="Whether to lock or unlock the instance. If not provided, the locked status will not be updated.",
         ),
     ] = None,
     name: Annotated[
@@ -171,9 +178,9 @@ def update(
         ]
     )
 
-    if name is None and description is None and version_id is None and not has_config_options:
+    if name is None and description is None and version_id is None and locked is None and not has_config_options:
         error(
-            "Provide at least one option to update: --name, --description, "
+            "Provide at least one option to update: --description, --locked/--unlocked, --name, "
             "--version-id, or any [magenta]Instance configuration[/magenta] option."
         )
 
@@ -193,12 +200,14 @@ def update(
             secret_collection_id=secret_collection_id,
         )
 
+    in_progress(msg="Updating instance...")
     updated_instance = cloud_app.update_instance(
         id=instance_id,
         name=name,
         description=description,
         version_id=version_id,
         configuration=configuration,
+        locked=locked,
     )
     success(
         f"Instance [magenta]{instance_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta]."
