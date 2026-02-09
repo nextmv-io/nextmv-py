@@ -294,6 +294,11 @@ class Application(
         Application
             The newly created (or existing) application.
 
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
         Examples
         --------
         >>> from nextmv.cloud import Client
