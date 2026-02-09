@@ -231,6 +231,7 @@ class ApplicationInstanceMixin:
         version_id: str | None = None,
         description: str | None = None,
         configuration: InstanceConfiguration | dict[str, Any] | None = None,
+        locked: bool | None = None,
     ) -> Instance:
         """
         Update an instance.
@@ -247,6 +248,10 @@ class ApplicationInstanceMixin:
             Optional description of the instance.
         configuration : Optional[InstanceConfiguration | dict[str, Any]], default=None
             Optional configuration to use for the instance.
+        locked : Optional[bool], default=None
+            Optional locked status of the instance. If True, the instance will
+            be locked. If False, the instance will be unlocked. If None, the
+            locked status will not be updated.
 
         Returns
         -------
@@ -286,4 +291,14 @@ class ApplicationInstanceMixin:
             payload=payload,
         )
 
-        return Instance.from_dict(response.json())
+        if locked is None:
+            return Instance.from_dict(response.json())
+
+        lock_payload = {"locked": locked}
+        lock_resp = self.client.request(
+            method="PUT",
+            endpoint=f"{self.endpoint}/instances/{id}/lock",
+            payload=lock_payload,
+        )
+
+        return Instance.from_dict(lock_resp.json())

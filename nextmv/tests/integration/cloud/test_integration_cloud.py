@@ -180,6 +180,12 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert inst1.name == name
         assert inst1.description == description
 
+        # We can unlock the instance. Although it starts as unlocked, we are
+        # avoiding that locking it might not allow the testing workflow to
+        # continue.
+        inst1 = app.update_instance(id=inst1.id, locked=False)
+        assert not inst1.locked
+
         # We can delete an instance.
         app.delete_instance(instance_id=inst3.id)
         exists = app.instance_exists(instance_id=inst3.id)

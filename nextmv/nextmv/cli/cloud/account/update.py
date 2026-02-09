@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_account
-from nextmv.cli.message import print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AccountIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -55,6 +55,7 @@ def update(
     """
 
     cloud_account = build_account(account_id=account_id, profile=profile)
+    in_progress(msg="Updating account...")
     updated_account = cloud_account.update(name=name)
     success(f"Account [magenta]{account_id}[/magenta] updated successfully.")
     updated_account_dict = updated_account.to_dict()

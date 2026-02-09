@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import error, print_json, success
+from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 
 # Set up subcommand application.
@@ -73,6 +73,7 @@ def update(
         error("Provide at least one option to update: --name or --description.")
 
     cloud_app = build_app(app_id=app_id, profile=profile)
+    in_progress(msg="Updating version...")
     updated_version = cloud_app.update_version(
         version_id=version_id,
         name=name,
