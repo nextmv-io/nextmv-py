@@ -79,7 +79,7 @@ class TestOutput(unittest.TestCase):
         expected = {
             "options": {},
             "solution": {},
-            "metrics": {"message": "hello world"},  
+            "metrics": {"message": "hello world"},
             "assets": [],
         }
         self.assertDictEqual(output.to_dict(), expected)
