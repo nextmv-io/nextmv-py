@@ -297,11 +297,11 @@ class MarketplaceApplication(BaseModel):
             "title": title,
         }
 
-        if description:
+        if description is not None and description != "":
             payload["description"] = description
-        if categories:
+        if categories is not None and categories != []:
             payload["categories"] = categories
-        if features:
+        if features is not None and features != []:
             payload["features"] = features
 
         response = client.request(
@@ -369,7 +369,7 @@ class MarketplaceApplication(BaseModel):
             If the response status code is not 2xx.
         """
 
-        if not version_id:
+        if version_id is None or version_id == "":
             version_id = safe_id("marketplace-version")
 
         payload = {
@@ -424,13 +424,13 @@ class MarketplaceApplication(BaseModel):
         app_dict = app.to_dict()
         payload = app_dict.copy()
 
-        if title is not None:
+        if title is not None and title != "":
             payload["title"] = title
-        if description is not None:
+        if description is not None and description != "":
             payload["description"] = description
-        if categories is not None:
+        if categories is not None and categories != []:
             payload["categories"] = categories
-        if features is not None:
+        if features is not None and features != []:
             payload["features"] = features
         if state is not None:
             payload["state"] = state
@@ -540,7 +540,7 @@ def list_marketplace_applications(client: Client, partner_id: str | None = None)
     """
 
     endpoint = "v1/marketplace/apps"
-    if partner_id:
+    if partner_id is not None and partner_id != "":
         endpoint = f"v1/marketplace/partners/{partner_id}/apps"
 
     response = client.request(
