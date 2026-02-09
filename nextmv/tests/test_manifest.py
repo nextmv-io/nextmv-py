@@ -300,6 +300,7 @@ class TestManifest(unittest.TestCase):
                     "statistics": "data/output/stats.json",
                     "assets": "data/output/assets.json",
                     "solutions": "data/output/solutions",
+                    "metrics": "data/output/metrics.json",
                 },
             },
         }
@@ -314,6 +315,7 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest_content.multi_file.output.statistics, "data/output/stats.json")
         self.assertEqual(manifest_content.multi_file.output.assets, "data/output/assets.json")
         self.assertEqual(manifest_content.multi_file.output.solutions, "data/output/solutions")
+        self.assertEqual(manifest_content.multi_file.output.metrics, "data/output/metrics.json")
 
     def test_from_options_with_validation(self):
         options = Options(
