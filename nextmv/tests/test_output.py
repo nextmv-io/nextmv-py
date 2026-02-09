@@ -74,6 +74,16 @@ class TestOutput(unittest.TestCase):
         }
         self.assertDictEqual(output.to_dict(), expected)
 
+        # Test with with metrics but no statistics
+        output = nextmv.Output(metrics={"message": "hello world"})
+        expected = {
+            "options": {},
+            "solution": {},
+            "metrics": {"message": "hello world"},
+            "assets": [],
+        }
+        self.assertDictEqual(output.to_dict(), expected)
+
         # Test with Options object
         options = nextmv.Options()
         options.duration = 30
@@ -101,6 +111,12 @@ class TestOutput(unittest.TestCase):
         output = nextmv.Output(statistics=stats_dict)
         result = output.to_dict()
         self.assertEqual(result["statistics"]["custom_metric"], 123.45)
+
+        # Test with metrics object
+        metrics = {"custom_metric": 678.90}
+        output = nextmv.Output(metrics=metrics)
+        result = output.to_dict()
+        self.assertEqual(result["metrics"]["custom_metric"], 678.90)
 
         # Test with list of Asset objects
         asset1 = nextmv.Asset(name="asset1", content={"data": [1, 2, 3]}, description="Test asset")
@@ -139,6 +155,12 @@ class TestOutput(unittest.TestCase):
             output.to_dict()
         self.assertIn("unsupported statistics type", str(context.exception))
 
+        # Test with invalid metrics type
+        with self.assertRaises(TypeError) as context:
+            output = nextmv.Output(metrics=123)
+            output.to_dict()
+        self.assertIn("unsupported metrics type", str(context.exception))
+
         # Test with invalid assets type
         with self.assertRaises(TypeError) as context:
             output = nextmv.Output(assets=123)
@@ -165,6 +187,7 @@ class TestOutput(unittest.TestCase):
         output = nextmv.Output(
             options=options,
             statistics=statistics,
+            metrics={"custom_metric": {"value": 99.9}},
             assets=[asset],
             solution={"value": 42},
             output_format=nextmv.OutputFormat.JSON,
@@ -175,6 +198,31 @@ class TestOutput(unittest.TestCase):
         self.assertEqual(result["options"]["duration"], 30)
         self.assertEqual(result["statistics"]["run"]["duration"], 10.5)
         self.assertEqual(result["statistics"]["result"]["value"], 42.0)
+        self.assertEqual(result["metrics"]["custom_metric"]["value"], 99.9)
+        self.assertEqual(result["assets"][0]["name"], "asset1")
+        self.assertEqual(result["assets"][0]["visual"]["schema"], "chartjs")
+        self.assertEqual(result["solution"]["value"], 42)
+
+        # Test with complex nested structure - metrics only
+        options = nextmv.Options()
+        options.duration = 30
+        asset = nextmv.Asset(
+            name="asset1",
+            content={"data": [1, 2, 3]},
+            visual=nextmv.Visual(visual_schema=nextmv.VisualSchema.CHARTJS, label="Test Chart"),
+        )
+        output = nextmv.Output(
+            options=options,
+            metrics={"custom_metric": {"value": 99.9}},
+            assets=[asset],
+            solution={"value": 42},
+            output_format=nextmv.OutputFormat.JSON,
+            json_configurations={"indent": 4},
+        )
+
+        result = output.to_dict()
+        self.assertEqual(result["options"]["duration"], 30)
+        self.assertEqual(result["metrics"]["custom_metric"]["value"], 99.9)
         self.assertEqual(result["assets"][0]["name"], "asset1")
         self.assertEqual(result["assets"][0]["visual"]["schema"], "chartjs")
         self.assertEqual(result["solution"]["value"], 42)
@@ -183,6 +231,7 @@ class TestOutput(unittest.TestCase):
         output = nextmv.Output(
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
+            metrics={"message": "hello world"},
         )
         output_writer = nextmv.LocalOutputWriter()
 
@@ -195,6 +244,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
                 "options": {},
                 "assets": [],
+                "metrics": {"message": "hello world"},
             }
 
             self.assertDictEqual(got, expected)

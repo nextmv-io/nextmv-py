@@ -15,6 +15,7 @@ class SimpleDecisionModel(nextmv.Model):
         return nextmv.Output(
             solution={"foo": "bar"},
             statistics={"baz": "qux"},
+            metrics={"message": "hello world"},
         )
 
 
@@ -94,6 +95,7 @@ class TestEntrypoint(unittest.TestCase):
 
         output_data = json.loads(output)
         self.assertIn("statistics", output_data)
+        self.assertIn("metrics", output_data)
 
     @staticmethod
     def _file_name(name: str, relative_location: str = ".") -> str:

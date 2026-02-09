@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, print_json, warning
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -124,8 +124,18 @@ def track(
     statistics: Annotated[
         str | None,
         typer.Option(
-            help="The statistics of the run being tracked. A [magenta]json[/magenta] file to read the statistics from.",
+            help="[red](deprecated) Use --metrics instead.[/red] The statistics of the run" \
+                " being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
+            rich_help_panel="Tracked run configuration",
+        ),
+    ] = None,
+    metrics: Annotated[
+        str | None,
+        typer.Option(
+            help="The metrics of the run being tracked. A [magenta]json[/magenta]"\
+                " file to read the metrics from.",
+            metavar="METRICS_PATH",
             rich_help_panel="Tracked run configuration",
         ),
     ] = None,
@@ -159,9 +169,9 @@ def track(
     path must be provided. If the content type is
     [magenta]multi-file[/magenta], then a directory path must be provided.
 
-    Run logs, assets, and statistics can be provided via files using the
-    --logs, --assets, and --statistics options, respectively. Assets and
-    statistics must be provided as [magenta]json[/magenta] files, while logs
+    Run logs, assets, and metrics can be provided via files using the
+    --logs, --assets, and --metrics options, respectively. Assets and
+    metrics must be provided as [magenta]json[/magenta] files, while logs
     must be provided as a utf-8 encoded text file.
 
     [bold][underline]Examples[/underline][/bold]
@@ -183,11 +193,11 @@ def track(
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --logs logs.log[/dim]
 
-    - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with assets and statistics
+    - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with assets and metrics
       from [magenta]json[/magenta] files, for an app with ID
       [magenta]hare-app[/magenta].
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --assets assets.json --statistics statistics.json[/dim]
+            --output output.json --assets assets.json --metrics metrics.json[/dim]
 
     - Track a [magenta]failed[/magenta] run with an error message, for an app with ID
       [magenta]hare-app[/magenta].
@@ -215,10 +225,12 @@ def track(
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with all available options,
       for an app with ID [magenta]hare-app[/magenta].
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
-            --output output.json --logs logs.log --assets assets.json --statistics statistics.json \\
+            --output output.json --logs logs.log --assets assets.json --metrics metrics.json \\
                 --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/dim]
     """
 
+    if statistics:
+        warning("The --statistics option is deprecated, use --metrics instead.")
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
@@ -251,6 +263,7 @@ def track(
         assets=assets,
         logs=logs,
         statistics=statistics,
+        metrics=metrics,
     )
 
     # Actually track the run.
@@ -277,12 +290,13 @@ def build_tracked_run_input(
     assets: str | None = None,
     logs: str | None = None,
     statistics: str | None = None,
+    metrics: str | None = None,
 ) -> TrackedRun:
     """
     Builds the tracked run input for tracking a run. Starts by creating a
     TrackedRun object with the provided status, duration, error message, name,
     and description. Then resolves the input and output using helper functions.
-    Finally, it reads the assets, logs, and statistics from the provided file
+    Finally, it reads the assets, logs, and metrics from the provided file
     paths, if any, and assigns them to the TrackedRun object.
 
     Parameters
@@ -310,7 +324,9 @@ def build_tracked_run_input(
     logs : str | None
         The logs file path, if any.
     statistics : str | None
-        The statistics file path, if any.
+        Deprecated: Use metrics. The statistics file path, if any.
+    metrics : str | None
+        The metrics file path, if any.
     """
     tracked_run = TrackedRun(
         status=TrackedRunStatus(status),
@@ -354,6 +370,14 @@ def build_tracked_run_input(
                 tracked_run.statistics = json.load(f)
         except json.JSONDecodeError as e:
             error(f"Failed to parse statistics file [magenta]{statistics}[/magenta] as [magenta]json[/magenta]: {e}.")
+
+    # Handle the metrics, which should be a JSON file.
+    if metrics is not None and metrics != "":
+        try:
+            with open(metrics) as f:
+                tracked_run.metrics = json.load(f)
+        except json.JSONDecodeError as e:
+            error(f"Failed to parse metrics file [magenta]{metrics}[/magenta] as [magenta]json[/magenta]: {e}.")
 
     return tracked_run
 

@@ -794,6 +794,8 @@ class Application(
                     output_config = multi_config["output_configuration"] = {}
                     if content.multi_file.output.statistics:
                         output_config["statistics_path"] = content.multi_file.output.statistics
+                    if content.multi_file.output.metrics:
+                        output_config["metrics_path"] = content.multi_file.output.metrics
                     if content.multi_file.output.assets:
                         output_config["assets_path"] = content.multi_file.output.assets
                     if content.multi_file.output.solutions:

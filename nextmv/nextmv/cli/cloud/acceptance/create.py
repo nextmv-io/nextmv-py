@@ -45,7 +45,7 @@ app = typer.Typer()
     - Multiple metrics as a [magenta]json[/magenta] array in a single --metrics flag.
 
     Each metric must have the following fields:
-    - [magenta]field[/magenta]: Field of the metric to measure (e.g., "solution.objective").
+    - [magenta]field[/magenta]: Field of the metric to measure (e.g., "result.custom.unassigned").
     - [magenta]metric_type[/magenta]: Type of metric comparison. Allowed values: {enum_values(MetricType)}.
     - [magenta]params[/magenta]: Parameters of the metric comparison.
         - [magenta]operator[/magenta]: Comparison operator. Allowed values: {enum_values(Comparison)}.
@@ -72,7 +72,7 @@ app = typer.Typer()
 
     - Create an acceptance test with a single metric.
         $ [dim]METRIC='{{
-            "field": "solution.objective",
+            "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
                 "operator": "lt",
@@ -86,7 +86,7 @@ app = typer.Typer()
 
     - Create with multiple metrics by repeating the flag.
         $ [dim]METRIC1='{{
-            "field": "solution.objective",
+            "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
                 "operator": "lt",
@@ -95,7 +95,7 @@ app = typer.Typer()
             "statistic": "mean"
         }}'
         METRIC2='{{
-            "field": "statistics.run.duration",
+            "field": "run.duration",
             "metric_type": "direct-comparison",
             "params": {{
                 "operator": "le",
@@ -110,7 +110,7 @@ app = typer.Typer()
     - Create with multiple metrics in a single [magenta]json[/magenta] array.
         $ [dim]METRICS='[
             {{
-                "field": "solution.objective",
+                "field": "result.custom.unassigned",
                 "metric_type": "direct-comparison",
                 "params": {{
                     "operator": "lt",
@@ -119,7 +119,7 @@ app = typer.Typer()
                 "statistic": "mean"
             }},
             {{
-                "field": "statistics.run.duration",
+                "field": "run.duration",
                 "metric_type": "direct-comparison",
                 "params": {{
                     "operator": "le",
@@ -134,7 +134,7 @@ app = typer.Typer()
 
     - Create an acceptance test and wait for it to complete.
         $ [dim]METRIC='{{
-            "field": "solution.objective",
+            "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
                 "operator": "lt",
@@ -148,7 +148,7 @@ app = typer.Typer()
 
     - Create an acceptance test and save the results to a file, waiting for completion.
         $ [dim]METRIC='{{
-            "field": "solution.objective",
+            "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
                 "operator": "lt",
