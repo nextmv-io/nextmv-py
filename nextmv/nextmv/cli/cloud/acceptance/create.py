@@ -71,7 +71,7 @@ app = typer.Typer()
     [bold][underline]Examples[/underline][/bold]
 
     - Create an acceptance test with a single metric.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
@@ -85,7 +85,7 @@ app = typer.Typer()
             --metrics "$METRIC" --input-set-id input-set-123[/dim]
 
     - Create with multiple metrics by repeating the flag.
-        $ [green]METRIC1='{{
+        $ [dim]METRIC1='{{
             "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
@@ -133,7 +133,7 @@ app = typer.Typer()
             --metrics "$METRICS" --input-set-id input-set-123[/dim]
 
     - Create an acceptance test and wait for it to complete.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{
@@ -147,7 +147,7 @@ app = typer.Typer()
             --metrics "$METRIC" --input-set-id input-set-123 --wait[/dim]
 
     - Create an acceptance test and save the results to a file, waiting for completion.
-        $ [green]METRIC='{{
+        $ [dim]METRIC='{{
             "field": "result.custom.unassigned",
             "metric_type": "direct-comparison",
             "params": {{

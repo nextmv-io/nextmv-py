@@ -98,7 +98,10 @@ Outputs key constant used for identifying outputs in the run output.
 
 class RunStatistics(BaseModel):
     """
-    Deprecated: Statistics about a general run.
+    !!! warning
+    `RunStatistics` is deprecated, use `metrics` on the `Output` directly.
+
+    Statistics about a general run.
 
     You can import the `RunStatistics` class directly from `nextmv`:
 
@@ -138,7 +141,10 @@ class RunStatistics(BaseModel):
 
 class ResultStatistics(BaseModel):
     """
-    Deprecated: Statistics about a specific result.
+    !!! warning
+    `ResultStatistics` is deprecated, use `metrics` on the `Output` directly.
+
+    Statistics about a specific result.
 
     You can import the `ResultStatistics` class directly from `nextmv`:
 
@@ -178,7 +184,10 @@ class ResultStatistics(BaseModel):
 
 class DataPoint(BaseModel):
     """
-    Deprecated: A data point representing a 2D coordinate.
+    !!! warning
+    `DataPoint` is deprecated, use `metrics` on the `Output` directly.
+
+    A data point representing a 2D coordinate.
 
     You can import the `DataPoint` class directly from `nextmv`:
 
@@ -211,6 +220,7 @@ class DataPoint(BaseModel):
 
 class Series(BaseModel):
     """
+
     Deprecated: A series of data points for visualization or analysis.
 
     You can import the `Series` class directly from `nextmv`:
@@ -245,7 +255,10 @@ class Series(BaseModel):
 
 class SeriesData(BaseModel):
     """
-    Deprecated: Data container for multiple series of data points.
+    !!! warning
+    `SeriesData` is deprecated, use `metrics` on the `Output` directly.
+
+    Data container for multiple series of data points.
 
     You can import the `SeriesData` class directly from `nextmv`:
 

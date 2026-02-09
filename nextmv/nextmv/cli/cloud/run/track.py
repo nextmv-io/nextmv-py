@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, print_json, warning
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -124,7 +124,7 @@ def track(
     statistics: Annotated[
         str | None,
         typer.Option(
-            help="Deprecated: Use 'metrics' instead. The statistics of the run" \
+            help="[red](deprecated) Use --metrics instead.[/red] The statistics of the run" \
                 " being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
             rich_help_panel="Tracked run configuration",
@@ -229,6 +229,8 @@ def track(
                 --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/dim]
     """
 
+    if statistics:
+        warning("The --statistics option is deprecated, use --metrics instead.")
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):

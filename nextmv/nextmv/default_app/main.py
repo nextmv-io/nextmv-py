@@ -28,7 +28,7 @@ output = nextmv.Output(
     solution={"message": message},
     metrics={
         "value": 1.23,
-        "custom": {"message": message},
+        "message": message,
     },
     assets=assets,
 )

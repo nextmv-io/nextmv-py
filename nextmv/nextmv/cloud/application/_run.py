@@ -1022,17 +1022,9 @@ class ApplicationRunMixin:
         if stats_upload_id is not None:
             external_result.statistics_upload_id = stats_upload_id
 
-        # Handle the metrics upload if provided.
-        metrics = tracked_run.metrics
-        if metrics is not None:
-            if isinstance(metrics, dict):
-                metrics_dict = metrics
-            else:
-                raise ValueError("tracked_run.metrics must be a `dict` object")
-
-            url_metrics = self.upload_url()
-            self.upload_data(data=metrics_dict, upload_url=url_metrics)
-            external_result.metrics_upload_id = url_metrics.upload_id
+        metrics_upload_id = self.__handle_tracked_run_metrics(tracked_run)
+        if metrics_upload_id is not None:
+            external_result.metrics_upload_id = metrics_upload_id
 
         # Handle the assets upload if provided.
         assets_upload_id = self.__handle_tracked_run_assets(tracked_run)
@@ -1422,6 +1414,23 @@ class ApplicationRunMixin:
         self.upload_data(data=stats_dict, upload_url=url_stats)
 
         return url_stats.upload_id
+
+    def __handle_tracked_run_metrics(self: "Application", tracked_run: TrackedRun) -> str | None:
+        if tracked_run.metrics is None or not tracked_run.metrics:
+            return None
+
+        # Handle the metrics upload if provided.
+        metrics = tracked_run.metrics
+        if metrics is not None:
+            if isinstance(metrics, dict):
+                metrics_dict = metrics
+            else:
+                raise ValueError("tracked_run.metrics must be a `dict` object")
+
+        url_metrics = self.upload_url()
+        self.upload_data(data=metrics_dict, upload_url=url_metrics)
+
+        return url_metrics.upload_id
 
     def __handle_tracked_run_assets(self: "Application", tracked_run: TrackedRun) -> str | None:
         if tracked_run.assets is None:
