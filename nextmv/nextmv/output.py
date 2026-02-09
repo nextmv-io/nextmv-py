@@ -220,7 +220,7 @@ class DataPoint(BaseModel):
 
 class Series(BaseModel):
     """
-    !!! warning        
+    !!! warning
         `Series` is deprecated, use `metrics` on the `Output` directly.
 
     A series of data points for visualization or analysis.

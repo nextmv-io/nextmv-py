@@ -346,7 +346,7 @@ class StatisticsIndicator(BaseModel):
     """
     !!! warning
         `StatisticsIndicator` is deprecated. Use `MetricsIndicator` instead, which has the same structure.
-    
+
     Statistics indicator of a run.
 
     You can import the `StatisticsIndicator` class directly from `nextmv`:
