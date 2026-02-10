@@ -22,6 +22,8 @@ process_run_information
     Function to update run metadata including duration and status.
 process_run_logs
     Function to process and save run logs.
+process_run_metrics
+    Function to process and save run metrics.
 process_run_statistics
     Function to process and save run statistics.
 process_run_assets
@@ -57,7 +59,16 @@ from nextmv.local.local import (
 )
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.manifest import Manifest, ManifestType
-from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, Asset, OutputFormat, VisualSchema
+from nextmv.output import (
+    ASSETS_KEY,
+    METRICS_KEY,
+    OUTPUTS_KEY,
+    SOLUTIONS_KEY,
+    STATISTICS_KEY,
+    Asset,
+    OutputFormat,
+    VisualSchema,
+)
 from nextmv.status import StatusV2
 
 
@@ -305,7 +316,7 @@ def process_run_output(
 ) -> None:
     """
     Processes the result of the subprocess run. This function is in charge of
-    handling the run results, including solutions, statistics, logs, assets,
+    handling the run results, including solutions, statistics, metrics, logs, assets,
     and visuals.
 
     Parameters
@@ -346,6 +357,13 @@ def process_run_output(
         run_dir=run_dir,
         result=result,
         stdout_output=stdout_output,
+    )
+    process_run_metrics(
+        temp_run_outputs_dir=temp_run_outputs_dir,
+        outputs_dir=outputs_dir,
+        stdout_output=stdout_output,
+        temp_src=temp_src,
+        manifest=manifest,
     )
     process_run_statistics(
         temp_run_outputs_dir=temp_run_outputs_dir,
@@ -451,7 +469,7 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
     if result.returncode != 0:
         status = StatusV2.failed.value
         # Truncate error message so that Cloud does not complain.
-        error = (result.stderr.strip().replace("\n", " ") if result.stderr else "unknown error")[:60]
+        error = "Run failed, please check logs for details."
 
     # Update the run info file.
     info["metadata"]["duration"] = duration
@@ -499,6 +517,64 @@ def process_run_logs(
 
         f.write(std_err)
 
+def process_run_metrics(
+    temp_run_outputs_dir: str,
+    outputs_dir: str,
+    stdout_output: str | dict[str, Any],
+    temp_src: str,
+    manifest: Manifest,
+) -> None:
+    """
+    Processes the metrics of the run. Checks for an outputs/metrics folder
+    or custom metrics file location from manifest. If found, copies to run
+    directory. Otherwise, attempts to extract metrics from stdout.
+
+    Parameters
+    ----------
+    temp_run_outputs_dir : str
+        The path to the temporary outputs directory.
+    outputs_dir : str
+        The path to the outputs directory in the run directory.
+    stdout_output : Union[str, dict[str, Any]]
+        The stdout output of the run, either as raw string or parsed dictionary.
+    temp_src : str
+        The path to the temporary source directory.
+    manifest : Manifest
+        The application manifest containing configuration and custom paths.
+    """
+
+    metrics_dst = os.path.join(outputs_dir, METRICS_KEY)
+    os.makedirs(metrics_dst, exist_ok=True)
+    metrics_file = f"{METRICS_KEY}.json"
+
+    # Check for custom location in manifest and override metrics_src if needed.
+    if (
+        manifest.configuration is not None
+        and manifest.configuration.content is not None
+        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.multi_file is not None
+    ):
+        metrics_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.metrics)
+
+        # If the custom metrics file exists, copy it to the metrics destination
+        if os.path.exists(metrics_src_file) and os.path.isfile(metrics_src_file):
+            metrics_dst_file = os.path.join(metrics_dst, metrics_file)
+            shutil.copy2(metrics_src_file, metrics_dst_file)
+            return
+
+    metrics_src = os.path.join(temp_run_outputs_dir, METRICS_KEY)
+    if os.path.exists(metrics_src) and os.path.isdir(metrics_src):
+        shutil.copytree(metrics_src, metrics_dst, dirs_exist_ok=True)
+        return
+
+    if not isinstance(stdout_output, dict):
+        return
+
+    if METRICS_KEY not in stdout_output:
+        return
+
+    with open(os.path.join(metrics_dst, metrics_file), "w") as f:
+        json.dump(stdout_output[METRICS_KEY], f, indent=2)
 
 def process_run_statistics(
     temp_run_outputs_dir: str,
@@ -508,6 +584,9 @@ def process_run_statistics(
     manifest: Manifest,
 ) -> None:
     """
+    !!! warning
+        `process_run_statistics` is deprecated, use `process_run_metrics` instead.
+
     Processes the statistics of the run. Checks for an outputs/statistics folder
     or custom statistics file location from manifest. If found, copies to run
     directory. Otherwise, attempts to extract statistics from stdout.
@@ -693,6 +772,7 @@ def process_run_solutions(
             original_src_dir=src,
             exclusion_dirs=[
                 os.path.join(outputs_dir, STATISTICS_KEY),
+                os.path.join(outputs_dir, METRICS_KEY),
                 os.path.join(outputs_dir, ASSETS_KEY),
                 os.path.join(run_dir, INPUTS_KEY),
             ],
@@ -848,7 +928,7 @@ def _copy_new_or_modified_files(  # noqa: C901
     This function identifies files that are either new (not present in the original
     source) or have been modified (different content, checksum, or modification time)
     compared to the original source. It excludes files that exist in specified
-    exclusion directories to avoid copying input data, statistics, or assets as
+    exclusion directories to avoid copying input data, statistics, metrics, or assets as
     solution outputs.
 
     Parameters

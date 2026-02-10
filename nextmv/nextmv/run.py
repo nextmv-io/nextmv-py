@@ -344,6 +344,9 @@ class RunTypeConfiguration(BaseModel):
 
 class StatisticsIndicator(BaseModel):
     """
+    !!! warning
+        `StatisticsIndicator` is deprecated. Use `MetricsIndicator` instead, which has the same structure.
+
     Statistics indicator of a run.
 
     You can import the `StatisticsIndicator` class directly from `nextmv`:
@@ -381,9 +384,11 @@ class StatisticsIndicator(BaseModel):
     value: Any
     """Value of the indicator."""
 
-
 class RunInfoStatistics(BaseModel):
     """
+    !!! warning
+        `RunInfoStatistics` is deprecated. Use `RunInfoMetrics` instead, which has the same structure.
+
     Statistics information for a run.
 
     You can import the `RunInfoStatistics` class directly from `nextmv`:
@@ -432,6 +437,96 @@ class RunInfoStatistics(BaseModel):
     """Error message if the statistics could not be retrieved."""
     indicators: list[StatisticsIndicator] | None = None
     """List of statistics indicators."""
+
+class MetricsIndicator(BaseModel):
+    """
+    Metrics indicator of a run.
+
+    You can import the `MetricsIndicator` class directly from `nextmv`:
+
+    ```python
+    from nextmv import MetricsIndicator
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the indicator.
+    value : Any
+        Value of the indicator.
+
+    Examples
+    --------
+    >>> from nextmv import MetricsIndicator
+    >>> indicator = MetricsIndicator(name="total_cost", value=1250.75)
+    >>> indicator.name
+    'total_cost'
+    >>> indicator.value
+    1250.75
+
+    >>> # Boolean indicator
+    >>> bool_indicator = MetricsIndicator(name="optimal", value=True)
+    >>> bool_indicator.name
+    'optimal'
+    >>> bool_indicator.value
+    True
+    """
+
+    name: str
+    """Name of the indicator."""
+    value: Any
+    """Value of the indicator."""
+
+class RunInfoMetrics(BaseModel):
+    """
+    Statistics information for a run.
+
+    You can import the `RunInfoMetrics` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunInfoMetrics
+    ```
+
+    Parameters
+    ----------
+    status : str
+        Status of the metrics in the run.
+    error : str, optional
+        Error message if the metrics could not be retrieved. Defaults to None.
+    indicators : list[StatisticsIndicator], optional
+        List of metrics indicators. Defaults to None.
+
+    Examples
+    --------
+    >>> from nextmv import RunInfoMetrics, StatisticsIndicator
+    >>> indicators = [
+    ...     StatisticsIndicator(name="total_cost", value=1250.75),
+    ...     StatisticsIndicator(name="optimal", value=True)
+    ... ]
+    >>> stats = RunInfoMetrics(status="success", indicators=indicators)
+    >>> stats.status
+    'success'
+    >>> len(stats.indicators)
+    2
+
+    >>> # Statistics with error
+    >>> error_stats = RunInfoMetrics(
+    ...     status="error",
+    ...     error="Failed to calculate metrics"
+    ... )
+    >>> error_stats.status
+    'error'
+    >>> error_stats.error
+    'Failed to calculate metrics'
+    """
+
+    status: str
+    """Status of the metrics in the run."""
+
+    error: str | None = None
+    """Error message if the metrics could not be retrieved."""
+    indicators: list[MetricsIndicator] | None = None
+    """List of metrics indicators."""
 
 
 class OptionsSummaryItem(BaseModel):
@@ -529,7 +624,9 @@ class Run(BaseModel):
     experiment_id : str, optional
         ID of the experiment associated with the run. Defaults to None.
     statistics : RunInfoStatistics, optional
-        Statistics of the run. Defaults to None.
+        Deprecated: Statistics of the run. Defaults to None.
+    metrics: RunInfoMetrics, optional
+        Metrics of the run. Defaults to None.
     input_id : str, optional
         ID of the input associated with the run. Defaults to None.
     option_set : str, optional
@@ -603,7 +700,9 @@ class Run(BaseModel):
     experiment_id: str | None = None
     """ID of the experiment associated with the run."""
     statistics: RunInfoStatistics | None = None
-    """Statistics of the run."""
+    """Deprecated: Statistics of the run."""
+    metrics: RunInfoMetrics | None = None
+    """Metrics of the run."""
     input_id: str | None = None
     """ID of the input associated with the run."""
     option_set: str | None = None
@@ -677,7 +776,9 @@ class Metadata(BaseModel):
     status_v2: StatusV2
     """Status of the run."""
     statistics: dict[str, Any] | None = None
-    """User defined statistics of the run."""
+    """Deprecated: User defined statistics of the run."""
+    metrics: dict[str, Any] | None = None
+    """User defined metrics of the run."""
 
     def run_is_finalized(self) -> bool:
         """
@@ -1351,9 +1452,11 @@ class ExternalRunResult(BaseModel):
     """Duration of the run, in milliseconds."""
     statistics_upload_id: str | None = None
     """
-    ID of the statistics upload. Use this field when working with `CSV_ARCHIVE`
-    or `MULTI_FILE` output formats.
+    Deprecated: Use metrics_upload_id instead. ID of the statistics upload.
+    Use this field for `MULTI_FILE` output formats.
     """
+    metrics_upload_id: str | None = None
+    """ID of the metrics upload. Use this field for `MULTI_FILE` output formats."""
     assets_upload_id: str | None = None
     """
     ID of the assets upload. Use this field when working with `CSV_ARCHIVE`
@@ -1473,11 +1576,18 @@ class TrackedRun:
         ignored, and the files are saved in the directory instead. Defaults to
         None.
     statistics : Statistics or dict[str, Any], optional
-        Statistics of the run being tracked. Only use this field if you want to
-        track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If
-        you are working with `JSON` or `TEXT` output formats, this field will
-        be ignored, as the statistics are extracted directly from the `output`.
-        This field is optional. Defaults to None.
+        Deprecated: Use metrics. Statistics of the run being tracked. Only use
+        this field if you want to track statistics for `CSV_ARCHIVE` or
+        `MULTI_FILE` output formats. If you are working with `JSON` or `TEXT`
+        output formats, this field will be ignored, as the statistics are
+        extracted directly from the `output`. This field is optional.
+        Defaults to None.
+    metrics: dict[str, Any], optional
+        Metrics of the run being tracked. Only use this field if you want to
+        track metrics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+        are working with `JSON` or `TEXT` output formats, this field will be
+        ignored, as the metrics are extracted directly from the `output`. This
+        field is optional. Defaults to None.
     assets : list[Asset or dict[str, Any]], optional
         Assets associated with the run being tracked. Only use this field if
         you want to track assets for `CSV_ARCHIVE` or `MULTI_FILE` output
@@ -1586,10 +1696,18 @@ class TrackedRun:
     """
     statistics: Statistics | dict[str, Any] | None = None
     """
-    Statistics of the run being tracked. Only use this field if you want to
-    track statistics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
+    Deprecated: Use metrics. Statistics of the run being tracked. Only use this
+    field if you want to track statistics for `CSV_ARCHIVE` or `MULTI_FILE`
+    output formats. If you are working with `JSON` or `TEXT` output formats,
+    this field will be ignored, as the statistics are extracted directly
+    from the `output`.
+    """
+    metrics: dict[str, Any] | None = None
+    """
+    Metrics of the run being tracked. Only use this field if you want to
+    track metrics for `CSV_ARCHIVE` or `MULTI_FILE` output formats. If you
     are working with `JSON` or `TEXT` output formats, this field will be
-    ignored, as the statistics are extracted directly from the `output`.
+    ignored, as the metrics are extracted directly from the `output`.
     """
     assets: list[Asset | dict[str, Any]] | None = None
     """

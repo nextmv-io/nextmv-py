@@ -21,6 +21,7 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "typer>=0.20.1",
+    "pip>=26.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
@@ -54,6 +55,7 @@ Repository = "https://github.com/nextmv-io/nextmv-py"
 [project.scripts]
 nextmv = "nextmv.cli.main:main"
 
+# Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
 all = [
     "folium>=0.20.0",
@@ -62,6 +64,9 @@ all = [
 notebook = [
     "mlflow>= 3.9.0",
 ]
+
+[dependency-groups]
+# Dependencies for development and testing.
 dev = [
     "build>=1.0.3",
     "pydantic>=2.5.2",
@@ -77,6 +82,8 @@ dev = [
     "plotly>=6.0.1",
     "pytest>=9.0.2",
     "nextpipe>=0.6.0",
+    "pip>=26.0",
+    "typer>=0.20.1",
 ]
 
 [tool.hatch.version]

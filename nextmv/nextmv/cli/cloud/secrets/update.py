@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.cloud.secrets.create import build_secrets
 from nextmv.cli.configuration.config import build_app
-from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SecretsCollectionIDOption
 from nextmv.cloud.secrets import SecretType
 
@@ -122,6 +122,7 @@ def update(
     if secrets is not None:
         secrets_list = build_secrets(secrets)
 
+    in_progress(msg="Updating secrets collection...")
     collection = cloud_app.update_secrets_collection(
         secrets_collection_id=secrets_collection_id,
         name=name,

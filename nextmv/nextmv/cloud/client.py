@@ -303,7 +303,7 @@ class Client:
         if data is not None:
             kwargs["data"] = data
         if payload is not None:
-            if isinstance(payload, (dict, list)):
+            if isinstance(payload, dict | list):
                 data = deflated_serialize_json(payload, json_configurations=json_configurations)
                 kwargs["data"] = data
             else:

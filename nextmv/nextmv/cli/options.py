@@ -218,3 +218,60 @@ SwitchbackTestIDOption = Annotated[
         metavar="SWITCHBACK_TEST_ID",
     ),
 ]
+
+# Marketplace app_id option - can be used in any marketplace command that requires an application ID.
+# Define it as follows in commands or callbacks, as necessary:
+# app_id: MarketplaceAppIDOption
+MarketplaceAppIDOption = Annotated[
+    str,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help="The Nextmv Marketplace application ID to use for this action.",
+        envvar="NEXTMV_MARKETPLACE_APP_ID",
+        metavar="APP_ID",
+    ),
+]
+
+# Marketplace partner_id option - can be used in any marketplace command that requires a partner ID.
+# Define it as follows in commands or callbacks, as necessary:
+# partner_id: MarketplacePartnerIDOption
+MarketplacePartnerIDOption = Annotated[
+    str,
+    typer.Option(
+        "--partner-id",
+        "-n",
+        help="The partner ID to use for this action.",
+        envvar="NEXTMV_MARKETPLACE_PARTNER_ID",
+        metavar="PARTNER_ID",
+    ),
+]
+
+# Marketplace version_id option - can be used in any command that requires a version ID.
+# Define it as follows in commands or callbacks, as necessary:
+# version_id: MarketplaceVersionIDOption
+MarketplaceVersionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--version-id",
+        "-v",
+        help="The Nextmv Marketplace version ID to use for this action.",
+        envvar="NEXTMV_MARKETPLACE_VERSION_ID",
+        metavar="VERSION_ID",
+    ),
+]
+
+# Marketplace subscription_id option - can be used in any command that requires a marketplace subscription ID.
+# Define it as follows in commands or callbacks, as necessary:
+# subscription_id: MarketplaceSubscriptionIDOption
+MarketplaceSubscriptionIDOption = Annotated[
+    str,
+    typer.Option(
+        "--subscription-id",
+        "-s",
+        help="The Nextmv Marketplace subscription ID to use for this action. "
+        "Format of the subscription ID: [dim]<PARTNER_ID>-<APP_ID>[/dim].",
+        envvar="NEXTMV_MARKETPLACE_SUBSCRIPTION_ID",
+        metavar="SUBSCRIPTION_ID",
+    ),
+]

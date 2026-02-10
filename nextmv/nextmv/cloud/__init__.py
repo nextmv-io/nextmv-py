@@ -47,6 +47,12 @@ from .integration import Integration as Integration
 from .integration import IntegrationProvider as IntegrationProvider
 from .integration import IntegrationType as IntegrationType
 from .integration import list_integrations as list_integrations
+from .marketplace import MarketplaceApplication as MarketplaceApplication
+from .marketplace import MarketplaceState as MarketplaceState
+from .marketplace import MarketplaceSubscription as MarketplaceSubscription
+from .marketplace import MarketplaceVersion as MarketplaceVersion
+from .marketplace import list_marketplace_applications as list_marketplace_applications
+from .marketplace import list_marketplace_subscriptions as list_marketplace_subscriptions
 from .scenario import Scenario as Scenario
 from .scenario import ScenarioConfiguration as ScenarioConfiguration
 from .scenario import ScenarioInput as ScenarioInput
@@ -61,6 +67,7 @@ from .shadow import StartEvents as StartEvents
 from .shadow import StopIntent as StopIntent
 from .shadow import TerminationEvents as TerminationEvents
 from .shadow import TestComparison as TestComparison
+from .sso import SSOConfiguration as SSOConfiguration
 from .switchback import SwitchbackPlan as SwitchbackPlan
 from .switchback import SwitchbackPlanUnit as SwitchbackPlanUnit
 from .switchback import SwitchbackTest as SwitchbackTest

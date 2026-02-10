@@ -35,7 +35,7 @@ from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest, default_python_manifest
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
+from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ErrorLog,
@@ -1120,7 +1120,7 @@ class Application:
         # Check that it is a valid run with inputs, outputs, logs, etc.
         if not self.__valid_run_result(run_result, runs_dir, run_id):
             if verbose:
-                log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs, outputs or logs).")
+                log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs).")
 
             return False
 
@@ -1130,8 +1130,10 @@ class Application:
 
         # Read the logs of the run and place each line as an element in a list
         run_dir = os.path.join(runs_dir, run_id)
-        with open(os.path.join(run_dir, LOGS_KEY, LOGS_FILE)) as f:
-            stderr_logs = f.read()
+        logs_path = os.path.join(run_dir, LOGS_KEY, LOGS_FILE)
+        if os.path.exists(logs_path):
+            with open(logs_path) as f:
+                stderr_logs = f.read()
 
         # Create the tracked run object and start configuring it.
         tracked_run = TrackedRun(
@@ -1168,6 +1170,13 @@ class Application:
             if os.path.exists(stats_file_path):
                 with open(stats_file_path) as f:
                     tracked_run.statistics = json.load(f)
+
+        # Resolve the metrics
+        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+            metrics_file_path = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
+            if os.path.exists(metrics_file_path):
+                with open(metrics_file_path) as f:
+                    tracked_run.metrics = json.load(f)
 
         # Resolve the assets according to their type and presence. If working
         # with JSON, the assets should be resolved from the output.
@@ -1237,22 +1246,6 @@ class Application:
         if not self.__validate_inputs(run_dir, run_result.metadata.format.format_input.input_type):
             return False
 
-        # Validate outputs
-        format_output = run_result.metadata.format.format_output
-        if format_output is None or not format_output:
-            return False
-
-        output_type = format_output.output_type
-        if output_type is None or output_type == "":
-            return False
-
-        if not self.__validate_outputs(run_dir, output_type):
-            return False
-
-        # Validate logs
-        if not self.__validate_logs(run_dir):
-            return False
-
         return True
 
     def __validate_inputs(self, run_dir: str, input_type: InputFormat) -> bool:
@@ -1273,31 +1266,3 @@ class Application:
 
         # For CSV_ARCHIVE and MULTI_FILE, inputs_path should be a directory
         return os.path.isdir(inputs_path)
-
-    def __validate_outputs(self, run_dir: str, output_type: OutputFormat) -> bool:
-        """Validate that the outputs directory and files exist for the given output type."""
-        outputs_dir = os.path.join(run_dir, OUTPUTS_KEY)
-        if not os.path.exists(outputs_dir):
-            return False
-
-        solutions_dir = os.path.join(outputs_dir, SOLUTIONS_KEY)
-        if not os.path.exists(solutions_dir):
-            return False
-
-        if output_type == OutputFormat.JSON:
-            solution_file = os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)
-
-            return os.path.isfile(solution_file)
-
-        # For CSV_ARCHIVE and MULTI_FILE, solutions_dir should be a directory
-        return os.path.isdir(solutions_dir)
-
-    def __validate_logs(self, run_dir: str) -> bool:
-        """Validate that the logs directory and file exist."""
-        logs_dir = os.path.join(run_dir, LOGS_KEY)
-        if not os.path.exists(logs_dir):
-            return False
-
-        logs_file = os.path.join(logs_dir, LOGS_FILE)
-
-        return os.path.isfile(logs_file)

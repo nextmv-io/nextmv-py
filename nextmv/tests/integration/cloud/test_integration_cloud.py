@@ -180,6 +180,12 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert inst1.name == name
         assert inst1.description == description
 
+        # We can unlock the instance. Although it starts as unlocked, we are
+        # avoiding that locking it might not allow the testing workflow to
+        # continue.
+        inst1 = app.update_instance(id=inst1.id, locked=False)
+        assert not inst1.locked
+
         # We can delete an instance.
         app.delete_instance(instance_id=inst3.id)
         exists = app.instance_exists(instance_id=inst3.id)
@@ -433,7 +439,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             _ = app.new_run_with_result(input=input_data, instance_id=inst1.id)
 
         # Stop the shadow test.
-        app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.complete)
+        app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.COMPLETE)
         metadata = app.shadow_test_metadata(shadow_test_id=shadow_test.shadow_test_id)
         assert metadata.status in {
             cloud.ExperimentStatus.STARTED,
@@ -512,7 +518,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         # Stop the switchback test.
         app.stop_switchback_test(
             switchback_test_id=switchback_test.switchback_test_id,
-            intent=cloud.StopIntent.complete,
+            intent=cloud.StopIntent.COMPLETE,
         )
         metadata = app.switchback_test_metadata(switchback_test_id=switchback_test.switchback_test_id)
         assert metadata.status in {

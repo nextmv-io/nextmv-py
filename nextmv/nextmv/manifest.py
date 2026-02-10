@@ -829,7 +829,9 @@ class ManifestContentMultiFileOutput(BaseModel):
     Parameters
     ----------
     statistics : Optional[str], default=""
-        The path to the statistics file.
+        Deprecated: Use `metrics` instead. The path to the statistics file.
+    metrics : Optional[str], default=""
+        The path to the metrics file.
     assets : Optional[str], default=""
         The path to the assets file.
     solutions : Optional[str], default=""
@@ -839,16 +841,18 @@ class ManifestContentMultiFileOutput(BaseModel):
     --------
     >>> from nextmv import ManifestContentMultiFileOutput
     >>> output_config = ManifestContentMultiFileOutput(
-    ...     statistics="my-outputs/statistics.json",
+    ...     metrics="my-outputs/metrics.json",
     ...     assets="my-outputs/assets.json",
     ...     solutions="my-outputs/solutions/"
     ... )
-    >>> output_config.statistics
-    'my-outputs/statistics.json'
+    >>> output_config.metrics
+    'my-outputs/metrics.json'
     """
 
     statistics: str | None = ""
-    """The path to the statistics file."""
+    """Deprecated: Use `metrics` instead. The path to the statistics file."""
+    metrics: str | None = ""
+    """The path to the metrics file."""
     assets: str | None = ""
     """The path to the assets file."""
     solutions: str | None = ""
@@ -878,7 +882,7 @@ class ManifestContentMultiFile(BaseModel):
     >>> multi_file_config = ManifestContentMultiFile(
     ...     input=ManifestContentMultiFileInput(path="data/input/"),
     ...     output=ManifestContentMultiFileOutput(
-    ...         statistics="my-outputs/statistics.json",
+    ...         metrics="my-outputs/metrics.json",
     ...         assets="my-outputs/assets.json",
     ...         solutions="my-outputs/solutions/"
     ...     )
@@ -919,7 +923,7 @@ class ManifestContent(BaseModel):
     ...     multi_file=ManifestContentMultiFile(
     ...         input=ManifestContentMultiFileInput(path="data/input/"),
     ...         output=ManifestContentMultiFileOutput(
-    ...             statistics="my-outputs/statistics.json",
+    ...             metrics="my-outputs/metrics.json",
     ...             assets="my-outputs/assets.json",
     ...             solutions="my-outputs/solutions/"
     ...         )

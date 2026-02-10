@@ -12,6 +12,8 @@ from nextmv.cli.message import error, success, warning
 from nextmv.cloud.account import Account
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
+from nextmv.cloud.marketplace import MarketplaceApplication, MarketplaceSubscription
+from nextmv.cloud.sso import SSOConfiguration
 
 # Some useful constants.
 CONFIG_DIR = Path.home() / ".nextmv"
@@ -160,6 +162,7 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
     typer.Exit
         If the application does not exist.
     """
+
     client = build_client(profile)
     exists = Application.exists(client=client, id=app_id)
     if exists:
@@ -177,6 +180,84 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
     success(f"Application with ID and name [magenta]{app_id}[/magenta] created successfully.")
 
     return app
+
+
+def build_marketplace_app(app_id: str, partner_id: str, profile: str | None = None) -> MarketplaceApplication:
+    """
+    Builds a `cloud.MarketplaceApplication` using the given application ID,
+    partner ID, and the API key and endpoint for the given profile. If no
+    profile is given, the default profile is used. If the application does not
+    exist, an exception is raised.
+
+    Parameters
+    ----------
+    app_id : str
+        The marketplace application ID.
+    partner_id : str
+        The partner ID.
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    MarketplaceApplication
+        A marketplace application object for the given application ID and
+        partner ID.
+
+    Raises
+    ------
+    typer.Exit
+        If the marketplace application does not exist.
+    """
+
+    client = build_client(profile)
+    try:
+        return MarketplaceApplication.get(
+            client=client,
+            partner_id=partner_id,
+            app_id=app_id,
+        )
+    except Exception as e:
+        error(
+            f"There was an issue retrieving the Marketplace application with ID [magenta]{app_id}[/magenta] "
+            f"and partner ID [magenta]{partner_id}[/magenta]: {e}. "
+            "Use [code]nextmv cloud marketplace app create[/code] to create a new app."
+        )
+
+
+def build_marketplace_subscription(subscription_id: str, profile: str | None = None) -> MarketplaceSubscription:
+    """
+    Builds a `cloud.MarketplaceSubscription` using the given subscription ID and
+    the API key and endpoint for the given profile. If no profile is given, the
+    default profile is used. If the subscription does not exist, an exception is
+    raised.
+
+    Parameters
+    ----------
+    subscription_id : str
+        The marketplace subscription ID.
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    MarketplaceSubscription
+        A marketplace subscription object for the given subscription ID.
+
+    Raises
+    ------
+    typer.Exit
+        If the marketplace subscription does not exist.
+    """
+
+    client = build_client(profile)
+    try:
+        return MarketplaceSubscription.get(client=client, subscription_id=subscription_id)
+    except Exception as e:
+        error(
+            "There was an issue retrieving the Marketplace subscription "
+            f"with ID [magenta]{subscription_id}[/magenta]: {e}"
+        )
 
 
 def build_account(account_id: str | None = None, profile: str | None = None) -> Account:
@@ -205,6 +286,32 @@ def build_account(account_id: str | None = None, profile: str | None = None) -> 
     client = build_client(profile)
 
     return Account(account_id=account_id, client=client)
+
+
+def build_sso_config(profile: str | None = None) -> SSOConfiguration:
+    """
+    Builds a `cloud.SSOConfiguration` using the API key and endpoint for the given
+    profile. If no profile is given, the default profile is used.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    SSOConfiguration
+        An SSOConfiguration object for the configured profile.
+
+    Raises
+    ------
+    typer.Exit
+        If the configuration is invalid or missing.
+    """
+
+    client = build_client(profile)
+
+    return SSOConfiguration(client=client)
 
 
 def obscure_api_key(api_key: str) -> str:

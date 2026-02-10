@@ -121,10 +121,8 @@ class Application(
     Note: It is recommended to use `Application.get()` or `Application.new()`
     instead of direct initialization to ensure proper setup.
 
-    Parameters
+    Attributes
     ----------
-    client : Client
-        Client to use for interacting with the Nextmv Cloud API.
     id : str
         ID of the application.
     name : str, optional
@@ -145,12 +143,19 @@ class Application(
         Creation timestamp of the application.
     updated_at : datetime, optional
         Last update timestamp of the application.
+    client : Client
+        Client to use for interacting with the Nextmv Cloud API. This is an
+        SDK-specific attribute and it is not part of the API representation of
+        an application.
     endpoint : str, default="v1/applications/{id}"
-        Base endpoint for the application (SDK-specific).
+        Base endpoint for the application. This is an SDK-specific attribute
+        and it is not part of the API representation of an application.
     experiments_endpoint : str, default="{base}/experiments"
-        Base endpoint for experiments (SDK-specific).
+        Base endpoint for experiments. This is an SDK-specific attribute and it
+        is not part of the API representation of an application.
     ensembles_endpoint : str, default="{base}/ensembles"
-        Base endpoint for ensembles (SDK-specific).
+        Base endpoint for ensembles. This is an SDK-specific attribute and it
+        is not part of the API representation of an application.
 
     Examples
     --------
@@ -288,6 +293,11 @@ class Application(
         -------
         Application
             The newly created (or existing) application.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
 
         Examples
         --------
@@ -784,6 +794,8 @@ class Application(
                     output_config = multi_config["output_configuration"] = {}
                     if content.multi_file.output.statistics:
                         output_config["statistics_path"] = content.multi_file.output.statistics
+                    if content.multi_file.output.metrics:
+                        output_config["metrics_path"] = content.multi_file.output.metrics
                     if content.multi_file.output.assets:
                         output_config["assets_path"] = content.multi_file.output.assets
                     if content.multi_file.output.solutions:

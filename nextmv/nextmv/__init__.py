@@ -58,9 +58,11 @@ from .run import Format as Format
 from .run import FormatInput as FormatInput
 from .run import FormatOutput as FormatOutput
 from .run import Metadata as Metadata
+from .run import MetricsIndicator as MetricsIndicator
 from .run import OptionsSummaryItem as OptionsSummaryItem
 from .run import Run as Run
 from .run import RunConfiguration as RunConfiguration
+from .run import RunInfoMetrics as RunInfoMetrics
 from .run import RunInformation as RunInformation
 from .run import RunInfoStatistics as RunInfoStatistics
 from .run import RunLog as RunLog
