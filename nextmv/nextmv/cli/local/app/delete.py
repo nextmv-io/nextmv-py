@@ -7,10 +7,10 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.message import error, info, success
+from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.application import Application
-from nextmv.local.registry import delete_registry_entry, read_local_registry
+from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,7 +18,8 @@ app = typer.Typer()
 
 @app.command()
 def delete(
-    app_id: AppIDOption,
+    app_id: LocalAppIDOption = None,
+    app_src: LocalAppSrcOption = None,
     yes: Annotated[
         bool,
         typer.Option(
@@ -27,13 +28,13 @@ def delete(
             help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
         ),
     ] = False,
-    profile: ProfileOption = None,
 ) -> None:
     """
     Deletes a local Nextmv application.
 
-    This action is permanent and cannot be undone. Use the --yes
-    flag to skip the confirmation prompt.
+    You may identify the app by using either --app-id or --app-src. This action
+    is permanent and cannot be undone. Use the --yes flag to skip the
+    confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -44,29 +45,39 @@ def delete(
         $ [dim]nextmv local app delete --app-id hare-app --yes[/dim]
     """
 
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        error("Either --app-id or --app-src must be provided to identify the application to delete.")
+
     if not yes:
-        confirm = get_confirmation(
-            f"Are you sure you want to delete application [magenta]{app_id}[/magenta]? This action cannot be undone.",
-        )
+        if app_id is not None and app_id != "":
+            msg = f"Are you sure you want to delete application [magenta]{app_id}[/magenta]?"
+        elif app_src is not None and app_src != "":
+            msg = f"Are you sure you want to delete application with source [magenta]{app_src}[/magenta]?"
+
+        confirm = get_confirmation(f"{msg} This action cannot be undone.")
 
         if not confirm:
-            info(msg=f"Application [magenta]{app_id}[/magenta] will not be deleted.", emoji=":bulb:")
+            if app_id is not None and app_id != "":
+                info(f"Application [magenta]{app_id}[/magenta] will not be deleted.")
+            elif app_src is not None and app_src != "":
+                info(f"Application with source [magenta]{app_src}[/magenta] will not be deleted.")
+
             return
 
     # Find app in registry.
-    registry = read_local_registry()
-    app_entry = next((app for app in registry.apps if app.app_id == app_id), None)
+    registry = Registry.from_yaml()
+    app_entry = registry.find_entry(app_id=app_id, app_src=app_src)
+
     if app_entry is None:
-        typer.echo(f"Application with ID '{app_id}' not found.")
-        raise typer.Exit(code=1)
-    app = Application(src=app_entry.path)
+        error("No application found matching the provided identifier(s).")
+
+    app = Application(src=app_entry.src, app_id=app_entry.app_id)
 
     # Make sure the app exists before attempting to delete.
     if not app.exists():
-        typer.echo(f"Application with ID '{app_id}' not found at path '{app_entry.path}'.")
-        raise typer.Exit(code=1)
+        error(f"Application with source [magenta]{app_entry.src}[/magenta] not found and cannot be deleted.")
 
     # Delete the app.
     app.delete()
-    delete_registry_entry(app_id)
-    success(f"Application [magenta]{app_id}[/magenta] deleted successfully.")
+
+    success(f"Application with source [magenta]{app_entry.src}[/magenta] deleted successfully.")

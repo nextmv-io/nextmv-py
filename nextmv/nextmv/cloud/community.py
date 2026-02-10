@@ -32,7 +32,7 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
-from nextmv.local.registry import AppEntry, add_registry_entry
+from nextmv.local.registry import AppEntry, Registry
 from nextmv.logger import log
 from nextmv.safe import safe_id
 
@@ -228,10 +228,11 @@ def clone_community_app(
     os.remove(downloaded_object)
 
     # Register as a local app.
-    add_registry_entry(
+    reg = Registry.from_yaml()
+    reg.register(
         AppEntry(
             app_id=safe_id(app),
-            path=os.path.abspath(full_destination),
+            src=os.path.abspath(full_destination),
         ),
     )
 

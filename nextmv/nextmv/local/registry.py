@@ -26,9 +26,11 @@ import os
 import pathlib
 
 import yaml
+from pydantic import Field
 
 from nextmv.base_model import BaseModel
 from nextmv.local.local import NEXTMV_DIR, REGISTRY_FILE
+from nextmv.safe import safe_id
 
 
 class AppEntry(BaseModel):
@@ -47,7 +49,7 @@ class AppEntry(BaseModel):
     ----------
     app_id : str
         The unique identifier of the application.
-    path : str
+    src : str
         The file system path where the application is located.
     """
 
@@ -55,7 +57,7 @@ class AppEntry(BaseModel):
     """
     The unique identifier of the application.
     """
-    path: str
+    src: str
     """
     The file system path where the application is located.
     """
@@ -75,11 +77,11 @@ class Registry(BaseModel):
 
     Attributes
     ----------
-    apps : list[RegistryEntry]
+    apps : list[AppEntry]
         A list of locally registered Nextmv applications.
     """
 
-    apps: list[AppEntry]
+    apps: list[AppEntry] = Field(default_factory=list)
     """
     A list of locally registered Nextmv applications.
     """
@@ -116,7 +118,8 @@ class Registry(BaseModel):
         >>> # registry = Registry.from_yaml()  # This would load the registry from the YAML file
         >>> # assert isinstance(registry, Registry)
         """
-        reg_path = get_registry_path()
+
+        reg_path = __get_registry_path()
 
         # If no registry file exists yet, create an empty registry.
         if not os.path.exists(reg_path):
@@ -127,7 +130,86 @@ class Registry(BaseModel):
         # Load and parse the YAML file.
         with open(reg_path) as file:
             raw_manifest = yaml.safe_load(file)
+
         return cls.from_dict(raw_manifest)
+
+    def delete_entry(self, app_id: str | None = None, app_src: str | None = None) -> None:
+        """
+        Remove an entry from the local app registry.
+
+        Specify either the `app_id` or the `app_src` to identify the entry to
+        delete. If both are provided, the method will prioritize deleting by
+        `app_id`.
+
+        Parameters
+        ----------
+        app_id : str | None
+            The ID of the application to remove from the registry.
+        app_src : str | None
+            The source path of the application to remove from the registry.
+        """
+
+        # We prioritize deleting by app ID if it is provided.
+        if app_id is not None and app_id != "":
+            self.apps = [entry for entry in self.apps if entry.app_id != app_id]
+        elif app_src is not None and app_src != "":
+            self.apps = [entry for entry in self.apps if entry.src != app_src]
+
+        self.to_yaml()
+
+    def find_entry(self, app_id: str | None = None, app_src: str | None = None) -> AppEntry | None:
+        """
+        Find an entry in the local app registry.
+
+        Specify either the `app_id` or the `app_src` to identify the entry to
+        find. If both are provided, the method will prioritize finding by
+        `app_id`.
+
+        Parameters
+        ----------
+        app_id : str | None
+            The ID of the application to find in the registry.
+        app_src : str | None
+            The source path of the application to find in the registry.
+
+        Returns
+        -------
+        AppEntry | None
+            The found registry entry, or `None` if no matching entry is found.
+        """
+
+        # We prioritize finding by app ID if it is provided.
+        if app_id is not None and app_id != "":
+            return next((entry for entry in self.apps if entry.app_id == app_id), None)
+
+        if app_src is not None and app_src != "":
+            return next((entry for entry in self.apps if entry.src == app_src), None)
+
+        return None
+
+    def register(self, src: str, app_id: str | None = None) -> AppEntry:
+        """
+        Store a new entry in the local app registry.
+
+        Parameters
+        ----------
+        entry : AppEntry
+            The registry entry to add.
+        """
+
+        if app_id is None or app_id == "":
+            app_id = safe_id("local-app")
+
+        entry = AppEntry(app_id=app_id, src=src)
+
+        if self.find_entry(app_id=entry.app_id, app_src=entry.src) is not None:
+            # Ignore duplicate entries.
+            return entry
+
+        self.apps.append(entry)
+        self.to_yaml()
+
+        return entry
 
     def to_yaml(self) -> None:
         """
@@ -149,7 +231,7 @@ class Registry(BaseModel):
         >>> # registry.to_yaml()  # This would write the registry to the YAML file
         """
 
-        with open(get_registry_path(), "w") as file:
+        with open(__get_registry_path(), "w") as file:
             yaml.dump(
                 self.to_dict(),
                 file,
@@ -160,7 +242,7 @@ class Registry(BaseModel):
             )
 
 
-def get_registry_path() -> str:
+def __get_registry_path() -> str:
     """
     Returns the path to the local registry file.
 
@@ -174,46 +256,3 @@ def get_registry_path() -> str:
     os.makedirs(nextmv_dir, exist_ok=True)
     registry_path = os.path.join(nextmv_dir, REGISTRY_FILE)
     return registry_path
-
-
-def read_local_registry() -> Registry:
-    """
-    Retrieve an instance of the LocalRegistry.
-
-    Returns
-    -------
-    Registry
-        The local app registry.
-    """
-    return Registry.from_yaml()
-
-
-def add_registry_entry(entry: AppEntry) -> None:
-    """
-    Store a new entry in the local app registry.
-
-    Parameters
-    ----------
-    entry : RegistryEntry
-        The registry entry to add.
-    """
-    registry = Registry.from_yaml()
-    if any(app.app_id == entry.app_id for app in registry.apps):
-        # Ignore duplicate entries.
-        return
-    registry.apps.append(entry)
-    registry.to_yaml()
-
-
-def delete_registry_entry(app_id: str) -> None:
-    """
-    Remove an entry from the local app registry.
-
-    Parameters
-    ----------
-    app_id : str
-        The ID of the application to remove from the registry.
-    """
-    registry = Registry.from_yaml()
-    registry.apps = [entry for entry in registry.apps if entry.app_id != app_id]
-    registry.to_yaml()

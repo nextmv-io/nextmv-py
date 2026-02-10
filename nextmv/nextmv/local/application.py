@@ -15,13 +15,13 @@ import os
 import shutil
 import tempfile
 import webbrowser
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
+from nextmv.deprecated import deprecated
 from nextmv.input import INPUTS_KEY, Input, InputFormat
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
@@ -31,6 +31,7 @@ from nextmv.local.local import (
     NEXTMV_DIR,
     RUNS_KEY,
 )
+from nextmv.local.registry import Registry
 from nextmv.local.runner import run
 from nextmv.logger import log
 from nextmv.manifest import Manifest, default_python_manifest
@@ -53,8 +54,7 @@ from nextmv.safe import safe_id
 from nextmv.status import StatusV2
 
 
-@dataclass
-class Application:
+class Application(BaseModel):
     """
     A decision model that can be executed.
 
@@ -91,6 +91,10 @@ class Application:
     source typically refers to the directory containing the `app.yaml`
     manifest.
     """
+    app_id: str | None = None
+    """
+    ID of the application. This ID is auto-generated if not provided.
+    """
 
     description: str | None = None
     """Description of the application."""
@@ -105,9 +109,9 @@ class Application:
     existing one.
     """
 
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """
-        Validate the presence of the manifest in the application.
+        Actions taken after the Application model is initialized.
         """
 
         if self.manifest is not None:
@@ -154,6 +158,10 @@ class Application:
         destination: str | None = None,
     ) -> "Application":
         """
+        !!! warning
+            `local.Application.initialize` is deprecated. You can initialize
+            sample local apps with the `cloud.clone_community_app` function.
+
         Initialize a sample Nextmv application, locally.
 
         This method will create a new application in the local file system. The
@@ -185,6 +193,12 @@ class Application:
         Application
             The initialized application instance.
         """
+
+        deprecated(
+            name="local.Application.initialize",
+            reason="`local.Application.initialize` is deprecated. "
+            "You can initialize sample local apps with the `cloud.clone_community_app` function.",
+        )
 
         destination_dir = os.getcwd() if destination is None else destination
         app_id = src if src is not None else safe_id("app")
@@ -229,6 +243,9 @@ class Application:
 
         shutil.rmtree(self.src)
 
+        reg = Registry.from_yaml()
+        reg.delete_entry(app_id=self.app_id, app_src=self.src)
+
     def exists(self) -> bool:
         """
         Check if the local application exists.
@@ -243,6 +260,23 @@ class Application:
         """
 
         return os.path.exists(self.src)
+
+    def is_registered(self) -> bool:
+        """
+        Check if the local application is registered in the local registry.
+
+        This method checks if the application has an entry in the local registry.
+
+        Returns
+        -------
+        bool
+            True if the application is registered, False otherwise.
+        """
+
+        reg = Registry.from_yaml()
+        entry = reg.find_entry(app_id=self.app_id, app_src=self.src)
+
+        return entry is not None
 
     def list_runs(self) -> list[Run]:
         """
@@ -536,6 +570,21 @@ class Application:
             polling_options=polling_options,
             output_dir_path=output_dir_path,
         )
+
+    def register(self) -> None:
+        """
+        Register the local application in the local registry.
+
+        This method adds an entry for the application in the local registry,
+        which is stored as a YAML file at `$HOME/.nextmv/registry.yaml`. The
+        registry keeps track of locally registered applications, allowing you
+        to manage and list them easily.
+
+        If the application is already registered, this method does nothing.
+        """
+
+        reg = Registry.from_yaml()
+        reg.register(src=self.src, app_id=self.app_id)
 
     def run_logs(self, run_id: str) -> str:
         """

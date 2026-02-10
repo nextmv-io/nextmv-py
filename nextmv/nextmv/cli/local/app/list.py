@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import print_json, success
-from nextmv.local.registry import read_local_registry
+from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -38,7 +38,7 @@ def list(
         $ [dim]nextmv local app list --output apps.json[/dim]
     """
 
-    registry = read_local_registry()
+    registry = Registry.from_yaml()
     apps_dicts = [app.to_dict() for app in registry.apps]
 
     if output is not None and output != "":

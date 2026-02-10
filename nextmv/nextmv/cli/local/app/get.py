@@ -10,7 +10,7 @@ import typer
 
 from nextmv.cli.message import in_progress, print_json, success, warning
 from nextmv.cli.options import AppIDOption
-from nextmv.local.registry import read_local_registry
+from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -45,7 +45,7 @@ def get(
         $ [dim]nextmv local app get --app-id hare-app --output app.json[/dim]
     """
 
-    registry = read_local_registry()
+    registry = Registry.from_yaml()
     in_progress(msg="Getting application...")
 
     app_entry = next((app for app in registry.apps if app.app_id == app_id), None)
@@ -53,7 +53,7 @@ def get(
     if app_entry is None:
         typer.echo(f"Application with ID '{app_id}' not found.")
         raise typer.Exit(code=1)
-    elif not os.path.exists(app_entry.path):
+    elif not os.path.exists(app_entry.src):
         warning(f"Application with ID '{app_id}' found in registry but path does not exist.")
 
     app_dict = app_entry.to_dict()

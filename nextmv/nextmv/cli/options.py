@@ -275,3 +275,28 @@ MarketplaceSubscriptionIDOption = Annotated[
         metavar="SUBSCRIPTION_ID",
     ),
 ]
+
+# Local app_id option - can be used in any command that requires a local
+# application ID. Define it as follows in commands or callbacks, as necessary:
+# app_id: LocalAppIDOption
+LocalAppIDOption = Annotated[
+    str | None,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help="The local Nextmv application ID to use for this action.",
+        envvar="NEXTMV_APP_ID",
+        metavar="APP_ID",
+    ),
+]
+
+LocalAppSrcOption = Annotated[
+    str | None,
+    typer.Option(
+        "--app-src",
+        "-s",
+        help="The source (filesystem path) of the local Nextmv application to use for this action.",
+        envvar="NEXTMV_APP_SRC",
+        metavar="APP_SRC",
+    ),
+]
