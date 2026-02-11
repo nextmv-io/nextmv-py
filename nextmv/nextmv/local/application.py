@@ -13,10 +13,14 @@ Application
 import json
 import os
 import shutil
+import sys
 import tempfile
 import webbrowser
 from datetime import datetime, timezone
 from typing import Any
+
+import rich
+from pydantic import Field
 
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
@@ -34,7 +38,7 @@ from nextmv.local.local import (
 from nextmv.local.registry import Registry
 from nextmv.local.runner import run
 from nextmv.logger import log
-from nextmv.manifest import Manifest, default_python_manifest
+from nextmv.manifest import Manifest
 from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
@@ -98,7 +102,7 @@ class Application(BaseModel):
 
     description: str | None = None
     """Description of the application."""
-    manifest: Manifest | None = None
+    manifest: Manifest | None = Field(default=None, exclude=True)
     """
     Manifest of the application. A manifest is a file named `app.yaml` that
     must be present at the root of the application's `src` directory. If the
@@ -107,6 +111,10 @@ class Application(BaseModel):
     function. If you specify this argument, and a manifest file is already
     present in the `src` directory, the provided manifest will override the
     existing one.
+    """
+    content_format: InputFormat | None = None
+    """
+    The content format of the application, which is determined by the manifest.
     """
 
     def model_post_init(self, __context) -> None:
@@ -117,20 +125,20 @@ class Application(BaseModel):
         if self.manifest is not None:
             self.manifest.to_yaml(self.src)
 
-            return
-
         try:
             manifest = Manifest.from_yaml(self.src)
             self.manifest = manifest
 
-            return
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Could not find manifest.yaml in {self.src}. Maybe specify a different `src` dir?"
+            ) from e
 
-        except Exception:
-            manifest = default_python_manifest()
-            self.manifest = manifest
-            manifest.to_yaml(self.src)
+        content_format = InputFormat.JSON
+        if self.manifest.configuration is not None and self.manifest.configuration.content is not None:
+            content_format = self.manifest.configuration.content.format
 
-            return
+        self.content_format = content_format
 
     @classmethod
     def from_path(cls, src: str) -> "Application":
@@ -148,7 +156,84 @@ class Application(BaseModel):
             The loaded application instance.
         """
 
-        return cls(src=src)
+        manifest = Manifest.from_yaml(src)
+
+        return cls(src=src, manifest=manifest)
+
+    @classmethod
+    def from_registry(cls, src: str | None = None, app_id: str | None = None) -> "Application":
+        """
+        Load an application from the local registry.
+
+        The local registry is a YAML file stored at `$HOME/.nextmv/registry.yaml`
+        that keeps track of locally registered applications. This method looks
+        for an entry in the local registry that matches the provided `src` or
+        `app_id`, and loads the application from the corresponding source path.
+
+        Specify either the `src` or the `app_id` to identify the application to
+        load. If both are provided, the method will prioritize loading by
+        `app_id`.
+
+        Parameters
+        ----------
+        src : str | None
+            Source path of the application to load. This is typically the path
+            to the directory containing the application's manifest (`app.yaml`).
+        app_id : str | None
+            ID of the application to load. This ID is auto-generated if not
+            provided during registration.
+
+        Returns
+        -------
+        Application
+            The loaded application instance.
+
+        Raises
+        ------
+        ValueError
+            If neither `src` nor `app_id` is provided, or if no matching entry is found in the registry.
+
+        Examples
+        --------
+        Assuming an application is registered in the local registry with the following entry:
+
+        ```yaml
+        apps:
+          - app_id: "app-123"
+            src: "/path/to/app"
+        ```
+
+        >>> from nextmv.local import Application
+        >>> app = Application.from_registry(app_id="app-123")
+        >>> print(app.src)
+        /path/to/app
+        """
+
+        if src is None and app_id is None:
+            raise ValueError("Either `src` or `app_id` must be provided to load an application from the registry")
+
+        reg = Registry.from_yaml()
+        entry = reg.entry(app_id=app_id, src=src)
+
+        if entry is None:
+            raise ValueError("No matching entry found in the registry for the provided `src` or `app_id`")
+
+        try:
+            manifest = Manifest.from_yaml(entry.src)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Could not find manifest.yaml in {entry.src}. Maybe specify a different `src` dir?"
+            ) from e
+
+        if not os.path.exists(entry.src):
+            raise FileNotFoundError(f"App was found in the registry but the path does not exist: {entry.src}")
+
+        return cls(
+            src=entry.src,
+            app_id=entry.app_id,
+            manifest=manifest,
+            description=entry.description,
+        )
 
     @classmethod
     def initialize(
@@ -244,7 +329,7 @@ class Application(BaseModel):
         shutil.rmtree(self.src)
 
         reg = Registry.from_yaml()
-        reg.delete_entry(app_id=self.app_id, app_src=self.src)
+        reg.delete_entry(app_id=self.app_id, src=self.src)
 
     def exists(self) -> bool:
         """
@@ -274,7 +359,7 @@ class Application(BaseModel):
         """
 
         reg = Registry.from_yaml()
-        entry = reg.find_entry(app_id=self.app_id, app_src=self.src)
+        entry = reg.entry(app_id=self.app_id, src=self.src)
 
         return entry is not None
 
@@ -584,7 +669,8 @@ class Application(BaseModel):
         """
 
         reg = Registry.from_yaml()
-        reg.register(src=self.src, app_id=self.app_id)
+        entry = reg.register(src=self.src, app_id=self.app_id, description=self.description)
+        self.app_id = entry.app_id
 
     def run_logs(self, run_id: str) -> str:
         """
@@ -853,6 +939,7 @@ class Application(BaseModel):
         run_ids: list[str] | None = None,
         instance_id: str | None = None,
         verbose: bool | None = False,
+        rich_print: bool | None = False,
     ) -> None:
         """
         Sync the local application to a Nextmv Cloud application target.
@@ -884,6 +971,8 @@ class Application(BaseModel):
         verbose : Optional[bool], default=False
             Whether to print verbose output during the sync process. Useful for
             debugging a large number of runs being synced.
+        rich_print : Optional[bool], default=False
+            Whether to use rich printing for output during the sync process.
 
         Raises
         ------
@@ -913,24 +1002,45 @@ class Application(BaseModel):
                 "target Application does not exist in Nextmv Cloud, create it with `cloud.Application.new`"
             )
         if verbose:
-            log(f"☁️ Starting sync of local application `{self.src}` to Nextmv Cloud application `{target.id}`.")
+            if rich_print:
+                rich.print(
+                    f":cloud: Starting sync of local application [magenta]{self.src}[/magenta] to "
+                    f"Nextmv Cloud application [magenta]{target.id}[/magenta].",
+                    file=sys.stderr,
+                )
+            else:
+                log(f"☁️ Starting sync of local application `{self.src}` to Nextmv Cloud application `{target.id}`.")
 
         # Create a temp dir to store the outputs that are written by default to
         # ".". During the sync process, we don't need to keep these outputs, so
         # we can use a temp dir that will be deleted after the sync is done.
         with tempfile.TemporaryDirectory(prefix="nextmv-sync-run-") as temp_results_dir:
             runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
-            if run_ids is None:
+            if not run_ids:
                 # If runs are not specified, by default we sync all local runs that
                 # can be found.
                 dirs = os.listdir(runs_dir)
                 run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
 
                 if verbose:
-                    log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
+                    if rich_print:
+                        rich.print(
+                            f":bulb: Found [magenta]{len(run_ids)}[/magenta] local runs to "
+                            f"sync from [magenta]{runs_dir}[/magenta].",
+                            file=sys.stderr,
+                        )
+                    else:
+                        log(f"ℹ️  Found {len(run_ids)} local runs to sync from {runs_dir}.")
             else:
                 if verbose:
-                    log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
+                    if rich_print:
+                        rich.print(
+                            f":bulb: Syncing [magenta]{len(run_ids)}[/magenta] specified local runs from "
+                            f"[magenta]{runs_dir}[/magenta].",
+                            file=sys.stderr,
+                        )
+                    else:
+                        log(f"ℹ️  Syncing {len(run_ids)} specified local runs from {runs_dir}.")
 
             total = 0
             for run_id in run_ids:
@@ -941,16 +1051,28 @@ class Application(BaseModel):
                     temp_dir=temp_results_dir,
                     instance_id=instance_id,
                     verbose=verbose,
+                    rich_print=rich_print,
                 )
                 if synced:
                     total += 1
 
-            if verbose:
-                log(
-                    f"🚀 Process completed, synced local application `{self.src}` to "
-                    f"Nextmv Cloud application `{target.id}`: "
-                    f"{total}/{len(run_ids)} runs."
+            if not verbose:
+                return
+
+            if rich_print:
+                rich.print(
+                    f":rocket: Process completed, synced local application [magenta]{self.src}[/magenta] to "
+                    f"Nextmv Cloud application [magenta]{target.id}[/magenta]: "
+                    f"[magenta]{total}[/magenta]/[magenta]{len(run_ids)}[/magenta] runs.",
+                    file=sys.stderr,
                 )
+                return
+
+            log(
+                f"🚀 Process completed, synced local application `{self.src}` to "
+                f"Nextmv Cloud application `{target.id}`: "
+                f"{total}/{len(run_ids)} runs."
+            )
 
     def __run_result(
         self,
@@ -1144,6 +1266,7 @@ class Application(BaseModel):
         temp_dir: str,
         instance_id: str | None = None,
         verbose: bool | None = False,
+        rich_print: bool | None = False,
     ) -> bool:
         """
         Syncs a local run to a Nextmv Cloud target application. Returns True if
@@ -1151,7 +1274,13 @@ class Application(BaseModel):
         """
 
         if verbose:
-            log(f"🔄 Syncing local run `{run_id}`... ")
+            if rich_print:
+                rich.print(
+                    f":hourglass_flowing_sand: Syncing local run [magenta]{run_id}[/magenta]...",
+                    file=sys.stderr,
+                )
+            else:
+                log(f"🔄 Syncing local run `{run_id}`... ")
 
         # For files-based runs, the result files are written by default to ".".
         # Avoid this using a dedicated temp dir.
@@ -1162,14 +1291,27 @@ class Application(BaseModel):
         synced_run, already_synced = run_result.is_synced(app_id=target.id, instance_id=instance_id)
         if already_synced:
             if verbose:
-                log(f"   ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
+                if rich_print:
+                    rich.print(
+                        f"\t:fast_forward: Skipping local run [magenta]{run_id}[/magenta], already synced with "
+                        f"[magenta]{synced_run.to_dict()}[/magenta].",
+                        file=sys.stderr,
+                    )
+                else:
+                    log(f"   ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
 
             return False
 
         # Check that it is a valid run with inputs, outputs, logs, etc.
         if not self.__valid_run_result(run_result, runs_dir, run_id):
             if verbose:
-                log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs).")
+                if rich_print:
+                    rich.print(
+                        f"\t:x: Skipping local run [magenta]{run_id}[/magenta], invalid run (missing inputs).",
+                        file=sys.stderr,
+                    )
+                else:
+                    log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs).")
 
             return False
 
@@ -1260,7 +1402,14 @@ class Application(BaseModel):
             json.dump(run_result.to_dict(), f, indent=2)
 
         if verbose:
-            log(f"✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
+            if rich_print:
+                rich.print(
+                    f":white_check_mark: Synced local run [magenta]{run_id}[/magenta] as remote run "
+                    f"[magenta]{synced_run.to_dict()}[/magenta].",
+                    file=sys.stderr,
+                )
+            else:
+                log(f"✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
 
         return True
 

@@ -32,9 +32,8 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
-from nextmv.local.registry import AppEntry, Registry
+from nextmv.local.registry import Registry
 from nextmv.logger import log
-from nextmv.safe import safe_id
 
 # Helpful constants.
 LATEST_VERSION = "latest"
@@ -227,13 +226,52 @@ def clone_community_app(
     # Remove the tarball after extraction
     os.remove(downloaded_object)
 
-    # Register as a local app.
+    if verbose:
+        if rich_print:
+            rich.print(
+                f":white_check_mark: Successfully cloned the [magenta]{app}[/magenta] community app, "
+                f"using version [magenta]{original_version}[/magenta] in path: [magenta]{full_destination}[/magenta].",
+                file=sys.stderr,
+            )
+        else:
+            log(
+                f"✅ Successfully cloned the {app} community app, using version {original_version} "
+                f"in path: {full_destination}."
+            )
+
+    _register_cloned_app(
+        app=app,
+        full_destination=full_destination,
+        verbose=verbose,
+        rich_print=rich_print,
+    )
+
+
+def _register_cloned_app(
+    app: str,
+    full_destination: str,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> None:
+    """
+    Actions to perform after cloning a community app, such as registering the
+    app in the local registry and printing success messages.
+
+    Parameters
+    ----------
+    app : str
+        The name of the community app that was cloned.
+    full_destination : str
+        The full path to the directory where the app was cloned.
+    verbose : bool, optional
+        Whether to print verbose output.
+    rich_print : bool, optional
+        Whether to use rich printing for output messages.
+    """
     reg = Registry.from_yaml()
-    reg.register(
-        AppEntry(
-            app_id=safe_id(app),
-            src=os.path.abspath(full_destination),
-        ),
+    entry = reg.register(
+        src=os.path.abspath(full_destination),
+        description=f"Local application registered from cloned community app {app}.",
     )
 
     if not verbose:
@@ -241,15 +279,13 @@ def clone_community_app(
 
     if rich_print:
         rich.print(
-            f":white_check_mark: Successfully cloned the [magenta]{app}[/magenta] community app, "
-            f"using version [magenta]{original_version}[/magenta] in path: [magenta]{full_destination}[/magenta].",
+            f":white_check_mark: Registered the cloned community app [magenta]{app}[/magenta] as a local app.",
             file=sys.stderr,
         )
+        rich.print_json(data=entry.to_dict())
         return
 
-    log(
-        f"✅ Successfully cloned the {app} community app, using version {original_version} in path: {full_destination}."
-    )
+    log(f"✅ Registered the cloned community app {app} as a local app: {entry.to_dict()}.")
 
 
 def _download_manifest(client: Client) -> dict[str, Any]:

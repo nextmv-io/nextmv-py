@@ -49,10 +49,7 @@ def get(
     client = build_client(profile)
     in_progress(msg="Getting application...")
 
-    cloud_app = Application.get(
-        client=client,
-        id=app_id,
-    )
+    cloud_app = Application.get(client=client, id=app_id)
     cloud_app_dict = cloud_app.to_dict()
 
     if output is not None and output != "":

@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.message import print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.local.registry import Registry
 
 # Set up subcommand application.
@@ -27,7 +27,7 @@ def list(
     ] = None,
 ) -> None:
     """
-    List all local Nextmv applications.
+    List all local registered Nextmv applications.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -38,15 +38,16 @@ def list(
         $ [dim]nextmv local app list --output apps.json[/dim]
     """
 
+    in_progress(msg="Listing applications...")
     registry = Registry.from_yaml()
-    apps_dicts = [app.to_dict() for app in registry.apps]
+    entries_dicts = [entry.to_dict() for entry in registry.list_entries()]
 
     if output is not None and output != "":
         with open(output, "w") as f:
-            json.dump(apps_dicts, f, indent=2)
+            json.dump(entries_dicts, f, indent=2)
 
         success(msg=f"Application list information saved to [magenta]{output}[/magenta].")
 
         return
 
-    print_json(apps_dicts)
+    print_json(entries_dicts)

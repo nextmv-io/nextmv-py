@@ -10,7 +10,6 @@ from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, info, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.application import Application
-from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -32,9 +31,9 @@ def delete(
     """
     Deletes a local Nextmv application.
 
-    You may identify the app by using either --app-id or --app-src. This action
-    is permanent and cannot be undone. Use the --yes flag to skip the
-    confirmation prompt.
+    You may identify the app by using --app-src, or --app-id if it has been
+    registered. This action is permanent and cannot be undone. Use the --yes
+    flag to skip the confirmation prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -46,7 +45,7 @@ def delete(
     """
 
     if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
-        error("Either --app-id or --app-src must be provided to identify the application to delete.")
+        error("Either --app-id or --app-src must be provided to identify the application.")
 
     if not yes:
         if app_id is not None and app_id != "":
@@ -64,20 +63,7 @@ def delete(
 
             return
 
-    # Find app in registry.
-    registry = Registry.from_yaml()
-    app_entry = registry.find_entry(app_id=app_id, app_src=app_src)
-
-    if app_entry is None:
-        error("No application found matching the provided identifier(s).")
-
-    app = Application(src=app_entry.src, app_id=app_entry.app_id)
-
-    # Make sure the app exists before attempting to delete.
-    if not app.exists():
-        error(f"Application with source [magenta]{app_entry.src}[/magenta] not found and cannot be deleted.")
-
-    # Delete the app.
+    app = Application.from_registry(src=app_src, app_id=app_id)
     app.delete()
 
-    success(f"Application with source [magenta]{app_entry.src}[/magenta] deleted successfully.")
+    success(f"Application with source [magenta]{app.src}[/magenta] deleted successfully.")

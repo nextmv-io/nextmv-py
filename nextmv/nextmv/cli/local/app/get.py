@@ -3,14 +3,13 @@ This module defines the cloud app get command for the Nextmv CLI.
 """
 
 import json
-import os
 from typing import Annotated
 
 import typer
 
-from nextmv.cli.message import in_progress, print_json, success, warning
-from nextmv.cli.options import AppIDOption
-from nextmv.local.registry import Registry
+from nextmv.cli.message import error, in_progress, print_json, success
+from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.local.application import Application
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,7 +17,8 @@ app = typer.Typer()
 
 @app.command()
 def get(
-    app_id: AppIDOption,
+    app_id: LocalAppIDOption = None,
+    app_src: LocalAppSrcOption = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -30,10 +30,10 @@ def get(
     ] = None,
 ) -> None:
     """
-    Get a local Nextmv application.
+    Get a registered local Nextmv application.
 
-    This command is useful to get the attributes of an existing local Nextmv
-    application by its ID.
+    You may identify the app by using --app-src, or --app-id if it has been
+    registered.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -45,22 +45,17 @@ def get(
         $ [dim]nextmv local app get --app-id hare-app --output app.json[/dim]
     """
 
-    registry = Registry.from_yaml()
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        error("Either --app-id or --app-src must be provided to identify the application.")
+
     in_progress(msg="Getting application...")
-
-    app_entry = next((app for app in registry.apps if app.app_id == app_id), None)
-
-    if app_entry is None:
-        typer.echo(f"Application with ID '{app_id}' not found.")
-        raise typer.Exit(code=1)
-    elif not os.path.exists(app_entry.src):
-        warning(f"Application with ID '{app_id}' found in registry but path does not exist.")
-
-    app_dict = app_entry.to_dict()
+    app = Application.from_registry(src=app_src, app_id=app_id)
+    app_dict = app.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(app_dict, f, indent=2)
+
         success(msg=f"Application information saved to [magenta]{output}[/magenta].")
 
         return

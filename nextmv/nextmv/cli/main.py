@@ -16,7 +16,6 @@ epilog of the Typer application defined below.
 import sys
 from typing import Annotated
 
-import rich
 import typer
 from typer import rich_utils
 
@@ -165,19 +164,20 @@ def main() -> None:
     own exit codes) and displays a clean error message instead of a traceback.
     """
 
-    try:
-        app()
-    except (typer.Exit, typer.Abort, SystemExit):
-        raise
-    except Exception as e:
-        # We do not use the messages.error function here because doing so would
-        # raise a Typer exception, which would print a traceback.
-        msg = str(e).rstrip("\n")
-        if not msg.endswith("."):
-            msg += "."
+    app()
+    # try:
+    #     app()
+    # except (typer.Exit, typer.Abort, SystemExit):
+    #     raise
+    # except Exception as e:
+    #     # We do not use the messages.error function here because doing so would
+    #     # raise a Typer exception, which would print a traceback.
+    #     msg = str(e).rstrip("\n")
+    #     if not msg.endswith("."):
+    #         msg += "."
 
-        rich.print(f"[red]Error:[/red] {msg}", file=sys.stderr)
-        sys.exit(1)
+    #     rich.print(f"[red]Error:[/red] {msg}", file=sys.stderr)
+    #     sys.exit(1)
 
 
 if __name__ == "__main__":

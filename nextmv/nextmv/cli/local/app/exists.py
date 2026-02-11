@@ -20,9 +20,9 @@ def exists(
     """
     Check if a local Nextmv application exists.
 
-    You may identify the app by using either --app-id or --app-src. This
-    command is useful in scripting applications to verify the existence of a
-    local application.
+    You may identify the app by using --app-src, or --app-id if it has been
+    registered. This command is useful in scripting applications to verify the
+    existence of a local application.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -30,7 +30,7 @@ def exists(
         $ [dim]nextmv local app exists --app-id hare-app[/dim]
 
     - Check if the application with source path [magenta]./hare-app/[/magenta] exists.
-        $ [dim]nextmv local app exists --app-src ./hare-app/[/dim
+        $ [dim]nextmv local app exists --app-src ./hare-app/[/dim]
     """
 
     in_progress(msg="Checking if application exists...")
