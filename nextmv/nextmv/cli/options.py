@@ -278,7 +278,7 @@ MarketplaceSubscriptionIDOption = Annotated[
 
 # Local app_id option - can be used in any command that requires a local
 # application ID. Define it as follows in commands or callbacks, as necessary:
-# app_id: LocalAppIDOption
+# app_id: LocalAppIDOption = None
 LocalAppIDOption = Annotated[
     str | None,
     typer.Option(
@@ -290,6 +290,9 @@ LocalAppIDOption = Annotated[
     ),
 ]
 
+# Local app_src option - can be used in any command that requires a local
+# application source path. Define it as follows in commands or callbacks, as necessary:
+# app_src: LocalAppSrcOption = "."
 LocalAppSrcOption = Annotated[
     str | None,
     typer.Option(

@@ -17,6 +17,15 @@ app = typer.Typer()
 
 @app.command()
 def get(
+    description: Annotated[
+        str,
+        typer.Option(
+            "--description",
+            "-d",
+            help="A new description for the application.",
+            metavar="DESCRIPTION",
+        ),
+    ],
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = ".",
     output: Annotated[
@@ -30,23 +39,24 @@ def get(
     ] = None,
 ) -> None:
     """
-    Get a registered local Nextmv application.
+    Update a registered local Nextmv application.
 
     You may identify the app by using --app-src, or --app-id if it has been
     registered.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Get the application with the ID [magenta]hare-app[/magenta].
-        $ [dim]nextmv local app get --app-id hare-app[/dim]
+    - Update the application with the ID [magenta]hare-app[/magenta].
+        $ [dim]nextmv local app update --app-id hare-app --description "New description"[/dim]
 
-    - Get the application with the ID [magenta]hare-app[/magenta] and save the information to an
+    - Update the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
-        $ [dim]nextmv local app get --app-id hare-app --output app.json[/dim]
+        $ [dim]nextmv local app update --app-id hare-app --description "New description" --output app.json[/dim]
     """
 
-    in_progress(msg="Getting application...")
+    in_progress(msg="Updating application...")
     app = Application.from_registry(src=app_src, app_id=app_id)
+    app.update(description=description)
     app_dict = app.to_dict()
 
     if output is not None and output != "":

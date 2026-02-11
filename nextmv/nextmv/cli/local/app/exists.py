@@ -15,7 +15,7 @@ app = typer.Typer()
 @app.command()
 def exists(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = None,
+    app_src: LocalAppSrcOption = ".",
 ) -> None:
     """
     Check if a local Nextmv application exists.

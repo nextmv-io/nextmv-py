@@ -28,7 +28,7 @@ def sync(
         ),
     ],
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = None,
+    app_src: LocalAppSrcOption = ".",
     instance_id: Annotated[
         str | None,
         typer.Option(

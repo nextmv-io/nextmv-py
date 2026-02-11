@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import error, info, success
+from nextmv.cli.message import info, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.application import Application
 
@@ -18,7 +18,7 @@ app = typer.Typer()
 @app.command()
 def delete(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = None,
+    app_src: LocalAppSrcOption = ".",
     yes: Annotated[
         bool,
         typer.Option(
@@ -43,9 +43,6 @@ def delete(
     - Delete the application with the ID [magenta]hare-app[/magenta] without confirmation prompt.
         $ [dim]nextmv local app delete --app-id hare-app --yes[/dim]
     """
-
-    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
-        error("Either --app-id or --app-src must be provided to identify the application.")
 
     if not yes:
         if app_id is not None and app_id != "":

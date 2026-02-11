@@ -502,20 +502,13 @@ class Application(BaseModel):
         if input is None and input_dir_path is None:
             raise ValueError("Either `input` or `input_directory` must be specified")
 
-        try:
-            manifest = Manifest.from_yaml(self.src)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(
-                f"Could not find app.yaml in {self.src}. Maybe specify a different `src` dir?"
-            ) from e
-
         input_data = None if input_dir_path else self.__extract_input_data(input)
         options_dict = self.__extract_options_dict(options, json_configurations)
         run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
         run_id = run(
             app_id=self.src,
             src=self.src,
-            manifest=manifest,
+            manifest=self.manifest,
             run_config=run_config_dict,
             name=name,
             description=description,
@@ -987,15 +980,6 @@ class Application(BaseModel):
         requests.HTTPError
             If the response status code is not 2xx.
         """
-        if self.src is None:
-            raise ValueError(
-                "`src` property for the `Application` must be specified to sync the application to Nextmv Cloud"
-            )
-
-        if target.client is None:
-            raise ValueError(
-                "`client` property for the target `Application` must be specified to sync the application to Cloud"
-            )
 
         if not target.exists(target.client, target.id):
             raise ValueError(
@@ -1078,6 +1062,29 @@ class Application(BaseModel):
                 f"Nextmv Cloud application `{target.id}`: "
                 f"{total}/{len(run_ids)} runs."
             )
+
+    def update(self, description: str | None = None) -> None:
+        """
+        Update the local application.
+
+        This method allows you to update the local application's metadata, such
+        as its description. It does not affect the application's source code or
+        runs.
+
+        Parameters
+        ----------
+        description : Optional[str]
+            New description for the application. If None, the description is not
+            updated.
+        """
+
+        if description is not None:
+            self.description = description
+
+        reg = Registry.from_yaml()
+        entry = reg.entry(app_id=self.app_id, src=self.src)
+        entry.description = self.description
+        reg.update_entry(entry)
 
     def __run_result(
         self,

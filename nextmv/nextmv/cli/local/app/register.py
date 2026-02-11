@@ -17,8 +17,8 @@ app = typer.Typer()
 
 @app.command()
 def register(
-    app_src: LocalAppSrcOption,
     app_id: LocalAppIDOption = None,
+    app_src: LocalAppSrcOption = ".",
     description: Annotated[
         str | None,
         typer.Option(
