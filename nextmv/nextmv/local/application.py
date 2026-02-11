@@ -131,7 +131,7 @@ class Application(BaseModel):
 
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Could not find manifest.yaml in {self.src}. Maybe specify a different `src` dir?"
+                f"Could not find app.yaml in {self.src}. Maybe specify a different `src` dir?"
             ) from e
 
         content_format = InputFormat.JSON
@@ -222,7 +222,7 @@ class Application(BaseModel):
             manifest = Manifest.from_yaml(entry.src)
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Could not find manifest.yaml in {entry.src}. Maybe specify a different `src` dir?"
+                f"Could not find app.yaml in {entry.src}. Maybe specify a different `src` dir?"
             ) from e
 
         if not os.path.exists(entry.src):
@@ -481,7 +481,7 @@ class Application(BaseModel):
             If neither `input` nor `input_dir_path` is specified.
             If `input_dir_path` is specified but `configuration` is not provided.
         FileNotFoundError
-            If the manifest.yaml file cannot be found in the specified `src` directory.
+            If the app.yaml file cannot be found in the specified `src` directory.
 
         Examples
         --------
@@ -506,7 +506,7 @@ class Application(BaseModel):
             manifest = Manifest.from_yaml(self.src)
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Could not find manifest.yaml in {self.src}. Maybe specify a different `src` dir?"
+                f"Could not find app.yaml in {self.src}. Maybe specify a different `src` dir?"
             ) from e
 
         input_data = None if input_dir_path else self.__extract_input_data(input)
@@ -626,7 +626,7 @@ class Application(BaseModel):
             neither `input` nor `inputs_dir_path` is specified. If
             `inputs_dir_path` is specified but `configuration` is not provided.
         FileNotFoundError
-            If the manifest.yaml file cannot be found in the specified `src`
+            If the app.yaml file cannot be found in the specified `src`
             directory.
 
         Examples
@@ -1004,7 +1004,7 @@ class Application(BaseModel):
         if verbose:
             if rich_print:
                 rich.print(
-                    f":cloud: Starting sync of local application [magenta]{self.src}[/magenta] to "
+                    f":cloud_with_lightning:  Starting sync of local application [magenta]{self.src}[/magenta] to "
                     f"Nextmv Cloud application [magenta]{target.id}[/magenta].",
                     file=sys.stderr,
                 )
@@ -1019,6 +1019,11 @@ class Application(BaseModel):
             if not run_ids:
                 # If runs are not specified, by default we sync all local runs that
                 # can be found.
+                if not os.path.exists(runs_dir):
+                    raise ValueError(
+                        f"`.nextmv/runs` dir does not exist at app source: {self.src}, try making a run first"
+                    )
+
                 dirs = os.listdir(runs_dir)
                 run_ids = [d for d in dirs if os.path.isdir(os.path.join(runs_dir, d))]
 
@@ -1404,7 +1409,7 @@ class Application(BaseModel):
         if verbose:
             if rich_print:
                 rich.print(
-                    f":white_check_mark: Synced local run [magenta]{run_id}[/magenta] as remote run "
+                    f"\t:white_check_mark: Synced local run [magenta]{run_id}[/magenta] as remote run "
                     f"[magenta]{synced_run.to_dict()}[/magenta].",
                     file=sys.stderr,
                 )

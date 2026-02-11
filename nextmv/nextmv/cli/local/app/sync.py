@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
+from nextmv import cloud, local
 from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, ProfileOption
-from nextmv.local.application import Application
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -76,11 +76,11 @@ def sync(
         $ [dim]nextmv local app sync --target-app-id hare-cloud-app --app-id hare-app --profile hare[/dim]
     """
 
-    local_app = Application.from_registry(src=app_src, app_id=app_id)
+    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
 
     client = build_client(profile)
     in_progress(msg="Getting target application...")
-    cloud_app = Application.get(client=client, id=target_app_id)
+    cloud_app = cloud.Application.get(client=client, id=target_app_id)
 
     local_app.sync(
         target=cloud_app,

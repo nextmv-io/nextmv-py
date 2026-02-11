@@ -236,14 +236,14 @@ print(json.dumps(output))
         self.assertIn("Either `input` or `input_directory` must be specified", str(context.exception))
 
     def test_new_run_manifest_not_found_error(self):
-        """Test new_run raises error when manifest.yaml is not found."""
+        """Test new_run raises error when app.yaml is not found."""
         # Remove the manifest file
         os.remove(os.path.join(self.app_src, "app.yaml"))
 
         with self.assertRaises(FileNotFoundError) as context:
             self.app.new_run(input={"test": "data"})
 
-        self.assertIn("Could not find manifest.yaml", str(context.exception))
+        self.assertIn("Could not find app.yaml", str(context.exception))
 
     @patch("nextmv.local.application.run")
     def test_new_run_with_nextmv_input_object(self, mock_run):

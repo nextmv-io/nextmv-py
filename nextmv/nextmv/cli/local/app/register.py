@@ -47,7 +47,7 @@ def register(
     refer to the application in other Nextmv CLI commands. If an app ID is not
     provided, the CLI will generate one for you. The source path must be a
     local path on your machine that contains a Nextmv application manifest
-    file ([magenta]manifest.yaml[/magenta]).
+    file ([magenta]app.yaml[/magenta]).
 
     [bold][underline]Examples[/underline][/bold]
 

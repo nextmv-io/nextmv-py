@@ -176,6 +176,8 @@ class Registry(BaseModel):
         if app_id is not None and app_id != "":
             self.apps = [entry for entry in self.apps if entry.app_id != app_id]
         elif src is not None and src != "":
+            # Normalize src to absolute path
+            src = os.path.abspath(src)
             self.apps = [entry for entry in self.apps if entry.src != src]
 
         self.to_yaml()
@@ -206,6 +208,8 @@ class Registry(BaseModel):
             return next((entry for entry in self.apps if entry.app_id == app_id), None)
 
         if src is not None and src != "":
+            # Normalize src to absolute path
+            src = os.path.abspath(src)
             return next((entry for entry in self.apps if entry.src == src), None)
 
         return None
@@ -236,6 +240,9 @@ class Registry(BaseModel):
         description: str | None
             An optional description of the application.
         """
+
+        # Normalize src to absolute path
+        src = os.path.abspath(src)
 
         try:
             manifest = Manifest.from_yaml(src)
