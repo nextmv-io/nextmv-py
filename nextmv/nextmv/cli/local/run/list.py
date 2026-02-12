@@ -33,7 +33,7 @@ def list(
         StatusV2 | None,
         typer.Option(
             "--status",
-            "-s",
+            "-t",
             help=f"Filter runs by their status. Allowed values are: {enum_values(StatusV2)}.",
             metavar="STATUS",
         ),

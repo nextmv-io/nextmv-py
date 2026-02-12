@@ -382,7 +382,11 @@ class Application(BaseModel):
 
         runs = []
         for run_id in run_ids:
-            info = self.run_metadata(run_id=run_id)
+            try:
+                info = self.run_metadata(run_id=run_id)
+            except Exception:
+                continue
+
             run = info.to_run()
             if status is not None and run.status_v2 != status:
                 continue

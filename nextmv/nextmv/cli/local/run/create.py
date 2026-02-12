@@ -111,20 +111,18 @@ def create(
     ] = -1,
 ) -> None:
     """
-    Create a new Nextmv Cloud application run.
+    Create a new local application run.
 
-    Input for the run should be given through [magenta]stdin[/magenta] or the
-    --input flag. When using the --input flag, the value can be one of the
-    following:
+    You may identify the app by using --app-src (path to the app directory), or
+    --app-id if it has been registered. Input for the run should be given
+    through [magenta]stdin[/magenta] or the --input flag. When using the
+    --input flag, the value can be one of the following:
 
     - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
       the input data. Use with the [magenta]json[/magenta], and
       [magenta]text[/magenta] content formats.
     - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
       containing the input data files. Use with the
-      [magenta]multi-file[/magenta] content format.
-    - [yellow]<.tar.gz PATH>[/yellow]: path to a [magenta].tar.gz[/magenta] file
-      containing tarred input data files. Use with the
       [magenta]multi-file[/magenta] content format.
 
     The CLI determines how to send the input to the application based on the
@@ -135,72 +133,38 @@ def create(
     specify a destination (file or dir) for the output, depending on the
     content type.
 
-    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
-    run completes. Using the --logs flag will also activate waiting, and allows
-    you to specify a file to write the logs to.
-
-    An application run executes against a specific instance. An instance
-    represents the combination of executable code and configuration. You can
-    specify the instance with the --instance-id flag. These are the possible
-    values for this flag:
-
-    - [yellow]unspecified[/yellow]: Run against the default instance of the
-      application. When an application is created, the default instance is [magenta]latest[/magenta].
-    - [yellow]latest[/yellow]: uses the special [magenta]latest[/magenta]
-      instance of the application. This corresponds to the latest pushed
-      executable.
-    - [yellow]<INSTANCE_ID>[/yellow]: uses the instance with the given ID.
-
     [bold][underline]Examples[/underline][/bold]
 
     - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
-      and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]cat input.json | nextmv cloud run create --app-id hare-app[/dim]
+      and create a run for an app at path [magenta]./my-app[/magenta].
+        $ [dim]cat input.json | nextmv local run create --app-src ./my-app[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json[/dim]
+      create a run for an app with ID [magenta]hare-app[/magenta].
+        $ [dim]nextmv local run create --app-id hare-app --input input.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      create a run for an app at path [magenta]./my-app[/magenta].
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --wait[/dim]
+        $ [dim]nextmv local run create --app-src ./my-app --input input.json --wait[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-      Tail the run's logs, streaming to [magenta]stderr[/magenta].
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail[/dim]
-
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/dim]
-
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-      Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/dim]
-
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and submit a run to an app with
-      ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance. Wait for the run to complete. Tail
-      the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
-      Write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
-            --output output.json [/dim]
+        $ [dim]nextmv local run create --app-id hare-app --input input.json --output output.json[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/dim]
+      create a run for an app at path [magenta]./my-app[/magenta].
+        $ [dim]nextmv local run create --app-src ./my-app --input inputs --content-format multi-file[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-      Wait for the run to complete, and save the results to the default location (a directory named after the run ID).
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
+      create a run for an app with ID [magenta]hare-app[/magenta].
+      Wait for the run to complete and save the result files to an [magenta]outputs[/magenta] directory.
+        $ [dim]nextmv local run create --app-id hare-app --input inputs --output outputs[/dim]
 
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
-      Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
+    - Create a run with custom options for an app at path [magenta]./my-app[/magenta].
+        $ [dim]nextmv local run create --app-src ./my-app --input input.json \\
+            --options duration=10s --options verbose=true[/dim]
     """
 
     # Validate that input is provided.
@@ -210,8 +174,9 @@ def create(
 
     # Instantiate the basic requirements to start a new run.
     local_app = local.Application.from_registry(src=app_src, app_id=app_id)
-    config = RunConfiguration()
+    config = None
     if content_format is not None:
+        config = RunConfiguration()
         config.format = Format(
             format_input=FormatInput(
                 input_type=InputFormat(content_format),
@@ -321,8 +286,12 @@ def resolve_input_kwarg(stdin: str | None, input: str | None) -> dict[str, Any]:
 
     # If the input is a file, we read the content and pass it directly.
     if input_path.is_file():
-        data = input_path.read_text()
-        return {"input": data}
+        try:
+            data = json.loads(input_path.read_text())
+            return {"input": data}
+        except json.JSONDecodeError:
+            data = input_path.read_text()
+            return {"input": data}
 
     # If the input is a directory, we give the path directly to the run method.
     # Internally, the files will be handled.
