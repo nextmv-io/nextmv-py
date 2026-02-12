@@ -57,6 +57,10 @@ DEFAULT_INPUT_JSON_FILE = "input.json"
 """
 Constant for the default input JSON file name.
 """
+DEFAULT_INPUT_TEXT_FILE = "input"
+"""
+Constant for the default input text file name.
+"""
 REGISTRY_FILE = "registry.yaml"
 """
 Constant for the local registry file name. This file stores information about the apps on

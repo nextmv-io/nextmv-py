@@ -1,15 +1,21 @@
 """
-This module defines the cloud run create command for the Nextmv CLI.
+This module defines the local run create command for the Nextmv CLI.
 """
 
-from typing import Annotated
+import json
+import sys
+from pathlib import Path
+from typing import Annotated, Any
 
 import typer
 
-from nextmv.cli.message import enum_values
-from nextmv.cli.options import AppIDOption
+from nextmv import local
+from nextmv.cli.local.run.get import handle_outputs
+from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.input import InputFormat
-from nextmv.run import RunType
+from nextmv.polling import default_polling_options
+from nextmv.run import Format, FormatInput, RunConfiguration
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,7 +23,8 @@ app = typer.Typer()
 
 @app.command()
 def create(
-    app_id: AppIDOption,
+    app_id: LocalAppIDOption = None,
+    app_src: LocalAppSrcOption = ".",
     # Options for controlling input.
     input: Annotated[
         str | None,
@@ -32,16 +39,6 @@ def create(
         ),
     ] = None,
     # Options for controlling output.
-    logs: Annotated[
-        str | None,
-        typer.Option(
-            "--logs",
-            "-l",
-            help="Waits for the run to complete and saves the logs to this location.",
-            metavar="LOGS_PATH",
-            rich_help_panel="Output control",
-        ),
-    ] = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -53,16 +50,6 @@ def create(
             rich_help_panel="Output control",
         ),
     ] = None,
-    tail: Annotated[
-        bool,
-        typer.Option(
-            "--tail",
-            "-t",
-            help="Tail the logs until the run completes. Logs are streamed to [magenta]stderr[/magenta]. "
-            "Specify log output location with --logs.",
-            rich_help_panel="Output control",
-        ),
-    ] = False,
     wait: Annotated[
         bool,
         typer.Option(
@@ -85,47 +72,11 @@ def create(
             rich_help_panel="Run configuration",
         ),
     ] = None,
-    definition_id: Annotated[
-        str | None,
-        typer.Option(
-            "--definition-id",
-            "-d",
-            help="The definition ID to use for the run. Required for certain run types like ensemble runs.",
-            metavar="DEFINITION_ID",
-            rich_help_panel="Run configuration",
-        ),
-    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
             help="An optional description for the new run.",
             metavar="DESCRIPTION",
-            rich_help_panel="Run configuration",
-        ),
-    ] = None,
-    execution_class: Annotated[
-        str | None,
-        typer.Option(
-            "--execution-class",
-            "-e",
-            help="The execution class to use for the run, if applicable.",
-            metavar="EXECUTION_CLASS",
-            rich_help_panel="Run configuration",
-        ),
-    ] = None,
-    instance_id: Annotated[
-        str | None,
-        typer.Option(
-            help="The instance ID to use for the run.",
-            metavar="INSTANCE_ID",
-            rich_help_panel="Run configuration",
-        ),
-    ] = "latest",
-    integration_id: Annotated[
-        str | None,
-        typer.Option(
-            help="The integration ID to use for the run, if applicable.",
-            metavar="INTEGRATION_ID",
             rich_help_panel="Run configuration",
         ),
     ] = None,
@@ -139,15 +90,6 @@ def create(
             rich_help_panel="Run configuration",
         ),
     ] = None,
-    no_queuing: Annotated[
-        bool,
-        typer.Option(
-            "--no-queuing",
-            help="Do not queue run. Default is [magenta]False[/magenta], "
-            "meaning the run [italic]will[/italic] be queued.",
-            rich_help_panel="Run configuration",
-        ),
-    ] = False,
     options: Annotated[
         list[str] | None,
         typer.Option(
@@ -156,34 +98,6 @@ def create(
             help="Options passed to the run. Format: [magenta]key=value[/magenta]. "
             "Pass multiple options by repeating the flag, or separating with commas.",
             metavar="KEY=VALUE",
-            rich_help_panel="Run configuration",
-        ),
-    ] = None,
-    priority: Annotated[
-        int,
-        typer.Option(
-            help="The priority of the run. Priority is between 1 and 10, with 1 being the highest priority.",
-            metavar="PRIORITY",
-            rich_help_panel="Run configuration",
-        ),
-    ] = 6,
-    run_type: Annotated[
-        RunType,
-        typer.Option(
-            "--run-type",
-            "-r",
-            help=f"The type of run to create. Allowed values are: {enum_values(RunType)}.",
-            metavar="RUN_TYPE",
-            rich_help_panel="Run configuration",
-        ),
-    ] = RunType.STANDARD,
-    secret_collection_id: Annotated[
-        str | None,
-        typer.Option(
-            "--secret-collection-id",
-            "-s",
-            help="The secret collection ID to use for the run, if applicable.",
-            metavar="SECRET_COLLECTION_ID",
             rich_help_panel="Run configuration",
         ),
     ] = None,
@@ -197,7 +111,7 @@ def create(
     ] = -1,
 ) -> None:
     """
-    Create a new Nextmv Local application run.
+    Create a new Nextmv Cloud application run.
 
     Input for the run should be given through [magenta]stdin[/magenta] or the
     --input flag. When using the --input flag, the value can be one of the
@@ -230,63 +144,189 @@ def create(
     specify the instance with the --instance-id flag. These are the possible
     values for this flag:
 
+    - [yellow]unspecified[/yellow]: Run against the default instance of the
+      application. When an application is created, the default instance is [magenta]latest[/magenta].
     - [yellow]latest[/yellow]: uses the special [magenta]latest[/magenta]
       instance of the application. This corresponds to the latest pushed
-      executable. This is the default behavior.
-    - [yellow]default[/yellow]: if the application has a [italic]default[/italic]
-      instance configured, then it uses that instance. Setting the flag's value
-      to [magenta]''[/magenta] (empty string) has the same effect.
+      executable.
     - [yellow]<INSTANCE_ID>[/yellow]: uses the instance with the given ID.
 
     [bold][underline]Examples[/underline][/bold]
 
     - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
       and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]cat input.json | nextmv local run create --app-id hare-app[/dim]
+        $ [dim]cat input.json | nextmv cloud run create --app-id hare-app[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json[/dim]
+
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --wait[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --wait[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --tail[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --output output.json[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --logs logs.log[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and submit a run to an app with
       ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance. Wait for the run to complete. Tail
       the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
       Write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --tail --logs logs.log \\
+        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
             --output output.json [/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-        $ [dim]nextmv local run create --app-id hare-app --input inputs --instance-id default[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
       Wait for the run to complete, and save the results to the default location (a directory named after the run ID).
-        $ [dim]nextmv local run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
-        $ [dim]nextmv local run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
+        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
     """
 
-    # TODO: replace copied code with actual logic / connect to actual logic
+    # Validate that input is provided.
+    stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
+    if stdin is None and (input is None or input == ""):
+        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
+
+    # Instantiate the basic requirements to start a new run.
+    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    config = RunConfiguration()
+    if content_format is not None:
+        config.format = Format(
+            format_input=FormatInput(
+                input_type=InputFormat(content_format),
+            ),
+        )
+    run_options = build_run_options(options)
+
+    # Start the run before deciding if we should poll or not.
+    input_kwarg = resolve_input_kwarg(stdin=stdin, input=input)
+    run_id = local_app.new_run(
+        **input_kwarg,
+        name=name,
+        description=description,
+        options=run_options,
+        configuration=config,
+    )
+
+    # If we don't need to poll at all we are done.
+    if not wait and output is None:
+        print_json({"run_id": run_id})
+
+        return
+
+    success(f"Run [magenta]{run_id}[/magenta] created.")
+
+    # Build the polling options.
+    polling_options = default_polling_options()
+    polling_options.max_duration = timeout
+
+    # Handle what happens after the run is created for logging and result
+    # retrieval.
+    handle_outputs(
+        local_app=local_app,
+        run_id=run_id,
+        wait=wait,
+        output=output,
+        polling_options=polling_options,
+        skip_wait_check=False,
+    )
+
+
+def build_run_options(options: list[str] | None) -> dict[str, str]:
+    """
+    Builds the run options for the new run. One can pass options by either
+    using the flag multiple times or by separating with commas in the same
+    flag. A combination of both is also possible.
+
+    Parameters
+    ----------
+    options : list[str] | None
+        The list of run options as strings.
+
+    Returns
+    -------
+    dict[str, str]
+        The built run options.
+    """
+
+    if options is None:
+        return None
+
+    run_options = {}
+    for opt in options:
+        # It is possible to pass multiple options separated by commas. The
+        # default way though is to use the flag multiple times to specify
+        # different options.
+        sub_opts = opt.split(",")
+        for sub_opt in sub_opts:
+            key_value = sub_opt.split("=", 1)
+            if len(key_value) != 2:
+                error(f"Invalid option format: {sub_opt}. Expected format is [magenta]key=value[/magenta].")
+
+            key, value = key_value
+            run_options[key] = value
+
+    return run_options
+
+
+def resolve_input_kwarg(stdin: str | None, input: str | None) -> dict[str, Any]:
+    """
+    Gets the keyword argument related to the input that is needed for the run
+    creation. It handles stdin, file, and directory inputs.
+
+    Parameters
+    ----------
+    stdin : str | None
+        The stdin input data, if provided.
+    input : str | None
+        The input path, if provided.
+
+    Returns
+    -------
+    dict[str, Any]
+        The keyword argument with the resolved input.
+    """
+
+    if stdin is not None:
+        # Handle the case where stdin is provided as JSON for a JSON app.
+        try:
+            input_data = json.loads(stdin)
+        except json.JSONDecodeError:
+            input_data = stdin
+
+        return {"input": input_data}
+
+    input_path = Path(input)
+
+    # If the input is a file, we read the content and pass it directly.
+    if input_path.is_file():
+        data = input_path.read_text()
+        return {"input": data}
+
+    # If the input is a directory, we give the path directly to the run method.
+    # Internally, the files will be handled.
+    if input_path.is_dir():
+        return {"input_dir_path": input}
+
+    error(f"Input path [magenta]{input}[/magenta] does not exist.")

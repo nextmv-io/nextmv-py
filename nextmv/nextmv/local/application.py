@@ -25,10 +25,10 @@ from pydantic import Field
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
-from nextmv.deprecated import deprecated
 from nextmv.input import INPUTS_KEY, Input, InputFormat
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
+    DEFAULT_INPUT_TEXT_FILE,
     DEFAULT_OUTPUT_JSON_FILE,
     LOGS_FILE,
     LOGS_KEY,
@@ -243,10 +243,6 @@ class Application(BaseModel):
         destination: str | None = None,
     ) -> "Application":
         """
-        !!! warning
-            `local.Application.initialize` is deprecated. You can initialize
-            sample local apps with the `cloud.clone_community_app` function.
-
         Initialize a sample Nextmv application, locally.
 
         This method will create a new application in the local file system. The
@@ -278,12 +274,6 @@ class Application(BaseModel):
         Application
             The initialized application instance.
         """
-
-        deprecated(
-            name="local.Application.initialize",
-            reason="`local.Application.initialize` is deprecated. "
-            "You can initialize sample local apps with the `cloud.clone_community_app` function.",
-        )
 
         destination_dir = os.getcwd() if destination is None else destination
         app_id = src if src is not None else safe_id("app")
@@ -363,9 +353,14 @@ class Application(BaseModel):
 
         return entry is not None
 
-    def list_runs(self) -> list[Run]:
+    def list_runs(self, status: StatusV2 | None = None) -> list[Run]:
         """
         List all runs for the application.
+
+        Parameters
+        ----------
+        status : Optional[StatusV2]
+            If specified, only runs with the given status will be returned.
 
         Returns
         -------
@@ -389,6 +384,9 @@ class Application(BaseModel):
         for run_id in run_ids:
             info = self.run_metadata(run_id=run_id)
             run = info.to_run()
+            if status is not None and run.status_v2 != status:
+                continue
+
             runs.append(run)
 
         return runs
@@ -665,6 +663,84 @@ class Application(BaseModel):
         entry = reg.register(src=self.src, app_id=self.app_id, description=self.description)
         self.app_id = entry.app_id
 
+    def run_input(self, run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | str | None:
+        """
+        Get the input of a local run.
+
+        This method retrieves the input of a run that was executed locally
+        using the `new_run` or `new_run_with_result` method. This is the local
+        equivalent to `cloud.Application.run_input`, which retrieves the input
+        of a remote run in Nextmv Cloud.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve input for.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON input files will be saved. This
+            is required if the input is non-JSON. If the directory does not
+            exist, it will be created. Uses the current directory by default.
+
+        Returns
+        -------
+        dict[str, Any] | str | None
+            The input of the run depending on the input format. If the input
+            format is JSON, a dict is returned. If the input format is text, a
+            string is returned. For multi-file and csv-archive, the input files
+            are saved to the given `output_dir_path`, and the method returns
+            `None`.
+        """
+
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        # See whether we can attach the output directly or need to save to the given
+        # directory
+        run_information = self.run_metadata(run_id=run_id)
+        input_type = run_information.metadata.format.format_input.input_type
+        if input_type != InputFormat.JSON and (not output_dir_path or output_dir_path == ""):
+            raise ValueError(
+                "The format of the input is not JSON: an `output_dir_path` must be provided.",
+            )
+
+        inputs_path = os.path.join(run_dir, INPUTS_KEY)
+        if input_type == InputFormat.JSON:
+            input_file = os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)
+            if not os.path.exists(input_file):
+                return None
+
+            with open(input_file) as f:
+                input_data = json.load(f)
+
+            return input_data
+
+        elif input_type == InputFormat.TEXT:
+            input_file = os.path.join(inputs_path, DEFAULT_INPUT_TEXT_FILE)
+            if not os.path.exists(input_file):
+                return None
+
+            with open(input_file) as f:
+                input_data = f.read()
+
+            return input_data
+
+        elif input_type in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}:
+            if not os.path.exists(inputs_path):
+                return None
+
+            output_dir = os.path.join(output_dir_path)
+            os.makedirs(output_dir, exist_ok=True)
+            shutil.copytree(inputs_path, output_dir, dirs_exist_ok=True)
+
+            return None
+
+        raise ValueError(f"Unsupported input format: {input_type}")
+
     def run_logs(self, run_id: str) -> str:
         """
         Get the logs of a local run.
@@ -884,7 +960,7 @@ class Application(BaseModel):
             output_dir_path=output_dir_path,
         )
 
-    def run_visuals(self, run_id: str) -> None:
+    def run_visuals(self, run_id: str) -> list[str]:
         """
         Open the local run visuals in a web browser.
 
@@ -901,6 +977,11 @@ class Application(BaseModel):
         ----------
         run_id : str
             ID of the local run to visualize.
+
+        Returns
+        -------
+        list[str]
+            The local URLs of the visual files that were opened in the web browser.
 
         Raises
         ------
@@ -921,10 +1002,15 @@ class Application(BaseModel):
         if not os.path.exists(visuals_dir):
             raise ValueError(f"`visuals` dir does not exist at: {run_dir}")
 
+        urls = []
         for file in os.listdir(visuals_dir):
             if file.endswith(".html"):
                 file_path = os.path.join(visuals_dir, file)
-                webbrowser.open_new_tab(f"file://{os.path.realpath(file_path)}")
+                url_path = f"file://{os.path.realpath(file_path)}"
+                webbrowser.open_new_tab(url_path)
+                urls.append(url_path)
+
+        return urls
 
     def sync(  # noqa: C901
         self,

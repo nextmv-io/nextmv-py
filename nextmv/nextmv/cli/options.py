@@ -45,7 +45,7 @@ RunIDOption = Annotated[
     typer.Option(
         "--run-id",
         "-r",
-        help="The Nextmv Cloud run ID to use for this action.",
+        help="The Nextmv run ID to use for this action.",
         envvar="NEXTMV_RUN_ID",
         metavar="RUN_ID",
     ),

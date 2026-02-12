@@ -23,7 +23,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from nextmv.input import INPUTS_KEY
-from nextmv.local.local import DEFAULT_INPUT_JSON_FILE, NEXTMV_DIR, RUNS_KEY, calculate_files_size
+from nextmv.local.local import (
+    DEFAULT_INPUT_JSON_FILE,
+    DEFAULT_INPUT_TEXT_FILE,
+    NEXTMV_DIR,
+    RUNS_KEY,
+    calculate_files_size,
+)
 from nextmv.manifest import Manifest
 from nextmv.run import Format, FormatInput, Metadata, RunInformation, StatusV2
 from nextmv.safe import safe_id
@@ -262,7 +268,7 @@ def record_input(
 
     elif isinstance(input_data, str):
         # If no inputs_dir_path is provided, try a single TEXT input.
-        with open(os.path.join(run_inputs_dir, "input"), "w") as f:
+        with open(os.path.join(run_inputs_dir, DEFAULT_INPUT_TEXT_FILE), "w") as f:
             f.write(input_data)
 
     else:

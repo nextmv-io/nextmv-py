@@ -55,9 +55,9 @@ def get(
     """
 
     in_progress(msg="Updating application...")
-    app = Application.from_registry(src=app_src, app_id=app_id)
-    app.update(description=description)
-    app_dict = app.to_dict()
+    local_app = Application.from_registry(src=app_src, app_id=app_id)
+    local_app.update(description=description)
+    app_dict = local_app.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

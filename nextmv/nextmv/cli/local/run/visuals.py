@@ -1,50 +1,42 @@
 """
-This module defines the cloud run metadata command for the Nextmv CLI.
+This module defines the local run metadata command for the Nextmv CLI.
 """
-
-from typing import Annotated
 
 import typer
 
-from nextmv.cli.options import AppIDOption, RunIDOption
+from nextmv import local
+from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
 
 
 @app.command()
-def metadata(
-    app_id: AppIDOption,
+def visuals(
     run_id: RunIDOption,
-    output: Annotated[
-        str | None,
-        typer.Option(
-            "--output",
-            "-o",
-            help="Saves the metadata to this location.",
-            metavar="OUTPUT_PATH",
-        ),
-    ] = None,
+    app_id: LocalAppIDOption = None,
+    app_src: LocalAppSrcOption = ".",
 ) -> None:
     """
-    Get the metadata of a Nextmv Cloud application run.
+    Get the visuals of a Nextmv local application run.
 
-    By default, the metadata is fetched and printed to [magenta]stdout[/magenta].
-    Use the --output flag to save the metadata to a file.
+    You may identify the app by using --app-src, or --app-id if it has been
+    registered.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
-      [magenta]hare-app[/magenta]. Metadata is printed to [magenta]stdout[/magenta].
-        $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123[/dim]
+    - Get the visuals of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
+      [magenta]hare-app[/magenta]. Visuals are opened in a web browser.
+        $ [dim]nextmv local run visuals --app-id hare-app --run-id burrow-123[/dim]
 
-    - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
-      [magenta]hare-app[/magenta]. Save the metadata to a [magenta]metadata.json[/magenta] file.
-        $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --output metadata.json[/dim]
-
-    - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
-      [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
-        $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --profile hare[/dim]
+    - Get the visuals of a run with ID [magenta]burrow-123[/magenta], belonging to an app with source path
+      [magenta]./my-app[/magenta].
+        $ [dim]nextmv local run visuals --app-src ./my-app --run-id burrow-123[/dim]
     """
 
-    # TODO: replace copied code with actual logic / connect to actual logic
+    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    in_progress(msg="Getting run visuals...")
+    run_visuals = local_app.run_visuals(run_id)
+    success(msg="Run visuals opened in web browser, here are the local URLs of the visual files:")
+    print_json(run_visuals)

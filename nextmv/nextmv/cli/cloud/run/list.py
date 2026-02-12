@@ -42,10 +42,10 @@ def list(
     """
     Get the list of runs for a Nextmv Cloud application.
 
-    By default, the list of runs is fetched and printed to [magenta]stdout[/magenta].
-    Use the --output flag to save the list to a file.
-
-    You can use the optional --status flag to filter runs by their status.
+    By default, the list of runs is fetched and printed to
+    [magenta]stdout[/magenta]. Use the --output flag to save the list to a
+    file. You can use the optional --status flag to filter runs by their
+    status.
 
     [bold][underline]Examples[/underline][/bold]
 

@@ -34,6 +34,6 @@ def exists(
     """
 
     in_progress(msg="Checking if application exists...")
-    app = Application(src=app_src, app_id=app_id)
-    ok = app.exists()
+    local_app = Application(src=app_src, app_id=app_id)
+    ok = local_app.exists()
     print_json({"exists": ok})

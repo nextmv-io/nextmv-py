@@ -60,7 +60,7 @@ def delete(
 
             return
 
-    app = Application.from_registry(src=app_src, app_id=app_id)
-    app.delete()
+    local_app = Application.from_registry(src=app_src, app_id=app_id)
+    local_app.delete()
 
-    success(f"Application with source [magenta]{app.src}[/magenta] deleted successfully.")
+    success(f"Application with source [magenta]{local_app.src}[/magenta] deleted successfully.")
