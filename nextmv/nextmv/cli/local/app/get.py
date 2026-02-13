@@ -3,13 +3,15 @@ This module defines the cloud app get command for the Nextmv CLI.
 """
 
 import json
+import os
 from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_local_app
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.local.application import Application
+from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -45,15 +47,26 @@ def get(
         $ [dim]nextmv local app get --app-id hare-app --output app.json[/dim]
     """
 
-    in_progress(msg="Getting application...")
-    local_app = build_local_app(app_src, app_id)
+    in_progress(msg="Getting registered application...")
+
+    app_src = os.path.abspath(app_src)
+    reg = Registry.from_yaml()
+    entry = reg.entry(app_id=app_id, src=app_src)
+    if entry is None:
+        warning(
+            f"Could not find a local registry entry for app ID [magenta]{app_id}[/magenta] and "
+            f"source [magenta]{app_src}[/magenta]. Register with [code]nextmv local app register[/code]."
+        )
+        return
+
+    local_app = Application.from_registry(src=app_src, app_id=app_id)
     app_dict = local_app.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:
             json.dump(app_dict, f, indent=2)
 
-        success(msg=f"Application information saved to [magenta]{output}[/magenta].")
+        success(msg=f"Registered application information saved to [magenta]{output}[/magenta].")
 
         return
 

@@ -2,14 +2,15 @@
 This module defines the local app delete command for the Nextmv CLI.
 """
 
+import os
 from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success
+from nextmv.cli.message import info, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.local.registry import Registry
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -29,11 +30,11 @@ def delete(
     ] = False,
 ) -> None:
     """
-    Deletes a local Nextmv application.
+    Deletes a Nextmv application from the local registry.
 
-    You may identify the app by using --app-src, or --app-id if it has been
-    registered. This action is permanent and cannot be undone. Use the --yes
-    flag to skip the confirmation prompt.
+    You may identify the app by using --app-src, or --app-id. This action is
+    permanent and cannot be undone. Use the --yes flag to skip the confirmation
+    prompt.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -43,6 +44,8 @@ def delete(
     - Delete the application with the ID [magenta]hare-app[/magenta] without confirmation prompt.
         $ [dim]nextmv local app delete --app-id hare-app --yes[/dim]
     """
+
+    app_src = os.path.abspath(app_src)
 
     if not yes:
         if app_id is not None and app_id != "":
@@ -60,7 +63,14 @@ def delete(
 
             return
 
-    local_app = build_local_app(app_src, app_id)
-    local_app.delete()
+    reg = Registry.from_yaml()
+    entry = reg.entry(app_id=app_id, src=app_src)
+    if entry is None:
+        warning(
+            f"Could not find a local registry entry for app ID [magenta]{app_id}[/magenta] and "
+            f"source [magenta]{app_src}[/magenta]."
+        )
+        return
 
-    success(f"Application with source [magenta]{local_app.src}[/magenta] deleted successfully.")
+    reg.delete_entry(app_id=app_id, src=app_src)
+    success("Application deleted successfully from the local registry.")

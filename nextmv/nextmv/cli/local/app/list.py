@@ -31,14 +31,14 @@ def list(
 
     [bold][underline]Examples[/underline][/bold]
 
-    - List all applications.
+    - List all registered applications.
         $ [dim]nextmv local app list[/dim]
 
-    - List all applications and save the information to an [magenta]apps.json[/magenta] file.
+    - List all registered applications and save the information to an [magenta]apps.json[/magenta] file.
         $ [dim]nextmv local app list --output apps.json[/dim]
     """
 
-    in_progress(msg="Listing applications...")
+    in_progress(msg="Listing registered applications...")
     registry = Registry.from_yaml()
     entries_dicts = [entry.to_dict() for entry in registry.list_entries()]
 
@@ -46,7 +46,7 @@ def list(
         with open(output, "w") as f:
             json.dump(entries_dicts, f, indent=2)
 
-        success(msg=f"Application list information saved to [magenta]{output}[/magenta].")
+        success(msg=f"Registered application list information saved to [magenta]{output}[/magenta].")
 
         return
 

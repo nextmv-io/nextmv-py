@@ -331,43 +331,6 @@ class Application(BaseModel):
             description=description,
         )
 
-    def delete(self) -> None:
-        """
-        Delete the local application.
-
-        This method deletes the application by removing its source directory
-        from the local file system. Use with caution, as this action is
-        irreversible.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the application's source directory does not exist.
-        """
-
-        if not os.path.exists(self.src):
-            raise FileNotFoundError(f"Application source directory does not exist: {self.src}")
-
-        shutil.rmtree(self.src)
-
-        reg = Registry.from_yaml()
-        reg.delete_entry(app_id=self.app_id, src=self.src)
-
-    def exists(self) -> bool:
-        """
-        Check if the local application exists.
-
-        This method checks if the application's source directory exists in the
-        local file system.
-
-        Returns
-        -------
-        bool
-            True if the application exists, False otherwise.
-        """
-
-        return os.path.exists(self.src)
-
     def is_registered(self) -> bool:
         """
         Check if the local application is registered in the local registry.

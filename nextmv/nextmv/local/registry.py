@@ -248,7 +248,7 @@ class Registry(BaseModel):
             manifest = Manifest.from_yaml(src)
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Registering a local app requires a manifest, which was not found at path: {src}"
+                f"Registering a local app requires a manifest, which was not found at path: `{src}`"
             ) from e
 
         if app_id is None or app_id == "":
