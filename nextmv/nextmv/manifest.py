@@ -51,6 +51,7 @@ MANIFEST_FILE_NAME
     Name of the app manifest file.
 """
 
+import glob
 import os
 from enum import Enum
 from typing import Any
@@ -1468,3 +1469,106 @@ def default_python_manifest() -> Manifest:
     )
 
     return m
+
+
+def find_files(
+    app_dir: str,
+    filters: list[str],
+) -> tuple[list[str], list[str], list[dict[str, str]]]:
+    """
+    Find all files matching the given filters in the given directory.
+
+    This function supports glob patterns with recursive matching, negation
+    patterns (starting with '!'), and directory patterns (ending with '/').
+    It temporarily changes to the app directory to perform globbing, then
+    returns to the original directory.
+
+    You can import the `find_files` function directly from `nextmv`:
+
+    ```python
+    from nextmv import find_files
+    ```
+
+    Parameters
+    ----------
+    app_dir : str
+        The root directory to search for files.
+    filters : list[str]
+        List of glob patterns to match files. Patterns starting with '!'
+        are treated as exclusions. Patterns ending with '/' are treated
+        as directory wildcards (equivalent to '/*').
+
+    Returns
+    -------
+    tuple[list[str], list[str], list[dict[str, str]]]
+        A tuple containing three elements:
+        - found: List of found file paths (relative to app_dir)
+        - missing: List of patterns that didn't match any files (excluding negation patterns)
+        - files: List of dicts with 'interior_path' (relative path) and 'absolute_path' keys
+
+    Raises
+    ------
+    Exception
+        If there is an error changing to the app directory.
+
+    Examples
+    --------
+    >>> # Find Python files
+    >>> found, missing, files = find_files("/path/to/app", ["*.py", "src/"])
+    >>> # Exclude cache files
+    >>> found, missing, files = find_files("/path/to/app", ["*.py", "!__pycache__/*"])
+
+    Notes
+    -----
+    - Only files are returned; directories are automatically excluded
+    - Negation patterns don't cause an error if they don't match anything
+    - The function changes the current working directory temporarily during execution
+    """
+
+    found = []
+    missing = []
+
+    # Temporarily switch to the directory to make the globbing work
+    cwd = os.getcwd()
+    try:
+        os.chdir(app_dir)
+    except OSError as e:
+        raise Exception(f"error changing to file root directory: {e}") from e
+
+    for filter in filters:
+        # We support "some/path/" ending with a "/". We consider it equivalent
+        # to "some/path/*".
+        pattern = filter
+        if filter.endswith("/"):
+            pattern = filter + "*"
+        # If the pattern starts with a '!': negate the pattern
+        negated = False
+        if pattern.startswith("!"):
+            pattern = pattern[1:]
+            negated = True
+        matches = glob.glob(pattern, recursive=True)
+        if not matches and not negated:
+            missing.append(filter)
+        else:
+            if negated:
+                found = [f for f in found if f not in matches]
+            else:
+                for match in matches:
+                    if os.path.isdir(match):
+                        continue
+
+                    found.append(match)
+
+    # Switch back to the original directory
+    os.chdir(cwd)
+
+    files = []
+    for file in found:
+        files.append(
+            {
+                "interior_path": file,
+                "absolute_path": os.path.join(app_dir, file),
+            }
+        )
+
+    return found, missing, files

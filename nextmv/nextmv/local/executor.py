@@ -39,7 +39,6 @@ resolve_stdout
 import hashlib
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -49,16 +48,9 @@ from typing import Any
 
 from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
-from nextmv.local.local import (
-    DEFAULT_OUTPUT_JSON_FILE,
-    LOGS_FILE,
-    LOGS_KEY,
-    NEXTMV_DIR,
-    OUTPUT_KEY,
-    calculate_files_size,
-)
+from nextmv.local.local import DEFAULT_OUTPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, OUTPUT_KEY, calculate_files_size
 from nextmv.local.plotly_handler import handle_plotly_visual
-from nextmv.manifest import Manifest, ManifestType
+from nextmv.manifest import Manifest, ManifestType, find_files
 from nextmv.output import (
     ASSETS_KEY,
     METRICS_KEY,
@@ -139,9 +131,11 @@ def execute_run(
         # place to work from, and be cleaned up afterwards.
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_src = os.path.join(temp_dir, "src")
-            shutil.copytree(src, temp_src, ignore=_ignore_patterns)
-
+            os.makedirs(temp_src, exist_ok=True)
             manifest = Manifest.from_dict(manifest_dict)
+
+            # Copy only the files specified in manifest.files
+            _copy_files_from_manifest(src, temp_src, manifest)
 
             stdin_input = process_run_input(
                 temp_src=temp_src,
@@ -772,6 +766,7 @@ def process_run_solutions(
             runtime_dir=solutions_src,
             dst_dir=solutions_dst,
             original_src_dir=src,
+            manifest=manifest,
             exclusion_dirs=[
                 os.path.join(outputs_dir, STATISTICS_KEY),
                 os.path.join(outputs_dir, METRICS_KEY),
@@ -866,90 +861,77 @@ def resolve_stdout(result: subprocess.CompletedProcess[str]) -> str | dict[str, 
         return raw_output
 
 
-def _ignore_patterns(dir_path: str, names: list[str]) -> list[str]:
+def _copy_files_from_manifest(src: str, temp_src: str, manifest: Manifest) -> None:
     """
-    Custom ignore function for copytree that filters files and directories
-    during source code copying. Excludes virtual environments, cache files,
-    the nextmv directory, and non-essential files while preserving Python
-    source files and application manifests.
+    Copy files specified in manifest.files from source to temporary directory.
 
     Parameters
     ----------
-    dir_path : str
-        The path to the directory being processed.
-    names : list[str]
-        A list of file and directory names in the current directory.
+    src : str
+        The path to the application source code.
+    temp_src : str
+        The path to the temporary source directory.
+    manifest : Manifest
+        The application manifest containing file patterns.
 
-    Returns
-    -------
-    list[str]
-        A list of names to ignore during the copy operation.
+    Raises
+    ------
+    Exception
+        If required files are missing or if copying fails.
     """
-    ignored = []
-    for name in names:
-        full_path = os.path.join(dir_path, name)
+    _, missing, files = find_files(src, manifest.files)
+    if len(missing) > 0:
+        raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
 
-        # Ignore nextmv directory
-        if name == NEXTMV_DIR:
-            ignored.append(name)
-            continue
+    for file in files:
+        target_dir = os.path.dirname(os.path.join(temp_src, file["interior_path"]))
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except OSError as e:
+            raise Exception(f"error creating directory for file {file['interior_path']}: {e}") from e
 
-        # Ignore virtual environment directories
-        if re.match(r"^\.?(venv|env|virtualenv).*$", name):
-            ignored.append(name)
-            continue
-
-        # Ignore __pycache__ directories
-        if name == "__pycache__":
-            ignored.append(name)
-            continue
-
-        # If it's a file, only keep Python files and app.yaml
-        if os.path.isfile(full_path):
-            if not (name.endswith(".py") or name == "app.yaml"):
-                ignored.append(name)
-                continue
-
-        # Ignore .pyc files explicitly
-        if name.endswith(".pyc"):
-            ignored.append(name)
-            continue
-
-    return ignored
+        try:
+            shutil.copy2(file["absolute_path"], os.path.join(target_dir, os.path.basename(file["absolute_path"])))
+        except Exception as e:
+            raise Exception(f"error copying file {file['absolute_path']}: {e}") from e
 
 
 def _copy_new_or_modified_files(  # noqa: C901
     runtime_dir: str,
     dst_dir: str,
-    original_src_dir: str | None = None,
+    original_src_dir: str,
+    manifest: Manifest,
     exclusion_dirs: list[str] | None = None,
 ) -> None:
     """
-    Copy only new or modified files from runtime directory to destination directory.
+    Copy only newly generated output files from runtime directory to destination directory.
 
-    This function identifies files that are either new (not present in the original
-    source) or have been modified (different content, checksum, or modification time)
-    compared to the original source. It excludes files that exist in specified
-    exclusion directories to avoid copying input data, statistics, metrics, or assets as
-    solution outputs.
+    This function identifies files that were NOT part of the original manifest.files
+    (i.e., they were generated during execution) and copies them to the destination,
+    excluding files that exist in specified exclusion directories.
 
     Parameters
     ----------
     runtime_dir : str
         The path to the runtime directory containing files to potentially copy.
     dst_dir : str
-        The destination directory where new or modified files will be copied.
-    original_src_dir : Optional[str], optional
-        The path to the original source directory for comparison, by default None.
-        If None, all files from runtime_dir are considered new.
+        The destination directory where new output files will be copied.
+    original_src_dir : str
+        The path to the original source directory (used to resolve manifest patterns).
+    manifest : Manifest
+        The application manifest containing file patterns for source files.
     exclusion_dirs : Optional[list[str]], optional
         List of directory paths containing files to exclude from copying,
         by default None. Files matching those in exclusion directories will
-        not be copied even if they are new or modified.
+        not be copied even if they are new.
     """
 
-    # Gather a list of the files that are created/modified in the runtime dir,
-    # this is, the directory where the actual executable code is run from.
+    # Get the list of files that were originally copied from manifest.files
+    # These are NOT outputs, so we should NOT copy them
+    _, _, manifest_files = find_files(original_src_dir, manifest.files)
+    manifest_files_rel = {file["interior_path"] for file in manifest_files}
+
+    # Gather a list of files in the runtime directory
     runtime_files_rel = []
     runtime_files_abs = []
     for root, _, files in os.walk(runtime_dir):
@@ -966,66 +948,35 @@ def _copy_new_or_modified_files(  # noqa: C901
             runtime_files_rel.append(os.path.relpath(file_path, runtime_dir))
             runtime_files_abs.append(file_path)
 
-    # Gather a list of the files that exist in the original source dir. Given
-    # that the source dir is copied to the runtime dir before execution, we can
-    # use this to determine which files are new or modified.
-    original_src_files_rel = set()
-    if original_src_dir is not None:
-        for root, _, files in os.walk(original_src_dir):
-            for rel_file in files:
-                file_path = os.path.join(root, rel_file)
-                original_src_files_rel.add(os.path.relpath(file_path, original_src_dir))
-
-    # Gather a list of the files that exist in the exclusion dirs. This is used
-    # to avoid copying files that are part of this special exclusion set.
+    # Gather a list of files in exclusion directories
     exclusion_files_rel = set()
     if exclusion_dirs is not None:
         for exclusion_dir in exclusion_dirs:
+            if not os.path.exists(exclusion_dir):
+                continue
             for root, _, files in os.walk(exclusion_dir):
                 for rel_file in files:
                     file_path = os.path.join(root, rel_file)
                     exclusion_files_rel.add(os.path.relpath(file_path, exclusion_dir))
 
-    # Now we filter the runtime files to only keep those that are new or
-    # modified compared to the original source files.
-    files_before_exclusion = []
+    # Filter to only include files that are:
+    # 1. NOT in the manifest.files (i.e., they are newly generated)
+    # 2. NOT in the exclusion directories
+    final_files = []
     for ix, rel_file in enumerate(runtime_files_rel):
         abs_file = runtime_files_abs[ix]
 
-        # If the file is net new, we keep it.
-        if rel_file not in original_src_files_rel:
-            files_before_exclusion.append(abs_file)
+        # Skip if this file was part of the original manifest.files
+        if rel_file in manifest_files_rel:
             continue
 
-        # If content of the file is different, we keep it.
-        runtime_checksum = _calculate_file_checksum(abs_file)
-        original_abs_file = os.path.join(original_src_dir, rel_file)
-        original_checksum = _calculate_file_checksum(original_abs_file)
-        if runtime_checksum != original_checksum:
-            files_before_exclusion.append(abs_file)
+        # Skip if this file is in an exclusion directory
+        if rel_file in exclusion_files_rel:
             continue
 
-        # If content of the file is the same, but the date is newer, we keep it.
-        src_mtime = os.path.getmtime(abs_file)
-        original_mtime = os.path.getmtime(original_abs_file)
-        if src_mtime > original_mtime:
-            files_before_exclusion.append(abs_file)
-            continue
+        final_files.append(abs_file)
 
-    # Now we filter out any files that are part of the exclusion set.
-    final_files = []
-    if exclusion_dirs is not None:
-        for file in files_before_exclusion:
-            rel_file = os.path.relpath(file, runtime_dir)
-            if rel_file in exclusion_files_rel:
-                continue
-
-            final_files.append(file)
-    else:
-        final_files = files_before_exclusion
-
-    # Now that we have a clean list of files that we are going to copy, we
-    # proceed to copy them over to the destination directory.
+    # Copy the filtered files to the destination directory
     for file in final_files:
         rel_file = os.path.relpath(file, runtime_dir)
         dst_file = os.path.join(dst_dir, rel_file)
