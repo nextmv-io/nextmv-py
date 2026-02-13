@@ -42,6 +42,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         # Create mock manifest
         self.mock_manifest = Mock(spec=Manifest)
+        self.mock_manifest.files = []
         self.mock_manifest.execution = Mock(spec=ManifestExecution)
         self.mock_manifest.execution.entrypoint = "main.py"
         self.mock_manifest.configuration = None
@@ -569,14 +570,14 @@ class TestLocalExecutor(unittest.TestCase):
     @patch("nextmv.local.executor.process_run_input")
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
     @patch("nextmv.local.executor.subprocess.run")
-    @patch("nextmv.local.executor.shutil.copytree")
+    @patch("nextmv.local.executor._copy_files_from_manifest")
     @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
     @patch("nextmv.local.executor.os.makedirs")
     def test_execute_run_full_flow(
         self,
         mock_makedirs,
         mock_temp_dir,
-        mock_copytree,
+        mock_copy_files_from_manifest,
         mock_subprocess_run,
         mock_open,
         mock_process_input,
@@ -612,8 +613,8 @@ class TestLocalExecutor(unittest.TestCase):
             options={"duration": "10s"},
         )
 
-        # Verify copytree was called to copy source
-        mock_copytree.assert_called_once_with("/test/src", temp_src, ignore=unittest.mock.ANY)
+        # Verify _copy_files_from_manifest was called to copy source files
+        mock_copy_files_from_manifest.assert_called_once_with("/test/src", temp_src, unittest.mock.ANY)
 
         # Verify process_run_input was called
         mock_process_input.assert_called_once_with(
@@ -743,6 +744,10 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         ]:
             os.makedirs(dir_path, exist_ok=True)
 
+        # Create mock manifest with empty files list
+        self.mock_manifest = Mock(spec=Manifest)
+        self.mock_manifest.files = []
+
     def tearDown(self):
         """Clean up test fixtures."""
         shutil.rmtree(self.test_dir)
@@ -781,14 +786,15 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self._create_file(self.runtime_dir, "subdir/file2.txt", "content2")
         self._create_file(self.runtime_dir, "file3.py", "print('hello')")
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # All files should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file1.txt"), "content1")
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "subdir/file2.txt"), "content2")
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file3.py"), "print('hello')")
 
-    def test_copy_new_files_only(self):
+    @patch("nextmv.local.executor.find_files")
+    def test_copy_new_files_only(self, mock_find_files):
         """Test copying only new files not present in original source."""
 
         # Create files in original source
@@ -810,7 +816,17 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         os.utime(runtime_file1, (older_time, older_time))
         os.utime(runtime_file2, (older_time, older_time))
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        # Mock find_files to return existing files as manifest files
+        mock_find_files.return_value = (
+            [],  # warnings
+            [],  # missing
+            [
+                {"interior_path": "existing_file.txt"},
+                {"interior_path": "subdir/existing_file2.txt"},
+            ],
+        )
+
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Only new files should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "new_file.txt"), "new_content")
@@ -831,7 +847,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self._create_file(self.runtime_dir, "file1.txt", "modified_content")
         self._create_file(self.runtime_dir, "subdir/file2.txt", "modified_content2")
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Modified files should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file1.txt"), "modified_content")
@@ -855,13 +871,14 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self.assertGreater(os.path.getmtime(runtime_file1), os.path.getmtime(original_file1))
         self.assertGreater(os.path.getmtime(runtime_file2), os.path.getmtime(original_file2))
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Files with newer timestamps should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file1.txt"), "same_content")
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "subdir/file2.txt"), "same_content2")
 
-    def test_skip_unchanged_files(self):
+    @patch("nextmv.local.executor.find_files")
+    def test_skip_unchanged_files(self, mock_find_files):
         """Test that unchanged files are not copied."""
 
         # Create files in original source
@@ -877,7 +894,16 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         newer_time = os.path.getmtime(runtime_file1) + 1
         os.utime(original_file1, (newer_time, newer_time))
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        # Mock find_files to return the file as a manifest file
+        mock_find_files.return_value = (
+            [],  # warnings
+            [],  # missing
+            [
+                {"interior_path": "file1.txt"},
+            ],
+        )
+
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Unchanged file should not be copied
         self._assert_file_not_exists(os.path.join(self.dst_dir, "file1.txt"))
@@ -896,7 +922,9 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self._create_file(self.exclusion_dir2, "subdir/exclude_this2.txt", "any_content2")
 
         exclusion_dirs = [self.exclusion_dir1, self.exclusion_dir2]
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, exclusion_dirs=exclusion_dirs)
+        _copy_new_or_modified_files(
+            self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest, exclusion_dirs=exclusion_dirs
+        )
 
         # Files not in exclusion should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "keep_this.txt"), "keep_content")
@@ -925,7 +953,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         # Create .pyc file in regular directory
         self._create_file(self.runtime_dir, "direct_pyc.pyc", "bytecode3")
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Regular Python file should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "normal_file.py"), "print('hello')")
@@ -947,7 +975,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         # Create corresponding original file for the modified one
         self._create_binary_file(self.original_src_dir, "modified.png", b"\x89PNG\r\n\x1a\n")
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # New binary file should be copied
         self.assertTrue(os.path.exists(os.path.join(self.dst_dir, "new_image.jpg")))
@@ -978,7 +1006,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
             self.runtime_dir, "level1/level2/level3/level4/new_deep_file.txt", "deep_new"
         )  # New deep file
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Modified files should be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "root_file.txt"), "root_modified")
@@ -1004,7 +1032,13 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         # The exclusion path must match the relative path from runtime_dir
         self._create_file(self.exclusion_dir1, "remove_empty/exclude_this.txt", "any_content")
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, exclusion_dirs=[self.exclusion_dir1])
+        _copy_new_or_modified_files(
+            self.runtime_dir,
+            self.dst_dir,
+            self.original_src_dir,
+            self.mock_manifest,
+            exclusion_dirs=[self.exclusion_dir1],
+        )
 
         # Directory with kept file should exist
         self.assertTrue(os.path.exists(os.path.join(self.dst_dir, "keep")))
@@ -1018,7 +1052,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         """Test behavior with empty runtime directory."""
 
         # Runtime directory is empty
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Destination should remain empty (except for the directory itself)
         dst_contents = os.listdir(self.dst_dir)
@@ -1033,7 +1067,9 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         exclusion_dirs = [nonexistent_dir]
 
         # Should not raise an error
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, exclusion_dirs=exclusion_dirs)
+        _copy_new_or_modified_files(
+            self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest, exclusion_dirs=exclusion_dirs
+        )
 
         # File should still be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file1.txt"), "content1")
@@ -1060,7 +1096,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         modified_checksum = _calculate_file_checksum(runtime_file)
         self.assertNotEqual(original_checksum, modified_checksum)
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Modified file should be copied due to different checksum
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "test_file.txt"), modified_content)
@@ -1075,7 +1111,7 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         os.chmod(test_file, stat.S_IRUSR | stat.S_IWUSR)
         original_mode = os.stat(test_file).st_mode
 
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir)
+        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
 
         # Check that copied file has same permissions
         copied_file = os.path.join(self.dst_dir, "test_file.txt")
@@ -1109,7 +1145,11 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self._create_file(self.exclusion_dir1, "exclude_me.txt", "any_content")
 
         _copy_new_or_modified_files(
-            self.runtime_dir, self.dst_dir, self.original_src_dir, exclusion_dirs=[self.exclusion_dir1]
+            self.runtime_dir,
+            self.dst_dir,
+            self.original_src_dir,
+            self.mock_manifest,
+            exclusion_dirs=[self.exclusion_dir1],
         )
 
         # Files with newer timestamps should be copied
