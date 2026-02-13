@@ -56,7 +56,8 @@ def get(
     Get the result (output) of a Nextmv local application run.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered. Use the --wait flag to wait for the run to complete, polling
+    registered. If the app is not already registered, this command will
+    register it. Use the --wait flag to wait for the run to complete, polling
     for results. Using the --output flag will also activate waiting, and allows
     you to specify a destination (file or dir) for the output, depending on the
     content type.

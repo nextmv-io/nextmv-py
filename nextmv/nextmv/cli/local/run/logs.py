@@ -36,7 +36,8 @@ def logs(
     Get the logs of a local application run.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered. By default, the logs are fetched and printed to
+    registered. If the app is not already registered, this command will
+    register it. By default, the logs are fetched and printed to
     [magenta]stderr[/magenta]. Use the --output flag to save the logs to a
     file.
 

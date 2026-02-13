@@ -43,7 +43,8 @@ def list(
     Get the list of runs for a Nextmv local application.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered. By default, the list of runs is fetched and printed to
+    registered. If the app is not already registered, this command will
+    register it. By default, the list of runs is fetched and printed to
     [magenta]stdout[/magenta]. Use the --output flag to save the list to a
     file. You can use the optional --status flag to filter runs by their status.
 

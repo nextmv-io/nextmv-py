@@ -10,6 +10,7 @@ from nextmv.cli.local.app.list import app as list_app
 from nextmv.cli.local.app.register import app as register_app
 from nextmv.cli.local.app.registered import app as registered_app
 from nextmv.cli.local.app.sync import app as sync_app
+from nextmv.cli.local.app.update import app as update_app
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -19,6 +20,7 @@ app.add_typer(list_app)
 app.add_typer(register_app)
 app.add_typer(registered_app)
 app.add_typer(sync_app)
+app.add_typer(update_app)
 
 
 @app.callback()

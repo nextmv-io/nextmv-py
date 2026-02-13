@@ -113,10 +113,11 @@ def create(
     """
     Create a new local application run.
 
-    You may identify the app by using --app-src (path to the app directory), or
-    --app-id if it has been registered. Input for the run should be given
-    through [magenta]stdin[/magenta] or the --input flag. When using the
-    --input flag, the value can be one of the following:
+    You may identify the app by using --app-src, or --app-id if it has been
+    registered. If the app is not already registered, this command will
+    register it. Input for the run should be given through
+    [magenta]stdin[/magenta] or the --input flag. When using the --input flag,
+    the value can be one of the following:
 
     - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
       the input data. Use with the [magenta]json[/magenta], and

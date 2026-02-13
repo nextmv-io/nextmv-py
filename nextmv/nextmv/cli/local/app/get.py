@@ -1,5 +1,5 @@
 """
-This module defines the cloud app get command for the Nextmv CLI.
+This module defines the local app get command for the Nextmv CLI.
 """
 
 import json
@@ -34,8 +34,7 @@ def get(
     """
     Get a registered local Nextmv application.
 
-    You may identify the app by using --app-src, or --app-id if it has been
-    registered.
+    You may identify the app by using --app-src or --app-id.
 
     [bold][underline]Examples[/underline][/bold]
 

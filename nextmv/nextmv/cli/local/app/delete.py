@@ -32,7 +32,7 @@ def delete(
     """
     Deletes a Nextmv application from the local registry.
 
-    You may identify the app by using --app-src, or --app-id. This action is
+    You may identify the app by using --app-src or --app-id. This action is
     permanent and cannot be undone. Use the --yes flag to skip the confirmation
     prompt.
 

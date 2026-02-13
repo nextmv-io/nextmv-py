@@ -1,5 +1,5 @@
 """
-This module defines the cloud app get command for the Nextmv CLI.
+This module defines the local app update command for the Nextmv CLI.
 """
 
 import json
@@ -16,7 +16,7 @@ app = typer.Typer()
 
 
 @app.command()
-def get(
+def update(
     description: Annotated[
         str,
         typer.Option(
@@ -42,7 +42,8 @@ def get(
     Update a registered local Nextmv application.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered.
+    registered. If the app is not already registered, this command will
+    register it.
 
     [bold][underline]Examples[/underline][/bold]
 

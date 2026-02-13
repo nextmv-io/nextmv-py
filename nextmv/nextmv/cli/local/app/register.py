@@ -1,5 +1,5 @@
 """
-This module defines the cloud app get command for the Nextmv CLI.
+This module defines the local app register command for the Nextmv CLI.
 """
 
 import json

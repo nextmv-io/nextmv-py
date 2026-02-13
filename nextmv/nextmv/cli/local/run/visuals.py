@@ -22,7 +22,8 @@ def visuals(
     Get the visuals of a Nextmv local application run.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered.
+    registered. If the app is not already registered, this command will
+    register it.
 
     [bold][underline]Examples[/underline][/bold]
 

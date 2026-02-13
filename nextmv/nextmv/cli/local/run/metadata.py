@@ -34,7 +34,8 @@ def metadata(
     Get the metadata of a Nextmv local application run.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered. By default, the metadata is fetched and printed to
+    registered. If the app is not already registered, this command will
+    register it. By default, the metadata is fetched and printed to
     [magenta]stdout[/magenta]. Use the --output flag to save the metadata to a
     file.
 

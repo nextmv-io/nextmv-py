@@ -1,5 +1,5 @@
 """
-This module defines the cloud app registered command for the Nextmv CLI.
+This module defines the local app registered command for the Nextmv CLI.
 """
 
 import typer

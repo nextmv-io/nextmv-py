@@ -1,5 +1,5 @@
 """
-This module defines the cloud app push command for the Nextmv CLI.
+This module defines the local app sync command for the Nextmv CLI.
 """
 
 from typing import Annotated
@@ -53,7 +53,8 @@ def sync(
     Sync a local Nextmv application to the Nextmv Cloud.
 
     You may identify the app by using --app-src, or --app-id if it has been
-    registered. Using the --run-ids option allows you to specify a subset of
+    registered. If the app is not already registered, this command will
+    register it. Using the --run-ids option allows you to specify a subset of
     runs to sync. By default, all runs are synced. You can also specify an
     --instance-id to associate the synced runs with a specific Cloud instance.
 

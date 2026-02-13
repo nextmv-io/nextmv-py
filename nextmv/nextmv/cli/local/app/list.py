@@ -1,5 +1,5 @@
 """
-This module defines the cloud app list command for the Nextmv CLI.
+This module defines the local app list command for the Nextmv CLI.
 """
 
 import json
