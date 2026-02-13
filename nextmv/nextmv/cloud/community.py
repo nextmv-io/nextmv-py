@@ -145,6 +145,7 @@ def clone_community_app(
     version: str | None = LATEST_VERSION,
     verbose: bool = False,
     rich_print: bool = False,
+    should_register: bool = False,
 ) -> None:
     """
     Clone a community app locally.
@@ -174,6 +175,8 @@ def clone_community_app(
         Whether to print verbose output.
     rich_print : bool, optional
         Whether to use rich printing for output messages.
+    should_register : bool, optional
+        Whether to register the cloned app in the local registry. Default is False.
     """
     comm_app = _find_app(client, app)
 
@@ -244,6 +247,7 @@ def clone_community_app(
         full_destination=full_destination,
         verbose=verbose,
         rich_print=rich_print,
+        should_register=should_register,
     )
 
 
@@ -252,6 +256,7 @@ def _register_cloned_app(
     full_destination: str,
     verbose: bool = False,
     rich_print: bool = False,
+    should_register: bool = False,
 ) -> None:
     """
     Actions to perform after cloning a community app, such as registering the
@@ -267,7 +272,13 @@ def _register_cloned_app(
         Whether to print verbose output.
     rich_print : bool, optional
         Whether to use rich printing for output messages.
+    should_register : bool, optional
+        Whether to register the cloned app in the local registry. Default is False.
     """
+
+    if not should_register:
+        return
+
     reg = Registry.from_yaml()
     entry = reg.register(
         src=os.path.abspath(full_destination),
@@ -279,13 +290,13 @@ def _register_cloned_app(
 
     if rich_print:
         rich.print(
-            f":white_check_mark: Registered the cloned community app [magenta]{app}[/magenta] as a local app.",
+            f":white_check_mark: Registered the cloned community app [magenta]{app}[/magenta] as a local app "
+            f"with ID [magenta]{entry.app_id}[/magenta].",
             file=sys.stderr,
         )
-        rich.print_json(data=entry.to_dict())
         return
 
-    log(f"✅ Registered the cloned community app {app} as a local app: {entry.to_dict()}.")
+    log(f"✅ Registered the cloned community app {app} as a local app: {entry.to_dict()} with ID {entry.app_id}.")
 
 
 def _download_manifest(client: Client) -> dict[str, Any]:
