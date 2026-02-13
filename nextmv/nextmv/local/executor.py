@@ -154,12 +154,10 @@ def execute_run(
                 json.dump(info, f, indent=2)
                 f.truncate()
 
-            # Start a Python subprocess to execute the entrypoint. For now, we are
-            # supporting a Python-first experience, so we are not summoning
-            # applications that are not Python-based.
+            # Start a subprocess to execute the entrypoint based on the application type.
             entrypoint = os.path.join(temp_src, __determine_entrypoint(manifest))
             cwd = __determine_cwd(manifest, default=temp_src)
-            args = [sys.executable, entrypoint] + options_args(options)
+            args = __determine_command(manifest) + [entrypoint] + options_args(options)
 
             result = subprocess.run(
                 args,
@@ -1072,6 +1070,32 @@ def __determine_cwd(manifest: Manifest, default: str) -> str:
         return manifest.execution.cwd
 
     return default
+
+
+def __determine_command(manifest: Manifest) -> list[str]:
+    """
+    Returns the command to execute based on the application type.
+
+    Parameters
+    ----------
+    manifest : Manifest
+        The application manifest containing type information.
+
+    Returns
+    -------
+    list[str]
+        The command prefix to use for execution. Empty list for binary executables.
+    """
+    if manifest.type == ManifestType.PYTHON:
+        return [sys.executable]
+    elif manifest.type == ManifestType.GO:
+        return []
+    elif manifest.type == ManifestType.BINARY:
+        return []
+    elif manifest.type == ManifestType.JAVA:
+        return ["java", "-XX:MaxRAMPercentage=90", "-jar"]
+    else:
+        raise ValueError(f'cannot determine command for app type "{manifest.type}"')
 
 
 if __name__ == "__main__":
