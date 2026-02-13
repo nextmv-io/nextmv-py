@@ -929,7 +929,8 @@ def _copy_new_or_modified_files(  # noqa: C901
     # Get the list of files that were originally copied from manifest.files
     # These are NOT outputs, so we should NOT copy them
     _, _, manifest_files = find_files(original_src_dir, manifest.files)
-    manifest_files_rel = {file["interior_path"] for file in manifest_files}
+    # Normalize to forward slashes for cross-platform comparison
+    manifest_files_rel = {file["interior_path"].replace("\\", "/") for file in manifest_files}
 
     # Gather a list of files in the runtime directory
     runtime_files_rel = []
@@ -945,7 +946,8 @@ def _copy_new_or_modified_files(  # noqa: C901
                 continue
 
             file_path = os.path.join(root, rel_file)
-            runtime_files_rel.append(os.path.relpath(file_path, runtime_dir))
+            # Normalize to forward slashes for cross-platform comparison
+            runtime_files_rel.append(os.path.relpath(file_path, runtime_dir).replace("\\", "/"))
             runtime_files_abs.append(file_path)
 
     # Gather a list of files in exclusion directories
@@ -957,7 +959,8 @@ def _copy_new_or_modified_files(  # noqa: C901
             for root, _, files in os.walk(exclusion_dir):
                 for rel_file in files:
                     file_path = os.path.join(root, rel_file)
-                    exclusion_files_rel.add(os.path.relpath(file_path, exclusion_dir))
+                    # Normalize to forward slashes for cross-platform comparison
+                    exclusion_files_rel.add(os.path.relpath(file_path, exclusion_dir).replace("\\", "/"))
 
     # Filter to only include files that are:
     # 1. NOT in the manifest.files (i.e., they are newly generated)
