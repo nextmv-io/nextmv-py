@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption
@@ -56,7 +56,7 @@ def delete(
             info(f"Acceptance test [magenta]{acceptance_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_acceptance_test(acceptance_test_id=acceptance_test_id)
     success(
         f"Acceptance test [magenta]{acceptance_test_id}[/magenta] deleted successfully "

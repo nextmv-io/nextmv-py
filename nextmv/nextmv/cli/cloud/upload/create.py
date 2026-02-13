@@ -4,7 +4,7 @@ This module defines the cloud upload create command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -29,7 +29,7 @@ def create(
         $ [dim]nextmv cloud upload create --app-id hare-app --profile hare[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating upload URL...")
     upload_url = cloud_app.upload_url()
     success(

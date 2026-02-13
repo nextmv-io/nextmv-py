@@ -196,7 +196,7 @@ def execute_run(
         with open(info_file, "r+") as f:
             info = json.load(f)
             info["metadata"]["status_v2"] = "failed"
-            info["metadata"]["error"] = str(e)
+            info["metadata"]["error"] = "Run failed, please check logs for details."
             f.seek(0)
             json.dump(info, f, indent=2)
             f.truncate()
@@ -517,6 +517,7 @@ def process_run_logs(
 
         f.write(std_err)
 
+
 def process_run_metrics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
@@ -575,6 +576,7 @@ def process_run_metrics(
 
     with open(os.path.join(metrics_dst, metrics_file), "w") as f:
         json.dump(stdout_output[METRICS_KEY], f, indent=2)
+
 
 def process_run_statistics(
     temp_run_outputs_dir: str,

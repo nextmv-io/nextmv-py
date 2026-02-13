@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.switchback import TestComparisonSingle
@@ -132,7 +132,7 @@ def create(
             --description "Which bunny hops best for carrots?"[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Creating switchback test in draft mode...")
     switchback_test = cloud_app.new_switchback_test(

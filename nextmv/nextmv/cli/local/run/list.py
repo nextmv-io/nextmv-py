@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv import local
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.status import StatusV2
@@ -64,7 +64,7 @@ def list(
         $ [dim]nextmv local run list --app-id hare-app --status queued[/dim]
     """
 
-    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     in_progress(msg="Listing app runs...")
     runs = local_app.list_runs(status=status)
     runs_dicts = [run.to_dict() for run in runs]

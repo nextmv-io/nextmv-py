@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.scenario import Scenario
@@ -272,7 +272,7 @@ def create(
         nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the scenario list from the CLI options
     scenario_list = build_scenarios(scenarios)

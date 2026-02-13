@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
-from nextmv.local.application import Application
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,7 +46,7 @@ def get(
     """
 
     in_progress(msg="Getting application...")
-    local_app = Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     app_dict = local_app.to_dict()
 
     if output is not None and output != "":

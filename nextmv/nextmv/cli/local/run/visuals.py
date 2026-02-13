@@ -4,7 +4,7 @@ This module defines the local run metadata command for the Nextmv CLI.
 
 import typer
 
-from nextmv import local
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
@@ -35,7 +35,7 @@ def visuals(
         $ [dim]nextmv local run visuals --app-src ./my-app --run-id burrow-123[/dim]
     """
 
-    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     in_progress(msg="Getting run visuals...")
     run_visuals = local_app.run_visuals(run_id)
     success(msg="Run visuals opened in web browser, here are the local URLs of the visual files:")

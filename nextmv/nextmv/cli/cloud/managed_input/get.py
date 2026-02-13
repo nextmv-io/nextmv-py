@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ManagedInputIDOption, ProfileOption
 
@@ -47,7 +47,7 @@ def get(
             --output managed_input.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting managed input...")
     managed_input = cloud_app.managed_input(managed_input_id=managed_input_id)
     managed_input_dict = managed_input.to_dict()

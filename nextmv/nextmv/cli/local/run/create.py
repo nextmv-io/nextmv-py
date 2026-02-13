@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import typer
 
-from nextmv import local
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
@@ -173,7 +173,7 @@ def create(
         error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
-    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     config = None
     if content_format is not None:
         config = RunConfiguration()

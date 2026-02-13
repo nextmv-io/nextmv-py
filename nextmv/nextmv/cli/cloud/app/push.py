@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 from rich.prompt import Prompt
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, in_progress, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
@@ -129,7 +129,7 @@ def push(
         $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     # If a version already exists, we cannot create it.
     if version_id is not None and version_id != "":

@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv import local
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
@@ -53,7 +53,7 @@ def metadata(
         $ [dim]nextmv local run metadata --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     in_progress(msg="Getting run metadata...")
     run_info = local_app.run_metadata(run_id)
     info_dict = run_info.to_dict()

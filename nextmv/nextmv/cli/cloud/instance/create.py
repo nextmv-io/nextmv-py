@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 from nextmv.cloud.instance import InstanceConfiguration
@@ -162,7 +162,7 @@ def create(
             --instance-id prod --options max_duration=30 --options timeout=60[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting instance...")
     else:

@@ -9,7 +9,7 @@ from typing import Annotated
 import rich
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
@@ -81,7 +81,7 @@ def logs(
         $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()

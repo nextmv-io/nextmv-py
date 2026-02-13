@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
-from nextmv.local.application import Application
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -60,7 +60,7 @@ def delete(
 
             return
 
-    local_app = Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
     local_app.delete()
 
     success(f"Application with source [magenta]{local_app.src}[/magenta] deleted successfully.")

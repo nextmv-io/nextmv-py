@@ -122,6 +122,16 @@ class Application(BaseModel):
         Actions taken after the Application model is initialized.
         """
 
+        # If this application is already registered, we use the information in
+        # the registry to normalize some of the attributes of the class.
+        reg = Registry.from_yaml()
+        entry = reg.entry(app_id=self.app_id, src=self.src)
+        if entry is not None:
+            self.app_id = entry.app_id
+            self.src = entry.src
+            self.description = entry.description
+            self.content_format = entry.content_format
+
         if self.manifest is not None:
             self.manifest.to_yaml(self.src)
 
@@ -131,7 +141,7 @@ class Application(BaseModel):
 
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Could not find app.yaml in {self.src}. Maybe specify a different `src` dir?"
+                f"Could not find app.yaml in `{self.src}`. Maybe specify a different `src` dir?"
             ) from e
 
         content_format = InputFormat.JSON
@@ -140,25 +150,9 @@ class Application(BaseModel):
 
         self.content_format = content_format
 
-    @classmethod
-    def from_path(cls, src: str) -> "Application":
-        """
-        Load an application from a given source path.
-
-        Parameters
-        ----------
-        src : str
-            Source path of the application.
-
-        Returns
-        -------
-        Application
-            The loaded application instance.
-        """
-
-        manifest = Manifest.from_yaml(src)
-
-        return cls(src=src, manifest=manifest)
+        # Always normalize the source path to an absolute path, to avoid issues
+        # with relative paths.
+        self.src = os.path.abspath(self.src)
 
     @classmethod
     def from_registry(cls, src: str | None = None, app_id: str | None = None) -> "Application":
@@ -222,7 +216,7 @@ class Application(BaseModel):
             manifest = Manifest.from_yaml(entry.src)
         except FileNotFoundError as e:
             raise FileNotFoundError(
-                f"Could not find app.yaml in {entry.src}. Maybe specify a different `src` dir?"
+                f"Could not find app.yaml in `{entry.src}`. Maybe specify a different `src` dir?"
             ) from e
 
         if not os.path.exists(entry.src):
@@ -234,6 +228,44 @@ class Application(BaseModel):
             manifest=manifest,
             description=entry.description,
         )
+
+    @classmethod
+    def get_or_register(cls, app_src: str, app_id: str | None = None) -> tuple["Application", bool]:
+        """
+        Get a local application from the registry or register it if it does not
+        exist.
+
+        This function checks if a local application with the given source and
+        ID is already registered in the local registry. If it is, it retrieves
+        and returns that application. If it is not registered, it creates a new
+        `Application` instance with the provided source and ID, registers it in
+        the local registry, and then returns it. The boolean in the returned
+        tuple indicates whether a new application was registered (True) or an
+        existing one was retrieved (False).
+
+        Parameters
+        ----------
+        app_src : str
+            The source path of the application to get or register.
+        app_id : Optional[str]
+            The ID of the application to get or register. If None, the ID will be
+            derived from the application source.
+
+        Returns
+        -------
+        tuple[Application, bool]
+            A tuple containing the local application retrieved from the registry or
+            newly registered, and a boolean indicating whether the application was
+            newly registered.
+        """
+
+        app = cls(src=app_src, app_id=app_id)
+        if app.is_registered():
+            return cls.from_registry(src=app_src, app_id=app_id), False
+
+        app.register()
+
+        return app, True
 
     @classmethod
     def initialize(
@@ -666,6 +698,7 @@ class Application(BaseModel):
         reg = Registry.from_yaml()
         entry = reg.register(src=self.src, app_id=self.app_id, description=self.description)
         self.app_id = entry.app_id
+        self.src = entry.src
 
     def run_input(self, run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | str | None:
         """

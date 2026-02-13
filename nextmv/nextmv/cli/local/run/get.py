@@ -8,10 +8,12 @@ from typing import Annotated
 import typer
 
 from nextmv import local
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.configuration.config import build_local_app
+from nextmv.cli.message import in_progress, info, print_json, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
 from nextmv.output import OutputFormat
 from nextmv.polling import PollingOptions, default_polling_options
+from nextmv.status import StatusV2
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -84,7 +86,7 @@ def get(
         $ [dim]nextmv local run get --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    local_app = local.Application.from_registry(src=app_src, app_id=app_id)
+    local_app = build_local_app(app_src, app_id)
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -150,9 +152,19 @@ def handle_outputs(
     if not wait and (output is None or output == "") and not skip_wait_check:
         return
 
-    # Get the run metadata to determine how to operate with the output.
     run_info = local_app.run_metadata(run_id=run_id)
-    content_format = run_info.metadata.format.format_output.output_type
+    status = run_info.metadata.status_v2
+    if status in {StatusV2.failed, StatusV2.canceled}:
+        warning(
+            f"Run with ID [magenta]{run_id}[/magenta] has status [magenta]{status.value}[/magenta], "
+            "there are no results."
+        )
+        return
+
+    if run_info.metadata.format.format_output is not None:
+        content_format = run_info.metadata.format.format_output.output_type
+    else:
+        content_format = OutputFormat(run_info.metadata.format.format_input.input_type.value)
 
     # Build kwargs for the result retrieval.
     kwargs = {"run_id": run_id}
@@ -186,11 +198,10 @@ def handle_outputs(
 
     # At this point, we know that the output is multi-file or csv-archive.
     result_dict = run_result.to_dict()
-    if "output" in result_dict and run_result.metadata.run_is_finalized():
-        del result_dict["output"]
+    if run_result.metadata.run_is_finalized():
         success(f"Run outputs saved to [magenta]{output_dir}[/magenta]. Here is the metadata.")
     else:
-        success(
+        info(
             f"Run is not finalized (status: [magenta]{run_result.metadata.status_v2.value}[/magenta]). "
             "Here is the metadata."
         )

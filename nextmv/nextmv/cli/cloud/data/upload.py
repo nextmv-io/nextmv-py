@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
@@ -100,7 +100,7 @@ def upload(
     if stdin is None and (input is None or input == ""):
         error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     data_kwarg = resolve_data_kwarg(
         stdin=stdin,
         input=input,

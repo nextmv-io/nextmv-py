@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SecretsCollectionIDOption
 
@@ -50,7 +50,7 @@ def get(
             --secrets-collection-id api-keys --output secrets.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting secrets collection...")
     collection = cloud_app.secrets_collection(secrets_collection_id=secrets_collection_id)
     collection_dict = collection.to_dict()

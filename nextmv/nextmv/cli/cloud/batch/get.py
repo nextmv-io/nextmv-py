@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
 from nextmv.polling import default_polling_options
@@ -72,7 +72,7 @@ def get(
         $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()
