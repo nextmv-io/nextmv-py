@@ -1535,33 +1535,33 @@ def find_files(
     except OSError as e:
         raise Exception(f"error changing to file root directory: {e}") from e
 
-    for filter in filters:
-        # We support "some/path/" ending with a "/". We consider it equivalent
-        # to "some/path/*".
-        pattern = filter
-        if filter.endswith("/"):
-            pattern = filter + "*"
-        # If the pattern starts with a '!': negate the pattern
-        negated = False
-        if pattern.startswith("!"):
-            pattern = pattern[1:]
-            negated = True
-        matches = glob.glob(pattern, recursive=True)
-        if not matches and not negated:
-            missing.append(filter)
-        else:
-            if negated:
-                found = [f for f in found if f not in matches]
+    try:
+        for filter in filters:
+            # We support "some/path/" ending with a "/". We consider it equivalent
+            # to "some/path/*".
+            pattern = filter
+            if filter.endswith("/"):
+                pattern = filter + "*"
+            # If the pattern starts with a '!': negate the pattern
+            negated = False
+            if pattern.startswith("!"):
+                pattern = pattern[1:]
+                negated = True
+            matches = glob.glob(pattern, recursive=True)
+            if not matches and not negated:
+                missing.append(filter)
             else:
-                for match in matches:
-                    if os.path.isdir(match):
-                        continue
+                if negated:
+                    found = [f for f in found if f not in matches]
+                else:
+                    for match in matches:
+                        if os.path.isdir(match):
+                            continue
 
-                    found.append(match)
-
-    # Switch back to the original directory
-    os.chdir(cwd)
-
+                        found.append(match)
+    finally:
+        # Switch back to the original directory
+        os.chdir(cwd)
     files = []
     for file in found:
         files.append(
