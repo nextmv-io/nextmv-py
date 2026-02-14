@@ -1536,6 +1536,7 @@ def find_files(
         raise Exception(f"error changing to file root directory: {e}") from e
 
     try:
+        filtered_files: set[str] = set()
         for filter in filters:
             # We support "some/path/" ending with a "/". We consider it equivalent
             # to "some/path/*".
@@ -1547,18 +1548,15 @@ def find_files(
             if pattern.startswith("!"):
                 pattern = pattern[1:]
                 negated = True
-            matches = glob.glob(pattern, recursive=True)
+            matches = {os.path.normpath(m) for m in glob.glob(pattern, recursive=True)}
             if not matches and not negated:
                 missing.append(filter)
             else:
                 if negated:
-                    found = [f for f in found if f not in matches]
+                    filtered_files = {f for f in filtered_files if f not in matches}
                 else:
-                    for match in matches:
-                        if os.path.isdir(match):
-                            continue
-
-                        found.append(match)
+                    filtered_files.update([f for f in matches if os.path.isfile(f)])
+        found = sorted(filtered_files)
     finally:
         # Switch back to the original directory
         os.chdir(cwd)
