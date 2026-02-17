@@ -38,3 +38,5 @@ def registered(
     entry = reg.entry(app_id=app_id, src=app_src)
     ok = entry is not None
     print_json({"registered": ok})
+    if not ok:
+        raise typer.Exit(code=1)

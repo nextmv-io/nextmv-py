@@ -37,3 +37,5 @@ def exists(
     in_progress(msg="Checking if version exists...")
     ok = cloud_app.version_exists(version_id=version_id)
     print_json({"exists": ok})
+    if not ok:
+        raise typer.Exit(code=1)

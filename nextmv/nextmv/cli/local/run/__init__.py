@@ -1,5 +1,5 @@
 """
-This module defines the cloud run command tree for the Nextmv CLI.
+This module defines the local run command tree for the Nextmv CLI.
 """
 
 import typer

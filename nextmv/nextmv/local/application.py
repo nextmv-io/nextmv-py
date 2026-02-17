@@ -105,12 +105,10 @@ class Application(BaseModel):
     manifest: Manifest | None = Field(default=None, exclude=True)
     """
     Manifest of the application. A manifest is a file named `app.yaml` that
-    must be present at the root of the application's `src` directory. If the
-    app is initialized, and a manifest is not present, a default Python
-    manifest will be created, using the `nextmv.default_python_manifest`
-    function. If you specify this argument, and a manifest file is already
-    present in the `src` directory, the provided manifest will override the
-    existing one.
+    must be present at the root of the application's `src` directory. If you
+    specify this argument when creating the Application, the provided manifest
+    will be written to the `src` directory, overriding any existing manifest
+    file.
     """
     content_format: InputFormat | None = None
     """
@@ -379,7 +377,9 @@ class Application(BaseModel):
         for run_id in run_ids:
             try:
                 info = self.run_metadata(run_id=run_id)
-            except Exception:
+            except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as e:
+                # Skip runs with expected errors (missing/corrupted files)
+                log(f"Warning: Skipping run '{run_id}' due to error: {e}")
                 continue
 
             run = info.to_run()
@@ -503,7 +503,7 @@ class Application(BaseModel):
         options_dict = self.__extract_options_dict(options, json_configurations)
         run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
         run_id = run(
-            app_id=self.src,
+            app_id=self.app_id if self.app_id is not None else "",
             src=self.src,
             manifest=self.manifest,
             run_config=run_config_dict,
@@ -1149,28 +1149,52 @@ class Application(BaseModel):
                 f"{total}/{len(run_ids)} runs."
             )
 
-    def update(self, description: str | None = None) -> None:
+    def update(
+        self,
+        app_id: str | None = None,
+        description: str | None = None,
+        content_format: InputFormat | None = None,
+    ) -> None:
         """
         Update the local application.
 
         This method allows you to update the local application's metadata, such
-        as its description. It does not affect the application's source code or
-        runs.
+        as its app_id, description and content format. It does not affect
+        the application's source code or runs.
 
         Parameters
         ----------
+        app_id : Optional[str]
+            New app_id for the application. If None, the app_id is not updated.
         description : Optional[str]
             New description for the application. If None, the description is not
             updated.
+        content_format : Optional[InputFormat]
+            New content format for the application. If None, the content format
+            is not updated.
         """
 
+        reg = Registry.from_yaml()
+
+        # Use both app_id and src to identify the entry for maximum specificity
+        updated_entry = reg.update_entry(
+            src=self.src,
+            app_id=self.app_id,
+            new_app_id=app_id,
+            description=description,
+            content_format=content_format,
+        )
+
+        if updated_entry is None:
+            raise ValueError(f"Application with app_id `{self.app_id}` and src `{self.src}` is not registered locally.")
+
+        # Update the instance attributes to reflect the changes
+        if app_id is not None:
+            self.app_id = app_id
         if description is not None:
             self.description = description
-
-        reg = Registry.from_yaml()
-        entry = reg.entry(app_id=self.app_id, src=self.src)
-        entry.description = self.description
-        reg.update_entry(entry)
+        if content_format is not None:
+            self.content_format = content_format
 
     def __run_result(
         self,
