@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing input sets...")
     input_sets = cloud_app.list_input_sets()
     input_sets_dicts = [input_set.to_dict() for input_set in input_sets]

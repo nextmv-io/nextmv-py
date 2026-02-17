@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing versions...")
     versions = cloud_app.list_versions()
     versions_dicts = [version.to_dict() for version in versions]

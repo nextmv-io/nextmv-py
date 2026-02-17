@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, EnsembleDefinitionIDOption, ProfileOption
 
@@ -80,7 +80,7 @@ def update(
     if name is None and description is None:
         error("Provide at least one option to update: --name or --description.")
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating ensemble definition...")
     ensemble_definition = cloud_app.update_ensemble_definition(
         id=ensemble_definition_id,

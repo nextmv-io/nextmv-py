@@ -8,7 +8,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.shadow import StartEvents, TerminationEvents
@@ -161,7 +161,7 @@ def create(
             --description "Testing cool bunnies" --comparisons "$COMPARISONS" --termination-maximum-runs 10[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     try:
         comparisons_dict = json.loads(comparisons)

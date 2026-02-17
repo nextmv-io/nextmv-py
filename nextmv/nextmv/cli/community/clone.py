@@ -50,7 +50,9 @@ def clone(
     By default, the [magenta]latest[/magenta] version will be used. You can
     specify a version with the --version flag, and customize the output
     directory with the --directory flag. If you want to list the available
-    apps, use the [code]nextmv community list[/code] command.
+    apps, use the [code]nextmv community list[/code] command. When an app is
+    cloned, it is automatically registered locally, so you can run it with the
+    [code]nextmv local run[/code] command using the generated app ID.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -83,4 +85,5 @@ def clone(
         version=version,
         verbose=True,
         rich_print=True,
+        should_register=True,
     )

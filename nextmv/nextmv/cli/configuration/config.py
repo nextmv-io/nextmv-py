@@ -7,10 +7,10 @@ from typing import Any
 
 import yaml
 
+from nextmv import cloud, local
 from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import error, success, warning
+from nextmv.cli.message import error, info, success, warning
 from nextmv.cloud.account import Account
-from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 from nextmv.cloud.marketplace import MarketplaceApplication, MarketplaceSubscription
 from nextmv.cloud.sso import SSOConfiguration
@@ -139,7 +139,7 @@ def build_client(profile: str | None = None) -> Client:
     return Client(api_key=api_key, url=f"https://{endpoint}")
 
 
-def build_app(app_id: str, profile: str | None = None) -> Application:
+def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Application:
     """
     Builds a `cloud.Application` using the given application ID and the API
     key and endpoint for the given profile. If no profile is given, the default
@@ -154,7 +154,7 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
 
     Returns
     -------
-    Application
+    cloud.Application
         An application object for the given application ID.
 
     Raises
@@ -164,9 +164,9 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
     """
 
     client = build_client(profile)
-    exists = Application.exists(client=client, id=app_id)
+    exists = cloud.Application.exists(client=client, id=app_id)
     if exists:
-        return Application(client=client, id=app_id)
+        return cloud.Application(client=client, id=app_id)
 
     warning(f"Application with ID [magenta]{app_id}[/magenta] does not exist.")
     should_create = get_confirmation(f"Do you want to create a new application with ID [magenta]{app_id}[/magenta]?")
@@ -176,7 +176,7 @@ def build_app(app_id: str, profile: str | None = None) -> Application:
             "Use [code]nextmv cloud app create[/code] to create a new app."
         )
 
-    app = Application.new(client=client, id=app_id, name=app_id)
+    app = cloud.Application.new(client=client, id=app_id, name=app_id)
     success(f"Application with ID and name [magenta]{app_id}[/magenta] created successfully.")
 
     return app
@@ -312,6 +312,35 @@ def build_sso_config(profile: str | None = None) -> SSOConfiguration:
     client = build_client(profile)
 
     return SSOConfiguration(client=client)
+
+
+def build_local_app(app_src: str, app_id: str | None) -> local.Application:
+    """
+    Builds a local application by either retrieving it from the registry if it
+    is already registered, or registering it if it is not.
+
+    Parameters
+    ----------
+    app_src : str
+        The source path of the local application.
+    app_id : str | None
+        The ID of the local application. If None, the application will be registered
+        without an ID and a random one will be generated.
+
+    Returns
+    -------
+    local.Application
+        The local application instance.
+    """
+
+    local_app, registered = local.Application.get_or_register(app_src=app_src, app_id=app_id)
+    if registered:
+        info(
+            f"Application at path [magenta]{local_app.src}[/magenta] registered locally with "
+            f"ID [magenta]{local_app.app_id}[/magenta]."
+        )
+
+    return local_app
 
 
 def obscure_api_key(api_key: str) -> str:

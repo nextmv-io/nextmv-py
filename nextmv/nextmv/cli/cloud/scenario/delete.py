@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
@@ -56,6 +56,6 @@ def delete(
             info(f"Scenario test [magenta]{scenario_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_scenario_test(scenario_test_id=scenario_test_id)
     success(msg=f"Scenario test [magenta]{scenario_test_id}[/magenta] deleted.")

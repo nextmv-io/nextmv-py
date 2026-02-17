@@ -236,14 +236,16 @@ print(json.dumps(output))
         self.assertIn("Either `input` or `input_directory` must be specified", str(context.exception))
 
     def test_new_run_manifest_not_found_error(self):
-        """Test new_run raises error when manifest.yaml is not found."""
-        # Remove the manifest file
-        os.remove(os.path.join(self.app_src, "app.yaml"))
+        """Test Application initialization raises error when app.yaml is not found."""
+        # Create a new temp directory without app.yaml
+        with tempfile.TemporaryDirectory() as temp_dir:
+            app_src_without_manifest = os.path.join(temp_dir, "no_manifest_app")
+            os.makedirs(app_src_without_manifest)
 
-        with self.assertRaises(FileNotFoundError) as context:
-            self.app.new_run(input={"test": "data"})
+            with self.assertRaises(FileNotFoundError) as context:
+                Application(src=app_src_without_manifest)
 
-        self.assertIn("Could not find manifest.yaml", str(context.exception))
+            self.assertIn("Could not find app.yaml", str(context.exception))
 
     @patch("nextmv.local.application.run")
     def test_new_run_with_nextmv_input_object(self, mock_run):
@@ -382,15 +384,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         self.runs_dir = os.path.join(self.app_src, NEXTMV_DIR, RUNS_KEY)
         os.makedirs(self.runs_dir)
 
-        # Create test application
-        self.app = Application(src=self.app_src)
-
-        # Test run ID
-        self.test_run_id = "run-123"
-        self.test_run_dir = os.path.join(self.runs_dir, self.test_run_id)
-        os.makedirs(self.test_run_dir)
-
-        # Create manifest file
+        # Create manifest file first (before Application initialization)
         manifest_content = {
             "spec_version": "v1beta1",
             "id": "test-app",
@@ -404,6 +398,14 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
 
         with open(os.path.join(self.app_src, "app.yaml"), "w") as f:
             yaml.dump(manifest_content, f)
+
+        # Create test application
+        self.app = Application(src=self.app_src)
+
+        # Test run ID
+        self.test_run_id = "run-123"
+        self.test_run_dir = os.path.join(self.runs_dir, self.test_run_id)
+        os.makedirs(self.test_run_dir)
 
     def tearDown(self):
         """Clean up test fixtures."""

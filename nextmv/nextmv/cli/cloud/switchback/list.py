@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud switchback list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing switchback tests...")
     switchback_tests = cloud_app.list_switchback_tests()
     switchback_tests_dict = [test.to_dict() for test in switchback_tests]

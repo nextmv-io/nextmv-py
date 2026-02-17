@@ -32,6 +32,7 @@ from pydantic import AliasChoices, Field
 
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
+from nextmv.local.registry import Registry
 from nextmv.logger import log
 
 # Helpful constants.
@@ -144,6 +145,7 @@ def clone_community_app(
     version: str | None = LATEST_VERSION,
     verbose: bool = False,
     rich_print: bool = False,
+    should_register: bool = False,
 ) -> None:
     """
     Clone a community app locally.
@@ -173,6 +175,8 @@ def clone_community_app(
         Whether to print verbose output.
     rich_print : bool, optional
         Whether to use rich printing for output messages.
+    should_register : bool, optional
+        Whether to register the cloned app in the local registry. Default is False.
     """
     comm_app = _find_app(client, app)
 
@@ -225,20 +229,74 @@ def clone_community_app(
     # Remove the tarball after extraction
     os.remove(downloaded_object)
 
+    if verbose:
+        if rich_print:
+            rich.print(
+                f":white_check_mark: Successfully cloned the [magenta]{app}[/magenta] community app, "
+                f"using version [magenta]{original_version}[/magenta] in path: [magenta]{full_destination}[/magenta].",
+                file=sys.stderr,
+            )
+        else:
+            log(
+                f"✅ Successfully cloned the {app} community app, using version {original_version} "
+                f"in path: {full_destination}."
+            )
+
+    _register_cloned_app(
+        app=app,
+        full_destination=full_destination,
+        verbose=verbose,
+        rich_print=rich_print,
+        should_register=should_register,
+    )
+
+
+def _register_cloned_app(
+    app: str,
+    full_destination: str,
+    verbose: bool = False,
+    rich_print: bool = False,
+    should_register: bool = False,
+) -> None:
+    """
+    Actions to perform after cloning a community app, such as registering the
+    app in the local registry and printing success messages.
+
+    Parameters
+    ----------
+    app : str
+        The name of the community app that was cloned.
+    full_destination : str
+        The full path to the directory where the app was cloned.
+    verbose : bool, optional
+        Whether to print verbose output.
+    rich_print : bool, optional
+        Whether to use rich printing for output messages.
+    should_register : bool, optional
+        Whether to register the cloned app in the local registry. Default is False.
+    """
+
+    if not should_register:
+        return
+
+    reg = Registry.from_yaml()
+    entry = reg.register(
+        src=os.path.abspath(full_destination),
+        description=f"Local application registered from cloned community app {app}.",
+    )
+
     if not verbose:
         return
 
     if rich_print:
         rich.print(
-            f":white_check_mark: Successfully cloned the [magenta]{app}[/magenta] community app, "
-            f"using version [magenta]{original_version}[/magenta] in path: [magenta]{full_destination}[/magenta].",
+            f":white_check_mark: Registered the cloned community app [magenta]{app}[/magenta] as a local app "
+            f"with ID [magenta]{entry.app_id}[/magenta].",
             file=sys.stderr,
         )
         return
 
-    log(
-        f"✅ Successfully cloned the {app} community app, using version {original_version} in path: {full_destination}."
-    )
+    log(f"✅ Registered the cloned community app {app} as a local app: {entry.to_dict()} with ID {entry.app_id}.")
 
 
 def _download_manifest(client: Client) -> dict[str, Any]:

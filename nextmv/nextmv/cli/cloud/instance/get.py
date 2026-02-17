@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
 
@@ -46,7 +46,7 @@ def get(
         $ [dim]nextmv cloud instance get --app-id hare-app --instance-id prod --output instance.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting instance...")
     instance = cloud_app.instance(instance_id=instance_id)
     instance_dict = instance.to_dict()

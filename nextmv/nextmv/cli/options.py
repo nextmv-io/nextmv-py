@@ -45,7 +45,7 @@ RunIDOption = Annotated[
     typer.Option(
         "--run-id",
         "-r",
-        help="The Nextmv Cloud run ID to use for this action.",
+        help="The Nextmv run ID to use for this action.",
         envvar="NEXTMV_RUN_ID",
         metavar="RUN_ID",
     ),
@@ -273,5 +273,33 @@ MarketplaceSubscriptionIDOption = Annotated[
         "Format of the subscription ID: [dim]<PARTNER_ID>-<APP_ID>[/dim].",
         envvar="NEXTMV_MARKETPLACE_SUBSCRIPTION_ID",
         metavar="SUBSCRIPTION_ID",
+    ),
+]
+
+# Local app_id option - can be used in any command that requires a local
+# application ID. Define it as follows in commands or callbacks, as necessary:
+# app_id: LocalAppIDOption = None
+LocalAppIDOption = Annotated[
+    str | None,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help="The local Nextmv application ID to use for this action.",
+        envvar="NEXTMV_APP_ID",
+        metavar="APP_ID",
+    ),
+]
+
+# Local app_src option - can be used in any command that requires a local
+# application source path. Define it as follows in commands or callbacks, as necessary:
+# app_src: LocalAppSrcOption = "."
+LocalAppSrcOption = Annotated[
+    str | None,
+    typer.Option(
+        "--app-src",
+        "-s",
+        help="The source (filesystem path) of the local Nextmv application to use for this action.",
+        envvar="NEXTMV_APP_SRC",
+        metavar="APP_SRC",
     ),
 ]

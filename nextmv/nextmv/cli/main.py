@@ -25,6 +25,7 @@ from nextmv.cli.community import app as community_app
 from nextmv.cli.configuration import app as configuration_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.confirm import get_confirmation
+from nextmv.cli.local import app as local_app
 from nextmv.cli.message import error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
@@ -48,6 +49,7 @@ app = typer.Typer(
 app.add_typer(cloud_app, name="cloud")
 app.add_typer(community_app, name="community")
 app.add_typer(configuration_app, name="configuration")
+app.add_typer(local_app, name="local")
 app.add_typer(version_app)
 
 
@@ -176,3 +178,7 @@ def main() -> None:
 
         rich.print(f"[red]Error:[/red] {msg}", file=sys.stderr)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

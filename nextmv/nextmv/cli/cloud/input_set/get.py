@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InputSetIDOption, ProfileOption
 
@@ -47,7 +47,7 @@ def get(
             --output input-set.json[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting input set...")
     input_set = cloud_app.input_set(input_set_id=input_set_id)
     input_set_dict = input_set.to_dict()

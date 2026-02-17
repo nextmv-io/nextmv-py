@@ -4,7 +4,7 @@ This module defines the cloud version exists command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 
@@ -33,7 +33,9 @@ def exists(
         $ [dim]nextmv cloud version exists --app-id hare-app --version-id v1 --profile hare[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Checking if version exists...")
     ok = cloud_app.version_exists(version_id=version_id)
     print_json({"exists": ok})
+    if not ok:
+        raise typer.Exit(code=1)

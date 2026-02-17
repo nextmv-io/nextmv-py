@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.status import StatusV2
@@ -42,10 +42,10 @@ def list(
     """
     Get the list of runs for a Nextmv Cloud application.
 
-    By default, the list of runs is fetched and printed to [magenta]stdout[/magenta].
-    Use the --output flag to save the list to a file.
-
-    You can use the optional --status flag to filter runs by their status.
+    By default, the list of runs is fetched and printed to
+    [magenta]stdout[/magenta]. Use the --output flag to save the list to a
+    file. You can use the optional --status flag to filter runs by their
+    status.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -64,7 +64,7 @@ def list(
         $ [dim]nextmv cloud run list --app-id hare-app --status queued[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
     runs = cloud_app.list_runs(status=status)
     runs_dicts = [run.to_dict() for run in runs]

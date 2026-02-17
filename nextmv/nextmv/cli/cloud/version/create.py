@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 
@@ -81,7 +81,7 @@ def create(
         $ [dim]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting version...")
     else:

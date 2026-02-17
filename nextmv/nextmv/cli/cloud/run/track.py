@@ -10,7 +10,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, warning
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.input import InputFormat
@@ -124,8 +124,8 @@ def track(
     statistics: Annotated[
         str | None,
         typer.Option(
-            help="[red](deprecated) Use --metrics instead.[/red] The statistics of the run" \
-                " being tracked. A [magenta]json[/magenta] file to read the statistics from.",
+            help="[red](deprecated) Use --metrics instead.[/red] The statistics of the run"
+            " being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
             rich_help_panel="Tracked run configuration",
         ),
@@ -133,8 +133,7 @@ def track(
     metrics: Annotated[
         str | None,
         typer.Option(
-            help="The metrics of the run being tracked. A [magenta]json[/magenta]"\
-                " file to read the metrics from.",
+            help="The metrics of the run being tracked. A [magenta]json[/magenta] file to read the metrics from.",
             metavar="METRICS_PATH",
             rich_help_panel="Tracked run configuration",
         ),
@@ -237,7 +236,7 @@ def track(
         error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     config = build_run_config(
         run_type=RunType.EXTERNAL,
         priority=6,

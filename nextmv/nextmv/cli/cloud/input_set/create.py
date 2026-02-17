@@ -8,7 +8,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.input_set import ManagedInput
@@ -139,7 +139,7 @@ def create(
             --end-time "2024-01-31T23:59:59Z"[/dim]
     """
 
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating input set...")
 
     # Generate a random input set ID if one is not provided.

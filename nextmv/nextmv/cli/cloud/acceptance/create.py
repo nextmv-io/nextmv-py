@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_app
+from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.acceptance_test import Comparison, Metric, MetricToleranceType, MetricType, StatisticType
@@ -269,7 +269,7 @@ def create(
     ] = False,
     profile: ProfileOption = None,
 ) -> None:
-    cloud_app = build_app(app_id=app_id, profile=profile)
+    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the metrics list from the CLI options
     metrics_list = build_metrics(metrics)
