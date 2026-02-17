@@ -1,6 +1,5 @@
 """Module with the logic for pushing an app to Nextmv Cloud."""
 
-import glob
 import os
 import platform
 import re
@@ -13,7 +12,7 @@ import tempfile
 import rich
 
 from nextmv.logger import log
-from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, find_files
 from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
 
 _MANDATORY_FILES_PER_TYPE = {
@@ -38,7 +37,7 @@ def _package(  # noqa: C901 # complexity attributed to printing.
         if manifest.type == ManifestType.PYTHON:
             __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose, rich_print)
 
-        found, missing, files = __find_files(app_dir, manifest.files)
+        found, missing, files = find_files(app_dir, manifest.files)
         __confirm_mandatory_files(manifest, found)
 
         if len(missing) > 0:
@@ -179,61 +178,6 @@ def _run_pre_push_command(
 
     if verbose:
         log(result.stdout)
-
-
-def __find_files(
-    app_dir: str,
-    filters: list[str],
-) -> tuple[list[str], list[str], list[dict[str, str]]]:
-    """Find all files matching the given filters in the given directory."""
-
-    found = []
-    missing = []
-
-    # Temporarily switch to the directory to make the globbing work
-    cwd = os.getcwd()
-    try:
-        os.chdir(app_dir)
-    except OSError as e:
-        raise Exception(f"error changing to file root directory: {e}") from e
-
-    for filter in filters:
-        # We support "some/path/" ending with a "/". We consider it equivalent
-        # to "some/path/*".
-        pattern = filter
-        if filter.endswith("/"):
-            pattern = filter + "*"
-        # If the pattern starts with a '!': negate the pattern
-        negated = False
-        if pattern.startswith("!"):
-            pattern = pattern[1:]
-            negated = True
-        matches = glob.glob(pattern, recursive=True)
-        if not matches and not negated:
-            missing.append(filter)
-        else:
-            if negated:
-                found = [f for f in found if f not in matches]
-            else:
-                for match in matches:
-                    if os.path.isdir(match):
-                        continue
-
-                    found.append(match)
-
-    # Switch back to the original directory
-    os.chdir(cwd)
-
-    files = []
-    for file in found:
-        files.append(
-            {
-                "interior_path": file,
-                "absolute_path": os.path.join(app_dir, file),
-            }
-        )
-
-    return found, missing, files
 
 
 def __confirm_mandatory_files(manifest: Manifest, present_files: list[str]) -> None:
