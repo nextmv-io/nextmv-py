@@ -105,12 +105,10 @@ class Application(BaseModel):
     manifest: Manifest | None = Field(default=None, exclude=True)
     """
     Manifest of the application. A manifest is a file named `app.yaml` that
-    must be present at the root of the application's `src` directory. If the
-    app is initialized, and a manifest is not present, a default Python
-    manifest will be created, using the `nextmv.default_python_manifest`
-    function. If you specify this argument, and a manifest file is already
-    present in the `src` directory, the provided manifest will override the
-    existing one.
+    must be present at the root of the application's `src` directory. If you
+    specify this argument when creating the Application, the provided manifest
+    will be written to the `src` directory, overriding any existing manifest
+    file.
     """
     content_format: InputFormat | None = None
     """
@@ -379,7 +377,9 @@ class Application(BaseModel):
         for run_id in run_ids:
             try:
                 info = self.run_metadata(run_id=run_id)
-            except Exception:
+            except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as e:
+                # Skip runs with expected errors (missing/corrupted files)
+                log(f"Warning: Skipping run '{run_id}' due to error: {e}")
                 continue
 
             run = info.to_run()
@@ -503,7 +503,7 @@ class Application(BaseModel):
         options_dict = self.__extract_options_dict(options, json_configurations)
         run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
         run_id = run(
-            app_id=self.src,
+            app_id=self.app_id if self.app_id is not None else "",
             src=self.src,
             manifest=self.manifest,
             run_config=run_config_dict,
@@ -1169,6 +1169,9 @@ class Application(BaseModel):
 
         reg = Registry.from_yaml()
         entry = reg.entry(app_id=self.app_id, src=self.src)
+        if entry is None:
+            raise ValueError(f"Application with app_id `{self.app_id}` and src `{self.src}` is not registered locally.")
+
         entry.description = self.description
         reg.update_entry(entry)
 

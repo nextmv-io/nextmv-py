@@ -42,3 +42,5 @@ def exists(
         id=app_id,
     )
     print_json({"exists": ok})
+    if not ok:
+        raise typer.Exit(code=1)

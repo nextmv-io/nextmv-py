@@ -37,3 +37,5 @@ def exists(
     in_progress(msg="Checking if instance exists...")
     ok = cloud_app.instance_exists(instance_id=instance_id)
     print_json({"exists": ok})
+    if not ok:
+        raise typer.Exit(code=1)
