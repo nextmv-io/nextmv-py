@@ -28,6 +28,15 @@ def update(
     ],
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = ".",
+    new_app_id: Annotated[
+        str | None,
+        typer.Option(
+            "--new-app-id",
+            "-n",
+            help="A new ID for the local Nextmv application.",
+            metavar="NEW_APP_ID",
+        ),
+    ] = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -43,7 +52,7 @@ def update(
 
     You may identify the app by using --app-src, or --app-id if it has been
     registered. If the app is not already registered, this command will
-    register it.
+    register it. You can update the app's ID through the --new-app-id option.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -53,11 +62,14 @@ def update(
     - Update the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
         $ [dim]nextmv local app update --app-id hare-app --description "New description" --output app.json[/dim]
+
+    - Update the ID of the application located at [magenta]./my-app[/magenta] to [magenta]hare-app[/magenta].
+        $ [dim]nextmv local app update --app-src ./my-app --new-app-id hare-app --description "New description"[/dim]
     """
 
     in_progress(msg="Updating application...")
     local_app = build_local_app(app_src, app_id)
-    local_app.update(description=description)
+    local_app.update(app_id=new_app_id, description=description)
     app_dict = local_app.to_dict()
 
     if output is not None and output != "":

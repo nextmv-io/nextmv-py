@@ -1149,31 +1149,52 @@ class Application(BaseModel):
                 f"{total}/{len(run_ids)} runs."
             )
 
-    def update(self, description: str | None = None) -> None:
+    def update(
+        self,
+        app_id: str | None = None,
+        description: str | None = None,
+        content_format: InputFormat | None = None,
+    ) -> None:
         """
         Update the local application.
 
         This method allows you to update the local application's metadata, such
-        as its description. It does not affect the application's source code or
-        runs.
+        as its app_id, description and content format. It does not affect
+        the application's source code or runs.
 
         Parameters
         ----------
+        app_id : Optional[str]
+            New app_id for the application. If None, the app_id is not updated.
         description : Optional[str]
             New description for the application. If None, the description is not
             updated.
+        content_format : Optional[InputFormat]
+            New content format for the application. If None, the content format
+            is not updated.
         """
 
-        if description is not None:
-            self.description = description
-
         reg = Registry.from_yaml()
-        entry = reg.entry(app_id=self.app_id, src=self.src)
-        if entry is None:
+
+        # Use both app_id and src to identify the entry for maximum specificity
+        updated_entry = reg.update_entry(
+            src=self.src,
+            app_id=self.app_id,
+            new_app_id=app_id,
+            description=description,
+            content_format=content_format,
+        )
+
+        if updated_entry is None:
             raise ValueError(f"Application with app_id `{self.app_id}` and src `{self.src}` is not registered locally.")
 
-        entry.description = self.description
-        reg.update_entry(entry)
+        # Update the instance attributes to reflect the changes
+        if app_id is not None:
+            self.app_id = app_id
+        if description is not None:
+            self.description = description
+        if content_format is not None:
+            self.content_format = content_format
 
     def __run_result(
         self,

@@ -229,6 +229,9 @@ class Registry(BaseModel):
         >>> entry = registry.entry(src="/path/to/app")
         """
 
+        if app_id is None and src is None:
+            raise ValueError("At least one of `app_id` or `src` must be provided to find a registry entry.")
+
         # Normalize src to absolute path if provided
         normalized_src = None
         if src is not None and src != "":
@@ -375,52 +378,101 @@ class Registry(BaseModel):
                 width=120,
             )
 
-    def update_entry(self, new: AppEntry) -> None:
+    def update_entry(
+        self,
+        src: str | None = None,
+        app_id: str | None = None,
+        new_app_id: str | None = None,
+        description: str | None = None,
+        content_format: InputFormat | None = None,
+    ) -> AppEntry | None:
         """
         Update an existing entry in the local app registry.
 
-        The entry to update is identified by matching both the `app_id` and `src`
-        of the provided `new` entry to ensure registry consistency. If no matching
-        entry is found, the method will not make any changes.
+        The entry to update is identified by `src` and/or `app_id`. You can
+        update the `app_id` (by means of `new_app_id`), `description`, and/or
+        `content_format` by providing non-None values for these parameters.
+        If no matching entry is found, the method will not make any changes
+        and will return None.
 
         Parameters
         ----------
-        new : AppEntry
-            The new registry entry with updated information. Both the `app_id` and
-            `src` of this entry must match an existing entry for it to be updated.
+        src : str | None
+            The source path of the application to find in the registry. If provided
+            along with `app_id`, both criteria must match.
+        app_id : str | None
+            The ID of the application to find in the registry. If provided along
+            with `src`, both criteria must match.
+        new_app_id : str | None
+            The new app_id to set. If None, the app_id will not be updated.
+        description : str | None
+            The new description to set. If None, the description will not be updated.
+        content_format : InputFormat | None
+            The new content format to set. If None, the content_format will not be updated.
+
+        Returns
+        -------
+        AppEntry | None
+            The updated entry if found and updated successfully, or None if no matching
+            entry was found.
 
         Examples
         --------
-        >>> from nextmv.local import Registry, AppEntry
-        >>> from datetime import datetime, timezone
+        >>> from nextmv.local import Registry
+        >>> from nextmv.input import InputFormat
         >>> registry = Registry.from_yaml()
-        >>> # Get existing entry and update it
-        >>> entry = registry.entry(app_id="my-app")
-        >>> if entry:
-        ...     entry.description = "Updated description"
-        ...     registry.update_entry(entry)
+        >>> # Update by src only
+        >>> updated = registry.update_entry(src="/path/to/app", description="Updated description")
+        >>> if updated:
+        ...     print(f"Updated {updated.app_id}")
+        >>> # Update by app_id only
+        >>> updated = registry.update_entry(app_id="my-app", description="Updated description")
+        >>> # Update the app_id itself
+        >>> updated = registry.update_entry(
+        ...     src="/path/to/app",
+        ...     new_app_id="new-app-id",
+        ...     content_format=InputFormat.CSV_ARCHIVE
+        ... )
+        >>> # Update by both src and app_id (both must match)
+        >>> updated = registry.update_entry(
+        ...     src="/path/to/app",
+        ...     app_id="my-app",
+        ...     description="Updated description"
+        ... )
         """
 
-        existing = self.entry(app_id=new.app_id, src=new.src)
+        # Find the existing entry by src and/or app_id.
+        existing = self.entry(src=src, app_id=app_id)
 
         if existing is None:
-            # No entry found, nothing to update
-            return
+            # No entry found, nothing to update.
+            return None
 
-        # Replace the existing entry with the new one
+        # Store the original src for matching in the update loop.
+        original_src = existing.src
+
+        # Update only the fields that are not None.
+        if new_app_id is not None:
+            existing.app_id = new_app_id
+        if description is not None:
+            existing.description = description
+        if content_format is not None:
+            existing.content_format = content_format
+
+        existing.updated_at = datetime.now(timezone.utc)
+
+        # Update the entry in the apps list.
         apps = []
         for entry in self.apps:
-            should_update = entry.app_id == existing.app_id and entry.src == existing.src
-            if should_update:
-                updated_at = datetime.now(timezone.utc)
-                new.updated_at = updated_at
-                apps.append(new)
-                continue
-
-            apps.append(entry)
+            if entry.src == original_src:
+                apps.append(existing)
+            else:
+                apps.append(entry)
 
         self.apps = apps
         self.to_yaml()
+
+        return existing
 
 
 def _get_registry_path() -> str:

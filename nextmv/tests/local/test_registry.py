@@ -1,5 +1,8 @@
 import os
+import pathlib
+import shutil
 import tempfile
+import time
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -17,7 +20,7 @@ class TestAppEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry = AppEntry(
             app_id="test-app",
-            src="/path/to/app",
+            src=os.path.abspath("path/to/app"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -25,7 +28,7 @@ class TestAppEntry(unittest.TestCase):
         )
 
         self.assertEqual(entry.app_id, "test-app")
-        self.assertEqual(entry.src, "/path/to/app")
+        self.assertEqual(entry.src, os.path.abspath("path/to/app"))
         self.assertEqual(entry.content_format, InputFormat.JSON)
         self.assertEqual(entry.created_at, now)
         self.assertEqual(entry.updated_at, now)
@@ -36,7 +39,7 @@ class TestAppEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry = AppEntry(
             app_id="test-app",
-            src="/path/to/app",
+            src=os.path.abspath("path/to/app"),
             content_format=InputFormat.CSV_ARCHIVE,
             created_at=now,
             updated_at=now,
@@ -50,7 +53,7 @@ class TestAppEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry = AppEntry(
             app_id="test-app",
-            src="/path/to/app",
+            src=os.path.abspath("path/to/app"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -60,7 +63,7 @@ class TestAppEntry(unittest.TestCase):
         entry_dict = entry.to_dict()
         self.assertIsInstance(entry_dict, dict)
         self.assertEqual(entry_dict["app_id"], "test-app")
-        self.assertEqual(entry_dict["src"], "/path/to/app")
+        self.assertEqual(entry_dict["src"], os.path.abspath("path/to/app"))
         self.assertEqual(entry_dict["description"], "Test application")
 
 
@@ -91,8 +94,6 @@ class TestRegistry(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -107,7 +108,7 @@ class TestRegistry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry = AppEntry(
             app_id="test-app",
-            src="/path/to/app",
+            src=os.path.abspath("path/to/app"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -130,8 +131,6 @@ class TestRegistryFromYAML(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -157,7 +156,7 @@ class TestRegistryFromYAML(unittest.TestCase):
             "apps": [
                 {
                     "app_id": "test-app",
-                    "src": "/path/to/app",
+                    "src": os.path.abspath("path/to/app"),
                     "content_format": "json",
                     "created_at": now.isoformat(),
                     "updated_at": now.isoformat(),
@@ -173,7 +172,7 @@ class TestRegistryFromYAML(unittest.TestCase):
 
         self.assertEqual(len(registry.apps), 1)
         self.assertEqual(registry.apps[0].app_id, "test-app")
-        self.assertEqual(registry.apps[0].src, "/path/to/app")
+        self.assertEqual(registry.apps[0].src, os.path.abspath("path/to/app"))
         self.assertEqual(registry.apps[0].description, "Test app")
 
 
@@ -206,8 +205,6 @@ class TestRegistryRegister(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -335,14 +332,14 @@ class TestRegistryEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         self.entry1 = AppEntry(
             app_id="app-1",
-            src="/path/to/app1",
+            src=os.path.abspath("path/to/app1"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry2 = AppEntry(
             app_id="app-2",
-            src="/path/to/app2",
+            src=os.path.abspath("path/to/app2"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -350,8 +347,6 @@ class TestRegistryEntry(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -363,29 +358,29 @@ class TestRegistryEntry(unittest.TestCase):
 
         self.assertIsNotNone(found)
         self.assertEqual(found.app_id, "app-1")
-        self.assertEqual(found.src, "/path/to/app1")
+        self.assertEqual(found.src, os.path.abspath("path/to/app1"))
 
     def test_entry_find_by_src(self):
         """Test finding an entry by src."""
         registry = Registry(apps=[self.entry1, self.entry2])
 
-        found = registry.entry(src="/path/to/app2")
+        found = registry.entry(src=os.path.abspath("path/to/app2"))
 
         self.assertIsNotNone(found)
         self.assertEqual(found.app_id, "app-2")
-        self.assertEqual(found.src, "/path/to/app2")
+        self.assertEqual(found.src, os.path.abspath("path/to/app2"))
 
     def test_entry_find_by_both_app_id_and_src(self):
         """Test finding an entry by both app_id and src."""
         registry = Registry(apps=[self.entry1, self.entry2])
 
         # Should find when both match
-        found = registry.entry(app_id="app-1", src="/path/to/app1")
+        found = registry.entry(app_id="app-1", src=os.path.abspath("path/to/app1"))
         self.assertIsNotNone(found)
         self.assertEqual(found.app_id, "app-1")
 
         # Should not find when only one matches
-        not_found = registry.entry(app_id="app-1", src="/path/to/app2")
+        not_found = registry.entry(app_id="app-1", src=os.path.abspath("path/to/app2"))
         self.assertIsNone(not_found)
 
     def test_entry_not_found(self):
@@ -440,21 +435,21 @@ class TestRegistryDeleteEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         self.entry1 = AppEntry(
             app_id="app-1",
-            src="/path/to/app1",
+            src=os.path.abspath("path/to/app1"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry2 = AppEntry(
             app_id="app-2",
-            src="/path/to/app2",
+            src=os.path.abspath("path/to/app2"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry3 = AppEntry(
             app_id="app-3",
-            src="/path/to/app3",
+            src=os.path.abspath("path/to/app3"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -462,8 +457,6 @@ class TestRegistryDeleteEntry(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -489,10 +482,10 @@ class TestRegistryDeleteEntry(unittest.TestCase):
 
         registry = Registry(apps=[self.entry1, self.entry2, self.entry3])
 
-        registry.delete_entry(src="/path/to/app1")
+        registry.delete_entry(src=os.path.abspath("path/to/app1"))
 
         self.assertEqual(len(registry.apps), 2)
-        self.assertIsNone(registry.entry(src="/path/to/app1"))
+        self.assertIsNone(registry.entry(src=os.path.abspath("path/to/app1")))
         self.assertIsNotNone(registry.entry(app_id="app-2"))
 
     @patch("nextmv.local.registry._get_registry_path")
@@ -503,7 +496,7 @@ class TestRegistryDeleteEntry(unittest.TestCase):
         registry = Registry(apps=[self.entry1, self.entry2])
 
         # Delete with both matching
-        registry.delete_entry(app_id="app-1", src="/path/to/app1")
+        registry.delete_entry(app_id="app-1", src=os.path.abspath("path/to/app1"))
 
         self.assertEqual(len(registry.apps), 1)
         self.assertIsNone(registry.entry(app_id="app-1"))
@@ -516,7 +509,7 @@ class TestRegistryDeleteEntry(unittest.TestCase):
         registry = Registry(apps=[self.entry1, self.entry2])
 
         # Try to delete with mismatched app_id and src
-        registry.delete_entry(app_id="app-1", src="/path/to/app2")
+        registry.delete_entry(app_id="app-1", src=os.path.abspath("path/to/app2"))
 
         # Should not delete anything
         self.assertEqual(len(registry.apps), 2)
@@ -549,7 +542,7 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         now = datetime.now(timezone.utc)
         self.entry1 = AppEntry(
             app_id="app-1",
-            src="/path/to/app1",
+            src=os.path.abspath("path/to/app1"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -557,7 +550,7 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         )
         self.entry2 = AppEntry(
             app_id="app-2",
-            src="/path/to/app2",
+            src=os.path.abspath("path/to/app2"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -565,8 +558,6 @@ class TestRegistryUpdateEntry(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -576,24 +567,29 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         mock_get_path.return_value = self.registry_path
 
         registry = Registry(apps=[self.entry1, self.entry2])
+        original_updated_at = self.entry1.updated_at
 
-        # Update the entry
-        updated_entry = AppEntry(
-            app_id="app-1",
-            src="/path/to/app1",
-            content_format=InputFormat.JSON,
-            created_at=self.entry1.created_at,
-            updated_at=self.entry1.updated_at,
+        # Wait a tiny bit to ensure timestamp difference
+        time.sleep(0.01)
+
+        # Update the entry's description
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
             description="Updated description",
         )
 
-        registry.update_entry(updated_entry)
+        # Check that the returned entry is correct
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "app-1")
+        self.assertEqual(updated.description, "Updated description")
+        self.assertEqual(updated.src, os.path.abspath("path/to/app1"))
+        self.assertGreater(updated.updated_at, original_updated_at)
 
-        # Check that description was updated
+        # Check that description was updated in registry
         found = registry.entry(app_id="app-1")
         self.assertEqual(found.description, "Updated description")
         # updated_at should be changed
-        self.assertNotEqual(found.updated_at, self.entry1.updated_at)
+        self.assertGreater(found.updated_at, original_updated_at)
 
     @patch("nextmv.local.registry._get_registry_path")
     def test_update_entry_changes_content_format(self, mock_get_path):
@@ -603,44 +599,49 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         registry = Registry(apps=[self.entry1])
 
         # Update the entry with new content format
-        updated_entry = AppEntry(
-            app_id="app-1",
-            src="/path/to/app1",
-            content_format=InputFormat.CSV_ARCHIVE,  # Changed from JSON
-            created_at=self.entry1.created_at,
-            updated_at=self.entry1.updated_at,
-            description="Original description",
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
+            content_format=InputFormat.CSV_ARCHIVE,
         )
 
-        registry.update_entry(updated_entry)
+        # Check that the returned entry is correct
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "app-1")
+        self.assertEqual(updated.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(updated.description, "Original description")
 
-        # Check that content format was updated
+        # Check that content format was updated in registry
         found = registry.entry(app_id="app-1")
         self.assertEqual(found.content_format, InputFormat.CSV_ARCHIVE)
 
     @patch("nextmv.local.registry._get_registry_path")
-    def test_update_entry_requires_both_app_id_and_src_to_match(self, mock_get_path):
-        """Test that update requires both app_id and src to match."""
+    def test_update_entry_can_change_app_id(self, mock_get_path):
+        """Test that update can change the app_id of an entry."""
         mock_get_path.return_value = self.registry_path
 
         registry = Registry(apps=[self.entry1, self.entry2])
 
-        # Create update with mismatched app_id/src combination
-        updated_entry = AppEntry(
-            app_id="app-1",
-            src="/path/to/different",  # Different src
-            content_format=InputFormat.CSV_ARCHIVE,
-            created_at=self.entry1.created_at,
-            updated_at=self.entry1.updated_at,
-            description="Should not update",
+        # Update the app_id using src to identify the entry
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
+            new_app_id="new-app-id",
         )
 
-        registry.update_entry(updated_entry)
+        # Check that the returned entry is correct
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "new-app-id")
+        self.assertEqual(updated.src, os.path.abspath("path/to/app1"))
+        self.assertEqual(updated.description, "Original description")
 
-        # Original entry should remain unchanged
-        found = registry.entry(app_id="app-1")
-        self.assertEqual(found.description, "Original description")
-        self.assertEqual(found.content_format, InputFormat.JSON)
+        # Should not find with old app_id
+        found_old = registry.entry(app_id="app-1")
+        self.assertIsNone(found_old)
+
+        # Should find with new app_id and same src
+        found_new = registry.entry(src=os.path.abspath("path/to/app1"))
+        self.assertIsNotNone(found_new)
+        self.assertEqual(found_new.app_id, "new-app-id")
+        self.assertEqual(found_new.description, "Original description")
 
     @patch("nextmv.local.registry._get_registry_path")
     def test_update_nonexistent_entry_does_nothing(self, mock_get_path):
@@ -648,19 +649,16 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         mock_get_path.return_value = self.registry_path
 
         registry = Registry(apps=[self.entry1])
-        now = datetime.now(timezone.utc)
 
         # Try to update non-existent entry
-        nonexistent_entry = AppEntry(
-            app_id="nonexistent",
-            src="/path/to/nonexistent",
-            content_format=InputFormat.JSON,
-            created_at=now,
-            updated_at=now,
+        # Should not raise an error and should return None
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/nonexistent"),
+            description="This should not update anything",
         )
 
-        # Should not raise an error
-        registry.update_entry(nonexistent_entry)
+        # Should return None for nonexistent entry
+        self.assertIsNone(updated)
 
         # Registry should be unchanged
         self.assertEqual(len(registry.apps), 1)
@@ -674,25 +672,119 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         original_updated_at = self.entry1.updated_at
 
         # Wait a tiny bit to ensure timestamp difference
-        import time
-
         time.sleep(0.01)
 
         # Update the entry
-        updated_entry = AppEntry(
-            app_id="app-1",
-            src="/path/to/app1",
-            content_format=InputFormat.JSON,
-            created_at=self.entry1.created_at,
-            updated_at=self.entry1.updated_at,  # This will be overwritten
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
             description="Updated",
         )
 
-        registry.update_entry(updated_entry)
+        # Check that the returned entry has updated timestamp
+        self.assertIsNotNone(updated)
+        self.assertGreater(updated.updated_at, original_updated_at)
 
-        # Check that updated_at was changed
+        # Check that updated_at was changed in registry
         found = registry.entry(app_id="app-1")
         self.assertGreater(found.updated_at, original_updated_at)
+
+    @patch("nextmv.local.registry._get_registry_path")
+    def test_update_entry_multiple_fields(self, mock_get_path):
+        """Test updating multiple fields at once returns correct entry."""
+        mock_get_path.return_value = self.registry_path
+
+        registry = Registry(apps=[self.entry1])
+
+        # Update multiple fields at once
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
+            new_app_id="updated-app-id",
+            description="Updated description",
+            content_format=InputFormat.CSV_ARCHIVE,
+        )
+
+        # Check that the returned entry has all updates
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "updated-app-id")
+        self.assertEqual(updated.description, "Updated description")
+        self.assertEqual(updated.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(updated.src, os.path.abspath("path/to/app1"))
+
+        # Verify in registry
+        found = registry.entry(src=os.path.abspath("path/to/app1"))
+        self.assertIsNotNone(found)
+        self.assertEqual(found.app_id, "updated-app-id")
+        self.assertEqual(found.description, "Updated description")
+        self.assertEqual(found.content_format, InputFormat.CSV_ARCHIVE)
+
+    @patch("nextmv.local.registry._get_registry_path")
+    def test_update_entry_by_app_id_only(self, mock_get_path):
+        """Test updating an entry by app_id only."""
+        mock_get_path.return_value = self.registry_path
+
+        registry = Registry(apps=[self.entry1, self.entry2])
+
+        # Update by app_id only
+        updated = registry.update_entry(
+            app_id="app-1",
+            description="Updated by app_id",
+        )
+
+        # Check that the returned entry is correct
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "app-1")
+        self.assertEqual(updated.description, "Updated by app_id")
+        self.assertEqual(updated.src, os.path.abspath("path/to/app1"))
+
+        # Verify in registry
+        found = registry.entry(app_id="app-1")
+        self.assertEqual(found.description, "Updated by app_id")
+
+    @patch("nextmv.local.registry._get_registry_path")
+    def test_update_entry_by_both_src_and_app_id(self, mock_get_path):
+        """Test updating an entry when both src and app_id are provided."""
+        mock_get_path.return_value = self.registry_path
+
+        registry = Registry(apps=[self.entry1, self.entry2])
+
+        # Update by both src and app_id (both must match)
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
+            app_id="app-1",
+            description="Updated by both",
+        )
+
+        # Check that the returned entry is correct
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.app_id, "app-1")
+        self.assertEqual(updated.description, "Updated by both")
+
+        # Verify in registry
+        found = registry.entry(src=os.path.abspath("path/to/app1"), app_id="app-1")
+        self.assertEqual(found.description, "Updated by both")
+
+    @patch("nextmv.local.registry._get_registry_path")
+    def test_update_entry_by_both_src_and_app_id_mismatch(self, mock_get_path):
+        """Test that update returns None when src and app_id don't match same entry."""
+        mock_get_path.return_value = self.registry_path
+
+        registry = Registry(apps=[self.entry1, self.entry2])
+
+        # Try to update with mismatched src and app_id
+        updated = registry.update_entry(
+            src=os.path.abspath("path/to/app1"),
+            app_id="app-2",  # This app_id doesn't match the src
+            description="Should not update",
+        )
+
+        # Should return None
+        self.assertIsNone(updated)
+
+        # Original entries should be unchanged
+        found1 = registry.entry(app_id="app-1")
+        self.assertEqual(found1.description, "Original description")
+        found2 = registry.entry(app_id="app-2")
+        self.assertIsNone(found2.description)
 
 
 class TestRegistryListEntries(unittest.TestCase):
@@ -712,21 +804,21 @@ class TestRegistryListEntries(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry1 = AppEntry(
             app_id="app-1",
-            src="/path/to/app1",
+            src=os.path.abspath("path/to/app1"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         entry2 = AppEntry(
             app_id="app-2",
-            src="/path/to/app2",
+            src=os.path.abspath("path/to/app2"),
             content_format=InputFormat.CSV_ARCHIVE,
             created_at=now,
             updated_at=now,
         )
         entry3 = AppEntry(
             app_id="app-3",
-            src="/path/to/app3",
+            src=os.path.abspath("path/to/app3"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -755,8 +847,6 @@ class TestRegistryToYAML(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -778,7 +868,7 @@ class TestRegistryToYAML(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry = AppEntry(
             app_id="test-app",
-            src="/path/to/app",
+            src=os.path.abspath("path/to/app"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
@@ -795,7 +885,7 @@ class TestRegistryToYAML(unittest.TestCase):
         self.assertIn("apps", data)
         self.assertEqual(len(data["apps"]), 1)
         self.assertEqual(data["apps"][0]["app_id"], "test-app")
-        self.assertEqual(data["apps"][0]["src"], "/path/to/app")
+        self.assertEqual(data["apps"][0]["src"], os.path.abspath("path/to/app"))
         self.assertEqual(data["apps"][0]["description"], "Test application")
 
     @patch("nextmv.local.registry._get_registry_path")
@@ -806,14 +896,14 @@ class TestRegistryToYAML(unittest.TestCase):
         now = datetime.now(timezone.utc)
         entry1 = AppEntry(
             app_id="app-1",
-            src="/path/to/app1",
+            src=os.path.abspath("path/to/app1"),
             content_format=InputFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         entry2 = AppEntry(
             app_id="app-2",
-            src="/path/to/app2",
+            src=os.path.abspath("path/to/app2"),
             content_format=InputFormat.CSV_ARCHIVE,
             created_at=now,
             updated_at=now,
@@ -847,9 +937,6 @@ class TestGetRegistryPath(unittest.TestCase):
 
     def test_get_registry_path_creates_directory(self):
         """Test that _get_registry_path creates the .nextmv directory if needed."""
-        import pathlib
-        import shutil
-
         # Get the path to the .nextmv directory
         home_dir = str(pathlib.Path.home())
         nextmv_dir = os.path.join(home_dir, ".nextmv")
@@ -922,8 +1009,6 @@ class TestRegistryIntegration(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        import shutil
-
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
@@ -959,8 +1044,15 @@ class TestRegistryIntegration(unittest.TestCase):
         self.assertEqual(found2.app_id, "my-app-2")
 
         # 6. Update an entry
-        entry1.description = "Updated first app"
-        registry.update_entry(entry1)
+        updated_entry = registry.update_entry(
+            src=os.path.abspath(self.app1_dir),
+            description="Updated first app",
+        )
+        # Verify the returned entry
+        self.assertIsNotNone(updated_entry)
+        self.assertEqual(updated_entry.app_id, "my-app-1")
+        self.assertEqual(updated_entry.description, "Updated first app")
+        # Verify it's updated in the registry
         updated = registry.entry(app_id="my-app-1")
         self.assertEqual(updated.description, "Updated first app")
 
