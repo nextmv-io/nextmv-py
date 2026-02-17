@@ -255,8 +255,14 @@ class TestRegistryRegister(unittest.TestCase):
         mock_get_path.return_value = self.registry_path
 
         registry = Registry()
-        # Use a relative path
-        relative_path = os.path.relpath(self.app_dir)
+        # Use a relative path - create a subdirectory to ensure we can use relative paths
+        try:
+            relative_path = os.path.relpath(self.app_dir)
+        except ValueError:
+            # On Windows, if paths are on different drives, relpath raises ValueError
+            # In this case, skip the relative path test
+            self.skipTest("Cannot create relative path across different drives")
+
         entry = registry.register(src=relative_path, app_id="test-app")
 
         # Should be normalized to absolute path
@@ -414,7 +420,13 @@ class TestRegistryEntry(unittest.TestCase):
         registry = Registry(apps=[entry])
 
         # Search with relative path
-        rel_path = os.path.relpath(self.test_dir)
+        try:
+            rel_path = os.path.relpath(self.test_dir)
+        except ValueError:
+            # On Windows, if paths are on different drives, relpath raises ValueError
+            # In this case, skip the relative path test
+            self.skipTest("Cannot create relative path across different drives")
+
         found = registry.entry(src=rel_path)
 
         self.assertIsNotNone(found)
@@ -931,7 +943,9 @@ class TestGetRegistryPath(unittest.TestCase):
         path = _get_registry_path()
 
         self.assertIsInstance(path, str)
-        self.assertTrue(path.endswith(".nextmv/registry.yaml"))
+        # Use os.path.join for platform-independent path checking
+        expected_suffix = os.path.join(".nextmv", "registry.yaml")
+        self.assertTrue(path.endswith(expected_suffix))
         # Verify the .nextmv directory exists
         self.assertTrue(os.path.exists(os.path.dirname(path)))
 
