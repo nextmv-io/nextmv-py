@@ -6,9 +6,9 @@ import nextmv
 input = nextmv.load()
 name = input.data["name"]
 
-options = nextmv.Options(
-    nextmv.Option("details", bool, True, "Print details to logs. Default true.", False),
-)
+# Extract options from the manifest.
+manifest = nextmv.Manifest.from_yaml(".")
+options = manifest.extract_options()
 
 ##### Insert model here
 
