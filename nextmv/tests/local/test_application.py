@@ -782,3 +782,88 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         )
 
         self.assertEqual(result, mock_result)
+
+
+class TestDefaultApp(unittest.TestCase):
+    """Test the default app runs correctly with manifest-based options."""
+
+    def test_default_app_runs_with_manifest_options(self):
+        """Test that the default app runs successfully with options extracted from manifest."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Initialize a new app (copies default_app structure)
+            app_name = "test-default-app"
+            app = Application.initialize(
+                src=app_name,
+                description="Test default application",
+                destination=temp_dir,
+            )
+
+            # Verify the manifest has the options defined
+            manifest = app.manifest
+            self.assertIsNotNone(manifest.configuration)
+            self.assertIsNotNone(manifest.configuration.options)
+            self.assertIsNotNone(manifest.configuration.options.items)
+            self.assertEqual(len(manifest.configuration.options.items), 1)
+            self.assertEqual(manifest.configuration.options.items[0].name, "details")
+            self.assertEqual(manifest.configuration.options.items[0].option_type, "bool")
+            self.assertEqual(manifest.configuration.options.items[0].default, True)
+
+            # Prepare input data for the run
+            input_data = {
+                "name": "Earth",
+                "radius": 6371,
+                "distance": 149.6,
+            }
+
+            # Run the application
+            run_id = app.new_run(input=input_data)
+            self.assertIsNotNone(run_id)
+
+            # Wait for run to complete and check results
+            result = app.run_result_with_polling(
+                run_id=run_id,
+                polling_options=PollingOptions(max_duration=30.0, delay=0.1),
+            )
+
+            # Verify the run succeeded
+            self.assertIsNotNone(result)
+            self.assertEqual(result.metadata.status_v2, StatusV2.succeeded)
+
+            # Verify the solution contains the expected message
+            self.assertIsNotNone(result.output)
+            self.assertIn("solution", result.output)
+            self.assertIn("message", result.output["solution"])
+            self.assertEqual(result.output["solution"]["message"], "Hello, Earth")
+
+            # Verify metrics were generated
+            self.assertIn("metrics", result.output)
+            self.assertIn("value", result.output["metrics"])
+            self.assertEqual(result.output["metrics"]["value"], 1.23)
+            self.assertIn("message", result.output["metrics"])
+            self.assertEqual(result.output["metrics"]["message"], "Hello, Earth")
+
+    def test_default_app_options_extraction(self):
+        """Test that options can be extracted from the default app manifest."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Initialize a new app
+            app_name = "test-options-extraction"
+            app = Application.initialize(
+                src=app_name,
+                description="Test options extraction",
+                destination=temp_dir,
+            )
+
+            # Get the manifest and extract options
+            manifest = app.manifest
+            options = manifest.extract_options(should_parse=False)
+
+            # Verify options were extracted correctly
+            self.assertIsNotNone(options)
+            self.assertEqual(len(options.options), 1)
+
+            details_option = options.options[0]
+            self.assertEqual(details_option.name, "details")
+            self.assertEqual(details_option.option_type, bool)
+            self.assertEqual(details_option.default, True)
+            self.assertEqual(details_option.description, "Print details to logs. Default true.")
+            self.assertEqual(details_option.required, False)

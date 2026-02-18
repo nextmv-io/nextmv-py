@@ -10,3 +10,12 @@ python:
 files:
   - src/
   - main.py
+
+configuration:
+  options:
+    items:
+      - name: details
+        option_type: bool
+        default: true
+        description: Print details to logs. Default true.
+        required: false
