@@ -41,7 +41,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 from datetime import datetime, timezone
 from typing import Any
@@ -1087,7 +1086,7 @@ def __determine_command(manifest: Manifest) -> list[str]:
         The command prefix to use for execution. Empty list for binary executables.
     """
     if manifest.type == ManifestType.PYTHON:
-        return [sys.executable]
+        return ["python"]
     elif manifest.type == ManifestType.GO:
         return []
     elif manifest.type == ManifestType.BINARY:
