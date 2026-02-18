@@ -1460,7 +1460,9 @@ wheels = [
 name = "nextmv"
 source = { editable = "." }
 dependencies = [
+    { name = "folium" },
     { name = "pip" },
+    { name = "plotly" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -1469,10 +1471,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-all = [
-    { name = "folium" },
-    { name = "plotly" },
-]
 notebook = [
     { name = "mlflow" },
 ]
@@ -1499,17 +1497,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "folium", marker = "extra == 'all'", specifier = ">=0.20.0" },
+    { name = "folium", specifier = ">=0.20.0" },
     { name = "mlflow", marker = "extra == 'notebook'", specifier = ">=3.9.0" },
     { name = "pip", specifier = ">=26.0" },
-    { name = "plotly", marker = "extra == 'all'", specifier = ">=6.0.1" },
+    { name = "plotly", specifier = ">=6.0.1" },
     { name = "pydantic", specifier = ">=2.5.2" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "typer", specifier = ">=0.20.1" },
     { name = "urllib3", specifier = ">=2.1.0" },
 ]
-provides-extras = ["all", "notebook"]
+provides-extras = ["notebook"]
 
 [package.metadata.requires-dev]
 dev = [
