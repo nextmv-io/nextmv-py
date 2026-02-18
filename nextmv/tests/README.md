@@ -3,7 +3,7 @@
 Make sure you have dev requisites installed:
 
 ```bash
-pip install -e '.[dev]'
+uv sync
 ```
 
 ## Unit tests
@@ -11,7 +11,7 @@ pip install -e '.[dev]'
 Run unit tests with:
 
 ```bash
-pytest --ignore=tests/integration
+uv run pytest --ignore=tests/integration
 ```
 
 This will ignore integration tests located in `tests/integration`.
@@ -27,7 +27,7 @@ export NEXTMV_API_KEY="<YOUR_API_KEY>"
 Run integration tests with:
 
 ```bash
-pytest tests/integration -s
+uv run pytest tests/integration -s
 ```
 
 The integration tests use [Nextpipe][nextpipe] to orchestrate a workflow of

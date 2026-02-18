@@ -13,7 +13,6 @@ record_input
     Function to write the input to the appropriate location.
 """
 
-import importlib.util
 import json
 import os
 import shutil
@@ -83,19 +82,6 @@ def run(
     str
         The ID of the created run.
     """
-
-    # Check for required optional dependencies
-    missing_deps = []
-    if importlib.util.find_spec("folium") is None:
-        missing_deps.append("folium")
-    if importlib.util.find_spec("plotly") is None:
-        missing_deps.append("plotly")
-
-    if missing_deps:
-        raise ImportError(
-            f"{' and '.join(missing_deps)} {'is' if len(missing_deps) == 1 else 'are'} not installed. "
-            "Please install optional dependencies with `pip install nextmv[all]`"
-        )
 
     # Initialize the run: create the ID, dir, and write the input.
     run_id = safe_id("local")
