@@ -877,9 +877,14 @@ def _copy_files_from_manifest(src: str, temp_src: str, manifest: Manifest) -> No
     Exception
         If required files are missing or if copying fails.
     """
-    _, missing, files = find_files(src, manifest.files)
+    found, missing, files = find_files(src, manifest.files)
+
+    manifest.confirm_mandatory_files(found)
+
     if len(missing) > 0:
         raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
+
+    manifest.to_yaml(temp_src)
 
     for file in files:
         target_dir = os.path.dirname(os.path.join(temp_src, file["interior_path"]))

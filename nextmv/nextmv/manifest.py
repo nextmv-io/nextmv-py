@@ -123,6 +123,17 @@ class ManifestType(str, Enum):
     """Binary format"""
 
 
+_MANDATORY_FILES_PER_TYPE = {
+    ManifestType.PYTHON: ["main.py"],
+    ManifestType.GO: ["main"],
+    ManifestType.BINARY: ["main"],
+    ManifestType.JAVA: ["main.jar"],
+}
+"""
+Mapping of mandatory files required for each manifest type.
+"""
+
+
 class ManifestRuntime(str, Enum):
     """
     Runtime (environment) where the app will be run on Nextmv Cloud.
@@ -1442,6 +1453,37 @@ class Manifest(BaseModel):
         )
 
         return manifest
+
+    def confirm_mandatory_files(self, present_files: list[str]) -> None:
+        """
+        Confirm that all mandatory files are present in the given list of
+        files.
+
+        This method checks that all mandatory files for the manifest's type are
+        present in the provided list of files. If a custom execution
+        configuration with an entrypoint is provided, it checks for the
+        presence of the custom entrypoint instead of the default mandatory
+        files.
+
+        Parameters
+        ----------
+        present_files : list[str]
+            The list of files to check against the mandatory files.
+        """
+
+        found_files = {os.path.normpath(file): True for file in present_files}
+
+        # Check for mandatory files (if a custom execution config is provided we check the
+        # custom entrypoint instead)
+        mandatory_files = []
+        if self.execution is None or self.execution.entrypoint is None:
+            mandatory_files = _MANDATORY_FILES_PER_TYPE[self.type]
+        else:
+            mandatory_files.append(os.path.normpath(self.execution.entrypoint))
+        missing_files = [file for file in mandatory_files if file not in found_files]
+
+        if missing_files:
+            raise Exception(f"missing mandatory files: {', '.join(missing_files)}")
 
 
 def default_python_manifest() -> Manifest:
