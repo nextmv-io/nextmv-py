@@ -22,6 +22,8 @@ dependencies = [
     "pyyaml>=6.0.1",
     "typer>=0.20.1",
     "pip>=26.0",
+    "folium>=0.20.0",
+    "plotly>=6.0.1",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
@@ -57,10 +59,6 @@ nextmv = "nextmv.cli.main:main"
 
 # Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
-all = [
-    "folium>=0.20.0",
-    "plotly>=6.0.1",
-]
 notebook = [
     "mlflow>= 3.9.0",
 ]
