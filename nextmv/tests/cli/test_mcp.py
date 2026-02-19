@@ -71,6 +71,15 @@ class TestMCPServerTools(unittest.TestCase):
         server = create_server()
         self.assertEqual(server.name, "nextmv")
 
+    def test_server_has_all_profile_tools(self):
+        """Test that profile tools are registered."""
+        from nextmv.cli.mcp.server import create_server
+
+        server = create_server()
+        tool_names = list(server._tool_manager._tools.keys())
+        for name in ["cloud_list_profiles", "cloud_set_profile", "cloud_get_profile"]:
+            self.assertIn(name, tool_names, f"Missing tool: {name}")
+
     def test_server_has_all_cloud_app_tools(self):
         """Test that cloud app tools are registered."""
         from nextmv.cli.mcp.server import create_server
@@ -238,8 +247,8 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        # Should have 65+ tools covering all CLI commands.
-        self.assertGreaterEqual(len(tool_names), 65, f"Only {len(tool_names)} tools registered")
+        # Should have 68+ tools covering all CLI commands.
+        self.assertGreaterEqual(len(tool_names), 68, f"Only {len(tool_names)} tools registered")
 
     @patch("nextmv.cli.mcp.server._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
@@ -510,3 +519,104 @@ class TestSaveToFile(unittest.TestCase):
         # Second scenario: explicit type + list config.
         self.assertEqual(scenarios[1].scenario_input.scenario_input_data, "other-set")
         self.assertEqual(scenarios[1].configuration[0].values, ["10", "30"])
+
+
+class TestProfiles(unittest.TestCase):
+    """Tests for profile management tools."""
+
+    def test_mask_key(self):
+        """Test that _mask_key masks all but the last 4 characters."""
+        from nextmv.cli.mcp.server import _mask_key
+
+        self.assertIsNone(_mask_key(None))
+        self.assertEqual(_mask_key("abcd"), "abcd")
+        self.assertEqual(_mask_key("abcde12345"), "XXXXXX2345")
+
+    def test_set_and_get_profile(self):
+        """Test that cloud_set_profile and cloud_get_profile work together."""
+        import nextmv.cli.mcp.server as srv
+        from nextmv.cli.mcp.server import create_server
+
+        server = create_server()
+        set_tool = server._tool_manager._tools["cloud_set_profile"]
+        get_tool = server._tool_manager._tools["cloud_get_profile"]
+
+        # Default profile.
+        result = asyncio.run(get_tool.run({}))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        self.assertIn("default", str(text))
+
+        # Switch to a named profile.
+        asyncio.run(set_tool.run({"profile": "staging"}))
+        self.assertEqual(srv._current_profile, "staging")
+
+        result = asyncio.run(get_tool.run({}))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        self.assertIn("staging", str(text))
+
+        # Switch back to default.
+        asyncio.run(set_tool.run({"profile": "default"}))
+        self.assertIsNone(srv._current_profile)
+
+    def test_list_profiles(self):
+        """Test that cloud_list_profiles reads config correctly."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_config = {
+            "apikey": "my-secret-key-1234",
+            "endpoint": "api.cloud.nextmv.io",
+            "staging": {
+                "apikey": "stg-key-5678",
+                "endpoint": "staging.api.nextmv.io",
+            },
+        }
+
+        with patch(
+            "nextmv.cli.configuration.config.load_config",
+            return_value=mock_config,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_list_profiles"]
+            result = asyncio.run(tool.run({}))
+            profiles = json.loads(result[0].text) if hasattr(result[0], "text") else result
+            self.assertEqual(len(profiles), 2)
+            self.assertEqual(profiles[0]["name"], "default")
+            self.assertEqual(profiles[0]["endpoint"], "api.cloud.nextmv.io")
+            self.assertIn("1234", profiles[0]["api_key"])
+            self.assertNotIn("my-secret", profiles[0]["api_key"])
+            self.assertEqual(profiles[1]["name"], "staging")
+            self.assertIn("5678", profiles[1]["api_key"])
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch("nextmv.cli.configuration.config.build_client")
+    def test_get_client_uses_profile(self, mock_build_client):
+        """Test that _get_client passes the profile to build_client."""
+        import nextmv.cli.mcp.server as srv
+        from nextmv.cli.mcp.server import _get_client
+
+        mock_build_client.return_value = MagicMock()
+
+        # Explicit profile override.
+        _get_client(profile="staging")
+        mock_build_client.assert_called_with(profile="staging")
+
+        # Session-level profile.
+        srv._current_profile = "prod"
+        _get_client()
+        mock_build_client.assert_called_with(profile="prod")
+
+        # Reset.
+        srv._current_profile = None
+
+    @patch.dict("os.environ", {"NEXTMV_API_KEY": "env-key"}, clear=False)
+    def test_get_client_env_skipped_when_profile_set(self):
+        """Test that env var is skipped when a profile is active."""
+        import nextmv.cli.mcp.server as srv
+        from nextmv.cli.mcp.server import _get_client
+
+        with patch("nextmv.cli.configuration.config.build_client") as mock_build:
+            mock_build.return_value = MagicMock()
+            srv._current_profile = "staging"
+            _get_client()
+            mock_build.assert_called_with(profile="staging")
+            srv._current_profile = None
