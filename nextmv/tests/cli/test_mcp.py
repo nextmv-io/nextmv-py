@@ -3,11 +3,19 @@
 import asyncio
 import json
 import os
+import re
 import unittest
 from unittest.mock import MagicMock, patch
 
 from nextmv.cli.main import app
 from typer.testing import CliRunner
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text."""
+    return _ANSI_RE.sub("", text)
 
 
 class TestMCPServeCommand(unittest.TestCase):
@@ -36,9 +44,10 @@ class TestMCPServeCommand(unittest.TestCase):
 
         result = self.runner.invoke(app, ["mcp", "serve", "--help"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("Start the Nextmv MCP server", result.output)
-        self.assertIn("--transport", result.output)
-        self.assertIn("--port", result.output)
+        output = _strip_ansi(result.output)
+        self.assertIn("Start the Nextmv MCP server", output)
+        self.assertIn("--transport", output)
+        self.assertIn("--port", output)
 
     @patch("nextmv.cli.main.go_cli_exists")
     @patch("nextmv.cli.main.load_config")
