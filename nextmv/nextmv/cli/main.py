@@ -27,6 +27,7 @@ from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
 from nextmv.cli.init import app as init_app
 from nextmv.cli.local import app as local_app
 from nextmv.cli.manifest import app as manifest_app
+from nextmv.cli.mcp import app as mcp_app
 from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
@@ -53,6 +54,7 @@ app.add_typer(configuration_app, name="configuration")
 app.add_typer(init_app)
 app.add_typer(local_app, name="local")
 app.add_typer(manifest_app, name="manifest")
+app.add_typer(mcp_app, name="mcp")
 app.add_typer(version_app)
 
 
@@ -79,7 +81,7 @@ def callback(
         return
 
     # Skip checks for certain commands.
-    ignored_commands = {"configuration", "local", "init", "manifest", "version"}
+    ignored_commands = {"configuration", "mcp", "local", "init", "manifest", "version"}
     if ctx.invoked_subcommand in ignored_commands:
         return
 
