@@ -451,3 +451,53 @@ class TestSaveToFile(unittest.TestCase):
         call_kwargs = mock_app.new_input_set.call_args[1]
         self.assertEqual(call_kwargs["run_ids"], ["run-1", "run-2"])
         self.assertIsNone(call_kwargs["inputs"])
+
+    @patch("nextmv.cli.mcp.server._get_app")
+    def test_cloud_create_scenario_test_converts_dicts(self, mock_get_app):
+        """Test that cloud_create_scenario_test converts dicts to Scenario objects."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.new_scenario_test.return_value = "st-123"
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_scenario_test"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "name": "test",
+            "scenarios": [
+                {
+                    "instance_id": "stable",
+                    "scenario_id": "s1",
+                    "scenario_input": {
+                        "input_set_id": "my-input-set",
+                    },
+                    "configuration": {
+                        "options": {"duration": "30", "objective": "cost"},
+                    },
+                },
+                {
+                    "instance_id": "stable",
+                    "scenario_id": "s2",
+                    "scenario_input": {
+                        "scenario_input_type": "input_set",
+                        "scenario_input_data": "other-set",
+                    },
+                    "configuration": [
+                        {"name": "duration", "values": ["10", "30"]},
+                    ],
+                },
+            ],
+        }))
+        call_kwargs = mock_app.new_scenario_test.call_args[1]
+        scenarios = call_kwargs["scenarios"]
+        self.assertEqual(len(scenarios), 2)
+        # First scenario: shorthand input_set_id + options dict.
+        self.assertEqual(scenarios[0].instance_id, "stable")
+        self.assertEqual(scenarios[0].scenario_id, "s1")
+        self.assertEqual(scenarios[0].scenario_input.scenario_input_data, "my-input-set")
+        self.assertEqual(len(scenarios[0].configuration), 2)
+        # Second scenario: explicit type + list config.
+        self.assertEqual(scenarios[1].scenario_input.scenario_input_data, "other-set")
+        self.assertEqual(scenarios[1].configuration[0].values, ["10", "30"])
