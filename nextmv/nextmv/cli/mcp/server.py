@@ -17,12 +17,32 @@ from nextmv.cloud import (
 )
 from nextmv.polling import default_polling_options
 
+# Session-level profile. None means "default" (top-level config keys).
+_current_profile: str | None = None
 
-def _get_client() -> Client:
-    """Build a Cloud client from env var or CLI config."""
+
+def _mask_key(key: str | None) -> str | None:
+    """Mask an API key, keeping only the last 4 characters visible."""
+
+    if not key:
+        return None
+    if len(key) <= 4:
+        return key
+    return "X" * (len(key) - 4) + key[-4:]
+
+
+def _get_client(profile: str | None = None) -> Client:
+    """Build a Cloud client from env var or CLI config.
+
+    Args:
+        profile: Optional profile override. If not provided, uses the
+            session-level ``_current_profile``.
+    """
+
+    resolved = profile or _current_profile
 
     api_key = os.getenv("NEXTMV_API_KEY")
-    if api_key:
+    if api_key and not resolved:
         endpoint = os.getenv("NEXTMV_ENDPOINT", "https://api.cloud.nextmv.io")
         if not endpoint.startswith("http"):
             endpoint = f"https://{endpoint}"
@@ -32,7 +52,9 @@ def _get_client() -> Client:
     try:
         from nextmv.cli.configuration.config import build_client
 
-        return build_client()
+        # "default" means use top-level keys (profile=None in build_client).
+        p = None if resolved is None or resolved == "default" else resolved
+        return build_client(profile=p)
     except Exception as e:
         raise ValueError(
             "No Nextmv API key found. Either set the NEXTMV_API_KEY "
@@ -41,10 +63,10 @@ def _get_client() -> Client:
         ) from e
 
 
-def _get_app(app_id: str) -> Application:
+def _get_app(app_id: str, profile: str | None = None) -> Application:
     """Build a cloud Application handle for the given ID."""
 
-    client = _get_client()
+    client = _get_client(profile=profile)
     return Application(client=client, id=app_id)
 
 
@@ -67,6 +89,83 @@ def _save_to_file(data: Any, prefix: str) -> str:
     with os.fdopen(fd, "w") as fh:
         json.dump(data, fh, indent=2)
     return f"Data saved to {path} — use file-reading tools to inspect the contents."
+
+
+# ════════════════════════════════════════════════════════════════
+# Cloud: Profile management
+# ════════════════════════════════════════════════════════════════
+
+
+def _register_profile_tools(mcp: FastMCP) -> None:
+    """Register profile management tools."""
+
+    @mcp.tool()
+    def cloud_list_profiles() -> list[dict[str, str | None]]:
+        """List available Nextmv Cloud profiles from ~/.nextmv/config.yaml.
+
+        Returns a list of profiles. Each profile has a name, endpoint,
+        and a masked API key (last 4 characters visible).
+        The "default" profile uses the top-level configuration keys.
+        """
+
+        from nextmv.cli.configuration.config import (
+            API_KEY_KEY,
+            ENDPOINT_KEY,
+            load_config,
+            non_profile_keys,
+        )
+
+        config = load_config()
+        profiles: list[dict[str, str | None]] = []
+
+        # Add the default profile (top-level keys).
+        if config:
+            profiles.append(
+                {
+                    "name": "default",
+                    "endpoint": config.get(ENDPOINT_KEY),
+                    "api_key": _mask_key(config.get(API_KEY_KEY)),
+                }
+            )
+
+        # Add named profiles.
+        reserved = non_profile_keys()
+        for key, value in config.items():
+            if key in reserved:
+                continue
+            if isinstance(value, dict):
+                profiles.append(
+                    {
+                        "name": key,
+                        "endpoint": value.get(ENDPOINT_KEY),
+                        "api_key": _mask_key(value.get(API_KEY_KEY)),
+                    }
+                )
+
+        return profiles
+
+    @mcp.tool()
+    def cloud_set_profile(profile: str) -> str:
+        """Set the active Nextmv Cloud profile for this session.
+
+        All subsequent cloud tool calls will use this profile's
+        credentials unless overridden. Use "default" to switch back
+        to the default profile.
+
+        Args:
+            profile: Profile name from ~/.nextmv/config.yaml, or
+                "default" for the top-level configuration.
+        """
+
+        global _current_profile
+        _current_profile = None if profile == "default" else profile
+        return f"Active profile set to \"{profile}\"."
+
+    @mcp.tool()
+    def cloud_get_profile() -> str:
+        """Get the currently active Nextmv Cloud profile name."""
+
+        return _current_profile or "default"
 
 
 # ════════════════════════════════════════════════════════════════
@@ -1790,11 +1889,20 @@ def create_server() -> FastMCP:
             "inputs, logs) are automatically saved to local temp files to "
             "keep the context window small — the tool will return the file "
             "path so you can selectively read what you need. Large inputs "
-            "can be passed directly as tool parameters without concern."
+            "can be passed directly as tool parameters without concern.\n\n"
+            "PROFILES: The server supports multiple profiles from "
+            "~/.nextmv/config.yaml. Use cloud_list_profiles to see "
+            "available profiles and cloud_set_profile to switch. The "
+            "default profile is used unless changed. When the user asks "
+            "to use a specific profile (e.g. \"list apps in my dev "
+            "profile\"), call cloud_set_profile first. Always state which "
+            "profile you are using when calling cloud tools, e.g. "
+            "(profile: \"default\")."
         ),
     )
 
     # Cloud tools
+    _register_profile_tools(mcp)
     _register_app_tools(mcp)
     _register_run_tools(mcp)
     _register_version_tools(mcp)
