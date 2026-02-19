@@ -59,6 +59,14 @@ nextmv = "nextmv.cli.main:main"
 
 # Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
+all = [
+    "folium>=0.20.0",
+    "mcp[cli]>=1.0",
+    "plotly>=6.0.1",
+]
+mcp = [
+    "mcp[cli]>=1.0",
+]
 notebook = [
     "mlflow>= 3.9.0",
 ]
@@ -78,6 +86,7 @@ dev = [
     "openpyxl>=3.1.5",
     "folium>=0.20.0",
     "plotly>=6.0.1",
+    "mcp[cli]>=1.0",
     "pytest>=9.0.2",
     "nextpipe>=0.6.0",
     "pip>=26.0",
