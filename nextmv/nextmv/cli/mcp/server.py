@@ -1,6 +1,8 @@
 """Nextmv MCP server definition."""
 
+import json
 import os
+import tempfile
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -51,6 +53,20 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
 
     app, _ = local.Application.get_or_register(app_src=app_dir, app_id=app_id)
     return app
+
+
+def _save_to_file(data: Any, prefix: str) -> str:
+    """Serialize data to a temp JSON file and return a message with the path.
+
+    This keeps large payloads out of the MCP response (and thus out of
+    the LLM context window). The caller can selectively read the file
+    using standard file-reading tools.
+    """
+
+    fd, path = tempfile.mkstemp(suffix=".json", prefix=f"{prefix}_")
+    with os.fdopen(fd, "w") as fh:
+        json.dump(data, fh, indent=2)
+    return f"Data saved to {path} — use file-reading tools to inspect the contents."
 
 
 # ════════════════════════════════════════════════════════════════
@@ -179,11 +195,12 @@ def _register_run_tools(mcp: FastMCP) -> None:
         input: dict[str, Any],
         instance_id: str | None = None,
         run_options: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Run a Nextmv Cloud application and wait for the result.
 
-        Submits the input to the app, polls until complete, and returns
-        the full result including solution output and statistics.
+        Submits the input to the app, polls until complete, and saves
+        the full result (solution output and statistics) to a local
+        temp file. Use file-reading tools to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -199,7 +216,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
             run_options=run_options or {},
             polling_options=default_polling_options(),
         )
-        return result.to_dict()
+        return _save_to_file(result.to_dict(), prefix=f"cloud_run_{app_id}")
 
     @mcp.tool()
     def cloud_run_submit(
@@ -242,8 +259,11 @@ def _register_run_tools(mcp: FastMCP) -> None:
         return metadata.to_dict()
 
     @mcp.tool()
-    def cloud_run_result(app_id: str, run_id: str) -> dict[str, Any]:
+    def cloud_run_result(app_id: str, run_id: str) -> str:
         """Get the full result of a completed Nextmv Cloud run.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -252,7 +272,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         result = app.run_result(run_id=run_id)
-        return result.to_dict()
+        return _save_to_file(result.to_dict(), prefix=f"run_result_{run_id}")
 
     @mcp.tool()
     def cloud_cancel_run(app_id: str, run_id: str) -> str:
@@ -288,8 +308,11 @@ def _register_run_tools(mcp: FastMCP) -> None:
         return [r.to_dict() for r in runs]
 
     @mcp.tool()
-    def cloud_run_input(app_id: str, run_id: str) -> dict[str, Any] | None:
+    def cloud_run_input(app_id: str, run_id: str) -> str:
         """Get the input data of a Nextmv Cloud run.
+
+        Saves the input to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -297,11 +320,15 @@ def _register_run_tools(mcp: FastMCP) -> None:
         """
 
         app = _get_app(app_id)
-        return app.run_input(run_id=run_id)
+        data = app.run_input(run_id=run_id)
+        return _save_to_file(data, prefix=f"run_input_{run_id}")
 
     @mcp.tool()
-    def cloud_run_logs(app_id: str, run_id: str) -> dict[str, Any]:
+    def cloud_run_logs(app_id: str, run_id: str) -> str:
         """Get the logs of a Nextmv Cloud run.
+
+        Saves the logs to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -310,7 +337,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         logs = app.run_logs(run_id=run_id)
-        return logs.to_dict()
+        return _save_to_file(logs.to_dict(), prefix=f"run_logs_{run_id}")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -650,11 +677,18 @@ def _register_input_set_tools(mcp: FastMCP) -> None:
         description: str | None = None,
         instance_id: str | None = None,
         maximum_runs: int | None = None,
+        run_ids: list[str] | None = None,
+        managed_input_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """Create a new input set for a Nextmv Cloud application.
 
         An input set collects inputs (from historical runs or managed
         inputs) for use in batch experiments and acceptance tests.
+
+        Three creation methods (use exactly one):
+        1. ``instance_id`` — collect recent runs from that instance.
+        2. ``run_ids`` — use specific run IDs.
+        3. ``managed_input_ids`` — use existing managed inputs.
 
         Args:
             app_id: The application ID.
@@ -663,15 +697,26 @@ def _register_input_set_tools(mcp: FastMCP) -> None:
             description: Optional description.
             instance_id: Optional instance ID to collect runs from.
             maximum_runs: Maximum number of runs to include (default: 20).
+            run_ids: Optional list of specific run IDs.
+            managed_input_ids: Optional list of managed input IDs.
         """
 
+        from nextmv.cloud.input_set import ManagedInput
+
         app = _get_app(app_id)
+
+        inputs = None
+        if managed_input_ids:
+            inputs = [ManagedInput(id=mid) for mid in managed_input_ids]
+
         input_set = app.new_input_set(
             id=input_set_id,
             name=name,
             description=description,
             instance_id=instance_id,
             maximum_runs=maximum_runs,
+            run_ids=run_ids,
+            inputs=inputs,
         )
         return input_set.to_dict()
 
@@ -1400,8 +1445,12 @@ def _register_managed_input_tools(mcp: FastMCP) -> None:
         name: str | None = None,
         description: str | None = None,
         run_id: str | None = None,
+        input: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Create a managed input for a Nextmv Cloud application.
+
+        Provide either ``run_id`` to copy the input from an existing run,
+        or ``input`` to upload raw JSON data directly.
 
         Args:
             app_id: The application ID.
@@ -1409,14 +1458,23 @@ def _register_managed_input_tools(mcp: FastMCP) -> None:
             name: Optional name.
             description: Optional description.
             run_id: Optional run ID to copy input from.
+            input: Optional raw input data (JSON object) to upload.
         """
 
         app = _get_app(app_id)
+
+        upload_id = None
+        if input is not None:
+            upload_url = app.upload_url()
+            app.upload_data(upload_url=upload_url, data=input)
+            upload_id = upload_url.upload_id
+
         mi = app.new_managed_input(
             id=managed_input_id,
             name=name,
             description=description,
             run_id=run_id,
+            upload_id=upload_id,
         )
         return mi.to_dict()
 
@@ -1485,8 +1543,11 @@ def _register_local_tools(mcp: FastMCP) -> None:
         input: dict[str, Any],
         app_id: str | None = None,
         run_options: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Run a local Nextmv application and wait for the result.
+
+        Saves the full result to a local temp file. Use file-reading
+        tools to inspect the contents.
 
         Args:
             app_dir: Path to the local application directory.
@@ -1501,7 +1562,7 @@ def _register_local_tools(mcp: FastMCP) -> None:
             run_options=run_options or {},
             polling_options=default_polling_options(),
         )
-        return result.to_dict()
+        return _save_to_file(result.to_dict(), prefix="local_run")
 
     @mcp.tool()
     def local_run_submit(
@@ -1531,8 +1592,11 @@ def _register_local_tools(mcp: FastMCP) -> None:
         app_dir: str,
         run_id: str,
         app_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get the result of a local run.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_dir: Path to the local application directory.
@@ -1542,7 +1606,7 @@ def _register_local_tools(mcp: FastMCP) -> None:
 
         app = _get_local_app(app_dir=app_dir, app_id=app_id)
         result = app.run_result(run_id=run_id)
-        return result.to_dict()
+        return _save_to_file(result.to_dict(), prefix=f"local_run_result_{run_id}")
 
     @mcp.tool()
     def local_list_runs(
@@ -1568,6 +1632,9 @@ def _register_local_tools(mcp: FastMCP) -> None:
     ) -> str:
         """Get the logs of a local run.
 
+        Saves the logs to a local temp file. Use file-reading tools
+        to inspect the contents.
+
         Args:
             app_dir: Path to the local application directory.
             run_id: The run ID.
@@ -1575,7 +1642,8 @@ def _register_local_tools(mcp: FastMCP) -> None:
         """
 
         app = _get_local_app(app_dir=app_dir, app_id=app_id)
-        return app.run_logs(run_id=run_id)
+        logs = app.run_logs(run_id=run_id)
+        return _save_to_file(logs, prefix=f"local_run_logs_{run_id}")
 
     @mcp.tool()
     def local_sync(
@@ -1622,7 +1690,13 @@ def create_server() -> FastMCP:
             "models (optimization, routing, scheduling, etc.). Use these "
             "tools to interact with Nextmv Cloud apps: list apps, submit "
             "runs, check results, manage versions/instances, run experiments, "
-            "and work with local applications."
+            "and work with local applications.\n\n"
+            "IMPORTANT: Always use these MCP tools instead of shelling out "
+            "to the `nextmv` CLI binary. Large responses (run results, "
+            "inputs, logs) are automatically saved to local temp files to "
+            "keep the context window small — the tool will return the file "
+            "path so you can selectively read what you need. Large inputs "
+            "can be passed directly as tool parameters without concern."
         ),
     )
 
