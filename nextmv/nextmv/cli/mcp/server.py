@@ -582,8 +582,11 @@ def _register_batch_tools(mcp: FastMCP) -> None:
         return batch_id
 
     @mcp.tool()
-    def cloud_get_batch(app_id: str, batch_id: str) -> dict[str, Any]:
+    def cloud_get_batch(app_id: str, batch_id: str) -> str:
         """Get batch experiment details and runs.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -592,7 +595,7 @@ def _register_batch_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         batch = app.batch_experiment(batch_id=batch_id)
-        return batch.to_dict()
+        return _save_to_file(batch.to_dict(), prefix=f"batch_{batch_id}")
 
     @mcp.tool()
     def cloud_list_batches(app_id: str) -> list[dict[str, Any]]:
@@ -607,8 +610,11 @@ def _register_batch_tools(mcp: FastMCP) -> None:
         return [b.to_dict() for b in batches]
 
     @mcp.tool()
-    def cloud_batch_metadata(app_id: str, batch_id: str) -> dict[str, Any]:
+    def cloud_batch_metadata(app_id: str, batch_id: str) -> str:
         """Get metadata for a batch experiment.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -617,7 +623,7 @@ def _register_batch_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         metadata = app.batch_experiment_metadata(batch_id=batch_id)
-        return metadata.to_dict()
+        return _save_to_file(metadata.to_dict(), prefix=f"batch_metadata_{batch_id}")
 
     @mcp.tool()
     def cloud_delete_batch(app_id: str, batch_id: str) -> str:
@@ -778,8 +784,11 @@ def _register_acceptance_tools(mcp: FastMCP) -> None:
     def cloud_get_acceptance_test(
         app_id: str,
         acceptance_test_id: str,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get details of an acceptance test.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -788,7 +797,7 @@ def _register_acceptance_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         test = app.acceptance_test(acceptance_test_id=acceptance_test_id)
-        return test.to_dict()
+        return _save_to_file(test.to_dict(), prefix=f"acceptance_test_{acceptance_test_id}")
 
     @mcp.tool()
     def cloud_create_acceptance_test(
@@ -847,6 +856,67 @@ def _register_acceptance_tools(mcp: FastMCP) -> None:
         return f"Deleted acceptance test {acceptance_test_id}"
 
 
+def _build_scenario(s: dict[str, Any]) -> Any:
+    """Convert a plain dict into a ``Scenario`` dataclass instance."""
+
+    from nextmv.cloud.scenario import (
+        Scenario,
+        ScenarioConfiguration,
+        ScenarioInput,
+        ScenarioInputType,
+    )
+
+    # --- Build ScenarioInput ---
+    raw_input = s["scenario_input"]
+    if "scenario_input_type" in raw_input:
+        si = ScenarioInput(
+            scenario_input_type=ScenarioInputType(raw_input["scenario_input_type"]),
+            scenario_input_data=raw_input["scenario_input_data"],
+        )
+    elif "input_set_id" in raw_input:
+        si = ScenarioInput(
+            scenario_input_type=ScenarioInputType.INPUT_SET,
+            scenario_input_data=raw_input["input_set_id"],
+        )
+    elif "managed_input_ids" in raw_input:
+        si = ScenarioInput(
+            scenario_input_type=ScenarioInputType.INPUT,
+            scenario_input_data=raw_input["managed_input_ids"],
+        )
+    else:
+        raise ValueError(
+            f"scenario_input must contain 'scenario_input_type' + "
+            f"'scenario_input_data', or 'input_set_id', or "
+            f"'managed_input_ids'. Got: {raw_input}"
+        )
+
+    # --- Build configuration ---
+    config = None
+    raw_config = s.get("configuration")
+    if isinstance(raw_config, list):
+        config = [
+            ScenarioConfiguration(name=c["name"], values=c["values"])
+            for c in raw_config
+        ]
+    elif isinstance(raw_config, dict):
+        # Shorthand: {"options": {"key": "val"}} or {"key": "val"}
+        opts = raw_config.get("options", raw_config)
+        config = [
+            ScenarioConfiguration(
+                name=k,
+                values=v if isinstance(v, list) else [v],
+            )
+            for k, v in opts.items()
+        ]
+
+    return Scenario(
+        scenario_input=si,
+        instance_id=s["instance_id"],
+        scenario_id=s.get("scenario_id"),
+        configuration=config,
+    )
+
+
 # ════════════════════════════════════════════════════════════════
 # Cloud: Scenario tests
 # ════════════════════════════════════════════════════════════════
@@ -871,8 +941,11 @@ def _register_scenario_tools(mcp: FastMCP) -> None:
     def cloud_get_scenario_test(
         app_id: str,
         scenario_test_id: str,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get details of a scenario test.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -881,7 +954,7 @@ def _register_scenario_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         test = app.scenario_test(scenario_test_id=scenario_test_id)
-        return test.to_dict()
+        return _save_to_file(test.to_dict(), prefix=f"scenario_test_{scenario_test_id}")
 
     @mcp.tool()
     def cloud_create_scenario_test(
@@ -899,8 +972,18 @@ def _register_scenario_tools(mcp: FastMCP) -> None:
 
         Args:
             app_id: The application ID.
-            scenarios: List of scenario definitions. Each is a dict with
-                keys: instance_id, scenario_input, scenario_id, configuration.
+            scenarios: List of scenario definitions. Each dict has keys:
+
+                - instance_id (str, required): Instance to run against.
+                - scenario_id (str, optional): ID for this scenario.
+                - scenario_input (dict, required): Must contain
+                  ``scenario_input_type`` ("input_set", "input", or "new")
+                  and ``scenario_input_data`` (a string input-set ID, a list
+                  of input IDs, or a list of raw dicts).
+                - configuration (list[dict], optional): Each entry has
+                  ``name`` (str) and ``values`` (list[str]).  A shorthand
+                  ``options`` dict (``{"key": "value", ...}``) is also
+                  accepted and is expanded to single-value configurations.
             scenario_test_id: Optional test ID.
             name: Optional name.
             description: Optional description.
@@ -908,8 +991,10 @@ def _register_scenario_tools(mcp: FastMCP) -> None:
         """
 
         app = _get_app(app_id)
+        scenario_objs = [_build_scenario(s) for s in scenarios]
+
         test_id = app.new_scenario_test(
-            scenarios=scenarios,
+            scenarios=scenario_objs,
             id=scenario_test_id,
             name=name,
             description=description,
@@ -958,8 +1043,11 @@ def _register_ensemble_tools(mcp: FastMCP) -> None:
     def cloud_get_ensemble(
         app_id: str,
         ensemble_id: str,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get details of an ensemble definition.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -968,7 +1056,7 @@ def _register_ensemble_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         ensemble = app.ensemble_definition(ensemble_definition_id=ensemble_id)
-        return ensemble.to_dict()
+        return _save_to_file(ensemble.to_dict(), prefix=f"ensemble_{ensemble_id}")
 
     @mcp.tool()
     def cloud_create_ensemble(
@@ -1046,8 +1134,11 @@ def _register_shadow_tools(mcp: FastMCP) -> None:
     def cloud_get_shadow_test(
         app_id: str,
         shadow_test_id: str,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get details of a shadow test.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -1056,7 +1147,7 @@ def _register_shadow_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         test = app.shadow_test(shadow_test_id=shadow_test_id)
-        return test.to_dict()
+        return _save_to_file(test.to_dict(), prefix=f"shadow_test_{shadow_test_id}")
 
     @mcp.tool()
     def cloud_create_shadow_test(
@@ -1170,8 +1261,11 @@ def _register_switchback_tools(mcp: FastMCP) -> None:
     def cloud_get_switchback_test(
         app_id: str,
         switchback_test_id: str,
-    ) -> dict[str, Any]:
+    ) -> str:
         """Get details of a switchback test.
+
+        Saves the result to a local temp file. Use file-reading tools
+        to inspect the contents.
 
         Args:
             app_id: The application ID.
@@ -1180,7 +1274,7 @@ def _register_switchback_tools(mcp: FastMCP) -> None:
 
         app = _get_app(app_id)
         test = app.switchback_test(switchback_test_id=switchback_test_id)
-        return test.to_dict()
+        return _save_to_file(test.to_dict(), prefix=f"switchback_test_{switchback_test_id}")
 
     @mcp.tool()
     def cloud_create_switchback_test(
