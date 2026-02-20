@@ -228,6 +228,12 @@ def choice(msg: str, choices: typing.Iterable[str], default: str | None = None) 
         Exits the program with code 1 if the operation is cancelled or no
         selection is made.
     """
+
+    # If this is not an interactive terminal, do not ask for confirmation, to
+    # avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        return default
+
     try:
         selection = questionary.select(
             msg,
@@ -270,6 +276,11 @@ def directory_path(msg: str, default: str | None = None) -> str:
         Exits the program with code 1 if the operation is cancelled or no
         directory path is provided.
     """
+    # If this is not an interactive terminal, do not ask for confirmation, to
+    # avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        return default
+
     try:
         dirpath = questionary.path(
             message=msg,

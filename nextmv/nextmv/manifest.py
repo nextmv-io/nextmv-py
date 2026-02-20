@@ -1137,7 +1137,7 @@ class Manifest(BaseModel):
     Python-specific attributes.
     """
     files: list[str] = Field(
-        default_factory=list,
+        min_length=1,
     )
     """The files to include (or exclude) in the app. This is mandatory."""
     configuration: ManifestConfiguration | None = None
@@ -1218,6 +1218,8 @@ class Manifest(BaseModel):
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
         """
+
+        dirpath = os.path.normpath(os.path.expanduser(dirpath))
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME)) as file:
             raw_manifest = yaml.safe_load(file)

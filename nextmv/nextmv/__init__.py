@@ -27,6 +27,7 @@ from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
 from .manifest import default_python_manifest as default_python_manifest
 from .manifest import find_files as find_files
+from .manifest import initialize_manifest as initialize_manifest
 from .model import Model as Model
 from .model import ModelConfiguration as ModelConfiguration
 from .options import Option as Option

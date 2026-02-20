@@ -160,6 +160,12 @@ guidelines:
   - `warning`: prints a warning message. Use for non-critical issues.
   - `error`: prints an error and raises an exception. Use for critical issues
     and to return early from commands.
+  - `confirmation`: prompts the user for a yes/no confirmation. Returns the
+    default value in non-interactive sessions.
+  - `choice`: prompts the user to select one option from a list of choices.
+    Returns the default value in non-interactive sessions.
+  - `directory_path`: prompts the user to enter or select a directory path.
+    Returns the default value in non-interactive sessions.
 - For printing `JSON` information, use the `print_json` function in the
   `message.py` file to print JSON output. This ensures consistent formatting
   across the CLI.
@@ -191,13 +197,20 @@ guidelines:
     ] = None,
   ```
 
-## Confirmation prompts
+## User prompts
 
-For destructive actions (like deletions), use the `get_confirmation()` method
-to ask for user confirmation before proceeding. The method is available from
-the `cli/confirm.py` file. This method already handles sensible values used for
-getting a confirmation from a user. Additionally, it handles non-interactive
-sessions by defaulting to `False` if no input can be provided.
+The `message.py` file provides three interactive prompt functions: `confirmation`,
+`choice`, and `directory_path`. All three handle non-interactive sessions
+gracefully by returning a default value when `stdin` is not a TTY, preventing
+commands from hanging indefinitely.
+
+### Confirmation
+
+For destructive actions (like deletions), use the `confirmation()` function
+from `message.py` to ask for user confirmation before proceeding. This function
+already handles sensible values used for getting a confirmation from a user.
+Additionally, it handles non-interactive sessions by defaulting to `False` if
+no input can be provided.
 
 When using confirmation prompts, follow these guidelines:
 
@@ -211,13 +224,41 @@ Consider the `nextmv cloud app delete` command:
 
 ```python
 if not yes:
-    confirm = get_confirmation(
+    confirm = confirmation(
         f"Are you sure you want to delete application [magenta]{app_id}[/magenta]? This action cannot be undone.",
     )
 
     if not confirm:
         info(f"Application [magenta]{app_id}[/magenta] will not be deleted.")
         return
+```
+
+### Choice
+
+Use the `choice()` function when the user must select one option from a
+predefined list. It renders an interactive selection menu and returns the chosen
+value. In non-interactive sessions, the `default` value is returned instead.
+
+```python
+selected = choice(
+    "Select an instance to use:",
+    choices=["instance-a", "instance-b", "instance-c"],
+    default="instance-a",
+)
+```
+
+### Directory path
+
+Use the `directory_path()` function when the user must provide or confirm a
+directory path. It renders an interactive path-completion prompt restricted to
+directories. In non-interactive sessions, the `default` value is returned
+instead.
+
+```python
+dirpath = directory_path(
+    "Select the output directory:",
+    default="./output",
+)
 ```
 
 ## Formatting, colors, and styles

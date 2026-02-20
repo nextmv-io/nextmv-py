@@ -1,5 +1,5 @@
 """
-This module defines the local manifest init command for the Nextmv CLI.
+This module defines the manifest init command for the Nextmv CLI.
 """
 
 from typing import Annotated
@@ -8,8 +8,6 @@ import typer
 
 from nextmv.cli.message import choice, directory_path, enum_values, success
 from nextmv.manifest import ManifestType, initialize_manifest
-
-_SUPPORTED_TYPES = [ManifestType.PYTHON, ManifestType.GO, ManifestType.JAVA]
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -49,13 +47,13 @@ def init(
     [bold][underline]Examples[/underline][/bold]
 
     - Initialize a Python manifest in the current directory.
-        $ [dim]nextmv local manifest init[/dim]
+        $ [dim]nextmv manifest init[/dim]
 
     - Initialize a Go manifest in the [magenta]./my-app[/magenta] directory.
-        $ [dim]nextmv local manifest init --type go --dirpath ./my-app[/dim]
+        $ [dim]nextmv manifest init --type go --dirpath ./my-app[/dim]
 
     - Initialize a Java manifest in the [magenta]./my-app[/magenta] directory.
-        $ [dim]nextmv local manifest init --type java --dirpath ./my-app[/dim]
+        $ [dim]nextmv manifest init --type java --dirpath ./my-app[/dim]
     """
 
     if manifest_type is None or manifest_type == "":
