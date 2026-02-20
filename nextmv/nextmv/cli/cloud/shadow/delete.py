@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import info, success
+from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
 
 # Set up subcommand application.

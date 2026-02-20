@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_marketplace_subscription
-from nextmv.cli.message import info, success
+from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import MarketplaceSubscriptionIDOption, ProfileOption
 
 # Set up subcommand application.
