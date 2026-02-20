@@ -1,6 +1,9 @@
+import os
+import tempfile
 import unittest
 
 from nextmv.manifest import (
+    MANIFEST_FILE_NAME,
     Manifest,
     ManifestContent,
     ManifestContentMultiFile,
@@ -14,6 +17,7 @@ from nextmv.manifest import (
     ManifestRuntime,
     ManifestType,
     ManifestValidation,
+    initialize_manifest,
 )
 from nextmv.model import ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
@@ -493,3 +497,74 @@ class TestManifestOption(unittest.TestCase):
                 self.assertEqual(option.default, manifest_option.default)
                 self.assertEqual(option.description, manifest_option.description)
                 self.assertEqual(option.required, manifest_option.required)
+
+
+class TestWriteSampleManifest(unittest.TestCase):
+    def test_writes_python_manifest(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            initialize_manifest(ManifestType.PYTHON, dirpath)
+            dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            self.assertTrue(os.path.isfile(dest))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.PYTHON)
+
+    def test_writes_go_manifest(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            initialize_manifest(ManifestType.GO, dirpath)
+            dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            self.assertTrue(os.path.isfile(dest))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.GO)
+
+    def test_writes_java_manifest(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            initialize_manifest(ManifestType.JAVA, dirpath)
+            dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            self.assertTrue(os.path.isfile(dest))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.JAVA)
+
+    def test_creates_directory_if_not_exists(self):
+        with tempfile.TemporaryDirectory() as base:
+            dirpath = os.path.join(base, "new_subdir")
+            self.assertFalse(os.path.exists(dirpath))
+            initialize_manifest(ManifestType.PYTHON, dirpath)
+            self.assertTrue(os.path.isfile(os.path.join(dirpath, MANIFEST_FILE_NAME)))
+
+    def test_overwrites_existing_file(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            with open(dest, "w") as f:
+                f.write("placeholder: true\n")
+            initialize_manifest(ManifestType.PYTHON, dirpath)
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.PYTHON)
+
+    def test_returns_normalized_path(self):
+        with tempfile.TemporaryDirectory() as base:
+            # Pass a path with a trailing slash; normpath should remove it.
+            dirpath = base + os.sep
+            dst = initialize_manifest(ManifestType.PYTHON, dirpath)
+            expected = os.path.join(os.path.normpath(dirpath), MANIFEST_FILE_NAME)
+            self.assertEqual(dst, expected)
+            self.assertTrue(os.path.isfile(dst))
+
+    def test_expands_user_home_in_path(self):
+        home = os.path.expanduser("~")
+        with tempfile.TemporaryDirectory(dir=home) as dirpath:
+            # Replace the home prefix with ~ so expanduser must be applied.
+            tilde_path = os.path.join("~", os.path.relpath(dirpath, home))
+            dst = initialize_manifest(ManifestType.PYTHON, tilde_path)
+            expected = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            self.assertEqual(dst, expected)
+            self.assertTrue(os.path.isfile(dst))
+
+    def test_normalized_path_used_for_subdirectory_creation(self):
+        with tempfile.TemporaryDirectory() as base:
+            # Path with redundant separators that normpath will clean up.
+            dirpath = os.path.join(base, "sub" + os.sep + os.sep + "dir")
+            dst = initialize_manifest(ManifestType.PYTHON, dirpath)
+            normalized = os.path.normpath(dirpath)
+            expected = os.path.join(normalized, MANIFEST_FILE_NAME)
+            self.assertEqual(dst, expected)
+            self.assertTrue(os.path.isfile(dst))

@@ -7,8 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_account
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success
+from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AccountIDOption, ProfileOption
 
 # Set up subcommand application.
@@ -46,7 +45,7 @@ def delete(
     """
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             f"Are you sure you want to delete account [magenta]{account_id}[/magenta]? This action cannot be undone.",
         )
 

@@ -7,7 +7,6 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_marketplace_subscription
-from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import info, success
 from nextmv.cli.options import MarketplaceSubscriptionIDOption, ProfileOption
 
@@ -44,7 +43,7 @@ def delete(
     """
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             f"Are you sure you want to delete subscription with ID [magenta]{subscription_id}[/magenta]?",
         )
 

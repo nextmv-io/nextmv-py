@@ -24,9 +24,8 @@ from nextmv.cli.cloud import app as cloud_app
 from nextmv.cli.community import app as community_app
 from nextmv.cli.configuration import app as configuration_app
 from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
-from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.local import app as local_app
-from nextmv.cli.message import error, info, success, warning
+from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
 
@@ -94,7 +93,7 @@ def handle_go_cli() -> None:
 
     exists = go_cli_exists()
     if exists:
-        delete = get_confirmation(
+        delete = confirmation(
             "Do you want to delete the [italic red]deprecated[/italic red] Nextmv CLI "
             f"at [magenta]{GO_CLI_PATH}[/magenta] now?"
         )

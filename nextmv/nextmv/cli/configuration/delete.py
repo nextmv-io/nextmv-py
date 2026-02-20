@@ -7,7 +7,6 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import load_config, save_config
-from nextmv.cli.confirm import get_confirmation
 from nextmv.cli.message import error, info, success
 
 # Set up subcommand application.
@@ -53,7 +52,7 @@ def delete(
         error(f"Profile [magenta]{profile}[/magenta] does not exist.")
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             f"Are you sure you want to delete profile [magenta]{profile}[/magenta]? This action cannot be undone.",
         )
 

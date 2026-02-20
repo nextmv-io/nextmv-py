@@ -7,8 +7,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success, warning
+from nextmv.cli.message import confirmation, info, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.registry import Registry
 
@@ -53,7 +52,7 @@ def delete(
         elif app_src is not None and app_src != "":
             msg = f"Are you sure you want to delete application with source [magenta]{app_src}[/magenta]?"
 
-        confirm = get_confirmation(f"{msg} This action cannot be undone.")
+        confirm = confirmation(f"{msg} This action cannot be undone.")
 
         if not confirm:
             if app_id is not None and app_id != "":
