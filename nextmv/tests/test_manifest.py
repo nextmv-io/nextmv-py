@@ -524,6 +524,14 @@ class TestWriteSampleManifest(unittest.TestCase):
             manifest = Manifest.from_yaml(dirpath)
             self.assertEqual(manifest.type, ManifestType.JAVA)
 
+    def test_writes_binary_manifest(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            initialize_manifest(ManifestType.BINARY, dirpath)
+            dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
+            self.assertTrue(os.path.isfile(dest))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.BINARY)
+
     def test_creates_directory_if_not_exists(self):
         with tempfile.TemporaryDirectory() as base:
             dirpath = os.path.join(base, "new_subdir")

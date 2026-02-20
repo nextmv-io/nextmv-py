@@ -203,7 +203,7 @@ def confirmation(msg: str, default: bool = False) -> bool:
     )
 
 
-def choice(msg: str, choices: typing.Iterable[str], default: str | None = None) -> str:
+def choice(msg: str, choices: typing.Iterable[str], default: str) -> str:
     """
     Prompt the user to select one option from a list of choices.
 
@@ -213,9 +213,8 @@ def choice(msg: str, choices: typing.Iterable[str], default: str | None = None) 
         The message to display as the selection prompt.
     choices : typing.Iterable[str]
         The available options the user can choose from.
-    default : str | None, optional
-        The option that is pre-selected when the prompt appears. If None, no
-        default is pre-selected. Default is None.
+    default : str, optional
+        The option that is pre-selected when the prompt appears. Default is the first option.
 
     Returns
     -------
@@ -253,7 +252,7 @@ def choice(msg: str, choices: typing.Iterable[str], default: str | None = None) 
     return selection
 
 
-def directory_path(msg: str, default: str | None = None) -> str:
+def directory_path(msg: str, default: str | None = ".") -> str:
     """
     Prompt the user to enter or select a directory path.
 
@@ -263,7 +262,7 @@ def directory_path(msg: str, default: str | None = None) -> str:
         The message to display as the directory path prompt.
     default : str | None, optional
         The default directory path pre-filled in the prompt. If None, no
-        default is pre-filled. Default is None.
+        default is pre-filled. Default is ".".
 
     Returns
     -------

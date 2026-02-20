@@ -69,7 +69,6 @@ def init(
             msg="In which directory would you like to init the manifest?",
             default=".",
         )
-        print("This is the directory where the manifest file will be initialized:", dirpath)
         dirpath = dirpath or "."
 
     dst = initialize_manifest(manifest_type=manifest_type, dirpath=dirpath)

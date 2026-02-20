@@ -46,6 +46,8 @@ default_python_manifest
     Creates a default Python manifest as a starting point for applications.
 find_files
     Find all files matching the given filters in the given directory.
+initialize_manifest
+    Initialize a manifest file of a given type in a specified directory.
 
 Constants
 --------
@@ -1629,9 +1631,10 @@ def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") 
     specified directory path with the name `app.yaml`. If no `dirpath` is
     provided, the file is written to the current directory.
 
-    You can import the `write_sample_manifest` function directly from `nextmv`:
+    You can import the `initialize_manifest` function directly from `nextmv`:
+
     ```python
-    from nextmv import write_sample_manifest
+    from nextmv import initialize_manifest
     ```
 
     Parameters
@@ -1654,10 +1657,10 @@ def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") 
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     src_mapping = {
-        manifest_type.PYTHON: "python_app.yaml",
-        manifest_type.GO: "go_app.yaml",
-        manifest_type.JAVA: "java_app.yaml",
-        manifest_type.BINARY: "binary_app.yaml",
+        ManifestType.PYTHON: "python_app.yaml",
+        ManifestType.GO: "go_app.yaml",
+        ManifestType.JAVA: "java_app.yaml",
+        ManifestType.BINARY: "binary_app.yaml",
     }
     src = os.path.join(current_dir, "templates", src_mapping[manifest_type])
 
