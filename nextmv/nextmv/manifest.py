@@ -1657,6 +1657,7 @@ def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") 
         manifest_type.PYTHON: "python_app.yaml",
         manifest_type.GO: "go_app.yaml",
         manifest_type.JAVA: "java_app.yaml",
+        manifest_type.BINARY: "binary_app.yaml",
     }
     src = os.path.join(current_dir, "templates", src_mapping[manifest_type])
 
