@@ -3,6 +3,7 @@
 from .__about__ import __version__
 from .base_model import BaseModel as BaseModel
 from .base_model import from_dict as from_dict
+from .content_format import ContentFormat as ContentFormat
 from .input import DataFile as DataFile
 from .input import Input as Input
 from .input import InputFormat as InputFormat

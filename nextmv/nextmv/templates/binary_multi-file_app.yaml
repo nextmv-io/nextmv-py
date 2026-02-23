@@ -1,0 +1,32 @@
+# This manifest holds the information the app needs to run on Nextmv.
+
+# Type and runtime specify the language and environment of the app.
+type: binary
+runtime: ghcr.io/nextmv-io/runtime/default:latest
+
+# Directives to build the binary of the app.
+build:
+  command: echo "Sample command, replace with actual build command"
+  # Specify environment variables needed for the build process.
+  environment:
+    FOO: bar
+    BAZ: qux
+
+# List all files/directories that should be included in the app. Globbing
+# (e.g.: configs/*.json) is supported.
+files:
+  - main
+
+# Application configurations.
+configuration:
+  # Define the content format of the app, one of: json, multi-file.
+  content:
+    format: "multi-file" # Read and write files from disk.
+    # Configuration of the multi-file format.
+    multi-file:
+      input:
+        path: inputs # Directory where the app will read input files from.
+      output:
+        solutions: outputs/solutions # Directory where the app will write solution files to.
+        metrics: outputs/metrics.json # Path where the app will write metrics to.
+        assets: outputs/assets/assets.json # Path where the app will write assets to.

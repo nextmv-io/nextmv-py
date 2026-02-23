@@ -65,6 +65,7 @@ import yaml
 from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
@@ -1621,15 +1622,15 @@ def find_files(
     return found, missing, files
 
 
-def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") -> str:
+def initialize_manifest(manifest_type: ManifestType, content_format: ContentFormat, dirpath: str | None = ".") -> str:
     """
-    Writes a sample manifest file, based on the given type, to the given
-    directory path.
+    Writes a sample manifest file, based on the given type and content format,
+    to the given directory path.
 
     The sample manifest files are located in the `templates` directory of the
-    package. The file that corresponds to the given type is copied to the
-    specified directory path with the name `app.yaml`. If no `dirpath` is
-    provided, the file is written to the current directory.
+    package. The file that corresponds to the given type and content format is
+    copied to the specified directory path with the name `app.yaml`. If no
+    `dirpath` is provided, the file is written to the current directory.
 
     You can import the `initialize_manifest` function directly from `nextmv`:
 
@@ -1640,7 +1641,11 @@ def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") 
     Parameters
     ----------
     manifest_type : ManifestType
-        The type of manifest to write. This determines which sample manifest file is copied.
+        The type of manifest to write. This determines which sample manifest
+        file is copied.
+    content_format : ContentFormat
+        The content format to write in the manifest. This determines which
+        sample manifest file is copied.
     dirpath : Optional[str], default="."
         The directory path where the sample manifest file will be written. If
         not provided, it defaults to the current directory.
@@ -1656,13 +1661,8 @@ def initialize_manifest(manifest_type: ManifestType, dirpath: str | None = ".") 
     destination = os.path.join(dirpath, MANIFEST_FILE_NAME)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    src_mapping = {
-        ManifestType.PYTHON: "python_app.yaml",
-        ManifestType.GO: "go_app.yaml",
-        ManifestType.JAVA: "java_app.yaml",
-        ManifestType.BINARY: "binary_app.yaml",
-    }
-    src = os.path.join(current_dir, "templates", src_mapping[manifest_type])
+    template = f"{manifest_type.value}_{content_format.value}_app.yaml"
+    src = os.path.join(current_dir, "templates", template)
 
     dst = shutil.copy(src, destination)
 

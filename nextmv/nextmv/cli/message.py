@@ -4,7 +4,7 @@ formatting. Logging, in general, is always printed to stderr.
 """
 
 import sys
-import typing
+from collections.abc import Sequence
 from enum import Enum
 from typing import Any
 
@@ -203,7 +203,7 @@ def confirmation(msg: str, default: bool = False) -> bool:
     )
 
 
-def choice(msg: str, choices: typing.Iterable[str], default: str) -> str:
+def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) -> str:
     """
     Prompt the user to select one option from a list of choices.
 
@@ -211,8 +211,9 @@ def choice(msg: str, choices: typing.Iterable[str], default: str) -> str:
     ----------
     msg : str
         The message to display as the selection prompt.
-    choices : typing.Iterable[str]
-        The available options the user can choose from.
+    choices : Sequence[str | questionary.Choice]
+        The available options the user can choose from. Use questionary.Choice
+        for more control.
     default : str, optional
         The option that is pre-selected when the prompt appears. Default is the first option.
 
