@@ -167,16 +167,16 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
     if exists:
         return cloud.Application(client=client, id=app_id)
 
-    warning(f"Application with ID [magenta]{app_id}[/magenta] does not exist.")
-    should_create = confirmation(f"Do you want to create a new application with ID [magenta]{app_id}[/magenta]?")
+    warning(f"Cloud application with ID [magenta]{app_id}[/magenta] does not exist.")
+    should_create = confirmation(f"Do you want to create a new Cloud application with ID [magenta]{app_id}[/magenta]?")
     if not should_create:
         error(
-            f"Application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "
-            "Use [code]nextmv cloud app create[/code] to create a new app."
+            f"Cloud application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "
+            "Use [code]nextmv cloud app create[/code] to create a new Cloud app."
         )
 
     app = cloud.Application.new(client=client, id=app_id, name=app_id)
-    success(f"Application with ID and name [magenta]{app_id}[/magenta] created successfully.")
+    success(f"Cloud application with ID and name [magenta]{app_id}[/magenta] created successfully.")
 
     return app
 

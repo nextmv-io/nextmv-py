@@ -6,8 +6,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv import cloud
-from nextmv.cli.configuration.config import build_client, build_local_app
+from nextmv.cli.configuration.config import build_cloud_app, build_local_app
 from nextmv.cli.message import in_progress
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, ProfileOption
 
@@ -78,9 +77,8 @@ def sync(
     """
 
     local_app = build_local_app(app_src, app_id)
-    client = build_client(profile)
     in_progress(msg="Getting target application...")
-    cloud_app = cloud.Application.get(client=client, id=target_app_id)
+    cloud_app = build_cloud_app(app_id=target_app_id, profile=profile)
 
     local_app.sync(
         target=cloud_app,
