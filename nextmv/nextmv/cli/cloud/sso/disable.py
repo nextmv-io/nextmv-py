@@ -7,8 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_sso_config
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success
+from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import ProfileOption
 
 # Set up subcommand application.
@@ -43,7 +42,7 @@ def disable(
     """
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             "Are you sure you want to disable the sso configuration?.",
         )
 

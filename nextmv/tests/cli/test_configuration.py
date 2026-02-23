@@ -129,7 +129,7 @@ class TestConfigureCommand(unittest.TestCase):
 
     @patch("nextmv.cli.configuration.delete.save_config")
     @patch("nextmv.cli.configuration.delete.load_config")
-    @patch("nextmv.cli.configuration.delete.get_confirmation", return_value=True)
+    @patch("nextmv.cli.configuration.delete.confirmation", return_value=True)
     @patch("sys.stdin.isatty", return_value=True)
     def test_delete_profile(self, mock_isatty, mock_confirm, mock_load, mock_save):
         """Test deleting a profile."""

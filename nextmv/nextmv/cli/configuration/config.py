@@ -8,8 +8,7 @@ from typing import Any
 import yaml
 
 from nextmv import cloud, local
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import error, info, success, warning
+from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cloud.account import Account
 from nextmv.cloud.client import Client
 from nextmv.cloud.marketplace import MarketplaceApplication, MarketplaceSubscription
@@ -169,7 +168,7 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
         return cloud.Application(client=client, id=app_id)
 
     warning(f"Application with ID [magenta]{app_id}[/magenta] does not exist.")
-    should_create = get_confirmation(f"Do you want to create a new application with ID [magenta]{app_id}[/magenta]?")
+    should_create = confirmation(f"Do you want to create a new application with ID [magenta]{app_id}[/magenta]?")
     if not should_create:
         error(
             f"Application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "

@@ -64,8 +64,6 @@ class InputFormat(str, Enum):
         JSON format, utf-8 encoded.
     TEXT : str
         Text format, utf-8 encoded.
-    CSV : str
-        CSV format, utf-8 encoded.
     CSV_ARCHIVE : str
         CSV archive format: multiple CSV files.
     MULTI_FILE : str

@@ -10,8 +10,7 @@ import typer
 from rich.prompt import Prompt
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import error, in_progress, info, success
+from nextmv.cli.message import confirmation, error, in_progress, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.manifest import Manifest
@@ -256,7 +255,7 @@ def _handle_version_creation(
 
     # If we are not auto-confirming version creation, ask the user.
     if not version_yes:
-        should_create = get_confirmation(
+        should_create = confirmation(
             msg=f"Do you want to create a new version for application [magenta]{app_id}[/magenta] now?",
             default=True,
         )
@@ -327,7 +326,7 @@ def _handle_instance_prompting(
 
     # If the instance exists, ask if we want to update it.
     if exists:
-        should_update = get_confirmation(
+        should_update = confirmation(
             msg=f"Instance [magenta]{instance_id}[/magenta] exists. "
             f"Do you want to link it to version [magenta]{version_id}[/magenta]?",
             default=True,
@@ -347,7 +346,7 @@ def _handle_instance_prompting(
         return
 
     # If the instance does not exist, ask if we want to create it.
-    should_create = get_confirmation(
+    should_create = confirmation(
         msg=f"Instance [magenta]{instance_id}[/magenta] does not exist. "
         f"Do you want to create it using version [magenta]{version_id}[/magenta]?",
         default=True,

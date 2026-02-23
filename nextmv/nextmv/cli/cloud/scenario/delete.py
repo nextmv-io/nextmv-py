@@ -7,8 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import info, success
+from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
 
 # Set up subcommand application.
@@ -47,7 +46,7 @@ def delete(
     """
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             f"Are you sure you want to delete scenario test [magenta]{scenario_test_id}[/magenta] "
             f"from application [magenta]{app_id}[/magenta]? This action cannot be undone.",
         )

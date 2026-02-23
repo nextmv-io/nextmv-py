@@ -44,6 +44,10 @@ Functions
 ---------
 default_python_manifest
     Creates a default Python manifest as a starting point for applications.
+find_files
+    Find all files matching the given filters in the given directory.
+initialize_manifest
+    Initialize a manifest file of a given type in a specified directory.
 
 Constants
 --------
@@ -53,6 +57,7 @@ MANIFEST_FILE_NAME
 
 import glob
 import os
+import shutil
 from enum import Enum
 from typing import Any
 
@@ -60,6 +65,7 @@ import yaml
 from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
@@ -1134,7 +1140,7 @@ class Manifest(BaseModel):
     Python-specific attributes.
     """
     files: list[str] = Field(
-        default_factory=list,
+        min_length=1,
     )
     """The files to include (or exclude) in the app. This is mandatory."""
     configuration: ManifestConfiguration | None = None
@@ -1215,6 +1221,8 @@ class Manifest(BaseModel):
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
         """
+
+        dirpath = os.path.normpath(os.path.expanduser(dirpath))
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME)) as file:
             raw_manifest = yaml.safe_load(file)
@@ -1612,3 +1620,50 @@ def find_files(
         )
 
     return found, missing, files
+
+
+def initialize_manifest(manifest_type: ManifestType, content_format: ContentFormat, dirpath: str | None = ".") -> str:
+    """
+    Writes a sample manifest file, based on the given type and content format,
+    to the given directory path.
+
+    The sample manifest files are located in the `templates` directory of the
+    package. The file that corresponds to the given type and content format is
+    copied to the specified directory path with the name `app.yaml`. If no
+    `dirpath` is provided, the file is written to the current directory.
+
+    You can import the `initialize_manifest` function directly from `nextmv`:
+
+    ```python
+    from nextmv import initialize_manifest
+    ```
+
+    Parameters
+    ----------
+    manifest_type : ManifestType
+        The type of manifest to write. This determines which sample manifest
+        file is copied.
+    content_format : ContentFormat
+        The content format to write in the manifest. This determines which
+        sample manifest file is copied.
+    dirpath : Optional[str], default="."
+        The directory path where the sample manifest file will be written. If
+        not provided, it defaults to the current directory.
+
+    Returns
+    -------
+    str
+        The path to the initialized manifest file.
+    """
+
+    dirpath = os.path.normpath(os.path.expanduser(dirpath))
+    os.makedirs(dirpath, exist_ok=True)
+    destination = os.path.join(dirpath, MANIFEST_FILE_NAME)
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    template = f"{manifest_type.value}_{content_format.value}_app.yaml"
+    src = os.path.join(current_dir, "templates", template)
+
+    dst = shutil.copy(src, destination)
+
+    return dst

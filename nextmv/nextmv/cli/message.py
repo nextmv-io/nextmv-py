@@ -4,11 +4,29 @@ formatting. Logging, in general, is always printed to stderr.
 """
 
 import sys
+from collections.abc import Sequence
 from enum import Enum
 from typing import Any
 
+import questionary
 import rich
 import typer
+from rich.prompt import Confirm
+
+# Shared questionary style that matches the CLI's [code] tag rendering:
+# bold with no color overrides, letting the terminal's default foreground
+# color show through.
+QUESTIONARY_STYLE = questionary.Style(
+    [
+        ("qmark", "noinherit"),
+        ("question", "noinherit"),
+        ("answer", "fg:ansimagenta"),
+        ("pointer", "fg:ansimagenta bold"),
+        ("highlighted", "fg:ansimagenta bold underline"),
+        ("selected", ""),
+        ("instruction", "fg:ansiyellow italic"),
+    ]
+)
 
 
 def message(msg: str, emoji: str | None = None) -> None:
@@ -152,6 +170,134 @@ def enum_values(enum_class: Enum) -> str:
         return " and ".join(values)
 
     return ", ".join(values[:-1]) + ", and " + values[-1]
+
+
+def confirmation(msg: str, default: bool = False) -> bool:
+    """
+    Prompt the user to get a yes/no confirmation.
+
+    Parameters
+    ----------
+    msg : str
+        The message to display to the user.
+    default : bool, optional
+        The default value if the user just presses Enter. Default is False.
+
+    Returns
+    -------
+    bool
+        True if the user confirmed, False otherwise.
+    """
+
+    # If this is not an interactive terminal, do not ask for confirmation, to
+    # avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        return default
+
+    return Confirm.ask(
+        msg,
+        default=default,
+        case_sensitive=False,
+        show_default=True,
+        show_choices=True,
+    )
+
+
+def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) -> str:
+    """
+    Prompt the user to select one option from a list of choices.
+
+    Parameters
+    ----------
+    msg : str
+        The message to display as the selection prompt.
+    choices : Sequence[str | questionary.Choice]
+        The available options the user can choose from. Use questionary.Choice
+        for more control.
+    default : str, optional
+        The option that is pre-selected when the prompt appears. Default is the first option.
+
+    Returns
+    -------
+    str
+        The option selected by the user.
+
+    Raises
+    ------
+    typer.Exit
+        Exits the program with code 1 if the operation is cancelled or no
+        selection is made.
+    """
+
+    # If this is not an interactive terminal, do not ask for confirmation, to
+    # avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        return default
+
+    try:
+        selection = questionary.select(
+            msg,
+            choices=choices,
+            default=default,
+            qmark="💡",
+            style=QUESTIONARY_STYLE,
+        ).ask(
+            kbi_msg="❌ Operation cancelled by user.",
+        )
+    except Exception as e:
+        error(f"Operation cancelled by user: {e}")
+
+    if selection is None:
+        error("No selection made.")
+
+    return selection
+
+
+def directory_path(msg: str, default: str | None = ".") -> str:
+    """
+    Prompt the user to enter or select a directory path.
+
+    Parameters
+    ----------
+    msg : str
+        The message to display as the directory path prompt.
+    default : str | None, optional
+        The default directory path pre-filled in the prompt. If None, no
+        default is pre-filled. Default is ".".
+
+    Returns
+    -------
+    str
+        The directory path entered or selected by the user.
+
+    Raises
+    ------
+    typer.Exit
+        Exits the program with code 1 if the operation is cancelled or no
+        directory path is provided.
+    """
+    # If this is not an interactive terminal, do not ask for confirmation, to
+    # avoid hanging indefinitely waiting for a user response.
+    if not sys.stdin.isatty():
+        return default
+
+    try:
+        dirpath = questionary.path(
+            message=msg,
+            default=default,
+            only_directories=True,
+            qmark="💡",
+            style=QUESTIONARY_STYLE,
+        ).ask(
+            kbi_msg="❌ Operation cancelled by user.",
+        )
+    except Exception as e:
+        error(f"Operation cancelled by user: {e}")
+
+    if dirpath is None:
+        error("No directory path provided.")
+
+    return dirpath
 
 
 def _format(msg: str) -> str:
