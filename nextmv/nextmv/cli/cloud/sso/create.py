@@ -108,5 +108,6 @@ def create(
         enabled=enabled,
         metadata_url=metadata_url,
         metadata_document=metadata_document,
+        mapped_domains=None,  # mapped_domains cannot be set at creation
     )
     success("SSO configuration created successfully.")
