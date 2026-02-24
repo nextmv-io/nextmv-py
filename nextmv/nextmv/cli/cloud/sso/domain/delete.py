@@ -7,8 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_sso_config
-from nextmv.cli.confirm import get_confirmation
-from nextmv.cli.message import in_progress, info, success
+from nextmv.cli.message import confirmation, in_progress, info, success
 from nextmv.cli.options import ProfileOption
 
 # Set up subcommand application.
@@ -52,7 +51,7 @@ def delete(
     """
 
     if not yes:
-        confirm = get_confirmation(
+        confirm = confirmation(
             f"Are you sure you want to delete the [magenta]{domain}[/magenta] domain? "
             "You must contact Nextmv support to re-add it.",
         )
