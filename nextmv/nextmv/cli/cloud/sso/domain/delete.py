@@ -1,5 +1,5 @@
 """
-This module defines the cloud sso delete domain command for the Nextmv CLI.
+This module defines the cloud sso domain delete command for the Nextmv CLI.
 """
 
 from typing import Annotated
@@ -38,10 +38,7 @@ def delete(
     """
     Delete a mapped domain from a Nextmv Cloud SSO configuration.
 
-    Mapped domains redirect additional domains to your IDP for federated authentication.
-    This command deletes a domain from an existing SSO configuration.
-
-    You can use the command [code] nextmv cloud sso get[/code] command to view all
+    You can use the [code]nextmv cloud sso get[/code] command to view all
     mapped domains in your SSO configuration.
 
     [bold][underline]Examples[/underline][/bold]

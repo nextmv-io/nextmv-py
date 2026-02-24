@@ -1,5 +1,5 @@
 """
-This module defines the cloud sso command tree for the Nextmv CLI.
+This module defines the cloud sso domain command tree for the Nextmv CLI.
 """
 
 import typer
@@ -15,6 +15,8 @@ app.add_typer(delete_app)
 def callback() -> None:
     """
     Manage SSO mapped domains for your Nextmv Cloud organization (account).
+
+    Mapped domains redirect additional domains to your IDP for federated authentication.
 
     Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link]
     for assistance configuring SSO for your organization.

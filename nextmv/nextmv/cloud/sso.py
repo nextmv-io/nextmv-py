@@ -151,7 +151,6 @@ class SSOConfiguration(BaseModel):
         enabled: bool | None = None,
         metadata_url: str | None = None,
         metadata_document: str | None = None,
-        mapped_domains: list[str] | None = None,
     ) -> None:
         """
         Create a new SSO configuration for the current Nextmv Cloud
@@ -173,8 +172,6 @@ class SSOConfiguration(BaseModel):
             The URL to the SSO metadata document.
         metadata_document : str, optional
             The SSO metadata document as a string.
-        mapped_domains : list[str], optional
-            A list of mapped domains in the SSO configuration.
 
         Raises
         ------
