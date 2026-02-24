@@ -38,6 +38,10 @@ def delete(
     """
     Delete a mapped domain from a Nextmv Cloud SSO configuration.
 
+
+    This action will prevent users from the deleted domain from accessing your
+    account using SSO. Use the --yes flag to skip the confirmation prompt.
+
     You can use the [code]nextmv cloud sso get[/code] command to view all
     mapped domains in your SSO configuration.
 
