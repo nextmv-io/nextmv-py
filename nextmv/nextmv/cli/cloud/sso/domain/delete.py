@@ -53,7 +53,8 @@ def delete(
 
     if not yes:
         confirm = get_confirmation(
-            f"Are you sure you want to delete the [magenta]{domain}[/magenta] domain? You must contact Nextmv support to re-add it.",
+            f"Are you sure you want to delete the [magenta]{domain}[/magenta] domain? "
+            "You must contact Nextmv support to re-add it.",
         )
 
         if not confirm:
