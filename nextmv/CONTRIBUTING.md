@@ -1,9 +1,158 @@
-# Contributing to Nextmv CLI
+# Contributing
 
-Hello dear contributor. Thank you for helping out with the CLI 😎. Here are a
-few style guidelines to help all of us maintain a high-quality tool, that feels
-unified and consistent. You are required to read and understand these
-guidelines before submitting a pull request.
+Welcome to `nextmv`, the general Python SDK for the Nextmv Platform. Please
+read this contributing guide to get set up before submitting a pull request.
+
+We recommend you open _this_ directory in a standalone window of your editor.
+From now on, all the commands assume that you are standing at the root of
+_this_ library, i.e. the directory where the `pyproject.toml` file is located.
+
+## Prerequisites
+
+Make sure you have the following installed:
+
+- [Python][python]: Python 3.10 or higher.
+- [`uv`][uv]: Python package and project manager.
+
+## Setup
+
+Sync all the dependencies with:
+
+```bash
+uv sync
+```
+
+Repeat this command when there are changes to the `pyproject.toml` or `uv.lock`
+files. Always commit changes to the `pyproject.toml` and `uv.lock` files.
+
+## Adding dependencies
+
+- If you need to add a new dependency to the library, add it with:
+
+    ```bash
+    uv add <PACKAGE_NAME>
+    ```
+
+- If you need to add a new _optional_ dependency to the library, add it with:
+
+    ```bash
+    uv add <PACKAGE_NAME> --optional <EXTRA_NAME>
+    ```
+
+- If you need to add a _development_ dependency, i.e. a package that is only
+  needed for development and testing (like `Nextpipe`, which is used in the
+  integration tests), add it with:
+
+    ```bash
+    uv add <PACKAGE_NAME> --dev
+    ```
+
+## Linting
+
+Run the linter with:
+
+```bash
+uv run ruff check .
+```
+
+## Unit tests
+
+Run unit tests with:
+
+```bash
+uv run pytest --ignore=tests/integration
+```
+
+This will ignore integration tests located in `tests/integration`.
+
+## Integration tests
+
+Make sure you have a valid Nextmv Cloud API key set in your environment:
+
+```bash
+export NEXTMV_API_KEY="<YOUR_API_KEY>"
+```
+
+Run integration tests with:
+
+```bash
+uv run pytest tests/integration -s
+```
+
+The integration tests use [Nextpipe][nextpipe] to orchestrate a workflow of
+steps that run both in sequence and in parallel. Here is a mermaid diagram of
+the steps that are run in the integration tests. This diagram was generated at
+the time of writing, and may change as the tests are updated.
+
+```mermaid
+ graph LR
+  init_app(init_app)
+  init_app --> community_push
+  init_app --> versions
+  init_app --> instances
+  init_app --> runs
+  init_app --> input_sets
+  init_app --> scenario_tests
+  init_app --> shadow_tests
+  init_app --> switchback_tests
+  init_app --> acceptance_tests
+  init_app --> secrets
+  init_app --> ensembles
+  init_app --> cleanup
+  community_push(community_push)
+  community_push --> versions
+  community_push --> secrets
+  versions(versions)
+  versions --> instances
+  versions --> cleanup
+  instances(instances)
+  instances --> runs
+  instances --> input_sets
+  instances --> scenario_tests
+  instances --> shadow_tests
+  instances --> switchback_tests
+  instances --> acceptance_tests
+  instances --> ensembles
+  instances --> cleanup
+  runs(runs)
+  runs --> input_sets
+  runs --> cleanup
+  input_sets(input_sets)
+  input_sets --> scenario_tests
+  input_sets --> acceptance_tests
+  input_sets --> cleanup
+  scenario_tests(scenario_tests)
+  scenario_tests --> cleanup
+  shadow_tests(shadow_tests)
+  shadow_tests --> switchback_tests
+  shadow_tests --> cleanup
+  switchback_tests(switchback_tests)
+  switchback_tests --> cleanup
+  acceptance_tests(acceptance_tests)
+  acceptance_tests --> cleanup
+  secrets(secrets)
+  secrets --> cleanup
+  ensembles(ensembles)
+  ensembles --> cleanup
+  cleanup(cleanup)
+```
+
+## CLI
+
+Whenever you are contributing to the `./nextmv/cli` package, you can run the
+`nextmv` command like this:
+
+```bash
+uv run nextmv <COMMAND>
+```
+
+This will allow you to directly test the changes you are making to the CLI.
+
+### CLI - Style guidelines
+
+Here are a few style guidelines to help all of us maintain a high-quality tool,
+that feels unified and consistent. You are required to read and understand
+these guidelines before submitting a pull request.
 
 The Nextmv CLI is built using [Typer][typer]. If you don't know Typer, we
 _strongly encourage_ you to read through the [Typer Learn][typer-learn]
@@ -29,7 +178,7 @@ from the Typer docs:
 > The best results for your command line application would be achieved
 > combining both Typer and Rich.
 
-## Command structure
+#### CLI - Command structure
 
 The logic for command tree organization is based on:
 
@@ -67,7 +216,7 @@ Where:
   believe a different structure makes more sense, feel free to propose it in
   your pull request, explaining the reasoning behind it.
 
-## File organization
+#### CLI - File organization
 
 Follow these guidelines when organizing files and directories for commands:
 
@@ -142,7 +291,7 @@ Follow these guidelines when organizing files and directories for commands:
       pass
   ```
 
-## Printing
+#### CLI - Printing
 
 When information to the user, i.e., printing to the console, follow these
 guidelines:
@@ -197,14 +346,14 @@ guidelines:
     ] = None,
   ```
 
-## User prompts
+#### CLI - User prompts
 
 The `message.py` file provides three interactive prompt functions: `confirmation`,
 `choice`, and `directory_path`. All three handle non-interactive sessions
 gracefully by returning a default value when `stdin` is not a TTY, preventing
 commands from hanging indefinitely.
 
-### Confirmation
+##### CLI - Confirmation
 
 For destructive actions (like deletions), use the `confirmation()` function
 from `message.py` to ask for user confirmation before proceeding. This function
@@ -233,7 +382,7 @@ if not yes:
         return
 ```
 
-### Choice
+##### CLI - Choice
 
 Use the `choice()` function when the user must select one option from a
 predefined list. It renders an interactive selection menu and returns the chosen
@@ -247,7 +396,7 @@ selected = choice(
 )
 ```
 
-### Directory path
+##### CLI - Directory path
 
 Use the `directory_path()` function when the user must provide or confirm a
 directory path. It renders an interactive path-completion prompt restricted to
@@ -261,7 +410,7 @@ dirpath = directory_path(
 )
 ```
 
-## Formatting, colors, and styles
+#### CLI - Formatting, colors, and styles
 
 Use these Rich markup colors/styles when formatting help text and messages.
 These are the main colors/styles that can be used for highlighting/contrast (we
@@ -384,7 +533,7 @@ Here are some guidelines for when to use each formatting style.
   The link provided is <https://github.com/nextmv-io/community-apps>, and it will
   be applied to the text `nextmv-io/community-apps`.
 
-## Command documentation
+#### CLI - Command documentation
 
 Every command should have good-enough documentation that guides the user on how
 to use it.
@@ -483,7 +632,7 @@ to use it.
             --description "An application for routing hares"[/dim]
     ```
 
-## Command options
+#### CLI - Command options
 
 Consider the following guideline when declaring command options:
 
@@ -618,6 +767,9 @@ Consider the following guideline when declaring command options:
   should always be the last option in the command's signature, for consistency
   across the CLI.
 
+[uv]: https://docs.astral.sh/uv/
+[python]: https://www.python.org/downloads/
+[nextpipe]: https://github.com/nextmv-io/nextpipe
 [typer]: https://typer.tiangolo.com
 [typer-learn]: https://typer.tiangolo.com/tutorial/
 [rich]: https://rich.readthedocs.io/en/stable/
