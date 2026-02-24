@@ -16,6 +16,15 @@ app = typer.Typer()
 
 @app.command()
 def delete(
+    domain: Annotated[
+        str,
+        typer.Option(
+            "--domain",
+            "-d",
+            help="The domain to delete from the SSO configuration.",
+            metavar="DOMAIN",
+        ),
+    ],
     yes: Annotated[
         bool,
         typer.Option(
@@ -24,15 +33,6 @@ def delete(
             help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
         ),
     ] = False,
-    domain: Annotated[
-        str | None,
-        typer.Option(
-            "--domain",
-            "-d",
-            help="The domain to delete from the SSO configuration.",
-            metavar="DOMAIN",
-        ),
-    ] = None,
     profile: ProfileOption = None,
 ) -> None:
     """

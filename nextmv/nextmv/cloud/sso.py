@@ -104,7 +104,7 @@ class SSOConfiguration(BaseModel):
     """
     The SSO metadata document as a string.
     """
-    mapped_domains: list[str] = Field(default_factory=list)
+    mapped_domains: list[str] | None = None
     """
     A list of mapped domains in the SSO configuration. Mapped domains redirect
     additional domains to your IDP for federated authentication.
