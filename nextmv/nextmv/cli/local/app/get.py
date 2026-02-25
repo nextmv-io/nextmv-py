@@ -20,7 +20,7 @@ app = typer.Typer()
 @app.command()
 def get(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = ".",
+    app_src: LocalAppSrcOption = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -46,9 +46,14 @@ def get(
         $ [dim]nextmv local app get --app-id hare-app --output app.json[/dim]
     """
 
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        app_src = "."
+
+    if app_src is not None and app_src != "":
+        app_src = os.path.abspath(app_src)
+
     in_progress(msg="Getting registered application...")
 
-    app_src = os.path.abspath(app_src)
     reg = Registry.from_yaml()
     entry = reg.entry(app_id=app_id, src=app_src)
     if entry is None:

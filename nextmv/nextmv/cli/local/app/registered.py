@@ -2,6 +2,8 @@
 This module defines the local app registered command for the Nextmv CLI.
 """
 
+import os
+
 import typer
 
 from nextmv.cli.message import in_progress, print_json
@@ -15,7 +17,7 @@ app = typer.Typer()
 @app.command()
 def registered(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = ".",
+    app_src: LocalAppSrcOption = None,
 ) -> None:
     """
     Check if a Nextmv application is registered locally.
@@ -32,6 +34,12 @@ def registered(
     - Check if the application with source path [magenta]./hare-app/[/magenta] is registered.
         $ [dim]nextmv local app registered --app-src ./hare-app/[/dim]
     """
+
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        app_src = "."
+
+    if app_src is not None and app_src != "":
+        app_src = os.path.abspath(app_src)
 
     in_progress(msg="Checking if application is registered...")
     reg = Registry.from_yaml()

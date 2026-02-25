@@ -69,7 +69,7 @@ def init(
 
     if manifest_type is None or manifest_type == "":
         manifest_type = choice(
-            msg="What is the type of your Nextmv app?",
+            msg="What is the type (language) of your Nextmv app?",
             choices=[member.value for member in ManifestType],
             default=ManifestType.PYTHON.value,
         )
@@ -84,7 +84,7 @@ def init(
             )
 
         content_format = choice(
-            msg="What is the content format of your app manifest?",
+            msg="What is the I/O (input/output) content format of your Nextmv app?",
             choices=choices,
             default=ContentFormat.JSON.value,
         )
@@ -92,7 +92,7 @@ def init(
 
     if dirpath is None or dirpath == "":
         dirpath = directory_path(
-            msg="In which directory would you like to init the manifest?",
+            msg="In which directory would you like to initialize the manifest?",
             default=".",
         )
         dirpath = dirpath or "."
