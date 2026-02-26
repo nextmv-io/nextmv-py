@@ -662,12 +662,14 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can start a run using the secrets collection.
         input_data = {"name": "world", "radius": 6378, "distance": 147.6}
-        app.new_run(
+        result = app.new_run_with_result(
             input=input_data,
             configuration=nextmv.RunConfiguration(
                 secrets_collection_id=summary.collection_id,
             ),
         )
+        assert result is not None
+        assert result.metadata.status_v2 == nextmv.StatusV2.succeeded
 
         # We can delete a secrets collection.
         app.delete_secrets_collection(secrets_collection_id=summary.collection_id)

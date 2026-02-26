@@ -7,6 +7,7 @@ import typer
 from nextmv.cli.cloud.sso.create import app as create_app
 from nextmv.cli.cloud.sso.delete import app as delete_app
 from nextmv.cli.cloud.sso.disable import app as disable_app
+from nextmv.cli.cloud.sso.domain import app as domain_app
 from nextmv.cli.cloud.sso.enable import app as enable_app
 from nextmv.cli.cloud.sso.get import app as get_app
 from nextmv.cli.cloud.sso.update import app as update_app
@@ -19,6 +20,7 @@ app.add_typer(disable_app)
 app.add_typer(enable_app)
 app.add_typer(get_app)
 app.add_typer(update_app)
+app.add_typer(domain_app, name="domain")
 
 
 @app.callback()

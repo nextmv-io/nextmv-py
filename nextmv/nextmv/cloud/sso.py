@@ -74,6 +74,9 @@ class SSOConfiguration(BaseModel):
         The URL to the SSO metadata document.
     metadata_document : str, optional
         The SSO metadata document as a string.
+    mapped_domains : list[str], optional
+        A list of mapped domains in the SSO configuration. This is read only, mapped
+        domains are added through an explicit command.
     client : Client
         Client to use for interacting with the Nextmv Cloud API. This is an
         SDK-specific attribute and it is not part of the API representation of
@@ -100,6 +103,11 @@ class SSOConfiguration(BaseModel):
     metadata_document: str | None = None
     """
     The SSO metadata document as a string.
+    """
+    mapped_domains: list[str] | None = None
+    """
+    A list of mapped domains in the SSO configuration. Mapped domains redirect
+    additional domains to your IDP for federated authentication.
     """
 
     # SDK-specific attributes for convenience when using methods.
@@ -133,7 +141,6 @@ class SSOConfiguration(BaseModel):
             method="GET",
             endpoint="v1/enterprise/sso",
         )
-
         return cls.from_dict({"client": client} | response.json())
 
     @classmethod
@@ -201,6 +208,22 @@ class SSOConfiguration(BaseModel):
         self.client.request(
             method="DELETE",
             endpoint=self.sso_endpoint,
+        )
+
+    def delete_domain(self, domain: str) -> None:
+        """
+        Deletes a domain from an existing SSO configuration for the current Nextmv
+        Cloud organization (account).
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        """
+
+        self.client.request(
+            method="DELETE",
+            endpoint=f"{self.sso_endpoint}/domains/{domain}",
         )
 
     def disable(self) -> None:
