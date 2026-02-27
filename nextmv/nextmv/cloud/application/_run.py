@@ -290,7 +290,7 @@ class ApplicationRunMixin:
             `upload_data` method.
         managed_input_id: Optional[str]
             The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
-            to use as the run's input. 
+            to use as the run's input.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is

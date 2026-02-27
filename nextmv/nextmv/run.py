@@ -819,7 +819,7 @@ class Metadata(BaseModel):
     Metadata for tracking elements of the run that
     may be useful for the purposes of reproducability.
     """
-    
+
     def run_is_finalized(self) -> bool:
         """
         Checks if the run has reached a finalized state.

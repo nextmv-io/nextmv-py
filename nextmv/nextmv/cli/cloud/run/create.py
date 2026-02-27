@@ -14,7 +14,7 @@ from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, print_json, success
-from nextmv.cli.options import AppIDOption, ManagedInputIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
@@ -518,7 +518,7 @@ def resolve_input_kwarg(
             input_data = stdin
 
         return {"input": input_data}
-    
+
     if managed_input_id is not None and managed_input_id != "":
         return {"managed_input_id": managed_input_id}
 
