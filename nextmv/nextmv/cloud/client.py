@@ -128,7 +128,7 @@ class Client:
     """Status codes to retry for requests to the Nextmv Cloud API."""
     timeout: float = 20
     """Timeout to use for requests to the Nextmv Cloud API."""
-    url: str = "https://api.cloud.nextmv.io"
+    url: str | None = "https://api.cloud.nextmv.io"
     """URL of the Nextmv Cloud API."""
     console_url: str = "https://cloud.nextmv.io"
     """URL of the Nextmv Cloud console."""
@@ -151,6 +151,10 @@ class Client:
             If `apikey` is not found in the configuration file for the
             selected profile.
         """
+
+        # Fallback for integration tests
+        if self.url is None:
+            self.url = "https://api.cloud.nextmv.io"
 
         if self.api_key is not None and self.api_key != "":
             self._set_headers_api_key(self.api_key)
