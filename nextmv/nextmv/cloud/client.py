@@ -157,10 +157,6 @@ class Client:
             selected profile.
         """
 
-        # Fallback for integration tests
-        if not self.url:
-            self.url = "https://api.cloud.nextmv.io"
-
         if self.api_key is not None and self.api_key != "":
             self._set_headers_api_key(self.api_key)
             return
