@@ -71,6 +71,7 @@ from .run import RunInfoStatistics as RunInfoStatistics
 from .run import RunLog as RunLog
 from .run import RunQueuing as RunQueuing
 from .run import RunResult as RunResult
+from .run import RunTrackingMetadata as RunTrackingMetadata
 from .run import RunType as RunType
 from .run import RunTypeConfiguration as RunTypeConfiguration
 from .run import StatisticsIndicator as StatisticsIndicator

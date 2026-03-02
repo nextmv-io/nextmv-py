@@ -720,6 +720,30 @@ class Run(BaseModel):
     input_set_id: str | None = None
     """ID of the input set associated with the run."""
 
+class RunTrackingMetadata(BaseModel):
+    """
+    Metadata elements for tracking elements of the run that
+    may be useful for the purposes of reproducibility.
+
+    You can import the RunTrackingMetadata class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunTrackingMetadata
+    ```
+
+    Parameters
+    ----------
+    cloned_run_id: str, optional
+        ID of the run that was "cloned" (i.e. relevant configuration was copied)
+        to generate a new run
+    input_id: str, optional
+        ID of the managed input used to make the run.
+    """
+
+    cloned_run_id: str | None = None
+    """ID of the run that was "cloned" to generate a new run."""
+    input_id: str | None = None
+    """ID of the managed input used to make the run."""
 
 class Metadata(BaseModel):
     """
@@ -753,6 +777,13 @@ class Metadata(BaseModel):
         Format of the input and output of the run.
     status_v2 : StatusV2
         Status of the run.
+    experiment_id: str, optional
+        ID of the experiment containing the run.
+    experiment_type: str, optional
+        Type of the experiment containing the run.
+    tracking: RunTrackingMetadata, optional
+        Metadata for tracking elements of the run that
+        may be useful for the purposes of reproducibility.
     """
 
     application_id: str
@@ -779,6 +810,15 @@ class Metadata(BaseModel):
     """Deprecated: User defined statistics of the run."""
     metrics: dict[str, Any] | None = None
     """User defined metrics of the run."""
+    experiment_id: str | None = None
+    """ID of the experiment containing the run."""
+    experiment_type: str | None = None
+    """Type of the experiment containing the run."""
+    tracking: RunTrackingMetadata | None = None
+    """
+    Metadata for tracking elements of the run that
+    may be useful for the purposes of reproducibility.
+    """
 
     def run_is_finalized(self) -> bool:
         """

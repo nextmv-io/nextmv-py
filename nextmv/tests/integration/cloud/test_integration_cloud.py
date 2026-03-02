@@ -8,7 +8,7 @@ from nextpipe import FlowSpec, needs, step
 import nextmv
 from nextmv import cloud
 
-client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"), url=os.getenv("NEXTMV_BASE_URL"))
 
 
 class CloudIntegrationWorkflow(FlowSpec):
@@ -216,8 +216,14 @@ class CloudIntegrationWorkflow(FlowSpec):
             The list of runs performed.
         """
 
+        # Prepare configurations values for runs
         inst1, inst2 = instances
         input_data = {"name": "world", "radius": 6378, "distance": 147.6}
+        upload_url_run = app.upload_url()
+        app.upload_data(upload_url=upload_url_run, data=input_data)
+        upload_url_managed_input = app.upload_url()
+        app.upload_data(upload_url=upload_url_managed_input, data=input_data)
+        managed_input = app.new_managed_input(upload_id=upload_url_managed_input.upload_id)
 
         # Start runs in different ways.
         run1 = app.new_run_with_result(input=input_data)
@@ -225,7 +231,10 @@ class CloudIntegrationWorkflow(FlowSpec):
         run3 = app.new_run_with_result(input=input_data, instance_id=inst2.id)
         run4 = app.new_run_with_result(input=input_data, instance_id="latest")
         run5 = app.new_run_with_result(input=input_data, run_options={"details": "false"})
-        runs: list[nextmv.RunResult] = [run1, run2, run3, run4, run5]
+        run6 = app.new_run_with_result(upload_id=upload_url_run.upload_id)
+        run7 = app.new_run_with_result(managed_input_id=managed_input.id)
+
+        runs: list[nextmv.RunResult] = [run1, run2, run3, run4, run5, run6, run7]
 
         # Perform different checks on the runs.
         for run in runs:
@@ -247,7 +256,7 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list runs.
         run_list = app.list_runs()
-        assert len(run_list) >= 5
+        assert len(run_list) >= 7
         run_ids = {r.id for r in run_list}
         for run in runs:
             assert run.id in run_ids

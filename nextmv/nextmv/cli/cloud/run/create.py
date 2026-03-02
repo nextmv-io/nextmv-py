@@ -40,6 +40,17 @@ def create(
             rich_help_panel="Input control",
         ),
     ] = None,
+    managed_input_id: Annotated[
+        str | None,
+        typer.Option(
+            "--managed-input-id",
+            "-m",
+            help="The Nextmv Cloud managed input ID to use as the input for the run.",
+            envvar="NEXTMV_MANAGED_INPUT_ID",
+            metavar="MANAGED_INPUT_ID",
+            rich_help_panel="Input control",
+        ),
+    ] = None,
     # Options for controlling output.
     logs: Annotated[
         str | None,
@@ -209,9 +220,9 @@ def create(
     """
     Create a new Nextmv Cloud application run.
 
-    Input for the run should be given through [magenta]stdin[/magenta] or the
-    --input flag. When using the --input flag, the value can be one of the
-    following:
+    Input for the run should be given through [magenta]stdin[/magenta], the --input flag,
+    or a Nextmv managed input by passing its ID into the --managed-input-id flag.
+    When using the --input flag, the value can be one of the following:
 
     - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
       the input data. Use with the [magenta]json[/magenta], and
@@ -297,12 +308,17 @@ def create(
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
         $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
+
+    - Set the run to use a [magenta]Nextmv managed[/magenta] input with ID [magenta]carrot-input[/magenta],
+      and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+      Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+        $ [dim]nextmv cloud run create --app-id hare-app --managed-input-id carrot-input --output outputs[/dim]
     """
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
-    if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
+    if stdin is None and (input is None or input == "") and (managed_input_id is None or managed_input_id == ""):
+        error("Input data must be provided via the --input or --managed-input-id flags, or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app = build_cloud_app(app_id=app_id, profile=profile)
@@ -322,6 +338,7 @@ def create(
     input_kwarg = resolve_input_kwarg(
         stdin=stdin,
         input=input,
+        managed_input_id=managed_input_id,
         cloud_app=cloud_app,
     )
     run_id = cloud_app.new_run(
@@ -470,6 +487,7 @@ def build_run_options(options: list[str] | None) -> dict[str, str]:
 def resolve_input_kwarg(
     stdin: str | None,
     input: str | None,
+    managed_input_id: str | None,
     cloud_app: Application,
 ) -> dict[str, Any]:
     """
@@ -500,6 +518,9 @@ def resolve_input_kwarg(
             input_data = stdin
 
         return {"input": input_data}
+
+    if managed_input_id is not None and managed_input_id != "":
+        return {"managed_input_id": managed_input_id}
 
     input_path = Path(input)
 

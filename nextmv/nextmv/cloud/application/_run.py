@@ -239,6 +239,7 @@ class ApplicationRunMixin:
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self: "Application",
         input: Input | dict[str, Any] | BaseModel | str = None,
+        managed_input_id: str | None = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -287,6 +288,9 @@ class ApplicationRunMixin:
 
             In general, if an input is too large, it will be uploaded with the
             `upload_data` method.
+        managed_input_id: Optional[str]
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
+            to use as the run's input.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -342,7 +346,7 @@ class ApplicationRunMixin:
         requests.HTTPError
             If the response status code is not 2xx.
         ValueError
-            If the `input` is of type `nextmv.Input` and the .input_format` is
+            If the `input` is of type `nextmv.Input` and the `.input_format` is
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
@@ -362,8 +366,9 @@ class ApplicationRunMixin:
         if input_data is not None:
             input_size = get_size(input_data)
 
-        upload_id_used = upload_id is not None
-        if self.__upload_url_required(upload_id_used, input_size, tar_file, input):
+        managed_input_id_used = managed_input_id is not None and managed_input_id != ""
+        upload_id_used = upload_id is not None and upload_id != ""
+        if self.__upload_url_required(upload_id_used or managed_input_id_used, input_size, tar_file, input):
             upload_url = self.upload_url()
             self.upload_data(data=input_data, upload_url=upload_url, tar_file=tar_file)
             upload_id = upload_url.upload_id
@@ -374,7 +379,16 @@ class ApplicationRunMixin:
         # Builds the payload progressively based on the different arguments
         # that must be provided.
         payload = {}
-        if upload_id_used:
+
+        # Request payload parameters `input_id`, `upload_id`, and `input`
+        # are mutually exclusive. The request will fail if more than one is defined.
+        # We prioritize the use of a managed input via `input_id` if defined,
+        # use `upload_id` if no managed input is defined but `upload_id` is or
+        # the input used necessitated the input be uploaded, and use `input`
+        # for all remaining cases.
+        if managed_input_id_used:
+            payload["input_id"] = managed_input_id
+        elif upload_id_used:
             payload["upload_id"] = upload_id
         else:
             payload["input"] = input_data
@@ -417,6 +431,7 @@ class ApplicationRunMixin:
     def new_run_with_result(
         self: "Application",
         input: Input | dict[str, Any] | BaseModel | str = None,
+        managed_input_id: str | None = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -522,6 +537,8 @@ class ApplicationRunMixin:
             Path to a directory where non-JSON output files will be saved. This is
             required if the output is non-JSON. If the directory does not exist, it
             will be created. Uses the current directory by default.
+        managed_input_id : Optional[str],
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`) to use as the run's input.
 
         Returns
         ----------
@@ -545,6 +562,7 @@ class ApplicationRunMixin:
 
         run_id = self.new_run(
             input=input,
+            managed_input_id=managed_input_id,
             instance_id=instance_id,
             name=name,
             description=description,
@@ -1235,7 +1253,7 @@ class ApplicationRunMixin:
 
     def __upload_url_required(
         self: "Application",
-        upload_id_used: bool,
+        uploaded_input_used: bool,
         input_size: int,
         tar_file: str,
         input: Input | dict[str, Any] | BaseModel | str = None,
@@ -1245,7 +1263,7 @@ class ApplicationRunMixin:
         based on the input size, type, and configuration.
         """
 
-        if upload_id_used:
+        if uploaded_input_used:
             return False
 
         non_json_payload = False
