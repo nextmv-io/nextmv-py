@@ -84,7 +84,7 @@ class Client:
     timeout : float
         Timeout to use for requests to the Nextmv Cloud API, in seconds.
         Defaults to ``20``.
-    url : str
+    url : str, optional
         URL of the Nextmv Cloud API. Defaults to
         ``"https://api.cloud.nextmv.io"``.
     console_url : str
@@ -157,7 +157,7 @@ class Client:
             selected profile.
         """
 
-        # Fallback for integration tests
+        # Fallback for backwards compatibility with empty string
         if not self.url:
             self.url = "https://api.cloud.nextmv.io"
 

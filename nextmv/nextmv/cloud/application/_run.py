@@ -239,7 +239,6 @@ class ApplicationRunMixin:
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self: "Application",
         input: Input | dict[str, Any] | BaseModel | str = None,
-        managed_input_id: str | None = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -250,6 +249,7 @@ class ApplicationRunMixin:
         external_result: ExternalRunResult | dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
         input_dir_path: str | None = None,
+        managed_input_id: str | None = None,
     ) -> str:
         """
         Submit an input to start a new run of the application. Returns the
@@ -288,9 +288,6 @@ class ApplicationRunMixin:
 
             In general, if an input is too large, it will be uploaded with the
             `upload_data` method.
-        managed_input_id: Optional[str]
-            The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
-            to use as the run's input.
         instance_id: Optional[str]
             ID of the instance to use for the run. If not provided, the default
             instance ID associated to the Class (`default_instance_id`) is
@@ -335,6 +332,9 @@ class ApplicationRunMixin:
             like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
             If both `input` and `input_dir_path` are specified, the `input` is
             ignored, and the files in the directory are used instead.
+        managed_input_id: Optional[str]
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
+            to use as the run's input.
 
         Returns
         ----------
@@ -368,7 +368,12 @@ class ApplicationRunMixin:
 
         managed_input_id_used = managed_input_id is not None and managed_input_id != ""
         upload_id_used = upload_id is not None and upload_id != ""
-        if self.__upload_url_required(upload_id_used or managed_input_id_used, input_size, tar_file, input):
+        if self.__upload_url_required(
+            uploaded_input_used=upload_id_used or managed_input_id_used,
+            input_size=input_size,
+            tar_file=tar_file,
+            input=input,
+        ):
             upload_url = self.upload_url()
             self.upload_data(data=input_data, upload_url=upload_url, tar_file=tar_file)
             upload_id = upload_url.upload_id
@@ -431,7 +436,6 @@ class ApplicationRunMixin:
     def new_run_with_result(
         self: "Application",
         input: Input | dict[str, Any] | BaseModel | str = None,
-        managed_input_id: str | None = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -444,6 +448,7 @@ class ApplicationRunMixin:
         json_configurations: dict[str, Any] | None = None,
         input_dir_path: str | None = None,
         output_dir_path: str | None = ".",
+        managed_input_id: str | None = None,
     ) -> RunResult:
         """
         Submit an input to start a new run of the application and poll for the
