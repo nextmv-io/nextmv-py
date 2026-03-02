@@ -158,7 +158,7 @@ class Client:
         """
 
         # Fallback for integration tests
-        if not self.url :
+        if not self.url:
             self.url = "https://api.cloud.nextmv.io"
 
         if self.api_key is not None and self.api_key != "":
