@@ -318,7 +318,7 @@ def create(
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == "") and (managed_input_id is None or managed_input_id == ""):
-        error("Input data must be provided via the --input or --managed_input_id flags, or [magenta]stdin[/magenta].")
+        error("Input data must be provided via the --input or --managed-input-id flags, or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app = build_cloud_app(app_id=app_id, profile=profile)

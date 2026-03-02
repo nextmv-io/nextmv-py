@@ -723,7 +723,7 @@ class Run(BaseModel):
 class RunTrackingMetadata(BaseModel):
     """
     Metadata elements for tracking elements of the run that
-    may be useful for the purposes of reproducability.
+    may be useful for the purposes of reproducibility.
 
     You can import the RunTrackingMetadata class directly from `nextmv`:
 
@@ -783,7 +783,7 @@ class Metadata(BaseModel):
         Type of the experiment containing the run.
     tracking: RunTrackingMetadata, optional
         Metadata for tracking elements of the run that
-        may be useful for the purposes of reproducability.
+        may be useful for the purposes of reproducibility.
     """
 
     application_id: str
@@ -817,7 +817,7 @@ class Metadata(BaseModel):
     tracking: RunTrackingMetadata | None = None
     """
     Metadata for tracking elements of the run that
-    may be useful for the purposes of reproducability.
+    may be useful for the purposes of reproducibility.
     """
 
     def run_is_finalized(self) -> bool:

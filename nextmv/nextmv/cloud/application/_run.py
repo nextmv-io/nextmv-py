@@ -1253,7 +1253,7 @@ class ApplicationRunMixin:
 
     def __upload_url_required(
         self: "Application",
-        upload_id_used: bool,
+        uploaded_input_used: bool,
         input_size: int,
         tar_file: str,
         input: Input | dict[str, Any] | BaseModel | str = None,
@@ -1263,7 +1263,7 @@ class ApplicationRunMixin:
         based on the input size, type, and configuration.
         """
 
-        if upload_id_used:
+        if uploaded_input_used:
             return False
 
         non_json_payload = False
