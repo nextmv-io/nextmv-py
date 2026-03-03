@@ -40,6 +40,7 @@ Tutorials to manage your Cloud applications and their runs.
 | [Instances][instances] | Manage instances of your Cloud application |
 | [Track Runs][external-runs] | Associate external runs executed outside of Cloud with your Cloud application |
 | [Secrets][secrets] | Manage secrets to use in your Cloud application |
+| [Managed Inputs][managed-inputs] | Manage inputs for your Cloud application independent from execution |
 | [Large Payloads][large-payloads] | Manage large payloads for your Cloud application |
 | [Queuing & prioritization][queuing] | Manage queuing and prioritization for your Cloud application |
 | [Execution classes][execution-classes] | Manage execution classes for your Cloud application |
@@ -72,6 +73,7 @@ Tutorials to manage testing and experimentation for your Cloud applications.
 [instances]: ./instances.md
 [external-runs]: ./external-runs.md
 [secrets]: ./secrets.md
+[managed-inputs]: ./managed-inputs.md
 [large-payloads]: ./large-payloads.md
 [queuing]: ./queuing.md
 [execution-classes]: ./execution-classes.md
