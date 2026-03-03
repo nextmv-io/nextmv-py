@@ -4,7 +4,7 @@ from nextpipe import FlowSpec, needs, step
 
 from nextmv import cloud
 
-client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"))
+client = cloud.Client(api_key=os.getenv("NEXTMV_API_KEY"), url=os.getenv("NEXTMV_BASE_URL"))
 
 
 class MarketplaceIntegrationWorkflow(FlowSpec):
