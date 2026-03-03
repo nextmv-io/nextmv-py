@@ -1,6 +1,7 @@
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
+from time import sleep
 
 from nextmv.safe import safe_id
 from nextpipe import FlowSpec, needs, step
@@ -71,6 +72,8 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert len(comm_apps) > 0
 
         # Use a temp dir to clone and push a community app.
+        # TODO: For more robust testing, create a bespoke app for python integration testing.
+        #       This is needed for features such as delay (to consistently test cancelation).
         with tempfile.TemporaryDirectory() as temp_dir:
             # We can clone a community app.
             name = "python-hello-world"
@@ -262,8 +265,11 @@ class CloudIntegrationWorkflow(FlowSpec):
             assert run.id in run_ids
 
         # Start and cancel a run.
-        run_id = app.new_run(input=input_data)
-        app.cancel_run(run_id=run_id)
+        # NOTE: Community app `python-hello-world` runs for a very short time; to cancel here is currently unreliable.
+        # TODO: Add a simple community app to support all integration test requirements (including delay to test
+        #       cancelation safely); re-enable this with delay when we move to the bespoke integration test app.
+        # run_id = app.new_run(input=input_data)
+        # app.cancel_run(run_id=run_id)
 
         return runs
 
@@ -385,6 +391,10 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert test1.name == name
         assert test1.description == description
 
+        # Ensure scenario test runs to completion
+        test1Result = app.scenario_test_with_polling(scenario_test_id=test1.id)
+        assert test1Result.status == cloud.ExperimentStatus.COMPLETED
+
         # We can delete a scenario test.
         app.delete_scenario_test(scenario_test_id=test1.id)
 
@@ -451,9 +461,8 @@ class CloudIntegrationWorkflow(FlowSpec):
         app.stop_shadow_test(shadow_test_id=shadow_test.shadow_test_id, intent=cloud.StopIntent.COMPLETE)
         metadata = app.shadow_test_metadata(shadow_test_id=shadow_test.shadow_test_id)
         assert metadata.status in {
-            cloud.ExperimentStatus.STARTED,
             cloud.ExperimentStatus.COMPLETED,
-            cloud.ExperimentStatus.STOPPING,
+            cloud.ExperimentStatus.STOPPING,    # Cancelation is asynchronous; test may be in temporary STOPPING state.
         }
 
         # Get the results of the shadow test and assert that it registered the
@@ -531,9 +540,8 @@ class CloudIntegrationWorkflow(FlowSpec):
         )
         metadata = app.switchback_test_metadata(switchback_test_id=switchback_test.switchback_test_id)
         assert metadata.status in {
-            cloud.ExperimentStatus.STARTED,
             cloud.ExperimentStatus.COMPLETED,
-            cloud.ExperimentStatus.STOPPING,
+            cloud.ExperimentStatus.STOPPING,    # Cancelation is asynchronous; test may be in temporary STOPPING state.
         }
 
         # Get the results of the switchback test and assert that it registered the
@@ -735,7 +743,7 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can start an ensemble run.
         input_data = {"name": "world", "radius": 6378, "distance": 147.6}
-        app.new_run(
+        run = app.new_run_with_result(
             input=input_data,
             configuration=nextmv.RunConfiguration(
                 run_type=nextmv.RunTypeConfiguration(
@@ -744,6 +752,7 @@ class CloudIntegrationWorkflow(FlowSpec):
                 ),
             ),
         )
+        assert run.metadata.status_v2 == nextmv.StatusV2.succeeded
 
         # We can delete an ensemble definition.
         app.delete_ensemble_definition(ensemble_definition_id=definition.id)
@@ -791,6 +800,9 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # Clean up the input set.
         app.delete_input_set(input_set_id=input_set.id)
+
+        # Give any in-progress resource deletion some time (1s should be more than sufficient) to finalize.
+        sleep(1)
 
         # We can delete the app after cleanup.
         app.delete()
