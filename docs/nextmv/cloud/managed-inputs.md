@@ -115,6 +115,5 @@ A possible output of such code
     be supplied to the `new_managed_input` function
 
 [runs]: ./runs.md
-[application-managed-inputs]: ./reference/application.md#nextmv.nextmv.cloud.application._managed_input
 [application-upload-url]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_url
 [application-upload-data]: ./reference/application.md#nextmv.nextmv.cloud.application.Application.upload_data

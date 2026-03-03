@@ -743,7 +743,7 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can start an ensemble run.
         input_data = {"name": "world", "radius": 6378, "distance": 147.6}
-        run = app.new_run_with_result(
+        result = app.new_run_with_result(
             input=input_data,
             configuration=nextmv.RunConfiguration(
                 run_type=nextmv.RunTypeConfiguration(
@@ -752,7 +752,7 @@ class CloudIntegrationWorkflow(FlowSpec):
                 ),
             ),
         )
-        assert run.metadata.status_v2 == nextmv.StatusV2.succeeded
+        assert result.metadata.status_v2 == nextmv.StatusV2.succeeded
 
         # We can delete an ensemble definition.
         app.delete_ensemble_definition(ensemble_definition_id=definition.id)
