@@ -5,9 +5,9 @@ This module defines the init command for the Nextmv CLI.
 import questionary
 import typer
 
-from nextmv.cli.message import choice, directory_path
+from nextmv.cli.message import choice, directory_path, success
 from nextmv.content_format import ContentFormat
-from nextmv.manifest import ManifestType
+from nextmv.manifest import ManifestType, initialize_manifest
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -138,3 +138,19 @@ def _path_question(is_template: bool) -> str:
     dirpath = dirpath or "."
 
     return dirpath
+
+
+def handle_files_initialization(
+    is_template: bool,
+    dirpath: str,
+    manifest_type: ManifestType,
+    content_format: ContentFormat,
+) -> None:
+    if is_template:
+        pass
+    else:
+        dst = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
+        success(
+            f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
+            f"initialized at [magenta]{dst}[/magenta]."
+        )

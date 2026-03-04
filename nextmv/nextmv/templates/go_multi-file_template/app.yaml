@@ -1,18 +1,21 @@
 # This manifest holds the information the app needs to run on Nextmv.
 
 # Type and runtime specify the language and environment of the app.
-type: python
-runtime: ghcr.io/nextmv-io/runtime/python:3.11
+type: go
+runtime: ghcr.io/nextmv-io/runtime/default:latest
 
-# Python-specific configurations.
-python:
-  # All listed packages will get bundled with the app.
-  pip-requirements: requirements.txt
+# Directives to build a Go binary from the app.
+build:
+  command: go build -o main .
+  # Use Linux ARM64 as the target for Nextmv Cloud.
+  environment:
+    GOOS: linux
+    GOARCH: arm64
 
 # List all files/directories that should be included in the app. Globbing
 # (e.g.: configs/*.json) is supported.
 files:
-  - main.py
+  - main
 
 # Application configurations.
 configuration:
@@ -25,5 +28,14 @@ configuration:
         path: inputs # Directory where the app will read input files from.
       output:
         solutions: outputs/solutions # Directory where the app will write solution files to.
-        metrics: outputs/metrics.json # Path where the app will write metrics to.
-        assets: outputs/assets/assets.json # Path where the app will write assets to.
+        metrics: outputs/metrics/metrics.json # Path where the app will write metrics to.
+  # Define the options (parameters) of the app.
+  options:
+    items:
+      - name: details
+        option_type: bool
+        default: true
+        description: Print details to logs. Default true.
+        required: false
+        ui:
+          display_name: Details

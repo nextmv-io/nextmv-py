@@ -1,0 +1,38 @@
+# This manifest holds the information the app needs to run on Nextmv.
+
+# Type and runtime specify the language and environment of the app.
+type: python
+runtime: ghcr.io/nextmv-io/runtime/python:3.11
+
+# Python-specific configurations.
+python:
+  # All listed packages will get bundled with the app.
+  pip-requirements: requirements.txt
+
+# List all files/directories that should be included in the app. Globbing
+# (e.g.: configs/*.json) is supported.
+files:
+  - main.py
+
+# Application configurations.
+configuration:
+  # Define the content format of the app, one of: json, multi-file.
+  content:
+    format: "multi-file" # Read and write files from disk.
+    # Configuration of the multi-file format.
+    multi-file:
+      input:
+        path: inputs # Directory where the app will read input files from.
+      output:
+        solutions: outputs/solutions # Directory where the app will write solution files to.
+        metrics: outputs/metrics.json # Path where the app will write metrics to.
+        assets: outputs/assets/assets.json # Path where the app will write assets to.
+  options:
+    items:
+      - name: details
+        option_type: bool
+        default: true
+        description: Print details to logs. Default true.
+        required: false
+        ui:
+          display_name: Details
