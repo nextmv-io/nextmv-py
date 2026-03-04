@@ -3,15 +3,13 @@
 Managed inputs are input files stored on the Nextmv platform and managed at an
 application level.
 
-## Creating managed inputs
-
 Managed inputs can be created in two different ways:
 
 * Via the ID of an existing [run][runs] within the application
 * Via the ID of [data uploaded to Nextmv][application-upload-data]
   through the use of a [presigned URL][application-upload-url].
 
-### __Via a run ID__
+## Creating inputs via a run ID
 
 Example code for generating a managed input via run ID:
 
@@ -22,33 +20,32 @@ import nextmv
 from nextmv.cloud import Application, Client
 
 client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
-app = Application(client=client, id=os.getenv("APP_ID"))
+app = Application(client=client, id="<YOUR_APP_ID>")
 managed_input = app.new_managed_input(
-    id=os.getenv("MANAGED_INPUT_ID"),
-    name=os.getenv("MANAGED_INPUT_ID"),
+    id="<YOUR_MANAGED_INPUT_ID>",
+    name="<YOUR_MANAGED_INPUT_ID>",
     description="An optional description",
-    run_id="latest-RNBs7AKSg",
+    run_id="<YOUR_RUN_ID>",
 )
 nextmv.write(managed_input)
 ```
 
 A possible output of such code
-(where environment variables `NEXTMV_API_KEY=routing` and `MANAGED_INPUT_ID=managed-input-3`,
-and the format of the existing run `latest-RNBs7AKSg` is the `JSON` type):
+(where the format of the existing run `<YOUR_RUN_ID` is the `JSON` type):
 
 ```json
 {
-    "app_id": "routing",
+    "app_id": "<YOUR_APP_ID>",
     "created_at": "2026-03-03T14:02:12.000000Z",
     "description": "An optional description",
-    "id": "managed-input-3",
-    "run_id": "latest-RNBs7AKSg",
+    "id": "<YOUR_MANAGED_INPUT_ID>",
+    "run_id": "<YOUR_RUN_ID>",
     "format": {
         "input": {
             "type": "json"
         }
     },
-    "name": "managed-input-3",
+    "name": "<YOUR_MANAGED_INPUT_ID>",
     "updated_at": "2026-03-03T14:02:12.000000Z"
 }
 ```
@@ -58,7 +55,7 @@ and the format of the existing run `latest-RNBs7AKSg` is the `JSON` type):
     The `format` information of a run used to create a managed input will be
     inherited by the managed input generated.
 
-### __Via the ID of uploaded data__
+## Creating inputs via the ID of uploaded data
 
 Example code for generating a managed input via uploaded data:
 
@@ -72,7 +69,7 @@ with open("<YOUR-INPUT-FILE>") as f:
     input = json.load(f)
 
 client = Client(api_key=os.getenv("NEXTMV_API_KEY"))
-app = Application(client=client, id=os.getenv("APP_ID"))
+app = Application(client=client, id="<YOUR_APP_ID>")
 
 # Get the upload URL.
 upload_url = app.upload_url()
@@ -81,30 +78,29 @@ upload_url = app.upload_url()
 app.upload_data(data=input, upload_url=upload_url)
 
 managed_input = app.new_managed_input(
-    id=os.getenv("MANAGED_INPUT_ID"),
-    name=os.getenv("MANAGED_INPUT_ID"),
+    id="<YOUR_MANAGED_INPUT_ID>",
+    name="<YOUR_MANAGED_INPUT_ID>",
     description="An optional description",
     upload_id=upload_url.upload_id,
 )
 nextmv.write(managed_input)
 ```
 
-A possible output of such code
-(where environment variables `NEXTMV_API_KEY=routing` and `MANAGED_INPUT_ID=managed-input-3`):
+A possible output of such code:
 
 ```json
 {
-    "app_id": "routing",
+    "app_id": "<YOUR_APP_ID>",
     "created_at": "2026-03-03T14:02:12.000000Z",
     "description": "An optional description",
-    "id": "managed-input-3",
+    "id": "<YOUR_MANAGED_INPUT_ID>",
     "upload_id": "generated-upload-id",
     "format": {
         "input": {
             "type": "json"
         }
     },
-    "name": "managed-input-3",
+    "name": "<YOUR_MANAGED_INPUT_ID>",
     "updated_at": "2026-03-03T14:02:12.000000Z"
 }
 ```
