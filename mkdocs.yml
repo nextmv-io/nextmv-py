@@ -50,6 +50,7 @@ nav:
           - Instances: nextmv/cloud/instances.md
           - Track runs: nextmv/cloud/external-runs.md
           - Secrets: nextmv/cloud/secrets.md
+          - Managed Inputs: nextmv/cloud/managed-inputs.md
           - Large payloads: nextmv/cloud/large-payloads.md
           - Queuing & prioritization: nextmv/cloud/queuing.md
           - Execution classes: nextmv/cloud/execution-classes.md
