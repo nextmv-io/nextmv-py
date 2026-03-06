@@ -25,6 +25,7 @@ from pydantic import Field
 from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
 from nextmv.input import INPUTS_KEY, Input, InputFormat
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
@@ -38,7 +39,7 @@ from nextmv.local.local import (
 from nextmv.local.registry import Registry
 from nextmv.local.runner import run
 from nextmv.logger import log
-from nextmv.manifest import Manifest
+from nextmv.manifest import Manifest, ManifestType
 from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
@@ -271,22 +272,29 @@ class Application(BaseModel):
         src: str | None = None,
         description: str | None = None,
         destination: str | None = None,
+        manifest_type: ManifestType = ManifestType.PYTHON,
+        content_format: ContentFormat = ContentFormat.JSON,
+        should_register: bool = False,
     ) -> "Application":
         """
         Initialize a sample Nextmv application, locally.
 
-        This method will create a new application in the local file system. The
-        application is a dir with the name given by `src` (it becomes the
-        _source_ of the app), under the location given by `destination`. If the
-        `destination` parameter is not specified, the current working directory
-        is used as default. This method will scaffold the application with the
-        necessary files and directories to have an opinionated structure for
-        your decision model. Once the application is initialized, you are
-        encouraged to complete it with the decision model itself, so that the
-        application can be run locally.
+        This method will create a new application from a template in the local
+        file system. The application is a dir with the name given by `src` (it
+        becomes the _source_ of the app), under the location given by
+        `destination`. If the `destination` parameter is not specified, the
+        current working directory is used as default. This method will scaffold
+        the application with the necessary files and directories to have an
+        opinionated structure for your decision model. The template used is
+        determined by the combination of `manifest_type` and `content_format`.
+        Once the application is initialized, you are encouraged to complete it
+        with the decision model itself, so that the application can be run
+        locally.
 
         If the `src` parameter is not provided, a random name will be generated
-        for the application.
+        for the application. If `should_register` is set to True, the
+        application will also be registered in the local registry after
+        initialization.
 
         Parameters
         ----------
@@ -298,6 +306,16 @@ class Application(BaseModel):
         destination : str, optional
             Destination directory where the application will be initialized. If
             not provided, the current working directory will be used.
+        manifest_type : ManifestType, default=ManifestType.PYTHON
+            Type of manifest to use for the application. Determines the
+            language/runtime template that will be scaffolded.
+        content_format : ContentFormat, default=ContentFormat.JSON
+            Content format of the application's input and output. Determines
+            which template variant is used when scaffolding the application.
+        should_register : bool, default=False
+            Whether to register the application in the local registry after
+            initialization. If True, the application will be added to
+            `$HOME/.nextmv/registry.yaml`.
 
         Returns
         -------
@@ -305,8 +323,8 @@ class Application(BaseModel):
             The initialized application instance.
         """
 
-        destination_dir = os.getcwd() if destination is None else destination
-        app_id = src if src is not None else safe_id("app")
+        destination_dir = os.getcwd() if not destination else destination
+        app_id = src if src else safe_id("local-app")
 
         # Create the new directory with the given name.
         app_src = os.path.join(destination_dir, app_id)
@@ -315,19 +333,34 @@ class Application(BaseModel):
 
         os.makedirs(app_src, exist_ok=False)
 
+        if manifest_type == ManifestType.BINARY:
+            manifest_type = ManifestType.GO
+
         # Get the path to the initial app structure template.
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        initial_app_structure_path = os.path.join(current_file_dir, "..", "default_app")
+        template = f"{manifest_type.value}_{content_format.value}_template"
+        initial_app_structure_path = os.path.join(current_file_dir, "..", "templates", template)
         initial_app_structure_path = os.path.normpath(initial_app_structure_path)
 
         # Copy everything from initial_app_structure to the new directory.
-        if os.path.exists(initial_app_structure_path):
-            shutil.copytree(initial_app_structure_path, app_src, dirs_exist_ok=True)
+        if not os.path.exists(initial_app_structure_path):
+            raise FileNotFoundError(f"Initial app structure template not found at: {initial_app_structure_path}")
 
-        return cls(
+        shutil.copytree(initial_app_structure_path, app_src, dirs_exist_ok=True)
+
+        manifest = Manifest.from_yaml(app_src)
+
+        local_app = cls(
             src=app_src,
             description=description,
+            content_format=InputFormat(content_format),
+            manifest=manifest,
         )
+
+        if should_register:
+            local_app.register()
+
+        return local_app
 
     def is_registered(self) -> bool:
         """

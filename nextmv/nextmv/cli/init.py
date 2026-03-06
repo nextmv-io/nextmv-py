@@ -4,10 +4,13 @@ This module defines the init command for the Nextmv CLI.
 
 import questionary
 import typer
+from rich.prompt import Prompt
 
 from nextmv.cli.message import choice, directory_path, success
 from nextmv.content_format import ContentFormat
+from nextmv.local.application import Application
 from nextmv.manifest import ManifestType, initialize_manifest
+from nextmv.safe import safe_id
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -23,6 +26,7 @@ def init() -> None:
     manifest_type = _manifest_type_question(is_template)
     content_format = _content_format_question(is_template)
     dirpath = _path_question(is_template)
+    _handle_files_initialization(is_template, dirpath, manifest_type, content_format)
 
 
 def _template_question() -> bool:
@@ -140,17 +144,68 @@ def _path_question(is_template: bool) -> str:
     return dirpath
 
 
-def handle_files_initialization(
+def _handle_files_initialization(
     is_template: bool,
     dirpath: str,
     manifest_type: ManifestType,
     content_format: ContentFormat,
 ) -> None:
+    """
+    Handle the file initialization for a new Nextmv application.
+
+    Depending on whether the user is starting from a template or an existing
+    model, this function either scaffolds a full application from a template or
+    initializes only the manifest file. In both cases, it prompts the user for
+    an app ID and registers the application in the local registry.
+
+    Parameters
+    ----------
+    is_template : bool
+        If True, a full application template is scaffolded under `dirpath`. If
+        False, only the manifest (`app.yaml`) is initialized in the existing
+        model directory.
+    dirpath : str
+        Path to the directory where the application or manifest will be
+        initialized.
+    manifest_type : ManifestType
+        Language/runtime type of the manifest to initialize.
+    content_format : ContentFormat
+        Content format (e.g. JSON, multi-file) to use for the application's
+        input and output.
+    """
     if is_template:
-        pass
+        template = f"{manifest_type.value}_{content_format.value}_template"
+        local_app = Application.initialize(
+            src=template,
+            description="Sample Nextmv application initialized with the CLI.",
+            manifest_type=manifest_type,
+            content_format=content_format,
+            destination=dirpath,
+            should_register=False,
+        )
+        success(
+            f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] template "
+            f"initialized at [magenta]{local_app.src}[/magenta]."
+        )
+
     else:
         dst = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
         success(
             f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
             f"initialized at [magenta]{dst}[/magenta]."
         )
+        local_app = Application(src=dst)
+
+    app_id = Prompt.ask(
+        "Let's register the app to run locally with an ID. Enter a custom ID or leave blank to generate a random one.",
+        case_sensitive=False,
+    )
+    if app_id == "":
+        app_id = safe_id("local-app")
+
+    local_app.app_id = app_id
+    local_app.register()
+    success(
+        f"Application at path [magenta]{local_app.src}[/magenta] registered locally with "
+        f"ID [magenta]{local_app.app_id}[/magenta]."
+    )

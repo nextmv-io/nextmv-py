@@ -1,0 +1,29 @@
+# This manifest holds the information the app needs to run on Nextmv.
+
+# Type and runtime specify the language and environment of the app.
+type: java
+runtime: ghcr.io/nextmv-io/runtime/java:latest
+
+# Directives to compile the app.
+pre-push: mvn package
+
+# List all files/directories that should be included in the app. Globbing
+# (e.g.: configs/*.json) is supported.
+files:
+  - main.jar
+
+# Application configurations.
+configuration:
+  # Define the content format of the app, one of: json, multi-file.
+  content:
+    format: "json" # Read JSON from stdin and write JSON to stdout.
+  # Define the options (parameters) of the app.
+  options:
+    items:
+      - name: details
+        option_type: bool
+        default: true
+        description: Print details to logs. Default true.
+        required: false
+        ui:
+          display_name: Details
