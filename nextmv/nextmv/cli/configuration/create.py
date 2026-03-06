@@ -88,7 +88,7 @@ def create(
     save_config(config)
 
     success("Configuration saved successfully.")
-    message(f"\t[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]")
-    message(f"\t[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]")
+    message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
+    message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
     if endpoint != DEFAULT_ENDPOINT:
-        message(f"\t[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]")
+        message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)

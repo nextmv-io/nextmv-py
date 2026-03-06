@@ -168,7 +168,10 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
         return cloud.Application(client=client, id=app_id)
 
     warning(f"Cloud application with ID [magenta]{app_id}[/magenta] does not exist.")
-    should_create = confirmation(f"Do you want to create a new Cloud application with ID [magenta]{app_id}[/magenta]?")
+    should_create = confirmation(
+        f"Do you want to create a new Cloud application with ID [magenta]{app_id}[/magenta]?",
+        default=True,
+    )
     if not should_create:
         error(
             f"Cloud application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "

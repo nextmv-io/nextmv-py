@@ -10,6 +10,7 @@ from typing import Any
 
 import questionary
 import rich
+import rich.markup
 import typer
 from rich.prompt import Confirm
 
@@ -29,7 +30,7 @@ QUESTIONARY_STYLE = questionary.Style(
 )
 
 
-def message(msg: str, emoji: str | None = None) -> None:
+def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
     """
     Pretty-print a message. Your message should end with a period. The use of
     emojis is encouraged to give context to the message. An emoji should be a
@@ -45,12 +46,17 @@ def message(msg: str, emoji: str | None = None) -> None:
         emoji should be a string as specified in:
         https://rich.readthedocs.io/en/latest/markup.html#emoji. For example:
         `:hourglass_flowing_sand:`.
+    indents : int
+        The number of indents to prefix the message with. Each indent is a tab
+        character. Default is 0.
     """
 
     msg = _format(msg)
     if emoji:
-        rich.print(f"{emoji} {msg}", file=sys.stderr)
-        return
+        msg = f"{emoji} {msg}"
+
+    if indents > 0:
+        msg = "\t" * indents + msg
 
     rich.print(msg, file=sys.stderr)
 
@@ -235,14 +241,15 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
         return default
 
     try:
+        kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         selection = questionary.select(
             msg,
             choices=choices,
             default=default,
-            qmark="💡",
+            qmark=str(rich.markup.render(":bulb:")),
             style=QUESTIONARY_STYLE,
         ).ask(
-            kbi_msg="❌ Operation cancelled by user.",
+            kbi_msg=kbi_msg,
         )
     except Exception as e:
         error(f"Operation cancelled by user: {e}")
@@ -253,28 +260,31 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
     return selection
 
 
-def directory_path(msg: str, default: str | None = ".") -> str:
+def directory_path(msg: str, default: str | None = ".", only_directories: bool = True) -> str:
     """
-    Prompt the user to enter or select a directory path.
+    Prompt the user to enter or select a directory or file path.
 
     Parameters
     ----------
     msg : str
-        The message to display as the directory path prompt.
+        The message to display as the path prompt.
     default : str | None, optional
-        The default directory path pre-filled in the prompt. If None, no
-        default is pre-filled. Default is ".".
+        The default path pre-filled in the prompt. If None, no default is
+        pre-filled. Default is ".".
+    only_directories : bool, optional
+        If True, only directories are shown in the file chooser. If False,
+        both directories and files are shown. Default is True.
 
     Returns
     -------
     str
-        The directory path entered or selected by the user.
+        The path entered or selected by the user.
 
     Raises
     ------
     typer.Exit
         Exits the program with code 1 if the operation is cancelled or no
-        directory path is provided.
+        path is provided.
     """
     # If this is not an interactive terminal, do not ask for confirmation, to
     # avoid hanging indefinitely waiting for a user response.
@@ -282,14 +292,15 @@ def directory_path(msg: str, default: str | None = ".") -> str:
         return default
 
     try:
+        kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         dirpath = questionary.path(
             message=msg,
             default=default,
-            only_directories=True,
-            qmark="💡",
+            only_directories=only_directories,
+            qmark=str(rich.markup.render(":bulb:")),
             style=QUESTIONARY_STYLE,
         ).ask(
-            kbi_msg="❌ Operation cancelled by user.",
+            kbi_msg=kbi_msg,
         )
     except Exception as e:
         error(f"Operation cancelled by user: {e}")
