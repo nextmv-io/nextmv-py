@@ -775,9 +775,9 @@ class ApplicationRunMixin:
         polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
             Options to use when polling for the run logs.
         log_func : Optional[Callable[[TimestampedRunLog], None]], default=None
-            Optional custom logging function to use. This function is invoked if provided,
-            independently of the `verbose` flag. It needs to take a `TimestampedRunLog` as
-            its argument and return `None`.
+            Optional custom logging function callback. This function is invoked
+            independently of the `verbose` flag. It needs to take a
+            `TimestampedRunLog` as its argument and return `None`.
 
         Returns
         -------
