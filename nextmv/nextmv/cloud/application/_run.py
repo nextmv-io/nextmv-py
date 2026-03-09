@@ -9,6 +9,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 import rich
@@ -749,6 +750,7 @@ class ApplicationRunMixin:
         verbose: bool = False,
         rich_print: bool = False,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+        log_func: Callable[[str], None] | None = None,
     ) -> list[TimestampedRunLog]:
         """
         Get the logs of a run with polling.
@@ -772,6 +774,9 @@ class ApplicationRunMixin:
             Whether to use rich printing for better formatting of the logs.
         polling_options : PollingOptions, default=_DEFAULT_POLLING_OPTIONS
             Options to use when polling for the run logs.
+        log_func : Optional[Callable[[str], None]], default=None
+            Optional custom logging function to use. If provided, this function will be
+            called instead of the default logging behavior when `verbose` is True.
 
         Returns
         -------
@@ -825,7 +830,9 @@ class ApplicationRunMixin:
                 log_entry = TimestampedRunLog.from_dict(resp_log)
                 if verbose:
                     msg = f"[{log_entry.timestamp}] {log_entry.log}"
-                    if rich_print:
+                    if log_func is not None:
+                        log_func(msg)
+                    elif rich_print:
                         rich.print(msg, file=sys.stderr)
                     else:
                         log(msg)
