@@ -55,11 +55,16 @@ class ExecutedCommand:
 def init() -> None:
     """
     Get started with the Nextmv CLI.
+
+    [bold][underline]Examples[/underline][/bold]
+
+    - Start the tutorial.
+        $ [dim]nextmv init[/dim]
     """
 
     begin = str(rich.markup.render(":rocket: Let's go!"))
     starting_choice = choice(
-        msg="Welcome to the Nextmv CLI! This command will guide you through your first steps with Nextmv.",
+        msg="Welcome to the Nextmv CLI! This tutorial will guide you through your first steps with Nextmv.",
         choices=[begin, "Maybe later."],
         default=begin,
     )
@@ -78,7 +83,6 @@ def init() -> None:
     rule()
 
     dirpath = _path_question(is_template)
-    rule()
 
     local_app = _handle_files_initialization(is_template, dirpath, manifest_type, content_format)
     rule()
@@ -120,11 +124,12 @@ def init() -> None:
         )
     except Exception:
         rule()
-        message(
-            msg="The tutorial was not completed! You can run [code]nextmv init[/code] any time. "
-            "Here are the commands that were run so far:",
-            emoji=":rabbit:",
-        )
+        message(msg="The tutorial was not completed! You can run [code]nextmv init[/code] any time.", emoji=":rabbit:")
+        if len(commands) > 0:
+            message(
+                msg="Here are the commands that were run so far:",
+                emoji=":rocket:",
+            )
 
     for cmd in commands:
         if cmd is not None:
@@ -867,6 +872,16 @@ def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> Executed
             f"Failed to get [italic]remote[/italic] run results. Command exited with code {result.returncode}.\n"
             f"Standard output: {result.stdout}\n"
             f"Standard error: {result.stderr}"
+        )
+
+    # Show the user the URL for the completed run.
+    raw_output = result.stdout.strip()
+    output = json.loads(raw_output)
+    console_url = output.get("console_url")
+    if console_url is not None:
+        success(
+            f"You can see the details of the [magenta]{run_id}[/magenta] run in the Nextmv Cloud Console at "
+            f"[link={console_url}][magenta]{console_url}[/magenta][/link]."
         )
 
     return ExecutedCommand(cmd=str_cmd, explanation="Get the results of a [italic]remote[/italic] run")

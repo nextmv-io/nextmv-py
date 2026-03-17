@@ -12,11 +12,15 @@ import questionary
 import rich
 import rich.markup
 import typer
+from rich.console import Console
+
+# Console instance for stderr output with highlighting disabled
+_STDERR_CONSOLE = Console(file=sys.stderr, highlight=False)
 
 # Shared questionary style that matches the CLI's [code] tag rendering:
 # bold with no color overrides, letting the terminal's default foreground
 # color show through.
-QUESTIONARY_STYLE = questionary.Style(
+_QUESTIONARY_STYLE = questionary.Style(
     [
         ("qmark", "noinherit"),
         ("question", "noinherit"),
@@ -57,7 +61,7 @@ def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
     if indents > 0:
         msg = "\t" * indents + msg
 
-    rich.print(msg, file=sys.stderr)
+    _STDERR_CONSOLE.print(msg)
 
 
 def info(msg: str) -> None:
@@ -112,7 +116,7 @@ def warning(msg: str) -> None:
     """
 
     msg = _format(msg)
-    rich.print(f":construction: [yellow] Warning:[/yellow] {msg}", file=sys.stderr)
+    _STDERR_CONSOLE.print(f":construction: [yellow] Warning:[/yellow] {msg}")
 
 
 def error(msg: str) -> None:
@@ -132,7 +136,7 @@ def error(msg: str) -> None:
     """
 
     msg = _format(msg)
-    rich.print(f":x: [red]Error:[/red] {msg}", file=sys.stderr)
+    _STDERR_CONSOLE.print(f":x: [red]Error:[/red] {msg}")
 
     raise typer.Exit(code=1)
 
@@ -202,7 +206,7 @@ def confirmation(msg: str, default: bool = False) -> bool:
     # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
     # cannot, so we print the question via Rich first and then show a plain
     # arrow-key Yes/No picker.
-    rich.print(msg, file=sys.stderr)
+    _STDERR_CONSOLE.print(msg)
     result = choice(
         msg="Confirm",
         choices=["Yes", "No"],
@@ -250,7 +254,7 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
             choices=choices,
             default=default,
             qmark=str(rich.markup.render(":bulb:")),
-            style=QUESTIONARY_STYLE,
+            style=_QUESTIONARY_STYLE,
         ).ask(
             kbi_msg=kbi_msg,
         )
@@ -297,7 +301,7 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
     # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
     # cannot, so we print the question via Rich first and then show a plain
     # path prompt.
-    rich.print(msg, file=sys.stderr)
+    _STDERR_CONSOLE.print(msg)
     try:
         kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         dirpath = questionary.path(
@@ -305,7 +309,7 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
             default=default,
             only_directories=only_directories,
             qmark=str(rich.markup.render(":bulb:")),
-            style=QUESTIONARY_STYLE,
+            style=_QUESTIONARY_STYLE,
             complete_while_typing=True,
         ).ask(
             kbi_msg=kbi_msg,
@@ -324,7 +328,7 @@ def rule() -> None:
     Print a horizontal rule to stderr.
     """
 
-    rich.print(rich.rule.Rule(style="magenta"), file=sys.stderr)
+    _STDERR_CONSOLE.print(rich.rule.Rule(style="magenta"))
 
 
 def _format(msg: str) -> str:
