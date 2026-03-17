@@ -348,13 +348,10 @@ class Application(BaseModel):
 
         shutil.copytree(initial_app_structure_path, app_src, dirs_exist_ok=True)
 
-        manifest = Manifest.from_yaml(app_src)
-
         local_app = cls(
             src=app_src,
             description=description,
             content_format=InputFormat(content_format),
-            manifest=manifest,
         )
 
         if should_register:

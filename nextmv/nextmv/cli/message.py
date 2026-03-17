@@ -12,7 +12,6 @@ import questionary
 import rich
 import rich.markup
 import typer
-from rich.prompt import Confirm
 
 # Shared questionary style that matches the CLI's [code] tag rendering:
 # bold with no color overrides, letting the terminal's default foreground
@@ -200,13 +199,17 @@ def confirmation(msg: str, default: bool = False) -> bool:
     if not sys.stdin.isatty():
         return default
 
-    return Confirm.ask(
-        msg,
-        default=default,
-        case_sensitive=False,
-        show_default=True,
-        show_choices=True,
+    # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
+    # cannot, so we print the question via Rich first and then show a plain
+    # arrow-key Yes/No picker.
+    rich.print(msg, file=sys.stderr)
+    result = choice(
+        msg="Confirm",
+        choices=["Yes", "No"],
+        default="Yes" if default else "No",
     )
+
+    return result == "Yes"
 
 
 def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) -> str:
@@ -291,14 +294,19 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
     if not sys.stdin.isatty():
         return default
 
+    # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
+    # cannot, so we print the question via Rich first and then show a plain
+    # path prompt.
+    rich.print(msg, file=sys.stderr)
     try:
         kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         dirpath = questionary.path(
-            message=msg,
+            message="Path (press Tab to browse)",
             default=default,
             only_directories=only_directories,
             qmark=str(rich.markup.render(":bulb:")),
             style=QUESTIONARY_STYLE,
+            complete_while_typing=True,
         ).ask(
             kbi_msg=kbi_msg,
         )
@@ -311,6 +319,14 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
     return dirpath
 
 
+def rule() -> None:
+    """
+    Print a horizontal rule to stderr.
+    """
+
+    rich.print(rich.rule.Rule(style="magenta"), file=sys.stderr)
+
+
 def _format(msg: str) -> str:
     """
     Format a message to ensure it ends with a period.
@@ -321,7 +337,7 @@ def _format(msg: str) -> str:
         The message to format.
     """
     msg = msg.rstrip("\n")
-    if not msg.endswith("."):
+    if msg and msg[-1].isalnum():
         msg += "."
 
     return msg

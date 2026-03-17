@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 
 import questionary
 import rich
@@ -14,8 +15,9 @@ import typer
 from rich.prompt import Prompt
 
 from nextmv import cloud, local
+from nextmv.cli.cloud.app.push import handle_push
 from nextmv.cli.configuration.config import build_cloud_app, load_config, obscure_api_key
-from nextmv.cli.message import choice, confirmation, directory_path, error, in_progress, info, message, success
+from nextmv.cli.message import choice, confirmation, directory_path, error, in_progress, info, message, rule, success
 from nextmv.cloud.community import _get_valid_path
 from nextmv.content_format import ContentFormat
 from nextmv.manifest import ManifestType, initialize_manifest
@@ -23,6 +25,29 @@ from nextmv.safe import safe_id
 
 # Set up subcommand application.
 app = typer.Typer()
+
+
+@dataclass
+class ExecutedCommand:
+    """
+    Simple class to track a command that was executed in the tutorial.
+
+    Attributes
+    ----------
+    cmd : str
+        The command that was executed.
+    explanation : str
+        A brief explanation of what the command does.
+    """
+
+    cmd: str
+    """
+    The command that was executed.
+    """
+    explanation: str
+    """
+    A brief explanation of what the command does.
+    """
 
 
 @app.command()
@@ -40,21 +65,63 @@ def init() -> None:
     if starting_choice != begin:
         info("You can run [code]nextmv init[/code] at any time to get started.")
         raise typer.Exit()
+    rule()
 
     is_template = _template_question()
-    manifest_type = _manifest_type_question(is_template)
-    content_format = _content_format_question(is_template)
-    dirpath = _path_question(is_template)
-    local_app = _handle_files_initialization(is_template, dirpath, manifest_type, content_format)
-    local_run_id = _handle_local_run_create(local_app, is_template)
-    _handle_local_run_get(local_run_id)
-    _handle_configuration()
-    cloud_app = _handle_app_sync()
-    _handle_app_push(cloud_app)
-    cloud_run_id = _handle_cloud_run_create(cloud_app, local_app, is_template)
-    _handle_cloud_run_get(cloud_app, cloud_run_id)
+    rule()
 
-    message("Congratulations! You've completed the Nextmv CLI tutorial. Happy optimizing!", emoji=":rocket:")
+    manifest_type = _manifest_type_question(is_template)
+    rule()
+
+    content_format = _content_format_question(is_template)
+    rule()
+
+    dirpath = _path_question(is_template)
+    rule()
+
+    local_app = _handle_files_initialization(is_template, dirpath, manifest_type, content_format)
+    rule()
+
+    commands = []
+    local_run_id, cmd1 = _handle_local_run_create(local_app, is_template)
+    commands.append(cmd1)
+    rule()
+
+    cmd2 = _handle_local_run_get(local_run_id)
+    commands.append(cmd2)
+    rule()
+
+    cmd3 = _handle_configuration()
+    commands.append(cmd3)
+    rule()
+
+    cloud_app, cmd4 = _handle_app_sync()
+    commands.append(cmd4)
+    rule()
+
+    cmd5 = _handle_app_push(cloud_app)
+    commands.append(cmd5)
+    rule()
+
+    cloud_run_id, cmd6 = _handle_cloud_run_create(cloud_app, local_app, is_template)
+    commands.append(cmd6)
+    rule()
+
+    cmd7 = _handle_cloud_run_get(cloud_app, cloud_run_id)
+    commands.append(cmd7)
+    rule()
+
+    message(
+        msg="Congratulations! You've completed the Nextmv CLI tutorial. "
+        "This is a summary of the commands that were executed during the tutorial:",
+        emoji=":rocket:",
+    )
+    for cmd in commands:
+        if cmd is not None:
+            message(msg=f"- {cmd.explanation}: [code]{cmd.cmd}[/code]", indents=1)
+
+    print("", file=sys.stderr)
+    message(msg="[yellow]Happy optimizing![/yellow]", emoji=":sparkles:")
 
 
 def _template_question() -> bool:
@@ -231,24 +298,10 @@ def _handle_files_initialization(
         )
         local_app = local.Application(src=dst)
 
-    app_id = Prompt.ask(
-        "Let's register the app to run locally with an ID. Enter a custom ID or leave blank to generate a random one",
-        case_sensitive=False,
-    )
-    if app_id == "":
-        app_id = safe_id("local-app")
-
-    local_app.app_id = app_id
-    local_app.register()
-    success(
-        f"Application at path [magenta]{local_app.src}[/magenta] registered locally with "
-        f"ID [magenta]{local_app.app_id}[/magenta]."
-    )
-
     return local_app
 
 
-def _handle_local_run_create(local_app: local.Application, is_template: bool) -> str:
+def _handle_local_run_create(local_app: local.Application, is_template: bool) -> tuple[str, ExecutedCommand]:
     """
     Prompt the user to start a local run for the initialized application.
 
@@ -265,8 +318,9 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
 
     Returns
     -------
-    str
-        The run ID returned by the local run command.
+    tuple[str, ExecutedCommand]
+        The run ID returned by the local run command and the command that was
+        executed.
 
     Raises
     ------
@@ -274,15 +328,17 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
         Exits the program if the user declines to start a run.
     """
     create_run = confirmation(
-        msg=f"Do you want to start a local run for local app [magenta]{local_app.app_id}[/magenta] now?",
+        msg=f"Do you want to start a run for local app at [magenta]{local_app.src}[/magenta] now?",
         default=True,
     )
     if not create_run:
         info("You can start a local run for this application at any time with [code]nextmv local run create[/code].")
         raise typer.Exit()
 
-    in_progress(f"Changing working directory to [magenta]{local_app.src}[/magenta].")
+    cwd = os.getcwd()
+    in_progress(f"Changing working directory from [magenta]{cwd}[/magenta] to [magenta]{local_app.src}[/magenta].")
     os.chdir(local_app.src)
+    success(f"Working directory is now [magenta]{os.getcwd()}[/magenta].")
 
     default = "."
     if is_template and local_app.content_format == ContentFormat.JSON:
@@ -296,7 +352,8 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
         only_directories=False,
     )
     command = ["nextmv", "local", "run", "create", "--input", dirpath]
-    in_progress(f"Starting local run with command: [code]{' '.join(command)}[/code]")
+    str_cmd = " ".join(command)
+    in_progress(f"Starting local run with command: [code]{str_cmd}[/code]")
 
     result = _cli_call(command)
 
@@ -319,10 +376,10 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
 
     success(f"Local run started successfully with run ID: [magenta]{run_id}[/magenta].")
 
-    return run_id
+    return run_id, ExecutedCommand(cmd=str_cmd, explanation="Start a [italic]local[/italic] run")
 
 
-def _handle_local_run_get(run_id: str) -> None:
+def _handle_local_run_get(run_id: str) -> ExecutedCommand:
     """
     Prompt the user to retrieve the results of a completed local run.
 
@@ -334,6 +391,11 @@ def _handle_local_run_get(run_id: str) -> None:
     ----------
     run_id : str
         The ID of the local run whose results should be retrieved.
+
+    Returns
+    -------
+    ExecutedCommand
+        The command that was executed to retrieve the local run results.
 
     Raises
     ------
@@ -349,15 +411,6 @@ def _handle_local_run_get(run_id: str) -> None:
         info("You can get the results of this local run at any time with [code]nextmv local run get[/code].")
         raise typer.Exit()
 
-    output_path = Prompt.ask(
-        "Please enter a directory or file name to save the local run results to, or leave blank to use a random name",
-        case_sensitive=False,
-    )
-    if output_path == "":
-        output_path = safe_id("local-run-results")
-
-    in_progress(f"Results will be saved to [magenta]{output_path}[/magenta].")
-
     command = [
         "nextmv",
         "local",
@@ -365,10 +418,9 @@ def _handle_local_run_get(run_id: str) -> None:
         "get",
         "--run-id",
         run_id,
-        "--output",
-        output_path,
     ]
-    in_progress(f"Getting local run results with command: [code]{' '.join(command)}[/code]")
+    str_cmd = " ".join(command)
+    in_progress(f"Getting local run results with command: [code]{str_cmd}[/code]")
 
     result = _cli_call(command)
 
@@ -379,8 +431,10 @@ def _handle_local_run_get(run_id: str) -> None:
             f"Standard error: {result.stderr}"
         )
 
+    return ExecutedCommand(cmd=str_cmd, explanation="Get the results of a [italic]local[/italic] run")
 
-def _handle_configuration() -> None:
+
+def _handle_configuration() -> ExecutedCommand | None:
     """
     Prompt the user to configure the Nextmv CLI if not already configured.
 
@@ -388,6 +442,11 @@ def _handle_configuration() -> None:
     whether to configure the CLI now. If confirmed, guides them through
     obtaining an API key and invokes ``nextmv configuration create`` to
     store it. Exits early if the user declines or if the command fails.
+
+    Returns
+    -------
+    ExecutedCommand | None
+        The command that was executed to create the configuration.
 
     Raises
     ------
@@ -397,7 +456,7 @@ def _handle_configuration() -> None:
     config = load_config()
     if config != {}:
         success("Nextmv CLI is already configured. Skipping configuration step.")
-        return
+        return None
 
     should_configure = confirmation(
         "The Nextmv CLI is not configured yet. Do you want to configure it now?",
@@ -428,6 +487,7 @@ def _handle_configuration() -> None:
         api_key = Prompt.ask(
             "Please enter your Nextmv API key to complete the configuration",
             case_sensitive=True,
+            password=True,
         )
         if api_key != "":
             break
@@ -439,8 +499,9 @@ def _handle_configuration() -> None:
 
     api_key = obscure_api_key(api_key)
     obfuscated[-1] = api_key
+    str_cmd = " ".join(obfuscated)
 
-    in_progress(f"Creating configuration with command: [code]{' '.join(obfuscated)}[/code]")
+    in_progress(f"Creating configuration with command: [code]{str_cmd}[/code]")
     result = _cli_call(command)
 
     if result.returncode != 0:
@@ -450,8 +511,10 @@ def _handle_configuration() -> None:
             f"Standard error: {result.stderr}"
         )
 
+    return ExecutedCommand(cmd=str_cmd, explanation="Configure the Nextmv CLI")
 
-def _handle_app_sync() -> cloud.Application:
+
+def _handle_app_sync() -> tuple[cloud.Application, ExecutedCommand]:
     """
     Prompt the user to sync their local application with Nextmv Cloud.
 
@@ -462,8 +525,9 @@ def _handle_app_sync() -> cloud.Application:
 
     Returns
     -------
-    cloud.Application
-        The Cloud application the local app was synced with.
+    tuple[cloud.Application, ExecutedCommand]
+        The Cloud application that the local app was synced with and the command
+        that was executed to perform the sync.
 
     Raises
     ------
@@ -492,7 +556,8 @@ def _handle_app_sync() -> cloud.Application:
     cloud_app = build_cloud_app(app_id=target_app_id)
 
     command = ["nextmv", "local", "app", "sync", "--target-app-id", cloud_app.id]
-    in_progress(f"Syncing local application with command: [code]{' '.join(command)}[/code]")
+    str_cmd = " ".join(command)
+    in_progress(f"Syncing local application with command: [code]{str_cmd}[/code]")
 
     result = _cli_call(command)
 
@@ -509,10 +574,10 @@ def _handle_app_sync() -> cloud.Application:
         f"[link={runs_url}][magenta]{runs_url}[/magenta][/link]."
     )
 
-    return cloud_app
+    return cloud_app, ExecutedCommand(cmd=str_cmd, explanation="Sync the local application with Nextmv Cloud")
 
 
-def _handle_app_push(cloud_app: cloud.Application) -> None:
+def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
     """
     Prompt the user to push their application to Nextmv Cloud.
 
@@ -525,6 +590,11 @@ def _handle_app_push(cloud_app: cloud.Application) -> None:
     ----------
     cloud_app : cloud.Application
         The Cloud application to push.
+
+    Returns
+    -------
+    ExecutedCommand
+        The command that was executed to push the app to Nextmv Cloud.
 
     Raises
     ------
@@ -550,10 +620,30 @@ def _handle_app_push(cloud_app: cloud.Application) -> None:
         info("You can push your app to Nextmv Cloud at any time with [code]nextmv cloud app push[/code].")
         raise typer.Exit()
 
-    cloud_app.push(verbose=True, rich_print=True)
+    str_cmd = f"[code]nextmv cloud app push --app-id {cloud_app.id}[/code]"
+    in_progress(f"Pushing application with command: [code]{str_cmd}[/code]")
+    handle_push(
+        cloud_app=cloud_app,
+        app_id=cloud_app.id,
+        app_dir=None,
+        manifest=None,
+        version_id=None,
+        version_yes=False,
+        version_no=False,
+        update_defined=False,
+        update_instance_id=None,
+        create_defined=False,
+        create_instance_id=None,
+    )
+
+    return ExecutedCommand(cmd=str_cmd, explanation="Push the application to Nextmv Cloud")
 
 
-def _handle_cloud_run_create(cloud_app: cloud.Application, local_app: local.Application, is_template: bool) -> str:
+def _handle_cloud_run_create(
+    cloud_app: cloud.Application,
+    local_app: local.Application,
+    is_template: bool,
+) -> tuple[str, ExecutedCommand]:
     """
     Prompt the user to start a run for their Cloud application.
 
@@ -572,8 +662,9 @@ def _handle_cloud_run_create(cloud_app: cloud.Application, local_app: local.Appl
 
     Returns
     -------
-    str
-        The run ID returned by the `cloud_app.run` command.
+    tuple[str, ExecutedCommand]
+        The run ID returned by the Cloud run command and the command that was
+        executed.
 
     Raises
     ------
@@ -582,12 +673,12 @@ def _handle_cloud_run_create(cloud_app: cloud.Application, local_app: local.Appl
     """
 
     create_run = confirmation(
-        msg=f"Do you want to start a [bold]remote[/bold] run for Cloud app [magenta]{cloud_app.id}[/magenta] now?",
+        msg=f"Do you want to start a [italic]remote[/italic] run for Cloud app [magenta]{cloud_app.id}[/magenta] now?",
         default=True,
     )
     if not create_run:
         info(
-            "You can start a [bold]remote[/bold] run for the Cloud app at any time with "
+            "You can start a [italic]remote[/italic] run for the Cloud app at any time with "
             "[code]nextmv cloud run create[/code]."
         )
         raise typer.Exit()
@@ -599,18 +690,19 @@ def _handle_cloud_run_create(cloud_app: cloud.Application, local_app: local.Appl
         default = "inputs/"
 
     dirpath = directory_path(
-        msg="Please select a directory or file to use as input for the [bold]remote[/bold] run",
+        msg="Please select a directory or file to use as input for the [italic]remote[/italic] run",
         default=default,
         only_directories=False,
     )
     command = ["nextmv", "cloud", "run", "create", "--app-id", cloud_app.id, "--input", dirpath]
-    in_progress(f"Starting [bold]remote[/bold] run with command: [code]{' '.join(command)}[/code]")
+    str_cmd = " ".join(command)
+    in_progress(f"Starting [italic]remote[/italic] run with command: [code]{str_cmd}[/code]")
 
     result = _cli_call(command)
 
     if result.returncode != 0:
         error(
-            f"Failed to start [bold]remote[/bold] run. Command exited with code {result.returncode}.\n"
+            f"Failed to start [italic]remote[/italic] run. Command exited with code {result.returncode}.\n"
             f"Standard output: {result.stdout}\n"
             f"Standard error: {result.stderr}"
         )
@@ -620,17 +712,17 @@ def _handle_cloud_run_create(cloud_app: cloud.Application, local_app: local.Appl
     run_id = output.get("run_id")
     if not run_id:
         error(
-            f"[bold]Remote[/bold] run started but no run ID was returned. Please check the output below for details.\n"
+            f"[italic]Remote[/italic] run started but no run ID was returned. Please check the output for details.\n"
             f"Standard output: {result.stdout}\n"
             f"Standard error: {result.stderr}"
         )
 
-    success(f"[bold]Remote[/bold] run started successfully with run ID: [magenta]{run_id}[/magenta].")
+    success(f"[italic]Remote[/italic] run started successfully with run ID: [magenta]{run_id}[/magenta].")
 
-    return run_id
+    return run_id, ExecutedCommand(cmd=str_cmd, explanation="Start a [italic]remote[/italic] run for the Cloud app")
 
 
-def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> None:
+def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> ExecutedCommand:
     """
     Prompt the user to retrieve the results of a completed Cloud run.
 
@@ -645,6 +737,11 @@ def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> None:
     run_id : str
         The ID of the Cloud run whose results should be retrieved.
 
+    Returns
+    -------
+    ExecutedCommand
+        The command that was executed to retrieve the Cloud run results.
+
     Raises
     ------
     typer.Exit
@@ -652,25 +749,15 @@ def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> None:
         command fails.
     """
     get_result = confirmation(
-        msg=f"Do you want to get the results of the [bold]remote[/bold] run with ID [magenta]{run_id}[/magenta] now?",
+        msg=f"Do you want to get the results of the [italic]remote[/italic] run with ID [magenta]{run_id}[/magenta]?",
         default=True,
     )
     if not get_result:
         info(
-            "You can get the results of this [bold]remote[/bold] run at any time with "
+            "You can get the results of this [italic]remote[/italic] run at any time with "
             "[code]nextmv cloud run get[/code]."
         )
         raise typer.Exit()
-
-    output_path = Prompt.ask(
-        "Please enter a directory or file name to save the [bold]remote[/bold] run results to, "
-        "or leave blank to use a random name",
-        case_sensitive=False,
-    )
-    if output_path == "":
-        output_path = safe_id("cloud-run-results")
-
-    in_progress(f"Results will be saved to [magenta]{output_path}[/magenta].")
 
     command = [
         "nextmv",
@@ -681,19 +768,20 @@ def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> None:
         cloud_app.id,
         "--run-id",
         run_id,
-        "--output",
-        output_path,
     ]
-    in_progress(f"Getting [bold]remote[/bold] run results with command: [code]{' '.join(command)}[/code]")
+    str_cmd = " ".join(command)
+    in_progress(f"Getting [italic]remote[/italic] run results with command: [code]{str_cmd}[/code]")
 
     result = _cli_call(command)
 
     if result.returncode != 0:
         error(
-            f"Failed to get [bold]remote[/bold] run results. Command exited with code {result.returncode}.\n"
+            f"Failed to get [italic]remote[/italic] run results. Command exited with code {result.returncode}.\n"
             f"Standard output: {result.stdout}\n"
             f"Standard error: {result.stderr}"
         )
+
+    return ExecutedCommand(cmd=str_cmd, explanation="Get the results of a [italic]remote[/italic] run")
 
 
 def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
