@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud scenario list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing scenario tests...")
     scenario_tests = cloud_app.list_scenario_tests()
     scenario_tests_dict = [exp.to_dict() for exp in scenario_tests]

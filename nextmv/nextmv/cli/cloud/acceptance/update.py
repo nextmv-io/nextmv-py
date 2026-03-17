@@ -70,7 +70,7 @@ def update(
             --description "New description" --output updated-test.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Updating acceptance test...")
     acceptance_test = cloud_app.update_acceptance_test(

@@ -49,7 +49,7 @@ def get(
             --ensemble-definition-id prod-ensemble --output ensemble.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting ensemble definition...")
     ensemble_definition = cloud_app.ensemble_definition(ensemble_definition_id=ensemble_definition_id)
     ensemble_definition_dict = ensemble_definition.to_dict()

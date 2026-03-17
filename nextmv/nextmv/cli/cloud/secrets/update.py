@@ -115,7 +115,7 @@ def update(
     if name is None and description is None and secrets is None:
         error("Provide at least one option to update: --name, --description, or --secrets.")
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the secrets list if provided
     secrets_list = None

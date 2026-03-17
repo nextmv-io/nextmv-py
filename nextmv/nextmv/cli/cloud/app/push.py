@@ -137,7 +137,7 @@ def push(
         $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # If a version already exists, we cannot create it.
     if version_id is not None and version_id != "":

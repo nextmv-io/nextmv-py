@@ -45,7 +45,7 @@ def stop(
     """
 
     in_progress(msg="Stopping switchback test...")
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.stop_switchback_test(switchback_test_id=switchback_test_id, intent=StopIntent(intent))
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] stopped successfully "

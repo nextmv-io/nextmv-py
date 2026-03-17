@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud secrets list --app-id hare-app --output secrets.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing secrets collections...")
     collections = cloud_app.list_secrets_collections()
     collections_dicts = [collection.to_dict() for collection in collections]

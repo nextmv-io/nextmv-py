@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing managed inputs...")
     managed_inputs = cloud_app.list_managed_inputs()
     managed_inputs_dicts = [managed_input.to_dict() for managed_input in managed_inputs]

@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud acceptance list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing acceptance tests...")
     acceptance_tests = cloud_app.list_acceptance_tests()
     acceptance_tests_dict = [test.to_dict() for test in acceptance_tests]

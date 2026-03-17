@@ -55,6 +55,6 @@ def delete(
             info(f"Scenario test [magenta]{scenario_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_scenario_test(scenario_test_id=scenario_test_id)
     success(msg=f"Scenario test [magenta]{scenario_test_id}[/magenta] deleted.")

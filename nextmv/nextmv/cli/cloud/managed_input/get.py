@@ -47,7 +47,7 @@ def get(
             --output managed_input.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting managed input...")
     managed_input = cloud_app.managed_input(managed_input_id=managed_input_id)
     managed_input_dict = managed_input.to_dict()

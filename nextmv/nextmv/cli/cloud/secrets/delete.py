@@ -54,7 +54,7 @@ def delete(
             info(f"Secrets collection [magenta]{secrets_collection_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_secrets_collection(secrets_collection_id=secrets_collection_id)
     success(
         f"Secrets collection [magenta]{secrets_collection_id}[/magenta] deleted successfully "

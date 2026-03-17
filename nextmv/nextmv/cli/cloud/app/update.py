@@ -103,7 +103,7 @@ def update(
             "--default-instance-id, or --default-experiment-instance."
         )
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating application...")
     updated_app = cloud_app.update(
         name=name,

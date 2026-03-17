@@ -50,7 +50,7 @@ def get(
             --secrets-collection-id api-keys --output secrets.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting secrets collection...")
     collection = cloud_app.secrets_collection(secrets_collection_id=secrets_collection_id)
     collection_dict = collection.to_dict()

@@ -46,7 +46,7 @@ def get(
         $ [dim]nextmv cloud instance get --app-id hare-app --instance-id prod --output instance.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting instance...")
     instance = cloud_app.instance(instance_id=instance_id)
     instance_dict = instance.to_dict()

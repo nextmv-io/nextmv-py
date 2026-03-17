@@ -51,7 +51,7 @@ def metadata(
         $ [dim]nextmv cloud scenario metadata --app-id hare-app --scenario-test-id hop-schedule --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting scenario test metadata...")
     scenario_metadata = cloud_app.scenario_test_metadata(scenario_test_id=scenario_test_id)
     scenario_metadata_dict = scenario_metadata.to_dict()

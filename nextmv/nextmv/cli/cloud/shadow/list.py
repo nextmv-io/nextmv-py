@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud shadow list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing shadow tests...")
     shadow_tests = cloud_app.list_shadow_tests()
     shadow_tests_dict = [test.to_dict() for test in shadow_tests]

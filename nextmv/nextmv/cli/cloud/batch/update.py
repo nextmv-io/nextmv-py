@@ -70,7 +70,7 @@ def update(
             --output updated-batch.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Updating batch experiment...")
     batch_experiment = cloud_app.update_batch_experiment(

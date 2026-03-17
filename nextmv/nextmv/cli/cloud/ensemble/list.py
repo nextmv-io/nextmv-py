@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud ensemble list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing ensemble definitions...")
     ensembles = cloud_app.list_ensemble_definitions()
     ensembles_dict = [ensemble.to_dict() for ensemble in ensembles]

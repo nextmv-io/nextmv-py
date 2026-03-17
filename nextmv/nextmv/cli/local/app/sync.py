@@ -85,7 +85,7 @@ def sync(
 
     local_app = build_local_app(app_src, app_id)
     in_progress(msg="Getting target application...")
-    cloud_app = build_cloud_app(app_id=target_app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=target_app_id, profile=profile)
 
     local_app.sync(
         target=cloud_app,

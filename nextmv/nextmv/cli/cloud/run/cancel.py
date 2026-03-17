@@ -31,7 +31,7 @@ def cancel(
         $ [dim]nextmv cloud run cancel --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg=f"Canceling run [magenta]{run_id}[/magenta]...")
     cloud_app.cancel_run(run_id)
     success(f"Run [magenta]{run_id}[/magenta] canceled.")

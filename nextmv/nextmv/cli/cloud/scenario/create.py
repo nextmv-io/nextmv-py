@@ -272,7 +272,7 @@ def create(
         nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the scenario list from the CLI options
     scenario_list = build_scenarios(scenarios)

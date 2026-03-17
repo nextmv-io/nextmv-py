@@ -70,7 +70,7 @@ def update(
             --output updated-switchback-test.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Updating switchback test...")
     switchback_test = cloud_app.update_switchback_test(

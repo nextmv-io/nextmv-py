@@ -184,7 +184,7 @@ def update(
             "--version-id, or any [magenta]Instance configuration[/magenta] option."
         )
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build configuration if any configuration options were provided.
     configuration = None

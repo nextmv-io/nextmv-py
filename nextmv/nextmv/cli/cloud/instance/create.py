@@ -162,7 +162,7 @@ def create(
             --instance-id prod --options max_duration=30 --options timeout=60[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting instance...")
     else:

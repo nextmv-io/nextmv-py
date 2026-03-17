@@ -119,7 +119,7 @@ def create(
             --secrets '{"type": "file", "location": "config/app.conf", "value": "server=prod\\nport=8080"}'[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating secrets collection...")
 
     # Build the secrets list from the CLI options

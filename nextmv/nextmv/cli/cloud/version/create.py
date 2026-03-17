@@ -81,7 +81,7 @@ def create(
         $ [dim]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting version...")
     else:

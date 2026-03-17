@@ -161,7 +161,7 @@ def create(
             --description "Testing cool bunnies" --comparisons "$COMPARISONS" --termination-maximum-runs 10[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     try:
         comparisons_dict = json.loads(comparisons)

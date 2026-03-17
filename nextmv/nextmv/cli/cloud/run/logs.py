@@ -81,7 +81,7 @@ def logs(
         $ [dim]nextmv cloud run logs --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()

@@ -55,7 +55,7 @@ def delete(
             info(f"Input set [magenta]{input_set_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_input_set(input_set_id=input_set_id)
     success(
         f"Input set [magenta]{input_set_id}[/magenta] deleted successfully "

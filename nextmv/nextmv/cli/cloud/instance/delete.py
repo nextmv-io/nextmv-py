@@ -53,7 +53,7 @@ def delete(
             info(f"Instance [magenta]{instance_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_instance(instance_id=instance_id)
     success(
         f"Instance [magenta]{instance_id}[/magenta] deleted successfully from application [magenta]{app_id}[/magenta]."

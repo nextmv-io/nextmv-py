@@ -43,7 +43,7 @@ def get(
         $ [dim]nextmv cloud shadow get --app-id hare-app --shadow-test-id lettuce-routes --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting shadow test...")
     shadow_test = cloud_app.shadow_test(shadow_test_id=shadow_test_id)
 

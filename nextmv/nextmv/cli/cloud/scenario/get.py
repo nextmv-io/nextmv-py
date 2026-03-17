@@ -71,7 +71,7 @@ def get(
     - Get the scenario test using a specific profile.
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id lettuce-routes --profile prod[/dim]
     """
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()

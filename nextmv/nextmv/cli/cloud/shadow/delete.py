@@ -55,7 +55,7 @@ def delete(
             info(f"Shadow test [magenta]{shadow_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_shadow_test(shadow_test_id=shadow_test_id)
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] deleted successfully "

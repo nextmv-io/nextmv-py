@@ -71,7 +71,7 @@ def get(
         $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()

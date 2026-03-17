@@ -139,7 +139,7 @@ def create(
             --end-time "2024-01-31T23:59:59Z"[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating input set...")
 
     # Generate a random input set ID if one is not provided.

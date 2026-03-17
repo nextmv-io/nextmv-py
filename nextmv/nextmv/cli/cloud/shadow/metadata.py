@@ -51,7 +51,7 @@ def metadata(
         $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id hop-schedule --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting shadow test metadata...")
     shadow_metadata = cloud_app.shadow_test_metadata(shadow_test_id=shadow_test_id)
     shadow_metadata_dict = shadow_metadata.to_dict()

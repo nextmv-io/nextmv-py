@@ -55,7 +55,7 @@ def delete(
             info(f"Managed input [magenta]{managed_input_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_managed_input(managed_input_id=managed_input_id)
     success(
         f"Managed input [magenta]{managed_input_id}[/magenta] deleted successfully "

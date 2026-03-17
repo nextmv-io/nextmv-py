@@ -219,7 +219,7 @@ def create(
     ] = None,
     profile: ProfileOption = None,
 ) -> None:
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating ensemble definition...")
 
     # Build the run groups and rules lists from the CLI options
