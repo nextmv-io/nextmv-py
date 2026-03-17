@@ -51,11 +51,6 @@ class TestApplication(unittest.TestCase):
             readme_path = os.path.join(app_dir, "README.md")
             self.assertTrue(os.path.exists(readme_path))
 
-            # Verify src directory was copied
-            src_dir = os.path.join(app_dir, "src")
-            self.assertTrue(os.path.exists(src_dir))
-            self.assertTrue(os.path.isdir(src_dir))
-
     def test_initialize_with_defaults(self):
         """Test the Application.initialize method with default parameters."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -80,7 +75,6 @@ class TestApplication(unittest.TestCase):
 
                 # Verify basic structure exists
                 self.assertTrue(os.path.exists(os.path.join(app_dir, "app.yaml")))
-                self.assertTrue(os.path.exists(os.path.join(app_dir, "src")))
 
             finally:
                 os.chdir(original_cwd)

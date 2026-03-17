@@ -14,9 +14,6 @@ import rich.markup
 import typer
 from rich.console import Console
 
-# Console instance for stderr output with highlighting disabled
-_STDERR_CONSOLE = Console(file=sys.stderr, highlight=False)
-
 # Shared questionary style that matches the CLI's [code] tag rendering:
 # bold with no color overrides, letting the terminal's default foreground
 # color show through.
@@ -61,7 +58,8 @@ def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
     if indents > 0:
         msg = "\t" * indents + msg
 
-    _STDERR_CONSOLE.print(msg)
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(msg)
 
 
 def info(msg: str) -> None:
@@ -116,7 +114,8 @@ def warning(msg: str) -> None:
     """
 
     msg = _format(msg)
-    _STDERR_CONSOLE.print(f":construction: [yellow] Warning:[/yellow] {msg}")
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(f":construction: [yellow] Warning:[/yellow] {msg}")
 
 
 def error(msg: str) -> None:
@@ -136,7 +135,8 @@ def error(msg: str) -> None:
     """
 
     msg = _format(msg)
-    _STDERR_CONSOLE.print(f":x: [red]Error:[/red] {msg}")
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(f":x: [red]Error:[/red] {msg}")
 
     raise typer.Exit(code=1)
 
@@ -206,7 +206,8 @@ def confirmation(msg: str, default: bool = False) -> bool:
     # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
     # cannot, so we print the question via Rich first and then show a plain
     # arrow-key Yes/No picker.
-    _STDERR_CONSOLE.print(msg)
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(msg)
     result = choice(
         msg="Confirm",
         choices=["Yes", "No"],
@@ -301,7 +302,8 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
     # Rich renders markup (e.g. [magenta]...[/magenta]) correctly; questionary
     # cannot, so we print the question via Rich first and then show a plain
     # path prompt.
-    _STDERR_CONSOLE.print(msg)
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(msg)
     try:
         kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         dirpath = questionary.path(
@@ -328,7 +330,8 @@ def rule() -> None:
     Print a horizontal rule to stderr.
     """
 
-    _STDERR_CONSOLE.print(rich.rule.Rule(style="magenta"))
+    console = Console(file=sys.stderr, highlight=False)
+    console.print(rich.rule.Rule(style="magenta"))
 
 
 def _format(msg: str) -> str:
