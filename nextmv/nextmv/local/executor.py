@@ -50,7 +50,7 @@ from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.local import DEFAULT_OUTPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, OUTPUT_KEY, calculate_files_size
 from nextmv.local.plotly_handler import handle_plotly_visual
-from nextmv.manifest import Manifest, ManifestType, find_files
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestType, find_files
 from nextmv.output import (
     ASSETS_KEY,
     METRICS_KEY,
@@ -946,6 +946,10 @@ def _copy_new_or_modified_files(  # noqa: C901
         for rel_file in files:
             # Skip .pyc files
             if rel_file.endswith(".pyc"):
+                continue
+
+            # Skip the manifest file itself
+            if rel_file == MANIFEST_FILE_NAME:
                 continue
 
             file_path = os.path.join(root, rel_file)
