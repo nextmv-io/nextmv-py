@@ -260,6 +260,8 @@ class BatchExperimentRun(BaseModel):
     """If the batch experiment is a scenario test, this is the ID of that test."""
     repetition: int | None = None
     """Repetition number of the experiment."""
+    run_number: str | None = None
+    """Run number of the experiment."""
 
     def model_post_init(self, __context) -> None:
         """
