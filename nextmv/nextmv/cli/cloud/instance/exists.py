@@ -33,7 +33,7 @@ def exists(
         $ [dim]nextmv cloud instance exists --app-id hare-app --instance-id prod --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Checking if instance exists...")
     ok = cloud_app.instance_exists(instance_id=instance_id)
     print_json({"exists": ok})

@@ -29,7 +29,7 @@ def create(
         $ [dim]nextmv cloud upload create --app-id hare-app --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Creating upload URL...")
     upload_url = cloud_app.upload_url()
     success(

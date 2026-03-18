@@ -70,7 +70,7 @@ def update(
             --output updated-scenario.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Updating scenario test...")
     scenario_info = cloud_app.update_scenario_test(
         scenario_test_id=scenario_test_id,

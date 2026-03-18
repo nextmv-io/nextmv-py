@@ -44,7 +44,7 @@ def get(
             --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting switchback test...")
     switchback_test = cloud_app.switchback_test(switchback_test_id=switchback_test_id)
 

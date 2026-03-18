@@ -138,7 +138,7 @@ def build_client(profile: str | None = None) -> Client:
     return Client(api_key=api_key, url=f"https://{endpoint}")
 
 
-def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Application:
+def build_cloud_app(app_id: str, profile: str | None = None) -> tuple[cloud.Application, bool]:
     """
     Builds a `cloud.Application` using the given application ID and the API
     key and endpoint for the given profile. If no profile is given, the default
@@ -153,8 +153,9 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
 
     Returns
     -------
-    cloud.Application
-        An application object for the given application ID.
+    tuple[cloud.Application, bool]
+        A tuple containing the application object for the given application ID
+        and a boolean indicating whether the application was newly created.
 
     Raises
     ------
@@ -165,10 +166,13 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
     client = build_client(profile)
     exists = cloud.Application.exists(client=client, id=app_id)
     if exists:
-        return cloud.Application(client=client, id=app_id)
+        return cloud.Application(client=client, id=app_id), False
 
     warning(f"Cloud application with ID [magenta]{app_id}[/magenta] does not exist.")
-    should_create = confirmation(f"Do you want to create a new Cloud application with ID [magenta]{app_id}[/magenta]?")
+    should_create = confirmation(
+        f"Do you want to create a new Cloud application with ID [magenta]{app_id}[/magenta]?",
+        default=True,
+    )
     if not should_create:
         error(
             f"Cloud application with ID [magenta]{app_id}[/magenta] was not created and does not exist. "
@@ -178,7 +182,7 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> cloud.Applicatio
     app = cloud.Application.new(client=client, id=app_id, name=app_id)
     success(f"Cloud application with ID and name [magenta]{app_id}[/magenta] created successfully.")
 
-    return app
+    return app, True
 
 
 def build_marketplace_app(app_id: str, partner_id: str, profile: str | None = None) -> MarketplaceApplication:

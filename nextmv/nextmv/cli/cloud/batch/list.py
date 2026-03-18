@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud batch list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing batch experiments...")
     batch_experiments = cloud_app.list_batch_experiments()
     batch_experiments_dict = [exp.to_dict() for exp in batch_experiments]

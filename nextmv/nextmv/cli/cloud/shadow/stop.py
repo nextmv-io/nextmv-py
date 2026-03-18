@@ -45,7 +45,7 @@ def stop(
     """
 
     in_progress(msg="Stopping shadow test...")
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.stop_shadow_test(shadow_test_id=shadow_test_id, intent=StopIntent(intent))
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] stopped successfully "

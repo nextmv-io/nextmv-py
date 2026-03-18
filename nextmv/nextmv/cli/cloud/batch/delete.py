@@ -55,7 +55,7 @@ def delete(
             info(f"Batch experiment [magenta]{batch_experiment_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_batch_experiment(batch_id=batch_experiment_id)
     success(
         f"Batch experiment [magenta]{batch_experiment_id}[/magenta] deleted successfully "

@@ -3,6 +3,7 @@ This module defines the local app register command for the Nextmv CLI.
 """
 
 import json
+import os
 from typing import Annotated
 
 import typer
@@ -18,7 +19,7 @@ app = typer.Typer()
 @app.command()
 def register(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = ".",
+    app_src: LocalAppSrcOption = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -58,6 +59,12 @@ def register(
       information to an [magenta]app.json[/magenta] file.
         $ [dim]nextmv local app register --app-src ./my-app --output app.json[/dim]
     """
+
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        app_src = "."
+
+    if app_src is not None and app_src != "":
+        app_src = os.path.abspath(app_src)
 
     registry = Registry.from_yaml()
     in_progress(msg="Registering application...")

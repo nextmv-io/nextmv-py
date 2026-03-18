@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud instance list --app-id hare-app --output instances.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing instances...")
     instances = cloud_app.list_instances()
     instances_dicts = [instance.to_dict() for instance in instances]

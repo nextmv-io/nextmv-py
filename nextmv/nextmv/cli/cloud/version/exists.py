@@ -33,7 +33,7 @@ def exists(
         $ [dim]nextmv cloud version exists --app-id hare-app --version-id v1 --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Checking if version exists...")
     ok = cloud_app.version_exists(version_id=version_id)
     print_json({"exists": ok})

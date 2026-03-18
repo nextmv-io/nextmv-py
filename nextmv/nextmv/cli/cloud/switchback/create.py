@@ -132,7 +132,7 @@ def create(
             --description "Which bunny hops best for carrots?"[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Creating switchback test in draft mode...")
     switchback_test = cloud_app.new_switchback_test(

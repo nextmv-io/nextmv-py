@@ -47,7 +47,7 @@ def get(
             --output input-set.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting input set...")
     input_set = cloud_app.input_set(input_set_id=input_set_id)
     input_set_dict = input_set.to_dict()

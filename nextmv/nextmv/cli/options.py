@@ -292,13 +292,14 @@ LocalAppIDOption = Annotated[
 
 # Local app_src option - can be used in any command that requires a local
 # application source path. Define it as follows in commands or callbacks, as necessary:
-# app_src: LocalAppSrcOption = "."
+# app_src: LocalAppSrcOption = None
 LocalAppSrcOption = Annotated[
     str | None,
     typer.Option(
         "--app-src",
         "-s",
-        help="The source (filesystem path) of the local Nextmv application to use for this action.",
+        help="The source (filesystem path) of the local Nextmv application to use for this action. "
+        "Defaults to the current working directory.",
         envvar="NEXTMV_APP_SRC",
         metavar="APP_SRC",
     ),

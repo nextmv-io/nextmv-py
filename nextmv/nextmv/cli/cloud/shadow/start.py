@@ -35,7 +35,7 @@ def start(
     """
 
     in_progress(msg="Starting shadow test...")
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.start_shadow_test(shadow_test_id=shadow_test_id)
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] started successfully "

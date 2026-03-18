@@ -52,7 +52,7 @@ def input(
         $ [dim]nextmv cloud run input --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting run input...")
 
     # First get the content type to check what we should do with the input,

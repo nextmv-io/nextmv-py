@@ -61,6 +61,15 @@ def push(
             rich_help_panel="Version control",
         ),
     ] = False,
+    version_no: Annotated[
+        bool,
+        typer.Option(
+            "--version-no",
+            "-n",
+            help="Skip version creation after push. Skips confirmation prompt. Useful for non-interactive sessions.",
+            rich_help_panel="Version control",
+        ),
+    ] = False,
     # Options for instance control.
     create_instance_id: Annotated[
         str | None,
@@ -128,7 +137,7 @@ def push(
         $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # If a version already exists, we cannot create it.
     if version_id is not None and version_id != "":
@@ -137,6 +146,10 @@ def push(
             error(
                 f"Version [magenta]{version_id}[/magenta] already exists for application [magenta]{app_id}[/magenta]."
             )
+
+    # Cannot skip and auto-confirm version creation at the same time.
+    if version_yes and version_no:
+        error("Cannot use --version-yes and --version-no at the same time.")
 
     # We cannot create and update an instance at the same time.
     update_defined = update_instance_id is not None and update_instance_id != ""
@@ -158,6 +171,63 @@ def push(
             "already exists. Use --update-instance-id instead."
         )
 
+    handle_push(
+        cloud_app=cloud_app,
+        app_id=app_id,
+        app_dir=app_dir,
+        manifest=manifest,
+        version_id=version_id,
+        version_yes=version_yes,
+        version_no=version_no,
+        update_defined=update_defined,
+        update_instance_id=update_instance_id,
+        create_defined=create_defined,
+        create_instance_id=create_instance_id,
+    )
+
+
+def handle_push(
+    cloud_app: Application,
+    app_id: str,
+    app_dir: str | None,
+    manifest: str | None,
+    version_id: str | None,
+    version_yes: bool,
+    version_no: bool,
+    update_defined: bool,
+    update_instance_id: str | None,
+    create_defined: bool,
+    create_instance_id: str | None,
+) -> None:
+    """
+    Handle the core push flow: push the application, create a version, and link it to an instance.
+
+    Parameters
+    ----------
+    cloud_app : Application
+        The cloud application object to interact with Nextmv Cloud.
+    app_id : str
+        The application ID.
+    app_dir : str | None
+        The path to the application's root directory.
+    manifest : str | None
+        The path to the application manifest file.
+    version_id : str | None
+        The version ID to use or create.
+    version_yes : bool
+        Whether to skip the prompt and auto-create a new version.
+    version_no : bool
+        Whether to skip the prompt and not create a new version.
+    update_defined : bool
+        Whether --update-instance-id was provided.
+    update_instance_id : str | None
+        The instance ID to update.
+    create_defined : bool
+        Whether --create-instance-id was provided.
+    create_instance_id : str | None
+        The instance ID to create.
+    """
+
     # Do the normal push first.
     loaded_manifest = Manifest.from_yaml(dirpath=manifest) if manifest is not None and manifest != "" else None
     cloud_app.push(
@@ -173,6 +243,7 @@ def push(
         app_id=app_id,
         version_id=version_id,
         version_yes=version_yes,
+        version_no=version_no,
         now=now,
     )
     if not should_continue:
@@ -219,6 +290,7 @@ def _handle_version_creation(
     app_id: str,
     version_id: str | None,
     version_yes: bool,
+    version_no: bool,
     now: datetime,
 ) -> tuple[str, bool]:
     """
@@ -237,6 +309,8 @@ def _handle_version_creation(
         The version ID to use or check for existence. If None or empty, a new version may be created.
     version_yes : bool
         Whether to skip the prompt and auto-create a new version.
+    version_no : bool
+        Whether to skip the prompt and not create a new version.
     now : datetime
         The current datetime, used for version description.
 
@@ -246,6 +320,11 @@ def _handle_version_creation(
         A tuple containing the version ID (empty string if not created) and a boolean indicating
         whether to continue with subsequent steps (True if a version is selected or created, False otherwise).
     """
+
+    # If the user wants to skip version creation, we are done.
+    if version_no:
+        info("Used option --version-no. Will not create a new version.")
+        return "", False
 
     # If the user provides a version, and it exists, we use it directly and we
     # are done.

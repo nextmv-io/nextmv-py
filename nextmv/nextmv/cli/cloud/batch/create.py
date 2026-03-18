@@ -247,7 +247,7 @@ def create(
             --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the runs list from the CLI options
     runs_list = build_runs(runs)

@@ -70,7 +70,7 @@ def update(
             --output updated-shadow-test.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Updating shadow test...")
     shadow_test = cloud_app.update_shadow_test(

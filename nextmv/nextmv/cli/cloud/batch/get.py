@@ -72,7 +72,7 @@ def get(
         $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()

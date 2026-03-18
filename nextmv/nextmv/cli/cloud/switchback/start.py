@@ -35,7 +35,7 @@ def start(
     """
 
     in_progress(msg="Starting switchback test...")
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.start_switchback_test(switchback_test_id=switchback_test_id)
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] started successfully "

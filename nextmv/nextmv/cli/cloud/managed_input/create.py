@@ -121,7 +121,7 @@ def create(
             "or specify an existing run ID."
         )
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     # Build format if content_format is provided
     format_obj = None

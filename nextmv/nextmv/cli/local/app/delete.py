@@ -18,7 +18,7 @@ app = typer.Typer()
 @app.command()
 def delete(
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = ".",
+    app_src: LocalAppSrcOption = None,
     yes: Annotated[
         bool,
         typer.Option(
@@ -44,7 +44,11 @@ def delete(
         $ [dim]nextmv local app delete --app-id hare-app --yes[/dim]
     """
 
-    app_src = os.path.abspath(app_src)
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        app_src = "."
+
+    if app_src is not None and app_src != "":
+        app_src = os.path.abspath(app_src)
 
     if not yes:
         if app_id is not None and app_id != "":

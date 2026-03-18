@@ -46,7 +46,7 @@ def get(
         $ [dim]nextmv cloud version get --app-id hare-app --version-id v1 --output version.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting version...")
     version = cloud_app.version(version_id=version_id)
     version_dict = version.to_dict()

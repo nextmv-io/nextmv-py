@@ -64,7 +64,7 @@ def list(
         $ [dim]nextmv cloud run list --app-id hare-app --status queued[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
     runs = cloud_app.list_runs(status=status)
     runs_dicts = [run.to_dict() for run in runs]

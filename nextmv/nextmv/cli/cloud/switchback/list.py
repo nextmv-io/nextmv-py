@@ -47,7 +47,7 @@ def list(
         $ [dim]nextmv cloud switchback list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing switchback tests...")
     switchback_tests = cloud_app.list_switchback_tests()
     switchback_tests_dict = [test.to_dict() for test in switchback_tests]

@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
     """
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing versions...")
     versions = cloud_app.list_versions()
     versions_dicts = [version.to_dict() for version in versions]

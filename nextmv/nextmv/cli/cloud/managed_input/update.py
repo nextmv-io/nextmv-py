@@ -73,7 +73,7 @@ def update(
     if name is None and description is None:
         error("Provide at least one option to update: --name or --description.")
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
     in_progress(msg="Updating managed input...")
     updated_managed_input = cloud_app.update_managed_input(

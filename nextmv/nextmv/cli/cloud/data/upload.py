@@ -100,7 +100,7 @@ def upload(
     if stdin is None and (input is None or input == ""):
         error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     data_kwarg = resolve_data_kwarg(
         stdin=stdin,
         input=input,

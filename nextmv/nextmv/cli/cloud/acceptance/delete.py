@@ -55,7 +55,7 @@ def delete(
             info(f"Acceptance test [magenta]{acceptance_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_acceptance_test(acceptance_test_id=acceptance_test_id)
     success(
         f"Acceptance test [magenta]{acceptance_test_id}[/magenta] deleted successfully "

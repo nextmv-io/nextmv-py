@@ -236,7 +236,7 @@ def track(
         error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     config = build_run_config(
         run_type=RunType.EXTERNAL,
         priority=6,

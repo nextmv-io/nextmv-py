@@ -54,7 +54,7 @@ def delete(
             info(f"Ensemble definition [magenta]{ensemble_definition_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app = build_cloud_app(app_id=app_id, profile=profile)
+    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     cloud_app.delete_ensemble_definition(ensemble_definition_id=ensemble_definition_id)
     success(
         f"Ensemble definition [magenta]{ensemble_definition_id}[/magenta] deleted successfully "

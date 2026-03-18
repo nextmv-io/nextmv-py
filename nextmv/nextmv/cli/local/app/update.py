@@ -3,6 +3,7 @@ This module defines the local app update command for the Nextmv CLI.
 """
 
 import json
+import os
 from typing import Annotated
 
 import typer
@@ -27,7 +28,7 @@ def update(
         ),
     ],
     app_id: LocalAppIDOption = None,
-    app_src: LocalAppSrcOption = ".",
+    app_src: LocalAppSrcOption = None,
     new_app_id: Annotated[
         str | None,
         typer.Option(
@@ -66,6 +67,12 @@ def update(
     - Update the ID of the application located at [magenta]./my-app[/magenta] to [magenta]hare-app[/magenta].
         $ [dim]nextmv local app update --app-src ./my-app --new-app-id hare-app --description "New description"[/dim]
     """
+
+    if (app_id is None or app_id == "") and (app_src is None or app_src == ""):
+        app_src = "."
+
+    if app_src is not None and app_src != "":
+        app_src = os.path.abspath(app_src)
 
     in_progress(msg="Updating application...")
     local_app = build_local_app(app_src, app_id)
