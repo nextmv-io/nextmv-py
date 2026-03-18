@@ -113,6 +113,7 @@ class TestMCPServerTools(unittest.TestCase):
             "cloud_list_runs",
             "cloud_run_input",
             "cloud_run_logs",
+            "cloud_poll_run_logs",
         ]
         for name in expected:
             self.assertIn(name, tool_names, f"Missing tool: {name}")
@@ -195,7 +196,7 @@ class TestMCPServerTools(unittest.TestCase):
             self.assertIn(name, tool_names, f"Missing tool: {name}")
 
     def test_server_has_all_admin_tools(self):
-        """Test that secrets, account, managed input tools are registered."""
+        """Test that secrets, account, managed input, cross-app tools are registered."""
         from nextmv.cli.mcp.server import create_server
 
         server = create_server()
@@ -211,6 +212,7 @@ class TestMCPServerTools(unittest.TestCase):
             "cloud_get_managed_input",
             "cloud_create_managed_input",
             "cloud_delete_managed_input",
+            "cloud_sso_delete_domain",
         ]
         for name in expected:
             self.assertIn(name, tool_names, f"Missing tool: {name}")
@@ -233,10 +235,14 @@ class TestMCPServerTools(unittest.TestCase):
         expected = [
             "local_run",
             "local_run_submit",
+            "local_run_status",
             "local_run_result",
+            "local_run_poll_result",
+            "local_run_input",
             "local_list_runs",
             "local_run_logs",
             "local_sync",
+            "manifest_init",
         ]
         for name in expected:
             self.assertIn(name, tool_names, f"Missing tool: {name}")
@@ -247,10 +253,9 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        # Should have 68+ tools covering all CLI commands.
-        self.assertGreaterEqual(len(tool_names), 68, f"Only {len(tool_names)} tools registered")
+        self.assertEqual(len(tool_names), 86, f"Expected 86 tools, got {len(tool_names)}")
 
-    @patch("nextmv.cli.mcp.server._get_client")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
         """Test that cloud_list_apps delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
@@ -261,13 +266,13 @@ class TestMCPServerTools(unittest.TestCase):
         mock_app = MagicMock()
         mock_app.to_dict.return_value = {"id": "test-app", "name": "Test App"}
 
-        with patch("nextmv.cli.mcp.server.list_applications", return_value=[mock_app]) as mock_list:
+        with patch("nextmv.cli.mcp.tools.app.list_applications", return_value=[mock_app]) as mock_list:
             server = create_server()
             tool = server._tool_manager._tools["cloud_list_apps"]
             asyncio.run(tool.run({}))
             mock_list.assert_called_once_with(mock_client)
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_cancel_run_calls_sdk(self, mock_get_app):
         """Test that cloud_cancel_run delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
@@ -280,7 +285,7 @@ class TestMCPServerTools(unittest.TestCase):
         asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-123"}))
         mock_app_instance.cancel_run.assert_called_once_with(run_id="run-123")
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_delete_app_calls_sdk(self, mock_get_app):
         """Test that cloud_delete_app delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
@@ -293,7 +298,7 @@ class TestMCPServerTools(unittest.TestCase):
         asyncio.run(tool.run({"app_id": "my-app"}))
         mock_app_instance.delete.assert_called_once()
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_list_runs_calls_sdk(self, mock_get_app):
         """Test that cloud_list_runs delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
@@ -361,7 +366,7 @@ class TestSaveToFile(unittest.TestCase):
         finally:
             os.unlink(path)
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_returns_file_path(self, mock_get_app):
         """Test that cloud_run_input saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
@@ -377,7 +382,7 @@ class TestSaveToFile(unittest.TestCase):
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("Data saved to", str(text))
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_returns_file_path(self, mock_get_app):
         """Test that cloud_run_result saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
@@ -394,7 +399,7 @@ class TestSaveToFile(unittest.TestCase):
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("Data saved to", str(text))
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_managed_input_with_raw_data(self, mock_get_app):
         """Test that cloud_create_managed_input uploads raw data when input is provided."""
         from nextmv.cli.mcp.server import create_server
@@ -425,7 +430,7 @@ class TestSaveToFile(unittest.TestCase):
             run_id=None, upload_id="upl_123",
         )
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_input_set_with_managed_input_ids(self, mock_get_app):
         """Test that cloud_create_input_set passes managed inputs correctly."""
         from nextmv.cli.mcp.server import create_server
@@ -448,7 +453,7 @@ class TestSaveToFile(unittest.TestCase):
         self.assertEqual(call_kwargs["inputs"][0].id, "mi-1")
         self.assertEqual(call_kwargs["inputs"][1].id, "mi-2")
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_input_set_with_run_ids(self, mock_get_app):
         """Test that cloud_create_input_set passes run_ids correctly."""
         from nextmv.cli.mcp.server import create_server
@@ -470,7 +475,7 @@ class TestSaveToFile(unittest.TestCase):
         self.assertEqual(call_kwargs["run_ids"], ["run-1", "run-2"])
         self.assertIsNone(call_kwargs["inputs"])
 
-    @patch("nextmv.cli.mcp.server._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_scenario_test_converts_dicts(self, mock_get_app):
         """Test that cloud_create_scenario_test converts dicts to Scenario objects."""
         from nextmv.cli.mcp.server import create_server
@@ -534,7 +539,7 @@ class TestProfiles(unittest.TestCase):
 
     def test_set_and_get_profile(self):
         """Test that cloud_set_profile and cloud_get_profile work together."""
-        import nextmv.cli.mcp.server as srv
+        import nextmv.cli.mcp.tools._helpers as helpers
         from nextmv.cli.mcp.server import create_server
 
         server = create_server()
@@ -548,7 +553,7 @@ class TestProfiles(unittest.TestCase):
 
         # Switch to a named profile.
         asyncio.run(set_tool.run({"profile": "staging"}))
-        self.assertEqual(srv._current_profile, "staging")
+        self.assertEqual(helpers._current_profile, "staging")
 
         result = asyncio.run(get_tool.run({}))
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -556,7 +561,7 @@ class TestProfiles(unittest.TestCase):
 
         # Switch back to default.
         asyncio.run(set_tool.run({"profile": "default"}))
-        self.assertIsNone(srv._current_profile)
+        self.assertIsNone(helpers._current_profile)
 
     def test_list_profiles(self):
         """Test that cloud_list_profiles reads config correctly."""
@@ -591,8 +596,8 @@ class TestProfiles(unittest.TestCase):
     @patch("nextmv.cli.configuration.config.build_client")
     def test_get_client_uses_profile(self, mock_build_client):
         """Test that _get_client passes the profile to build_client."""
-        import nextmv.cli.mcp.server as srv
-        from nextmv.cli.mcp.server import _get_client
+        import nextmv.cli.mcp.tools._helpers as helpers
+        from nextmv.cli.mcp.tools._helpers import _get_client
 
         mock_build_client.return_value = MagicMock()
 
@@ -601,22 +606,328 @@ class TestProfiles(unittest.TestCase):
         mock_build_client.assert_called_with(profile="staging")
 
         # Session-level profile.
-        srv._current_profile = "prod"
+        helpers._current_profile = "prod"
         _get_client()
         mock_build_client.assert_called_with(profile="prod")
 
         # Reset.
-        srv._current_profile = None
+        helpers._current_profile = None
 
     @patch.dict("os.environ", {"NEXTMV_API_KEY": "env-key"}, clear=False)
     def test_get_client_env_skipped_when_profile_set(self):
         """Test that env var is skipped when a profile is active."""
-        import nextmv.cli.mcp.server as srv
-        from nextmv.cli.mcp.server import _get_client
+        import nextmv.cli.mcp.tools._helpers as helpers
+        from nextmv.cli.mcp.tools._helpers import _get_client
 
         with patch("nextmv.cli.configuration.config.build_client") as mock_build:
             mock_build.return_value = MagicMock()
-            srv._current_profile = "staging"
+            helpers._current_profile = "staging"
             _get_client()
             mock_build.assert_called_with(profile="staging")
-            srv._current_profile = None
+            helpers._current_profile = None
+
+
+class TestBugFixes(unittest.TestCase):
+    """Tests for specific bug fixes."""
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_with_dicts(self, mock_get_app):
+        """Bug 1: cloud_create_ensemble must accept plain dicts for run_groups and rules."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_ensemble = MagicMock()
+        mock_ensemble.to_dict.return_value = {"id": "ens-1"}
+        mock_app.new_ensemble_definition.return_value = mock_ensemble
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "run_groups": [
+                {"id": "grp-1", "instance_id": "prod", "repetitions": 1, "options": {}},
+                {"id": "grp-2", "instance_id": "staging", "repetitions": 1, "options": {}},
+            ],
+            "rules": [
+                {
+                    "id": "min-cost",
+                    "statistics_path": "result.value",
+                    "objective": "minimize",
+                    "tolerance": 0.01,
+                    "index": 0,
+                },
+            ],
+            "name": "test ensemble",
+        }))
+        mock_app.new_ensemble_definition.assert_called_once()
+        call_kwargs = mock_app.new_ensemble_definition.call_args[1]
+        # run_groups should be RunGroup objects, not dicts.
+        from nextmv.cloud.ensemble import EvaluationRule, RunGroup
+        self.assertIsInstance(call_kwargs["run_groups"][0], RunGroup)
+        self.assertIsInstance(call_kwargs["run_groups"][1], RunGroup)
+        self.assertEqual(call_kwargs["run_groups"][0].id, "grp-1")
+        # rules should be EvaluationRule objects, not dicts.
+        self.assertIsInstance(call_kwargs["rules"][0], EvaluationRule)
+        self.assertEqual(call_kwargs["rules"][0].id, "min-cost")
+        self.assertEqual(call_kwargs["rules"][0].tolerance.value, 0.01)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_with_shorthand_objective(self, mock_get_app):
+        """Bug 1: objective shorthand 'min'/'max' should be accepted."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_ensemble = MagicMock()
+        mock_ensemble.to_dict.return_value = {"id": "ens-1"}
+        mock_app.new_ensemble_definition.return_value = mock_ensemble
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+            "rules": [
+                {
+                    "id": "min-cost",
+                    "statistics_path": "result.value",
+                    "objective": "min",
+                    "tolerance": 0.01,
+                    "index": 0,
+                },
+            ],
+        }))
+        call_kwargs = mock_app.new_ensemble_definition.call_args[1]
+        from nextmv.cloud.ensemble import RuleObjective
+        self.assertEqual(call_kwargs["rules"][0].objective, RuleObjective.MINIMIZE)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_with_dict_tolerance(self, mock_get_app):
+        """Bug 1: rules with a dict tolerance should be converted correctly."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_ensemble = MagicMock()
+        mock_ensemble.to_dict.return_value = {"id": "ens-1"}
+        mock_app.new_ensemble_definition.return_value = mock_ensemble
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+            "rules": [
+                {
+                    "id": "rule-1",
+                    "statistics_path": "result.value",
+                    "objective": "maximize",
+                    "tolerance": {"value": 5.0, "type": "absolute"},
+                    "index": 1,
+                },
+            ],
+        }))
+        call_kwargs = mock_app.new_ensemble_definition.call_args[1]
+        from nextmv.cloud.ensemble import RuleToleranceType
+        rule = call_kwargs["rules"][0]
+        self.assertEqual(rule.tolerance.value, 5.0)
+        self.assertEqual(rule.tolerance.type, RuleToleranceType.ABSOLUTE)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_missing_run_group_field(self, mock_get_app):
+        """Bug 1: Missing required run_group fields give a clear error string."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_get_app.return_value = MagicMock()
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        result = asyncio.run(tool.run({
+            "app_id": "my-app",
+            # Missing 'instance_id' in run group.
+            "run_groups": [{"id": "grp-1"}],
+            "rules": [
+                {
+                    "id": "r1",
+                    "statistics_path": "result.value",
+                    "objective": "min",
+                    "tolerance": 0.01,
+                },
+            ],
+        }))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        self.assertIn("run_groups[0]", str(text))
+        self.assertIn("Error", str(text))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_missing_rule_field(self, mock_get_app):
+        """Bug 1: Missing required rule fields give a clear error string."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_get_app.return_value = MagicMock()
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        result = asyncio.run(tool.run({
+            "app_id": "my-app",
+            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+            # Missing 'statistics_path' in rule.
+            "rules": [{"id": "r1", "objective": "min", "tolerance": 0.01}],
+        }))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        self.assertIn("rules[0]", str(text))
+        self.assertIn("Error", str(text))
+
+    def test_cloud_create_scenario_test_has_content_type_param(self):
+        """Bug 2: cloud_create_scenario_test should accept a content_type parameter."""
+        from nextmv.cli.mcp.server import create_server
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_scenario_test"]
+        # Verify the tool's function accepts content_type in its signature.
+        import inspect
+        sig = inspect.signature(tool.fn)
+        self.assertIn("content_type", sig.parameters)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_scenario_test_content_type_path(self, mock_get_app, mock_get_client):
+        """Bug 2: content_type path builds payload with content_type and posts directly."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_app = MagicMock()
+        mock_app.experiments_endpoint = "v1/applications/my-app/experiments"
+
+        # Mock instance lookup.
+        mock_instance = MagicMock()
+        mock_app.instance.return_value = mock_instance
+
+        # Mock input set lookup (INPUT_SET scenario type).
+        mock_input_set = MagicMock()
+        mock_input_set.id = "my-input-set"
+        mock_input_set.input_ids = ["inp-1"]
+        mock_input_set.inputs = []
+        mock_app.input_set.return_value = mock_input_set
+
+        # Mock the API POST response.
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "scenario-test-123"}
+        mock_app.client = mock_client
+        mock_client.request.return_value = mock_response
+
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_scenario_test"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "scenarios": [
+                {
+                    "instance_id": "stable",
+                    "scenario_id": "s1",
+                    "scenario_input": {
+                        "input_set_id": "my-input-set",
+                    },
+                },
+            ],
+            "content_type": "multi-file",
+            "name": "multi-file test",
+        }))
+
+        # Verify the direct API POST was made with content_type.
+        mock_client.request.assert_called_once()
+        call_kwargs = mock_client.request.call_args[1]
+        self.assertEqual(call_kwargs["method"], "POST")
+        self.assertIn("batch", call_kwargs["endpoint"])
+        payload = call_kwargs["payload"]
+        self.assertEqual(payload["content_type"], "multi-file")
+        self.assertEqual(payload["type"], "scenario")
+        self.assertIn("runs", payload)
+        self.assertTrue(len(payload["runs"]) > 0)
+
+        # Verify the SDK's new_scenario_test was NOT called (bypassed).
+        mock_app.new_scenario_test.assert_not_called()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_create_ensemble_missing_rule_fields(self, mock_get_app):
+        """Bug 1: missing rule fields return a user-friendly error, not an exception."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_ensemble"]
+        result = asyncio.run(tool.run({
+            "app_id": "my-app",
+            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+            "rules": [
+                {
+                    "id": "rule-missing-fields",
+                    # Missing statistics_path and objective.
+                },
+            ],
+        }))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        self.assertIn("Error", str(text))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_scenario_test_content_type_multiple_inputs(
+        self, mock_get_client, mock_get_app,
+    ):
+        """Bug 2: inline content_type path correctly creates runs for each input."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        mock_app = MagicMock()
+        mock_instance = MagicMock()
+        mock_app.instance.return_value = mock_instance
+
+        mock_input_set = MagicMock()
+        mock_input_set.id = "my-input-set"
+        mock_input_set.input_ids = ["inp-1", "inp-2"]
+        mock_input_set.inputs = []
+        mock_app.input_set.return_value = mock_input_set
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "scenario-test-456"}
+        mock_app.client = mock_client
+        mock_client.request.return_value = mock_response
+
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_create_scenario_test"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "scenarios": [
+                {
+                    "instance_id": "stable",
+                    "scenario_id": "s1",
+                    "scenario_input": {"input_set_id": "my-input-set"},
+                },
+            ],
+            "content_type": "multi-file",
+        }))
+
+        payload = mock_client.request.call_args[1]["payload"]
+        runs = payload["runs"]
+        # Two inputs in the input set, one scenario, one option set = 2 runs.
+        self.assertEqual(len(runs), 2, "Expected one run per input")
+        # Each run should reference a valid input_id.
+        run_input_ids = {r["input_id"] for r in runs}
+        self.assertEqual(run_input_ids, {"inp-1", "inp-2"})
+        # Each run should have a run_number set.
+        for run in runs:
+            self.assertIn("run_number", run, "Expected run_number to be set on each run")
+            self.assertIsNotNone(run["run_number"])
+        run_numbers = [r["run_number"] for r in runs]
+        self.assertEqual(run_numbers, ["1", "2"])
+

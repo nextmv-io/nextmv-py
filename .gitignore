@@ -166,3 +166,6 @@ cython_debug/
 
 # Documentation stuff
 site/
+
+scratch
+.claude
