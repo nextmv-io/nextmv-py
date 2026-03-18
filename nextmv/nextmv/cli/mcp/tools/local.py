@@ -55,7 +55,9 @@ def _local_run_logs_impl(
 
 def local_run(
     app_dir: str,
-    input: dict[str, Any],
+    input: dict[str, Any] | None = None,
+    input_dir_path: str | None = None,
+    content_format: str | None = None,
     run_options: dict[str, str] | None = None,
 ) -> str:
     """Run a local Nextmv application and wait for the result.
@@ -65,16 +67,32 @@ def local_run(
     ``{app_dir}/.nextmv/runs/{run_id}/``. Use file-reading tools to
     inspect the result file.
 
+    For JSON apps, provide ``input`` as a JSON object. For multi-file
+    or CSV archive apps, provide ``input_dir_path`` pointing to a
+    directory of input files and set ``content_format`` accordingly
+    (e.g. ``"multi-file"`` or ``"csv-archive"``).
+
     Args:
         app_dir: Absolute path to the local application directory
             containing an app.yaml manifest.
-        input: The input data (JSON object) for the optimization run.
+        input: The input data (JSON object) for the run. Used for
+            JSON apps. Ignored when ``input_dir_path`` is provided.
+        input_dir_path: Path to a directory containing input files.
+            Use for multi-file or CSV archive apps. When provided,
+            ``content_format`` must also be set.
+        content_format: Content format of the input. Required when
+            ``input_dir_path`` is set. Allowed values:
+            ``"multi-file"``, ``"csv-archive"``, ``"json"``.
         run_options: Optional solver options passed to the application,
             e.g. ``{"solve.duration": "10s"}``.
     """
 
     app = _helpers._get_local_app(app_dir=app_dir)
-    run_id = app.new_run(input=input, options=run_options)
+    config = _helpers._build_run_configuration(content_format)
+    if input_dir_path is not None:
+        run_id = app.new_run(input_dir_path=input_dir_path, options=run_options, configuration=config)
+    else:
+        run_id = app.new_run(input=input, options=run_options, configuration=config)
     app.run_result_with_polling(
         run_id=run_id,
         polling_options=default_polling_options(),
@@ -89,7 +107,9 @@ def local_run(
 
 def local_run_submit(
     app_dir: str,
-    input: dict[str, Any],
+    input: dict[str, Any] | None = None,
+    input_dir_path: str | None = None,
+    content_format: str | None = None,
     run_options: dict[str, str] | None = None,
 ) -> str:
     """Submit a local run without waiting for completion.
@@ -98,16 +118,31 @@ def local_run_submit(
     ID immediately. Use ``local_run_poll_result`` or
     ``local_run_status`` to check on the run later.
 
+    For JSON apps, provide ``input`` as a JSON object. For multi-file
+    or CSV archive apps, provide ``input_dir_path`` pointing to a
+    directory of input files and set ``content_format`` accordingly
+    (e.g. ``"multi-file"`` or ``"csv-archive"``).
+
     Args:
         app_dir: Absolute path to the local application directory
             containing an app.yaml manifest.
-        input: The input data (JSON object) for the run.
+        input: The input data (JSON object) for the run. Used for
+            JSON apps. Ignored when ``input_dir_path`` is provided.
+        input_dir_path: Path to a directory containing input files.
+            Use for multi-file or CSV archive apps. When provided,
+            ``content_format`` must also be set.
+        content_format: Content format of the input. Required when
+            ``input_dir_path`` is set. Allowed values:
+            ``"multi-file"``, ``"csv-archive"``, ``"json"``.
         run_options: Optional solver options passed to the application,
             e.g. ``{"solve.duration": "10s"}``.
     """
 
     app = _helpers._get_local_app(app_dir=app_dir)
-    return app.new_run(input=input, options=run_options)
+    config = _helpers._build_run_configuration(content_format)
+    if input_dir_path is not None:
+        return app.new_run(input_dir_path=input_dir_path, options=run_options, configuration=config)
+    return app.new_run(input=input, options=run_options, configuration=config)
 
 
 def local_run_status(

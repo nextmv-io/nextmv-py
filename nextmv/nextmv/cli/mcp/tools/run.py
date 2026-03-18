@@ -45,7 +45,9 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     def cloud_run(
         app_id: str,
-        input: dict[str, Any],
+        input: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        content_format: str | None = None,
         instance_id: str | None = None,
         run_options: dict[str, str] | None = None,
         managed_input_id: str | None = None,
@@ -57,10 +59,22 @@ def register(mcp: FastMCP) -> None:
         statistics) to a local temp file. Use file-reading tools to
         inspect the contents.
 
+        For JSON apps, provide ``input`` as a JSON object. For
+        multi-file or CSV archive apps, provide ``input_dir_path``
+        pointing to a local directory of input files and set
+        ``content_format`` accordingly (e.g. ``"multi-file"``).
+
         Args:
             app_id: The application ID.
-            input: The input data (JSON object) for the optimization
-                run. Ignored when ``managed_input_id`` is provided.
+            input: The input data (JSON object) for the run. Used for
+                JSON apps. Ignored when ``input_dir_path`` or
+                ``managed_input_id`` is provided.
+            input_dir_path: Path to a local directory containing input
+                files. Use for multi-file or CSV archive apps. When
+                provided, ``content_format`` must also be set.
+            content_format: Content format of the input. Required when
+                ``input_dir_path`` is set. Allowed values:
+                ``"multi-file"``, ``"csv-archive"``, ``"json"``.
             instance_id: Instance to run against. Uses the application's
                 default instance if omitted.
             run_options: Solver options passed to the application, e.g.
@@ -70,8 +84,11 @@ def register(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_app(app_id)
+        config = _helpers._build_run_configuration(content_format)
         result = app.new_run_with_result(
             input=input,
+            input_dir_path=input_dir_path,
+            configuration=config,
             instance_id=instance_id,
             run_options=run_options or {},
             polling_options=default_polling_options(),
@@ -82,7 +99,9 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     def cloud_run_submit(
         app_id: str,
-        input: dict[str, Any],
+        input: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        content_format: str | None = None,
         instance_id: str | None = None,
         run_options: dict[str, str] | None = None,
         managed_input_id: str | None = None,
@@ -92,10 +111,22 @@ def register(mcp: FastMCP) -> None:
         Returns the run ID immediately. Use ``cloud_run_status`` or
         ``cloud_run_result`` to check on the run later.
 
+        For JSON apps, provide ``input`` as a JSON object. For
+        multi-file or CSV archive apps, provide ``input_dir_path``
+        pointing to a local directory of input files and set
+        ``content_format`` accordingly (e.g. ``"multi-file"``).
+
         Args:
             app_id: The application ID.
-            input: The input data (JSON object) for the run. Ignored
-                when ``managed_input_id`` is provided.
+            input: The input data (JSON object) for the run. Used for
+                JSON apps. Ignored when ``input_dir_path`` or
+                ``managed_input_id`` is provided.
+            input_dir_path: Path to a local directory containing input
+                files. Use for multi-file or CSV archive apps. When
+                provided, ``content_format`` must also be set.
+            content_format: Content format of the input. Required when
+                ``input_dir_path`` is set. Allowed values:
+                ``"multi-file"``, ``"csv-archive"``, ``"json"``.
             instance_id: Instance to run against. Uses the application's
                 default instance if omitted.
             run_options: Solver options passed to the application, e.g.
@@ -105,13 +136,15 @@ def register(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_app(app_id)
-        run_id = app.new_run(
+        config = _helpers._build_run_configuration(content_format)
+        return app.new_run(
             input=input,
+            input_dir_path=input_dir_path,
+            configuration=config,
             instance_id=instance_id,
             options=run_options or {},
             managed_input_id=managed_input_id,
         )
-        return run_id
 
     @mcp.tool()
     def cloud_run_status(app_id: str, run_id: str) -> dict[str, Any]:

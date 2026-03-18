@@ -73,6 +73,24 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
     return app
 
 
+def _build_run_configuration(content_format: str | None):
+    """Build a RunConfiguration for the given content format string, or None."""
+
+    if content_format is None:
+        return None
+
+    from nextmv.input import InputFormat
+    from nextmv.run import Format, FormatInput, RunConfiguration
+
+    config = RunConfiguration()
+    config.format = Format(
+        format_input=FormatInput(
+            input_type=InputFormat(content_format),
+        ),
+    )
+    return config
+
+
 def _save_to_file(data: Any, prefix: str) -> str:
     """Serialize data to a temp JSON file and return a message with the path.
 

@@ -931,3 +931,115 @@ class TestBugFixes(unittest.TestCase):
         run_numbers = [r["run_number"] for r in runs]
         self.assertEqual(run_numbers, ["1", "2"])
 
+
+class TestMultiFileRunSupport(unittest.TestCase):
+    """Tests for multi-file run support in local and cloud run tools."""
+
+    def test_build_run_configuration_none(self):
+        """_build_run_configuration returns None when content_format is None."""
+        from nextmv.cli.mcp.tools._helpers import _build_run_configuration
+
+        self.assertIsNone(_build_run_configuration(None))
+
+    def test_build_run_configuration_multi_file(self):
+        """_build_run_configuration builds a RunConfiguration for 'multi-file'."""
+        from nextmv.cli.mcp.tools._helpers import _build_run_configuration
+        from nextmv.input import InputFormat
+
+        config = _build_run_configuration("multi-file")
+        self.assertIsNotNone(config)
+        self.assertEqual(
+            config.format.format_input.input_type,
+            InputFormat.MULTI_FILE,
+        )
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_local_app")
+    def test_local_run_submit_json_input(self, mock_get_local_app):
+        """local_run_submit passes input dict to new_run for JSON apps."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.new_run.return_value = "run-123"
+        mock_get_local_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["local_run_submit"]
+        asyncio.run(tool.run({
+            "app_dir": "/some/app",
+            "input": {"stops": []},
+        }))
+        mock_app.new_run.assert_called_once()
+        call_kwargs = mock_app.new_run.call_args[1]
+        self.assertEqual(call_kwargs["input"], {"stops": []})
+        self.assertIsNone(call_kwargs.get("input_dir_path"))
+        self.assertIsNone(call_kwargs.get("configuration"))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_local_app")
+    def test_local_run_submit_multifile_input(self, mock_get_local_app):
+        """local_run_submit passes input_dir_path + configuration for multi-file apps."""
+        from nextmv.cli.mcp.server import create_server
+        from nextmv.input import InputFormat
+
+        mock_app = MagicMock()
+        mock_app.new_run.return_value = "run-456"
+        mock_get_local_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["local_run_submit"]
+        asyncio.run(tool.run({
+            "app_dir": "/some/app",
+            "input_dir_path": "/some/input-dir",
+            "content_format": "multi-file",
+        }))
+        mock_app.new_run.assert_called_once()
+        call_kwargs = mock_app.new_run.call_args[1]
+        self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
+        config = call_kwargs.get("configuration")
+        self.assertIsNotNone(config)
+        self.assertEqual(config.format.format_input.input_type, InputFormat.MULTI_FILE)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_submit_json_input(self, mock_get_app):
+        """cloud_run_submit passes input dict to new_run for JSON apps."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.new_run.return_value = "run-789"
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_run_submit"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "input": {"stops": []},
+        }))
+        mock_app.new_run.assert_called_once()
+        call_kwargs = mock_app.new_run.call_args[1]
+        self.assertEqual(call_kwargs["input"], {"stops": []})
+        self.assertIsNone(call_kwargs.get("input_dir_path"))
+        self.assertIsNone(call_kwargs.get("configuration"))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_submit_multifile_input(self, mock_get_app):
+        """cloud_run_submit passes input_dir_path + configuration for multi-file apps."""
+        from nextmv.cli.mcp.server import create_server
+        from nextmv.input import InputFormat
+
+        mock_app = MagicMock()
+        mock_app.new_run.return_value = "run-mf-1"
+        mock_get_app.return_value = mock_app
+
+        server = create_server()
+        tool = server._tool_manager._tools["cloud_run_submit"]
+        asyncio.run(tool.run({
+            "app_id": "my-app",
+            "input_dir_path": "/some/input-dir",
+            "content_format": "multi-file",
+        }))
+        mock_app.new_run.assert_called_once()
+        call_kwargs = mock_app.new_run.call_args[1]
+        self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
+        config = call_kwargs.get("configuration")
+        self.assertIsNotNone(config)
+        self.assertEqual(config.format.format_input.input_type, InputFormat.MULTI_FILE)
+
