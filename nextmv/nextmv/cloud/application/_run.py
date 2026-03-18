@@ -22,14 +22,7 @@ from nextmv.cloud.url import DownloadURL
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import (
-    ASSETS_KEY,
-    STATISTICS_KEY,
-    Asset,
-    Output,
-    OutputFormat,
-    Statistics,
-)
+from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
@@ -867,6 +860,33 @@ class ApplicationRunMixin:
 
         return sorted(logs, key=lambda log: log.timestamp)
 
+    def run_output(self: "Application", run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | None:
+        """
+        Gets the output, and only the output, of a run.
+
+        This method is different from the `run_result` method, which retrieves
+        the complete result of a run, including the run output. This method is
+        useful when you only need the output of a run and not the complete
+        result with metadata.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the output for.
+
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            Output of the run as a dictionary. If the output format is non-JSON,
+            the method returns None after saving the output files to the specified
+            `output_dir_path`.
+        """
+
     def run_result(self: "Application", run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """
         Get the result of a run.
@@ -1212,6 +1232,7 @@ class ApplicationRunMixin:
         output size exceeds _MAX_RUN_SIZE. If it does, the method will request
         a download URL and fetch the output data separately.
         """
+
         query_params = None
         use_presigned_url = False
         if (
