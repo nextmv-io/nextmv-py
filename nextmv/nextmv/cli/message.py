@@ -13,6 +13,7 @@ import rich
 import rich.markup
 import typer
 from rich.console import Console
+from rich.rule import Rule
 
 # Shared questionary style that matches the CLI's [code] tag rendering:
 # bold with no color overrides, letting the terminal's default foreground
@@ -268,7 +269,7 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
     return selection
 
 
-def directory_path(msg: str, default: str | None = ".", only_directories: bool = True) -> str:
+def directory_path(msg: str, default: str, only_directories: bool = True) -> str:
     """
     Prompt the user to enter or select a directory or file path.
 
@@ -276,9 +277,8 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
     ----------
     msg : str
         The message to display as the path prompt.
-    default : str | None, optional
-        The default path pre-filled in the prompt. If None, no default is
-        pre-filled. Default is ".".
+    default : str, optional
+        The default path pre-filled in the prompt.
     only_directories : bool, optional
         If True, only directories are shown in the file chooser. If False,
         both directories and files are shown. Default is True.
@@ -294,6 +294,7 @@ def directory_path(msg: str, default: str | None = ".", only_directories: bool =
         Exits the program with code 1 if the operation is cancelled or no
         path is provided.
     """
+
     # If this is not an interactive terminal, do not ask for confirmation, to
     # avoid hanging indefinitely waiting for a user response.
     if not sys.stdin.isatty():
@@ -331,7 +332,7 @@ def rule() -> None:
     """
 
     console = Console(file=sys.stderr, highlight=False)
-    console.print(rich.rule.Rule(style="magenta"))
+    console.print(Rule(style="magenta"))
 
 
 def _format(msg: str) -> str:

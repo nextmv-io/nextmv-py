@@ -9,12 +9,12 @@ def main():
     """Main function that runs the model."""
 
     # Read the input from stdin.
-    input = nextmv.load(
+    loaded_input = nextmv.load(
         input_format=nextmv.InputFormat.MULTI_FILE,
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
         path="inputs",
     )
-    input_data = input.data["input"]
+    input_data = loaded_input.data["input"]
     name = input_data["name"]
 
     # Extract options from the manifest.

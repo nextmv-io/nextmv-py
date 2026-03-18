@@ -267,8 +267,7 @@ def _handle_files_initialization(
 
     Depending on whether the user is starting from a template or an existing
     model, this function either scaffolds a full application from a template or
-    initializes only the manifest file. In both cases, it prompts the user for
-    an app ID and registers the application in the local registry.
+    initializes only the manifest file.
 
     Parameters
     ----------
@@ -701,7 +700,7 @@ def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
         raise typer.Exit()
 
     # Actually execute the command to push the app to Nextmv Cloud.
-    str_cmd = f"[code]nextmv cloud app push --app-id {cloud_app.id}[/code]"
+    str_cmd = f"nextmv cloud app push --app-id {cloud_app.id}"
     in_progress(f"Pushing application with command: [code]{str_cmd}[/code]")
     handle_push(
         cloud_app=cloud_app,

@@ -9,8 +9,8 @@ def main():
     """Main function that runs the model."""
 
     # Read the input from stdin.
-    input = nextmv.load()
-    name = input.data["name"]
+    loaded_input = nextmv.load()
+    name = loaded_input.data["name"]
 
     # Extract options from the manifest.
     manifest = nextmv.Manifest.from_yaml(".")
@@ -23,10 +23,10 @@ def main():
     nextmv.log(message)
 
     if options.details:
-        detail = f"You are {input.data['distance']} million km from the sun"
+        detail = f"You are {loaded_input.data['distance']} million km from the sun"
         nextmv.log(detail)
 
-    assets = _create_visuals(name, input.data["radius"], input.data["distance"])
+    assets = _create_visuals(name, loaded_input.data["radius"], loaded_input.data["distance"])
 
     # Write output and metrics.
     output = nextmv.Output(
