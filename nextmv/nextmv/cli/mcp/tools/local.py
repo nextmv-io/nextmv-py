@@ -1,9 +1,6 @@
 """MCP tools for local application management."""
 
-import json
 import os
-import subprocess
-import tempfile
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -18,103 +15,6 @@ def _local_run_dir(app_dir: str, run_id: str) -> str:
     from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 
     return os.path.join(app_dir, NEXTMV_DIR, RUNS_KEY, run_id)
-
-
-def _run_via_cli(
-    app_dir: str,
-    input_data: dict[str, Any],
-    run_options: dict[str, str] | None = None,
-    wait: bool = False,
-) -> str:
-    """Execute a local run via ``uv run nextmv local run create``.
-
-    This invokes the Nextmv CLI through ``uv``, which ensures that
-    the application's ``requirements.txt`` dependencies are installed
-    and available at runtime (unlike calling the SDK directly with
-    ``sys.executable``).
-
-    Args:
-        app_dir: Absolute path to the local application directory.
-        input_data: The input data (JSON object) for the run.
-        run_options: Optional solver options passed as ``--options key=value``.
-        wait: If True, blocks until the run completes (``--wait``).
-
-    Returns:
-        The run ID (parsed from the CLI's JSON stdout output).
-
-    Raises:
-        RuntimeError: If the CLI process exits with a non-zero return code.
-    """
-
-    # Write input to a temp file so the CLI can read it via --input.
-    fd, input_path = tempfile.mkstemp(suffix=".json", prefix="mcp_local_input_")
-    try:
-        with os.fdopen(fd, "w") as fh:
-            json.dump(input_data, fh)
-
-        cmd: list[str] = [
-            "uv", "run", "nextmv",
-            "local", "run", "create",
-            "--app-src", os.path.abspath(app_dir),
-            "--input", input_path,
-        ]
-
-        if run_options:
-            for key, value in run_options.items():
-                cmd.extend(["--options", f"{key}={value}"])
-
-        if wait:
-            cmd.append("--wait")
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
-            env=os.environ,
-        )
-
-        if result.returncode != 0:
-            stderr = result.stderr.strip()
-            raise RuntimeError(
-                f"nextmv local run create failed (exit {result.returncode}): {stderr}"
-            )
-
-        # The CLI prints JSON with a "run_id" key to stdout when not
-        # waiting, or the full result when waiting.
-        stdout = result.stdout.strip()
-        try:
-            parsed = json.loads(stdout)
-            if isinstance(parsed, dict) and "run_id" in parsed:
-                return parsed["run_id"]
-        except json.JSONDecodeError:
-            pass
-
-        # When --wait is used the CLI may print the run_id via a
-        # success message to stderr. Fall back to extracting the
-        # run_id from the run directory listing.
-        from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
-
-        runs_dir = os.path.join(
-            os.path.abspath(app_dir), NEXTMV_DIR, RUNS_KEY,
-        )
-        if os.path.isdir(runs_dir):
-            entries = sorted(
-                os.listdir(runs_dir),
-                key=lambda d: os.path.getmtime(
-                    os.path.join(runs_dir, d)
-                ),
-            )
-            if entries:
-                return entries[-1]
-
-        raise RuntimeError(
-            f"Could not determine run_id from CLI output: {stdout}"
-        )
-    finally:
-        # Clean up the temp input file.
-        if os.path.exists(input_path):
-            os.unlink(input_path)
 
 
 def _local_run_input_impl(
@@ -160,11 +60,10 @@ def local_run(
 ) -> str:
     """Run a local Nextmv application and wait for the result.
 
-    Executes the application via ``uv run nextmv local run create
-    --wait``, which handles dependency installation (e.g.
-    requirements.txt) automatically. The result is stored in the
-    local run directory at ``{app_dir}/.nextmv/runs/{run_id}/``.
-    Use file-reading tools to inspect the result file.
+    Executes the application using the Nextmv SDK and polls until the
+    run completes. The result is stored in the local run directory at
+    ``{app_dir}/.nextmv/runs/{run_id}/``. Use file-reading tools to
+    inspect the result file.
 
     Args:
         app_dir: Absolute path to the local application directory
@@ -174,11 +73,11 @@ def local_run(
             e.g. ``{"solve.duration": "10s"}``.
     """
 
-    run_id = _run_via_cli(
-        app_dir=app_dir,
-        input_data=input,
-        run_options=run_options,
-        wait=True,
+    app = _helpers._get_local_app(app_dir=app_dir)
+    run_id = app.new_run(input=input, options=run_options)
+    app.run_result_with_polling(
+        run_id=run_id,
+        polling_options=default_polling_options(),
     )
     run_dir = _local_run_dir(app_dir, run_id)
     result_path = os.path.join(run_dir, f"{run_id}.json")
@@ -195,10 +94,9 @@ def local_run_submit(
 ) -> str:
     """Submit a local run without waiting for completion.
 
-    Executes the application via ``uv run nextmv local run create``
-    (non-blocking). Returns the run ID immediately. Use
-    ``local_run_poll_result`` or ``local_run_status`` to check on
-    the run later.
+    Executes the application using the Nextmv SDK and returns the run
+    ID immediately. Use ``local_run_poll_result`` or
+    ``local_run_status`` to check on the run later.
 
     Args:
         app_dir: Absolute path to the local application directory
@@ -208,12 +106,8 @@ def local_run_submit(
             e.g. ``{"solve.duration": "10s"}``.
     """
 
-    return _run_via_cli(
-        app_dir=app_dir,
-        input_data=input,
-        run_options=run_options,
-        wait=False,
-    )
+    app = _helpers._get_local_app(app_dir=app_dir)
+    return app.new_run(input=input, options=run_options)
 
 
 def local_run_status(
