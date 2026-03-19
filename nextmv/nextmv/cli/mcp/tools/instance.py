@@ -51,7 +51,7 @@ def register(mcp: FastMCP) -> None:
         name: str | None = None,
         description: str | None = None,
         configuration: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | str:
         """Create a new instance for a Nextmv Cloud application.
 
         An instance points to a specific version and can be configured
@@ -69,6 +69,14 @@ def register(mcp: FastMCP) -> None:
         """
 
         from nextmv.cloud import InstanceConfiguration
+
+        try:
+            version_id = _helpers._require_non_empty(version_id, "version_id")
+        except ValueError as e:
+            return str(e)
+        instance_id = _helpers._none_if_empty(instance_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
 
         app = _helpers._get_app(app_id)
         config = InstanceConfiguration(**configuration) if configuration else None
@@ -103,6 +111,10 @@ def register(mcp: FastMCP) -> None:
             description: New description.
             configuration: New instance configuration dictionary.
         """
+
+        name = _helpers._none_if_empty(name)
+        version_id = _helpers._none_if_empty(version_id)
+        description = _helpers._none_if_empty(description)
 
         app = _helpers._get_app(app_id)
         inst = app.update_instance(

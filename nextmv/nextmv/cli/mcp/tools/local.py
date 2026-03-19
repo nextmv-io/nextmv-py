@@ -87,6 +87,9 @@ def local_run(
             e.g. ``{"solve.duration": "10s"}``.
     """
 
+    content_format = _helpers._none_if_empty(content_format)
+    input_dir_path = _helpers._none_if_empty(input_dir_path)
+
     app = _helpers._get_local_app(app_dir=app_dir)
     config = _helpers._build_run_configuration(content_format)
     if input_dir_path is not None:
@@ -137,6 +140,9 @@ def local_run_submit(
         run_options: Optional solver options passed to the application,
             e.g. ``{"solve.duration": "10s"}``.
     """
+
+    content_format = _helpers._none_if_empty(content_format)
+    input_dir_path = _helpers._none_if_empty(input_dir_path)
 
     app = _helpers._get_local_app(app_dir=app_dir)
     config = _helpers._build_run_configuration(content_format)
@@ -295,6 +301,9 @@ def local_sync(
         run_ids: Optional list of specific run IDs to sync. If omitted,
             all local runs are synced.
     """
+
+    app_id = _helpers._none_if_empty(app_id)
+    instance_id = _helpers._none_if_empty(instance_id)
 
     local_app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
     cloud_target = _helpers._get_app(cloud_app_id)

@@ -56,6 +56,9 @@ def register(mcp: FastMCP) -> None:
             description: Optional description of what the application does.
         """
 
+        app_id = _helpers._none_if_empty(app_id)
+        description = _helpers._none_if_empty(description)
+
         client = _helpers._get_client()
         app = Application.new(
             client=client,
@@ -113,6 +116,10 @@ def register(mcp: FastMCP) -> None:
             default_instance_id: New default instance ID used when no
                 instance is specified at run time.
         """
+
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+        default_instance_id = _helpers._none_if_empty(default_instance_id)
 
         app = _helpers._get_app(app_id)
         updated = app.update(

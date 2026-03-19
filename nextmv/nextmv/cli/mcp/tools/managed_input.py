@@ -69,6 +69,11 @@ def register(mcp: FastMCP) -> None:
             input: Raw input data (JSON object) to upload directly.
         """
 
+        managed_input_id = _helpers._none_if_empty(managed_input_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+        run_id = _helpers._none_if_empty(run_id)
+
         app = _helpers._get_app(app_id)
 
         upload_id = None

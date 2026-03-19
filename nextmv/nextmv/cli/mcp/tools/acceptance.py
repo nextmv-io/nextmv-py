@@ -78,6 +78,11 @@ def register(mcp: FastMCP) -> None:
             description: Optional description.
         """
 
+        acceptance_test_id = _helpers._none_if_empty(acceptance_test_id)
+        name = _helpers._none_if_empty(name)
+        input_set_id = _helpers._none_if_empty(input_set_id)
+        description = _helpers._none_if_empty(description)
+
         app = _helpers._get_app(app_id)
         test = app.new_acceptance_test(
             candidate_instance_id=candidate_instance_id,

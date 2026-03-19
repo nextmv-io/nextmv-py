@@ -80,6 +80,10 @@ def register(mcp: FastMCP) -> None:
 
         from nextmv.cloud import TestComparisonSingle
 
+        switchback_test_id = _helpers._none_if_empty(switchback_test_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+
         app = _helpers._get_app(app_id)
         comparison = TestComparisonSingle(
             baseline_instance_id=baseline_instance_id,

@@ -77,6 +77,10 @@ def register(mcp: FastMCP) -> None:
                 if omitted.
         """
 
+        shadow_test_id = _helpers._none_if_empty(shadow_test_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+
         app = _helpers._get_app(app_id)
         test = app.new_shadow_test(
             comparisons=comparisons,

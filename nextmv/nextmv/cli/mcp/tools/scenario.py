@@ -208,6 +208,11 @@ def _cloud_create_scenario_test_impl(
     from nextmv.cloud.scenario import _scenarios_by_id
     from nextmv.safe import safe_id
 
+    scenario_test_id = _helpers._none_if_empty(scenario_test_id)
+    name = _helpers._none_if_empty(name)
+    description = _helpers._none_if_empty(description)
+    content_type = _helpers._none_if_empty(content_type)
+
     app = _helpers._get_app(app_id)
     try:
         scenario_objs = [_build_scenario(s) for s in scenarios]
@@ -237,9 +242,9 @@ def _cloud_create_scenario_test_impl(
     if not scenarios:
         return "Error: at least one scenario must be provided."
 
-    if scenario_test_id is None or scenario_test_id == "":
+    if scenario_test_id is None:
         scenario_test_id = safe_id("scenario")
-    if name is None or name == "":
+    if name is None:
         name = scenario_test_id
 
     scenarios_by_id = _scenarios_by_id(scenario_objs)

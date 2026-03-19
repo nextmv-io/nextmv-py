@@ -91,6 +91,27 @@ def _build_run_configuration(content_format: str | None):
     return config
 
 
+def _none_if_empty(value: str | None) -> str | None:
+    """Convert empty or whitespace-only strings to None.
+
+    LLMs sometimes pass ``""`` instead of omitting optional parameters.
+    This normalises empty strings so downstream code sees ``None``.
+    Whitespace-only strings (e.g. ``"  "``) are also treated as empty.
+    """
+
+    if value is None or not value.strip():
+        return None
+    return value.strip()
+
+
+def _require_non_empty(value: str, name: str) -> str:
+    """Raise a clear error when a required string parameter is empty."""
+
+    if not value or not value.strip():
+        raise ValueError(f"'{name}' is required and must not be empty.")
+    return value.strip()
+
+
 def _save_to_file(data: Any, prefix: str) -> str:
     """Serialize data to a temp JSON file and return a message with the path.
 

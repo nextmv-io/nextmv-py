@@ -76,6 +76,11 @@ def register(mcp: FastMCP) -> None:
 
         from nextmv.cloud.input_set import ManagedInput
 
+        input_set_id = _helpers._none_if_empty(input_set_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+        instance_id = _helpers._none_if_empty(instance_id)
+
         app = _helpers._get_app(app_id)
 
         inputs = None
@@ -111,6 +116,9 @@ def register(mcp: FastMCP) -> None:
             name: New human-readable name.
             description: New description.
         """
+
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
 
         app = _helpers._get_app(app_id)
         input_set = app.update_input_set(id=input_set_id, name=name, description=description)

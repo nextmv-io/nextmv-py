@@ -35,6 +35,9 @@ def register(mcp: FastMCP) -> None:
                 e.g. ``{"fast": {"solve.duration": "5s"}}``.
         """
 
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+
         app = _helpers._get_app(app_id)
         batch_id = app.new_batch_experiment(
             input_set_id=input_set_id,

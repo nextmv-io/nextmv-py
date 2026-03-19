@@ -83,6 +83,11 @@ def register(mcp: FastMCP) -> None:
                 instead of the inline ``input`` data.
         """
 
+        content_format = _helpers._none_if_empty(content_format)
+        instance_id = _helpers._none_if_empty(instance_id)
+        managed_input_id = _helpers._none_if_empty(managed_input_id)
+        input_dir_path = _helpers._none_if_empty(input_dir_path)
+
         app = _helpers._get_app(app_id)
         config = _helpers._build_run_configuration(content_format)
         result = app.new_run_with_result(
@@ -134,6 +139,11 @@ def register(mcp: FastMCP) -> None:
             managed_input_id: ID of an existing managed input to use
                 instead of the inline ``input`` data.
         """
+
+        content_format = _helpers._none_if_empty(content_format)
+        instance_id = _helpers._none_if_empty(instance_id)
+        managed_input_id = _helpers._none_if_empty(managed_input_id)
+        input_dir_path = _helpers._none_if_empty(input_dir_path)
 
         app = _helpers._get_app(app_id)
         config = _helpers._build_run_configuration(content_format)
@@ -212,6 +222,8 @@ def register(mcp: FastMCP) -> None:
                 ``"succeeded"``, ``"failed"``, ``"running"``,
                 ``"queued"``, ``"canceled"``.
         """
+
+        status = _helpers._none_if_empty(status)
 
         return _cloud_list_runs_impl(app_id=app_id, status=status)
 

@@ -60,12 +60,16 @@ def register(mcp: FastMCP) -> None:
                 version.
         """
 
+        version_id = _helpers._none_if_empty(version_id)
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
+
         app = _helpers._get_app(app_id)
         v = app.new_version(
             id=version_id,
             name=name,
             description=description,
-            exist_ok=version_id is not None and version_id != "",
+            exist_ok=version_id is not None,
         )
         return v.to_dict()
 
@@ -87,6 +91,9 @@ def register(mcp: FastMCP) -> None:
             name: New human-readable name.
             description: New description.
         """
+
+        name = _helpers._none_if_empty(name)
+        description = _helpers._none_if_empty(description)
 
         app = _helpers._get_app(app_id)
         v = app.update_version(version_id=version_id, name=name, description=description)
