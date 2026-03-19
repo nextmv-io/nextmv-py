@@ -51,6 +51,30 @@ class ApplicationRunMixin:
     Mixin class for managing app runs within an application.
     """
 
+    def delete_run(self: "Application", run_id: str) -> None:
+        """
+        Delete a run.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_run("run-456")
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/runs/{run_id}",
+        )
+
     def cancel_run(self: "Application", run_id: str) -> None:
         """
         Cancel a run.

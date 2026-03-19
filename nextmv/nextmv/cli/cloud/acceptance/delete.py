@@ -2,13 +2,11 @@
 This module defines the cloud acceptance delete command for the Nextmv CLI.
 """
 
-from typing import Annotated
-
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption
+from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,14 +16,7 @@ app = typer.Typer()
 def delete(
     app_id: AppIDOption,
     acceptance_test_id: AcceptanceTestIDOption,
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

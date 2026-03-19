@@ -304,3 +304,15 @@ LocalAppSrcOption = Annotated[
         metavar="APP_SRC",
     ),
 ]
+
+# Yes option - can be used in any command that requires a deletion confirmation.
+# Define it as follows in commands or callbacks, as necessary:
+# yes: YesOption = False
+YesOption = Annotated[
+    bool,
+    typer.Option(
+        "--yes",
+        "-y",
+        help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
+    ),
+]

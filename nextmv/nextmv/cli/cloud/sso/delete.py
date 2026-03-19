@@ -2,13 +2,11 @@
 This module defines the cloud sso delete command for the Nextmv CLI.
 """
 
-from typing import Annotated
-
 import typer
 
 from nextmv.cli.configuration.config import build_sso_config
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -16,14 +14,7 @@ app = typer.Typer()
 
 @app.command()
 def delete(
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """
