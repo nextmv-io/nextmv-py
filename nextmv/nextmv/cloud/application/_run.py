@@ -938,8 +938,10 @@ class ApplicationRunMixin:
         json_resp = response.json()
 
         # If we don't need to use a presigned URL, we can return the output
-        # directly.
-        if not use_presigned_url:
+        # directly. Only attempt to download the output once the run has
+        # reached a final state. This avoids hitting the pre-signed URL for
+        # queued or running executions.
+        if not use_presigned_url or not run_information.metadata.run_is_finalized():
             return json_resp
 
         download_url = DownloadURL.from_dict(json_resp)
@@ -1328,8 +1330,10 @@ class ApplicationRunMixin:
         result.console_url = self.__console_url(result.id)
 
         # If we don't need to use a presigned URL, we can return the output
-        # directly.
-        if not use_presigned_url:
+        # directly. Only attempt to download the output once the run has
+        # reached a final state. This avoids hitting the `/runs/{id}/output`
+        # endpoint for queued or running executions.
+        if not use_presigned_url or not run_information.metadata.run_is_finalized():
             return result
 
         output = self.run_output(run_id=run_id, output_dir_path=output_dir_path)
