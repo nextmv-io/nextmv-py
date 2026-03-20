@@ -246,6 +246,9 @@ class CloudIntegrationWorkflow(FlowSpec):
             run_input = app.run_input(run_id=run.id)
             assert run_input == input_data
 
+            run_output = app.run_output(run_id=run.id)
+            assert run_output is not None
+
             logs = app.run_logs(run_id=run.id)
             assert logs.log is not None and logs.log != ""
 
@@ -462,7 +465,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         metadata = app.shadow_test_metadata(shadow_test_id=shadow_test.shadow_test_id)
         assert metadata.status in {
             cloud.ExperimentStatus.COMPLETED,
-            cloud.ExperimentStatus.STOPPING,    # Cancelation is asynchronous; test may be in temporary STOPPING state.
+            cloud.ExperimentStatus.STOPPING,  # Cancelation is asynchronous; test may be in temporary STOPPING state.
         }
 
         # Get the results of the shadow test and assert that it registered the
@@ -541,7 +544,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         metadata = app.switchback_test_metadata(switchback_test_id=switchback_test.switchback_test_id)
         assert metadata.status in {
             cloud.ExperimentStatus.COMPLETED,
-            cloud.ExperimentStatus.STOPPING,    # Cancelation is asynchronous; test may be in temporary STOPPING state.
+            cloud.ExperimentStatus.STOPPING,  # Cancelation is asynchronous; test may be in temporary STOPPING state.
         }
 
         # Get the results of the switchback test and assert that it registered the

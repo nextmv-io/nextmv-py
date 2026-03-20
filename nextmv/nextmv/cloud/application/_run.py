@@ -911,6 +911,59 @@ class ApplicationRunMixin:
             `output_dir_path`.
         """
 
+        # Get the run information to check how we need to handle the output.
+        run_information = self.run_metadata(run_id=run_id)
+        output_format = run_information.metadata.format.format_output.output_type
+        is_json = output_format == OutputFormat.JSON
+
+        # We need to specify `output_dir_path` for non-JSON.
+        if not is_json and (not output_dir_path or output_dir_path == ""):
+            raise ValueError(
+                f"Output format is {output_format.value} (not json), an `output_dir_path` must be provided.",
+            )
+
+        # If the output is large or non-JSON, we need to fetch it from the
+        # download URL.
+        query_params = None
+        use_presigned_url = False
+        if not is_json or run_information.metadata.output_size > _MAX_RUN_SIZE:
+            query_params = {"format": "url"}
+            use_presigned_url = True
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/output",
+            query_params=query_params,
+        )
+        json_resp = response.json()
+
+        # If we don't need to use a presigned URL, we can return the output
+        # directly.
+        if not use_presigned_url:
+            return json_resp
+
+        download_url = DownloadURL.from_dict(json_resp["output"])
+        download_response = self.client.request(
+            method="GET",
+            endpoint=download_url.url,
+            headers={"Content-Type": "application/json"},
+        )
+
+        # If the run is JSON, we can just return the large output immediately.
+        if is_json:
+            return download_response.json()
+
+        # At this point, we know that we are working with non-JSON data.
+        if not os.path.exists(output_dir_path):
+            os.makedirs(output_dir_path, exist_ok=True)
+
+        # Save .tar.gz file to a temp directory and extract contents to output_dir_path
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
+            with open(temp_tar_path, "wb") as f:
+                f.write(download_response.content)
+            shutil.unpack_archive(temp_tar_path, output_dir_path)
+
     def run_result(self: "Application", run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """
         Get the result of a run.
