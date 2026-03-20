@@ -942,7 +942,7 @@ class ApplicationRunMixin:
         if not use_presigned_url:
             return json_resp
 
-        download_url = DownloadURL.from_dict(json_resp["output"])
+        download_url = DownloadURL.from_dict(json_resp)
         download_response = self.client.request(
             method="GET",
             endpoint=download_url.url,
@@ -1327,33 +1327,14 @@ class ApplicationRunMixin:
         result = RunResult.from_dict(response.json())
         result.console_url = self.__console_url(result.id)
 
-        if not use_presigned_url or result.metadata.status_v2 != StatusV2.succeeded:
+        # If we don't need to use a presigned URL, we can return the output
+        # directly.
+        if not use_presigned_url:
             return result
 
-        download_url = DownloadURL.from_dict(response.json()["output"])
-        download_response = self.client.request(
-            method="GET",
-            endpoint=download_url.url,
-            headers={"Content-Type": "application/json"},
-        )
-
-        # See whether we can attach the output directly or need to save to the given
-        # directory
-        if run_information.metadata.format.format_output.output_type != OutputFormat.JSON:
-            if not output_dir_path or output_dir_path == "":
-                raise ValueError(
-                    "If the output format is not JSON, an output_dir_path must be provided.",
-                )
-            if not os.path.exists(output_dir_path):
-                os.makedirs(output_dir_path, exist_ok=True)
-            # Save .tar.gz file to a temp directory and extract contents to output_dir_path
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
-                with open(temp_tar_path, "wb") as f:
-                    f.write(download_response.content)
-                shutil.unpack_archive(temp_tar_path, output_dir_path)
-        else:
-            result.output = download_response.json()
+        output = self.run_output(run_id=run_id, output_dir_path=output_dir_path)
+        if output is not None:
+            result.output = output
 
         return result
 
