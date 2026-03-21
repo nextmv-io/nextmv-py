@@ -4,6 +4,8 @@ import asyncio
 import json
 import os
 import re
+import shutil
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -1181,4 +1183,243 @@ class TestEnsembleRunTools(unittest.TestCase):
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("ensemble_id", str(text))
         mock_get_app.assert_not_called()
+
+
+class TestCloudRunCache(unittest.TestCase):
+    """Tests for the cloud run local cache feature."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_cloud_run_dir(self):
+        """Test that _cloud_run_dir returns the expected path."""
+        from nextmv.cli.mcp.tools._helpers import _cloud_run_dir
+
+        result = _cloud_run_dir("api.cloud.nextmv.io", "run-123")
+        expected = os.path.join(
+            str(os.path.expanduser("~")), ".nextmv", "runs", "api.cloud.nextmv.io", "run-123"
+        )
+        self.assertEqual(result, expected)
+
+    def test_cloud_run_file_exists_returns_path(self):
+        """Test that _cloud_run_file_exists returns the path when the file exists."""
+        from nextmv.cli.mcp.tools._helpers import _cloud_run_file_exists
+
+        # Create a file inside the temp dir.
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+        os.makedirs(run_dir, exist_ok=True)
+        file_path = os.path.join(run_dir, "run-1.json")
+        with open(file_path, "w") as f:
+            f.write("{}")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            result = _cloud_run_file_exists("ep", "run-1", "run-1.json")
+            self.assertEqual(result, file_path)
+
+    def test_cloud_run_file_exists_returns_none(self):
+        """Test that _cloud_run_file_exists returns None for nonexistent files."""
+        from nextmv.cli.mcp.tools._helpers import _cloud_run_file_exists
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=os.path.join(self.tmp_dir, "no-such-run"),
+        ):
+            result = _cloud_run_file_exists("ep", "run-999", "run-999.json")
+            self.assertIsNone(result)
+
+    def test_endpoint_from_app(self):
+        """Test that _endpoint_from_app strips the URL scheme."""
+        from nextmv.cli.mcp.tools._helpers import _endpoint_from_app
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        self.assertEqual(_endpoint_from_app(mock_app), "api.cloud.nextmv.io")
+
+        mock_app.client.url = "http://localhost:9000"
+        self.assertEqual(_endpoint_from_app(mock_app), "localhost:9000")
+
+    def test_save_cloud_run_file(self):
+        """Test that _save_cloud_run_file creates the file with correct JSON."""
+        from nextmv.cli.mcp.tools._helpers import _save_cloud_run_file
+
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+        data = {"output": {"routes": []}}
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            path = _save_cloud_run_file(data, "ep", "run-1", "run-1.json")
+            self.assertTrue(os.path.exists(path))
+            with open(path) as f:
+                loaded = json.load(f)
+            self.assertEqual(loaded, data)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_result_uses_cache(self, mock_get_app):
+        """Test that cloud_run_result returns cached data without calling the SDK."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_get_app.return_value = mock_app
+
+        # Pre-populate cache.
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+        os.makedirs(run_dir, exist_ok=True)
+        cached_file = os.path.join(run_dir, "run-1.json")
+        with open(cached_file, "w") as f:
+            json.dump({"output": {}}, f)
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_result"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Cached:", str(text))
+            mock_app.run_result.assert_not_called()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_result_downloads_on_miss(self, mock_get_app):
+        """Test that cloud_run_result downloads and caches when no cache exists."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_result = MagicMock()
+        mock_result.to_dict.return_value = {"output": {}}
+        mock_result.id = "run-1"
+        mock_app.run_result.return_value = mock_result
+        mock_get_app.return_value = mock_app
+
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_result"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+            mock_app.run_result.assert_called_once()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_input_uses_cache(self, mock_get_app):
+        """Test that cloud_run_input returns cached data without calling the SDK."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_get_app.return_value = mock_app
+
+        # Pre-populate cache.
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+        inputs_dir = os.path.join(run_dir, "inputs")
+        os.makedirs(inputs_dir, exist_ok=True)
+        cached_file = os.path.join(inputs_dir, "input.json")
+        with open(cached_file, "w") as f:
+            json.dump({"stops": []}, f)
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_input"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Cached:", str(text))
+            mock_app.run_input.assert_not_called()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_input_downloads_on_miss(self, mock_get_app):
+        """Test that cloud_run_input downloads and saves as inputs/input.json on miss."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_app.run_input.return_value = {"stops": []}
+        mock_get_app.return_value = mock_app
+
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_input"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+            mock_app.run_input.assert_called_once()
+            # Verify the file was saved.
+            saved = os.path.join(run_dir, "inputs", "input.json")
+            self.assertTrue(os.path.exists(saved))
+            with open(saved) as f:
+                self.assertEqual(json.load(f), {"stops": []})
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_logs_uses_cache(self, mock_get_app):
+        """Test that cloud_run_logs returns cached data without calling the SDK."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_get_app.return_value = mock_app
+
+        # Pre-populate cache.
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+        logs_dir = os.path.join(run_dir, "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        cached_file = os.path.join(logs_dir, "logs.json")
+        with open(cached_file, "w") as f:
+            json.dump({"entries": []}, f)
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_logs"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Cached:", str(text))
+            mock_app.run_logs.assert_not_called()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_logs_downloads_on_miss(self, mock_get_app):
+        """Test that cloud_run_logs downloads and caches when no cache exists."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_logs = MagicMock()
+        mock_logs.to_dict.return_value = {"entries": []}
+        mock_app.run_logs.return_value = mock_logs
+        mock_get_app.return_value = mock_app
+
+        run_dir = os.path.join(self.tmp_dir, "run-1")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_logs"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+            mock_app.run_logs.assert_called_once()
 
