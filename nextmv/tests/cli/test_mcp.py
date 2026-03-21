@@ -368,38 +368,54 @@ class TestSaveToFile(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    @patch("nextmv.cli.mcp.tools._helpers._cloud_run_dir")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_input_returns_file_path(self, mock_get_app):
+    def test_cloud_run_input_returns_file_path(self, mock_get_app, mock_run_dir):
         """Test that cloud_run_input saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_app = MagicMock()
-        mock_app.run_input.return_value = {"depot": {"lat": 0, "lon": 0}, "stops": []}
-        mock_get_app.return_value = mock_app
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            mock_run_dir.return_value = os.path.join(tmp_dir, "api.cloud.nextmv.io", "run-1")
 
-        server = create_server()
-        tool = server._tool_manager._tools["cloud_run_input"]
-        result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
-        # Result is JSON-encoded string (json_response=True).
-        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
-        self.assertIn("Data saved to", str(text))
+            mock_app = MagicMock()
+            mock_app.client.url = "https://api.cloud.nextmv.io"
+            mock_app.run_input.return_value = {"depot": {"lat": 0, "lon": 0}, "stops": []}
+            mock_get_app.return_value = mock_app
 
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_input"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            # Result is JSON-encoded string (json_response=True).
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    @patch("nextmv.cli.mcp.tools._helpers._cloud_run_dir")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_result_returns_file_path(self, mock_get_app):
+    def test_cloud_run_result_returns_file_path(self, mock_get_app, mock_run_dir):
         """Test that cloud_run_result saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_app = MagicMock()
-        mock_result = MagicMock()
-        mock_result.to_dict.return_value = {"output": {"routes": []}}
-        mock_app.run_result.return_value = mock_result
-        mock_get_app.return_value = mock_app
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            mock_run_dir.return_value = os.path.join(tmp_dir, "api.cloud.nextmv.io", "run-1")
 
-        server = create_server()
-        tool = server._tool_manager._tools["cloud_run_result"]
-        result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
-        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
-        self.assertIn("Data saved to", str(text))
+            mock_app = MagicMock()
+            mock_app.client.url = "https://api.cloud.nextmv.io"
+            mock_result = MagicMock()
+            mock_result.to_dict.return_value = {"output": {"routes": []}}
+            mock_app.run_result.return_value = mock_result
+            mock_get_app.return_value = mock_app
+
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_result"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_managed_input_with_raw_data(self, mock_get_app):
