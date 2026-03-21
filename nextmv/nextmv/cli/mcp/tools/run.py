@@ -6,6 +6,9 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
+from nextmv.input import INPUTS_KEY
+from nextmv.local.local import LOGS_FILE, LOGS_KEY
+from nextmv.output import OUTPUTS_KEY
 from nextmv.polling import default_polling_options
 
 
@@ -38,7 +41,7 @@ def _cloud_poll_run_logs_impl(app_id: str, run_id: str) -> str:
         polling_options=default_polling_options(),
         log_func=_collect,
     )
-    path = _helpers._save_cloud_run_file(collected, endpoint, run_id, "logs", "logs.json")
+    path = _helpers._save_cloud_run_logs(collected, endpoint, run_id)
     return f"Downloaded: {path}"
 
 
@@ -67,7 +70,7 @@ def _cloud_run_impl(
     if content_format and content_format != "json":
         output_dir_path = os.path.join(
             _helpers._cloud_run_dir(endpoint, "__pending__"),
-            "output",
+            OUTPUTS_KEY,
         )
 
     result = app.new_run_with_result(
@@ -86,13 +89,15 @@ def _cloud_run_impl(
 
     # If we used a temporary __pending__ output dir, move it.
     if output_dir_path and os.path.isdir(output_dir_path):
-        final_output = os.path.join(run_dir, "output")
+        final_output = os.path.join(run_dir, OUTPUTS_KEY)
         os.makedirs(os.path.dirname(final_output), exist_ok=True)
         os.rename(output_dir_path, final_output)
 
+    result_dict = result.to_dict()
     path = _helpers._save_cloud_run_file(
-        result.to_dict(), endpoint, run_id, f"{run_id}.json"
+        result_dict, endpoint, run_id, f"{run_id}.json"
     )
+    _helpers._extract_cloud_run_outputs(result_dict, endpoint, run_id)
     return f"Downloaded: {path}"
 
 
@@ -109,12 +114,14 @@ def _cloud_run_result_impl(app_id: str, run_id: str) -> str:
 
     # Download. For non-JSON, extract output archive into cache.
     run_dir = _helpers._cloud_run_dir(endpoint, run_id)
-    output_subdir = os.path.join(run_dir, "output")
+    output_subdir = os.path.join(run_dir, OUTPUTS_KEY)
     result = app.run_result(run_id=run_id, output_dir_path=output_subdir)
 
+    result_dict = result.to_dict()
     path = _helpers._save_cloud_run_file(
-        result.to_dict(), endpoint, run_id, f"{run_id}.json"
+        result_dict, endpoint, run_id, f"{run_id}.json"
     )
+    _helpers._extract_cloud_run_outputs(result_dict, endpoint, run_id)
     return f"Downloaded: {path}"
 
 
@@ -124,10 +131,10 @@ def _cloud_run_input_impl(app_id: str, run_id: str) -> str:
     app = _helpers._get_app(app_id)
     endpoint = _helpers._endpoint_from_app(app)
     run_dir = _helpers._cloud_run_dir(endpoint, run_id)
-    inputs_dir = os.path.join(run_dir, "inputs")
+    inputs_dir = os.path.join(run_dir, INPUTS_KEY)
 
     # Check cache: JSON input or multi-file inputs directory.
-    cached_json = _helpers._cloud_run_file_exists(endpoint, run_id, "inputs", "input.json")
+    cached_json = _helpers._cloud_run_file_exists(endpoint, run_id, INPUTS_KEY, "input.json")
     if cached_json:
         return f"Cached: {cached_json}"
     if os.path.isdir(inputs_dir) and os.listdir(inputs_dir):
@@ -137,7 +144,7 @@ def _cloud_run_input_impl(app_id: str, run_id: str) -> str:
     data = app.run_input(run_id=run_id, output_dir_path=inputs_dir)
     if data is not None:
         # JSON input — save it.
-        path = _helpers._save_cloud_run_file(data, endpoint, run_id, "inputs", "input.json")
+        path = _helpers._save_cloud_run_file(data, endpoint, run_id, INPUTS_KEY, "input.json")
         return f"Downloaded: {path}"
     # Non-JSON: files were extracted into inputs_dir by the SDK.
     return f"Downloaded: {inputs_dir}"
@@ -150,13 +157,13 @@ def _cloud_run_logs_impl(app_id: str, run_id: str) -> str:
     endpoint = _helpers._endpoint_from_app(app)
 
     # Check cache.
-    cached = _helpers._cloud_run_file_exists(endpoint, run_id, "logs", "logs.json")
+    cached = _helpers._cloud_run_file_exists(endpoint, run_id, LOGS_KEY, LOGS_FILE)
     if cached:
         return f"Cached: {cached}"
 
     logs = app.run_logs(run_id=run_id)
-    path = _helpers._save_cloud_run_file(
-        logs.to_dict(), endpoint, run_id, "logs", "logs.json"
+    path = _helpers._save_cloud_run_logs(
+        logs.to_dict(), endpoint, run_id,
     )
     return f"Downloaded: {path}"
 

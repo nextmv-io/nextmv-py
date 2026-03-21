@@ -3,11 +3,12 @@
 import json
 import os
 import tempfile
-from pathlib import Path
 from typing import Any
 
 from nextmv import local
 from nextmv.cloud import Application, Client
+from nextmv.local.local import LOGS_FILE, LOGS_KEY
+from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
 
 # Session-level profile. None means "default" (top-level config keys).
 _current_profile: str | None = None
@@ -135,7 +136,7 @@ def _cloud_run_dir(endpoint: str, run_id: str) -> str:
     ``http://``) stripped.
     """
 
-    return str(Path.home() / ".nextmv" / "runs" / endpoint / run_id)
+    return os.path.join(os.path.expanduser("~"), ".nextmv", "runs", endpoint, run_id)
 
 
 def _cloud_run_file_exists(endpoint: str, run_id: str, *path_parts: str) -> str | None:
@@ -174,4 +175,101 @@ def _save_cloud_run_file(data: Any, endpoint: str, run_id: str, *path_parts: str
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as fh:
         json.dump(data, fh, indent=2)
+    return path
+
+
+def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_id: str) -> None:
+    """Extract output components from a cloud result into separate files.
+
+    Mirrors the local run ``outputs/`` directory structure:
+
+    * ``outputs/solutions/solution.json`` — the full output dict (matches local)
+    * ``outputs/metrics/metrics.json`` — raw metrics value
+    * ``outputs/statistics/statistics.json`` — wrapped as ``{"statistics": ...}``
+    * ``outputs/assets/assets.json`` — wrapped as ``{"assets": ...}``
+
+    Skipped when *output* is not a dict with inline data (e.g. csv-archive
+    results where the SDK already extracted files via ``output_dir_path``).
+    """
+
+    output = result_dict.get("output")
+    if not isinstance(output, dict) or "solution" not in output:
+        return
+
+    run_dir = _cloud_run_dir(endpoint, run_id)
+    outputs_dir = os.path.join(run_dir, OUTPUTS_KEY)
+
+    # solution → outputs/solutions/solution.json
+    # Local writes the entire stdout output dict here, so we do the same.
+    path = os.path.join(outputs_dir, SOLUTIONS_KEY, "solution.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(output, fh, indent=2)
+
+    # metrics → outputs/metrics/metrics.json (raw, matching local)
+    metrics = output.get(METRICS_KEY)
+    if metrics:
+        path = os.path.join(outputs_dir, METRICS_KEY, f"{METRICS_KEY}.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            json.dump(metrics, fh, indent=2)
+
+    # statistics → outputs/statistics/statistics.json (wrapped, matching local)
+    statistics = output.get(STATISTICS_KEY)
+    if statistics:
+        path = os.path.join(outputs_dir, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            json.dump({STATISTICS_KEY: statistics}, fh, indent=2)
+
+    # assets → outputs/assets/assets.json (wrapped, matching local)
+    assets = output.get(ASSETS_KEY)
+    if assets:
+        path = os.path.join(outputs_dir, ASSETS_KEY, f"{ASSETS_KEY}.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            json.dump({ASSETS_KEY: assets}, fh, indent=2)
+
+    # Generate visuals from assets (Plotly/GeoJSON → HTML), matching local.
+    try:
+        from nextmv.local.executor import process_run_visuals
+
+        process_run_visuals(run_dir=run_dir, outputs_dir=outputs_dir)
+    except Exception:
+        pass  # Visual generation is best-effort.
+
+
+def _save_cloud_run_logs(data: Any, endpoint: str, run_id: str) -> str:
+    """Write cloud run logs as plain text to match local run format.
+
+    Accepts either a ``RunLog.to_dict()`` (``{"log": "..."}`` with an
+    optional ``"stderr"`` key) or a list of poll entries
+    (``[{"timestamp": ..., "log": ...}, ...]``).
+    """
+
+    path = os.path.join(_cloud_run_dir(endpoint, run_id), LOGS_KEY, LOGS_FILE)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    with open(path, "w") as fh:
+        if isinstance(data, list):
+            # Poll entries: write each as "timestamp log\n".
+            for entry in data:
+                ts = entry.get("timestamp") or ""
+                log = entry.get("log") or ""
+                fh.write(f"{ts} {log}\n")
+        elif isinstance(data, dict):
+            # RunLog.to_dict(): write the log string directly.
+            log = data.get("log", "")
+            if log:
+                fh.write(log)
+                if not log.endswith("\n"):
+                    fh.write("\n")
+            stderr = data.get("stderr", "")
+            if stderr:
+                fh.write(stderr)
+                if not stderr.endswith("\n"):
+                    fh.write("\n")
+        else:
+            fh.write(str(data))
+
     return path

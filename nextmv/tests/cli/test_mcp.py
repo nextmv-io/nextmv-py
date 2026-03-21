@@ -1306,13 +1306,20 @@ class TestCloudRunCache(unittest.TestCase):
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_downloads_on_miss(self, mock_get_app):
-        """Test that cloud_run_result downloads and caches when no cache exists."""
+        """Test that cloud_run_result downloads, caches, and extracts outputs."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
         mock_result = MagicMock()
-        mock_result.to_dict.return_value = {"output": {}}
+        mock_result.to_dict.return_value = {
+            "output": {
+                "solution": {"items": [1, 2, 3], "value": 100},
+                "statistics": {"duration": 0.5},
+                "metrics": {"cost": 42},
+                "assets": [{"name": "chart"}],
+            },
+        }
         mock_result.id = "run-1"
         mock_app.run_result.return_value = mock_result
         mock_get_app.return_value = mock_app
@@ -1329,6 +1336,190 @@ class TestCloudRunCache(unittest.TestCase):
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
             mock_app.run_result.assert_called_once()
+
+            # Verify outputs were extracted into local run layout.
+            output_data = {
+                "solution": {"items": [1, 2, 3], "value": 100},
+                "statistics": {"duration": 0.5},
+                "metrics": {"cost": 42},
+                "assets": [{"name": "chart"}],
+            }
+
+            # solution.json contains the full output dict (matching local behavior).
+            sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
+            self.assertTrue(os.path.exists(sol_path))
+            with open(sol_path) as f:
+                self.assertEqual(json.load(f), output_data)
+
+            # statistics.json is wrapped with {"statistics": ...} (matching local).
+            stats_path = os.path.join(run_dir, "outputs", "statistics", "statistics.json")
+            self.assertTrue(os.path.exists(stats_path))
+            with open(stats_path) as f:
+                self.assertEqual(json.load(f), {"statistics": {"duration": 0.5}})
+
+            # metrics.json is raw (matching local).
+            metrics_path = os.path.join(run_dir, "outputs", "metrics", "metrics.json")
+            self.assertTrue(os.path.exists(metrics_path))
+            with open(metrics_path) as f:
+                self.assertEqual(json.load(f), {"cost": 42})
+
+            # assets.json is wrapped with {"assets": ...} (matching local).
+            assets_path = os.path.join(run_dir, "outputs", "assets", "assets.json")
+            self.assertTrue(os.path.exists(assets_path))
+            with open(assets_path) as f:
+                self.assertEqual(json.load(f), {"assets": [{"name": "chart"}]})
+
+    def test_extract_cloud_run_outputs_skips_missing(self):
+        """Test that _extract_cloud_run_outputs skips components that are absent."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-partial")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            # Only solution present, no metrics/statistics/assets.
+            _extract_cloud_run_outputs(
+                {"output": {"solution": {"x": 1}}}, "ep", "run-partial"
+            )
+
+            # solution.json contains the full output dict.
+            sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
+            self.assertTrue(os.path.exists(sol_path))
+            with open(sol_path) as f:
+                self.assertEqual(json.load(f), {"solution": {"x": 1}})
+
+            # These should not exist.
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs", "metrics")))
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs", "statistics")))
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs", "assets")))
+
+    def test_extract_cloud_run_outputs_empty_solution(self):
+        """Test that _extract_cloud_run_outputs writes solution.json even for empty solution."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-empty-sol")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            _extract_cloud_run_outputs(
+                {"output": {"solution": {}, "assets": []}}, "ep", "run-empty-sol"
+            )
+
+            # Even empty solution should be written (full output dict).
+            sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
+            self.assertTrue(os.path.exists(sol_path))
+            with open(sol_path) as f:
+                self.assertEqual(json.load(f), {"solution": {}, "assets": []})
+
+            # Empty list assets should be skipped (matching local executor).
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs", "assets")))
+
+    def test_extract_cloud_run_outputs_csv_archive_noop(self):
+        """Test that _extract_cloud_run_outputs is a no-op for csv-archive results."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-csv-noop")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            # csv-archive results have a URL, not inline solution data.
+            _extract_cloud_run_outputs(
+                {"output": {"url": "https://s3.example.com/output.tar.gz"}}, "ep", "run-csv-noop"
+            )
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs")))
+
+    def test_extract_cloud_run_outputs_no_output_key(self):
+        """Test that _extract_cloud_run_outputs is a no-op when output is missing."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-empty")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            _extract_cloud_run_outputs({}, "ep", "run-empty")
+            self.assertFalse(os.path.exists(os.path.join(run_dir, "outputs")))
+
+    def test_extract_cloud_run_outputs_generates_visuals(self):
+        """Test that _extract_cloud_run_outputs generates HTML visuals from Plotly assets."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-visuals")
+
+        # Minimal Plotly figure JSON that plotly.io can parse.
+        plotly_content = {
+            "data": [{"type": "scatter", "x": [1, 2], "y": [3, 4]}],
+            "layout": {"title": "Test"},
+        }
+
+        result_dict = {
+            "output": {
+                "solution": {"value": 42},
+                "assets": [
+                    {
+                        "name": "my_chart",
+                        "content": plotly_content,
+                        "content_type": "json",
+                        "visual": {
+                            "visual_schema": "plotly",
+                            "label": "test_chart",
+                        },
+                    },
+                ],
+            },
+        }
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            _extract_cloud_run_outputs(result_dict, "ep", "run-visuals")
+
+            # Verify assets.json was written.
+            assets_path = os.path.join(run_dir, "outputs", "assets", "assets.json")
+            self.assertTrue(os.path.exists(assets_path))
+
+            # Verify visuals/ directory was created with HTML file.
+            visuals_dir = os.path.join(run_dir, "visuals")
+            self.assertTrue(os.path.isdir(visuals_dir))
+            html_file = os.path.join(visuals_dir, "test_chart.html")
+            self.assertTrue(os.path.exists(html_file))
+            with open(html_file) as f:
+                content = f.read()
+            self.assertIn("<html>", content.lower())
+
+    def test_extract_cloud_run_outputs_visual_failure_is_ignored(self):
+        """Test that visual generation failure does not lose the run result."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-bad-visual")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ), patch(
+            "nextmv.local.executor.process_run_visuals",
+            side_effect=RuntimeError("plotly exploded"),
+        ):
+            # Should not raise despite visual generation failure.
+            _extract_cloud_run_outputs(
+                {"output": {"solution": {"x": 1}, "statistics": {"duration": 0.5}}},
+                "ep",
+                "run-bad-visual",
+            )
+
+            # Core data should still be written.
+            sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
+            self.assertTrue(os.path.exists(sol_path))
+            stats_path = os.path.join(run_dir, "outputs", "statistics", "statistics.json")
+            self.assertTrue(os.path.exists(stats_path))
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_uses_cache(self, mock_get_app):
@@ -1399,9 +1590,9 @@ class TestCloudRunCache(unittest.TestCase):
         run_dir = os.path.join(self.tmp_dir, "run-1")
         logs_dir = os.path.join(run_dir, "logs")
         os.makedirs(logs_dir, exist_ok=True)
-        cached_file = os.path.join(logs_dir, "logs.json")
+        cached_file = os.path.join(logs_dir, "logs.log")
         with open(cached_file, "w") as f:
-            json.dump({"entries": []}, f)
+            f.write("some log output\n")
 
         with patch(
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
@@ -1416,13 +1607,13 @@ class TestCloudRunCache(unittest.TestCase):
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_logs_downloads_on_miss(self, mock_get_app):
-        """Test that cloud_run_logs downloads and caches when no cache exists."""
+        """Test that cloud_run_logs downloads and caches as plain text."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
         mock_logs = MagicMock()
-        mock_logs.to_dict.return_value = {"entries": []}
+        mock_logs.to_dict.return_value = {"log": "solver started\nsolver finished"}
         mock_app.run_logs.return_value = mock_logs
         mock_get_app.return_value = mock_app
 
@@ -1438,4 +1629,222 @@ class TestCloudRunCache(unittest.TestCase):
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
             mock_app.run_logs.assert_called_once()
+
+            # Verify file was written as plain text at the correct path.
+            logs_file = os.path.join(run_dir, "logs", "logs.log")
+            self.assertTrue(os.path.exists(logs_file))
+            with open(logs_file) as f:
+                content = f.read()
+            self.assertIn("solver started", content)
+            self.assertIn("solver finished", content)
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_poll_run_logs_writes_plain_text(self, mock_get_app):
+        """Test that cloud_poll_run_logs writes timestamped entries as plain text."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+
+        # Simulate poll_logs calling log_func with timestamped entries.
+        def fake_poll_logs(run_id, polling_options, log_func):
+            entry1 = MagicMock()
+            entry1.timestamp = "2026-03-21T10:00:00Z"
+            entry1.log = "starting solver"
+            entry2 = MagicMock()
+            entry2.timestamp = "2026-03-21T10:00:05Z"
+            entry2.log = "solver complete"
+            log_func(entry1)
+            log_func(entry2)
+
+        mock_app.poll_logs.side_effect = fake_poll_logs
+        mock_get_app.return_value = mock_app
+
+        run_dir = os.path.join(self.tmp_dir, "run-poll")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_poll_run_logs"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+
+            # Verify file content is plain text with timestamps.
+            logs_file = os.path.join(run_dir, "logs", "logs.log")
+            self.assertTrue(os.path.exists(logs_file))
+            with open(logs_file) as f:
+                lines = f.readlines()
+            self.assertEqual(len(lines), 2)
+            self.assertIn("2026-03-21T10:00:00Z", lines[0])
+            self.assertIn("starting solver", lines[0])
+            self.assertIn("solver complete", lines[1])
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_multifile_moves_outputs(self, mock_get_app):
+        """Test that cloud_run with csv-archive extracts outputs into outputs/ dir."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_result = MagicMock()
+        mock_result.id = "run-csv"
+        # For csv-archive, output is a URL, not inline data.
+        mock_result.to_dict.return_value = {
+            "output": {"url": "https://s3.example.com/output.tar.gz"},
+        }
+        mock_get_app.return_value = mock_app
+
+        pending_dir = os.path.join(self.tmp_dir, "__pending__")
+        run_dir = os.path.join(self.tmp_dir, "run-csv")
+
+        def fake_cloud_run_dir(endpoint, run_id):
+            if run_id == "__pending__":
+                return pending_dir
+            return run_dir
+
+        def fake_new_run(*, input, input_dir_path, configuration, instance_id,
+                         run_options, polling_options, managed_input_id, output_dir_path):
+            # Simulate SDK extracting tar.gz into output_dir_path.
+            if output_dir_path:
+                os.makedirs(output_dir_path, exist_ok=True)
+                with open(os.path.join(output_dir_path, "solution.csv"), "w") as f:
+                    f.write("item,chosen\nA,1\nB,0\n")
+            return mock_result
+
+        mock_app.new_run_with_result.side_effect = fake_new_run
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            side_effect=fake_cloud_run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run"]
+            result = asyncio.run(tool.run({
+                "app_id": "my-app",
+                "input_dir_path": "/some/csvs",
+                "content_format": "csv-archive",
+            }))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+
+            # Verify output was moved from __pending__/outputs/ to run-csv/outputs/.
+            outputs_dir = os.path.join(run_dir, "outputs")
+            self.assertTrue(os.path.isdir(outputs_dir))
+            sol_file = os.path.join(outputs_dir, "solution.csv")
+            self.assertTrue(os.path.exists(sol_file))
+            with open(sol_file) as f:
+                self.assertIn("item,chosen", f.read())
+
+            # __pending__ outputs should no longer exist (it was renamed).
+            self.assertFalse(os.path.exists(os.path.join(pending_dir, "outputs")))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_input_multifile_downloads(self, mock_get_app):
+        """Test that cloud_run_input extracts multifile inputs into inputs/ dir."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+
+        run_dir = os.path.join(self.tmp_dir, "run-csv-input")
+
+        def fake_run_input(run_id, output_dir_path):
+            # Simulate SDK extracting tar.gz into output_dir_path.
+            os.makedirs(output_dir_path, exist_ok=True)
+            with open(os.path.join(output_dir_path, "items.csv"), "w") as f:
+                f.write("item,weight,value\nA,10,60\n")
+            with open(os.path.join(output_dir_path, "capacity.csv"), "w") as f:
+                f.write("capacity\n50\n")
+            return None  # Non-JSON: SDK returns None.
+
+        mock_app.run_input.side_effect = fake_run_input
+        mock_get_app.return_value = mock_app
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_input"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+
+            # Verify extracted files.
+            inputs_dir = os.path.join(run_dir, "inputs")
+            self.assertTrue(os.path.exists(os.path.join(inputs_dir, "items.csv")))
+            self.assertTrue(os.path.exists(os.path.join(inputs_dir, "capacity.csv")))
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_input_multifile_uses_cache(self, mock_get_app):
+        """Test that cloud_run_input returns cached multifile inputs without re-downloading."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+        mock_get_app.return_value = mock_app
+
+        # Pre-populate cache with multifile inputs.
+        run_dir = os.path.join(self.tmp_dir, "run-csv-cached")
+        inputs_dir = os.path.join(run_dir, "inputs")
+        os.makedirs(inputs_dir, exist_ok=True)
+        with open(os.path.join(inputs_dir, "items.csv"), "w") as f:
+            f.write("item,weight\nA,10\n")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_input"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Cached:", str(text))
+            mock_app.run_input.assert_not_called()
+
+    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    def test_cloud_run_result_multifile_extracts_output(self, mock_get_app):
+        """Test that cloud_run_result for non-JSON extracts into outputs/ dir."""
+        from nextmv.cli.mcp.server import create_server
+
+        mock_app = MagicMock()
+        mock_app.client.url = "https://api.cloud.nextmv.io"
+
+        run_dir = os.path.join(self.tmp_dir, "run-csv-result")
+
+        def fake_run_result(run_id, output_dir_path):
+            # Simulate SDK extracting tar.gz into output_dir_path.
+            os.makedirs(output_dir_path, exist_ok=True)
+            with open(os.path.join(output_dir_path, "solution.csv"), "w") as f:
+                f.write("item,chosen\nA,1\n")
+            mock_result = MagicMock()
+            # For csv-archive, output has a URL not inline data.
+            mock_result.to_dict.return_value = {
+                "output": {"url": "https://s3.example.com/output.tar.gz"},
+            }
+            return mock_result
+
+        mock_app.run_result.side_effect = fake_run_result
+        mock_get_app.return_value = mock_app
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ):
+            server = create_server()
+            tool = server._tool_manager._tools["cloud_run_result"]
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("Downloaded:", str(text))
+
+            # Verify the output was extracted.
+            outputs_dir = os.path.join(run_dir, "outputs")
+            self.assertTrue(os.path.isdir(outputs_dir))
+            sol_file = os.path.join(outputs_dir, "solution.csv")
+            self.assertTrue(os.path.exists(sol_file))
+            with open(sol_file) as f:
+                self.assertIn("item,chosen", f.read())
 

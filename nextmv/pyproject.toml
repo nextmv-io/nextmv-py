@@ -25,6 +25,7 @@ dependencies = [
     "folium>=0.20.0",
     "plotly>=6.0.1",
     "questionary>=2.1.1",
+    "mcp[cli]>=1.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
@@ -62,11 +63,7 @@ nextmv = "nextmv.cli.main:main"
 [project.optional-dependencies]
 all = [
     "folium>=0.20.0",
-    "mcp[cli]>=1.0",
     "plotly>=6.0.1",
-]
-mcp = [
-    "mcp[cli]>=1.0",
 ]
 notebook = [
     "mlflow>= 3.9.0",

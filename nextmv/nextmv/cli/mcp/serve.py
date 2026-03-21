@@ -39,9 +39,6 @@ def serve(
     [magenta]stdio[/magenta], which is what Claude Code, Cursor, and most
     local clients expect.
 
-    Requires the [magenta]mcp[/magenta] optional dependency. Install with:
-    [code]pip install 'nextmv[mcp]'[/code]
-
     [bold][underline]Examples[/underline][/bold]
 
     - Start the MCP server with stdio transport (default).
@@ -54,14 +51,7 @@ def serve(
         $ [dim]claude mcp add nextmv -- nextmv mcp serve[/dim]
     """
 
-    try:
-        from nextmv.cli.mcp.server import create_server
-    except ImportError:
-        error(
-            "MCP support requires the [magenta]mcp[/magenta] package. "
-            "Install with: [code]pip install 'nextmv[mcp]'[/code]"
-        )
-        return  # unreachable, error() raises
+    from nextmv.cli.mcp.server import create_server
 
     server = create_server()
 
