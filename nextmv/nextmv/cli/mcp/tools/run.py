@@ -1,5 +1,6 @@
 """MCP tools for cloud run management."""
 
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -31,12 +32,133 @@ def _cloud_poll_run_logs_impl(app_id: str, run_id: str) -> str:
         collected.append({"timestamp": log_entry.timestamp, "log": log_entry.log})
 
     app = _helpers._get_app(app_id)
+    endpoint = _helpers._endpoint_from_app(app)
     app.poll_logs(
         run_id=run_id,
         polling_options=default_polling_options(),
         log_func=_collect,
     )
-    return _helpers._save_to_file(collected, prefix=f"poll_logs_{run_id}")
+    path = _helpers._save_cloud_run_file(collected, endpoint, run_id, "logs", "logs.json")
+    return f"Downloaded: {path}"
+
+
+def _cloud_run_impl(
+    app_id: str,
+    input: dict[str, Any] | None,
+    input_dir_path: str | None,
+    content_format: str | None,
+    instance_id: str | None,
+    run_options: dict[str, str] | None,
+    managed_input_id: str | None,
+) -> str:
+    """Implementation for cloud_run."""
+
+    content_format = _helpers._none_if_empty(content_format)
+    instance_id = _helpers._none_if_empty(instance_id)
+    managed_input_id = _helpers._none_if_empty(managed_input_id)
+    input_dir_path = _helpers._none_if_empty(input_dir_path)
+
+    app = _helpers._get_app(app_id)
+    endpoint = _helpers._endpoint_from_app(app)
+    config = _helpers._build_run_configuration(content_format)
+
+    # For non-JSON formats, prepare an output directory in the cache.
+    output_dir_path = None
+    if content_format and content_format != "json":
+        output_dir_path = os.path.join(
+            _helpers._cloud_run_dir(endpoint, "__pending__"),
+            "output",
+        )
+
+    result = app.new_run_with_result(
+        input=input,
+        input_dir_path=input_dir_path,
+        configuration=config,
+        instance_id=instance_id,
+        run_options=run_options or {},
+        polling_options=default_polling_options(),
+        managed_input_id=managed_input_id,
+        output_dir_path=output_dir_path,
+    )
+
+    run_id = result.id
+    run_dir = _helpers._cloud_run_dir(endpoint, run_id)
+
+    # If we used a temporary __pending__ output dir, move it.
+    if output_dir_path and os.path.isdir(output_dir_path):
+        final_output = os.path.join(run_dir, "output")
+        os.makedirs(os.path.dirname(final_output), exist_ok=True)
+        os.rename(output_dir_path, final_output)
+
+    path = _helpers._save_cloud_run_file(
+        result.to_dict(), endpoint, run_id, f"{run_id}.json"
+    )
+    return f"Downloaded: {path}"
+
+
+def _cloud_run_result_impl(app_id: str, run_id: str) -> str:
+    """Implementation for cloud_run_result."""
+
+    app = _helpers._get_app(app_id)
+    endpoint = _helpers._endpoint_from_app(app)
+
+    # Check cache.
+    cached = _helpers._cloud_run_file_exists(endpoint, run_id, f"{run_id}.json")
+    if cached:
+        return f"Cached: {cached}"
+
+    # Download. For non-JSON, extract output archive into cache.
+    run_dir = _helpers._cloud_run_dir(endpoint, run_id)
+    output_subdir = os.path.join(run_dir, "output")
+    result = app.run_result(run_id=run_id, output_dir_path=output_subdir)
+
+    path = _helpers._save_cloud_run_file(
+        result.to_dict(), endpoint, run_id, f"{run_id}.json"
+    )
+    return f"Downloaded: {path}"
+
+
+def _cloud_run_input_impl(app_id: str, run_id: str) -> str:
+    """Implementation for cloud_run_input."""
+
+    app = _helpers._get_app(app_id)
+    endpoint = _helpers._endpoint_from_app(app)
+    run_dir = _helpers._cloud_run_dir(endpoint, run_id)
+    inputs_dir = os.path.join(run_dir, "inputs")
+
+    # Check cache: JSON input or multi-file inputs directory.
+    cached_json = _helpers._cloud_run_file_exists(endpoint, run_id, "inputs", "input.json")
+    if cached_json:
+        return f"Cached: {cached_json}"
+    if os.path.isdir(inputs_dir) and os.listdir(inputs_dir):
+        return f"Cached: {inputs_dir}"
+
+    # Download. For non-JSON, the SDK extracts files into inputs_dir.
+    data = app.run_input(run_id=run_id, output_dir_path=inputs_dir)
+    if data is not None:
+        # JSON input — save it.
+        path = _helpers._save_cloud_run_file(data, endpoint, run_id, "inputs", "input.json")
+        return f"Downloaded: {path}"
+    # Non-JSON: files were extracted into inputs_dir by the SDK.
+    return f"Downloaded: {inputs_dir}"
+
+
+def _cloud_run_logs_impl(app_id: str, run_id: str) -> str:
+    """Implementation for cloud_run_logs."""
+
+    app = _helpers._get_app(app_id)
+    endpoint = _helpers._endpoint_from_app(app)
+
+    # Check cache.
+    cached = _helpers._cloud_run_file_exists(endpoint, run_id, "logs", "logs.json")
+    if cached:
+        return f"Cached: {cached}"
+
+    logs = app.run_logs(run_id=run_id)
+    path = _helpers._save_cloud_run_file(
+        logs.to_dict(), endpoint, run_id, "logs", "logs.json"
+    )
+    return f"Downloaded: {path}"
 
 
 def register(mcp: FastMCP) -> None:
@@ -83,23 +205,15 @@ def register(mcp: FastMCP) -> None:
                 instead of the inline ``input`` data.
         """
 
-        content_format = _helpers._none_if_empty(content_format)
-        instance_id = _helpers._none_if_empty(instance_id)
-        managed_input_id = _helpers._none_if_empty(managed_input_id)
-        input_dir_path = _helpers._none_if_empty(input_dir_path)
-
-        app = _helpers._get_app(app_id)
-        config = _helpers._build_run_configuration(content_format)
-        result = app.new_run_with_result(
+        return _cloud_run_impl(
+            app_id=app_id,
             input=input,
             input_dir_path=input_dir_path,
-            configuration=config,
+            content_format=content_format,
             instance_id=instance_id,
-            run_options=run_options or {},
-            polling_options=default_polling_options(),
+            run_options=run_options,
             managed_input_id=managed_input_id,
         )
-        return _helpers._save_to_file(result.to_dict(), prefix=f"cloud_run_{app_id}")
 
     @mcp.tool()
     def cloud_run_submit(
@@ -186,9 +300,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
-        app = _helpers._get_app(app_id)
-        result = app.run_result(run_id=run_id)
-        return _helpers._save_to_file(result.to_dict(), prefix=f"run_result_{run_id}")
+        return _cloud_run_result_impl(app_id=app_id, run_id=run_id)
 
     @mcp.tool()
     def cloud_cancel_run(app_id: str, run_id: str) -> str:
@@ -239,9 +351,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
-        app = _helpers._get_app(app_id)
-        data = app.run_input(run_id=run_id)
-        return _helpers._save_to_file(data, prefix=f"run_input_{run_id}")
+        return _cloud_run_input_impl(app_id=app_id, run_id=run_id)
 
     @mcp.tool()
     def cloud_run_logs(app_id: str, run_id: str) -> str:
@@ -257,9 +367,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
-        app = _helpers._get_app(app_id)
-        logs = app.run_logs(run_id=run_id)
-        return _helpers._save_to_file(logs.to_dict(), prefix=f"run_logs_{run_id}")
+        return _cloud_run_logs_impl(app_id=app_id, run_id=run_id)
 
     @mcp.tool()
     def cloud_poll_run_logs(app_id: str, run_id: str) -> str:

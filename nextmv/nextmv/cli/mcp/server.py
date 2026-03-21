@@ -69,7 +69,14 @@ def create_server() -> FastMCP:
             "to use a specific profile (e.g. \"list apps in my dev "
             "profile\"), call cloud_set_profile first. Always state which "
             "profile you are using when calling cloud tools, e.g. "
-            "(profile: \"default\")."
+            "(profile: \"default\").\n\n"
+            "CLOUD RUN CACHE: Cloud run data (results, inputs, logs) is "
+            "cached locally at ~/.nextmv/runs/{endpoint}/{run_id}/ using "
+            "the same directory layout as local runs. The {endpoint} is the "
+            "API endpoint (e.g. api.cloud.nextmv.io). If a file already "
+            "exists there, it will not be re-downloaded. You can read "
+            "cached cloud run data directly from these paths without "
+            "calling the cloud tools again."
         ),
     )
 

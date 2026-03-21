@@ -3,6 +3,7 @@
 import json
 import os
 import tempfile
+from pathlib import Path
 from typing import Any
 
 from nextmv import local
@@ -124,3 +125,53 @@ def _save_to_file(data: Any, prefix: str) -> str:
     with os.fdopen(fd, "w") as fh:
         json.dump(data, fh, indent=2)
     return f"Data saved to {path} — use file-reading tools to inspect the contents."
+
+
+def _cloud_run_dir(endpoint: str, run_id: str) -> str:
+    """Build the local cache directory for a cloud run.
+
+    Returns ``~/.nextmv/runs/{endpoint}/{run_id}``. The *endpoint*
+    parameter should already have the URL scheme (``https://`` /
+    ``http://``) stripped.
+    """
+
+    return str(Path.home() / ".nextmv" / "runs" / endpoint / run_id)
+
+
+def _cloud_run_file_exists(endpoint: str, run_id: str, *path_parts: str) -> str | None:
+    """Return the file path if a cached cloud run file exists, else None.
+
+    Args:
+        endpoint: API endpoint with scheme stripped.
+        run_id: The run ID.
+        *path_parts: Path components relative to the run directory
+            (e.g. ``"inputs", "input.json"``).
+    """
+
+    path = os.path.join(_cloud_run_dir(endpoint, run_id), *path_parts)
+    return path if os.path.exists(path) else None
+
+
+def _endpoint_from_app(app: Application) -> str:
+    """Return the API endpoint from an Application with scheme stripped."""
+
+    url: str = app.client.url
+    for scheme in ("https://", "http://"):
+        if url.startswith(scheme):
+            url = url[len(scheme):]
+            break
+    return url
+
+
+def _save_cloud_run_file(data: Any, endpoint: str, run_id: str, *path_parts: str) -> str:
+    """Serialize *data* as JSON into the cloud run cache and return the path.
+
+    Creates intermediate directories as needed. The *endpoint* parameter
+    should already have the URL scheme stripped.
+    """
+
+    path = os.path.join(_cloud_run_dir(endpoint, run_id), *path_parts)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(data, fh, indent=2)
+    return path
