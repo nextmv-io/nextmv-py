@@ -22,14 +22,7 @@ from nextmv.cloud.url import DownloadURL
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import (
-    ASSETS_KEY,
-    STATISTICS_KEY,
-    Asset,
-    Output,
-    OutputFormat,
-    Statistics,
-)
+from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
@@ -57,6 +50,30 @@ class ApplicationRunMixin:
     """
     Mixin class for managing app runs within an application.
     """
+
+    def delete_run(self: "Application", run_id: str) -> None:
+        """
+        Delete a run.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to delete.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> app.delete_run("run-456")
+        """
+
+        _ = self.client.request(
+            method="DELETE",
+            endpoint=f"{self.endpoint}/runs/{run_id}",
+        )
 
     def cancel_run(self: "Application", run_id: str) -> None:
         """
@@ -867,6 +884,88 @@ class ApplicationRunMixin:
 
         return sorted(logs, key=lambda log: log.timestamp)
 
+    def run_output(self: "Application", run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | None:
+        """
+        Gets the output, and only the output, of a run.
+
+        This method is different from the `run_result` method, which retrieves
+        the complete result of a run, including the run output. This method is
+        useful when you only need the output of a run and not the complete
+        result with metadata.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the output for.
+
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            Output of the run as a dictionary. If the output format is non-JSON,
+            the method returns None after saving the output files to the specified
+            `output_dir_path`.
+        """
+
+        # Get the run information to check how we need to handle the output.
+        run_information = self.run_metadata(run_id=run_id)
+        output_format = run_information.metadata.format.format_output.output_type
+        is_json = output_format == OutputFormat.JSON
+
+        # We need to specify `output_dir_path` for non-JSON.
+        if not is_json and (not output_dir_path or output_dir_path == ""):
+            raise ValueError(
+                f"Output format is {output_format.value} (not json), an `output_dir_path` must be provided.",
+            )
+
+        # If the output is large or non-JSON, we need to fetch it from the
+        # download URL.
+        query_params = None
+        use_presigned_url = False
+        if not is_json or run_information.metadata.output_size > _MAX_RUN_SIZE:
+            query_params = {"format": "url"}
+            use_presigned_url = True
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/output",
+            query_params=query_params,
+        )
+        json_resp = response.json()
+
+        # If we don't need to use a presigned URL, we can return the output
+        # directly. Only attempt to download the output once the run has
+        # reached a final state. This avoids hitting the pre-signed URL for
+        # queued or running executions.
+        if not use_presigned_url or not run_information.metadata.run_is_finalized():
+            return json_resp
+
+        download_url = DownloadURL.from_dict(json_resp)
+        download_response = self.client.request(
+            method="GET",
+            endpoint=download_url.url,
+            headers={"Content-Type": "application/json"},
+        )
+
+        # If the run is JSON, we can just return the large output immediately.
+        if is_json:
+            return download_response.json()
+
+        # At this point, we know that we are working with non-JSON data.
+        if not os.path.exists(output_dir_path):
+            os.makedirs(output_dir_path, exist_ok=True)
+
+        # Save .tar.gz file to a temp directory and extract contents to output_dir_path
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
+            with open(temp_tar_path, "wb") as f:
+                f.write(download_response.content)
+            shutil.unpack_archive(temp_tar_path, output_dir_path)
+
     def run_result(self: "Application", run_id: str, output_dir_path: str | None = ".") -> RunResult:
         """
         Get the result of a run.
@@ -1212,6 +1311,7 @@ class ApplicationRunMixin:
         output size exceeds _MAX_RUN_SIZE. If it does, the method will request
         a download URL and fetch the output data separately.
         """
+
         query_params = None
         use_presigned_url = False
         if (
@@ -1229,33 +1329,16 @@ class ApplicationRunMixin:
         result = RunResult.from_dict(response.json())
         result.console_url = self.__console_url(result.id)
 
-        if not use_presigned_url or result.metadata.status_v2 != StatusV2.succeeded:
+        # If we don't need to use a presigned URL, we can return the output
+        # directly. Only attempt to download the output once the run has
+        # reached a final state. This avoids hitting the `/runs/{id}/output`
+        # endpoint for queued or running executions.
+        if not use_presigned_url or not run_information.metadata.run_is_finalized():
             return result
 
-        download_url = DownloadURL.from_dict(response.json()["output"])
-        download_response = self.client.request(
-            method="GET",
-            endpoint=download_url.url,
-            headers={"Content-Type": "application/json"},
-        )
-
-        # See whether we can attach the output directly or need to save to the given
-        # directory
-        if run_information.metadata.format.format_output.output_type != OutputFormat.JSON:
-            if not output_dir_path or output_dir_path == "":
-                raise ValueError(
-                    "If the output format is not JSON, an output_dir_path must be provided.",
-                )
-            if not os.path.exists(output_dir_path):
-                os.makedirs(output_dir_path, exist_ok=True)
-            # Save .tar.gz file to a temp directory and extract contents to output_dir_path
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                temp_tar_path = os.path.join(tmpdirname, f"{run_id}.tar.gz")
-                with open(temp_tar_path, "wb") as f:
-                    f.write(download_response.content)
-                shutil.unpack_archive(temp_tar_path, output_dir_path)
-        else:
-            result.output = download_response.json()
+        output = self.run_output(run_id=run_id, output_dir_path=output_dir_path)
+        if output is not None:
+            result.output = output
 
         return result
 

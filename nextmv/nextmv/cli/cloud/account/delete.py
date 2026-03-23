@@ -2,13 +2,11 @@
 This module defines the cloud account delete command for the Nextmv CLI.
 """
 
-from typing import Annotated
-
 import typer
 
 from nextmv.cli.configuration.config import build_account
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import AccountIDOption, ProfileOption
+from nextmv.cli.options import AccountIDOption, ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,14 +15,7 @@ app = typer.Typer()
 @app.command()
 def delete(
     account_id: AccountIDOption,
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

@@ -8,6 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import load_config, save_config
 from nextmv.cli.message import confirmation, error, info, success
+from nextmv.cli.options import YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -25,14 +26,7 @@ def delete(
             metavar="PROFILE_NAME",
         ),
     ],
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
 ) -> None:
     """
     Delete a profile from the configuration.
