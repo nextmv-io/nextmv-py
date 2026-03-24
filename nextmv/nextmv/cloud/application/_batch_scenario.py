@@ -262,6 +262,7 @@ class ApplicationBatchMixin:
         option_sets: dict[str, dict[str, str]] | None = None,
         runs: list[BatchExperimentRun | dict[str, Any]] | None = None,
         type: str | None = "batch",
+        content_type: str | None = None,
     ) -> str:
         """
         Create a new batch experiment.
@@ -286,6 +287,10 @@ class ApplicationBatchMixin:
             Type of the batch experiment. This is used to determine the
             experiment type. The default value is "batch". If you want to
             create a scenario test, set this to "scenario".
+        content_type: Optional[str]
+            Content type for the app's input/output format. Set to
+            "multi-file" for multi-file apps. If not provided, defaults
+            to the app's configured content type.
 
         Returns
         -------
@@ -323,6 +328,8 @@ class ApplicationBatchMixin:
             payload["runs"] = payload_runs
         if type is not None:
             payload["type"] = type
+        if content_type is not None:
+            payload["content_type"] = content_type
 
         response = self.client.request(
             method="POST",
@@ -404,6 +411,7 @@ class ApplicationBatchMixin:
         name: str | None = None,
         description: str | None = None,
         repetitions: int | None = 0,
+        content_type: str | None = None,
     ) -> str:
         """
         Create a new scenario test. The test is based on `scenarios` and you
@@ -448,6 +456,10 @@ class ApplicationBatchMixin:
             repetition means that the test will be repeated once, i.e.: it
             will be executed twice. 2 repetitions equals 3 executions, so on,
             and so forth.
+        content_type: Optional[str]
+            Content type for the app's input/output format. Set to
+            "multi-file" for multi-file apps. If not provided, defaults
+            to the app's configured content type.
 
         Returns
         -------
@@ -524,6 +536,7 @@ class ApplicationBatchMixin:
             type="scenario",
             option_sets=opt_sets,
             runs=runs,
+            content_type=content_type,
         )
 
     def new_scenario_test_with_result(
@@ -533,6 +546,7 @@ class ApplicationBatchMixin:
         name: str | None = None,
         description: str | None = None,
         repetitions: int | None = 0,
+        content_type: str | None = None,
         polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
     ) -> BatchExperiment:
         """
@@ -584,6 +598,7 @@ class ApplicationBatchMixin:
             name=name,
             description=description,
             repetitions=repetitions,
+            content_type=content_type,
         )
 
         return self.scenario_test_with_polling(

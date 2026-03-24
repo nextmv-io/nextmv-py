@@ -15,6 +15,7 @@ from nextmv.cli.mcp.tools import (
     batch,
     community,
     ensemble,
+    guide,
     input_set,
     instance,
     local,
@@ -32,12 +33,12 @@ from nextmv.cli.mcp.tools import (
 # Re-export helpers for backward compatibility — tests and external code
 # may import these directly from ``nextmv.cli.mcp.server``.
 from nextmv.cli.mcp.tools._helpers import (  # noqa: F401
-    _current_profile,
     _get_app,
     _get_client,
     _get_local_app,
     _mask_key,
     _save_to_file,
+    session,
 )
 
 # Re-export SDK names that tests patch on this module.
@@ -76,7 +77,10 @@ def create_server() -> FastMCP:
             "API endpoint (e.g. api.cloud.nextmv.io). If a file already "
             "exists there, it will not be re-downloaded. You can read "
             "cached cloud run data directly from these paths without "
-            "calling the cloud tools again."
+            "calling the cloud tools again.\n\n"
+            "WORKFLOW GUIDE: When creating a new app, deploying to Cloud, "
+            "or running experiments, call the nextmv_workflow_guide tool "
+            "first to get the step-by-step workflow and coding patterns."
         ),
     )
 
@@ -103,5 +107,8 @@ def create_server() -> FastMCP:
 
     # Local tools
     local.register(mcp)
+
+    # Workflow guide
+    guide.register(mcp)
 
     return mcp

@@ -1,6 +1,8 @@
 """Shared helpers for MCP tool modules."""
 
+import contextvars
 import json
+import logging
 import os
 import tempfile
 from typing import Any
@@ -10,8 +12,77 @@ from nextmv.cloud import Application, Client
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
 
-# Session-level profile. None means "default" (top-level config keys).
-_current_profile: str | None = None
+logger = logging.getLogger(__name__)
+
+
+class ProfileSession:
+    """Manages the active Nextmv Cloud profile for the current async context.
+
+    Uses ``contextvars.ContextVar`` internally so that each async task
+    (and therefore each concurrent HTTP request in streamable-http
+    transport) gets its own isolated profile state.
+    """
+
+    def __init__(self) -> None:
+        self._profile: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+            "nextmv_profile", default=None,
+        )
+
+    @property
+    def profile(self) -> str | None:
+        """Return the current profile name, or ``None`` for the default."""
+
+        return self._profile.get()
+
+    @profile.setter
+    def profile(self, value: str | None) -> None:
+        self._profile.set(value)
+
+    def get_client(self, profile: str | None = None) -> Client:
+        """Build a Nextmv Cloud client from env var or CLI config.
+
+        Checks for credentials in the following order:
+
+        1. ``NEXTMV_API_KEY`` environment variable (unless a profile is active).
+        2. CLI configuration file at ``~/.nextmv/config.yaml``.
+
+        Args:
+            profile: Optional profile name override. If not provided, uses
+                the session-level profile.
+        """
+
+        resolved = profile or self.profile
+
+        api_key = os.getenv("NEXTMV_API_KEY")
+        if api_key and not resolved:
+            endpoint = os.getenv("NEXTMV_ENDPOINT", "https://api.cloud.nextmv.io")
+            if not endpoint.startswith("http"):
+                endpoint = f"https://{endpoint}"
+            return Client(api_key=api_key, url=endpoint)
+
+        # Fall back to the CLI configuration file (~/.nextmv/config.yaml).
+        try:
+            from nextmv.cli.configuration.config import build_client
+
+            # "default" means use top-level keys (profile=None in build_client).
+            p = None if resolved is None or resolved == "default" else resolved
+            return build_client(profile=p)
+        except Exception as e:
+            raise ValueError(
+                f"Could not build a Nextmv client: {e}. Either set the "
+                "NEXTMV_API_KEY environment variable or configure the "
+                "CLI with: nextmv configuration create"
+            ) from e
+
+    def get_app(self, app_id: str, profile: str | None = None) -> Application:
+        """Build a cloud Application handle for the given ID."""
+
+        client = self.get_client(profile=profile)
+        return Application(client=client, id=app_id)
+
+
+# Singleton session used by all MCP tool modules.
+session = ProfileSession()
 
 
 def _mask_key(key: str | None) -> str | None:
@@ -24,48 +95,18 @@ def _mask_key(key: str | None) -> str | None:
     return "X" * (len(key) - 4) + key[-4:]
 
 
+# ---------------------------------------------------------------------------
+# Convenience aliases so tool modules can call ``_helpers._get_client()``
+# without reaching into ``session`` directly.
+# ---------------------------------------------------------------------------
+
+
 def _get_client(profile: str | None = None) -> Client:
-    """Build a Nextmv Cloud client from env var or CLI config.
-
-    Checks for credentials in the following order:
-
-    1. ``NEXTMV_API_KEY`` environment variable (unless a profile is active).
-    2. CLI configuration file at ``~/.nextmv/config.yaml``.
-
-    Args:
-        profile: Optional profile name override. If not provided, uses
-            the session-level ``_current_profile``.
-    """
-
-    resolved = profile or _current_profile
-
-    api_key = os.getenv("NEXTMV_API_KEY")
-    if api_key and not resolved:
-        endpoint = os.getenv("NEXTMV_ENDPOINT", "https://api.cloud.nextmv.io")
-        if not endpoint.startswith("http"):
-            endpoint = f"https://{endpoint}"
-        return Client(api_key=api_key, url=endpoint)
-
-    # Fall back to the CLI configuration file (~/.nextmv/config.yaml).
-    try:
-        from nextmv.cli.configuration.config import build_client
-
-        # "default" means use top-level keys (profile=None in build_client).
-        p = None if resolved is None or resolved == "default" else resolved
-        return build_client(profile=p)
-    except Exception as e:
-        raise ValueError(
-            "No Nextmv API key found. Either set the NEXTMV_API_KEY "
-            "environment variable or configure the CLI with: "
-            "nextmv configuration create"
-        ) from e
+    return session.get_client(profile=profile)
 
 
 def _get_app(app_id: str, profile: str | None = None) -> Application:
-    """Build a cloud Application handle for the given ID."""
-
-    client = _get_client(profile=profile)
-    return Application(client=client, id=app_id)
+    return session.get_app(app_id=app_id, profile=profile)
 
 
 def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application:
@@ -235,8 +276,8 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
         from nextmv.local.executor import process_run_visuals
 
         process_run_visuals(run_dir=run_dir, outputs_dir=outputs_dir)
-    except Exception:
-        pass  # Visual generation is best-effort.
+    except Exception as exc:
+        logger.warning("Visual generation failed for run %s: %s", run_id, exc)
 
 
 def _save_cloud_run_logs(data: Any, endpoint: str, run_id: str) -> str:

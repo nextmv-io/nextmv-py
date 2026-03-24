@@ -1,4 +1,16 @@
-"""MCP (Model Context Protocol) server for the Nextmv CLI."""
+"""MCP (Model Context Protocol) server for the Nextmv CLI.
+
+Requires the ``mcp`` optional extra: ``pip install nextmv[mcp]``.
+"""
+
+# Fail fast at import time so that main.py's try/except can gate the
+# subcommand registration.
+import importlib.util
+
+if importlib.util.find_spec("mcp") is None:
+    raise ImportError(
+        "The mcp extra is not installed. Install it with: pip install nextmv[mcp]"
+    )
 
 import typer
 

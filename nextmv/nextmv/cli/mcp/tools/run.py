@@ -10,6 +10,7 @@ from nextmv.input import INPUTS_KEY
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.output import OUTPUTS_KEY
 from nextmv.polling import default_polling_options
+from nextmv.safe import safe_id
 
 
 def _cloud_list_runs_impl(
@@ -29,19 +30,27 @@ def _cloud_list_runs_impl(
 def _cloud_poll_run_logs_impl(app_id: str, run_id: str) -> str:
     """Implementation for polling cloud run logs."""
 
-    collected: list[dict[str, Any]] = []
-
-    def _collect(log_entry) -> None:
-        collected.append({"timestamp": log_entry.timestamp, "log": log_entry.log})
-
     app = _helpers._get_app(app_id)
     endpoint = _helpers._endpoint_from_app(app)
-    app.poll_logs(
-        run_id=run_id,
-        polling_options=default_polling_options(),
-        log_func=_collect,
-    )
-    path = _helpers._save_cloud_run_logs(collected, endpoint, run_id)
+
+    path = os.path.join(_helpers._cloud_run_dir(endpoint, run_id), LOGS_KEY, LOGS_FILE)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    # Stream log entries directly to the file to avoid unbounded
+    # memory growth for long-running jobs.
+    with open(path, "w") as fh:
+
+        def _write(log_entry) -> None:
+            ts = log_entry.timestamp or ""
+            log = log_entry.log or ""
+            fh.write(f"{ts} {log}\n")
+
+        app.poll_logs(
+            run_id=run_id,
+            polling_options=default_polling_options(),
+            log_func=_write,
+        )
+
     return f"Downloaded: {path}"
 
 
@@ -66,10 +75,11 @@ def _cloud_run_impl(
     config = _helpers._build_run_configuration(content_format)
 
     # For non-JSON formats, prepare an output directory in the cache.
+    # Use a unique temporary ID to avoid collisions from concurrent runs.
     output_dir_path = None
     if content_format and content_format != "json":
         output_dir_path = os.path.join(
-            _helpers._cloud_run_dir(endpoint, "__pending__"),
+            _helpers._cloud_run_dir(endpoint, safe_id("pending")),
             OUTPUTS_KEY,
         )
 

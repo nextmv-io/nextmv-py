@@ -68,7 +68,7 @@ def register(mcp: FastMCP) -> None:
                 top-level configuration keys.
         """
 
-        _helpers._current_profile = None if profile == "default" else profile
+        _helpers.session.profile = None if profile == "default" else profile
         return f"Active profile set to \"{profile}\"."
 
     @mcp.tool()
@@ -78,4 +78,4 @@ def register(mcp: FastMCP) -> None:
         Returns ``"default"`` if no named profile has been set.
         """
 
-        return _helpers._current_profile or "default"
+        return _helpers.session.profile or "default"

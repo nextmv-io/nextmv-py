@@ -1,13 +1,18 @@
 """MCP tools for cloud scenario tests."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
 
+if TYPE_CHECKING:
+    from nextmv.cloud.scenario import Scenario
 
-def _build_scenario(s: dict[str, Any]) -> Any:
+
+def _build_scenario(s: dict[str, Any]) -> Scenario:
     """Convert a plain dict into a ``Scenario`` dataclass instance."""
 
     from nextmv.cloud.scenario import (
@@ -68,132 +73,6 @@ def _build_scenario(s: dict[str, Any]) -> Any:
     )
 
 
-def _resolve_input_set_for_scenario(app: Any, sid: str, scenario: Any) -> Any:
-    """Resolve the input set for a single scenario based on its input type.
-
-    Returns the input set object for the given scenario.
-    """
-
-    from nextmv.cloud.input_set import ManagedInput
-    from nextmv.cloud.scenario import ScenarioInputType
-    from nextmv.safe import safe_name_and_id
-
-    input_type = scenario.scenario_input.scenario_input_type
-    input_data = scenario.scenario_input.scenario_input_data
-
-    if input_type == ScenarioInputType.INPUT_SET:
-        return app.input_set(input_set_id=input_data)
-
-    if input_type == ScenarioInputType.INPUT:
-        is_name, is_id = safe_name_and_id(prefix="inpset", entity_id=sid)
-        return app.new_input_set(
-            id=is_id,
-            name=is_name,
-            description=f"Automatically created from scenario test: {is_id}",
-            maximum_runs=20,
-            inputs=[
-                ManagedInput.from_dict(data={"id": iid})
-                for iid in input_data
-            ],
-        )
-
-    if input_type == ScenarioInputType.NEW:
-        managed_inputs = []
-        for data in input_data:
-            upload_url = app.upload_url()
-            app.upload_data(data=data, upload_url=upload_url)
-            mi_name, mi_id = safe_name_and_id(prefix="man-input", entity_id=sid)
-            mi = app.new_managed_input(
-                id=mi_id,
-                name=mi_name,
-                description=f"Automatically created from scenario test: {mi_id}",
-                upload_id=upload_url.upload_id,
-            )
-            managed_inputs.append(mi)
-        is_name, is_id = safe_name_and_id(prefix="inpset", entity_id=sid)
-        return app.new_input_set(
-            id=is_id,
-            name=is_name,
-            description=f"Automatically created from scenario test: {is_id}",
-            maximum_runs=20,
-            inputs=managed_inputs,
-        )
-
-    raise ValueError(
-        f"Unknown scenario input type: {input_type}"
-    )
-
-
-def _build_multifile_batch_payload(
-    app: Any,
-    scenario_objs: list[Any],
-    scenarios_by_id: dict[str, Any],
-    scenario_test_id: str,
-    name: str,
-    description: str | None,
-    repetitions: int,
-    content_type: str,
-) -> dict[str, Any]:
-    """Build the batch experiment payload for multi-file content types.
-
-    Returns the full payload dict ready to POST to the API.
-    """
-
-    from nextmv.cloud.batch_experiment import BatchExperimentRun
-    from nextmv.cloud.input_set import ManagedInput
-    from nextmv.cloud.scenario import _option_sets
-
-    input_sets: dict[str, Any] = {}
-    instances: dict[str, Any] = {}
-    for sid, scenario in scenarios_by_id.items():
-        instances[sid] = app.instance(instance_id=scenario.instance_id)
-        input_sets[sid] = _resolve_input_set_for_scenario(app, sid, scenario)
-
-    opt_sets_by_scenario = _option_sets(scenario_objs)
-
-    runs: list[dict[str, Any]] = []
-    opt_sets: dict[str, Any] = {}
-    run_counter = 0
-    for sid, scenario_opt_sets in opt_sets_by_scenario.items():
-        opt_sets = {**opt_sets, **scenario_opt_sets}
-        input_set = input_sets[sid]
-        scenario = scenarios_by_id[sid]
-
-        for set_key in scenario_opt_sets.keys():
-            inp_ids = (
-                input_set.input_ids
-                if len(input_set.input_ids) > 0
-                else input_set.inputs
-            )
-            for inp in inp_ids:
-                input_id = inp.id if isinstance(inp, ManagedInput) else inp
-                for rep in range(repetitions + 1):
-                    run_counter += 1
-                    run = BatchExperimentRun(
-                        input_id=input_id,
-                        input_set_id=input_set.id,
-                        instance_id=scenario.instance_id,
-                        option_set=set_key,
-                        scenario_id=sid,
-                        repetition=rep,
-                        run_number=str(run_counter),
-                    )
-                    runs.append(run.to_dict())
-
-    payload: dict[str, Any] = {
-        "id": scenario_test_id,
-        "name": name,
-        "type": "scenario",
-        "content_type": content_type,
-        "option_sets": opt_sets,
-        "runs": runs,
-    }
-    if description is not None:
-        payload["description"] = description
-
-    return payload
-
-
 def _cloud_create_scenario_test_impl(
     app_id: str,
     scenarios: list[dict[str, Any]],
@@ -204,9 +83,6 @@ def _cloud_create_scenario_test_impl(
     content_type: str | None = None,
 ) -> str:
     """Implementation for creating a scenario test."""
-
-    from nextmv.cloud.scenario import _scenarios_by_id
-    from nextmv.safe import safe_id
 
     scenario_test_id = _helpers._none_if_empty(scenario_test_id)
     name = _helpers._none_if_empty(name)
@@ -219,53 +95,15 @@ def _cloud_create_scenario_test_impl(
     except (KeyError, ValueError) as exc:
         return f"Error: invalid scenario definition — {exc}"
 
-    if not content_type:
-        # Standard flow — delegate entirely to the SDK.
-        test_id = app.new_scenario_test(
-            scenarios=scenario_objs,
-            id=scenario_test_id,
-            name=name,
-            description=description,
-            repetitions=repetitions,
-        )
-        return test_id
-
-    # When content_type is specified (e.g. "multi-file"), we must
-    # include it in the batch experiment creation payload.  The SDK's
-    # new_scenario_test does not support this parameter, so we
-    # replicate its core logic here and inject content_type into the
-    # POST payload sent to the API.
-    #
-    # SYNC NOTE: This block mirrors Application.new_scenario_test in
-    # cloud/application/_batch_scenario.py.  If that method changes,
-    # this code must be updated to match.
-    if not scenarios:
-        return "Error: at least one scenario must be provided."
-
-    if scenario_test_id is None:
-        scenario_test_id = safe_id("scenario")
-    if name is None:
-        name = scenario_test_id
-
-    scenarios_by_id = _scenarios_by_id(scenario_objs)
-
-    payload = _build_multifile_batch_payload(
-        app=app,
-        scenario_objs=scenario_objs,
-        scenarios_by_id=scenarios_by_id,
-        scenario_test_id=scenario_test_id,
+    test_id = app.new_scenario_test(
+        scenarios=scenario_objs,
+        id=scenario_test_id,
         name=name,
         description=description,
         repetitions=repetitions,
         content_type=content_type,
     )
-
-    response = app.client.request(
-        method="POST",
-        endpoint=f"{app.experiments_endpoint}/batch",
-        payload=payload,
-    )
-    return response.json()["id"]
+    return test_id
 
 
 def register(mcp: FastMCP) -> None:

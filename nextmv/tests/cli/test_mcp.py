@@ -249,13 +249,36 @@ class TestMCPServerTools(unittest.TestCase):
         for name in expected:
             self.assertIn(name, tool_names, f"Missing tool: {name}")
 
+    def test_server_has_workflow_guide_tool(self):
+        """Test that the workflow guide tool is registered."""
+        from nextmv.cli.mcp.server import create_server
+
+        server = create_server()
+        tool_names = list(server._tool_manager._tools.keys())
+        self.assertIn("nextmv_workflow_guide", tool_names)
+
+    def test_workflow_guide_returns_content(self):
+        """Test that the workflow guide tool returns the guide content."""
+        from nextmv.cli.mcp.server import create_server
+
+        server = create_server()
+        tool = server._tool_manager._tools["nextmv_workflow_guide"]
+        result = asyncio.run(tool.run({}))
+        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        # Verify key sections are present.
+        self.assertIn("Nextmv App Development Workflow", str(text))
+        self.assertIn("app.yaml", str(text))
+        self.assertIn("local_run", str(text))
+        self.assertIn("cloud_create_app", str(text))
+        self.assertIn("Checklist", str(text))
+
     def test_total_tool_count(self):
         """Test that the server has the expected total number of tools."""
         from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        self.assertEqual(len(tool_names), 88, f"Expected 88 tools, got {len(tool_names)}")
+        self.assertEqual(len(tool_names), 89, f"Expected 89 tools, got {len(tool_names)}")
 
     @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
@@ -345,7 +368,7 @@ class TestGetClient(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             _get_client()
-        self.assertIn("No Nextmv API key found", str(ctx.exception))
+        self.assertIn("Could not build a Nextmv client", str(ctx.exception))
 
 
 class TestSaveToFile(unittest.TestCase):
@@ -557,7 +580,6 @@ class TestProfiles(unittest.TestCase):
 
     def test_set_and_get_profile(self):
         """Test that cloud_set_profile and cloud_get_profile work together."""
-        import nextmv.cli.mcp.tools._helpers as helpers
         from nextmv.cli.mcp.server import create_server
 
         server = create_server()
@@ -569,17 +591,21 @@ class TestProfiles(unittest.TestCase):
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("default", str(text))
 
-        # Switch to a named profile.
-        asyncio.run(set_tool.run({"profile": "staging"}))
-        self.assertEqual(helpers._current_profile, "staging")
+        # Set and get must run in the same async context for the
+        # ContextVar state to be visible, since asyncio.run() creates
+        # a fresh context each time.
+        async def _set_then_get(profile: str) -> str:
+            await set_tool.run({"profile": profile})
+            result = await get_tool.run({})
+            return json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
 
-        result = asyncio.run(get_tool.run({}))
-        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+        # Switch to a named profile.
+        text = asyncio.run(_set_then_get("staging"))
         self.assertIn("staging", str(text))
 
         # Switch back to default.
-        asyncio.run(set_tool.run({"profile": "default"}))
-        self.assertIsNone(helpers._current_profile)
+        text = asyncio.run(_set_then_get("default"))
+        self.assertIn("default", str(text))
 
     def test_list_profiles(self):
         """Test that cloud_list_profiles reads config correctly."""
@@ -614,35 +640,35 @@ class TestProfiles(unittest.TestCase):
     @patch("nextmv.cli.configuration.config.build_client")
     def test_get_client_uses_profile(self, mock_build_client):
         """Test that _get_client passes the profile to build_client."""
-        import nextmv.cli.mcp.tools._helpers as helpers
-        from nextmv.cli.mcp.tools._helpers import _get_client
+        from nextmv.cli.mcp.tools._helpers import session
 
         mock_build_client.return_value = MagicMock()
 
         # Explicit profile override.
-        _get_client(profile="staging")
+        session.get_client(profile="staging")
         mock_build_client.assert_called_with(profile="staging")
 
         # Session-level profile.
-        helpers._current_profile = "prod"
-        _get_client()
-        mock_build_client.assert_called_with(profile="prod")
-
-        # Reset.
-        helpers._current_profile = None
+        session.profile = "prod"
+        try:
+            session.get_client()
+            mock_build_client.assert_called_with(profile="prod")
+        finally:
+            session.profile = None
 
     @patch.dict("os.environ", {"NEXTMV_API_KEY": "env-key"}, clear=False)
     def test_get_client_env_skipped_when_profile_set(self):
         """Test that env var is skipped when a profile is active."""
-        import nextmv.cli.mcp.tools._helpers as helpers
-        from nextmv.cli.mcp.tools._helpers import _get_client
+        from nextmv.cli.mcp.tools._helpers import session
 
         with patch("nextmv.cli.configuration.config.build_client") as mock_build:
             mock_build.return_value = MagicMock()
-            helpers._current_profile = "staging"
-            _get_client()
-            mock_build.assert_called_with(profile="staging")
-            helpers._current_profile = None
+            session.profile = "staging"
+            try:
+                session.get_client()
+                mock_build.assert_called_with(profile="staging")
+            finally:
+                session.profile = None
 
 
 class TestBugFixes(unittest.TestCase):
@@ -808,35 +834,13 @@ class TestBugFixes(unittest.TestCase):
         sig = inspect.signature(tool.fn)
         self.assertIn("content_type", sig.parameters)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_client")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_scenario_test_content_type_path(self, mock_get_app, mock_get_client):
-        """Bug 2: content_type path builds payload with content_type and posts directly."""
+    def test_cloud_create_scenario_test_content_type_path(self, mock_get_app):
+        """Bug 2: content_type is passed through to the SDK's new_scenario_test."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
         mock_app = MagicMock()
-        mock_app.experiments_endpoint = "v1/applications/my-app/experiments"
-
-        # Mock instance lookup.
-        mock_instance = MagicMock()
-        mock_app.instance.return_value = mock_instance
-
-        # Mock input set lookup (INPUT_SET scenario type).
-        mock_input_set = MagicMock()
-        mock_input_set.id = "my-input-set"
-        mock_input_set.input_ids = ["inp-1"]
-        mock_input_set.inputs = []
-        mock_app.input_set.return_value = mock_input_set
-
-        # Mock the API POST response.
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"id": "scenario-test-123"}
-        mock_app.client = mock_client
-        mock_client.request.return_value = mock_response
-
+        mock_app.new_scenario_test.return_value = "scenario-test-123"
         mock_get_app.return_value = mock_app
 
         server = create_server()
@@ -856,19 +860,10 @@ class TestBugFixes(unittest.TestCase):
             "name": "multi-file test",
         }))
 
-        # Verify the direct API POST was made with content_type.
-        mock_client.request.assert_called_once()
-        call_kwargs = mock_client.request.call_args[1]
-        self.assertEqual(call_kwargs["method"], "POST")
-        self.assertIn("batch", call_kwargs["endpoint"])
-        payload = call_kwargs["payload"]
-        self.assertEqual(payload["content_type"], "multi-file")
-        self.assertEqual(payload["type"], "scenario")
-        self.assertIn("runs", payload)
-        self.assertTrue(len(payload["runs"]) > 0)
-
-        # Verify the SDK's new_scenario_test was NOT called (bypassed).
-        mock_app.new_scenario_test.assert_not_called()
+        # Verify the SDK's new_scenario_test was called with content_type.
+        mock_app.new_scenario_test.assert_called_once()
+        call_kwargs = mock_app.new_scenario_test.call_args[1]
+        self.assertEqual(call_kwargs["content_type"], "multi-file")
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_missing_rule_fields(self, mock_get_app):
@@ -894,31 +889,14 @@ class TestBugFixes(unittest.TestCase):
         self.assertIn("Error", str(text))
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_create_scenario_test_content_type_multiple_inputs(
-        self, mock_get_client, mock_get_app,
+        self, mock_get_app,
     ):
-        """Bug 2: inline content_type path correctly creates runs for each input."""
+        """Bug 2: content_type is passed to SDK for multi-input scenarios."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
-
         mock_app = MagicMock()
-        mock_instance = MagicMock()
-        mock_app.instance.return_value = mock_instance
-
-        mock_input_set = MagicMock()
-        mock_input_set.id = "my-input-set"
-        mock_input_set.input_ids = ["inp-1", "inp-2"]
-        mock_input_set.inputs = []
-        mock_app.input_set.return_value = mock_input_set
-
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"id": "scenario-test-456"}
-        mock_app.client = mock_client
-        mock_client.request.return_value = mock_response
-
+        mock_app.new_scenario_test.return_value = "scenario-test-456"
         mock_get_app.return_value = mock_app
 
         server = create_server()
@@ -935,19 +913,11 @@ class TestBugFixes(unittest.TestCase):
             "content_type": "multi-file",
         }))
 
-        payload = mock_client.request.call_args[1]["payload"]
-        runs = payload["runs"]
-        # Two inputs in the input set, one scenario, one option set = 2 runs.
-        self.assertEqual(len(runs), 2, "Expected one run per input")
-        # Each run should reference a valid input_id.
-        run_input_ids = {r["input_id"] for r in runs}
-        self.assertEqual(run_input_ids, {"inp-1", "inp-2"})
-        # Each run should have a run_number set.
-        for run in runs:
-            self.assertIn("run_number", run, "Expected run_number to be set on each run")
-            self.assertIsNotNone(run["run_number"])
-        run_numbers = [r["run_number"] for r in runs]
-        self.assertEqual(run_numbers, ["1", "2"])
+        # Verify the SDK was called with content_type and proper scenarios.
+        mock_app.new_scenario_test.assert_called_once()
+        call_kwargs = mock_app.new_scenario_test.call_args[1]
+        self.assertEqual(call_kwargs["content_type"], "multi-file")
+        self.assertEqual(len(call_kwargs["scenarios"]), 1)
 
 
 class TestMultiFileRunSupport(unittest.TestCase):
@@ -1697,12 +1667,15 @@ class TestCloudRunCache(unittest.TestCase):
         }
         mock_get_app.return_value = mock_app
 
-        pending_dir = os.path.join(self.tmp_dir, "__pending__")
         run_dir = os.path.join(self.tmp_dir, "run-csv")
+        # Track the pending dir created by safe_id so we can verify it was moved.
+        pending_dirs_created: list[str] = []
 
         def fake_cloud_run_dir(endpoint, run_id):
-            if run_id == "__pending__":
-                return pending_dir
+            if run_id.startswith("pending-"):
+                d = os.path.join(self.tmp_dir, run_id)
+                pending_dirs_created.append(d)
+                return d
             return run_dir
 
         def fake_new_run(*, input, input_dir_path, configuration, instance_id,
@@ -1730,7 +1703,7 @@ class TestCloudRunCache(unittest.TestCase):
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
 
-            # Verify output was moved from __pending__/outputs/ to run-csv/outputs/.
+            # Verify output was moved from pending dir to run-csv/outputs/.
             outputs_dir = os.path.join(run_dir, "outputs")
             self.assertTrue(os.path.isdir(outputs_dir))
             sol_file = os.path.join(outputs_dir, "solution.csv")
@@ -1738,8 +1711,10 @@ class TestCloudRunCache(unittest.TestCase):
             with open(sol_file) as f:
                 self.assertIn("item,chosen", f.read())
 
-            # __pending__ outputs should no longer exist (it was renamed).
-            self.assertFalse(os.path.exists(os.path.join(pending_dir, "outputs")))
+            # The pending dir's outputs should no longer exist (it was renamed).
+            self.assertTrue(len(pending_dirs_created) > 0)
+            for d in pending_dirs_created:
+                self.assertFalse(os.path.exists(os.path.join(d, "outputs")))
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_multifile_downloads(self, mock_get_app):
@@ -1848,3 +1823,218 @@ class TestCloudRunCache(unittest.TestCase):
             with open(sol_file) as f:
                 self.assertIn("item,chosen", f.read())
 
+
+class TestMCPOptionalDependency(unittest.TestCase):
+    """Tests for MCP as an optional dependency."""
+
+    def test_mcp_init_raises_when_mcp_missing(self):
+        """Importing nextmv.cli.mcp raises ImportError when mcp is not installed."""
+        import importlib
+        import sys
+
+        with patch("importlib.util.find_spec", return_value=None):
+            # Remove cached module so the guard re-executes.
+            saved = {}
+            for key in list(sys.modules):
+                if key.startswith("nextmv.cli.mcp"):
+                    saved[key] = sys.modules.pop(key)
+            try:
+                with self.assertRaises(ImportError) as ctx:
+                    importlib.import_module("nextmv.cli.mcp")
+                self.assertIn("nextmv[mcp]", str(ctx.exception))
+            finally:
+                sys.modules.update(saved)
+
+    def test_cli_works_without_mcp(self):
+        """The CLI still works when the mcp subcommand cannot be imported."""
+
+        runner = CliRunner()
+
+        with patch(
+            "nextmv.cli.main.go_cli_exists", return_value=False,
+        ), patch(
+            "nextmv.cli.main.load_config", return_value={},
+        ):
+            result = runner.invoke(app, ["--help"])
+            self.assertEqual(result.exit_code, 0)
+            # Core subcommands should still be present.
+            output = _strip_ansi(result.output)
+            self.assertIn("cloud", output)
+            self.assertIn("local", output)
+            self.assertIn("community", output)
+
+
+class TestProfileSessionIsolation(unittest.TestCase):
+    """Tests for ProfileSession async context isolation."""
+
+    def test_profile_default_is_none(self):
+        """A fresh ProfileSession starts with profile=None."""
+        from nextmv.cli.mcp.tools._helpers import ProfileSession
+
+        s = ProfileSession()
+        self.assertIsNone(s.profile)
+
+    def test_profile_set_get(self):
+        """Setting and getting profile works."""
+        from nextmv.cli.mcp.tools._helpers import ProfileSession
+
+        s = ProfileSession()
+        s.profile = "staging"
+        self.assertEqual(s.profile, "staging")
+        s.profile = None
+        self.assertIsNone(s.profile)
+
+    def test_async_context_isolation(self):
+        """Profile set in one asyncio.run() does not leak to the next."""
+        from nextmv.cli.mcp.tools._helpers import ProfileSession
+
+        s = ProfileSession()
+
+        async def set_profile():
+            s.profile = "isolated"
+            return s.profile
+
+        # Set profile inside async context.
+        result = asyncio.run(set_profile())
+        self.assertEqual(result, "isolated")
+
+        # Outside that context (new asyncio.run), the profile should be default.
+        async def get_profile():
+            return s.profile
+
+        result = asyncio.run(get_profile())
+        self.assertIsNone(result)
+
+    def test_copied_contexts_are_isolated(self):
+        """Two copied contexts have independent profile state."""
+        import contextvars
+
+        from nextmv.cli.mcp.tools._helpers import ProfileSession
+
+        s = ProfileSession()
+        results = {}
+
+        def run_a():
+            s.profile = "alpha"
+            results["a"] = s.profile
+
+        def run_b():
+            s.profile = "beta"
+            results["b"] = s.profile
+
+        ctx_a = contextvars.copy_context()
+        ctx_b = contextvars.copy_context()
+        ctx_a.run(run_a)
+        ctx_b.run(run_b)
+
+        self.assertEqual(results["a"], "alpha")
+        self.assertEqual(results["b"], "beta")
+
+
+class TestVisualGenerationWarning(unittest.TestCase):
+    """Test that visual generation failure logs a warning."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_visual_failure_logs_warning(self):
+        """_extract_cloud_run_outputs logs a warning when visuals fail."""
+        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
+
+        run_dir = os.path.join(self.tmp_dir, "run-warn")
+
+        with patch(
+            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+            return_value=run_dir,
+        ), patch(
+            "nextmv.local.executor.process_run_visuals",
+            side_effect=RuntimeError("plotly exploded"),
+        ), patch(
+            "nextmv.cli.mcp.tools._helpers.logger",
+        ) as mock_logger:
+            _extract_cloud_run_outputs(
+                {"output": {"solution": {"x": 1}}},
+                "ep",
+                "run-warn",
+            )
+            mock_logger.warning.assert_called_once()
+            args = mock_logger.warning.call_args[0]
+            self.assertIn("run-warn", args[1])
+            self.assertIn("plotly exploded", str(args[2]))
+
+
+class TestSDKContentType(unittest.TestCase):
+    """Tests for the content_type parameter added to SDK batch/scenario methods."""
+
+    def _make_app(self):
+        """Create an Application with a mock client."""
+        from nextmv.cloud import Application, Client
+
+        client = Client(api_key="test-key", url="https://api.test.io")
+        client.request = MagicMock()
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "test-id"}
+        client.request.return_value = mock_response
+        return Application(client=client, id="test-app")
+
+    def test_new_batch_experiment_passes_content_type(self):
+        """new_batch_experiment includes content_type in the API payload."""
+        app = self._make_app()
+        app.new_batch_experiment(
+            name="test",
+            type="scenario",
+            content_type="multi-file",
+            runs=[],
+        )
+
+        payload = app.client.request.call_args[1]["payload"]
+        self.assertEqual(payload["content_type"], "multi-file")
+
+    def test_new_batch_experiment_omits_content_type_when_none(self):
+        """new_batch_experiment does not include content_type when None."""
+        app = self._make_app()
+        app.new_batch_experiment(name="test")
+
+        payload = app.client.request.call_args[1]["payload"]
+        self.assertNotIn("content_type", payload)
+
+    def test_new_scenario_test_passes_content_type(self):
+        """new_scenario_test forwards content_type to new_batch_experiment.
+
+        We verify this through the MCP tool layer, which calls the SDK's
+        new_scenario_test. The tool-level tests in TestBugFixes already
+        confirm content_type is passed. Here we test the SDK method
+        directly by checking the API payload.
+        """
+        app = self._make_app()
+
+        # Mock the instance and input_set lookups that new_scenario_test needs.
+        mock_instance = MagicMock()
+        mock_input_set = MagicMock()
+        mock_input_set.id = "is-1"
+        mock_input_set.input_ids = ["inp-1"]
+        mock_input_set.inputs = []
+
+        from nextmv.cloud.scenario import Scenario, ScenarioInput, ScenarioInputType
+
+        scenario = Scenario(
+            scenario_input=ScenarioInput(
+                scenario_input_type=ScenarioInputType.INPUT_SET,
+                scenario_input_data="is-1",
+            ),
+            instance_id="inst-1",
+        )
+
+        with patch.object(type(app), "instance", return_value=mock_instance), \
+             patch.object(type(app), "input_set", return_value=mock_input_set):
+            app.new_scenario_test(
+                scenarios=[scenario],
+                content_type="multi-file",
+            )
+
+        # The SDK should have made the API POST with content_type in the payload.
+        payload = app.client.request.call_args[1]["payload"]
+        self.assertEqual(payload.get("content_type"), "multi-file")

@@ -1590,7 +1590,6 @@ name = "nextmv"
 source = { editable = "." }
 dependencies = [
     { name = "folium" },
-    { name = "mcp", extra = ["cli"] },
     { name = "pip" },
     { name = "plotly" },
     { name = "pydantic" },
@@ -1602,9 +1601,8 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-all = [
-    { name = "folium" },
-    { name = "plotly" },
+mcp = [
+    { name = "mcp", extra = ["cli"] },
 ]
 notebook = [
     { name = "mlflow" },
@@ -1635,12 +1633,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "folium", specifier = ">=0.20.0" },
-    { name = "folium", marker = "extra == 'all'", specifier = ">=0.20.0" },
-    { name = "mcp", extras = ["cli"], specifier = ">=1.0" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.0" },
     { name = "mlflow", marker = "extra == 'notebook'", specifier = ">=3.9.0" },
     { name = "pip", specifier = ">=26.0" },
     { name = "plotly", specifier = ">=6.0.1" },
-    { name = "plotly", marker = "extra == 'all'", specifier = ">=6.0.1" },
     { name = "pydantic", specifier = ">=2.5.2" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "questionary", specifier = ">=2.1.1" },
@@ -1648,7 +1644,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.20.1" },
     { name = "urllib3", specifier = ">=2.1.0" },
 ]
-provides-extras = ["all", "notebook"]
+provides-extras = ["mcp", "notebook"]
 
 [package.metadata.requires-dev]
 dev = [
