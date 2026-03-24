@@ -1491,7 +1491,7 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertTrue(os.path.isdir(visuals_dir))
             html_file = os.path.join(visuals_dir, "test_chart.html")
             self.assertTrue(os.path.exists(html_file))
-            with open(html_file) as f:
+            with open(html_file, encoding="utf-8") as f:
                 content = f.read()
             self.assertIn("<html>", content.lower())
 
