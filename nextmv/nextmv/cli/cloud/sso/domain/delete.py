@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_sso_config
 from nextmv.cli.message import confirmation, in_progress, info, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -25,14 +25,7 @@ def delete(
             metavar="DOMAIN",
         ),
     ],
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

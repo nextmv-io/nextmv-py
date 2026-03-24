@@ -384,6 +384,7 @@ class StatisticsIndicator(BaseModel):
     value: Any
     """Value of the indicator."""
 
+
 class RunInfoStatistics(BaseModel):
     """
     !!! warning
@@ -438,6 +439,7 @@ class RunInfoStatistics(BaseModel):
     indicators: list[StatisticsIndicator] | None = None
     """List of statistics indicators."""
 
+
 class MetricsIndicator(BaseModel):
     """
     Metrics indicator of a run.
@@ -476,6 +478,7 @@ class MetricsIndicator(BaseModel):
     """Name of the indicator."""
     value: Any
     """Value of the indicator."""
+
 
 class RunInfoMetrics(BaseModel):
     """
@@ -720,6 +723,7 @@ class Run(BaseModel):
     input_set_id: str | None = None
     """ID of the input set associated with the run."""
 
+
 class RunTrackingMetadata(BaseModel):
     """
     Metadata elements for tracking elements of the run that
@@ -744,6 +748,7 @@ class RunTrackingMetadata(BaseModel):
     """ID of the run that was "cloned" to generate a new run."""
     input_id: str | None = None
     """ID of the managed input used to make the run."""
+
 
 class Metadata(BaseModel):
     """

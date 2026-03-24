@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import in_progress, info, print_json, success
+from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.output import OutputFormat
@@ -187,13 +187,8 @@ def handle_outputs(
 
     # At this point, we know that the output is multi-file or csv-archive.
     result_dict = run_result.to_dict()
-    if "output" in result_dict and run_result.metadata.run_is_finalized():
+    if "output" in result_dict:
         del result_dict["output"]
-        success(f"Run outputs saved to [magenta]{output_dir}[/magenta]. Here is the metadata.")
-    else:
-        info(
-            f"Run is not finalized (status: [magenta]{run_result.metadata.status_v2.value}[/magenta]). "
-            "Here is the metadata."
-        )
 
+    success(f"Run outputs saved to [magenta]{output_dir}[/magenta]. Here is the metadata.")
     print_json(result_dict)

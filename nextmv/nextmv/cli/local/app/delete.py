@@ -3,12 +3,11 @@ This module defines the local app delete command for the Nextmv CLI.
 """
 
 import os
-from typing import Annotated
 
 import typer
 
 from nextmv.cli.message import confirmation, info, success, warning
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, YesOption
 from nextmv.local.registry import Registry
 
 # Set up subcommand application.
@@ -19,14 +18,7 @@ app = typer.Typer()
 def delete(
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = None,
-    yes: Annotated[
-        bool,
-        typer.Option(
-            "--yes",
-            "-y",
-            help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
-        ),
-    ] = False,
+    yes: YesOption = False,
 ) -> None:
     """
     Deletes a Nextmv application from the local registry.
