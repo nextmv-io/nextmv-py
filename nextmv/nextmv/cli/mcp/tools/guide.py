@@ -7,10 +7,9 @@ WORKFLOW_GUIDE = """\
 
 ## Rules
 
-- **License**: Only use Apache 2.0 compatible solvers and libraries \
-(e.g., Pyomo, OR-Tools, HiGHS, CBC, scikit-learn, SimPy). Avoid \
-commercial solvers (Gurobi, Xpress, CPLEX) unless the user explicitly \
-requests them.
+- **Solver**: Ask the user which solver or modeling library to use (e.g.,
+  Pyomo, OR-Tools, HiGHS, SimPy, Gurobi, Xpress, CPLEX, AMPL, Hexaly, \
+  scikit-learn, Timefold, CVXPY, and others).
 - **Metrics**: Every app must report metrics via `nextmv.Output(metrics={...})`.
   - **Optimization apps** (MIP, LP, CP, heuristics): use `status` \
 (`optimal` | `suboptimal` | `infeasible` | `unbounded`) and \
