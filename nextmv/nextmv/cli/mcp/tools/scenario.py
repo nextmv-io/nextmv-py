@@ -143,7 +143,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         test = app.scenario_test(scenario_test_id=scenario_test_id)
-        return _helpers._save_to_file(test.to_dict(), prefix=f"scenario_test_{scenario_test_id}")
+        return _helpers._save_to_json_file(test.to_dict(), prefix=f"scenario_test_{scenario_test_id}")
 
     @mcp.tool()
     def cloud_create_scenario_test(

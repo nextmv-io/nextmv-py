@@ -44,7 +44,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         test = app.shadow_test(shadow_test_id=shadow_test_id)
-        return _helpers._save_to_file(test.to_dict(), prefix=f"shadow_test_{shadow_test_id}")
+        return _helpers._save_to_json_file(test.to_dict(), prefix=f"shadow_test_{shadow_test_id}")
 
     @mcp.tool()
     def cloud_create_shadow_test(

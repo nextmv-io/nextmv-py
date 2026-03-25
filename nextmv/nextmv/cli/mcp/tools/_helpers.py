@@ -2,17 +2,21 @@
 
 import contextvars
 import json
-import logging
 import os
 import tempfile
 from typing import Any
 
 from nextmv import local
 from nextmv.cloud import Application, Client
+from nextmv.input import InputFormat
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
+from nextmv.cli.configuration.config import build_client
+from nextmv.local.executor import process_run_visuals
+from nextmv.logger import log
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
+from nextmv.run import Format, FormatInput, RunConfiguration
 
-logger = logging.getLogger(__name__)
+DEFAULT_NEXTMV_ENDPOINT = "https://api.cloud.nextmv.io"
 
 
 class ProfileSession:
@@ -55,15 +59,13 @@ class ProfileSession:
 
         api_key = os.getenv("NEXTMV_API_KEY")
         if api_key and not resolved:
-            endpoint = os.getenv("NEXTMV_ENDPOINT", "https://api.cloud.nextmv.io")
+            endpoint = os.getenv("NEXTMV_ENDPOINT", DEFAULT_NEXTMV_ENDPOINT)
             if not endpoint.startswith("http"):
                 endpoint = f"https://{endpoint}"
             return Client(api_key=api_key, url=endpoint)
 
         # Fall back to the CLI configuration file (~/.nextmv/config.yaml).
         try:
-            from nextmv.cli.configuration.config import build_client
-
             # "default" means use top-level keys (profile=None in build_client).
             p = None if resolved is None or resolved == "default" else resolved
             return build_client(profile=p)
@@ -91,7 +93,7 @@ def _mask_key(key: str | None) -> str | None:
     if not key:
         return None
     if len(key) <= 4:
-        return key
+        return "X" * len(key)
     return "X" * (len(key) - 4) + key[-4:]
 
 
@@ -122,14 +124,9 @@ def _build_run_configuration(content_format: str | None):
     if content_format is None:
         return None
 
-    from nextmv.input import InputFormat
-    from nextmv.run import Format, FormatInput, RunConfiguration
-
     config = RunConfiguration()
     config.format = Format(
-        format_input=FormatInput(
-            input_type=InputFormat(content_format),
-        ),
+        format_input=FormatInput(input_type=InputFormat(content_format)),
     )
     return config
 
@@ -155,18 +152,24 @@ def _require_non_empty(value: str, name: str) -> str:
     return value.strip()
 
 
-def _save_to_file(data: Any, prefix: str) -> str:
-    """Serialize data to a temp JSON file and return a message with the path.
+def _save_to_file(data: Any, prefix: str, suffix: str) -> str:
+    """Serialize data to a temp file and return a message with the path.
 
     This keeps large payloads out of the MCP response (and thus out of
     the LLM context window). The caller can selectively read the file
     using standard file-reading tools.
     """
 
-    fd, path = tempfile.mkstemp(suffix=".json", prefix=f"{prefix}_")
+    fd, path = tempfile.mkstemp(prefix=f"{prefix}_", suffix=suffix)
     with os.fdopen(fd, "w") as fh:
-        json.dump(data, fh, indent=2)
+        fh.write(data)
     return f"Data saved to {path} — use file-reading tools to inspect the contents."
+
+
+def _save_to_json_file(data: Any, prefix: str) -> str:
+    """Serialize data to a temp JSON file and return a message with the path."""
+
+    return _save_to_file(json.dumps(data, indent=2), prefix=prefix, suffix=".json")
 
 
 def _cloud_run_dir(endpoint: str, run_id: str) -> str:
@@ -273,11 +276,9 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
 
     # Generate visuals from assets (Plotly/GeoJSON → HTML), matching local.
     try:
-        from nextmv.local.executor import process_run_visuals
-
         process_run_visuals(run_dir=run_dir, outputs_dir=outputs_dir)
     except Exception as exc:
-        logger.warning("Visual generation failed for run %s: %s", run_id, exc)
+        log(f"Visual generation failed for run {run_id}: {exc}")
 
 
 def _save_cloud_run_logs(data: Any, endpoint: str, run_id: str) -> str:

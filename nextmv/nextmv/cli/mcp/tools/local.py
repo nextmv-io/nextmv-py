@@ -6,13 +6,15 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
+from nextmv.content_format import ContentFormat
+from nextmv.input import INPUTS_KEY
+from nextmv.local.local import DEFAULT_INPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, NEXTMV_DIR, RUNS_KEY
+from nextmv.manifest import ManifestType, initialize_manifest
 from nextmv.polling import default_polling_options
 
 
 def _local_run_dir(app_dir: str, run_id: str) -> str:
     """Return the path to a local run directory."""
-
-    from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 
     return os.path.join(app_dir, NEXTMV_DIR, RUNS_KEY, run_id)
 
@@ -24,9 +26,6 @@ def _local_run_input_impl(
 ) -> str:
     """Implementation for getting the input data of a local run."""
 
-    from nextmv.input import INPUTS_KEY
-    from nextmv.local.local import DEFAULT_INPUT_JSON_FILE
-
     run_dir = _local_run_dir(app_dir, run_id)
     input_path = os.path.join(run_dir, INPUTS_KEY, DEFAULT_INPUT_JSON_FILE)
     if not os.path.exists(input_path):
@@ -34,7 +33,7 @@ def _local_run_input_impl(
         # if the file doesn't exist at the expected path.
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
         data = app.run_input(run_id=run_id)
-        return _helpers._save_to_file(data, prefix=f"local_run_input_{run_id}")
+        return _helpers._save_to_json_file(data, prefix=f"local_run_input_{run_id}")
     return f"Data saved to {input_path} — use file-reading tools to inspect the contents."
 
 
@@ -43,8 +42,6 @@ def _local_run_logs_impl(
     run_id: str,
 ) -> str:
     """Implementation for getting the logs of a local run."""
-
-    from nextmv.local.local import LOGS_FILE, LOGS_KEY
 
     run_dir = _local_run_dir(app_dir, run_id)
     logs_path = os.path.join(run_dir, LOGS_KEY, LOGS_FILE)
@@ -130,9 +127,6 @@ def _manifest_init_impl(
     dirpath: str,
 ) -> str:
     """Implementation for manifest_init."""
-
-    from nextmv.content_format import ContentFormat
-    from nextmv.manifest import ManifestType, initialize_manifest
 
     dst = initialize_manifest(
         manifest_type=ManifestType(manifest_type),

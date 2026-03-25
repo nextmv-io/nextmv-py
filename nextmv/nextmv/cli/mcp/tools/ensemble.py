@@ -6,8 +6,15 @@ from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.cloud import Application
+from nextmv.cloud.ensemble import (
+    EvaluationRule,
+    RuleObjective,
+    RuleTolerance,
+    RuleToleranceType,
+    RunGroup,
+)
 from nextmv.polling import default_polling_options
-from nextmv.run import RunConfiguration
+from nextmv.run import RunConfiguration, RunType, RunTypeConfiguration
 
 
 def _cloud_create_ensemble_impl(
@@ -19,10 +26,6 @@ def _cloud_create_ensemble_impl(
     description: str | None = None,
 ) -> dict[str, Any] | str:
     """Implementation for creating an ensemble definition."""
-
-    from nextmv.cloud.ensemble import (
-        RunGroup,
-    )
 
     app = _helpers._get_app(app_id)
 
@@ -74,14 +77,7 @@ def _parse_evaluation_rule(r: dict[str, Any], index: int) -> Any:
     Returns an ``EvaluationRule`` on success, or an error string on failure.
     """
 
-    from nextmv.cloud.ensemble import (
-        EvaluationRule,
-        RuleObjective,
-        RuleTolerance,
-        RuleToleranceType,
-    )
-
-    # Normalise the tolerance field: the LLM may pass a bare
+    # Normalize the tolerance field: the LLM may pass a bare
     # float (shorthand for a relative tolerance) or a full dict.
     raw_tol = r.get("tolerance")
     if isinstance(raw_tol, dict):
@@ -128,8 +124,6 @@ def _build_ensemble_run_config(
 
     Raises ``ValueError`` if required parameters are empty.
     """
-
-    from nextmv.run import RunType, RunTypeConfiguration
 
     app_id = _helpers._require_non_empty(app_id, "app_id")
     ensemble_id = _helpers._require_non_empty(ensemble_id, "ensemble_id")
@@ -182,7 +176,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         ensemble = app.ensemble_definition(ensemble_definition_id=ensemble_id)
-        return _helpers._save_to_file(ensemble.to_dict(), prefix=f"ensemble_{ensemble_id}")
+        return _helpers._save_to_json_file(ensemble.to_dict(), prefix=f"ensemble_{ensemble_id}")
 
     @mcp.tool()
     def cloud_create_ensemble(
@@ -281,7 +275,7 @@ def register(mcp: FastMCP) -> None:
         try:
             app, config = _build_ensemble_run_config(app_id, ensemble_id, content_format)
         except ValueError as e:
-            return str(e)
+            return f"Error building ensemble run configuration: {e}"
 
         run_result = app.new_run_with_result(
             input=input,
@@ -291,7 +285,7 @@ def register(mcp: FastMCP) -> None:
             polling_options=default_polling_options(),
             managed_input_id=managed_input_id,
         )
-        return _helpers._save_to_file(run_result.to_dict(), prefix=f"ensemble_run_{app_id}_{ensemble_id}")
+        return _helpers._save_to_json_file(run_result.to_dict(), prefix=f"ensemble_run_{app_id}_{ensemble_id}")
 
     @mcp.tool()
     def cloud_ensemble_run_submit(
@@ -333,7 +327,7 @@ def register(mcp: FastMCP) -> None:
         try:
             app, config = _build_ensemble_run_config(app_id, ensemble_id, content_format)
         except ValueError as e:
-            return str(e)
+            return f"Error building ensemble run configuration: {e}"
 
         return app.new_run(
             input=input,

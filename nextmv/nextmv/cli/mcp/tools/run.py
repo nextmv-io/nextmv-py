@@ -11,6 +11,7 @@ from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.output import OUTPUTS_KEY
 from nextmv.polling import default_polling_options
 from nextmv.safe import safe_id
+from nextmv.status import StatusV2
 
 
 def _cloud_list_runs_impl(
@@ -18,8 +19,6 @@ def _cloud_list_runs_impl(
     status: str | None = None,
 ) -> list[dict[str, Any]]:
     """Implementation for listing cloud runs."""
-
-    from nextmv.status import StatusV2
 
     app = _helpers._get_app(app_id)
     status_filter = StatusV2(status) if status else None

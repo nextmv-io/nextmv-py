@@ -38,6 +38,7 @@ from nextmv.cli.mcp.tools._helpers import (  # noqa: F401
     _get_local_app,
     _mask_key,
     _save_to_file,
+    _save_to_json_file,
     session,
 )
 

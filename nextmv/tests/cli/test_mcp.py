@@ -361,7 +361,7 @@ class TestGetClient(unittest.TestCase):
         self.assertEqual(client.url, "https://custom.api.io")
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch("nextmv.cli.configuration.config.build_client", side_effect=Exception("no config"))
+    @patch("nextmv.cli.mcp.tools._helpers.build_client", side_effect=Exception("no config"))
     def test_get_client_no_key_no_config_raises(self, mock_build):
         """Test that _get_client raises when no API key or config is available."""
         from nextmv.cli.mcp.server import _get_client
@@ -376,10 +376,10 @@ class TestSaveToFile(unittest.TestCase):
 
     def test_save_to_file_creates_json(self):
         """Test that _save_to_file writes valid JSON and returns a path message."""
-        from nextmv.cli.mcp.server import _save_to_file
+        from nextmv.cli.mcp.server import _save_to_json_file
 
         data = {"stops": [{"id": "s1"}, {"id": "s2"}]}
-        msg = _save_to_file(data, prefix="test")
+        msg = _save_to_json_file(data, prefix="test")
         self.assertIn("Data saved to", msg)
 
         # Extract path from message.
@@ -571,11 +571,12 @@ class TestProfiles(unittest.TestCase):
     """Tests for profile management tools."""
 
     def test_mask_key(self):
-        """Test that _mask_key masks all but the last 4 characters."""
+        """Test that _mask_key masks keys correctly."""
         from nextmv.cli.mcp.server import _mask_key
 
         self.assertIsNone(_mask_key(None))
-        self.assertEqual(_mask_key("abcd"), "abcd")
+        self.assertEqual(_mask_key("abcd"), "XXXX")
+        self.assertEqual(_mask_key("abc"), "XXX")
         self.assertEqual(_mask_key("abcde12345"), "XXXXXX2345")
 
     def test_set_and_get_profile(self):
@@ -621,7 +622,7 @@ class TestProfiles(unittest.TestCase):
         }
 
         with patch(
-            "nextmv.cli.configuration.config.load_config",
+            "nextmv.cli.mcp.tools.profile.load_config",
             return_value=mock_config,
         ):
             server = create_server()
@@ -637,7 +638,7 @@ class TestProfiles(unittest.TestCase):
             self.assertIn("5678", profiles[1]["api_key"])
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch("nextmv.cli.configuration.config.build_client")
+    @patch("nextmv.cli.mcp.tools._helpers.build_client")
     def test_get_client_uses_profile(self, mock_build_client):
         """Test that _get_client passes the profile to build_client."""
         from nextmv.cli.mcp.tools._helpers import session
@@ -661,7 +662,7 @@ class TestProfiles(unittest.TestCase):
         """Test that env var is skipped when a profile is active."""
         from nextmv.cli.mcp.tools._helpers import session
 
-        with patch("nextmv.cli.configuration.config.build_client") as mock_build:
+        with patch("nextmv.cli.mcp.tools._helpers.build_client") as mock_build:
             mock_build.return_value = MagicMock()
             session.profile = "staging"
             try:
@@ -1950,20 +1951,20 @@ class TestVisualGenerationWarning(unittest.TestCase):
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
             return_value=run_dir,
         ), patch(
-            "nextmv.local.executor.process_run_visuals",
+            "nextmv.cli.mcp.tools._helpers.process_run_visuals",
             side_effect=RuntimeError("plotly exploded"),
         ), patch(
-            "nextmv.cli.mcp.tools._helpers.logger",
-        ) as mock_logger:
+            "nextmv.cli.mcp.tools._helpers.log",
+        ) as mock_log:
             _extract_cloud_run_outputs(
                 {"output": {"solution": {"x": 1}}},
                 "ep",
                 "run-warn",
             )
-            mock_logger.warning.assert_called_once()
-            args = mock_logger.warning.call_args[0]
-            self.assertIn("run-warn", args[1])
-            self.assertIn("plotly exploded", str(args[2]))
+            mock_log.assert_called_once()
+            msg = mock_log.call_args[0][0]
+            self.assertIn("run-warn", msg)
+            self.assertIn("plotly exploded", msg)
 
 
 class TestSDKContentType(unittest.TestCase):

@@ -3,6 +3,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
+from nextmv.cloud.sso import SSOConfiguration
 
 
 def register(mcp: FastMCP) -> None:
@@ -20,8 +21,6 @@ def register(mcp: FastMCP) -> None:
         Args:
             domain: The domain to remove (e.g., ``"example.com"``).
         """
-
-        from nextmv.cloud.sso import SSOConfiguration
 
         client = _helpers._get_client()
         sso = SSOConfiguration.get(client=client)

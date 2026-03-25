@@ -5,6 +5,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.mcp.tools import _helpers
+from nextmv.cloud import StopIntent, TestComparisonSingle
 
 
 def register(mcp: FastMCP) -> None:
@@ -44,7 +45,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         test = app.switchback_test(switchback_test_id=switchback_test_id)
-        return _helpers._save_to_file(test.to_dict(), prefix=f"switchback_test_{switchback_test_id}")
+        return _helpers._save_to_json_file(test.to_dict(), prefix=f"switchback_test_{switchback_test_id}")
 
     @mcp.tool()
     def cloud_create_switchback_test(
@@ -77,8 +78,6 @@ def register(mcp: FastMCP) -> None:
             name: Optional human-readable name.
             description: Optional description.
         """
-
-        from nextmv.cloud import TestComparisonSingle
 
         switchback_test_id = _helpers._none_if_empty(switchback_test_id)
         name = _helpers._none_if_empty(name)
@@ -135,8 +134,6 @@ def register(mcp: FastMCP) -> None:
             intent: Stop intent. Allowed values: ``"cancel"``
                 (default) or ``"promote"``.
         """
-
-        from nextmv.cloud import StopIntent
 
         app = _helpers._get_app(app_id)
         app.stop_switchback_test(

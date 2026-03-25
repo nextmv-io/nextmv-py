@@ -44,7 +44,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         test = app.acceptance_test(acceptance_test_id=acceptance_test_id)
-        return _helpers._save_to_file(test.to_dict(), prefix=f"acceptance_test_{acceptance_test_id}")
+        return _helpers._save_to_json_file(test.to_dict(), prefix=f"acceptance_test_{acceptance_test_id}")
 
     @mcp.tool()
     def cloud_create_acceptance_test(

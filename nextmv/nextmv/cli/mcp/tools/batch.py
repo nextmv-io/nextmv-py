@@ -62,7 +62,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         batch = app.batch_experiment(batch_id=batch_id)
-        return _helpers._save_to_file(batch.to_dict(), prefix=f"batch_{batch_id}")
+        return _helpers._save_to_json_file(batch.to_dict(), prefix=f"batch_{batch_id}")
 
     @mcp.tool()
     def cloud_list_batches(app_id: str) -> list[dict[str, Any]]:
@@ -94,7 +94,7 @@ def register(mcp: FastMCP) -> None:
 
         app = _helpers._get_app(app_id)
         metadata = app.batch_experiment_metadata(batch_id=batch_id)
-        return _helpers._save_to_file(metadata.to_dict(), prefix=f"batch_metadata_{batch_id}")
+        return _helpers._save_to_json_file(metadata.to_dict(), prefix=f"batch_metadata_{batch_id}")
 
     @mcp.tool()
     def cloud_delete_batch(app_id: str, batch_id: str) -> str:

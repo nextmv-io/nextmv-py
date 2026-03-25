@@ -2,6 +2,12 @@
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.configuration.config import (
+    API_KEY_KEY,
+    ENDPOINT_KEY,
+    load_config,
+    non_profile_keys,
+)
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -14,16 +20,10 @@ def register(mcp: FastMCP) -> None:
 
         Reads profiles from ``~/.nextmv/config.yaml``. Each returned
         profile contains a name, endpoint URL, and a masked API key
-        (only the last 4 characters are visible). The ``"default"``
-        profile corresponds to the top-level configuration keys.
+        (keys of 4 characters or fewer are fully masked). The
+        ``"default"`` profile corresponds to the top-level
+        configuration keys.
         """
-
-        from nextmv.cli.configuration.config import (
-            API_KEY_KEY,
-            ENDPOINT_KEY,
-            load_config,
-            non_profile_keys,
-        )
 
         config = load_config()
         profiles: list[dict[str, str | None]] = []

@@ -4,6 +4,7 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.mcp.server import create_server
 from nextmv.cli.message import error
 
 # Set up subcommand application.
@@ -50,8 +51,6 @@ def serve(
     - Register with Claude Code.
         $ [dim]claude mcp add nextmv -- nextmv mcp serve[/dim]
     """
-
-    from nextmv.cli.mcp.server import create_server
 
     server = create_server()
 
