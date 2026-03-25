@@ -583,30 +583,43 @@ class TestProfiles(unittest.TestCase):
         """Test that cloud_set_profile and cloud_get_profile work together."""
         from nextmv.cli.mcp.server import create_server
 
-        server = create_server()
-        set_tool = server._tool_manager._tools["cloud_set_profile"]
-        get_tool = server._tool_manager._tools["cloud_get_profile"]
+        mock_config = {
+            "apikey": "test-key",
+            "endpoint": "api.cloud.nextmv.io",
+            "staging": {
+                "apikey": "stg-key",
+                "endpoint": "staging.api.nextmv.io",
+            },
+        }
 
-        # Default profile.
-        result = asyncio.run(get_tool.run({}))
-        text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
-        self.assertIn("default", str(text))
+        with patch(
+            "nextmv.cli.mcp.tools.profile.load_config",
+            return_value=mock_config,
+        ):
+            server = create_server()
+            set_tool = server._tool_manager._tools["cloud_set_profile"]
+            get_tool = server._tool_manager._tools["cloud_get_profile"]
 
-        # Set and get must run in the same async context for the
-        # ContextVar state to be visible, since asyncio.run() creates
-        # a fresh context each time.
-        async def _set_then_get(profile: str) -> str:
-            await set_tool.run({"profile": profile})
-            result = await get_tool.run({})
-            return json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            # Default profile.
+            result = asyncio.run(get_tool.run({}))
+            text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
+            self.assertIn("default", str(text))
 
-        # Switch to a named profile.
-        text = asyncio.run(_set_then_get("staging"))
-        self.assertIn("staging", str(text))
+            # Set and get must run in the same async context for the
+            # ContextVar state to be visible, since asyncio.run() creates
+            # a fresh context each time.
+            async def _set_then_get(profile: str) -> str:
+                await set_tool.run({"profile": profile})
+                result = await get_tool.run({})
+                return json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
 
-        # Switch back to default.
-        text = asyncio.run(_set_then_get("default"))
-        self.assertIn("default", str(text))
+            # Switch to a named profile.
+            text = asyncio.run(_set_then_get("staging"))
+            self.assertIn("staging", str(text))
+
+            # Switch back to default.
+            text = asyncio.run(_set_then_get("default"))
+            self.assertIn("default", str(text))
 
     def test_list_profiles(self):
         """Test that cloud_list_profiles reads config correctly."""

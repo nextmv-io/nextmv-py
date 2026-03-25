@@ -118,12 +118,26 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
     return app
 
 
+_VALID_CONTENT_FORMATS = {f.value for f in InputFormat}
+
+
+def _validate_content_format(content_format: str) -> None:
+    """Raise ``ValueError`` if *content_format* is not a recognised value."""
+
+    if content_format not in _VALID_CONTENT_FORMATS:
+        raise ValueError(
+            f"Invalid content_format '{content_format}'. "
+            f"Allowed values: {sorted(_VALID_CONTENT_FORMATS)}"
+        )
+
+
 def _build_run_configuration(content_format: str | None):
     """Build a RunConfiguration for the given content format string, or None."""
 
     if content_format is None:
         return None
 
+    _validate_content_format(content_format)
     config = RunConfiguration()
     config.format = Format(
         format_input=FormatInput(input_type=InputFormat(content_format)),

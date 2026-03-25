@@ -68,6 +68,14 @@ def register(mcp: FastMCP) -> None:
                 top-level configuration keys.
         """
 
+        if profile != "default":
+            config = load_config()
+            reserved = non_profile_keys()
+            named = {k for k in config if k not in reserved and isinstance(config[k], dict)}
+            if profile not in named:
+                available = sorted(named | {"default"})
+                return f"Error: profile '{profile}' not found. Available profiles: {available}"
+
         _helpers.session.profile = None if profile == "default" else profile
         return f"Active profile set to \"{profile}\"."
 

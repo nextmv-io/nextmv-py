@@ -81,6 +81,13 @@ def register(mcp: FastMCP) -> None:
         description = _helpers._none_if_empty(description)
         instance_id = _helpers._none_if_empty(instance_id)
 
+        # Validate that exactly one creation method is provided.
+        methods = sum([bool(instance_id), bool(run_ids), bool(managed_input_ids)])
+        if methods == 0:
+            return "Error: provide exactly one of instance_id, run_ids, or managed_input_ids."
+        if methods > 1:
+            return "Error: provide only one of instance_id, run_ids, or managed_input_ids (got multiple)."
+
         app = _helpers._get_app(app_id)
 
         inputs = None

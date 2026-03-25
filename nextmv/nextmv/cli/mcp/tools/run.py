@@ -74,7 +74,8 @@ def _cloud_run_impl(
     config = _helpers._build_run_configuration(content_format)
 
     # For non-JSON formats, prepare an output directory in the cache.
-    # Use a unique temporary ID to avoid collisions from concurrent runs.
+    # safe_id generates a unique random suffix, so concurrent runs
+    # each get their own directory.
     output_dir_path = None
     if content_format and content_format != "json":
         output_dir_path = os.path.join(

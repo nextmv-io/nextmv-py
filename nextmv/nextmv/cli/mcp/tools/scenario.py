@@ -22,6 +22,11 @@ def _build_scenario(s: dict[str, Any]) -> Scenario:
         ScenarioInputType,
     )
 
+    # --- Validate required keys ---
+    missing = [k for k in ("scenario_input", "instance_id") if k not in s]
+    if missing:
+        raise ValueError(f"scenario is missing required keys: {missing}")
+
     # --- Build ScenarioInput ---
     raw_input = s["scenario_input"]
     if "scenario_input_type" in raw_input:
@@ -50,6 +55,12 @@ def _build_scenario(s: dict[str, Any]) -> Scenario:
     config = None
     raw_config = s.get("configuration")
     if isinstance(raw_config, list):
+        for i, c in enumerate(raw_config):
+            cfg_missing = [k for k in ("name", "values") if k not in c]
+            if cfg_missing:
+                raise ValueError(
+                    f"configuration[{i}] is missing required keys: {cfg_missing}"
+                )
         config = [
             ScenarioConfiguration(name=c["name"], values=c["values"])
             for c in raw_config
@@ -88,6 +99,9 @@ def _cloud_create_scenario_test_impl(
     name = _helpers._none_if_empty(name)
     description = _helpers._none_if_empty(description)
     content_type = _helpers._none_if_empty(content_type)
+
+    if not scenarios:
+        return "Error: at least one scenario is required."
 
     app = _helpers._get_app(app_id)
     try:
