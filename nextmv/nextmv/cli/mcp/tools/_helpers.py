@@ -7,11 +7,11 @@ import tempfile
 from typing import Any
 
 from nextmv import local
+from nextmv.cli.configuration.config import build_client
 from nextmv.cloud import Application, Client
 from nextmv.input import InputFormat
-from nextmv.local.local import LOGS_FILE, LOGS_KEY
-from nextmv.cli.configuration.config import build_client
 from nextmv.local.executor import process_run_visuals
+from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.logger import log
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
 from nextmv.run import Format, FormatInput, RunConfiguration
@@ -29,7 +29,8 @@ class ProfileSession:
 
     def __init__(self) -> None:
         self._profile: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-            "nextmv_profile", default=None,
+            "nextmv_profile",
+            default=None,
         )
 
     @property
@@ -125,10 +126,7 @@ def _validate_content_format(content_format: str) -> None:
     """Raise ``ValueError`` if *content_format* is not a recognised value."""
 
     if content_format not in _VALID_CONTENT_FORMATS:
-        raise ValueError(
-            f"Invalid content_format '{content_format}'. "
-            f"Allowed values: {sorted(_VALID_CONTENT_FORMATS)}"
-        )
+        raise ValueError(f"Invalid content_format '{content_format}'. Allowed values: {sorted(_VALID_CONTENT_FORMATS)}")
 
 
 def _build_run_configuration(content_format: str | None):
@@ -214,10 +212,10 @@ def _cloud_run_file_exists(endpoint: str, run_id: str, *path_parts: str) -> str 
 def _endpoint_from_app(app: Application) -> str:
     """Return the API endpoint from an Application with scheme stripped."""
 
-    url: str = app.client.url
+    url: str = app.client.url or ""
     for scheme in ("https://", "http://"):
         if url.startswith(scheme):
-            url = url[len(scheme):]
+            url = url[len(scheme) :]
             break
     return url
 
