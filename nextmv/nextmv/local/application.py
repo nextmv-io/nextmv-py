@@ -211,8 +211,10 @@ class Application(BaseModel):
         if entry is None:
             raise ValueError("No matching entry found in the registry for the provided `src` or `app_id`")
 
+        # Validate that the app.yaml file exists in the specified source
+        # directory before loading the application.
         try:
-            manifest = Manifest.from_yaml(entry.src)
+            Manifest.from_yaml(entry.src)
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 f"Could not find app.yaml in `{entry.src}`. Maybe specify a different `src` dir?"
@@ -224,7 +226,6 @@ class Application(BaseModel):
         return cls(
             src=entry.src,
             app_id=entry.app_id,
-            manifest=manifest,
             description=entry.description,
         )
 
