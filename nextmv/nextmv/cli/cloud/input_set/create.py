@@ -146,13 +146,14 @@ def create(
     if input_set_id is None:
         input_set_id = safe_id("input-set")
 
-    managed_inputs = []
+    managed_input_list = []
     if managed_inputs is not None:
         for d in json.loads(managed_inputs):
             i = ManagedInput.from_dict(d)
             if i is None:
                 error(f"[magenta]{d}[/magenta] is not a valid [yellow]ManagedInput[/yellow]")
-            managed_inputs.append(i)
+
+            managed_input_list.append(i)
 
     input_set = cloud_app.new_input_set(
         input_set_id,
@@ -163,6 +164,6 @@ def create(
         start_time=start_time,
         end_time=end_time,
         maximum_runs=maximum_runs,
-        inputs=managed_inputs,
+        inputs=managed_input_list or None,
     )
     print_json(input_set.to_dict())
