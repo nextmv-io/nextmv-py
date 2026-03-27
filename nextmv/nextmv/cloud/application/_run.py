@@ -387,6 +387,8 @@ class ApplicationRunMixin:
         )
         if managed_input_used:
             input = managed_input
+            if input_dir_path is not None and input_dir_path != "":
+                raise ValueError("Cannot specify both a managed input and an input directory path.")
 
         input_size = 0
         if input_data is not None:
@@ -1409,7 +1411,7 @@ class ApplicationRunMixin:
         if managed_input is not None and isinstance(managed_input, ManagedInput):
             return True, managed_input
         elif managed_input_id is not None and managed_input_id != "":
-            return True, ManagedInput(id=managed_input_id)
+            return True, self.managed_input(managed_input_id=managed_input_id)
         else:
             return False, None
 
