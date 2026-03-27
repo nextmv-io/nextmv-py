@@ -276,9 +276,9 @@ class ApplicationRunMixin:
 
         Parameters
         ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
 
             If `nextmv.Input` is used, and the `input_format` is either
             `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
@@ -460,7 +460,7 @@ class ApplicationRunMixin:
 
     def new_run_with_result(
         self: "Application",
-        input: Input | dict[str, Any] | BaseModel | str = None,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -483,9 +483,9 @@ class ApplicationRunMixin:
 
         Parameters
         ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
 
             If `nextmv.Input` is used, and the `input_format` is either
             `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
@@ -568,7 +568,8 @@ class ApplicationRunMixin:
             required if the output is non-JSON. If the directory does not exist, it
             will be created. Uses the current directory by default.
         managed_input_id : Optional[str],
-            The ID of an existing managed input (`nextmv.cloud.ManagedInput`) to use as the run's input.
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`) to use as
+            the run's input.
 
         Returns
         ----------
