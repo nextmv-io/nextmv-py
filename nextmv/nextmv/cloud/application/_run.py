@@ -1460,8 +1460,7 @@ class ApplicationRunMixin:
         configuration = RunConfiguration()
         if isinstance(input, ManagedInput):
             configuration.format = input.format
-        else:
-            configuration.resolve(input=input, dir_path=dir_path)
+        configuration.resolve(input=input, dir_path=dir_path)
         configuration_dict = configuration.to_dict()
 
         return configuration_dict
