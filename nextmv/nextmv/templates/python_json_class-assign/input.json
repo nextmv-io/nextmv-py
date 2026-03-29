@@ -1,0 +1,303 @@
+{
+  "students": [
+    {
+      "id": "s1",
+      "name": "Alice Johnson",
+      "priority": 3,
+      "class_level": "honors",
+      "preferences": ["STEM", "arts"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s2",
+      "name": "Bob Smith",
+      "priority": 2,
+      "class_level": "standard",
+      "preferences": ["humanities"]
+    },
+    {
+      "id": "s3",
+      "name": "Carol Davis",
+      "priority": 1,
+      "class_level": "AP",
+      "preferences": ["STEM"]
+    },
+    {
+      "id": "s4",
+      "name": "David Lee",
+      "priority": 2,
+      "class_level": "honors",
+      "preferences": ["arts", "humanities"],
+      "extended_day_request": 17
+    },
+    {
+      "id": "s5",
+      "name": "Eva Martinez",
+      "priority": 1,
+      "class_level": "standard",
+      "preferences": ["STEM", "arts"]
+    },
+    {
+      "id": "s6",
+      "name": "Frank Wilson",
+      "priority": 3,
+      "class_level": "honors",
+      "preferences": ["humanities"],
+      "extended_day_request": 18
+    },
+    {
+      "id": "s7",
+      "name": "Grace Chen",
+      "priority": 2,
+      "class_level": "AP",
+      "preferences": ["STEM", "humanities"]
+    },
+    {
+      "id": "s8",
+      "name": "Henry Brown",
+      "priority": 1,
+      "class_level": "standard",
+      "preferences": ["arts"]
+    },
+    {
+      "id": "s9",
+      "name": "Isabella Garcia",
+      "priority": 3,
+      "class_level": "honors",
+      "preferences": ["STEM"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s10",
+      "name": "James Taylor",
+      "priority": 1,
+      "class_level": "standard",
+      "preferences": ["humanities"]
+    },
+    {
+      "id": "s11",
+      "name": "Karen White",
+      "priority": 3,
+      "class_level": "AP",
+      "preferences": ["arts", "STEM"],
+      "extended_day_request": 17
+    },
+    {
+      "id": "s12",
+      "name": "Larry King",
+      "priority": 2,
+      "class_level": "honors",
+      "preferences": ["STEM"]
+    },
+    {
+      "id": "s13",
+      "name": "Maria Santos",
+      "priority": 3,
+      "class_level": "standard",
+      "preferences": ["humanities"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s14",
+      "name": "Nathan Park",
+      "priority": 1,
+      "class_level": "AP",
+      "preferences": ["arts", "STEM"]
+    },
+    {
+      "id": "s15",
+      "name": "Olivia Reed",
+      "priority": 2,
+      "class_level": "honors",
+      "preferences": ["STEM", "humanities"],
+      "extended_day_request": 17
+    },
+    {
+      "id": "s16",
+      "name": "Peter Zhang",
+      "priority": 3,
+      "class_level": "standard",
+      "preferences": ["arts"]
+    },
+    {
+      "id": "s17",
+      "name": "Quinn Murphy",
+      "priority": 1,
+      "class_level": "standard",
+      "preferences": ["STEM"]
+    },
+    {
+      "id": "s18",
+      "name": "Rachel Green",
+      "priority": 2,
+      "class_level": "honors",
+      "preferences": ["arts", "humanities"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s19",
+      "name": "Samuel Adams",
+      "priority": 3,
+      "class_level": "AP",
+      "preferences": ["STEM"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s20",
+      "name": "Tina Foster",
+      "priority": 1,
+      "class_level": "standard",
+      "preferences": ["humanities", "arts"]
+    },
+    {
+      "id": "s21",
+      "name": "Uma Patel",
+      "priority": 2,
+      "class_level": "honors",
+      "preferences": ["STEM"]
+    },
+    {
+      "id": "s22",
+      "name": "Victor Hugo",
+      "priority": 3,
+      "class_level": "standard",
+      "preferences": ["arts"],
+      "extended_day_request": 17
+    },
+    {
+      "id": "s23",
+      "name": "Wendy Clark",
+      "priority": 1,
+      "class_level": "AP",
+      "preferences": ["humanities", "STEM"]
+    },
+    {
+      "id": "s24",
+      "name": "Xavier Jones",
+      "priority": 2,
+      "class_level": "standard",
+      "preferences": ["STEM"],
+      "extended_day_request": 16
+    },
+    {
+      "id": "s25",
+      "name": "Yuki Tanaka",
+      "priority": 3,
+      "class_level": "honors",
+      "preferences": ["arts", "STEM"],
+      "extended_day_request": 16
+    }
+  ],
+  "classes": [
+    {
+      "id": "std-stem-1",
+      "name": "Standard STEM A",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "std-stem-2",
+      "name": "Standard STEM B",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "std-arts-1",
+      "name": "Standard Arts A",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "arts"
+    },
+    {
+      "id": "std-arts-2",
+      "name": "Standard Arts B",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "arts"
+    },
+    {
+      "id": "std-hum-1",
+      "name": "Standard Humanities A",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "humanities"
+    },
+    {
+      "id": "std-hum-2",
+      "name": "Standard Humanities B",
+      "capacity": 8,
+      "level": "standard",
+      "subject_focus": "humanities"
+    },
+    {
+      "id": "hon-stem-1",
+      "name": "Honors STEM A",
+      "capacity": 7,
+      "level": "honors",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "hon-stem-2",
+      "name": "Honors STEM B",
+      "capacity": 7,
+      "level": "honors",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "hon-arts-1",
+      "name": "Honors Arts A",
+      "capacity": 7,
+      "level": "honors",
+      "subject_focus": "arts"
+    },
+    {
+      "id": "hon-arts-2",
+      "name": "Honors Arts B",
+      "capacity": 7,
+      "level": "honors",
+      "subject_focus": "arts"
+    },
+    {
+      "id": "hon-hum-1",
+      "name": "Honors Humanities",
+      "capacity": 7,
+      "level": "honors",
+      "subject_focus": "humanities"
+    },
+    {
+      "id": "ap-stem-1",
+      "name": "AP STEM A",
+      "capacity": 6,
+      "level": "AP",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "ap-stem-2",
+      "name": "AP STEM B",
+      "capacity": 6,
+      "level": "AP",
+      "subject_focus": "STEM"
+    },
+    {
+      "id": "ap-arts-1",
+      "name": "AP Arts",
+      "capacity": 6,
+      "level": "AP",
+      "subject_focus": "arts"
+    },
+    {
+      "id": "ap-hum-1",
+      "name": "AP Humanities",
+      "capacity": 6,
+      "level": "AP",
+      "subject_focus": "humanities"
+    }
+  ],
+  "separations": [
+    ["s2", "s10"],
+    ["s5", "s17"],
+    ["s8", "s16"]
+  ]
+}

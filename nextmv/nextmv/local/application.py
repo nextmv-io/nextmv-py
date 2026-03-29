@@ -275,6 +275,7 @@ class Application(BaseModel):
         destination: str | None = None,
         manifest_type: ManifestType = ManifestType.PYTHON,
         content_format: ContentFormat = ContentFormat.JSON,
+        example: str | None = "hello-world",
         should_register: bool = False,
     ) -> "Application":
         """
@@ -288,9 +289,10 @@ class Application(BaseModel):
         the application with the necessary files and directories to have an
         opinionated structure for your decision model. The template used is
         determined by the combination of `manifest_type` and `content_format`.
-        Once the application is initialized, you are encouraged to complete it
-        with the decision model itself, so that the application can be run
-        locally.
+        The `example` parameter further specifies which example within the
+        template to use when scaffolding the application. Once the application
+        is initialized, you are encouraged to complete it with the decision
+        model itself, so that the application can be run locally.
 
         If the `src` parameter is not provided, a random name will be generated
         for the application. If `should_register` is set to True, the
@@ -313,6 +315,13 @@ class Application(BaseModel):
         content_format : ContentFormat, default=ContentFormat.JSON
             Content format of the application's input and output. Determines
             which template variant is used when scaffolding the application.
+        example : str, optional, default="hello-world"
+            The example template to use when initializing the application.
+            Valid values depend on the `manifest_type`.
+            - `PYTHON`: `hello-world`, `class-assign`, `demand-alloc`
+            - `GO`: `hello-world`
+            - `JAVA`: `hello-world`
+            - `BINARY`: `hello-world`
         should_register : bool, default=False
             Whether to register the application in the local registry after
             initialization. If True, the application will be added to
@@ -334,12 +343,25 @@ class Application(BaseModel):
 
         os.makedirs(app_src, exist_ok=False)
 
+        # Treat binary as Go for simplicity.
         if manifest_type == ManifestType.BINARY:
             manifest_type = ManifestType.GO
 
+        # Validate that the example and manifest_type combo are valid.
+        if example not in {"hello-world", "class-assign", "demand-alloc"}:
+            raise ValueError(
+                f"Invalid example: {example}. Valid examples are 'hello-world', 'class-assign' and 'demand-alloc'."
+            )
+
+        if example != "hello-world" and manifest_type != ManifestType.PYTHON:
+            raise ValueError(
+                "Example templates other than 'hello-world' are only available for Python. "
+                f"Received manifest type: {manifest_type.value}"
+            )
+
         # Get the path to the initial app structure template.
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        template = f"{manifest_type.value}_{content_format.value}_template"
+        template = f"{manifest_type.value}_{content_format.value}_{example}"
         initial_app_structure_path = os.path.join(current_file_dir, "..", "templates", template)
         initial_app_structure_path = os.path.normpath(initial_app_structure_path)
 
@@ -349,10 +371,18 @@ class Application(BaseModel):
 
         shutil.copytree(initial_app_structure_path, app_src, dirs_exist_ok=True)
 
+        # Workaround to provide a sample manifest when initializing with the
+        # demand allocation example, as this example is a folder of two
+        # applications, instead of a standalone app.
+        manifest = None
+        if example == "demand-alloc":
+            manifest = Manifest.from_yaml(os.path.join(app_src, "workflow"))
+
         local_app = cls(
             src=app_src,
             description=description,
             content_format=InputFormat(content_format),
+            manifest=manifest,
         )
 
         if should_register:

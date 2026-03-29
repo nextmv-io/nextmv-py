@@ -1,0 +1,78 @@
+# This manifest holds the information the app needs to run on Nextmv.
+
+# Type and runtime specify the language and environment of the app.
+type: python
+runtime: ghcr.io/nextmv-io/runtime/python:3.11
+
+# Python-specific configurations.
+python:
+  # All listed packages will get bundled with the app.
+  pip-requirements: requirements.txt
+
+# List all files/directories that should be included in the app. Globbing
+# (e.g.: configs/*.json) is supported.
+files:
+  - main.py
+  - visuals.py
+
+# Application configurations.
+configuration:
+  # Define the content format of the app, one of: json, multi-file.
+  content:
+    format: "multi-file" # Read and write files from disk.
+    # Configuration of the multi-file format.
+    multi-file:
+      input:
+        path: inputs # Directory where the app will read input files from.
+      output:
+        solutions: outputs/solutions # Directory where the app will write solution files to.
+        metrics: outputs/metrics/metrics.json # Path where the app will write metrics to.
+        assets: outputs/assets/assets.json # Path where the app will write assets to.
+  # Define the options (parameters) of the app.
+  options:
+    strict: false
+    items:
+      - name: solver
+        option_type: string
+        default: highs
+        description: ""
+        required: false
+        additional_attributes:
+          values:
+            - highs
+            - cbc
+            - glpk
+        ui:
+          control_type: select
+          display_name: Solver
+      - name: penalty_unmet_demand
+        option_type: float
+        default: 100
+        description: ""
+        required: false
+        additional_attributes:
+          min: 0
+          max: 1000
+          step: 10
+        ui:
+          control_type: slider
+          display_name: Penalty for Unmet Demand (per unit)
+      - name: time_limit
+        option_type: float
+        default: 30
+        description: ""
+        required: false
+        additional_attributes:
+          min: 5
+          max: 300
+          step: 5
+        ui:
+          control_type: slider
+          display_name: Solver Time Limit (seconds)
+      - name: random_seed
+        option_type: int
+        description: ""
+        required: false
+        ui:
+          control_type: input
+          display_name: Random Seed (optional, for reproducibility)
