@@ -39,7 +39,7 @@ from nextmv.local.local import (
 from nextmv.local.registry import Registry
 from nextmv.local.runner import run
 from nextmv.logger import log
-from nextmv.manifest import Manifest, ManifestType
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestType
 from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
@@ -384,6 +384,13 @@ class Application(BaseModel):
             content_format=InputFormat(content_format),
             manifest=manifest,
         )
+
+        # To clean up the workaround mentioned above, we now remove the
+        # manifest file from the dir.
+        if example == "demand-alloc":
+            manifest_path = os.path.join(app_src, MANIFEST_FILE_NAME)
+            if os.path.exists(manifest_path):
+                os.remove(manifest_path)
 
         if should_register:
             local_app.register()
