@@ -341,11 +341,8 @@ class Application(BaseModel):
         if os.path.exists(app_src):
             raise FileExistsError(f"destination dir for src already exists: {app_src}")
 
-        os.makedirs(app_src, exist_ok=False)
-
-        # Treat binary as Go for simplicity.
-        if manifest_type == ManifestType.BINARY:
-            manifest_type = ManifestType.GO
+        if example is None:
+            example = "hello-world"
 
         # Validate that the example and manifest_type combo are valid.
         if example not in {"hello-world", "class-assign", "demand-alloc"}:
@@ -358,6 +355,12 @@ class Application(BaseModel):
                 "Example templates other than 'hello-world' are only available for Python. "
                 f"Received manifest type: {manifest_type.value}"
             )
+
+        # Treat binary as Go for simplicity.
+        if manifest_type == ManifestType.BINARY:
+            manifest_type = ManifestType.GO
+
+        os.makedirs(app_src, exist_ok=False)
 
         # Get the path to the initial app structure template.
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
