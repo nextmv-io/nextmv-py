@@ -24,19 +24,6 @@ configuration:
   options:
     strict: false
     items:
-      - name: solver
-        option_type: string
-        default: highs
-        description: ""
-        required: false
-        additional_attributes:
-          values:
-            - highs
-            - cbc
-            - glpk
-        ui:
-          control_type: select
-          display_name: Solver
       - name: penalty_unmet_demand
         option_type: float
         default: 100

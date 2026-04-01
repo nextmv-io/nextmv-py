@@ -88,7 +88,7 @@ def solve(
     _add_objective(model)
     _add_constraints(model, input_data, student_data, class_data, class_ids)
 
-    solver = SolverFactory(options.solver)
+    solver = SolverFactory("highs")
     solver.options["timelimit"] = options.duration
     results = solver.solve(model, tee=False)
 

@@ -24,12 +24,6 @@ STATUS_MAP = {
     "unbounded": "unbounded",
 }
 
-SOLVER_MAP = {
-    "highs": ("appsi_highs", "time_limit"),
-    "cbc": ("cbc", "seconds"),
-    "glpk": ("glpk", "tmlim"),
-}
-
 
 def main() -> None:
     """Entry point for the inventory allocation model.
@@ -48,7 +42,6 @@ def main() -> None:
 
     nextmv.log(f"Warehouses: {num_warehouses}, total supply: {sum(supply)}")
     nextmv.log(f"Stores: {num_stores}, total demand: {sum(demand)}")
-    nextmv.log(f"Solver: {options.solver}")
     nextmv.log(f"Penalty per unmet unit: {options.penalty_unmet_demand}")
     nextmv.log(f"Cost threshold: {options.cost_threshold}")
     nextmv.log(f"Supply utilization min: {options.supply_utilization_min}")
@@ -339,12 +332,11 @@ def solve_model(
         If the selected solver backend is not installed or not found on
         ``PATH``.
     """
-    solver_name = options.solver if options.solver in SOLVER_MAP else "highs"
-    pyomo_solver, time_limit_key = SOLVER_MAP[solver_name]
+    solver_choice, time_limit_key = "highs", "time_limit"
 
-    solver = SolverFactory(pyomo_solver)
+    solver = SolverFactory(solver_choice)
     if not solver.available():
-        raise RuntimeError(f"Solver '{solver_name}' ({pyomo_solver}) is not installed or not on PATH.")
+        raise RuntimeError(f"Solver '{solver_choice}' is not installed or not on PATH.")
     solver.options[time_limit_key] = options.time_limit
 
     _saved = os.dup(1)
@@ -357,7 +349,7 @@ def solve_model(
     nextmv.log(f"Solver status: {status}")
     mapped_status = STATUS_MAP.get(status, status)
 
-    return results, solver_name, mapped_status
+    return results, solver_choice, mapped_status
 
 
 def extract_solution(

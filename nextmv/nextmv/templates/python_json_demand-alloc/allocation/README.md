@@ -35,7 +35,6 @@ This is the basic structure:
 
     ```bash
     cat input.json | python main.py \
-        --solver highs \
         --penalty_unmet_demand 100 \
         --supply_utilization_min 0 \
         --cost_threshold 0 \

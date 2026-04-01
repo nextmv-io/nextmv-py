@@ -44,19 +44,6 @@ configuration:
         ui:
           control_type: slider
           display_name: Duration
-      - name: solver
-        option_type: string
-        default: highs
-        description: Solver to use for optimization
-        required: false
-        additional_attributes:
-          values:
-            - highs
-            - glpk
-            - cbc
-        ui:
-          control_type: select
-          display_name: Solver
       - name: extended_day_time
         option_type: int
         default: 17

@@ -2,3 +2,4 @@
 main.jar
 target/
 outputs/
+dependency-reduced-pom.xml
