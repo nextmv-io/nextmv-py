@@ -170,11 +170,7 @@ def _manifest_type_question() -> ManifestType:
         default=ManifestType.PYTHON.value,
     )
 
-    manifest_type = ManifestType(manifest_type)
-    if manifest_type == ManifestType.GO:  # Go is just a binary
-        manifest_type = ManifestType.BINARY
-
-    return manifest_type
+    return ManifestType(manifest_type)
 
 
 def _template_question(manifest_type: ManifestType) -> str:

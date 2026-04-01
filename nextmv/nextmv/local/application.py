@@ -355,10 +355,6 @@ class Application(BaseModel):
                 f"Received manifest type: {manifest_type.value}"
             )
 
-        # Treat binary as Go for simplicity.
-        if manifest_type == ManifestType.BINARY:
-            manifest_type = ManifestType.GO
-
         os.makedirs(app_src, exist_ok=False)
 
         # Get the path to the initial app structure template.
