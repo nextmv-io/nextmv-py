@@ -1,0 +1,436 @@
+{
+  "stores": [
+    { "id": "store_0", "name": "Downtown" },
+    { "id": "store_1", "name": "Midtown" },
+    { "id": "store_2", "name": "Uptown" },
+    { "id": "store_3", "name": "Eastside" },
+    { "id": "store_4", "name": "Westside" }
+  ],
+  "warehouses": [
+    { "id": "wh_0", "name": "Central Hub", "supply": 250 },
+    { "id": "wh_1", "name": "North Depot", "supply": 300 },
+    { "id": "wh_2", "name": "South Depot", "supply": 200 }
+  ],
+  "historical_sales": [
+    {
+      "store_id": "store_0",
+      "period": 1,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 75
+    },
+    {
+      "store_id": "store_0",
+      "period": 2,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 70
+    },
+    {
+      "store_id": "store_0",
+      "period": 3,
+      "price": 11.0,
+      "promotion": 1,
+      "units_sold": 92
+    },
+    {
+      "store_id": "store_0",
+      "period": 4,
+      "price": 11.5,
+      "promotion": 0,
+      "units_sold": 78
+    },
+    {
+      "store_id": "store_0",
+      "period": 5,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 81
+    },
+    {
+      "store_id": "store_0",
+      "period": 6,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 88
+    },
+    {
+      "store_id": "store_0",
+      "period": 7,
+      "price": 10.5,
+      "promotion": 1,
+      "units_sold": 104
+    },
+    {
+      "store_id": "store_0",
+      "period": 8,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 91
+    },
+    {
+      "store_id": "store_0",
+      "period": 9,
+      "price": 13.0,
+      "promotion": 0,
+      "units_sold": 74
+    },
+    {
+      "store_id": "store_0",
+      "period": 10,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 77
+    },
+    {
+      "store_id": "store_0",
+      "period": 11,
+      "price": 11.0,
+      "promotion": 1,
+      "units_sold": 96
+    },
+    {
+      "store_id": "store_0",
+      "period": 12,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 72
+    },
+    {
+      "store_id": "store_1",
+      "period": 1,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 60
+    },
+    {
+      "store_id": "store_1",
+      "period": 2,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 58
+    },
+    {
+      "store_id": "store_1",
+      "period": 3,
+      "price": 9.5,
+      "promotion": 1,
+      "units_sold": 77
+    },
+    {
+      "store_id": "store_1",
+      "period": 4,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 63
+    },
+    {
+      "store_id": "store_1",
+      "period": 5,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 66
+    },
+    {
+      "store_id": "store_1",
+      "period": 6,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 72
+    },
+    {
+      "store_id": "store_1",
+      "period": 7,
+      "price": 9.0,
+      "promotion": 1,
+      "units_sold": 85
+    },
+    {
+      "store_id": "store_1",
+      "period": 8,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 74
+    },
+    {
+      "store_id": "store_1",
+      "period": 9,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 59
+    },
+    {
+      "store_id": "store_1",
+      "period": 10,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 62
+    },
+    {
+      "store_id": "store_1",
+      "period": 11,
+      "price": 9.5,
+      "promotion": 1,
+      "units_sold": 80
+    },
+    {
+      "store_id": "store_1",
+      "period": 12,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 60
+    },
+    {
+      "store_id": "store_2",
+      "period": 1,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 47
+    },
+    {
+      "store_id": "store_2",
+      "period": 2,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 44
+    },
+    {
+      "store_id": "store_2",
+      "period": 3,
+      "price": 14.0,
+      "promotion": 1,
+      "units_sold": 60
+    },
+    {
+      "store_id": "store_2",
+      "period": 4,
+      "price": 14.5,
+      "promotion": 0,
+      "units_sold": 49
+    },
+    {
+      "store_id": "store_2",
+      "period": 5,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 51
+    },
+    {
+      "store_id": "store_2",
+      "period": 6,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 56
+    },
+    {
+      "store_id": "store_2",
+      "period": 7,
+      "price": 13.0,
+      "promotion": 1,
+      "units_sold": 68
+    },
+    {
+      "store_id": "store_2",
+      "period": 8,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 57
+    },
+    {
+      "store_id": "store_2",
+      "period": 9,
+      "price": 16.0,
+      "promotion": 0,
+      "units_sold": 44
+    },
+    {
+      "store_id": "store_2",
+      "period": 10,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 48
+    },
+    {
+      "store_id": "store_2",
+      "period": 11,
+      "price": 14.0,
+      "promotion": 1,
+      "units_sold": 63
+    },
+    {
+      "store_id": "store_2",
+      "period": 12,
+      "price": 15.0,
+      "promotion": 0,
+      "units_sold": 46
+    },
+    {
+      "store_id": "store_3",
+      "period": 1,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 65
+    },
+    {
+      "store_id": "store_3",
+      "period": 2,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 63
+    },
+    {
+      "store_id": "store_3",
+      "period": 3,
+      "price": 10.5,
+      "promotion": 1,
+      "units_sold": 83
+    },
+    {
+      "store_id": "store_3",
+      "period": 4,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 68
+    },
+    {
+      "store_id": "store_3",
+      "period": 5,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 71
+    },
+    {
+      "store_id": "store_3",
+      "period": 6,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 79
+    },
+    {
+      "store_id": "store_3",
+      "period": 7,
+      "price": 10.0,
+      "promotion": 1,
+      "units_sold": 93
+    },
+    {
+      "store_id": "store_3",
+      "period": 8,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 80
+    },
+    {
+      "store_id": "store_3",
+      "period": 9,
+      "price": 12.0,
+      "promotion": 0,
+      "units_sold": 64
+    },
+    {
+      "store_id": "store_3",
+      "period": 10,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 67
+    },
+    {
+      "store_id": "store_3",
+      "period": 11,
+      "price": 10.5,
+      "promotion": 1,
+      "units_sold": 87
+    },
+    {
+      "store_id": "store_3",
+      "period": 12,
+      "price": 11.0,
+      "promotion": 0,
+      "units_sold": 64
+    },
+    {
+      "store_id": "store_4",
+      "period": 1,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 51
+    },
+    {
+      "store_id": "store_4",
+      "period": 2,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 49
+    },
+    {
+      "store_id": "store_4",
+      "period": 3,
+      "price": 8.5,
+      "promotion": 1,
+      "units_sold": 66
+    },
+    {
+      "store_id": "store_4",
+      "period": 4,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 53
+    },
+    {
+      "store_id": "store_4",
+      "period": 5,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 56
+    },
+    {
+      "store_id": "store_4",
+      "period": 6,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 61
+    },
+    {
+      "store_id": "store_4",
+      "period": 7,
+      "price": 8.0,
+      "promotion": 1,
+      "units_sold": 74
+    },
+    {
+      "store_id": "store_4",
+      "period": 8,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 62
+    },
+    {
+      "store_id": "store_4",
+      "period": 9,
+      "price": 10.0,
+      "promotion": 0,
+      "units_sold": 49
+    },
+    {
+      "store_id": "store_4",
+      "period": 10,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 52
+    },
+    {
+      "store_id": "store_4",
+      "period": 11,
+      "price": 8.5,
+      "promotion": 1,
+      "units_sold": 69
+    },
+    {
+      "store_id": "store_4",
+      "period": 12,
+      "price": 9.0,
+      "promotion": 0,
+      "units_sold": 50
+    }
+  ]
+}

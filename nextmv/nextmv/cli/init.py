@@ -73,100 +73,90 @@ def init() -> None:
         raise typer.Exit()
     rule()
 
-    is_template = _template_question()
+    manifest_type = _manifest_type_question()
     rule()
 
-    manifest_type = _manifest_type_question(is_template)
+    template = _template_question(manifest_type)
     rule()
 
-    content_format = _content_format_question(is_template)
+    content_format = _content_format_question()
     rule()
 
-    dirpath = _path_question(is_template)
+    dirpath = _path_question(template)
 
-    local_app = _handle_files_initialization(is_template, dirpath, manifest_type, content_format)
+    local_app = _handle_files_initialization(template, dirpath, manifest_type, content_format)
     rule()
 
-    commands = []
-    try:
-        local_run_id, cmds1 = _handle_local_run_create(local_app, is_template)
-        commands.extend(cmds1)
-        rule()
-
-        cmd2 = _handle_local_run_get(local_run_id)
-        commands.append(cmd2)
-        rule()
-
-        cmd3 = _handle_configuration()
-        commands.append(cmd3)
-        rule()
-
-        cloud_app, cmds4 = _handle_app_sync()
-        commands.extend(cmds4)
-        rule()
-
-        cmd5 = _handle_app_push(cloud_app)
-        commands.append(cmd5)
-        rule()
-
-        cloud_run_id, cmd6 = _handle_cloud_run_create(cloud_app, local_app, is_template)
-        commands.append(cmd6)
-        rule()
-
-        cmd7 = _handle_cloud_run_get(cloud_app, cloud_run_id)
-        commands.append(cmd7)
-        rule()
-
+    if manifest_type == ManifestType.PYTHON and template == "demand-alloc":
         message(
-            msg="Congratulations! You've completed the Nextmv CLI tutorial. "
-            "This is a summary of the commands that were executed during the tutorial:",
+            msg="This template is a complex, real-world example of a demand-forecast allocation workflow. "
+            "Please navigate to the directory and read the [magenta]README.md[/magenta] files for more information.",
+            emoji=":sparkles:",
+        )
+        rule()
+        message(
+            msg="Congratulations! You've completed the Nextmv CLI tutorial.",
             emoji=":rocket:",
         )
-    except Exception:
-        rule()
-        message(msg="The tutorial was not completed! You can run [code]nextmv init[/code] any time.", emoji=":rabbit:")
-        if len(commands) > 0:
+
+    else:
+        commands = []
+        try:
+            local_run_id, cmds1 = _handle_local_run_create(local_app, template)
+            commands.extend(cmds1)
+            rule()
+
+            cmd2 = _handle_local_run_get(local_run_id)
+            commands.append(cmd2)
+            rule()
+
+            cmd3 = _handle_configuration()
+            commands.append(cmd3)
+            rule()
+
+            cloud_app, cmds4 = _handle_app_sync()
+            commands.extend(cmds4)
+            rule()
+
+            cmd5 = _handle_app_push(cloud_app)
+            commands.append(cmd5)
+            rule()
+
+            cloud_run_id, cmd6 = _handle_cloud_run_create(cloud_app, local_app, template)
+            commands.append(cmd6)
+            rule()
+
+            cmd7 = _handle_cloud_run_get(cloud_app, cloud_run_id)
+            commands.append(cmd7)
+            rule()
+
             message(
-                msg="Here are the commands that were run so far:",
+                msg="Congratulations! You've completed the Nextmv CLI tutorial. "
+                "This is a summary of the commands that were executed during the tutorial:",
                 emoji=":rocket:",
             )
+        except Exception:
+            rule()
+            message(
+                msg="The tutorial was not completed! You can run [code]nextmv init[/code] any time.", emoji=":rabbit:"
+            )
+            if len(commands) > 0:
+                message(
+                    msg="Here are the commands that were run so far:",
+                    emoji=":rocket:",
+                )
 
-    for cmd in commands:
-        if cmd is not None:
-            message(msg=f"- {cmd.explanation}: [code]{cmd.cmd}[/code]", indents=1)
+        for cmd in commands:
+            if cmd is not None:
+                message(msg=f"- {cmd.explanation}: [code]{cmd.cmd}[/code]", indents=1)
 
     print("", file=sys.stderr)
     message(msg="[yellow]Happy optimizing![/yellow]", emoji=":sparkles:")
 
 
-def _template_question() -> bool:
-    """
-    Ask the user if they want to start with a template or an existing model.
-
-    Returns
-    -------
-    bool
-        True if the user wants to start with a template, False if they want to
-        start with an existing model.
-    """
-
-    init_type = choice(
-        msg="Are you working with an existing model or do you want to start with a template?",
-        choices=["Template", "Existing model"],
-        default="Template",
-    )
-
-    return init_type == "Template"
-
-
-def _manifest_type_question(is_template: bool) -> ManifestType:
+def _manifest_type_question() -> ManifestType:
     """
     Ask the user which language they want to use for their manifest.
-
-    Parameters
-    ----------
-    is_template : bool
-        Whether the user is starting with a template or an existing model.
 
     Returns
     -------
@@ -174,24 +164,66 @@ def _manifest_type_question(is_template: bool) -> ManifestType:
         The type of manifest to initialize, based on the user's choice.
     """
 
-    msg = "Which type (language) is your existing model written in?"
-    if is_template:
-        msg = "Which type (language) do you want to use for your Nextmv application template?"
-
     manifest_type = choice(
-        msg=msg,
+        msg="Which type (language) do you want to work with?",
         choices=[member.value for member in ManifestType],
         default=ManifestType.PYTHON.value,
     )
 
-    manifest_type = ManifestType(manifest_type)
-    if manifest_type == ManifestType.BINARY:
-        manifest_type = ManifestType.GO
-
-    return manifest_type
+    return ManifestType(manifest_type)
 
 
-def _content_format_question(is_template: bool) -> ContentFormat:
+def _template_question(manifest_type: ManifestType) -> str:
+    """
+    Ask the user how they want to start working with Nextmv.
+
+    Returns
+    -------
+    str
+        The user's choice for how to start working with Nextmv. If the user
+        chooses to start with an example template, the value will be the name
+        of the example. If they choose to start with an existing model, the
+        value will be "existing".
+    """
+
+    hello_world = questionary.Choice(
+        title="Example - hello world",
+        description="A simple, beginner-friendly example to get you started with the basics of Nextmv.",
+        value="hello-world",
+    )
+    existing_model = questionary.Choice(
+        title="Existing model",
+        description="I already have a model and want to make it work with Nextmv.",
+        value="existing",
+    )
+    if manifest_type == ManifestType.PYTHON:
+        choices = [
+            hello_world,
+            questionary.Choice(
+                title="Example - class-room assignment",
+                description="A more complete, real-world example to see Nextmv in action.",
+                value="class-assign",
+            ),
+            questionary.Choice(
+                title="Example - demand allocation workflow",
+                description="A complex example showcasing a decision workflow with multiple steps and a sub-app.",
+                value="demand-alloc",
+            ),
+            existing_model,
+        ]
+    else:
+        choices = [hello_world, existing_model]
+
+    init_type = choice(
+        msg="How do you want to start working with Nextmv?",
+        choices=choices,
+        default=hello_world.value,
+    )
+
+    return init_type
+
+
+def _content_format_question() -> ContentFormat:
     """
     Ask the user which content format they want to use for their manifest.
 
@@ -212,12 +244,8 @@ def _content_format_question(is_template: bool) -> ContentFormat:
             description=member.description,
         )
 
-    msg = "How does your existing model handle I/O (input/output) data?"
-    if is_template:
-        msg = "Which type of I/O (input/output) content format do you prefer for your app?"
-
     content_format = choice(
-        msg=msg,
+        msg="Which type of I/O (input/output) content format do you prefer for your app?",
         choices=choices,
         default=ContentFormat.JSON.value,
     )
@@ -226,15 +254,15 @@ def _content_format_question(is_template: bool) -> ContentFormat:
     return content_format
 
 
-def _path_question(is_template: bool) -> str:
+def _path_question(template: str) -> str:
     """
     Ask the user for the path to their existing model or where they want to
     initialize their template.
 
     Parameters
     ----------
-    is_template : bool
-        Whether the user is starting with a template or an existing model.
+    template : str
+        The name of the template or "existing" if the user is working with an existing model.
 
     Returns
     -------
@@ -244,7 +272,7 @@ def _path_question(is_template: bool) -> str:
     """
 
     msg = "What is the path to your existing model?"
-    if is_template:
+    if template != "existing":
         msg = "Where would you like to initialize your Nextmv application template?"
 
     dirpath = directory_path(
@@ -257,7 +285,7 @@ def _path_question(is_template: bool) -> str:
 
 
 def _handle_files_initialization(
-    is_template: bool,
+    template: str,
     dirpath: str,
     manifest_type: ManifestType,
     content_format: ContentFormat,
@@ -271,10 +299,8 @@ def _handle_files_initialization(
 
     Parameters
     ----------
-    is_template : bool
-        If True, a full application template is scaffolded under `dirpath`. If
-        False, only the manifest (`app.yaml`) is initialized in the existing
-        model directory.
+    template : str
+        The name of the template or "existing" if the user is working with an existing model.
     dirpath : str
         Path to the directory where the application or manifest will be
         initialized.
@@ -291,14 +317,15 @@ def _handle_files_initialization(
         local registry.
     """
 
-    if is_template:
-        template = f"{manifest_type.value}_{content_format.value}_template"
-        resolved_template = _get_valid_path(template, os.stat)
+    if template != "existing":
+        template_dst = f"{manifest_type.value}_{content_format.value}_{template}"
+        resolved_template = _get_valid_path(template_dst, os.stat)
         local_app = local.Application.initialize(
             src=resolved_template,
             description="Sample Nextmv application initialized with the CLI.",
             manifest_type=manifest_type,
             content_format=content_format,
+            example=template,
             destination=dirpath,
             should_register=False,
         )
@@ -308,17 +335,17 @@ def _handle_files_initialization(
         )
 
     else:
-        dst = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
+        manifest_path = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
         success(
             f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
-            f"initialized at [magenta]{dst}[/magenta]."
+            f"initialized at [magenta]{manifest_path}[/magenta]."
         )
-        local_app = local.Application(src=dst)
+        local_app = local.Application(src=os.path.dirname(manifest_path))
 
     return local_app
 
 
-def _handle_local_run_create(local_app: local.Application, is_template: bool) -> tuple[str, list[ExecutedCommand]]:
+def _handle_local_run_create(local_app: local.Application, template: str) -> tuple[str, list[ExecutedCommand]]:
     """
     Prompt the user to start a local run for the initialized application.
 
@@ -330,8 +357,8 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
     ----------
     local_app : Application
         The registered local application for which the run will be started.
-    is_template : bool
-        Indicates whether the application was initialized from a template.
+    template : str
+        The name of the template or "existing" if the user is working with an existing model.
 
     Returns
     -------
@@ -376,11 +403,25 @@ def _handle_local_run_create(local_app: local.Application, is_template: bool) ->
             cmd = ExecutedCommand(cmd=cmd_str, explanation="Compile/build the application")
             commands.append(cmd)
 
+    # If the application is Python, we ask if the user wants to install
+    # dependencies with pip.
+    if man_type == ManifestType.PYTHON and template != "hello-world":
+        cmd_str = Prompt.ask(
+            prompt=f"This application is of type [magenta]{man_type.value}[/magenta]. "
+            "Please type the command needed to install deps (e.g. [code]pip install -r requirements.txt[/code]). "
+            "Leave blank to omit",
+            default="",
+        )
+        if cmd_str:
+            result = _cli_call(cmd_str.split())
+            cmd = ExecutedCommand(cmd=cmd_str, explanation="Install dependencies for the Python application")
+            commands.append(cmd)
+
     # Select the input path to run the local app.
     default = "."
-    if is_template and local_app.content_format == ContentFormat.JSON:
+    if template != "existing" and local_app.content_format == ContentFormat.JSON:
         default = "input.json"
-    elif is_template and local_app.content_format == ContentFormat.MULTI_FILE:
+    elif template != "existing" and local_app.content_format == ContentFormat.MULTI_FILE:
         default = "inputs/"
 
     dirpath = directory_path(
@@ -457,14 +498,7 @@ def _handle_local_run_get(run_id: str) -> ExecutedCommand:
         raise typer.Exit()
 
     # Actually execute the command to get the local run results.
-    command = [
-        "nextmv",
-        "local",
-        "run",
-        "get",
-        "--run-id",
-        run_id,
-    ]
+    command = ["nextmv", "local", "run", "get", "--run-id", run_id, "--wait"]
     str_cmd = " ".join(command)
     in_progress(f"Getting local run results with command: [code]{str_cmd}[/code]")
     result = _cli_call(command)
@@ -851,16 +885,7 @@ def _handle_cloud_run_get(cloud_app: cloud.Application, run_id: str) -> Executed
         raise typer.Exit()
 
     # Actually execute the command to get the Cloud run results.
-    command = [
-        "nextmv",
-        "cloud",
-        "run",
-        "get",
-        "--app-id",
-        cloud_app.id,
-        "--run-id",
-        run_id,
-    ]
+    command = ["nextmv", "cloud", "run", "get", "--app-id", cloud_app.id, "--run-id", run_id, "--wait"]
     str_cmd = " ".join(command)
     in_progress(f"Getting [italic]remote[/italic] run results with command: [code]{str_cmd}[/code]")
     result = _cli_call(command)

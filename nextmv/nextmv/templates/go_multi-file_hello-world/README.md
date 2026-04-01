@@ -2,7 +2,7 @@
 
 This is a template for a Nextmv application with the following characteristics:
 
-* Type: Go
+* Type: Binary (Go)
 * Content format: `multi-file`. Read/write one or more files from/to disk (a directory).
 
 This is the basic structure:

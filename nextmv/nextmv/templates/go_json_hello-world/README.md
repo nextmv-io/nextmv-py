@@ -2,7 +2,7 @@
 
 This is a template for a Nextmv application with the following characteristics:
 
-* Type: Go
+* Type: Binary (Go)
 * Content format: `json`, utf-8 encoded. JSON is read from stdin
   and written to stdout.
 

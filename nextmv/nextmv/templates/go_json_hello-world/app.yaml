@@ -1,7 +1,7 @@
 # This manifest holds the information the app needs to run on Nextmv.
 
 # Type and runtime specify the language and environment of the app.
-type: go
+type: binary
 runtime: ghcr.io/nextmv-io/runtime/default:latest
 
 # Directives to build a Go binary from the app.
