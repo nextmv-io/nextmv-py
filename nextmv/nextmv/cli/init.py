@@ -171,8 +171,8 @@ def _manifest_type_question() -> ManifestType:
     )
 
     manifest_type = ManifestType(manifest_type)
-    if manifest_type == ManifestType.BINARY:
-        manifest_type = ManifestType.GO
+    if manifest_type == ManifestType.GO:  # Go is just a binary
+        manifest_type = ManifestType.BINARY
 
     return manifest_type
 
@@ -339,12 +339,12 @@ def _handle_files_initialization(
         )
 
     else:
-        dst = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
+        manifest_path = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
         success(
             f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
-            f"initialized at [magenta]{dst}[/magenta]."
+            f"initialized at [magenta]{manifest_path}[/magenta]."
         )
-        local_app = local.Application(src=dst)
+        local_app = local.Application(src=os.path.dirname(manifest_path))
 
     return local_app
 
