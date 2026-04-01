@@ -55,6 +55,14 @@ app.add_typer(local_app, name="local")
 app.add_typer(manifest_app, name="manifest")
 app.add_typer(version_app)
 
+# Register the MCP subcommand only if the mcp extra is installed.
+try:
+    from nextmv.cli.mcp import app as mcp_app
+
+    app.add_typer(mcp_app, name="mcp")
+except ImportError:
+    pass
+
 
 @app.callback()
 def callback(
@@ -79,7 +87,7 @@ def callback(
         return
 
     # Skip checks for certain commands.
-    ignored_commands = {"configuration", "local", "init", "manifest", "version"}
+    ignored_commands = {"configuration", "mcp", "local", "init", "manifest", "version"}
     if ctx.invoked_subcommand in ignored_commands:
         return
 

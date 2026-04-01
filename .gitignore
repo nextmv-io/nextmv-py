@@ -161,5 +161,10 @@ cython_debug/
 # VSCode
 .vscode/
 
+# Agents
+.claude
+
 # Documentation stuff
 site/
+
+scratch
