@@ -515,7 +515,8 @@ class TestWriteSampleManifest(unittest.TestCase):
             dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
             self.assertTrue(os.path.isfile(dest))
             manifest = Manifest.from_yaml(dirpath)
-            self.assertEqual(manifest.type, ManifestType.GO)
+            # Go is just a binary app, so, we use the binary manifest type.
+            self.assertEqual(manifest.type, ManifestType.BINARY)
 
     def test_writes_java_manifest(self):
         with tempfile.TemporaryDirectory() as dirpath:
@@ -548,7 +549,8 @@ class TestWriteSampleManifest(unittest.TestCase):
             dest = os.path.join(dirpath, MANIFEST_FILE_NAME)
             self.assertTrue(os.path.isfile(dest))
             manifest = Manifest.from_yaml(dirpath)
-            self.assertEqual(manifest.type, ManifestType.GO)
+            # Go is just a binary app, so, we use the binary manifest type.
+            self.assertEqual(manifest.type, ManifestType.BINARY)
             self.assertEqual(manifest.configuration.content.format.value, ContentFormat.MULTI_FILE.value)
 
     def test_writes_java_multi_file_manifest(self):
