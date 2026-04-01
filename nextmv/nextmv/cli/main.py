@@ -59,7 +59,7 @@ app.add_typer(version_app)
 try:
     from nextmv.cli.mcp import app as mcp_app
 
-    app.add_typer(mcp_app, name="mcp", rich_help_panel="Preview")
+    app.add_typer(mcp_app, name="mcp")
 except ImportError:
     pass
 
