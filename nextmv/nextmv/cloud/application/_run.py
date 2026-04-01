@@ -18,6 +18,7 @@ from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.cloud.assets import RunAsset
 from nextmv.cloud.client import get_size
+from nextmv.cloud.input_set import ManagedInput
 from nextmv.cloud.url import DownloadURL
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
@@ -256,7 +257,7 @@ class ApplicationRunMixin:
 
     def new_run(  # noqa: C901 # Refactor this function at some point.
         self: "Application",
-        input: Input | dict[str, Any] | BaseModel | str = None,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -275,9 +276,9 @@ class ApplicationRunMixin:
 
         Parameters
         ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
 
             If `nextmv.Input` is used, and the `input_format` is either
             `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
@@ -380,14 +381,22 @@ class ApplicationRunMixin:
 
         input_data = self.__extract_input_data(input)
 
+        managed_input_used, managed_input = self.__prepare_managed_input(
+            managed_input=input,
+            managed_input_id=managed_input_id,
+        )
+        if managed_input_used:
+            input = managed_input
+            if input_dir_path is not None and input_dir_path != "":
+                raise ValueError("Cannot specify both a managed input and an input directory path.")
+
         input_size = 0
         if input_data is not None:
             input_size = get_size(input_data)
 
-        managed_input_id_used = managed_input_id is not None and managed_input_id != ""
         upload_id_used = upload_id is not None and upload_id != ""
         if self.__upload_url_required(
-            uploaded_input_used=upload_id_used or managed_input_id_used,
+            uploaded_input_used=upload_id_used or managed_input_used,
             input_size=input_size,
             tar_file=tar_file,
             input=input,
@@ -409,8 +418,8 @@ class ApplicationRunMixin:
         # use `upload_id` if no managed input is defined but `upload_id` is or
         # the input used necessitated the input be uploaded, and use `input`
         # for all remaining cases.
-        if managed_input_id_used:
-            payload["input_id"] = managed_input_id
+        if managed_input_used:
+            payload["input_id"] = managed_input.id
         elif upload_id_used:
             payload["upload_id"] = upload_id
         else:
@@ -453,7 +462,7 @@ class ApplicationRunMixin:
 
     def new_run_with_result(
         self: "Application",
-        input: Input | dict[str, Any] | BaseModel | str = None,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -476,9 +485,9 @@ class ApplicationRunMixin:
 
         Parameters
         ----------
-        input: Union[Input, dict[str, Any], BaseModel, str]
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
             Input to use for the run. This can be a `nextmv.Input` object,
-            `dict`, `BaseModel` or `str`.
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
 
             If `nextmv.Input` is used, and the `input_format` is either
             `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
@@ -561,7 +570,8 @@ class ApplicationRunMixin:
             required if the output is non-JSON. If the directory does not exist, it
             will be created. Uses the current directory by default.
         managed_input_id : Optional[str],
-            The ID of an existing managed input (`nextmv.cloud.ManagedInput`) to use as the run's input.
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`) to use as
+            the run's input.
 
         Returns
         ----------
@@ -1393,6 +1403,18 @@ class ApplicationRunMixin:
 
         return input_data
 
+    def __prepare_managed_input(
+        self: "Application",
+        managed_input_id: str | None,
+        managed_input: ManagedInput | None,
+    ) -> tuple[bool, ManagedInput | None]:
+        if managed_input is not None and isinstance(managed_input, ManagedInput):
+            return True, managed_input
+        elif managed_input_id is not None and managed_input_id != "":
+            return True, self.managed_input(managed_input_id=managed_input_id)
+        else:
+            return False, None
+
     def __extract_options_dict(
         self: "Application",
         options: Options | dict[str, str] | None = None,
@@ -1420,7 +1442,7 @@ class ApplicationRunMixin:
 
     def __extract_run_config(
         self: "Application",
-        input: Input | dict[str, Any] | BaseModel | str = None,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
         configuration: RunConfiguration | dict[str, Any] | None = None,
         dir_path: str | None = None,
     ) -> dict[str, Any]:
@@ -1436,6 +1458,8 @@ class ApplicationRunMixin:
             return configuration_dict
 
         configuration = RunConfiguration()
+        if isinstance(input, ManagedInput):
+            configuration.format = input.format
         configuration.resolve(input=input, dir_path=dir_path)
         configuration_dict = configuration.to_dict()
 
