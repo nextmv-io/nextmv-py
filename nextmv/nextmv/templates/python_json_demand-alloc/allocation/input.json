@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "num_warehouses": 5,
+  "num_stores": 10,
+  "supply_range": [200, 300],
+  "demand_range": [50, 150]
+}
