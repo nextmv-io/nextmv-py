@@ -341,8 +341,7 @@ class Application(BaseModel):
         if os.path.exists(app_src):
             raise FileExistsError(f"destination dir for src already exists: {app_src}")
 
-        if example is None:
-            example = "hello-world"
+        example = example or "hello-world"
 
         # Validate that the example and manifest_type combo are valid.
         if example not in {"hello-world", "class-assign", "demand-alloc"}:
