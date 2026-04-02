@@ -12,6 +12,7 @@ AccountMemberRole
 
 from enum import Enum
 
+
 class AccountMemberRole(str, Enum):
     """
     The role type of an `AccountMember` represented as a string.
