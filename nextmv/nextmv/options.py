@@ -23,6 +23,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 
 
@@ -132,7 +133,7 @@ class Option:
     the option. This will be validated by the Nextmv Cloud, and availability
     is based on options_type.
     """
-    hidden_from: list[str] | None = None
+    hidden_from: list[AccountMemberRole] | None = None
     """
     A list of team roles for which this option will be hidden in the UI. For
     example, if you want to hide an option from the "operator" role, you can

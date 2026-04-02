@@ -20,6 +20,7 @@ from datetime import datetime
 from pydantic import AliasChoices, Field
 
 from nextmv import deprecated
+from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 from nextmv.cloud.client import Client
 from nextmv.status import StatusV2
@@ -137,7 +138,6 @@ class Queue(BaseModel):
     runs: list[QueuedRun]
     """List of runs in the queue."""
 
-
 class AccountMember(BaseModel):
     """
     A member of a Nextmv Cloud account (organization).
@@ -173,11 +173,10 @@ class AccountMember(BaseModel):
 
     email: str | None = None
     """Email of the account member."""
-    role: str | None = None
+    role: AccountMemberRole | None = None
     """Role of the account member."""
     pending_invite: bool | None = None
     """Whether the member has a pending invite."""
-
 
 class Account(BaseModel):
     """
