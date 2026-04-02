@@ -75,7 +75,7 @@ class Option:
         it is used in the Nextmv Cloud UI to define the type of control to use for
         the option. This will be validated by the Nextmv Cloud, and availability
         is based on options_type.
-    hidden_from : list[str], optional
+    hidden_from : list[AccountMemberRole], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
         pass `hidden_from=["operator"]`.
