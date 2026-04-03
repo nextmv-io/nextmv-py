@@ -1,6 +1,7 @@
 """Nextmv Python SDK."""
 
 from .__about__ import __version__
+from .account import AccountMemberRole as AccountMemberRole
 from .base_model import BaseModel as BaseModel
 from .base_model import from_dict as from_dict
 from .content_format import ContentFormat as ContentFormat
