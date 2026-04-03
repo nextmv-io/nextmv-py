@@ -1,5 +1,11 @@
 name: unit tests
-on: [push]
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ${{ matrix.platform }}
