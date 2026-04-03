@@ -64,6 +64,7 @@ from typing import Any
 import yaml
 from pydantic import AliasChoices, Field, field_validator
 
+from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
@@ -457,10 +458,13 @@ class ManifestOptionUI(BaseModel):
         it is used in the Nextmv Cloud UI to define the type of control to use for
         the option. This will be validated by the Nextmv Cloud, and availability
         is based on option_type.
-    hidden_from : list[str], optional
+    hidden_from : list[AccountMemberRole], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
         pass `hidden_from=["operator"]`.
+
+        Each roles is validated during API handling to ensure they are one of:
+        `"root"`, `"admin"`, `"developer"`, `"operator"`, or `"viewer"`
     display_name : str, optional
         An optional display name for the option. This is useful for making
         the option more user-friendly in the UI.
@@ -475,7 +479,7 @@ class ManifestOptionUI(BaseModel):
 
     control_type: str | None = None
     """The type of control to use for the option in the Nextmv Cloud UI."""
-    hidden_from: list[str] | None = None
+    hidden_from: list[AccountMemberRole] | None = None
     """A list of team roles for which this option will be hidden in the UI."""
     display_name: str | None = None
     """An optional display name for the option. This is useful for making
