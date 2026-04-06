@@ -138,7 +138,7 @@ class Client:
     console_url: str = "https://cloud.nextmv.io"
     """URL of the Nextmv Cloud console."""
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: C901
         """
         Initializes the client after dataclass construction.
 
