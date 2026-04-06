@@ -7,10 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.application import list_applications
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,7 +44,7 @@ def list(
         $ [dim]nextmv cloud app list --output apps.json[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing applications...")
 
     cloud_apps = list_applications(client)

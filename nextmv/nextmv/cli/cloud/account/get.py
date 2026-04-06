@@ -7,10 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AccountIDOption, ProfileOption
 from nextmv.cloud.account import Account
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,7 +46,7 @@ def get(
         $ [dim]nextmv cloud account get --account-id cottontail-couriers --output account.json[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting account...")
 
     cloud_account = Account.get(

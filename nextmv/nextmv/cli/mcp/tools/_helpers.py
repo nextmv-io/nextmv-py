@@ -7,7 +7,6 @@ import tempfile
 from typing import Any
 
 from nextmv import local
-from nextmv.cli.configuration.config import build_client
 from nextmv.cloud import Application, Client
 from nextmv.input import InputFormat
 from nextmv.local.executor import process_run_visuals
@@ -67,9 +66,9 @@ class ProfileSession:
 
         # Fall back to the CLI configuration file (~/.nextmv/config.yaml).
         try:
-            # "default" means use top-level keys (profile=None in build_client).
+            # "default" means use top-level keys (profile=None in Client).
             p = None if resolved is None or resolved == "default" else resolved
-            return build_client(profile=p)
+            return Client(profile=p)
         except Exception as e:
             raise ValueError(
                 f"Could not build a Nextmv client: {e}. Either set the "

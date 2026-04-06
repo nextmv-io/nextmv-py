@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.account import Account
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,7 +70,7 @@ def create(
             --admins "thumper@forestmail.com,flopsy@warren.io"[/dim]
     """
 
-    cloud_client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Creating account...")
 
     admin_list = []
@@ -82,5 +82,5 @@ def create(
         for sub_admin in sub_admins:
             admin_list.append(sub_admin.strip())
 
-    account = Account.new(client=cloud_client, name=name, admins=admin_list)
+    account = Account.new(client=client, name=name, admins=admin_list)
     print_json(account.to_dict())

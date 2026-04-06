@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.sso import SSOConfiguration
 
 # Set up subcommand application.
@@ -99,11 +99,11 @@ def create(
     if stdin is not None:
         metadata_document = stdin
 
-    cloud_client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Creating configuration...")
 
     SSOConfiguration.new(
-        client=cloud_client,
+        client=client,
         allow_non_domain_users=allow_non_domain_users,
         enabled=enabled,
         metadata_url=metadata_url,

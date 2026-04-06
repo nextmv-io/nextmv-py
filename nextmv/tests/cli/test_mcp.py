@@ -361,7 +361,7 @@ class TestGetClient(unittest.TestCase):
         self.assertEqual(client.url, "https://custom.api.io")
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch("nextmv.cli.mcp.tools._helpers.build_client", side_effect=Exception("no config"))
+    @patch("nextmv.cli.mcp.tools._helpers.Client", side_effect=Exception("no config"))
     def test_get_client_no_key_no_config_raises(self, mock_build):
         """Test that _get_client raises when no API key or config is available."""
         from nextmv.cli.mcp.server import _get_client
@@ -456,19 +456,26 @@ class TestSaveToFile(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_managed_input"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "name": "test input",
-            "input": {"stops": [{"id": "s1"}]},
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "name": "test input",
+                    "input": {"stops": [{"id": "s1"}]},
+                }
+            )
+        )
         mock_app.upload_url.assert_called_once()
         mock_app.upload_data.assert_called_once_with(
             upload_url=mock_upload_url,
             data={"stops": [{"id": "s1"}]},
         )
         mock_app.new_managed_input.assert_called_once_with(
-            id=None, name="test input", description=None,
-            run_id=None, upload_id="upl_123",
+            id=None,
+            name="test input",
+            description=None,
+            run_id=None,
+            upload_id="upl_123",
         )
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
@@ -484,11 +491,15 @@ class TestSaveToFile(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_input_set"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "name": "test set",
-            "managed_input_ids": ["mi-1", "mi-2"],
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "name": "test set",
+                    "managed_input_ids": ["mi-1", "mi-2"],
+                }
+            )
+        )
         call_kwargs = mock_app.new_input_set.call_args[1]
         self.assertEqual(len(call_kwargs["inputs"]), 2)
         self.assertEqual(call_kwargs["inputs"][0].id, "mi-1")
@@ -507,11 +518,15 @@ class TestSaveToFile(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_input_set"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "name": "test set",
-            "run_ids": ["run-1", "run-2"],
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "name": "test set",
+                    "run_ids": ["run-1", "run-2"],
+                }
+            )
+        )
         call_kwargs = mock_app.new_input_set.call_args[1]
         self.assertEqual(call_kwargs["run_ids"], ["run-1", "run-2"])
         self.assertIsNone(call_kwargs["inputs"])
@@ -527,33 +542,37 @@ class TestSaveToFile(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "name": "test",
-            "scenarios": [
+        asyncio.run(
+            tool.run(
                 {
-                    "instance_id": "stable",
-                    "scenario_id": "s1",
-                    "scenario_input": {
-                        "input_set_id": "my-input-set",
-                    },
-                    "configuration": {
-                        "options": {"duration": "30", "objective": "cost"},
-                    },
-                },
-                {
-                    "instance_id": "stable",
-                    "scenario_id": "s2",
-                    "scenario_input": {
-                        "scenario_input_type": "input_set",
-                        "scenario_input_data": "other-set",
-                    },
-                    "configuration": [
-                        {"name": "duration", "values": ["10", "30"]},
+                    "app_id": "my-app",
+                    "name": "test",
+                    "scenarios": [
+                        {
+                            "instance_id": "stable",
+                            "scenario_id": "s1",
+                            "scenario_input": {
+                                "input_set_id": "my-input-set",
+                            },
+                            "configuration": {
+                                "options": {"duration": "30", "objective": "cost"},
+                            },
+                        },
+                        {
+                            "instance_id": "stable",
+                            "scenario_id": "s2",
+                            "scenario_input": {
+                                "scenario_input_type": "input_set",
+                                "scenario_input_data": "other-set",
+                            },
+                            "configuration": [
+                                {"name": "duration", "values": ["10", "30"]},
+                            ],
+                        },
                     ],
-                },
-            ],
-        }))
+                }
+            )
+        )
         call_kwargs = mock_app.new_scenario_test.call_args[1]
         scenarios = call_kwargs["scenarios"]
         self.assertEqual(len(scenarios), 2)
@@ -651,22 +670,22 @@ class TestProfiles(unittest.TestCase):
             self.assertIn("5678", profiles[1]["api_key"])
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch("nextmv.cli.mcp.tools._helpers.build_client")
-    def test_get_client_uses_profile(self, mock_build_client):
-        """Test that _get_client passes the profile to build_client."""
+    @patch("nextmv.cli.mcp.tools._helpers.Client")
+    def test_get_client_uses_profile(self, mock_client):
+        """Test that _get_client passes the profile to Client."""
         from nextmv.cli.mcp.tools._helpers import session
 
-        mock_build_client.return_value = MagicMock()
+        mock_client.return_value = MagicMock()
 
         # Explicit profile override.
         session.get_client(profile="staging")
-        mock_build_client.assert_called_with(profile="staging")
+        mock_client.assert_called_with(profile="staging")
 
         # Session-level profile.
         session.profile = "prod"
         try:
             session.get_client()
-            mock_build_client.assert_called_with(profile="prod")
+            mock_client.assert_called_with(profile="prod")
         finally:
             session.profile = None
 
@@ -675,12 +694,12 @@ class TestProfiles(unittest.TestCase):
         """Test that env var is skipped when a profile is active."""
         from nextmv.cli.mcp.tools._helpers import session
 
-        with patch("nextmv.cli.mcp.tools._helpers.build_client") as mock_build:
-            mock_build.return_value = MagicMock()
+        with patch("nextmv.cli.mcp.tools._helpers.Client") as mock_client:
+            mock_client.return_value = MagicMock()
             session.profile = "staging"
             try:
                 session.get_client()
-                mock_build.assert_called_with(profile="staging")
+                mock_client.assert_called_with(profile="staging")
             finally:
                 session.profile = None
 
@@ -701,27 +720,32 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "run_groups": [
-                {"id": "grp-1", "instance_id": "prod", "repetitions": 1, "options": {}},
-                {"id": "grp-2", "instance_id": "staging", "repetitions": 1, "options": {}},
-            ],
-            "rules": [
+        asyncio.run(
+            tool.run(
                 {
-                    "id": "min-cost",
-                    "statistics_path": "result.value",
-                    "objective": "minimize",
-                    "tolerance": 0.01,
-                    "index": 0,
-                },
-            ],
-            "name": "test ensemble",
-        }))
+                    "app_id": "my-app",
+                    "run_groups": [
+                        {"id": "grp-1", "instance_id": "prod", "repetitions": 1, "options": {}},
+                        {"id": "grp-2", "instance_id": "staging", "repetitions": 1, "options": {}},
+                    ],
+                    "rules": [
+                        {
+                            "id": "min-cost",
+                            "statistics_path": "result.value",
+                            "objective": "minimize",
+                            "tolerance": 0.01,
+                            "index": 0,
+                        },
+                    ],
+                    "name": "test ensemble",
+                }
+            )
+        )
         mock_app.new_ensemble_definition.assert_called_once()
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
         # run_groups should be RunGroup objects, not dicts.
         from nextmv.cloud.ensemble import EvaluationRule, RunGroup
+
         self.assertIsInstance(call_kwargs["run_groups"][0], RunGroup)
         self.assertIsInstance(call_kwargs["run_groups"][1], RunGroup)
         self.assertEqual(call_kwargs["run_groups"][0].id, "grp-1")
@@ -743,21 +767,26 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
-            "rules": [
+        asyncio.run(
+            tool.run(
                 {
-                    "id": "min-cost",
-                    "statistics_path": "result.value",
-                    "objective": "min",
-                    "tolerance": 0.01,
-                    "index": 0,
-                },
-            ],
-        }))
+                    "app_id": "my-app",
+                    "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+                    "rules": [
+                        {
+                            "id": "min-cost",
+                            "statistics_path": "result.value",
+                            "objective": "min",
+                            "tolerance": 0.01,
+                            "index": 0,
+                        },
+                    ],
+                }
+            )
+        )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
         from nextmv.cloud.ensemble import RuleObjective
+
         self.assertEqual(call_kwargs["rules"][0].objective, RuleObjective.MINIMIZE)
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
@@ -773,21 +802,26 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
-            "rules": [
+        asyncio.run(
+            tool.run(
                 {
-                    "id": "rule-1",
-                    "statistics_path": "result.value",
-                    "objective": "maximize",
-                    "tolerance": {"value": 5.0, "type": "absolute"},
-                    "index": 1,
-                },
-            ],
-        }))
+                    "app_id": "my-app",
+                    "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+                    "rules": [
+                        {
+                            "id": "rule-1",
+                            "statistics_path": "result.value",
+                            "objective": "maximize",
+                            "tolerance": {"value": 5.0, "type": "absolute"},
+                            "index": 1,
+                        },
+                    ],
+                }
+            )
+        )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
         from nextmv.cloud.ensemble import RuleToleranceType
+
         rule = call_kwargs["rules"][0]
         self.assertEqual(rule.tolerance.value, 5.0)
         self.assertEqual(rule.tolerance.type, RuleToleranceType.ABSOLUTE)
@@ -801,19 +835,23 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            # Missing 'instance_id' in run group.
-            "run_groups": [{"id": "grp-1"}],
-            "rules": [
+        result = asyncio.run(
+            tool.run(
                 {
-                    "id": "r1",
-                    "statistics_path": "result.value",
-                    "objective": "min",
-                    "tolerance": 0.01,
-                },
-            ],
-        }))
+                    "app_id": "my-app",
+                    # Missing 'instance_id' in run group.
+                    "run_groups": [{"id": "grp-1"}],
+                    "rules": [
+                        {
+                            "id": "r1",
+                            "statistics_path": "result.value",
+                            "objective": "min",
+                            "tolerance": 0.01,
+                        },
+                    ],
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("run_groups[0]", str(text))
         self.assertIn("Error", str(text))
@@ -827,12 +865,16 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
-            # Missing 'statistics_path' in rule.
-            "rules": [{"id": "r1", "objective": "min", "tolerance": 0.01}],
-        }))
+        result = asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+                    # Missing 'statistics_path' in rule.
+                    "rules": [{"id": "r1", "objective": "min", "tolerance": 0.01}],
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("rules[0]", str(text))
         self.assertIn("Error", str(text))
@@ -845,6 +887,7 @@ class TestBugFixes(unittest.TestCase):
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
         # Verify the tool's function accepts content_type in its signature.
         import inspect
+
         sig = inspect.signature(tool.fn)
         self.assertIn("content_type", sig.parameters)
 
@@ -859,20 +902,24 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "scenarios": [
+        asyncio.run(
+            tool.run(
                 {
-                    "instance_id": "stable",
-                    "scenario_id": "s1",
-                    "scenario_input": {
-                        "input_set_id": "my-input-set",
-                    },
-                },
-            ],
-            "content_type": "multi-file",
-            "name": "multi-file test",
-        }))
+                    "app_id": "my-app",
+                    "scenarios": [
+                        {
+                            "instance_id": "stable",
+                            "scenario_id": "s1",
+                            "scenario_input": {
+                                "input_set_id": "my-input-set",
+                            },
+                        },
+                    ],
+                    "content_type": "multi-file",
+                    "name": "multi-file test",
+                }
+            )
+        )
 
         # Verify the SDK's new_scenario_test was called with content_type.
         mock_app.new_scenario_test.assert_called_once()
@@ -889,22 +936,27 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
-            "rules": [
+        result = asyncio.run(
+            tool.run(
                 {
-                    "id": "rule-missing-fields",
-                    # Missing statistics_path and objective.
-                },
-            ],
-        }))
+                    "app_id": "my-app",
+                    "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
+                    "rules": [
+                        {
+                            "id": "rule-missing-fields",
+                            # Missing statistics_path and objective.
+                        },
+                    ],
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("Error", str(text))
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_scenario_test_content_type_multiple_inputs(
-        self, mock_get_app,
+        self,
+        mock_get_app,
     ):
         """Bug 2: content_type is passed to SDK for multi-input scenarios."""
         from nextmv.cli.mcp.server import create_server
@@ -915,17 +967,21 @@ class TestBugFixes(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "scenarios": [
+        asyncio.run(
+            tool.run(
                 {
-                    "instance_id": "stable",
-                    "scenario_id": "s1",
-                    "scenario_input": {"input_set_id": "my-input-set"},
-                },
-            ],
-            "content_type": "multi-file",
-        }))
+                    "app_id": "my-app",
+                    "scenarios": [
+                        {
+                            "instance_id": "stable",
+                            "scenario_id": "s1",
+                            "scenario_input": {"input_set_id": "my-input-set"},
+                        },
+                    ],
+                    "content_type": "multi-file",
+                }
+            )
+        )
 
         # Verify the SDK was called with content_type and proper scenarios.
         mock_app.new_scenario_test.assert_called_once()
@@ -966,10 +1022,14 @@ class TestMultiFileRunSupport(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["local_run_submit"]
-        asyncio.run(tool.run({
-            "app_dir": "/some/app",
-            "input": {"stops": []},
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_dir": "/some/app",
+                    "input": {"stops": []},
+                }
+            )
+        )
         mock_app.new_run.assert_called_once()
         call_kwargs = mock_app.new_run.call_args[1]
         self.assertEqual(call_kwargs["input"], {"stops": []})
@@ -988,11 +1048,15 @@ class TestMultiFileRunSupport(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["local_run_submit"]
-        asyncio.run(tool.run({
-            "app_dir": "/some/app",
-            "input_dir_path": "/some/input-dir",
-            "content_format": "multi-file",
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_dir": "/some/app",
+                    "input_dir_path": "/some/input-dir",
+                    "content_format": "multi-file",
+                }
+            )
+        )
         mock_app.new_run.assert_called_once()
         call_kwargs = mock_app.new_run.call_args[1]
         self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
@@ -1011,10 +1075,14 @@ class TestMultiFileRunSupport(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_run_submit"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "input": {"stops": []},
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "input": {"stops": []},
+                }
+            )
+        )
         mock_app.new_run.assert_called_once()
         call_kwargs = mock_app.new_run.call_args[1]
         self.assertEqual(call_kwargs["input"], {"stops": []})
@@ -1033,11 +1101,15 @@ class TestMultiFileRunSupport(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_run_submit"]
-        asyncio.run(tool.run({
-            "app_id": "my-app",
-            "input_dir_path": "/some/input-dir",
-            "content_format": "multi-file",
-        }))
+        asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "input_dir_path": "/some/input-dir",
+                    "content_format": "multi-file",
+                }
+            )
+        )
         mock_app.new_run.assert_called_once()
         call_kwargs = mock_app.new_run.call_args[1]
         self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
@@ -1121,11 +1193,15 @@ class TestEnsembleRunTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            "ensemble_id": "ens-1",
-            "input": {"stops": []},
-        }))
+        result = asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "ensemble_id": "ens-1",
+                    "input": {"stops": []},
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("Data saved to", str(text))
         mock_app.new_run_with_result.assert_called_once()
@@ -1143,11 +1219,15 @@ class TestEnsembleRunTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run_submit"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            "ensemble_id": "ens-1",
-            "input": {"stops": []},
-        }))
+        result = asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "ensemble_id": "ens-1",
+                    "input": {"stops": []},
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("run-ens-42", str(text))
         mock_app.new_run.assert_called_once()
@@ -1159,11 +1239,15 @@ class TestEnsembleRunTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run"]
-        result = asyncio.run(tool.run({
-            "app_id": "",
-            "ensemble_id": "ens-1",
-            "input": {"stops": []},
-        }))
+        result = asyncio.run(
+            tool.run(
+                {
+                    "app_id": "",
+                    "ensemble_id": "ens-1",
+                    "input": {"stops": []},
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("app_id", str(text))
         mock_get_app.assert_not_called()
@@ -1175,11 +1259,15 @@ class TestEnsembleRunTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run_submit"]
-        result = asyncio.run(tool.run({
-            "app_id": "my-app",
-            "ensemble_id": "   ",
-            "input": {"stops": []},
-        }))
+        result = asyncio.run(
+            tool.run(
+                {
+                    "app_id": "my-app",
+                    "ensemble_id": "   ",
+                    "input": {"stops": []},
+                }
+            )
+        )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("ensemble_id", str(text))
         mock_get_app.assert_not_called()
@@ -1199,9 +1287,7 @@ class TestCloudRunCache(unittest.TestCase):
         from nextmv.cli.mcp.tools._helpers import _cloud_run_dir
 
         result = _cloud_run_dir("api.cloud.nextmv.io", "run-123")
-        expected = os.path.join(
-            str(os.path.expanduser("~")), ".nextmv", "runs", "api.cloud.nextmv.io", "run-123"
-        )
+        expected = os.path.join(str(os.path.expanduser("~")), ".nextmv", "runs", "api.cloud.nextmv.io", "run-123")
         self.assertEqual(result, expected)
 
     def test_cloud_run_file_exists_returns_path(self):
@@ -1364,9 +1450,7 @@ class TestCloudRunCache(unittest.TestCase):
             return_value=run_dir,
         ):
             # Only solution present, no metrics/statistics/assets.
-            _extract_cloud_run_outputs(
-                {"output": {"solution": {"x": 1}}}, "ep", "run-partial"
-            )
+            _extract_cloud_run_outputs({"output": {"solution": {"x": 1}}}, "ep", "run-partial")
 
             # solution.json contains the full output dict.
             sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
@@ -1389,9 +1473,7 @@ class TestCloudRunCache(unittest.TestCase):
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
             return_value=run_dir,
         ):
-            _extract_cloud_run_outputs(
-                {"output": {"solution": {}, "assets": []}}, "ep", "run-empty-sol"
-            )
+            _extract_cloud_run_outputs({"output": {"solution": {}, "assets": []}}, "ep", "run-empty-sol")
 
             # Even empty solution should be written (full output dict).
             sol_path = os.path.join(run_dir, "outputs", "solutions", "solution.json")
@@ -1485,12 +1567,15 @@ class TestCloudRunCache(unittest.TestCase):
 
         run_dir = os.path.join(self.tmp_dir, "run-bad-visual")
 
-        with patch(
-            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
-            return_value=run_dir,
-        ), patch(
-            "nextmv.local.executor.process_run_visuals",
-            side_effect=RuntimeError("plotly exploded"),
+        with (
+            patch(
+                "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+                return_value=run_dir,
+            ),
+            patch(
+                "nextmv.local.executor.process_run_visuals",
+                side_effect=RuntimeError("plotly exploded"),
+            ),
         ):
             # Should not raise despite visual generation failure.
             _extract_cloud_run_outputs(
@@ -1692,8 +1777,17 @@ class TestCloudRunCache(unittest.TestCase):
                 return d
             return run_dir
 
-        def fake_new_run(*, input, input_dir_path, configuration, instance_id,
-                         run_options, polling_options, managed_input_id, output_dir_path):
+        def fake_new_run(
+            *,
+            input,
+            input_dir_path,
+            configuration,
+            instance_id,
+            run_options,
+            polling_options,
+            managed_input_id,
+            output_dir_path,
+        ):
             # Simulate SDK extracting tar.gz into output_dir_path.
             if output_dir_path:
                 os.makedirs(output_dir_path, exist_ok=True)
@@ -1709,11 +1803,15 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run"]
-            result = asyncio.run(tool.run({
-                "app_id": "my-app",
-                "input_dir_path": "/some/csvs",
-                "content_format": "csv-archive",
-            }))
+            result = asyncio.run(
+                tool.run(
+                    {
+                        "app_id": "my-app",
+                        "input_dir_path": "/some/csvs",
+                        "content_format": "csv-archive",
+                    }
+                )
+            )
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
 
@@ -1864,10 +1962,15 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         runner = CliRunner()
 
-        with patch(
-            "nextmv.cli.main.go_cli_exists", return_value=False,
-        ), patch(
-            "nextmv.cli.main.load_config", return_value={},
+        with (
+            patch(
+                "nextmv.cli.main.go_cli_exists",
+                return_value=False,
+            ),
+            patch(
+                "nextmv.cli.main.load_config",
+                return_value={},
+            ),
         ):
             result = runner.invoke(app, ["--help"])
             self.assertEqual(result.exit_code, 0)
@@ -1960,15 +2063,19 @@ class TestVisualGenerationWarning(unittest.TestCase):
 
         run_dir = os.path.join(self.tmp_dir, "run-warn")
 
-        with patch(
-            "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
-            return_value=run_dir,
-        ), patch(
-            "nextmv.cli.mcp.tools._helpers.process_run_visuals",
-            side_effect=RuntimeError("plotly exploded"),
-        ), patch(
-            "nextmv.cli.mcp.tools._helpers.log",
-        ) as mock_log:
+        with (
+            patch(
+                "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
+                return_value=run_dir,
+            ),
+            patch(
+                "nextmv.cli.mcp.tools._helpers.process_run_visuals",
+                side_effect=RuntimeError("plotly exploded"),
+            ),
+            patch(
+                "nextmv.cli.mcp.tools._helpers.log",
+            ) as mock_log,
+        ):
             _extract_cloud_run_outputs(
                 {"output": {"solution": {"x": 1}}},
                 "ep",
@@ -2042,8 +2149,10 @@ class TestSDKContentType(unittest.TestCase):
             instance_id="inst-1",
         )
 
-        with patch.object(type(app), "instance", return_value=mock_instance), \
-             patch.object(type(app), "input_set", return_value=mock_input_set):
+        with (
+            patch.object(type(app), "instance", return_value=mock_instance),
+            patch.object(type(app), "input_set", return_value=mock_input_set),
+        ):
             app.new_scenario_test(
                 scenarios=[scenario],
                 content_type="multi-file",
