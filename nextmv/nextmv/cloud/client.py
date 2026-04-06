@@ -161,6 +161,10 @@ class Client:
         if not self.url:
             self.url = "https://api.cloud.nextmv.io"
 
+        endpoint_env = os.getenv("NEXTMV_ENDPOINT")
+        if endpoint_env is not None:
+            self.url = f"https://{endpoint_env}"
+
         if self.api_key is not None and self.api_key != "":
             self._set_headers_api_key(self.api_key)
             return
