@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.scenario import Scenario
 from nextmv.polling import default_polling_options
 
@@ -272,7 +273,8 @@ def create(
         nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     # Build the scenario list from the CLI options
     scenario_list = build_scenarios(scenarios)
@@ -298,11 +300,10 @@ def create(
     polling_options.max_duration = timeout
 
     in_progress(msg="Getting scenario test results...")
-    scenario_test = cloud_app.scenario_test_with_polling(
+    scenario_test_dict = cloud_app.scenario_test_with_polling(
         scenario_test_id=scenario_id,
         polling_options=polling_options,
-    )
-    scenario_test_dict = scenario_test.to_dict()
+    ).to_dict()
 
     # Handle output
     if output is not None and output != "":

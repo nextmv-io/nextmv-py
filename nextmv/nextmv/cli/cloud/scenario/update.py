@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,18 +71,18 @@ def update(
             --output updated-scenario.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Updating scenario test...")
-    scenario_info = cloud_app.update_scenario_test(
+    scenario_info_dict = cloud_app.update_scenario_test(
         scenario_test_id=scenario_test_id,
         name=name,
         description=description,
-    )
+    ).to_dict()
     success(
         f"Scenario test [magenta]{scenario_test_id}[/magenta] updated successfully "
         f"in application [magenta]{app_id}[/magenta]."
     )
-    scenario_info_dict = scenario_info.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

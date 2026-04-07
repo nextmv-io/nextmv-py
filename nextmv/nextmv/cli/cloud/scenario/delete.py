@@ -4,9 +4,10 @@ This module defines the cloud scenario delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.scenario import delete_scenario_test as _delete_scenario_test
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,6 +47,6 @@ def delete(
             info(f"Scenario test [magenta]{scenario_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_scenario_test(scenario_test_id=scenario_test_id)
+    client = Client(profile=profile)
+    _delete_scenario_test(client, app_id, scenario_test_id)
     success(msg=f"Scenario test [magenta]{scenario_test_id}[/magenta] deleted.")
