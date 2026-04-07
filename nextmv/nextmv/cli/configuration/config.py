@@ -73,71 +73,6 @@ def non_profile_keys() -> set[str]:
     return {API_KEY_KEY, ENDPOINT_KEY}
 
 
-def build_client(profile: str | None = None) -> Client:
-    """
-    Builds a `cloud.Client` using the API key and endpoint for the given
-    profile. If no profile is given, the default profile is used. If either the
-    API key or endpoint is missing, an exception is raised. If the config is
-    not available, an exception is raised.
-
-    Parameters
-    ----------
-    profile : str | None
-        The profile name to use. If None, the default profile is used.
-
-    Returns
-    -------
-    Client
-        A client configured with the API key and endpoint for the selected
-        profile or the default configuration.
-
-    Raises
-    ------
-    typer.Exit
-        If no configuration is found, if the requested profile does not exist,
-        or if the API key or endpoint (for either the selected profile or the
-        default configuration) is not set or is empty.
-    """
-
-    config = load_config()
-    if config == {}:
-        error("No configuration found. Please run [code]nextmv configuration create[/code].")
-
-    if profile is not None:
-        if profile not in config:
-            error(
-                f"Profile [magenta]{profile}[/magenta] does not exist. "
-                "Create it using [code]nextmv configuration create[/code] with the --profile option."
-            )
-
-        api_key = config[profile].get(API_KEY_KEY)
-        if api_key is None or api_key == "":
-            error(
-                f"API key for profile [magenta]{profile}[/magenta] is not set or is empty. "
-                "Set it using [code]nextmv configuration create[/code] with the --profile and --api-key options."
-            )
-
-        endpoint = config[profile].get(ENDPOINT_KEY)
-        if endpoint is None or endpoint == "":
-            error(
-                f"Endpoint for profile [magenta]{profile}[/magenta] is not set or is empty. "
-                "Please run [code]nextmv configuration create[/code]."
-            )
-    else:
-        api_key = config.get(API_KEY_KEY)
-        if api_key is None or api_key == "":
-            error(
-                "Default API key is not set or is empty. "
-                "Please run [code]nextmv configuration create[/code] with the --api-key option."
-            )
-
-        endpoint = config.get(ENDPOINT_KEY)
-        if endpoint is None or endpoint == "":
-            error("Default endpoint is not set or is empty. Please run [code]nextmv configuration create[/code].")
-
-    return Client(api_key=api_key, url=f"https://{endpoint}")
-
-
 def build_cloud_app(app_id: str, profile: str | None = None) -> tuple[cloud.Application, bool]:
     """
     Builds a `cloud.Application` using the given application ID and the API
@@ -163,7 +98,7 @@ def build_cloud_app(app_id: str, profile: str | None = None) -> tuple[cloud.Appl
         If the application does not exist.
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     exists = cloud.Application.exists(client=client, id=app_id)
     if exists:
         return cloud.Application(client=client, id=app_id), False
@@ -213,7 +148,7 @@ def build_marketplace_app(app_id: str, partner_id: str, profile: str | None = No
         If the marketplace application does not exist.
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     try:
         return MarketplaceApplication.get(
             client=client,
@@ -253,7 +188,7 @@ def build_marketplace_subscription(subscription_id: str, profile: str | None = N
         If the marketplace subscription does not exist.
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     try:
         return MarketplaceSubscription.get(client=client, subscription_id=subscription_id)
     except Exception as e:
@@ -286,7 +221,7 @@ def build_account(account_id: str | None = None, profile: str | None = None) -> 
         If the configuration is invalid or missing.
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
 
     return Account(account_id=account_id, client=client)
 
@@ -312,7 +247,7 @@ def build_sso_config(profile: str | None = None) -> SSOConfiguration:
         If the configuration is invalid or missing.
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
 
     return SSOConfiguration(client=client)
 

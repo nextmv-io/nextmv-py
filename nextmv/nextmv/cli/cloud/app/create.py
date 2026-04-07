@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.application import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -121,7 +121,7 @@ def create(
             --default-experiment-instance experiment-v1[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting application...")
     else:

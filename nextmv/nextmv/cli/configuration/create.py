@@ -39,6 +39,8 @@ def create(
             "--endpoint",
             "-e",
             hidden=True,
+            envvar="NEXTMV_ENDPOINT",
+            metavar="NEXTMV_ENDPOINT",
         ),
     ] = DEFAULT_ENDPOINT,
     profile: Annotated[  # Similar to nextmv.cli.options.ProfileOption but with different help text.
