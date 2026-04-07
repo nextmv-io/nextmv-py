@@ -6,9 +6,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.marketplace import MarketplaceSubscription
 
 # Set up subcommand application.
@@ -48,7 +48,7 @@ def create(
             --profile hare[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Creating subscription...")
     subscription = MarketplaceSubscription.new(client, subscription_id)
     print_json(subscription.to_dict())

@@ -9,7 +9,6 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.client import Client
@@ -62,7 +61,7 @@ def list(
     if app is not None and app == "":
         error("The --app flag cannot be an empty string.")
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     if flat and app is None:
         _apps_list(client)
         raise typer.Exit()

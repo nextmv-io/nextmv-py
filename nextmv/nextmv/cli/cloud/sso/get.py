@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.sso import SSOConfiguration
 
 # Set up subcommand application.
@@ -44,7 +44,7 @@ def get(
         $ [dim]nextmv cloud sso get --output sso_config.json[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting SSO configuration...")
 
     sso_config = SSOConfiguration.get(client)

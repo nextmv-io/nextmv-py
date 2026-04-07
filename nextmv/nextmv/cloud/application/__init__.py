@@ -198,8 +198,15 @@ class Application(
     """Last update timestamp of the application."""
 
     # SDK-specific attributes for convenience when using methods.
-    client: Client = Field(exclude=True)
-    """Client to use for interacting with the Nextmv Cloud API."""
+    client: Client = Field(exclude=True, default_factory=Client)
+    """
+    Client to use for interacting with the Nextmv Cloud API.
+
+    This attribute is optional, and if not provided, it will be initialized
+    with a default `Client` instance. We suggest that you read the docstrings
+    on the `Client` class for more information about how to properly initialize
+    the client using your API key and other configurations.
+    """
     endpoint: str = Field(exclude=True, default="v1/applications/{id}")
     """Base endpoint for the application."""
     experiments_endpoint: str = Field(exclude=True, default="{base}/experiments")

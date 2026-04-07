@@ -6,9 +6,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.community import clone_community_app
 
 # Set up subcommand application.
@@ -77,7 +77,7 @@ def clone(
     if version is not None and version == "":
         error("The --version flag cannot be an empty string.")
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     clone_community_app(
         client=client,
         app=app,
