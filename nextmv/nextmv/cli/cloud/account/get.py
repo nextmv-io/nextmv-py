@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.account import get_account as _get_account
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AccountIDOption, ProfileOption
-from nextmv.cloud.account import Account
 from nextmv.cloud.client import Client
 
 # Set up subcommand application.
@@ -48,12 +48,7 @@ def get(
 
     client = Client(profile=profile)
     in_progress(msg="Getting account...")
-
-    cloud_account = Account.get(
-        client=client,
-        account_id=account_id,
-    )
-    cloud_account_dict = cloud_account.to_dict()
+    cloud_account_dict = _get_account(client, account_id=account_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

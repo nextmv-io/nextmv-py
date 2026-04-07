@@ -4,6 +4,8 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.account import get_account as _get_account
+from nextmv.cli.actions.account import get_queue as _get_queue
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -21,11 +23,8 @@ def register(mcp: FastMCP) -> None:
             account_id: The account ID to retrieve.
         """
 
-        from nextmv.cloud.account import Account
-
         client = _helpers._get_client()
-        account = Account.get(client=client, account_id=account_id)
-        return account.to_dict()
+        return _get_account(client, account_id=account_id)
 
     @mcp.tool()
     def cloud_get_queue(account_id: str) -> dict[str, Any]:
@@ -39,9 +38,5 @@ def register(mcp: FastMCP) -> None:
             account_id: The account ID.
         """
 
-        from nextmv.cloud.account import Account
-
         client = _helpers._get_client()
-        account = Account.get(client=client, account_id=account_id)
-        queue = account.queue()
-        return queue.to_dict()
+        return _get_queue(client, account_id=account_id)
