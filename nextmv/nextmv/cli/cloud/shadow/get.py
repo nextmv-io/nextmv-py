@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.shadow import get_shadow_test as _get_shadow_test
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -43,11 +44,9 @@ def get(
         $ [dim]nextmv cloud shadow get --app-id hare-app --shadow-test-id lettuce-routes --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting shadow test...")
-    shadow_test = cloud_app.shadow_test(shadow_test_id=shadow_test_id)
-
-    shadow_test_dict = shadow_test.to_dict()
+    shadow_test_dict = _get_shadow_test(client, app_id, shadow_test_id)
 
     # Handle output
     if output is not None and output != "":

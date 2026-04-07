@@ -4,9 +4,10 @@ This module defines the cloud shadow delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.shadow import delete_shadow_test as _delete_shadow_test
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,8 +47,8 @@ def delete(
             info(f"Shadow test [magenta]{shadow_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_shadow_test(shadow_test_id=shadow_test_id)
+    client = Client(profile=profile)
+    _delete_shadow_test(client, app_id, shadow_test_id)
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."

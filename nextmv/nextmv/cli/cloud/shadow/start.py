@@ -4,9 +4,10 @@ This module defines the cloud shadow start command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.shadow import start_shadow_test as _start_shadow_test
 from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -35,8 +36,8 @@ def start(
     """
 
     in_progress(msg="Starting shadow test...")
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.start_shadow_test(shadow_test_id=shadow_test_id)
+    client = Client(profile=profile)
+    _start_shadow_test(client, app_id, shadow_test_id)
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] started successfully "
         f"in application [magenta]{app_id}[/magenta]."
