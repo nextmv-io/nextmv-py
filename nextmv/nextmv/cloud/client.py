@@ -553,11 +553,19 @@ class Client:
             The resolved profile name, or `None` if no profile is set.
         """
         profile_env = os.getenv("NEXTMV_PROFILE")
-        if profile_env is not None and profile_env != "":
-            return profile_env
+        if profile_env is not None:
+            profile_env = profile_env.strip()
+            if profile_env != "":
+                if profile_env.lower() == "default":
+                    return None
+                return profile_env
 
-        if self.profile is not None and self.profile != "":
-            return self.profile
+        if self.profile is not None:
+            profile = self.profile.strip()
+            if profile != "":
+                if profile.lower() == "default":
+                    return None
+                return profile
 
         return None
 
