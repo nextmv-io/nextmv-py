@@ -511,6 +511,8 @@ class ManifestOption(BaseModel):
         The description of the option.
     required : bool, default=False
         Whether the option is required or not.
+    local_only : bool, default=False
+        Whether the option is only used locally and should not be sent to Nextmv Cloud.
     additional_attributes : Optional[dict[str, Any]], default=None
         Optional additional attributes for the option. The Nextmv Cloud may
         perform validation on these attributes. For example, the maximum
@@ -551,6 +553,8 @@ class ManifestOption(BaseModel):
     """The description of the option"""
     required: bool = False
     """Whether the option is required or not"""
+    local_only: bool = False
+    """Whether the option is only used locally and should not be sent to Nextmv Cloud."""
     additional_attributes: dict[str, Any] | None = None
     """Optional additional attributes for the option."""
     ui: ManifestOptionUI | None = None
