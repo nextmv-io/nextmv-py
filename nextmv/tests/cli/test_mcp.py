@@ -291,7 +291,7 @@ class TestMCPServerTools(unittest.TestCase):
         mock_app = MagicMock()
         mock_app.to_dict.return_value = {"id": "test-app", "name": "Test App"}
 
-        with patch("nextmv.cli.mcp.tools.app.list_applications", return_value=[mock_app]) as mock_list:
+        with patch("nextmv.cli.actions.app.list_applications", return_value=[mock_app]) as mock_list:
             server = create_server()
             tool = server._tool_manager._tools["cloud_list_apps"]
             asyncio.run(tool.run({}))
@@ -310,13 +310,15 @@ class TestMCPServerTools(unittest.TestCase):
         asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-123"}))
         mock_app_instance.cancel_run.assert_called_once_with(run_id="run-123")
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_delete_app_calls_sdk(self, mock_get_app):
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    @patch("nextmv.cli.actions.app.Application")
+    def test_cloud_delete_app_calls_sdk(self, mock_app_cls, mock_get_client):
         """Test that cloud_delete_app delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app_instance = MagicMock()
-        mock_get_app.return_value = mock_app_instance
+        mock_app_cls.return_value = mock_app_instance
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_delete_app"]
