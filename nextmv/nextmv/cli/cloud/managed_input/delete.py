@@ -4,9 +4,10 @@ This module defines the cloud managed-input delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.managed_input import delete_managed_input as _delete_managed_input
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ManagedInputIDOption, ProfileOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,8 +47,8 @@ def delete(
             info(f"Managed input [magenta]{managed_input_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_managed_input(managed_input_id=managed_input_id)
+    client = Client(profile=profile)
+    _delete_managed_input(client, app_id=app_id, managed_input_id=managed_input_id)
     success(
         f"Managed input [magenta]{managed_input_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."

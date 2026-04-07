@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.managed_input import list_managed_inputs as _list_managed_inputs
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,10 +45,9 @@ def list(
         $ [dim]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing managed inputs...")
-    managed_inputs = cloud_app.list_managed_inputs()
-    managed_inputs_dicts = [managed_input.to_dict() for managed_input in managed_inputs]
+    managed_inputs_dicts = _list_managed_inputs(client, app_id=app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

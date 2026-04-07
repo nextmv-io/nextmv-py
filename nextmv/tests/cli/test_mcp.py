@@ -442,8 +442,9 @@ class TestSaveToFile(unittest.TestCase):
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_managed_input_with_raw_data(self, mock_get_app):
+    @patch("nextmv.cli.actions.managed_input.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_managed_input_with_raw_data(self, mock_get_client, mock_application_class):
         """Test that cloud_create_managed_input uploads raw data when input is provided."""
         from nextmv.cli.mcp.server import create_server
 
@@ -454,7 +455,7 @@ class TestSaveToFile(unittest.TestCase):
         mock_mi = MagicMock()
         mock_mi.to_dict.return_value = {"id": "mi-1", "upload_id": "upl_123"}
         mock_app.new_managed_input.return_value = mock_mi
-        mock_get_app.return_value = mock_app
+        mock_application_class.return_value = mock_app
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_managed_input"]

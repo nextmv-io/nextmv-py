@@ -4,6 +4,10 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.managed_input import create_managed_input as _create_managed_input
+from nextmv.cli.actions.managed_input import delete_managed_input as _delete_managed_input
+from nextmv.cli.actions.managed_input import get_managed_input as _get_managed_input
+from nextmv.cli.actions.managed_input import list_managed_inputs as _list_managed_inputs
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -22,9 +26,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        inputs = app.list_managed_inputs()
-        return [i.to_dict() for i in inputs]
+        client = _helpers._get_client()
+        return _list_managed_inputs(client, app_id=app_id)
 
     @mcp.tool()
     def cloud_get_managed_input(
@@ -41,9 +44,8 @@ def register(mcp: FastMCP) -> None:
             managed_input_id: The managed input ID to retrieve.
         """
 
-        app = _helpers._get_app(app_id)
-        mi = app.managed_input(managed_input_id=managed_input_id)
-        return mi.to_dict()
+        client = _helpers._get_client()
+        return _get_managed_input(client, app_id=app_id, managed_input_id=managed_input_id)
 
     @mcp.tool()
     def cloud_create_managed_input(
@@ -74,22 +76,16 @@ def register(mcp: FastMCP) -> None:
         description = _helpers._none_if_empty(description)
         run_id = _helpers._none_if_empty(run_id)
 
-        app = _helpers._get_app(app_id)
-
-        upload_id = None
-        if input is not None:
-            upload_url = app.upload_url()
-            app.upload_data(upload_url=upload_url, data=input)
-            upload_id = upload_url.upload_id
-
-        mi = app.new_managed_input(
-            id=managed_input_id,
+        client = _helpers._get_client()
+        return _create_managed_input(
+            client,
+            app_id=app_id,
+            data=input,
+            managed_input_id=managed_input_id,
             name=name,
             description=description,
             run_id=run_id,
-            upload_id=upload_id,
         )
-        return mi.to_dict()
 
     @mcp.tool()
     def cloud_delete_managed_input(
@@ -103,6 +99,6 @@ def register(mcp: FastMCP) -> None:
             managed_input_id: The managed input ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_managed_input(managed_input_id=managed_input_id)
+        client = _helpers._get_client()
+        _delete_managed_input(client, app_id=app_id, managed_input_id=managed_input_id)
         return f"Deleted managed input {managed_input_id}"
