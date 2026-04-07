@@ -560,6 +560,21 @@ class ManifestOption(BaseModel):
     ui: ManifestOptionUI | None = None
     """Optional UI attributes for the option."""
 
+    def model_post_init(self, __context) -> None:
+        """
+        Validations done after parsing the model.
+
+        Raises
+        ------
+        ValueError
+            If validation fails. A descriptive error message is provided in this case.
+        """
+
+        # It does not make sense to define options as required AND them being local only,
+        # since this would make Platform runs via UI cumbersome to impossible.
+        if self.required and self.local_only:
+            raise ValueError(f"Option '{self.name}' cannot be both required and local only.")
+
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
         """
