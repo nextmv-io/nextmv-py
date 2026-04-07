@@ -4,6 +4,7 @@ run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 on: [push]
 
 jobs:
+  # >>> 'nextmv' package jobs.
   release-nextmv:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
@@ -17,10 +18,77 @@ jobs:
       VERSION_PREFIX: nextmv-
     secrets: inherit
 
+  release-binaries:
+    name: Release ${{ matrix.os }}-${{ matrix.arch }} binaries
+    needs: [release-nextmv]
+    permissions:
+      contents: write # This is required for uploading assets to GitHub releases
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+            ext: ""
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            ext: ""
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+            ext: ""
+          - os: macos
+            arch: arm64
+            runner: macos-latest
+            ext: ""
+          - os: windows
+            arch: x64
+            runner: windows-latest
+            ext: ".exe"
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup Python
+        uses: actions/setup-python@v6
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install .
+
+      - name: build binary with PyInstaller
+        # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
+        run: pyinstaller --name nextmv --onefile --console nextmv/cli/main.py
+        working-directory: nextmv/
+
+      - name: rename binary for distribution
+        shell: bash # Force bash shell for consistent behavior across OSes
+        run: |
+          mv dist/nextmv${{ matrix.ext }} dist/nextmv-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
+        working-directory: nextmv/
+
+      - name: determine exact version being released
+        run: |
+          VERSION="nextmv-$(cat nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
+
+      - name: attach binary to GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload $VERSION dist/nextmv-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} --clobber
+        working-directory: nextmv/
+
   # Unfortunately, PyPI publishing does not support reusable workflows, so we
   # must publish here and do copy-pasting below as well. Sorry.
   publish-nextmv:
-    needs: [release-nextmv]
+    needs: [release-nextmv, build-binaries]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
     runs-on: ubuntu-latest
     environment:
@@ -30,12 +98,12 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
 
       - name: set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
 
       - name: install dependencies
         run: |
@@ -61,6 +129,7 @@ jobs:
       REPOSITORY: nextmv-py
     secrets: inherit
 
+  # >>> 'nextmv-gurobipy' package jobs.
   release-nextmv-gurobipy:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
@@ -85,12 +154,12 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
 
       - name: set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
 
       - name: install dependencies
         run: |
@@ -116,6 +185,7 @@ jobs:
       REPOSITORY: nextmv-py
     secrets: inherit
 
+  # >>> 'nextmv-scikit-learn' package jobs.
   release-nextmv-scikit-learn:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
@@ -140,10 +210,10 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
 
       - name: Install dependencies
         run: |
