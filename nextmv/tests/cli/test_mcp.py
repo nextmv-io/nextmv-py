@@ -362,7 +362,7 @@ class TestGetClient(unittest.TestCase):
 
     @patch.dict("os.environ", {}, clear=True)
     @patch("nextmv.cli.mcp.tools._helpers.Client", side_effect=Exception("no config"))
-    def test_get_client_no_key_no_config_raises(self, mock_build):
+    def test_get_client_no_key_no_config_raises(self, mock_client):
         """Test that _get_client raises when no API key or config is available."""
         from nextmv.cli.mcp.server import _get_client
 
