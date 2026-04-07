@@ -24,6 +24,7 @@ import requests
 import yaml
 from requests.adapters import HTTPAdapter, Retry
 
+from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
@@ -197,12 +198,10 @@ class Client:
     backoff_max: float = 60
     """Maximum backoff time to use for requests to the Nextmv Cloud API, in
     seconds."""
-    configuration_file: str = "~/.nextmv/config.yaml"
+    configuration_file: str | None = None
     """
     Deprecated. This attribute is no longer being used. Use the `profile`
     attribute to specify different configurations instead.
-
-    Path to the configuration file used by the Nextmv CLI.
     """
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
@@ -255,11 +254,14 @@ class Client:
         Raises
         ------
         ValueError
-            If `api_key` is an empty string.
-            If no API key is found in any of the lookup locations.
-            If a profile is specified via `NEXTMV_PROFILE` but not found in
-            the configuration file.
-            If `apikey` is not found in the configuration file for the
+            If no API key is found after checking the constructor argument,
+            the ``NEXTMV_API_KEY`` environment variable, and the
+            configuration file (for the resolved profile or the default
+            profile). A ``None`` or empty ``api_key`` is treated as unset
+            and causes the lookup to fall through to the next source.
+            If a profile is specified via ``NEXTMV_PROFILE`` or the
+            ``profile`` attribute but is not found in the configuration file.
+            If ``apikey`` is not found in the configuration file for the
             selected profile.
         """
 
@@ -267,6 +269,12 @@ class Client:
         self.url = self.__resolve_endpoint(profile)
         self.api_key = self.__resolve_api_key(profile)
         self.__set_headers_api_key(self.api_key)
+
+        if self.configuration_file is not None and self.configuration_file != "":
+            deprecated(
+                name="Client.configuration_file",
+                reason="`Client.configuration_file` is deprecated, use `Client.profile` to work with another profile",
+            )
 
     def request(
         self,
@@ -558,6 +566,7 @@ class Client:
             if profile_env != "":
                 if profile_env.lower() == "default":
                     return None
+
                 return profile_env
 
         if self.profile is not None:
@@ -565,6 +574,7 @@ class Client:
             if profile != "":
                 if profile.lower() == "default":
                     return None
+
                 return profile
 
         return None
