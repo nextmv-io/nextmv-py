@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.version import update_version as _update_version
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -72,15 +73,16 @@ def update(
     if name is None and description is None:
         error("Provide at least one option to update: --name or --description.")
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Updating version...")
-    updated_version = cloud_app.update_version(
+    updated_version_dict = _update_version(
+        client,
+        app_id=app_id,
         version_id=version_id,
         name=name,
         description=description,
     )
     success(f"Version [magenta]{version_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta].")
-    updated_version_dict = updated_version.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.version import get_version as _get_version
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,10 +47,9 @@ def get(
         $ [dim]nextmv cloud version get --app-id hare-app --version-id v1 --output version.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting version...")
-    version = cloud_app.version(version_id=version_id)
-    version_dict = version.to_dict()
+    version_dict = _get_version(client, app_id=app_id, version_id=version_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

@@ -4,6 +4,13 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.version import (
+    create_version,
+    delete_version,
+    get_version,
+    list_versions,
+    update_version,
+)
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -22,9 +29,7 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        versions = app.list_versions()
-        return [v.to_dict() for v in versions]
+        return list_versions(_helpers._get_client(), app_id=app_id)
 
     @mcp.tool()
     def cloud_get_version(app_id: str, version_id: str) -> dict[str, Any]:
@@ -35,9 +40,7 @@ def register(mcp: FastMCP) -> None:
             version_id: The version ID to retrieve.
         """
 
-        app = _helpers._get_app(app_id)
-        v = app.version(version_id=version_id)
-        return v.to_dict()
+        return get_version(_helpers._get_client(), app_id=app_id, version_id=version_id)
 
     @mcp.tool()
     def cloud_create_version(
@@ -64,14 +67,14 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        v = app.new_version(
-            id=version_id,
+        return create_version(
+            _helpers._get_client(),
+            app_id=app_id,
+            version_id=version_id,
             name=name,
             description=description,
             exist_ok=version_id is not None,
         )
-        return v.to_dict()
 
     @mcp.tool()
     def cloud_update_version(
@@ -95,9 +98,13 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        v = app.update_version(version_id=version_id, name=name, description=description)
-        return v.to_dict()
+        return update_version(
+            _helpers._get_client(),
+            app_id=app_id,
+            version_id=version_id,
+            name=name,
+            description=description,
+        )
 
     @mcp.tool()
     def cloud_delete_version(app_id: str, version_id: str) -> str:
@@ -108,6 +115,5 @@ def register(mcp: FastMCP) -> None:
             version_id: The version ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_version(version_id=version_id)
+        delete_version(_helpers._get_client(), app_id=app_id, version_id=version_id)
         return f"Deleted version {version_id}"

@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.version import create_version as _create_version
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -81,16 +82,18 @@ def create(
         $ [dim]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     if exist_ok:
         in_progress(msg="Creating or getting version...")
     else:
         in_progress(msg="Creating version...")
 
-    version = cloud_app.new_version(
-        id=version_id,
+    version_dict = _create_version(
+        client,
+        app_id=app_id,
+        version_id=version_id,
         name=name,
         description=description,
         exist_ok=exist_ok,
     )
-    print_json(version.to_dict())
+    print_json(version_dict)

@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.version import list_versions as _list_versions
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,10 +45,9 @@ def list(
         $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing versions...")
-    versions = cloud_app.list_versions()
-    versions_dicts = [version.to_dict() for version in versions]
+    versions_dicts = _list_versions(client, app_id=app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:
