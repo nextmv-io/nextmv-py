@@ -43,6 +43,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -159,14 +160,71 @@ def execute_run(
             cwd = __determine_cwd(manifest, default=temp_src)
             args = __determine_command(manifest) + [entrypoint] + options_args(options)
 
-            result = subprocess.run(
+            # Determine whether stdout should be streamed live to the log file.
+            # For MULTI_FILE format, stdout carries log output and must be streamed
+            # immediately. For other formats (JSON, CSV_ARCHIVE), stdout carries
+            # structured output consumed after the process completes.
+            is_multi_file = (
+                manifest.configuration is not None
+                and manifest.configuration.content is not None
+                and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+            ) or run_config["format"]["input"]["type"] == InputFormat.MULTI_FILE.value
+
+            log_file_path = os.path.join(logs_dir, LOGS_FILE)
+            stdout_lines: list[str] = []
+            stderr_lines: list[str] = []
+
+            process = subprocess.Popen(
                 args,
                 env=os.environ,
-                check=False,
                 text=True,
-                capture_output=True,
-                input=stdin_input,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 cwd=cwd,
+            )
+
+            def write_stdin() -> None:
+                process.stdin.write(stdin_input)
+                process.stdin.close()
+
+            def stream_stderr() -> None:
+                with open(log_file_path, "a") as log_f:
+                    for line in process.stderr:
+                        log_f.write(line)
+                        log_f.flush()
+                        stderr_lines.append(line)
+
+            def stream_stdout() -> None:
+                if is_multi_file:
+                    with open(log_file_path, "a") as log_f:
+                        for line in process.stdout:
+                            log_f.write(line)
+                            log_f.flush()
+                            stdout_lines.append(line)
+                else:
+                    for line in process.stdout:
+                        stdout_lines.append(line)
+
+            # Use threads to read both streams concurrently without deadlocking.
+            stdin_thread = threading.Thread(target=write_stdin)
+            stderr_thread = threading.Thread(target=stream_stderr)
+            stdout_thread = threading.Thread(target=stream_stdout)
+
+            stdin_thread.start()
+            stderr_thread.start()
+            stdout_thread.start()
+
+            stdin_thread.join()
+            stderr_thread.join()
+            stdout_thread.join()
+            process.wait()
+
+            result = subprocess.CompletedProcess(
+                args=args,
+                returncode=process.returncode,
+                stdout="".join(stdout_lines),
+                stderr="".join(stderr_lines),
             )
 
             process_run_output(

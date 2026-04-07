@@ -569,7 +569,7 @@ class TestLocalExecutor(unittest.TestCase):
     @patch("nextmv.local.executor.process_run_output")
     @patch("nextmv.local.executor.process_run_input")
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
-    @patch("nextmv.local.executor.subprocess.run")
+    @patch("nextmv.local.executor.subprocess.Popen")
     @patch("nextmv.local.executor._copy_files_from_manifest")
     @patch("nextmv.local.executor.tempfile.TemporaryDirectory")
     @patch("nextmv.local.executor.os.makedirs")
@@ -578,7 +578,7 @@ class TestLocalExecutor(unittest.TestCase):
         mock_makedirs,
         mock_temp_dir,
         mock_copy_files_from_manifest,
-        mock_subprocess_run,
+        mock_subprocess_popen,
         mock_open,
         mock_process_input,
         mock_process_output,
@@ -593,10 +593,12 @@ class TestLocalExecutor(unittest.TestCase):
 
         mock_process_input.return_value = '{"test": "input"}'
 
-        mock_result = Mock()
-        mock_result.stdout = '{"solution": {"value": 42}}'
-        mock_result.stderr = "No errors"
-        mock_subprocess_run.return_value = mock_result
+        mock_process = Mock()
+        mock_process.returncode = 0
+        mock_process.stdout = iter([])
+        mock_process.stderr = iter([])
+        mock_process.stdin = Mock()
+        mock_subprocess_popen.return_value = mock_process
 
         run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
 
@@ -625,9 +627,9 @@ class TestLocalExecutor(unittest.TestCase):
             inputs_dir_path=None,
         )
 
-        # Verify subprocess.run was called
-        mock_subprocess_run.assert_called_once()
-        call_args = mock_subprocess_run.call_args
+        # Verify subprocess.Popen was called
+        mock_subprocess_popen.assert_called_once()
+        call_args = mock_subprocess_popen.call_args
         self.assertEqual(call_args[0][0][:2], [sys.executable, os.path.join(temp_src, "main.py")])
         self.assertIn("-duration", call_args[0][0])
         self.assertIn("10s", call_args[0][0])
@@ -637,7 +639,7 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=unittest.mock.ANY,
             run_id="test_run_id",
             temp_src=temp_src,
-            result=mock_result,
+            result=unittest.mock.ANY,
             run_dir="/test/run_dir",
             src="/test/src",
         )
