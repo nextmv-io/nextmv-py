@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.app import update_app as _update_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -103,16 +104,17 @@ def update(
             "--default-instance-id, or --default-experiment-instance."
         )
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Updating application...")
-    updated_app = cloud_app.update(
+    updated_app_dict = _update_app(
+        client,
+        app_id=app_id,
         name=name,
         description=description,
         default_instance_id=default_instance_id,
         default_experiment_instance=default_experiment_instance,
     )
     success(f"Application [magenta]{app_id}[/magenta] updated successfully.")
-    updated_app_dict = updated_app.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

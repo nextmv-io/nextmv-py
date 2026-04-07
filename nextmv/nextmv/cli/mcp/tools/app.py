@@ -4,8 +4,16 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.app import (
+    app_exists,
+    create_app,
+    delete_app,
+    get_app,
+    list_apps,
+    push_app,
+    update_app,
+)
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.cloud import Application, list_applications
 
 
 def register(mcp: FastMCP) -> None:
@@ -18,10 +26,7 @@ def register(mcp: FastMCP) -> None:
         Returns a list of application dictionaries containing each
         application's ID, name, description, and default instance.
         """
-
-        client = _helpers._get_client()
-        apps = list_applications(client)
-        return [a.to_dict() for a in apps]
+        return list_apps(_helpers._get_client())
 
     @mcp.tool()
     def cloud_get_app(app_id: str) -> dict[str, Any]:
@@ -33,10 +38,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             app_id: The application ID (e.g., ``"my-routing-app"``).
         """
-
-        client = _helpers._get_client()
-        app = Application.get(client=client, id=app_id)
-        return app.to_dict()
+        return get_app(_helpers._get_client(), app_id=app_id)
 
     @mcp.tool()
     def cloud_create_app(
@@ -55,18 +57,12 @@ def register(mcp: FastMCP) -> None:
                 the name if omitted.
             description: Optional description of what the application does.
         """
-
-        app_id = _helpers._none_if_empty(app_id)
-        description = _helpers._none_if_empty(description)
-
-        client = _helpers._get_client()
-        app = Application.new(
-            client=client,
+        return create_app(
+            _helpers._get_client(),
             name=name,
-            id=app_id,
-            description=description,
+            app_id=_helpers._none_if_empty(app_id),
+            description=_helpers._none_if_empty(description),
         )
-        return app.to_dict()
 
     @mcp.tool()
     def cloud_delete_app(app_id: str) -> str:
@@ -78,9 +74,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             app_id: The application ID to delete.
         """
-
-        app = _helpers._get_app(app_id)
-        app.delete()
+        delete_app(_helpers._get_client(), app_id=app_id)
         return f"Deleted application {app_id}"
 
     @mcp.tool()
@@ -93,9 +87,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             app_id: The application ID to check.
         """
-
-        client = _helpers._get_client()
-        return Application.exists(client=client, id=app_id)
+        return app_exists(_helpers._get_client(), app_id=app_id)
 
     @mcp.tool()
     def cloud_update_app(
@@ -116,18 +108,13 @@ def register(mcp: FastMCP) -> None:
             default_instance_id: New default instance ID used when no
                 instance is specified at run time.
         """
-
-        name = _helpers._none_if_empty(name)
-        description = _helpers._none_if_empty(description)
-        default_instance_id = _helpers._none_if_empty(default_instance_id)
-
-        app = _helpers._get_app(app_id)
-        updated = app.update(
-            name=name,
-            description=description,
-            default_instance_id=default_instance_id,
+        return update_app(
+            _helpers._get_client(),
+            app_id=app_id,
+            name=_helpers._none_if_empty(name),
+            description=_helpers._none_if_empty(description),
+            default_instance_id=_helpers._none_if_empty(default_instance_id),
         )
-        return updated.to_dict()
 
     @mcp.tool()
     def cloud_push_app(app_id: str, app_dir: str) -> str:
@@ -142,7 +129,5 @@ def register(mcp: FastMCP) -> None:
             app_dir: Absolute path to the local directory containing the
                 application code and ``app.yaml`` manifest.
         """
-
-        app = _helpers._get_app(app_id)
-        app.push(app_dir=app_dir)
+        push_app(_helpers._get_client(), app_id=app_id, app_dir=app_dir)
         return f"Pushed {app_dir} to application {app_id}"
