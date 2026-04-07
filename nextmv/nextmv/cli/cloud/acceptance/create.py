@@ -7,10 +7,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
 from nextmv.cloud.acceptance_test import Comparison, Metric, MetricToleranceType, MetricType, StatisticType
+from nextmv.cloud.client import Client
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -269,7 +270,8 @@ def create(
     ] = False,
     profile: ProfileOption = None,
 ) -> None:
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     # Build the metrics list from the CLI options
     metrics_list = build_metrics(metrics)
@@ -298,11 +300,10 @@ def create(
     polling_options.max_duration = timeout
 
     in_progress(msg="Getting acceptance test results...")
-    acceptance_test = cloud_app.acceptance_test_with_polling(
+    acceptance_test_dict = cloud_app.acceptance_test_with_polling(
         acceptance_test_id=acceptance_id,
         polling_options=polling_options,
-    )
-    acceptance_test_dict = acceptance_test.to_dict()
+    ).to_dict()
 
     # Handle output
     if output is not None and output != "":

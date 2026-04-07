@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,20 +71,19 @@ def update(
             --description "New description" --output updated-test.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     in_progress(msg="Updating acceptance test...")
-    acceptance_test = cloud_app.update_acceptance_test(
+    acceptance_test_dict = cloud_app.update_acceptance_test(
         acceptance_test_id=acceptance_test_id,
         name=name,
         description=description,
-    )
+    ).to_dict()
     success(
         f"Acceptance test [magenta]{acceptance_test_id}[/magenta] updated successfully "
         f"in application [magenta]{app_id}[/magenta]."
     )
-
-    acceptance_test_dict = acceptance_test.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:
