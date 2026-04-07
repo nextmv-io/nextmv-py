@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.ensemble import EvaluationRule, RuleObjective, RuleTolerance, RuleToleranceType, RunGroup
 
 # Set up subcommand application.
@@ -219,21 +220,22 @@ def create(
     ] = None,
     profile: ProfileOption = None,
 ) -> None:
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Creating ensemble definition...")
 
     # Build the run groups and rules lists from the CLI options
     run_groups_list = build_run_groups(run_groups)
     rules_list = build_rules(rules)
 
-    ensemble_definition = cloud_app.new_ensemble_definition(
+    ensemble_definition_dict = cloud_app.new_ensemble_definition(
         run_groups=run_groups_list,
         rules=rules_list,
         id=ensemble_definition_id,
         name=name,
         description=description,
-    )
-    print_json(ensemble_definition.to_dict())
+    ).to_dict()
+    print_json(ensemble_definition_dict)
 
 
 def build_run_groups(run_groups: list[str]) -> list[RunGroup]:

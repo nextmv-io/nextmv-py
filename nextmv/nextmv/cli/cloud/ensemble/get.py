@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.ensemble import get_ensemble as _get_ensemble
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, EnsembleDefinitionIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -49,10 +50,9 @@ def get(
             --ensemble-definition-id prod-ensemble --output ensemble.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting ensemble definition...")
-    ensemble_definition = cloud_app.ensemble_definition(ensemble_definition_id=ensemble_definition_id)
-    ensemble_definition_dict = ensemble_definition.to_dict()
+    ensemble_definition_dict = _get_ensemble(client, app_id, ensemble_definition_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:
