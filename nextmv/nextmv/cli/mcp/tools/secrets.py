@@ -4,6 +4,10 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.secrets import create_secrets_collection as _create_secrets_collection
+from nextmv.cli.actions.secrets import delete_secrets_collection as _delete_secrets_collection
+from nextmv.cli.actions.secrets import get_secrets_collection as _get_secrets_collection
+from nextmv.cli.actions.secrets import list_secrets_collections as _list_secrets_collections
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -22,9 +26,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        collections = app.list_secrets_collections()
-        return [c.to_dict() for c in collections]
+        client = _helpers._get_client()
+        return _list_secrets_collections(client, app_id=app_id)
 
     @mcp.tool()
     def cloud_get_secrets_collection(
@@ -42,9 +45,8 @@ def register(mcp: FastMCP) -> None:
                 retrieve.
         """
 
-        app = _helpers._get_app(app_id)
-        collection = app.secrets_collection(secrets_collection_id=secrets_collection_id)
-        return collection.to_dict()
+        client = _helpers._get_client()
+        return _get_secrets_collection(client, app_id=app_id, secrets_collection_id=secrets_collection_id)
 
     @mcp.tool()
     def cloud_create_secrets_collection(
@@ -74,14 +76,15 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        collection = app.new_secrets_collection(
+        client = _helpers._get_client()
+        return _create_secrets_collection(
+            client,
+            app_id=app_id,
             secrets=secrets,
-            id=secrets_collection_id,
+            secrets_collection_id=secrets_collection_id,
             name=name,
             description=description,
         )
-        return collection.to_dict()
 
     @mcp.tool()
     def cloud_delete_secrets_collection(
@@ -95,6 +98,6 @@ def register(mcp: FastMCP) -> None:
             secrets_collection_id: The secrets collection ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_secrets_collection(secrets_collection_id=secrets_collection_id)
+        client = _helpers._get_client()
+        _delete_secrets_collection(client, app_id=app_id, secrets_collection_id=secrets_collection_id)
         return f"Deleted secrets collection {secrets_collection_id}"
