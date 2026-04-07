@@ -20,8 +20,6 @@ resolve_output_format
     Function to determine the output format from manifest or directory structure.
 process_run_information
     Function to update run metadata including duration and status.
-process_run_logs
-    Function to process and save run logs.
 process_run_metrics
     Function to process and save run metrics.
 process_run_statistics
@@ -402,12 +400,6 @@ def process_run_output(
         run_dir=run_dir,
         result=result,
     )
-    process_run_logs(
-        output_format=output_format,
-        run_dir=run_dir,
-        result=result,
-        stdout_output=stdout_output,
-    )
     process_run_metrics(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
@@ -528,44 +520,6 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
 
     with open(info_file, "w") as f:
         json.dump(info, f, indent=2)
-
-
-def process_run_logs(
-    output_format: OutputFormat,
-    run_dir: str,
-    result: subprocess.CompletedProcess[str],
-    stdout_output: str | dict[str, Any],
-) -> None:
-    """
-    Processes the logs of the run. Writes the logs to a logs directory.
-    For multi-file format, stdout is written to logs if present.
-
-    Parameters
-    ----------
-    output_format : OutputFormat
-        The output format of the run (JSON, CSV_ARCHIVE, or MULTI_FILE).
-    run_dir : str
-        The path to the run directory where logs will be stored.
-    result : subprocess.CompletedProcess[str]
-        The result of the subprocess run containing stderr output.
-    stdout_output : Union[str, dict[str, Any]]
-        The stdout output of the run, either as raw string or parsed dictionary.
-    """
-
-    logs_dir = os.path.join(run_dir, LOGS_KEY)
-    os.makedirs(logs_dir, exist_ok=True)
-    std_err = result.stderr
-    with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
-        if output_format == OutputFormat.MULTI_FILE and bool(stdout_output):
-            if isinstance(stdout_output, dict):
-                f.write(json.dumps(stdout_output))
-            elif isinstance(stdout_output, str):
-                f.write(stdout_output)
-
-            if std_err:
-                f.write("\n")
-
-        f.write(std_err)
 
 
 def process_run_metrics(

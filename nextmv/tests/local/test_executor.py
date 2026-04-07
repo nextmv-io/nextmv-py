@@ -20,7 +20,6 @@ from nextmv.local.executor import (
     options_args,
     process_run_assets,
     process_run_input,
-    process_run_logs,
     process_run_output,
     process_run_solutions,
     process_run_statistics,
@@ -263,31 +262,6 @@ class TestLocalExecutor(unittest.TestCase):
             )
 
         self.assertIn("input data must be None for csv-archive or multi-file format", str(context.exception))
-
-    def test_process_run_logs(self):
-        """Test process_run_logs function."""
-        # Create mock result
-        mock_result = Mock()
-        mock_result.stderr = "Error line 1\nError line 2\n"
-
-        stdout_output = {"logs": ["test log 1", "test log 2"]}
-
-        process_run_logs(
-            output_format=self.mock_output_format, run_dir=self.run_dir, result=mock_result, stdout_output=stdout_output
-        )
-
-        # Check that logs directory was created
-        logs_dir = os.path.join(self.run_dir, "logs")
-        self.assertTrue(os.path.exists(logs_dir))
-
-        # Check that logs.log was created with correct content
-        logs_file = os.path.join(logs_dir, "logs.log")
-        self.assertTrue(os.path.exists(logs_file))
-
-        with open(logs_file) as f:
-            content = f.read()
-
-        self.assertEqual(content, "Error line 1\nError line 2\n")
 
     def test_process_run_statistics_from_directory(self):
         """Test process_run_statistics when statistics directory exists."""
@@ -658,7 +632,6 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.local.executor.process_run_logs") as mock_logs,
             patch("nextmv.local.executor.process_run_statistics") as mock_stats,
             patch("nextmv.local.executor.process_run_assets") as mock_assets,
             patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
@@ -673,12 +646,6 @@ class TestLocalExecutor(unittest.TestCase):
             )
 
             # Verify all processing functions were called
-            mock_logs.assert_called_once_with(
-                output_format=unittest.mock.ANY,
-                run_dir=self.run_dir,
-                result=mock_result,
-                stdout_output={"solution": {"value": 42}, "statistics": {"duration": 1.5}},
-            )
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
@@ -697,7 +664,6 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.local.executor.process_run_logs") as mock_logs,
             patch("nextmv.local.executor.process_run_statistics") as mock_stats,
             patch("nextmv.local.executor.process_run_assets") as mock_assets,
             patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
@@ -712,9 +678,6 @@ class TestLocalExecutor(unittest.TestCase):
             )
 
             # Verify all processing functions were called with empty string
-            mock_logs.assert_called_once_with(
-                output_format=unittest.mock.ANY, run_dir=self.run_dir, result=mock_result, stdout_output=""
-            )
             mock_stats.assert_called_once()
             mock_assets.assert_called_once()
             mock_solutions.assert_called_once()
