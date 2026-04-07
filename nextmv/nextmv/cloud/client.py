@@ -16,6 +16,7 @@ get_size(obj)
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import IO, Any
 from urllib.parse import urljoin
 
@@ -23,6 +24,7 @@ import requests
 import yaml
 from requests.adapters import HTTPAdapter, Retry
 
+from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
@@ -32,6 +34,12 @@ This constant defines the upper limit for the size of data payloads that can
 be sent to the Nextmv Cloud API, specifically for lambda functions. It is set
 to 500 MiB.
 """
+
+# Some useful constants.
+_CONFIG_DIR = Path.home() / ".nextmv"
+_CONFIG_FILE = _CONFIG_DIR / "config.yaml"
+_API_KEY_KEY = "apikey"
+_ENDPOINT_KEY = "endpoint"
 
 
 @dataclass
@@ -45,63 +53,138 @@ class Client:
     from nextmv.cloud import Client
     ```
 
-    The API key will be searched, in order of precedence, in:
+    The `Client` class is configured mainly with an API key and an endpoint
+    URL. There are multiple ways to provide these configurations, and the
+    client will check for them in the following order of precedence:
 
-    1. The `api_key` argument in the constructor.
-    2. The `NEXTMV_API_KEY` environment variable.
-    3. The `~/.nextmv/config.yaml` file used by the Nextmv CLI.
+    1. The `api_key` and `url` attributes set directly on the client
+       instance.
+    2. The `NEXTMV_API_KEY` and `NEXTMV_ENDPOINT` environment variables.
+    3. If the `NEXTMV_PROFILE` environment variable is set, it is used to
+       look up the API key and endpoint for that profile in the configuration
+       file (`~/.nextmv/config.yaml`).
+    4. If the `profile` attribute is set on the client, it is used to look
+       up the API key and endpoint for that profile in the configuration file.
+    5. If the `profile` attribute is not set, the default profile is used to
+       look up the API key and endpoint in the configuration file.
+    6. If all of the above lookups fail, an exception is raised indicating that
+       the API key is missing, and the endpoint falls back to the hardcoded
+       default URL of `https://api.cloud.nextmv.io`.
 
-    Parameters
+    Attributes
     ----------
     api_key : str, optional
-        API key to use for authenticating with the Nextmv Cloud API. If not
-        provided, the client will look for the `NEXTMV_API_KEY` environment
-        variable.
+        API key to use for authenticating with the Nextmv Cloud API. Resolved
+        from the constructor argument, the `NEXTMV_API_KEY` environment
+        variable, or the configuration file (in that order). Raises
+        `ValueError` if no key is found anywhere.
     allowed_methods : list[str]
-        Allowed HTTP methods to use for retries in requests to the Nextmv
-        Cloud API. Defaults to ``["GET", "POST", "PUT", "DELETE"]``.
+        HTTP methods for which failed requests are eligible for retry.
+        Defaults to `["GET", "POST", "PUT", "DELETE"]`. Adjust this list to
+        restrict retries to idempotent methods only (e.g., `["GET"]`).
     backoff_factor : float
-        Exponential backoff factor to use for requests to the Nextmv Cloud
-        API. Defaults to ``1``.
+        Multiplier applied between retry attempts using exponential backoff.
+        A value of `1` means the successive delays will be 1s, 2s, 4s,
+        … (before jitter). Defaults to `1`.
     backoff_jitter : float
-        Jitter to use for requests to the Nextmv Cloud API when backing off.
-        Defaults to ``0.1``.
+        Random jitter (in seconds) added to each backoff delay to avoid
+        thundering-herd problems. Defaults to `0.1`.
     backoff_max : float
-        Maximum backoff time to use for requests to the Nextmv Cloud API, in
-        seconds. Defaults to ``60``.
+        Upper bound on the backoff delay, in seconds. No single wait between
+        retries will exceed this value. Defaults to `60`.
     configuration_file : str
-        Path to the configuration file used by the Nextmv CLI. Defaults to
-        ``"~/.nextmv/config.yaml"``.
+        **Deprecated** — no longer used. Kept for backwards compatibility.
+        Previously held the path to the Nextmv CLI configuration file.
     headers : dict[str, str], optional
-        Headers to use for requests to the Nextmv Cloud API. Automatically
-        set up with the API key.
+        HTTP headers sent with every request. Automatically populated during
+        `__post_init__` with `Authorization: Bearer <api_key>` and
+        `Content-Type: application/json`. Override by passing a custom dict
+        to individual :meth:`request` calls via the `headers` parameter.
     max_retries : int
-        Maximum number of retries to use for requests to the Nextmv Cloud
-        API. Defaults to ``10``.
+        Total number of retry attempts allowed per request. Defaults to
+        `10`. Set to `0` to disable retries.
+    profile : str, optional
+        Named profile to use when looking up credentials in the configuration
+        file (`~/.nextmv/config.yaml`). Overridden by the
+        `NEXTMV_PROFILE` environment variable when that variable is set.
     status_forcelist : list[int]
-        Status codes to retry for requests to the Nextmv Cloud API. Defaults
-        to ``[429]``.
+        HTTP status codes that trigger an automatic retry. Defaults to
+        `[429]` (Too Many Requests). Add codes such as `500`, `502`,
+        or `503` to also retry on server errors.
     timeout : float
-        Timeout to use for requests to the Nextmv Cloud API, in seconds.
-        Defaults to ``20``.
+        Maximum number of seconds to wait for the server to send a response.
+        Defaults to `20`. Increase for large payloads or slow connections.
     url : str, optional
-        URL of the Nextmv Cloud API. Defaults to
-        ``"https://api.cloud.nextmv.io"``.
+        Base URL of the Nextmv Cloud API. Resolved from the constructor
+        argument, the `NEXTMV_ENDPOINT` environment variable, or the
+        configuration file (in that order). Defaults to
+        `"https://api.cloud.nextmv.io"` when not set anywhere.
     console_url : str
-        URL of the Nextmv Cloud console. Defaults to
-        ``"https://cloud.nextmv.io"``.
+        URL of the Nextmv Cloud web console. Defaults to
+        `"https://cloud.nextmv.io"`. Not used for API requests; provided
+        for convenience when constructing deep-links into the console.
 
     Examples
     --------
+    Authenticate with an explicit API key:
+
     >>> client = Client(api_key="YOUR_API_KEY")
     >>> response = client.request(method="GET", endpoint="/v1/applications")
-    >>> print(response.json())
+    >>> print(response.status_code)
+    200
+
+    Authenticate via the `NEXTMV_API_KEY` environment variable (the
+    `api_key` argument can be omitted):
+
+    >>> import os
+    >>> os.environ["NEXTMV_API_KEY"] = "YOUR_API_KEY"
+    >>> client = Client()
+
+    Use a named profile from the configuration file:
+
+    >>> client = Client(profile="staging")
+
+    Override the profile with an environment variable:
+
+    >>> os.environ["NEXTMV_PROFILE"] = "production"
+    >>> client = Client()  # uses the "production" profile
+
+    Customise retry and timeout behaviour:
+
+    >>> client = Client(
+    ...     api_key="YOUR_API_KEY",
+    ...     max_retries=3,
+    ...     backoff_factor=0.5,
+    ...     backoff_jitter=0.05,
+    ...     backoff_max=30,
+    ...     status_forcelist=[429, 500, 502, 503],
+    ...     timeout=60,
+    ... )
+
+    Point the client at a self-hosted or staging API endpoint:
+
+    >>> client = Client(
+    ...     api_key="YOUR_API_KEY",
+    ...     url="https://staging.api.example.com",
+    ... )
     """
 
     api_key: str | None = None
-    """API key to use for authenticating with the Nextmv Cloud API. If not
-    provided, the client will look for the NEXTMV_API_KEY environment
-    variable."""
+    """
+    API key to use for authenticating with the Nextmv Cloud API.
+
+    The API key is determined in the following order of precedence:
+    1. This `api_key` attribute set on the client.
+    2. The `NEXTMV_API_KEY` environment variable.
+    3. If the `NEXTMV_PROFILE` environment variable is set, it is used to look
+    up the API key for that profile in the configuration file.
+    4. If the `profile` attribute is set on the client, it is used to look up
+    the API key for that profile in the configuration file.
+    5. If the `profile` attribute is not set, the default profile is used to
+    look up the API key in the configuration file.
+    6. If all of the above lookups fail, an exception is raised indicating that
+    the API key is missing.
+    """
     allowed_methods: list[str] = field(
         default_factory=lambda: ["GET", "POST", "PUT", "DELETE"],
     )
@@ -115,8 +198,11 @@ class Client:
     backoff_max: float = 60
     """Maximum backoff time to use for requests to the Nextmv Cloud API, in
     seconds."""
-    configuration_file: str = "~/.nextmv/config.yaml"
-    """Path to the configuration file used by the Nextmv CLI."""
+    configuration_file: str | None = None
+    """
+    Deprecated. This attribute is no longer being used. Use the `profile`
+    attribute to specify different configurations instead.
+    """
     headers: dict[str, str] | None = None
     """Headers to use for requests to the Nextmv Cloud API."""
     max_retries: int = 10
@@ -128,15 +214,34 @@ class Client:
     """Status codes to retry for requests to the Nextmv Cloud API."""
     timeout: float = 20
     """Timeout to use for requests to the Nextmv Cloud API."""
-    url: str | None = "https://api.cloud.nextmv.io"
+    url: str | None = None
     """
-    URL of the Nextmv Cloud API.
+    URL (endpoint) of the Nextmv Cloud API.
 
-    If set to `None` or to an empty string, it is
-    replaced with "https://api.cloud.nextmv.io" during client initialization.
+    The endpoint is determined in the following order of precedence:
+    1. This `url` attribute set on the client.
+    2. The `NEXTMV_ENDPOINT` environment variable.
+    3. If the `NEXTMV_PROFILE` environment variable is set, it is used to look
+    up the endpoint for that profile in the configuration file.
+    4. If the `profile` attribute is set on the client, it is used to look up
+    the endpoint for that profile in the configuration file.
+    5. If the `profile` attribute is not set, the default profile is used to
+    look up the endpoint in the configuration file.
+    6. If all of the above lookups fail, the hardcoded default URL of
+    `https://api.cloud.nextmv.io` is used.
     """
     console_url: str = "https://cloud.nextmv.io"
     """URL of the Nextmv Cloud console."""
+    profile: str | None = None
+    """
+    Profile to use from the configuration file. Profiles allow you to configure
+    multiple sets of API keys and endpoints in the configuration file and
+    select between them.
+
+    The profile is determined in the following order of precedence:
+    1. The `NEXTMV_PROFILE` environment variable.
+    2. This `profile` attribute set on the client.
+    """
 
     def __post_init__(self):
         """
@@ -149,57 +254,27 @@ class Client:
         Raises
         ------
         ValueError
-            If `api_key` is an empty string.
-            If no API key is found in any of the lookup locations.
-            If a profile is specified via `NEXTMV_PROFILE` but not found in
-            the configuration file.
-            If `apikey` is not found in the configuration file for the
+            If no API key is found after checking the constructor argument,
+            the ``NEXTMV_API_KEY`` environment variable, and the
+            configuration file (for the resolved profile or the default
+            profile). A ``None`` or empty ``api_key`` is treated as unset
+            and causes the lookup to fall through to the next source.
+            If a profile is specified via ``NEXTMV_PROFILE`` or the
+            ``profile`` attribute but is not found in the configuration file.
+            If ``apikey`` is not found in the configuration file for the
             selected profile.
         """
 
-        # Fallback for backwards compatibility with empty string
-        if not self.url:
-            self.url = "https://api.cloud.nextmv.io"
+        profile = self.__resolve_profile()
+        self.url = self.__resolve_endpoint(profile)
+        self.api_key = self.__resolve_api_key(profile)
+        self.__set_headers_api_key(self.api_key)
 
-        if self.api_key is not None and self.api_key != "":
-            self._set_headers_api_key(self.api_key)
-            return
-
-        if self.api_key == "":
-            raise ValueError("api_key cannot be empty")
-
-        api_key_env = os.getenv("NEXTMV_API_KEY")
-        if api_key_env is not None:
-            self.api_key = api_key_env
-            self._set_headers_api_key(api_key_env)
-            return
-
-        config_path = os.path.expanduser(self.configuration_file)
-        if not os.path.exists(config_path):
-            raise ValueError(
-                f"no API key set in constructor or NEXTMV_API_KEY env var, and {self.configuration_file} does not exist"
+        if self.configuration_file is not None and self.configuration_file != "":
+            deprecated(
+                name="Client.configuration_file",
+                reason="`Client.configuration_file` is deprecated, use `Client.profile` to work with another profile",
             )
-
-        with open(config_path) as f:
-            config = yaml.safe_load(f)
-
-        profile = os.getenv("NEXTMV_PROFILE")
-        parent = config
-        if profile is not None:
-            parent = config.get(profile)
-            if parent is None:
-                raise ValueError(f"profile {profile} set via NEXTMV_PROFILE but not found in {self.configuration_file}")
-
-        api_key = parent.get("apikey")
-        if api_key is None:
-            raise ValueError(f"no apiKey found in {self.configuration_file}")
-        self.api_key = api_key
-
-        endpoint = parent.get("endpoint")
-        if endpoint is not None:
-            self.url = f"https://{endpoint}"
-
-        self._set_headers_api_key(api_key)
 
     def request(
         self,
@@ -254,24 +329,57 @@ class Client:
 
         Examples
         --------
+        List all applications:
+
         >>> client = Client(api_key="YOUR_API_KEY")
-        >>> # Get a list of applications
         >>> response = client.request(method="GET", endpoint="/v1/applications")
         >>> print(response.status_code)
         200
-        >>> # Create a new run
+        >>> apps = response.json()
+        >>> print([a["id"] for a in apps["items"]])
+        ['my-app', 'another-app']
+
+        Create a new run with a JSON payload:
+
         >>> run_payload = {
-        ...     "applicationId": "app_id",
-        ...     "instanceId": "instance_id",
-        ...     "input": {"value": 10}
+        ...     "applicationId": "my-app",
+        ...     "instanceId": "candidate",
+        ...     "input": {"value": 10},
         ... }
         >>> response = client.request(
         ...     method="POST",
         ...     endpoint="/v1/runs",
-        ...     payload=run_payload
+        ...     payload=run_payload,
         ... )
         >>> print(response.json()["id"])
         run_xxxxxxxxxxxx
+
+        Retrieve a specific run using query parameters:
+
+        >>> response = client.request(
+        ...     method="GET",
+        ...     endpoint="/v1/runs",
+        ...     query_params={"applicationId": "my-app", "limit": 5},
+        ... )
+        >>> print(len(response.json()["items"]))
+        5
+
+        Send a request with custom headers (e.g., to pass a request ID):
+
+        >>> response = client.request(
+        ...     method="GET",
+        ...     endpoint="/v1/applications",
+        ...     headers={**client.headers, "X-Request-Id": "abc-123"},
+        ... )
+
+        Send a JSON payload with custom serialization (pretty-printed):
+
+        >>> response = client.request(
+        ...     method="POST",
+        ...     endpoint="/v1/runs",
+        ...     payload={"applicationId": "my-app", "input": {}},
+        ...     json_configurations={"indent": 2},
+        ... )
         """
 
         if payload is not None and data is not None:
@@ -372,10 +480,27 @@ class Client:
 
         Examples
         --------
-        Assume `presigned_upload_url` is obtained from a previous API call.
+        Upload a dictionary as JSON (presigned URL obtained from a prior API
+        call):
+
         >>> client = Client(api_key="YOUR_API_KEY")
-        >>> input_data = {"value": 42, "items": [1, 2, 3]}
-        >>> client.upload_to_presigned_url(data=input_data, url="PRE_SIGNED_URL") # doctest: +SKIP
+        >>> input_data = {"stops": [{"id": "A"}, {"id": "B"}], "config": {"max_duration": 30}}
+        >>> client.upload_to_presigned_url(data=input_data, url="PRE_SIGNED_URL")  # doctest: +SKIP
+
+        Upload a raw JSON string:
+
+        >>> client.upload_to_presigned_url(  # doctest: +SKIP
+        ...     data='{"stops": [{"id": "A"}]}',
+        ...     url="PRE_SIGNED_URL",
+        ... )
+
+        Upload a pre-built tarball (e.g., a packaged application):
+
+        >>> client.upload_to_presigned_url(  # doctest: +SKIP
+        ...     data=None,
+        ...     url="PRE_SIGNED_URL",
+        ...     tar_file="/path/to/app.tar.gz",
+        ... )
         """
 
         upload_data: str | None = None
@@ -423,7 +548,137 @@ class Client:
                 f"status code {response.status_code} and message: {response.text}"
             ) from e
 
-    def _set_headers_api_key(self, api_key: str) -> None:
+    def __resolve_profile(self) -> str | None:
+        """
+        Resolves the active profile name.
+
+        Checks, in order of precedence: the `NEXTMV_PROFILE` environment
+        variable and then the `profile` attribute set on the client.
+
+        Returns
+        -------
+        str or None
+            The resolved profile name, or `None` if no profile is set.
+        """
+        profile_env = os.getenv("NEXTMV_PROFILE")
+        if profile_env is not None:
+            profile_env = profile_env.strip()
+            if profile_env != "":
+                if profile_env.lower() == "default":
+                    return None
+
+                return profile_env
+
+        if self.profile is not None:
+            profile = self.profile.strip()
+            if profile != "":
+                if profile.lower() == "default":
+                    return None
+
+                return profile
+
+        return None
+
+    def __resolve_endpoint(self, profile: str | None) -> str:
+        """
+        Resolves the API endpoint URL.
+
+        Checks, in order of precedence: the `url` attribute set on the
+        client, the `NEXTMV_ENDPOINT` environment variable, the endpoint
+        for the given profile in the configuration file, and finally the
+        default endpoint for the default profile in the configuration file.
+        Falls back to the hardcoded default URL if all other lookups fail.
+
+        Parameters
+        ----------
+        profile : str or None
+            The profile name to use when looking up the endpoint in the
+            configuration file. If `None` or empty, the default profile
+            is used.
+
+        Returns
+        -------
+        str
+            The resolved API endpoint URL.
+        """
+        if self.url is not None and self.url != "":
+            url = self.url
+        elif (url_env := os.getenv("NEXTMV_ENDPOINT")):
+            url = url_env
+        elif profile is not None and profile != "":
+            url = _retrieve_endpoint_from_config(profile)
+        else:
+            # The fallback behavior is to attempt to retrieve the default endpoint
+            # from the config file. If everything fails, we return the hardcoded
+            # default endpoint.
+            try:
+                url = _retrieve_endpoint_from_config()
+            except (RuntimeError, ValueError):
+                url = "https://api.cloud.nextmv.io"
+
+        if not url.startswith("https://") and not url.startswith("http://"):
+            url = f"https://{url}"
+
+        return url
+
+    def __resolve_api_key(self, profile: str | None) -> str:
+        """
+        Resolves the API key.
+
+        Checks, in order of precedence: the `api_key` attribute set on the
+        client, the `NEXTMV_API_KEY` environment variable, the API key for
+        the given profile in the configuration file, and finally the API key
+        for the default profile in the configuration file.
+
+        Parameters
+        ----------
+        profile : str or None
+            The profile name to use when looking up the API key in the
+            configuration file. If `None` or empty, the default profile
+            is used.
+
+        Returns
+        -------
+        str
+            The resolved API key.
+
+        Raises
+        ------
+        RuntimeError
+            If no configuration file is found when falling back to the
+            configuration file lookup.
+        ValueError
+            If the API key is not set or is empty in the configuration file
+            for the resolved profile.
+        """
+        if self.api_key is not None and self.api_key != "":
+            return self.api_key
+
+        api_key_env = os.getenv("NEXTMV_API_KEY")
+        if api_key_env is not None and api_key_env != "":
+            return api_key_env
+
+        if profile is not None and profile != "":
+            api_key = _retrieve_key_from_config(profile)
+            return api_key
+
+        # The fallback behavior is to attempt to retrieve the default api key
+        # from the config file. If the key is missing, an exception is raised.
+        try:
+            api_key = _retrieve_key_from_config()
+        except (RuntimeError, ValueError) as e:
+            raise ValueError(
+                "API key is missing. Please set the API key in one of the following ways: "
+                "1. Pass it directly to the Client constructor. "
+                "2. Set the NEXTMV_API_KEY environment variable. "
+                "3. Set the API key in the configuration file for the default profile. "
+                "4. If using profiles, set the API key in the configuration file for the selected profile and ensure "
+                "the profile is selected via the NEXTMV_PROFILE environment variable or the Client constructor."
+            ) from e
+
+        return api_key
+
+    def __set_headers_api_key(self, api_key: str) -> None:
         """
         Sets the Authorization and Content-Type headers.
 
@@ -504,3 +759,115 @@ def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[st
 
     else:
         raise TypeError("Unsupported type. Only dictionaries, file objects (IO[bytes]), and strings are supported.")
+
+
+def _load_config() -> dict[str, Any]:
+    """
+    Load the current configuration from the config file. Returns an empty
+    dictionary if no configuration file exists.
+
+    Returns
+    -------
+    dict[str, Any]
+        The current configuration as a dictionary.
+    """
+
+    if not _CONFIG_FILE.exists():
+        return {}
+
+    with _CONFIG_FILE.open() as file:
+        config = yaml.safe_load(file)
+
+    if config is None:
+        return {}
+    return config
+
+
+def _retrieve_key_from_config(profile: str | None = None) -> str:
+    """
+    Retrieves the API key for the given profile. If no profile is given, the
+    default profile is used. If the API key is missing, an exception is raised.
+    If the config is not available, an exception is raised.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    str
+        The API key for the selected profile or the default configuration.
+
+    Raises
+    ------
+    RuntimeError
+        If no configuration file is found.
+    ValueError
+        If the requested profile does not exist, or if the API key (for either
+        the selected profile or the default configuration) is not set or is
+        empty.
+    """
+
+    config = _load_config()
+    if config == {}:
+        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+
+    if profile is not None:
+        if profile not in config:
+            raise ValueError(f"Profile `{profile}` does not exist.")
+
+        api_key = config[profile].get(_API_KEY_KEY)
+        if api_key is None or api_key == "":
+            raise ValueError(f"API key for profile `{profile}` is not set or is empty.")
+    else:
+        api_key = config.get(_API_KEY_KEY)
+        if api_key is None or api_key == "":
+            raise ValueError("Default API key is not set or is empty.")
+
+    return api_key
+
+
+def _retrieve_endpoint_from_config(profile: str | None = None) -> str:
+    """
+    Retrieves the endpoint for the given profile. If no profile is given, the
+    default profile is used. If the endpoint is missing, an exception is
+    raised. If the config is not available, an exception is raised.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name to use. If None, the default profile is used.
+
+    Returns
+    -------
+    str
+        The endpoint for the selected profile or the default configuration.
+
+    Raises
+    ------
+    RuntimeError
+        If no configuration file is found.
+    ValueError
+        If the requested profile does not exist, or if the endpoint (for either
+        the selected profile or the default configuration) is not set or is
+        empty.
+    """
+
+    config = _load_config()
+    if config == {}:
+        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+
+    if profile is not None:
+        if profile not in config:
+            raise ValueError(f"Profile `{profile}` does not exist.")
+
+        endpoint = config[profile].get(_ENDPOINT_KEY)
+        if endpoint is None or endpoint == "":
+            raise ValueError(f"Endpoint for profile `{profile}` is not set or is empty.")
+    else:
+        endpoint = config.get(_ENDPOINT_KEY)
+        if endpoint is None or endpoint == "":
+            raise ValueError("Default endpoint is not set or is empty.")
+
+    return f"https://{endpoint}"

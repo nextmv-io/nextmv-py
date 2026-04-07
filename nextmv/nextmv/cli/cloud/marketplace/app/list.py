@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_client
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.marketplace import list_marketplace_applications
 
 # Set up subcommand application.
@@ -60,7 +60,7 @@ def list(
         $ [dim]nextmv cloud marketplace app list --output apps.json[/dim]
     """
 
-    client = build_client(profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing applications...")
 
     mkt_apps = list_marketplace_applications(client, partner_id)

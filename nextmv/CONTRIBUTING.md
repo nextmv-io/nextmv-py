@@ -586,7 +586,7 @@ to use it.
           $ [dim]nextmv cloud app get --app-id hare-app --output app.json[/dim]
       """
 
-      client = build_client(profile)
+      client = Client(profile=profile)
       in_progress("Getting application...")
 
       cloud_app = Application.get(
