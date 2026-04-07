@@ -601,11 +601,10 @@ class Client:
         str
             The resolved API endpoint URL.
         """
-        url_key_env = os.getenv("NEXTMV_ENDPOINT")
         if self.url is not None and self.url != "":
             url = self.url
-        elif url_key_env is not None and url_key_env != "":
-            url = url_key_env
+        elif (url_env := os.getenv("NEXTMV_ENDPOINT")):
+            url = url_env
         elif profile is not None and profile != "":
             url = _retrieve_endpoint_from_config(profile)
         else:
