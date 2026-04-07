@@ -7,10 +7,11 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.instance import update_instance as _update_instance
 from nextmv.cli.cloud.instance.create import build_config, build_options
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.input import InputFormat
 
 # Set up subcommand application.
@@ -184,7 +185,7 @@ def update(
             "--version-id, or any [magenta]Instance configuration[/magenta] option."
         )
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
 
     # Build configuration if any configuration options were provided.
     configuration = None
@@ -201,18 +202,18 @@ def update(
         )
 
     in_progress(msg="Updating instance...")
-    updated_instance = cloud_app.update_instance(
-        id=instance_id,
+    updated_instance_dict = _update_instance(
+        client,
+        app_id=app_id,
+        instance_id=instance_id,
         name=name,
-        description=description,
         version_id=version_id,
+        description=description,
         configuration=configuration,
-        locked=locked,
     )
     success(
         f"Instance [magenta]{instance_id}[/magenta] updated successfully in application [magenta]{app_id}[/magenta]."
     )
-    updated_instance_dict = updated_instance.to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

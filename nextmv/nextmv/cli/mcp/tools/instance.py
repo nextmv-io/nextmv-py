@@ -4,6 +4,13 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.instance import (
+    create_instance,
+    delete_instance,
+    get_instance,
+    list_instances,
+    update_instance,
+)
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -23,9 +30,7 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        instances = app.list_instances()
-        return [i.to_dict() for i in instances]
+        return list_instances(_helpers._get_client(), app_id=app_id)
 
     @mcp.tool()
     def cloud_get_instance(app_id: str, instance_id: str) -> dict[str, Any]:
@@ -39,9 +44,7 @@ def register(mcp: FastMCP) -> None:
             instance_id: The instance ID to retrieve.
         """
 
-        app = _helpers._get_app(app_id)
-        inst = app.instance(instance_id=instance_id)
-        return inst.to_dict()
+        return get_instance(_helpers._get_client(), app_id=app_id, instance_id=instance_id)
 
     @mcp.tool()
     def cloud_create_instance(
@@ -68,8 +71,6 @@ def register(mcp: FastMCP) -> None:
                 ``secrets_collection_id``, ``integration_id``.
         """
 
-        from nextmv.cloud import InstanceConfiguration
-
         try:
             version_id = _helpers._require_non_empty(version_id, "version_id")
         except ValueError as e:
@@ -78,16 +79,15 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        config = InstanceConfiguration(**configuration) if configuration else None
-        inst = app.new_instance(
+        return create_instance(
+            _helpers._get_client(),
+            app_id=app_id,
             version_id=version_id,
-            id=instance_id,
+            instance_id=instance_id,
             name=name,
             description=description,
-            configuration=config,
+            configuration=configuration,
         )
-        return inst.to_dict()
 
     @mcp.tool()
     def cloud_update_instance(
@@ -116,15 +116,15 @@ def register(mcp: FastMCP) -> None:
         version_id = _helpers._none_if_empty(version_id)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        inst = app.update_instance(
-            id=instance_id,
+        return update_instance(
+            _helpers._get_client(),
+            app_id=app_id,
+            instance_id=instance_id,
             name=name,
             version_id=version_id,
             description=description,
             configuration=configuration,
         )
-        return inst.to_dict()
 
     @mcp.tool()
     def cloud_delete_instance(app_id: str, instance_id: str) -> str:
@@ -135,6 +135,5 @@ def register(mcp: FastMCP) -> None:
             instance_id: The instance ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_instance(instance_id=instance_id)
+        delete_instance(_helpers._get_client(), app_id=app_id, instance_id=instance_id)
         return f"Deleted instance {instance_id}"
