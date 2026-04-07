@@ -57,15 +57,15 @@ jobs:
       - name: smoketest binary (windows)
         if: ${{ matrix.os == 'windows' }}
         run: |
-          dist/nextmv.exe --help
-          dist/nextmv.exe version
+          nextmv.exe --help
+          nextmv.exe version
         shell: cmd
-        working-directory: nextmv/
+        working-directory: nextmv/dist
 
       - name: smoketest binary (linux/macos)
         if: ${{ matrix.os != 'windows' }}
         run: |
-          dist/nextmv --help
-          dist/nextmv version
+          ./nextmv --help
+          ./nextmv version
         shell: bash
-        working-directory: nextmv/
+        working-directory: nextmv/dist
