@@ -64,6 +64,12 @@ configuration:
           control_type: select
           hidden_from:
             - operator
+      - name: a local only parameter
+        option_type: string
+        default: local_default
+        description: a local only description
+        required: false
+        local_only: true
   content:
     format: "multi-file"
     multi-file:
