@@ -47,6 +47,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller
           pip install .
+        working-directory: nextmv/
 
       - name: build binary with PyInstaller
         # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
