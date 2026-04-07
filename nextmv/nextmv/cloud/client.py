@@ -583,24 +583,24 @@ class Client:
         str
             The resolved API endpoint URL.
         """
-        if self.url is not None and self.url != "":
-            return self.url
-
         url_key_env = os.getenv("NEXTMV_ENDPOINT")
-        if url_key_env is not None and url_key_env != "":
-            return url_key_env
-
-        if profile is not None and profile != "":
+        if self.url is not None and self.url != "":
+            url = self.url
+        elif url_key_env is not None and url_key_env != "":
+            url = url_key_env
+        elif profile is not None and profile != "":
             url = _retrieve_endpoint_from_config(profile)
-            return url
+        else:
+            # The fallback behavior is to attempt to retrieve the default endpoint
+            # from the config file. If everything fails, we return the hardcoded
+            # default endpoint.
+            try:
+                url = _retrieve_endpoint_from_config()
+            except (RuntimeError, ValueError):
+                url = "https://api.cloud.nextmv.io"
 
-        # The fallback behavior is to attempt to retrieve the default endpoint
-        # from the config file. If everything fails, we return the hardcoded
-        # default endpoint.
-        try:
-            url = _retrieve_endpoint_from_config()
-        except (RuntimeError, ValueError):
-            url = "https://api.cloud.nextmv.io"
+        if not url.startswith("https://") and not url.startswith("http://"):
+            url = f"https://{url}"
 
         return url
 
