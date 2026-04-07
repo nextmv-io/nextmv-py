@@ -480,8 +480,9 @@ class TestSaveToFile(unittest.TestCase):
             upload_id="upl_123",
         )
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_input_set_with_managed_input_ids(self, mock_get_app):
+    @patch("nextmv.cli.actions.input_set.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_input_set_with_managed_input_ids(self, mock_get_client, mock_application_class):
         """Test that cloud_create_input_set passes managed inputs correctly."""
         from nextmv.cli.mcp.server import create_server
 
@@ -489,7 +490,7 @@ class TestSaveToFile(unittest.TestCase):
         mock_input_set = MagicMock()
         mock_input_set.to_dict.return_value = {"id": "is-1"}
         mock_app.new_input_set.return_value = mock_input_set
-        mock_get_app.return_value = mock_app
+        mock_application_class.return_value = mock_app
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_input_set"]
@@ -507,8 +508,9 @@ class TestSaveToFile(unittest.TestCase):
         self.assertEqual(call_kwargs["inputs"][0].id, "mi-1")
         self.assertEqual(call_kwargs["inputs"][1].id, "mi-2")
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_input_set_with_run_ids(self, mock_get_app):
+    @patch("nextmv.cli.actions.input_set.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_input_set_with_run_ids(self, mock_get_client, mock_application_class):
         """Test that cloud_create_input_set passes run_ids correctly."""
         from nextmv.cli.mcp.server import create_server
 
@@ -516,7 +518,7 @@ class TestSaveToFile(unittest.TestCase):
         mock_input_set = MagicMock()
         mock_input_set.to_dict.return_value = {"id": "is-1"}
         mock_app.new_input_set.return_value = mock_input_set
-        mock_get_app.return_value = mock_app
+        mock_application_class.return_value = mock_app
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_input_set"]

@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InputSetIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.input_set import ManagedInput
 
 # Set up subcommand application.
@@ -90,7 +91,8 @@ def update(
     if name is None and description is None and managed_inputs is None:
         error("Provide at least one option: --name, --description, or --managed-inputs.")
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Updating input set...")
 
     managed_input_list = []
