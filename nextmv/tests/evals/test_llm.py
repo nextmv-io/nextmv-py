@@ -20,12 +20,20 @@ from nextmv.evals.prompts import EVAL_SYSTEM_PROMPT
 from nextmv.evals.runner import EvalRunner
 
 
+def _ollama_base_url():
+    """Return the Ollama base URL from OLLAMA_HOST or default."""
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    if not host.startswith("http"):
+        host = f"http://{host}"
+    return host
+
+
 def _is_ollama_available():
-    """Check if Ollama is running locally."""
+    """Check if Ollama is running."""
     try:
         import urllib.request
 
-        urllib.request.urlopen("http://localhost:11434/api/tags", timeout=2)
+        urllib.request.urlopen(f"{_ollama_base_url()}/api/tags", timeout=2)
         return True
     except Exception:
         return False
@@ -126,8 +134,11 @@ class TestOllamaEvals(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not _is_ollama_available():
-            raise unittest.SkipTest("Ollama not available at localhost:11434")
+            raise unittest.SkipTest(
+                f"Ollama not available at {_ollama_base_url()}"
+            )
         cls.model = os.environ.get("EVAL_MODEL", "gemma4:26b")
+        cls.base_url = f"{_ollama_base_url()}/v1"
         cls.server = _make_mock_server()
         cls.runner = EvalRunner(server=cls.server, max_steps=5)
         cls.cases = _load_all_cases()
@@ -143,7 +154,7 @@ class TestOllamaEvals(unittest.TestCase):
                     tools=scoped_tools,
                     model=self.model,
                     system=EVAL_SYSTEM_PROMPT,
-                    base_url="http://localhost:11434/v1",
+                    base_url=self.base_url,
                 )
                 result = asyncio.run(
                     self.runner.run_case(case, mode="llm", agent=agent)
