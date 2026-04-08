@@ -75,7 +75,7 @@ jobs:
 
       - name: determine exact version being released
         run: |
-          VERSION="nextmv-$(cat nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
+          VERSION="nextmv-$(cat nextmv/nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION"
 
