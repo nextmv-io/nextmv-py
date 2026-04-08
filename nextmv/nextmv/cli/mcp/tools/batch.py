@@ -68,7 +68,8 @@ def register(mcp: FastMCP) -> None:
 
         client = _helpers._get_client()
         data = _get_batch(client, app_id, batch_id)
-        return _helpers._save_to_json_file(data, prefix=f"batch_{batch_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "batch", batch_id)
 
     @mcp.tool()
     def cloud_list_batches(app_id: str) -> list[dict[str, Any]]:
@@ -99,7 +100,8 @@ def register(mcp: FastMCP) -> None:
 
         client = _helpers._get_client()
         data = _batch_metadata(client, app_id, batch_id)
-        return _helpers._save_to_json_file(data, prefix=f"batch_metadata_{batch_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "batch", batch_id, filename="metadata.json")
 
     @mcp.tool()
     def cloud_delete_batch(app_id: str, batch_id: str) -> str:

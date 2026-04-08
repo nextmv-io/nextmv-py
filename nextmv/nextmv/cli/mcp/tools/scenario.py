@@ -39,8 +39,8 @@ def register(mcp: FastMCP) -> None:
         """Get details and results of a scenario test.
 
         Saves the full test data (including per-scenario run results)
-        to a local temp file. Use file-reading tools to inspect the
-        contents.
+        to ~/.nextmv/experiments/. Use file-reading tools to inspect
+        the contents.
 
         Args:
             app_id: The application ID.
@@ -49,7 +49,8 @@ def register(mcp: FastMCP) -> None:
 
         client = _helpers._get_client()
         data = _get_scenario_test(client, app_id, scenario_test_id)
-        return _helpers._save_to_json_file(data, prefix=f"scenario_test_{scenario_test_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "scenario", scenario_test_id)
 
     @mcp.tool()
     def cloud_create_scenario_test(

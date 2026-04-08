@@ -47,7 +47,8 @@ def register(mcp: FastMCP) -> None:
 
         client = _helpers._get_client()
         data = _get_acceptance_test(client, app_id, acceptance_test_id)
-        return _helpers._save_to_json_file(data, prefix=f"acceptance_test_{acceptance_test_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "acceptance", acceptance_test_id)
 
     @mcp.tool()
     def cloud_create_acceptance_test(

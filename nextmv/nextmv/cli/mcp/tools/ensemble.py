@@ -50,7 +50,8 @@ def register(mcp: FastMCP) -> None:
 
         client = _helpers._get_client()
         data = _get_ensemble(client, app_id, ensemble_id)
-        return _helpers._save_to_json_file(data, prefix=f"ensemble_{ensemble_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "ensemble", ensemble_id)
 
     @mcp.tool()
     def cloud_create_ensemble(
@@ -178,7 +179,8 @@ def register(mcp: FastMCP) -> None:
         except ValueError as e:
             return f"Error building ensemble run configuration: {e}"
 
-        return _helpers._save_to_json_file(result, prefix=f"ensemble_run_{app_id}_{ensemble_id}")
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(result, endpoint, "ensemble", ensemble_id, filename="run_result.json")
 
     @mcp.tool()
     def cloud_ensemble_run_submit(

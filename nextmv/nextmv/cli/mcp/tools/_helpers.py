@@ -177,6 +177,37 @@ def _cloud_run_dir(endpoint: str, run_id: str) -> str:
     return os.path.join(os.path.expanduser("~"), ".nextmv", "runs", endpoint, run_id)
 
 
+def _experiment_dir(endpoint: str, experiment_type: str, experiment_id: str) -> str:
+    """Build the local cache directory for an experiment.
+
+    Returns ``~/.nextmv/experiments/{endpoint}/{type}/{id}``.
+    """
+
+    return os.path.join(
+        os.path.expanduser("~"), ".nextmv", "experiments", endpoint, experiment_type, experiment_id,
+    )
+
+
+def _save_experiment_file(
+    data: Any,
+    endpoint: str,
+    experiment_type: str,
+    experiment_id: str,
+    filename: str = "result.json",
+) -> str:
+    """Serialize experiment data as JSON into the experiment cache.
+
+    Returns a message pointing to the saved file path.
+    """
+
+    exp_dir = _experiment_dir(endpoint, experiment_type, experiment_id)
+    os.makedirs(exp_dir, exist_ok=True)
+    path = os.path.join(exp_dir, filename)
+    with open(path, "w") as fh:
+        json.dump(data, fh, indent=2)
+    return f"Data saved to {path} — use file-reading tools to inspect the contents."
+
+
 def _cloud_run_file_exists(endpoint: str, run_id: str, *path_parts: str) -> str | None:
     """Return the file path if a cached cloud run file exists, else None.
 
@@ -194,7 +225,13 @@ def _cloud_run_file_exists(endpoint: str, run_id: str, *path_parts: str) -> str 
 def _endpoint_from_app(app: Application) -> str:
     """Return the API endpoint from an Application with scheme stripped."""
 
-    url: str = app.client.url or ""
+    return _endpoint_from_client(app.client)
+
+
+def _endpoint_from_client(client: Client) -> str:
+    """Return the API endpoint from a Client with scheme stripped."""
+
+    url: str = client.url or ""
     for scheme in ("https://", "http://"):
         if url.startswith(scheme):
             url = url[len(scheme) :]
