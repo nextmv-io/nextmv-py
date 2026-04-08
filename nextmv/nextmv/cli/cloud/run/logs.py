@@ -108,14 +108,13 @@ def handle_logs(
     """
     Handle retrieving and outputting logs from a run.
 
-    If neither `tail` is True nor `logs` is specified, this function
-    returns early without doing anything. Otherwise, logs are retrieved and
-    optionally written to a file.
-
     When `tail` is True, logs are streamed in real-time to stderr as the run
     executes. When `logs` is specified (without tailing), the function waits
-    for the run to complete and then fetches all logs at once. In both cases,
-    if a `logs` file path is provided, the logs are persisted to that file.
+    for the run to complete and then fetches all logs at once. When neither
+    `tail` is True nor `file_output` is set, logs are fetched immediately and
+    printed to stderr without waiting for the run to complete. In all cases
+    where `tail` is True or `logs` is specified, if a `logs` file path is
+    provided, the logs are persisted to that file.
 
     Parameters
     ----------

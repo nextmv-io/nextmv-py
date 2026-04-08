@@ -824,7 +824,7 @@ class ApplicationRunMixin:
 
         Examples
         --------
-        >>> from nextmv.cloud import PollingOptions
+        >>> from nextmv import PollingOptions
         >>> # Create custom polling options
         >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
         >>> # Get run logs with polling
@@ -1058,7 +1058,7 @@ class ApplicationRunMixin:
 
         Examples
         --------
-        >>> from nextmv.cloud import PollingOptions
+        >>> from nextmv import PollingOptions
         >>> # Create custom polling options
         >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
         >>> # Get run result with polling
