@@ -81,6 +81,7 @@ jobs:
           echo "VERSION=$VERSION"
 
       - name: attach binary to GitHub release
+        shell: bash # Force bash shell for consistent behavior across OSes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
