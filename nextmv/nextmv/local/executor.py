@@ -172,9 +172,18 @@ def execute_run(
             stdout_lines: list[str] = []
             stderr_lines: list[str] = []
 
+            # Force unbuffered stdout/stderr in child processes so both
+            # streams are written to the log file in real time.
+            child_env = os.environ.copy()
+            child_env["PYTHONUNBUFFERED"] = "1"
+
+            # This is the process that actually executes the entrypoint script.
+            # We use subprocess.Popen instead of subprocess.run because we need
+            # to stream the output in real time, which is not possible with
+            # subprocess.run.
             process = subprocess.Popen(
                 args,
-                env=os.environ,
+                env=child_env,
                 text=True,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -183,28 +192,41 @@ def execute_run(
             )
 
             def write_stdin() -> None:
+                # Write all input at once then close so the child process receives EOF.
                 process.stdin.write(stdin_input)
                 process.stdin.close()
 
+            # A lock to serialize writes from the stdout and stderr threads so log
+            # lines are never interleaved in the log file.
+            log_lock = threading.Lock()
+            log_f = open(log_file_path, "a")
+
             def stream_stderr() -> None:
-                with open(log_file_path, "a") as log_f:
-                    for line in process.stderr:
+                # Stderr is always streamed live to the log file so errors appear
+                # immediately even if the process is still running.
+                for line in process.stderr:
+                    with log_lock:
                         log_f.write(line)
                         log_f.flush()
-                        stderr_lines.append(line)
+                    stderr_lines.append(line)
 
             def stream_stdout() -> None:
+                # For multi-file runs, stdout carries log output, so mirror it to
+                # the log file in real time just like stderr. For other formats,
+                # stdout carries the structured result and is only buffered.
                 if is_multi_file:
-                    with open(log_file_path, "a") as log_f:
-                        for line in process.stdout:
+                    for line in process.stdout:
+                        with log_lock:
                             log_f.write(line)
                             log_f.flush()
-                            stdout_lines.append(line)
+                        stdout_lines.append(line)
                 else:
                     for line in process.stdout:
                         stdout_lines.append(line)
 
-            # Use threads to read both streams concurrently without deadlocking.
+            # Run stdin, stdout, and stderr on separate threads so no single pipe
+            # can fill its OS buffer and block the process while another pipe waits,
+            # which would cause a deadlock.
             stdin_thread = threading.Thread(target=write_stdin)
             stderr_thread = threading.Thread(target=stream_stderr)
             stdout_thread = threading.Thread(target=stream_stdout)
@@ -213,11 +235,16 @@ def execute_run(
             stderr_thread.start()
             stdout_thread.start()
 
+            # Wait for all streams to be fully consumed before calling process.wait()
+            # to ensure no output is lost.
             stdin_thread.join()
             stderr_thread.join()
             stdout_thread.join()
             process.wait()
+            log_f.close()
 
+            # Assemble a CompletedProcess so the rest of the pipeline can treat this
+            # the same as a synchronous subprocess.run() result.
             result = subprocess.CompletedProcess(
                 args=args,
                 returncode=process.returncode,

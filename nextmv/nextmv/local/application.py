@@ -16,6 +16,7 @@ import shutil
 import sys
 import tempfile
 import webbrowser
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
@@ -852,6 +853,97 @@ class Application(BaseModel):
             logs = f.read()
 
         return logs
+
+    def run_logs_with_polling(
+        self,
+        run_id: str,
+        verbose: bool = False,
+        rich_print: bool = False,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+        log_func: Callable[[str], None] | None = None,
+    ) -> list[str]:
+        """
+        Get the logs of a local run with polling.
+
+        Retrieves the logs of a run. This method polls for the logs until the
+        run finishes executing or the polling strategy is exhausted. It is the
+        "real-time" equivalent of the `run_logs` method. After the polling is
+        done, all the logs are returned as a list of strings (one per line).
+        You can use the `verbose` parameter to print the logs as they are
+        obtained during the polling process. You can also use the `rich_print`
+        parameter to enable rich printing for better formatting of the logs.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve the logs for.
+        verbose : bool, default=False
+            Whether to print the logs as they are obtained during the polling
+            process.
+        rich_print : bool, default=False
+            Whether to use rich printing for better formatting of the logs.
+        polling_options : PollingOptions, default=DEFAULT_POLLING_OPTIONS
+            Options to use when polling for the run logs.
+        log_func : Optional[Callable[[str], None]], default=None
+            Optional custom logging function callback. This function is invoked
+            independently of the `verbose` flag. It needs to take a `str` as
+            its argument and return `None`.
+
+        Returns
+        -------
+        list[str]
+            List of log lines of the run.
+
+        Raises
+        ------
+        TimeoutError
+            If the run does not complete after the polling strategy is
+            exhausted based on time duration.
+        RuntimeError
+            If the run does not complete after the polling strategy is
+            exhausted based on number of tries.
+
+        Examples
+        --------
+        >>> from nextmv.cloud import PollingOptions
+        >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
+        >>> logs = app.run_logs_with_polling("run-123", polling_opts)
+        >>> for line in logs:
+        ...     print(line)
+        Starting optimization...
+        Found initial solution
+        """
+
+        all_logs: list[str] = []
+        lines_seen = 0
+
+        def polling_func() -> tuple[Any, bool]:
+            nonlocal lines_seen
+
+            # Check if the run has finalized. If so, all logs are guaranteed
+            # to have been flushed to the file before this check returned.
+            run_information = self.run_metadata(run_id=run_id)
+            is_done = run_information.metadata.run_is_finalized()
+
+            # Read the current log file contents and emit only new lines.
+            log_contents = self.run_logs(run_id)
+            current_lines = log_contents.splitlines() if log_contents else []
+            for line in current_lines[lines_seen:]:
+                if log_func is not None:
+                    log_func(line)
+                if verbose:
+                    if rich_print:
+                        rich.print(line, file=sys.stderr)
+                    else:
+                        log(line)
+                all_logs.append(line)
+            lines_seen = len(current_lines)
+
+            return all_logs, is_done
+
+        all_logs = poll(polling_options=polling_options, polling_func=polling_func)
+
+        return all_logs
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """

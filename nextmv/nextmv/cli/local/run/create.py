@@ -11,6 +11,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.local.run.get import handle_outputs
+from nextmv.cli.local.run.logs import handle_logs
 from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.input import InputFormat
@@ -39,6 +40,16 @@ def create(
         ),
     ] = None,
     # Options for controlling output.
+    logs: Annotated[
+        str | None,
+        typer.Option(
+            "--logs",
+            "-l",
+            help="Waits for the run to complete and saves the logs to this location.",
+            metavar="LOGS_PATH",
+            rich_help_panel="Output control",
+        ),
+    ] = None,
     output: Annotated[
         str | None,
         typer.Option(
@@ -50,6 +61,16 @@ def create(
             rich_help_panel="Output control",
         ),
     ] = None,
+    tail: Annotated[
+        bool,
+        typer.Option(
+            "--tail",
+            "-t",
+            help="Tail the logs until the run completes. Logs are streamed to [magenta]stderr[/magenta]. "
+            "Specify log output location with --logs.",
+            rich_help_panel="Output control",
+        ),
+    ] = False,
     wait: Annotated[
         bool,
         typer.Option(
@@ -134,6 +155,10 @@ def create(
     specify a destination (file or dir) for the output, depending on the
     content type.
 
+    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
+    run completes. Using the --logs flag will also activate waiting, and allows
+    you to specify a file to write the logs to.
+
     [bold][underline]Examples[/underline][/bold]
 
     - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
@@ -150,9 +175,26 @@ def create(
         $ [dim]nextmv local run create --app-src ./my-app --input input.json --wait[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      create a run for an app at path [magenta]./my-app[/magenta].
+      Tail the run's logs, streaming to [magenta]stderr[/magenta].
+        $ [dim]nextmv local run create --app-src ./my-app --input input.json --tail[/dim]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
         $ [dim]nextmv local run create --app-id hare-app --input input.json --output output.json[/dim]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+      create a run for an app with ID [magenta]hare-app[/magenta].
+      Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
+        $ [dim]nextmv local run create --app-id hare-app --input input.json --logs logs.log[/dim]
+
+    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and create a run for an app at
+      path [magenta]./my-app[/magenta]. Wait for the run to complete. Tail the run's logs, streaming to
+      [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file. Write the result to an
+      [magenta]output.json[/magenta] file.
+        $ [dim]nextmv local run create --app-src ./my-app --input input.json --tail --logs logs.log \\
+            --output output.json[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       create a run for an app at path [magenta]./my-app[/magenta].
@@ -196,7 +238,7 @@ def create(
     )
 
     # If we don't need to poll at all we are done.
-    if not wait and output is None:
+    if not wait and not tail and output is None and logs is None:
         print_json({"run_id": run_id})
 
         return
@@ -209,6 +251,14 @@ def create(
 
     # Handle what happens after the run is created for logging and result
     # retrieval.
+    handle_logs(
+        local_app=local_app,
+        run_id=run_id,
+        tail=tail,
+        logs=logs,
+        polling_options=polling_options,
+        file_output=True,
+    )
     handle_outputs(
         local_app=local_app,
         run_id=run_id,
