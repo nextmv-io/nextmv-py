@@ -74,6 +74,7 @@ jobs:
         working-directory: nextmv/
 
       - name: determine exact version being released
+        shell: bash # Force bash shell for consistent behavior across OSes
         run: |
           VERSION="nextmv-$(cat nextmv/nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
