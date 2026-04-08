@@ -121,9 +121,9 @@ def build_ensemble_run_config(
     content_format: str | None = None,
 ) -> RunConfiguration:
     """Build a RunConfiguration for an ensemble run."""
-    from nextmv.cli.mcp.tools._helpers import _build_run_configuration
+    from nextmv.cli.actions.config import build_run_configuration
 
-    config = _build_run_configuration(content_format) or RunConfiguration()
+    config = build_run_configuration(content_format) or RunConfiguration()
     config.run_type = RunTypeConfiguration(
         run_type=RunType.ENSEMBLE,
         definition_id=ensemble_id,

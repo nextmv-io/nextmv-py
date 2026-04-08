@@ -8,12 +8,12 @@ from typing import Any
 
 from nextmv import local
 from nextmv.cloud import Application, Client
-from nextmv.input import InputFormat
+from nextmv.cli.actions.config import build_run_configuration, validate_content_format
 from nextmv.local.executor import process_run_visuals
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.logger import log
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
-from nextmv.run import Format, FormatInput, RunConfiguration
+from nextmv.run import RunConfiguration
 
 DEFAULT_NEXTMV_ENDPOINT = "https://api.cloud.nextmv.io"
 
@@ -118,28 +118,13 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
     return app
 
 
-_VALID_CONTENT_FORMATS = {f.value for f in InputFormat}
+# ---------------------------------------------------------------------------
+# Backward-compatible aliases — new code should import from
+# nextmv.cli.actions.config directly.
+# ---------------------------------------------------------------------------
 
-
-def _validate_content_format(content_format: str) -> None:
-    """Raise ``ValueError`` if *content_format* is not a recognised value."""
-
-    if content_format not in _VALID_CONTENT_FORMATS:
-        raise ValueError(f"Invalid content_format '{content_format}'. Allowed values: {sorted(_VALID_CONTENT_FORMATS)}")
-
-
-def _build_run_configuration(content_format: str | None):
-    """Build a RunConfiguration for the given content format string, or None."""
-
-    if content_format is None:
-        return None
-
-    _validate_content_format(content_format)
-    config = RunConfiguration()
-    config.format = Format(
-        format_input=FormatInput(input_type=InputFormat(content_format)),
-    )
-    return config
+_validate_content_format = validate_content_format
+_build_run_configuration = build_run_configuration
 
 
 def _none_if_empty(value: str | None) -> str | None:
