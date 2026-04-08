@@ -24,6 +24,7 @@ from nextmv.local.executor import (
     process_run_solutions,
     process_run_statistics,
 )
+from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.manifest import Manifest, ManifestExecution
 from nextmv.output import ASSETS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY, OutputFormat
 
@@ -617,6 +618,103 @@ class TestLocalExecutor(unittest.TestCase):
             run_dir="/test/run_dir",
             src="/test/src",
         )
+
+    def test_execute_run_stderr_persisted_to_logs_json_format(self):
+        """Test that stderr is written to logs/logs.log for JSON format runs."""
+        run_id = "test_run_stderr_json"
+        run_dir = os.path.join(self.test_dir, "run_dir_stderr_json")
+        os.makedirs(run_dir)
+
+        info_file = os.path.join(run_dir, f"{run_id}.json")
+        with open(info_file, "w") as f:
+            json.dump(
+                {
+                    "metadata": {
+                        "created_at": "2023-01-01T00:00:00Z",
+                        "status_v2": "pending",
+                        "format": {"output": {"type": "json"}},
+                    }
+                },
+                f,
+            )
+
+        mock_process = Mock()
+        mock_process.returncode = 0
+        mock_process.stdin = Mock()
+        mock_process.stdout = iter(["stdout line\n"])
+        mock_process.stderr = iter(["stderr line 1\n", "stderr line 2\n"])
+
+        with (
+            patch("nextmv.local.executor._copy_files_from_manifest"),
+            patch("nextmv.local.executor.process_run_output"),
+            patch("nextmv.local.executor.subprocess.Popen", return_value=mock_process),
+        ):
+            execute_run(
+                run_id=run_id,
+                src="/test/src",
+                manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python", "files": ["main.py"]},
+                run_dir=run_dir,
+                run_config={"format": {"input": {"type": "json"}}},
+                input_data={"test": "data"},
+            )
+
+        logs_file = os.path.join(run_dir, LOGS_KEY, LOGS_FILE)
+        self.assertTrue(os.path.exists(logs_file), "logs/logs.log should be created")
+        with open(logs_file) as f:
+            log_content = f.read()
+
+        self.assertIn("stderr line 1", log_content)
+        self.assertIn("stderr line 2", log_content)
+        # For JSON format, stdout is buffered only and must not appear in the log
+        self.assertNotIn("stdout line", log_content)
+
+    def test_execute_run_stdout_persisted_to_logs_multi_file_format(self):
+        """Test that stdout is written to logs/logs.log for multi-file format runs."""
+        run_id = "test_run_stdout_multifile"
+        run_dir = os.path.join(self.test_dir, "run_dir_stdout_multifile")
+        os.makedirs(run_dir)
+
+        info_file = os.path.join(run_dir, f"{run_id}.json")
+        with open(info_file, "w") as f:
+            json.dump(
+                {
+                    "metadata": {
+                        "created_at": "2023-01-01T00:00:00Z",
+                        "status_v2": "pending",
+                        "format": {"output": {"type": "json"}},
+                    }
+                },
+                f,
+            )
+
+        mock_process = Mock()
+        mock_process.returncode = 0
+        mock_process.stdin = Mock()
+        mock_process.stdout = iter(["stdout log line 1\n", "stdout log line 2\n"])
+        mock_process.stderr = iter(["stderr line\n"])
+
+        with (
+            patch("nextmv.local.executor._copy_files_from_manifest"),
+            patch("nextmv.local.executor.process_run_output"),
+            patch("nextmv.local.executor.subprocess.Popen", return_value=mock_process),
+        ):
+            execute_run(
+                run_id=run_id,
+                src="/test/src",
+                manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python", "files": ["main.py"]},
+                run_dir=run_dir,
+                run_config={"format": {"input": {"type": "multi-file"}}},
+                input_data=None,
+            )
+
+        logs_file = os.path.join(run_dir, LOGS_KEY, LOGS_FILE)
+        self.assertTrue(os.path.exists(logs_file), "logs/logs.log should be created")
+        with open(logs_file) as f:
+            log_content = f.read()
+
+        self.assertIn("stdout log line 1", log_content)
+        self.assertIn("stdout log line 2", log_content)
+        self.assertIn("stderr line", log_content)
 
     def test_process_run_output_with_valid_json(self):
         """Test process_run_output with valid JSON stdout."""
