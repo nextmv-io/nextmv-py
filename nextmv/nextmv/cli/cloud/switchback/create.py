@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.switchback import TestComparisonSingle
 
 # Set up subcommand application.
@@ -132,10 +133,11 @@ def create(
             --description "Which bunny hops best for carrots?"[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     in_progress(msg="Creating switchback test in draft mode...")
-    switchback_test = cloud_app.new_switchback_test(
+    switchback_test_dict = cloud_app.new_switchback_test(
         comparison=TestComparisonSingle(
             baseline_instance_id=baseline_instance_id,
             candidate_instance_id=candidate_instance_id,
@@ -146,6 +148,6 @@ def create(
         name=name,
         description=description,
         start=start,
-    )
+    ).to_dict()
 
-    print_json(switchback_test.to_dict())
+    print_json(switchback_test_dict)

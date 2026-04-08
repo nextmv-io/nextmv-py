@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -53,10 +54,10 @@ def metadata(
             --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Getting switchback test metadata...")
-    switchback_metadata = cloud_app.switchback_test_metadata(switchback_test_id=switchback_test_id)
-    switchback_metadata_dict = switchback_metadata.to_dict()
+    switchback_metadata_dict = cloud_app.switchback_test_metadata(switchback_test_id=switchback_test_id).to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.switchback import stop_switchback_test as _stop_switchback_test
 from nextmv.cli.message import enum_values, in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.shadow import StopIntent
 
 # Set up subcommand application.
@@ -45,8 +46,8 @@ def stop(
     """
 
     in_progress(msg="Stopping switchback test...")
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.stop_switchback_test(switchback_test_id=switchback_test_id, intent=StopIntent(intent))
+    client = Client(profile=profile)
+    _stop_switchback_test(client, app_id, switchback_test_id, intent=intent.value)
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] stopped successfully "
         f"in application [magenta]{app_id}[/magenta]."

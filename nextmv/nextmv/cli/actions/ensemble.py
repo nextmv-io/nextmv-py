@@ -51,9 +51,15 @@ def parse_evaluation_rule(r: dict[str, Any], index: int) -> EvaluationRule:
         )
     objective = RuleObjective(mapped)
 
+    try:
+        rule_id = r["id"]
+        statistics_path = r["statistics_path"]
+    except KeyError as exc:
+        raise KeyError(f"rules[{index}] is missing required field {exc}") from exc
+
     return EvaluationRule(
-        id=r["id"],
-        statistics_path=r["statistics_path"],
+        id=rule_id,
+        statistics_path=statistics_path,
         objective=objective,
         tolerance=tol,
         index=r.get("index", 0),
@@ -86,7 +92,12 @@ def create_ensemble(
     """Create an ensemble definition. Returns the ensemble dict."""
     app = Application(client=client, id=app_id)
 
-    run_group_objs = [RunGroup.from_dict(rg) for rg in run_groups]
+    run_group_objs = []
+    for i, rg in enumerate(run_groups):
+        try:
+            run_group_objs.append(RunGroup.from_dict(rg))
+        except Exception as exc:
+            raise ValueError(f"run_groups[{i}] is invalid: {exc}") from exc
     rule_objs = [parse_evaluation_rule(r, i) for i, r in enumerate(rules)]
 
     ensemble = app.new_ensemble_definition(

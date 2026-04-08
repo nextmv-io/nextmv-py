@@ -4,9 +4,10 @@ This module defines the cloud switchback delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.switchback import delete_switchback_test as _delete_switchback_test
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -46,8 +47,8 @@ def delete(
             info(f"Switchback test [magenta]{switchback_test_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_switchback_test(switchback_test_id=switchback_test_id)
+    client = Client(profile=profile)
+    _delete_switchback_test(client, app_id, switchback_test_id)
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."

@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,16 +71,15 @@ def update(
             --output updated-switchback-test.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     in_progress(msg="Updating switchback test...")
-    switchback_test = cloud_app.update_switchback_test(
+    switchback_test_dict = cloud_app.update_switchback_test(
         switchback_test_id=switchback_test_id,
         name=name,
         description=description,
-    )
-
-    switchback_test_dict = switchback_test.to_dict()
+    ).to_dict()
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] updated successfully "
         f"in application [magenta]{app_id}[/magenta]."

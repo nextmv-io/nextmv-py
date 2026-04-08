@@ -536,14 +536,16 @@ class TestSaveToFile(unittest.TestCase):
         self.assertEqual(call_kwargs["run_ids"], ["run-1", "run-2"])
         self.assertIsNone(call_kwargs["inputs"])
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_scenario_test_converts_dicts(self, mock_get_app):
+    @patch("nextmv.cli.actions.scenario.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_scenario_test_converts_dicts(self, mock_get_client, mock_application_cls):
         """Test that cloud_create_scenario_test converts dicts to Scenario objects."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "st-123"
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
@@ -712,8 +714,9 @@ class TestProfiles(unittest.TestCase):
 class TestBugFixes(unittest.TestCase):
     """Tests for specific bug fixes."""
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_with_dicts(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_with_dicts(self, mock_get_client, mock_application_cls):
         """Bug 1: cloud_create_ensemble must accept plain dicts for run_groups and rules."""
         from nextmv.cli.mcp.server import create_server
 
@@ -721,7 +724,8 @@ class TestBugFixes(unittest.TestCase):
         mock_ensemble = MagicMock()
         mock_ensemble.to_dict.return_value = {"id": "ens-1"}
         mock_app.new_ensemble_definition.return_value = mock_ensemble
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -759,8 +763,9 @@ class TestBugFixes(unittest.TestCase):
         self.assertEqual(call_kwargs["rules"][0].id, "min-cost")
         self.assertEqual(call_kwargs["rules"][0].tolerance.value, 0.01)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_with_shorthand_objective(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_with_shorthand_objective(self, mock_get_client, mock_application_cls):
         """Bug 1: objective shorthand 'min'/'max' should be accepted."""
         from nextmv.cli.mcp.server import create_server
 
@@ -768,7 +773,8 @@ class TestBugFixes(unittest.TestCase):
         mock_ensemble = MagicMock()
         mock_ensemble.to_dict.return_value = {"id": "ens-1"}
         mock_app.new_ensemble_definition.return_value = mock_ensemble
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -794,8 +800,9 @@ class TestBugFixes(unittest.TestCase):
 
         self.assertEqual(call_kwargs["rules"][0].objective, RuleObjective.MINIMIZE)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_with_dict_tolerance(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_with_dict_tolerance(self, mock_get_client, mock_application_cls):
         """Bug 1: rules with a dict tolerance should be converted correctly."""
         from nextmv.cli.mcp.server import create_server
 
@@ -803,7 +810,8 @@ class TestBugFixes(unittest.TestCase):
         mock_ensemble = MagicMock()
         mock_ensemble.to_dict.return_value = {"id": "ens-1"}
         mock_app.new_ensemble_definition.return_value = mock_ensemble
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -831,12 +839,14 @@ class TestBugFixes(unittest.TestCase):
         self.assertEqual(rule.tolerance.value, 5.0)
         self.assertEqual(rule.tolerance.type, RuleToleranceType.ABSOLUTE)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_missing_run_group_field(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_missing_run_group_field(self, mock_get_client, mock_application_cls):
         """Bug 1: Missing required run_group fields give a clear error string."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_get_app.return_value = MagicMock()
+        mock_get_client.return_value = MagicMock()
+        mock_application_cls.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -861,12 +871,14 @@ class TestBugFixes(unittest.TestCase):
         self.assertIn("run_groups[0]", str(text))
         self.assertIn("Error", str(text))
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_missing_rule_field(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_missing_rule_field(self, mock_get_client, mock_application_cls):
         """Bug 1: Missing required rule fields give a clear error string."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_get_app.return_value = MagicMock()
+        mock_get_client.return_value = MagicMock()
+        mock_application_cls.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -896,14 +908,16 @@ class TestBugFixes(unittest.TestCase):
         sig = inspect.signature(tool.fn)
         self.assertIn("content_type", sig.parameters)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_scenario_test_content_type_path(self, mock_get_app):
+    @patch("nextmv.cli.actions.scenario.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_scenario_test_content_type_path(self, mock_get_client, mock_application_cls):
         """Bug 2: content_type is passed through to the SDK's new_scenario_test."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "scenario-test-123"
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
@@ -931,13 +945,14 @@ class TestBugFixes(unittest.TestCase):
         call_kwargs = mock_app.new_scenario_test.call_args[1]
         self.assertEqual(call_kwargs["content_type"], "multi-file")
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_create_ensemble_missing_rule_fields(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_create_ensemble_missing_rule_fields(self, mock_get_client, mock_application_cls):
         """Bug 1: missing rule fields return a user-friendly error, not an exception."""
         from nextmv.cli.mcp.server import create_server
 
-        mock_app = MagicMock()
-        mock_get_app.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
+        mock_application_cls.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_ensemble"]
@@ -958,17 +973,20 @@ class TestBugFixes(unittest.TestCase):
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         self.assertIn("Error", str(text))
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
+    @patch("nextmv.cli.actions.scenario.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_create_scenario_test_content_type_multiple_inputs(
         self,
-        mock_get_app,
+        mock_get_client,
+        mock_application_cls,
     ):
         """Bug 2: content_type is passed to SDK for multi-input scenarios."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "scenario-test-456"
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
@@ -1185,8 +1203,9 @@ class TestHelperFunctions(unittest.TestCase):
 class TestEnsembleRunTools(unittest.TestCase):
     """Smoke tests for cloud_ensemble_run and cloud_ensemble_run_submit."""
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_ensemble_run_returns_file_path(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_ensemble_run_returns_file_path(self, mock_get_client, mock_application_cls):
         """cloud_ensemble_run polls and saves result to a temp file."""
         from nextmv.cli.mcp.server import create_server
 
@@ -1194,7 +1213,8 @@ class TestEnsembleRunTools(unittest.TestCase):
         mock_result = MagicMock()
         mock_result.to_dict.return_value = {"id": "run-1", "output": {"routes": []}}
         mock_app.new_run_with_result.return_value = mock_result
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run"]
@@ -1213,14 +1233,16 @@ class TestEnsembleRunTools(unittest.TestCase):
         call_kwargs = mock_app.new_run_with_result.call_args[1]
         self.assertIsNotNone(call_kwargs["configuration"].run_type)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_ensemble_run_submit_returns_run_id(self, mock_get_app):
+    @patch("nextmv.cli.actions.ensemble.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_ensemble_run_submit_returns_run_id(self, mock_get_client, mock_application_cls):
         """cloud_ensemble_run_submit returns the run ID immediately."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-ens-42"
-        mock_get_app.return_value = mock_app
+        mock_application_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run_submit"]

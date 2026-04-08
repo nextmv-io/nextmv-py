@@ -4,9 +4,10 @@ This module defines the cloud switchback start command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.switchback import start_switchback_test as _start_switchback_test
 from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -35,8 +36,8 @@ def start(
     """
 
     in_progress(msg="Starting switchback test...")
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.start_switchback_test(switchback_test_id=switchback_test_id)
+    client = Client(profile=profile)
+    _start_switchback_test(client, app_id, switchback_test_id)
     success(
         f"Switchback test [magenta]{switchback_test_id}[/magenta] started successfully "
         f"in application [magenta]{app_id}[/magenta]."
