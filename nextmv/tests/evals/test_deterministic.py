@@ -70,3 +70,77 @@ class TestLoader(unittest.TestCase):
     def test_case_with_no_deterministic_gets_empty_list(self):
         case = EvalCase(id="test", task="do something", expected_tools=[])
         self.assertEqual(case.deterministic, [])
+
+
+import asyncio
+from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from nextmv.evals.runner import EvalRunner, EvalResult
+from nextmv.evals.loader import EvalCase as EC
+
+
+class TestEvalRunner(unittest.TestCase):
+
+    def _make_mock_server(self):
+        server = AsyncMock()
+        server.list_tools.return_value = []
+
+        async def mock_call_tool(name, args):
+            responses = {
+                "cloud_list_apps": ([SimpleNamespace(text='[{"id": "routing-demo", "name": "Routing Demo"}]')], None),
+                "cloud_get_app": ([SimpleNamespace(text='{"id": "routing-demo", "name": "Routing Demo"}')], None),
+            }
+            return responses.get(name, ([SimpleNamespace(text="{}")], None))
+
+        server.call_tool = AsyncMock(side_effect=mock_call_tool)
+        return server
+
+    def test_runs_deterministic_case(self):
+        case = EC(
+            id="list_apps",
+            task="List apps",
+            expected_tools=["cloud_list_apps"],
+            success={"tool_called": "cloud_list_apps"},
+            deterministic=[ToolCall(name="cloud_list_apps", arguments={})],
+        )
+        server = self._make_mock_server()
+        runner = EvalRunner(server=server)
+        result = asyncio.run(runner.run_case(case, mode="deterministic"))
+
+        self.assertIsInstance(result, EvalResult)
+        self.assertEqual(result.case_id, "list_apps")
+        self.assertEqual(result.tools_called, ["cloud_list_apps"])
+        self.assertEqual(result.tool_score, 1.0)
+        self.assertTrue(result.outcome_passed)
+
+    def test_multi_step_deterministic(self):
+        case = EC(
+            id="create_and_get",
+            task="Create and get app",
+            expected_tools=["cloud_list_apps", "cloud_get_app"],
+            success={"tool_called": "cloud_get_app"},
+            deterministic=[
+                ToolCall(name="cloud_list_apps", arguments={}),
+                ToolCall(name="cloud_get_app", arguments={"app_id": "routing-demo"}),
+            ],
+        )
+        server = self._make_mock_server()
+        runner = EvalRunner(server=server)
+        result = asyncio.run(runner.run_case(case, mode="deterministic"))
+
+        self.assertEqual(result.tools_called, ["cloud_list_apps", "cloud_get_app"])
+        self.assertEqual(result.tool_score, 1.0)
+        self.assertTrue(result.outcome_passed)
+
+    def test_max_steps_prevents_infinite_loop(self):
+        long_script = [ToolCall(name="cloud_list_apps", arguments={})] * 100
+        case = EC(
+            id="long",
+            task="Long task",
+            expected_tools=["cloud_list_apps"],
+            deterministic=long_script,
+        )
+        server = self._make_mock_server()
+        runner = EvalRunner(server=server, max_steps=5)
+        result = asyncio.run(runner.run_case(case, mode="deterministic"))
+        self.assertEqual(len(result.tools_called), 5)
