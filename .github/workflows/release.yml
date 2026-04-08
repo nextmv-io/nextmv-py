@@ -89,7 +89,7 @@ jobs:
   # Unfortunately, PyPI publishing does not support reusable workflows, so we
   # must publish here and do copy-pasting below as well. Sorry.
   publish-nextmv:
-    needs: [release-nextmv, build-binaries]
+    needs: [release-nextmv, release-binaries]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
     runs-on: ubuntu-latest
     environment:
