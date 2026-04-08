@@ -66,6 +66,10 @@ mcp = [
 notebook = [
     "mlflow>= 3.9.0",
 ]
+evals = [
+    "anthropic>=0.52.0",
+    "openai>=1.82.0",
+]
 
 [dependency-groups]
 # Dependencies for development and testing.
@@ -88,6 +92,11 @@ dev = [
     "pip>=26.0",
     "typer>=0.20.1",
     "questionary>=2.1.1",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "llm: marks tests that require LLM API keys (deselect with '-m not llm')",
 ]
 
 [tool.hatch.version]
