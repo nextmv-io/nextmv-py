@@ -85,7 +85,7 @@ class PollingOptions:
 
     Examples
     --------
-    >>> from nextmv.cloud import PollingOptions
+    >>> from nextmv import PollingOptions
     >>> # Create polling options with custom settings
     >>> polling_options = PollingOptions(
     ...     max_tries=50,
@@ -218,7 +218,7 @@ def poll(  # noqa: C901
 
     Examples
     --------
-    >>> from nextmv.cloud import PollingOptions, poll
+    >>> from nextmv import PollingOptions, poll
     >>> import time
     >>>
     >>> # Define a polling function that succeeds after 3 tries

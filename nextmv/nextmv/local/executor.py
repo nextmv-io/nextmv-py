@@ -20,8 +20,6 @@ resolve_output_format
     Function to determine the output format from manifest or directory structure.
 process_run_information
     Function to update run metadata including duration and status.
-process_run_logs
-    Function to process and save run logs.
 process_run_metrics
     Function to process and save run metrics.
 process_run_statistics
@@ -43,6 +41,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -159,14 +158,98 @@ def execute_run(
             cwd = __determine_cwd(manifest, default=temp_src)
             args = __determine_command(manifest) + [entrypoint] + options_args(options)
 
-            result = subprocess.run(
+            # Determine whether stdout should be streamed live to the log file.
+            # For MULTI_FILE format, stdout carries log output and must be streamed
+            # immediately. For other formats (JSON, CSV_ARCHIVE), stdout carries
+            # structured output consumed after the process completes.
+            is_multi_file = (
+                manifest.configuration is not None
+                and manifest.configuration.content is not None
+                and manifest.configuration.content.format == InputFormat.MULTI_FILE
+            ) or run_config["format"]["input"]["type"] == InputFormat.MULTI_FILE.value
+
+            log_file_path = os.path.join(logs_dir, LOGS_FILE)
+            stdout_lines: list[str] = []
+            stderr_lines: list[str] = []
+
+            # Force unbuffered stdout/stderr in child processes so both
+            # streams are written to the log file in real time.
+            child_env = os.environ.copy()
+            child_env["PYTHONUNBUFFERED"] = "1"
+
+            # This is the process that actually executes the entrypoint script.
+            # We use subprocess.Popen instead of subprocess.run because we need
+            # to stream the output in real time, which is not possible with
+            # subprocess.run.
+            process = subprocess.Popen(
                 args,
-                env=os.environ,
-                check=False,
+                env=child_env,
                 text=True,
-                capture_output=True,
-                input=stdin_input,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 cwd=cwd,
+            )
+
+            def write_stdin() -> None:
+                # Write all input at once then close so the child process receives EOF.
+                process.stdin.write(stdin_input)
+                process.stdin.close()
+
+            # A lock to serialize writes from the stdout and stderr threads so log
+            # lines are never interleaved in the log file.
+            log_lock = threading.Lock()
+            log_f = open(log_file_path, "a")
+
+            def stream_stderr() -> None:
+                # Stderr is always streamed live to the log file so errors appear
+                # immediately even if the process is still running.
+                for line in process.stderr:
+                    with log_lock:
+                        log_f.write(line)
+                        log_f.flush()
+                    stderr_lines.append(line)
+
+            def stream_stdout() -> None:
+                # For multi-file runs, stdout carries log output, so mirror it to
+                # the log file in real time just like stderr. For other formats,
+                # stdout carries the structured result and is only buffered.
+                if is_multi_file:
+                    for line in process.stdout:
+                        with log_lock:
+                            log_f.write(line)
+                            log_f.flush()
+                        stdout_lines.append(line)
+                else:
+                    for line in process.stdout:
+                        stdout_lines.append(line)
+
+            # Run stdin, stdout, and stderr on separate threads so no single pipe
+            # can fill its OS buffer and block the process while another pipe waits,
+            # which would cause a deadlock.
+            stdin_thread = threading.Thread(target=write_stdin)
+            stderr_thread = threading.Thread(target=stream_stderr)
+            stdout_thread = threading.Thread(target=stream_stdout)
+
+            stdin_thread.start()
+            stderr_thread.start()
+            stdout_thread.start()
+
+            # Wait for all streams to be fully consumed before calling process.wait()
+            # to ensure no output is lost.
+            stdin_thread.join()
+            stderr_thread.join()
+            stdout_thread.join()
+            process.wait()
+            log_f.close()
+
+            # Assemble a CompletedProcess so the rest of the pipeline can treat this
+            # the same as a synchronous subprocess.run() result.
+            result = subprocess.CompletedProcess(
+                args=args,
+                returncode=process.returncode,
+                stdout="".join(stdout_lines),
+                stderr="".join(stderr_lines),
             )
 
             process_run_output(
@@ -344,12 +427,6 @@ def process_run_output(
         run_dir=run_dir,
         result=result,
     )
-    process_run_logs(
-        output_format=output_format,
-        run_dir=run_dir,
-        result=result,
-        stdout_output=stdout_output,
-    )
     process_run_metrics(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
@@ -470,44 +547,6 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
 
     with open(info_file, "w") as f:
         json.dump(info, f, indent=2)
-
-
-def process_run_logs(
-    output_format: OutputFormat,
-    run_dir: str,
-    result: subprocess.CompletedProcess[str],
-    stdout_output: str | dict[str, Any],
-) -> None:
-    """
-    Processes the logs of the run. Writes the logs to a logs directory.
-    For multi-file format, stdout is written to logs if present.
-
-    Parameters
-    ----------
-    output_format : OutputFormat
-        The output format of the run (JSON, CSV_ARCHIVE, or MULTI_FILE).
-    run_dir : str
-        The path to the run directory where logs will be stored.
-    result : subprocess.CompletedProcess[str]
-        The result of the subprocess run containing stderr output.
-    stdout_output : Union[str, dict[str, Any]]
-        The stdout output of the run, either as raw string or parsed dictionary.
-    """
-
-    logs_dir = os.path.join(run_dir, LOGS_KEY)
-    os.makedirs(logs_dir, exist_ok=True)
-    std_err = result.stderr
-    with open(os.path.join(logs_dir, LOGS_FILE), "w") as f:
-        if output_format == OutputFormat.MULTI_FILE and bool(stdout_output):
-            if isinstance(stdout_output, dict):
-                f.write(json.dumps(stdout_output))
-            elif isinstance(stdout_output, str):
-                f.write(stdout_output)
-
-            if std_err:
-                f.write("\n")
-
-        f.write(std_err)
 
 
 def process_run_metrics(
