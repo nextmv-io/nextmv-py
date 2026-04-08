@@ -48,6 +48,9 @@ Inputs key constant used for identifying inputs in the run.
 
 class InputFormat(str, Enum):
     """
+    !!! warning
+        `InputFormat` is deprecated, use `nextmv.ContentFormat` instead.
+
     Format of an `Input`.
 
     You can import the `InputFormat` class directly from `nextmv`:
@@ -61,23 +64,55 @@ class InputFormat(str, Enum):
     Attributes
     ----------
     JSON : str
+        !!! warning
+            `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
         JSON format, utf-8 encoded.
     TEXT : str
+        !!! warning
+            `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Text format, utf-8 encoded.
     CSV_ARCHIVE : str
+        !!! warning
+            `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         CSV archive format: multiple CSV files.
     MULTI_FILE : str
+        !!! warning
+            `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Multi-file format, used for loading multiple files in a single input.
     """
 
     JSON = "json"
-    """JSON format, utf-8 encoded."""
+    """
+    !!! warning
+        `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
+    JSON format, utf-8 encoded.
+    """
     TEXT = "text"
-    """Text format, utf-8 encoded."""
+    """
+    !!! warning
+        `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Text format, utf-8 encoded.
+    """
     CSV_ARCHIVE = "csv-archive"
-    """CSV archive format: multiple CSV files."""
+    """
+    !!! warning
+        `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    CSV archive format: multiple CSV files.
+    """
     MULTI_FILE = "multi-file"
-    """Multi-file format, used for loading multiple files in a single input."""
+    """
+    !!! warning
+        `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Multi-file format, used for loading multiple files in a single input.
+    """
 
 
 @dataclass
