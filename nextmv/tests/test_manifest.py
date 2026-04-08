@@ -189,7 +189,7 @@ class TestManifest(unittest.TestCase):
     def test_extract_options(self):
         manifest = Manifest.from_yaml("tests/cloud")
         options = manifest.extract_options(should_parse=False)
-        self.assertEqual(len(options.options), 5)
+        self.assertEqual(len(options.options), 6)
 
         found = {
             "string": False,
@@ -498,6 +498,57 @@ class TestManifestOption(unittest.TestCase):
                 self.assertEqual(option.default, manifest_option.default)
                 self.assertEqual(option.description, manifest_option.description)
                 self.assertEqual(option.required, manifest_option.required)
+
+
+class TestManifestOptionLocalOnly(unittest.TestCase):
+    def test_local_only_defaults_to_false(self):
+        option = ManifestOption(name="my_option", option_type="string", default="val")
+        self.assertFalse(option.local_only)
+
+    def test_local_only_can_be_set_to_true(self):
+        option = ManifestOption(name="my_option", option_type="int", default=0, local_only=True)
+        self.assertTrue(option.local_only)
+
+    def test_required_and_local_only_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="my_option", option_type="string", default="val", required=True, local_only=True)
+        self.assertIn("my_option", str(ctx.exception))
+        self.assertIn("required", str(ctx.exception).lower())
+        self.assertIn("local only", str(ctx.exception).lower())
+
+    def test_local_only_round_trips_through_dict(self):
+        original = ManifestOption(name="my_option", option_type="float", default=1.5, local_only=True)
+        as_dict = original.to_dict()
+        self.assertTrue(as_dict["local_only"])
+        restored = ManifestOption.from_dict(as_dict)
+        self.assertTrue(restored.local_only)
+
+    def test_non_local_only_round_trips_through_dict(self):
+        original = ManifestOption(name="my_option", option_type="bool", default=False, local_only=False)
+        as_dict = original.to_dict()
+        self.assertFalse(as_dict["local_only"])
+        restored = ManifestOption.from_dict(as_dict)
+        self.assertFalse(restored.local_only)
+
+    def test_local_only_loaded_from_yaml(self):
+        manifest = Manifest.from_yaml("tests/cloud")
+        items = manifest.configuration.options.items
+        local_only_items = [item for item in items if item.local_only]
+        self.assertEqual(len(local_only_items), 1)
+        item = local_only_items[0]
+        self.assertEqual(item.name, "a local only parameter")
+        self.assertEqual(item.option_type, "string")
+        self.assertEqual(item.default, "local_default")
+        self.assertFalse(item.required)
+        self.assertTrue(item.local_only)
+
+    def test_other_options_are_not_local_only(self):
+        manifest = Manifest.from_yaml("tests/cloud")
+        items = manifest.configuration.options.items
+        non_local_only_items = [item for item in items if not item.local_only]
+        # All items except the one explicitly marked local_only should have local_only=False.
+        for item in non_local_only_items:
+            self.assertFalse(item.local_only, msg=f"Option '{item.name}' should not be local_only")
 
 
 class TestWriteSampleManifest(unittest.TestCase):
