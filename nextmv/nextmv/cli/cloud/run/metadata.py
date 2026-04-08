@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.run import run_metadata
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
@@ -53,8 +54,7 @@ def metadata(
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting run metadata...")
-    run_info = cloud_app.run_metadata(run_id)
-    info_dict = run_info.to_dict()
+    info_dict = run_metadata(cloud_app, run_id=run_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:
