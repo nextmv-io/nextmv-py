@@ -1,5 +1,6 @@
 - id: submit_run
   task: "Submit a run for the app 'routing-demo' with input {\"stops\": 5}."
+  tool_groups: [run]
   expected_tools:
     - cloud_run_submit
   success:
@@ -13,6 +14,7 @@
 
 - id: get_run_result
   task: "Get the result of run 'latest-abc123' for app 'routing-demo'."
+  tool_groups: [run]
   expected_tools:
     - cloud_run_result
   success:
@@ -25,6 +27,7 @@
 
 - id: check_run_status
   task: "What is the status of run 'latest-abc123' for app 'routing-demo'?"
+  tool_groups: [run]
   expected_tools:
     - cloud_run_status
   success:
@@ -37,6 +40,7 @@
 
 - id: list_runs_for_app
   task: "Show me all runs for the 'routing-demo' app."
+  tool_groups: [run]
   expected_tools:
     - cloud_list_runs
   success:

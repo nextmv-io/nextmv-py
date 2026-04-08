@@ -71,6 +71,24 @@ class TestLoader(unittest.TestCase):
         case = EvalCase(id="test", task="do something", expected_tools=[])
         self.assertEqual(case.deterministic, [])
 
+    def test_tool_groups_resolved_to_tools(self):
+        cases = load_eval_cases(os.path.join(self._cases_dir(), "app_management.yaml"))
+        case = cases[0]  # list_apps uses tool_groups: [app]
+        self.assertIn("cloud_list_apps", case.tools)
+        self.assertIn("cloud_get_app", case.tools)
+        self.assertIn("cloud_create_app", case.tools)
+        self.assertIn("cloud_delete_app", case.tools)
+
+    def test_tool_groups_no_duplicates(self):
+        """Combining multiple groups should not produce duplicate tools."""
+        from nextmv.evals.loader import _resolve_tools
+        groups = {
+            "a": ["tool_1", "tool_2"],
+            "b": ["tool_2", "tool_3"],
+        }
+        tools = _resolve_tools({"tool_groups": ["a", "b"]}, groups)
+        self.assertEqual(tools, ["tool_1", "tool_2", "tool_3"])
+
 
 import asyncio
 from unittest.mock import AsyncMock
