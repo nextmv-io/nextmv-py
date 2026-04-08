@@ -17,6 +17,7 @@ class EvalCase:
     id: str
     task: str
     expected_tools: list[str]
+    tools: list[str] = field(default_factory=list)
     success: dict[str, str] = field(default_factory=dict)
     deterministic: list[ToolCall] = field(default_factory=list)
 
@@ -39,6 +40,7 @@ def load_eval_cases(path: str) -> list[EvalCase]:
                 id=raw["id"],
                 task=raw["task"],
                 expected_tools=raw.get("expected_tools", []),
+                tools=raw.get("tools", []),
                 success=raw.get("success", {}),
                 deterministic=deterministic,
             )

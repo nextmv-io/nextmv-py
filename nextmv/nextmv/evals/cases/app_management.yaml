@@ -1,5 +1,12 @@
 - id: list_apps
   task: "List all my Nextmv Cloud applications."
+  tools:
+    - cloud_list_apps
+    - cloud_get_app
+    - cloud_create_app
+    - cloud_delete_app
+    - cloud_app_exists
+    - cloud_update_app
   expected_tools:
     - cloud_list_apps
   success:
@@ -10,6 +17,13 @@
 
 - id: get_app_by_id
   task: "Get details for the app called 'routing-demo'."
+  tools:
+    - cloud_list_apps
+    - cloud_get_app
+    - cloud_create_app
+    - cloud_delete_app
+    - cloud_app_exists
+    - cloud_update_app
   expected_tools:
     - cloud_get_app
   success:
@@ -21,6 +35,13 @@
 
 - id: find_routing_app
   task: "List my apps and find the one that has 'routing' in the name."
+  tools:
+    - cloud_list_apps
+    - cloud_get_app
+    - cloud_create_app
+    - cloud_delete_app
+    - cloud_app_exists
+    - cloud_update_app
   expected_tools:
     - cloud_list_apps
   success:
@@ -31,6 +52,13 @@
 
 - id: create_and_get_app
   task: "Create a new app called 'eval-test' and then get its details."
+  tools:
+    - cloud_list_apps
+    - cloud_get_app
+    - cloud_create_app
+    - cloud_delete_app
+    - cloud_app_exists
+    - cloud_update_app
   expected_tools:
     - cloud_create_app
     - cloud_get_app
@@ -46,6 +74,13 @@
 
 - id: delete_nonexistent_app
   task: "Delete the app 'does-not-exist-xyz'."
+  tools:
+    - cloud_list_apps
+    - cloud_get_app
+    - cloud_create_app
+    - cloud_delete_app
+    - cloud_app_exists
+    - cloud_update_app
   expected_tools:
     - cloud_delete_app
   success:

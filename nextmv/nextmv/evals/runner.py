@@ -27,6 +27,16 @@ class EvalRunner:
     def __init__(self, server: Any, max_steps: int = 20) -> None:
         self._server = server
         self._max_steps = max_steps
+        self._all_tools: list[Any] | None = None
+
+    async def get_tools(self, case: EvalCase | None = None) -> list[Any]:
+        """Get tool schemas, scoped to the case's tool list if specified."""
+        if self._all_tools is None:
+            self._all_tools = await self._server.list_tools()
+        if case and case.tools:
+            allowed = set(case.tools)
+            return [t for t in self._all_tools if t.name in allowed]
+        return list(self._all_tools)
 
     async def run_case(
         self,
