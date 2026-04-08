@@ -1,61 +1,47 @@
-"""Scoring functions for eval results."""
-
-from __future__ import annotations
+"""Scoring functions for MCP eval results."""
 
 from typing import Any
 
 
 def score_tool_sequence(expected: list[str], actual: list[str]) -> float:
-    """Score how well the actual tool sequence matches the expected one.
+    """Score whether the expected tools were called (order-independent).
 
-    Returns 1.0 for an exact match, 0.0 for no overlap. Partial matches
-    are scored as the fraction of expected tools that appear in order.
+    Returns the fraction of expected tools that appear in actual.
+    Extra tools in actual are not penalized. An empty expected
+    list scores 1.0.
     """
     if not expected:
-        return 1.0 if not actual else 0.0
-    if not actual:
-        return 0.0
-
-    # Exact sequence match
-    if expected == actual:
         return 1.0
 
-    # Count how many expected tools appear in order in actual
-    matched = 0
-    actual_idx = 0
-    for tool in expected:
-        while actual_idx < len(actual):
-            if actual[actual_idx] == tool:
-                matched += 1
-                actual_idx += 1
-                break
-            actual_idx += 1
-
-    return matched / len(expected)
+    actual_set = set(actual)
+    hits = sum(1 for tool in expected if tool in actual_set)
+    return hits / len(expected)
 
 
 def score_outcome(
     tool_results: list[dict[str, Any]],
-    success: dict[str, str],
+    criteria: dict[str, str],
 ) -> bool:
-    """Check whether the tool results satisfy the success criteria.
+    """Check whether tool results meet the success criteria.
 
     Supported criteria:
-    - tool_called: True if the named tool appears in tool_results.
-    - output_contains: True if any tool result content contains the string.
+    - "contains": check if any tool result contains the substring
+    - "tool_called": check if a specific tool was invoked
+
+    Returns True if all criteria pass, or if criteria is empty.
     """
-    if not success:
+    if not criteria:
         return True
 
-    tool_called = success.get("tool_called")
-    if tool_called is not None:
-        found = any(r.get("tool") == tool_called for r in tool_results)
+    if "contains" in criteria:
+        substring = criteria["contains"]
+        found = any(substring in r.get("content", "") for r in tool_results)
         if not found:
             return False
 
-    output_contains = success.get("output_contains")
-    if output_contains is not None:
-        found = any(output_contains in r.get("content", "") for r in tool_results)
+    if "tool_called" in criteria:
+        tool_name = criteria["tool_called"]
+        found = any(r.get("tool") == tool_name for r in tool_results)
         if not found:
             return False
 
