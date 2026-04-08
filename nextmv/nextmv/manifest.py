@@ -511,6 +511,8 @@ class ManifestOption(BaseModel):
         The description of the option.
     required : bool, default=False
         Whether the option is required or not.
+    local_only : bool, default=False
+        Whether the option is only used locally and should not be sent to Nextmv Cloud.
     additional_attributes : Optional[dict[str, Any]], default=None
         Optional additional attributes for the option. The Nextmv Cloud may
         perform validation on these attributes. For example, the maximum
@@ -551,10 +553,27 @@ class ManifestOption(BaseModel):
     """The description of the option"""
     required: bool = False
     """Whether the option is required or not"""
+    local_only: bool = False
+    """Whether the option is only used locally and should not be sent to Nextmv Cloud."""
     additional_attributes: dict[str, Any] | None = None
     """Optional additional attributes for the option."""
     ui: ManifestOptionUI | None = None
     """Optional UI attributes for the option."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Validations done after parsing the model.
+
+        Raises
+        ------
+        ValueError
+            If validation fails. A descriptive error message is provided in this case.
+        """
+
+        # It does not make sense to define options as required AND them being local only,
+        # since this would make Platform runs via UI cumbersome to impossible.
+        if self.required and self.local_only:
+            raise ValueError(f"Option '{self.name}' cannot be both required and local only.")
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":

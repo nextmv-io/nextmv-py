@@ -7,7 +7,7 @@ import tempfile
 from typing import Any
 
 from nextmv import local
-from nextmv.cli.actions.config import build_run_configuration, validate_content_format
+from nextmv.cli.actions.config import build_run_configuration
 from nextmv.cloud import Application, Client
 from nextmv.local.executor import process_run_visuals
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
@@ -122,7 +122,6 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
 # nextmv.cli.actions.config directly.
 # ---------------------------------------------------------------------------
 
-_validate_content_format = validate_content_format
 _build_run_configuration = build_run_configuration
 
 

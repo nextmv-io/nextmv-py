@@ -7,7 +7,7 @@ from nextmv.cloud import Application
 from nextmv.content_format import ContentFormat
 from nextmv.manifest import ManifestType, initialize_manifest
 from nextmv.polling import PollingOptions, default_polling_options
-from nextmv.run import RunConfiguration
+from nextmv.run import RunConfiguration, RunResult
 from nextmv.status import StatusV2
 
 
@@ -41,7 +41,7 @@ def new_local_run_with_result(
     output_dir_path: str | None = None,
     name: str | None = None,
     description: str | None = None,
-):
+) -> RunResult:
     """Submit a local run and poll until complete. Returns the RunResult."""
     return app.new_run_with_result(
         input=input,
@@ -60,7 +60,7 @@ def local_run_poll_result(
     run_id: str,
     polling_options: PollingOptions | None = None,
     output_dir_path: str | None = None,
-):
+) -> RunResult:
     """Poll a local run until complete. Returns the RunResult."""
     return app.run_result_with_polling(
         run_id=run_id,
@@ -87,7 +87,7 @@ def local_run_result(
     app: local.Application,
     run_id: str,
     output_dir_path: str | None = None,
-):
+) -> RunResult:
     """Fetch the result of a completed local run. Returns the RunResult."""
     return app.run_result(run_id=run_id, output_dir_path=output_dir_path)
 
@@ -96,7 +96,7 @@ def local_run_input(
     app: local.Application,
     run_id: str,
     output_dir_path: str | None = None,
-):
+) -> Any:
     """Fetch the input for a local run."""
     return app.run_input(run_id=run_id, output_dir_path=output_dir_path)
 

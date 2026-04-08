@@ -4,7 +4,7 @@ from typing import Any
 
 from nextmv.cloud import Application
 from nextmv.polling import PollingOptions, default_polling_options
-from nextmv.run import RunConfiguration
+from nextmv.run import RunConfiguration, RunResult
 from nextmv.status import StatusV2
 
 
@@ -44,7 +44,7 @@ def submit_run_with_result(
     managed_input_id: str | None = None,
     polling_options: PollingOptions | None = None,
     output_dir_path: str | None = None,
-):
+) -> RunResult:
     """Submit a run and poll until complete. Returns the RunResult."""
     return app.new_run_with_result(
         input=input,
@@ -63,17 +63,17 @@ def run_metadata(app: Application, run_id: str) -> dict[str, Any]:
     return app.run_metadata(run_id=run_id).to_dict()
 
 
-def run_result(app: Application, run_id: str, output_dir_path: str | None = None):
+def run_result(app: Application, run_id: str, output_dir_path: str | None = None) -> RunResult:
     """Fetch the result of a completed run. Returns the RunResult."""
     return app.run_result(run_id=run_id, output_dir_path=output_dir_path)
 
 
-def run_input(app: Application, run_id: str, output_dir_path: str | None = None):
+def run_input(app: Application, run_id: str, output_dir_path: str | None = None) -> Any:
     """Fetch the input data for a run."""
     return app.run_input(run_id=run_id, output_dir_path=output_dir_path)
 
 
-def run_logs(app: Application, run_id: str):
+def run_logs(app: Application, run_id: str) -> Any:
     """Fetch log snapshot for a run."""
     return app.run_logs(run_id=run_id)
 

@@ -7,11 +7,11 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.scenario import create_scenario_test as _create_scenario_test
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud import Application
 from nextmv.cloud.client import Client
-from nextmv.cloud.scenario import Scenario
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -276,12 +276,14 @@ def create(
     client = Client(profile=profile)
     cloud_app = Application(client=client, id=app_id)
 
-    # Build the scenario list from the CLI options
-    scenario_list = build_scenarios(scenarios)
+    # Build the scenario dicts from the CLI JSON strings
+    scenario_dicts = build_scenario_dicts(scenarios)
 
-    scenario_id = cloud_app.new_scenario_test(
-        scenarios=scenario_list,
-        id=scenario_test_id,
+    scenario_id = _create_scenario_test(
+        client=client,
+        app_id=app_id,
+        scenarios=scenario_dicts,
+        scenario_test_id=scenario_test_id,
         name=name,
         description=description,
         repetitions=repetitions,
@@ -317,9 +319,9 @@ def create(
     print_json(scenario_test_dict)
 
 
-def build_scenarios(scenarios: list[str]) -> list[Scenario]:
+def build_scenario_dicts(scenarios: list[str]) -> list[dict]:
     """
-    Build a list of Scenario objects from CLI JSON input.
+    Parse CLI JSON input into a list of scenario dicts.
 
     Parameters
     ----------
@@ -329,8 +331,8 @@ def build_scenarios(scenarios: list[str]) -> list[Scenario]:
 
     Returns
     -------
-    list[Scenario]
-        The built list of Scenario objects.
+    list[dict]
+        The parsed list of scenario dicts.
     """
 
     scenario_list = []
@@ -341,11 +343,14 @@ def build_scenarios(scenarios: list[str]) -> list[Scenario]:
 
             # Handle the case where the value is a list of scenarios.
             if isinstance(scenario_data, list):
-                scenario_list.extend(_process_scenario_list(scenario_data, scenario_str))
+                for ix, item in enumerate(scenario_data):
+                    _validate_scenario_fields(item, scenario_str, ix)
+                    scenario_list.append(item)
 
             # Handle the case where the value is a single scenario.
             elif isinstance(scenario_data, dict):
-                scenario_list.append(_process_single_scenario(scenario_data, scenario_str))
+                _validate_scenario_fields(scenario_data, scenario_str)
+                scenario_list.append(scenario_data)
 
             else:
                 error(
@@ -357,54 +362,6 @@ def build_scenarios(scenarios: list[str]) -> list[Scenario]:
             error(f"Invalid scenario format: [magenta]{scenario_str}[/magenta]. Error: {e}")
 
     return scenario_list
-
-
-def _process_scenario_list(scenario_data: list, scenario_str: str) -> list[Scenario]:
-    """
-    Process a list of scenario dictionaries into Scenario objects.
-
-    Parameters
-    ----------
-    scenario_data : list
-        List of scenario dictionaries.
-    scenario_str : str
-        Original string for error messages.
-
-    Returns
-    -------
-    list[Scenario]
-        List of processed Scenario objects.
-    """
-
-    processed_scenarios = []
-    for ix, item in enumerate(scenario_data):
-        _validate_scenario_fields(item, scenario_str, ix)
-        scenario = Scenario.from_dict(item)
-        processed_scenarios.append(scenario)
-
-    return processed_scenarios
-
-
-def _process_single_scenario(scenario_data: dict, scenario_str: str) -> "Scenario":
-    """
-    Process a single scenario dictionary into a Scenario object.
-
-    Parameters
-    ----------
-    scenario_data : dict
-        Scenario dictionary.
-    scenario_str : str
-        Original string for error messages.
-
-    Returns
-    -------
-    Scenario
-        Processed Scenario object.
-    """
-
-    _validate_scenario_fields(scenario_data, scenario_str)
-
-    return Scenario.from_dict(scenario_data)
 
 
 def _validate_scenario_fields(scenario_data: dict, scenario_str: str, index: int | None = None) -> None:
