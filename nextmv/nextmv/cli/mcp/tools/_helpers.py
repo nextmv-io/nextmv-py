@@ -7,13 +7,12 @@ import tempfile
 from typing import Any
 
 from nextmv import local
-from nextmv.cloud import Application, Client
 from nextmv.cli.actions.config import build_run_configuration, validate_content_format
+from nextmv.cloud import Application, Client
 from nextmv.local.executor import process_run_visuals
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.logger import log
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
-from nextmv.run import RunConfiguration
 
 DEFAULT_NEXTMV_ENDPOINT = "https://api.cloud.nextmv.io"
 

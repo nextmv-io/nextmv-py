@@ -7,10 +7,20 @@ from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.actions.local import (
     local_list_runs as _local_list_runs_action,
+)
+from nextmv.cli.actions.local import (
     local_run_metadata as _local_run_metadata_action,
+)
+from nextmv.cli.actions.local import (
     local_run_poll_result as _local_run_poll_result_action,
+)
+from nextmv.cli.actions.local import (
     local_sync as _local_sync_action,
+)
+from nextmv.cli.actions.local import (
     manifest_init as _manifest_init_action,
+)
+from nextmv.cli.actions.local import (
     new_local_run,
 )
 from nextmv.cli.mcp.tools import _helpers

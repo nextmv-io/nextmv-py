@@ -4,7 +4,6 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.ensemble import build_ensemble_run_config as _build_ensemble_run_config
 from nextmv.cli.actions.ensemble import create_ensemble as _create_ensemble
 from nextmv.cli.actions.ensemble import delete_ensemble as _delete_ensemble
 from nextmv.cli.actions.ensemble import ensemble_run_submit as _ensemble_run_submit
