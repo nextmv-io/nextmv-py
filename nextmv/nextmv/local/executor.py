@@ -165,7 +165,7 @@ def execute_run(
             is_multi_file = (
                 manifest.configuration is not None
                 and manifest.configuration.content is not None
-                and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+                and manifest.configuration.content.format == InputFormat.MULTI_FILE
             ) or run_config["format"]["input"]["type"] == InputFormat.MULTI_FILE.value
 
             log_file_path = os.path.join(logs_dir, LOGS_FILE)
