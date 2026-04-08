@@ -100,6 +100,14 @@ def run(
         inputs_dir_path=inputs_dir_path,
     )
 
+    # Prepare manifest dictionary for execution. We need to convert relative paths to
+    # absolute paths to allow execution in a different directory.
+    manifest_dict = manifest.to_dict()
+    if manifest_dict.get("python", {}).get("pip-requirements", None) is not None:
+        manifest_dict["python"]["pip-requirements"] = os.path.abspath(
+            os.path.join(src, manifest_dict["python"]["pip-requirements"])
+        )
+
     # Start the process as a daemon (detached) so we don't wait for it to
     # finish. We send the input via stdin and close it immediately without
     # waiting. We call the `executor.py` script to do the actual execution.
@@ -107,7 +115,7 @@ def run(
         {
             "run_id": run_id,
             "src": os.path.abspath(src),
-            "manifest_dict": manifest.to_dict(),
+            "manifest_dict": manifest_dict,
             "run_dir": os.path.abspath(run_dir),
             "run_config": run_config,
             "input_data": input_data,

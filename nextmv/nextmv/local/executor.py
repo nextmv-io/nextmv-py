@@ -1136,14 +1136,24 @@ def __determine_command(manifest: Manifest) -> list[str]:
     """
     if manifest.type == ManifestType.PYTHON:
         if manifest.python is not None and manifest.python.pip_requirements is not None:
-            return [
-                sys.executable,
-                "-m",
-                "uv",
-                "run",
-                "--with",
-                ",".join(manifest.python.pip_requirements),
-            ]
+            if isinstance(manifest.python.pip_requirements, list):
+                return [
+                    sys.executable,
+                    "-m",
+                    "uv",
+                    "run",
+                    "--with",
+                    ",".join(),
+                ]
+            elif isinstance(manifest.python.pip_requirements, str):
+                return [
+                    sys.executable,
+                    "-m",
+                    "uv",
+                    "run",
+                    "--with-requirements",
+                    manifest.python.pip_requirements,
+                ]
         return [sys.executable, "-m", "uv", "run"]
     elif manifest.type == ManifestType.GO:
         return []
