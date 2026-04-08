@@ -3,7 +3,7 @@
 import asyncio
 import contextvars
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 class TestGetClient(unittest.TestCase):

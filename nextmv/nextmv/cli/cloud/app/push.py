@@ -9,11 +9,11 @@ from typing import Annotated
 import typer
 from rich.prompt import Prompt
 
-from nextmv.cli.actions.app import push_app as _push_app
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import confirmation, error, in_progress, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
+from nextmv.manifest import Manifest
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -175,6 +175,7 @@ def push(
         cloud_app=cloud_app,
         app_id=app_id,
         app_dir=app_dir,
+        manifest=manifest,
         version_id=version_id,
         version_yes=version_yes,
         version_no=version_no,
@@ -189,6 +190,7 @@ def handle_push(
     cloud_app: Application,
     app_id: str,
     app_dir: str | None,
+    manifest: str | None,
     version_id: str | None,
     version_yes: bool,
     version_no: bool,
@@ -208,6 +210,8 @@ def handle_push(
         The application ID.
     app_dir : str | None
         The path to the application's root directory.
+    manifest : str | None
+        The path to the application manifest file.
     version_id : str | None
         The version ID to use or create.
     version_yes : bool
@@ -225,7 +229,13 @@ def handle_push(
     """
 
     # Do the normal push first.
-    _push_app(cloud_app.client, app_id=app_id, app_dir=app_dir)
+    loaded_manifest = Manifest.from_yaml(dirpath=manifest) if manifest is not None and manifest != "" else None
+    cloud_app.push(
+        manifest=loaded_manifest,
+        app_dir=app_dir,
+        verbose=True,
+        rich_print=True,
+    )
 
     now = datetime.now(timezone.utc)
     version_id, should_continue = _handle_version_creation(

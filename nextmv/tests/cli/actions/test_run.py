@@ -1,7 +1,7 @@
 """Tests for nextmv.cli.actions.run."""
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 class TestSubmitRun(unittest.TestCase):
