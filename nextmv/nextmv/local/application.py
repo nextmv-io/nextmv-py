@@ -905,7 +905,7 @@ class Application(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import PollingOptions
+        >>> from nextmv import PollingOptions
         >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
         >>> logs = app.run_logs_with_polling("run-123", polling_opts)
         >>> for line in logs:
@@ -1094,7 +1094,7 @@ class Application(BaseModel):
 
         Examples
         --------
-        >>> from nextmv.cloud import PollingOptions
+        >>> from nextmv import PollingOptions
         >>> # Create custom polling options
         >>> polling_opts = PollingOptions(max_tries=50, max_duration=600)
         >>> # Get run result with polling
