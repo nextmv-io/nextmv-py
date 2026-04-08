@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.12.0.schema.json
+
+PackageIdentifier: Nextmv.CLI
+PackageVersion: replaceme
+PackageName: Nextmv.CLI
+PackageLocale: en-US
+Publisher: Nextmv
+License: Apache 2.0
+ShortDescription: Nextmv CLI for managing, deploying and interacting with decision models.
+Commands:
+  - nextmv
+Installers:
+  - Architecture: x64
+    InstallerType: portable
+    InstallerUrl: https://github.com/nextmv-io/nextmv-py/releases/replaceme/nextmv-windows-x64.exe
+    InstallerSha256: replaceme
+ManifestType: singleton
+ManifestVersion: 1.12.0
