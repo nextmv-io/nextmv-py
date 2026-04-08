@@ -1135,6 +1135,15 @@ def __determine_command(manifest: Manifest) -> list[str]:
         The command prefix to use for execution. Empty list for binary executables.
     """
     if manifest.type == ManifestType.PYTHON:
+        if manifest.python is not None and manifest.python.pip_requirements is not None:
+            return [
+                sys.executable,
+                "-m",
+                "uv",
+                "run",
+                "--with",
+                ",".join(manifest.python.pip_requirements),
+            ]
         return [sys.executable, "-m", "uv", "run"]
     elif manifest.type == ManifestType.GO:
         return []
