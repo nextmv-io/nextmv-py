@@ -811,6 +811,9 @@ class Application(
 
         if manifest.configuration is not None and manifest.configuration.options is not None:
             options = manifest.configuration.options.to_dict()
+            # Ignore local_only options since they are not meant to be used on the platform
+            if "items" in options:
+                options["items"] = [item for item in options["items"] if not item.get("local_only", False)]
             if "format" in options and isinstance(options["format"], list):
                 # the endpoint expects a dictionary with a template key having a list of strings
                 # the app.yaml however defines format as a list of strings, so we need to convert it here
