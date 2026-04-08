@@ -58,7 +58,12 @@ def _resolve_tools(
     tools: list[str] = []
     seen: set[str] = set()
     for name in group_names:
-        for tool in tool_groups.get(name, []):
+        if name not in tool_groups:
+            raise ValueError(
+                f"Unknown tool group '{name}'. "
+                f"Available groups: {sorted(tool_groups.keys())}"
+            )
+        for tool in tool_groups[name]:
             if tool not in seen:
                 tools.append(tool)
                 seen.add(tool)

@@ -4,7 +4,7 @@ These tests call real LLM APIs. They are skipped by default in CI.
 Run with: pytest -m llm
 
 For Ollama (local): just have Ollama running on localhost:11434
-For cloud APIs: set ANTHROPIC_API_KEY or OPENAI_API_KEY
+For Claude: set ANTHROPIC_API_KEY
 """
 
 import asyncio
@@ -205,39 +205,3 @@ class TestAnthropicEvals(unittest.TestCase):
                 )
 
 
-@pytest.mark.llm
-class TestOpenAIEvals(unittest.TestCase):
-    """Run eval cases with OpenAI (requires OPENAI_API_KEY)."""
-
-    @classmethod
-    def setUpClass(cls):
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise unittest.SkipTest("OPENAI_API_KEY not set")
-        cls.model = os.environ.get("OPENAI_MODEL", "gpt-4o")
-        cls.server = _make_mock_server()
-        cls.runner = EvalRunner(server=cls.server, max_steps=5)
-        cls.cases = _load_all_cases()
-
-    def test_all_cases(self):
-        from nextmv.evals.providers.openai import OpenAIAgent
-
-        results = []
-        for case in self.cases:
-            with self.subTest(case_id=case.id):
-                scoped_tools = asyncio.run(self.runner.get_tools(case))
-                agent = OpenAIAgent(
-                    tools=scoped_tools,
-                    model=self.model,
-                    system=EVAL_SYSTEM_PROMPT,
-                )
-                result = asyncio.run(
-                    self.runner.run_case(case, mode="llm", agent=agent)
-                )
-                results.append(result)
-                self.assertGreater(
-                    result.tool_score,
-                    0.5,
-                    f"Case {case.id}: tool_score={result.tool_score}, "
-                    f"called={result.tools_called}, "
-                    f"expected={case.expected_tools}",
-                )

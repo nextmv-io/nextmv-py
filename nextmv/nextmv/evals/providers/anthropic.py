@@ -14,9 +14,9 @@ from nextmv.evals.bridge import mcp_tool_to_anthropic
 class AnthropicAgent:
     """Agent that uses Claude to decide which MCP tools to call.
 
-    Maintains a conversation with Claude, translating tool_use
-    responses into ToolCall objects and feeding tool results back
-    as tool_result messages.
+    Single-use: create a new instance for each eval case.
+    The agent accumulates conversation state across calls to
+    next_action() and cannot be reused for a different task.
     """
 
     def __init__(
@@ -40,29 +40,33 @@ class AnthropicAgent:
         messages: list[dict[str, Any]],
         tool_results: list[dict[str, Any]],
     ) -> ToolCall | None:
+        if not messages:
+            return None
+
         # Build the messages list for the API call
         if not self._messages:
-            # First call — send the user task
             self._messages.append({"role": "user", "content": messages[0]["content"]})
         elif self._pending_tool_use_id and tool_results:
-            # Feed the last tool result back
             last_result = tool_results[-1]
             self._messages.append({
                 "role": "user",
                 "content": [{
                     "type": "tool_result",
                     "tool_use_id": self._pending_tool_use_id,
-                    "content": last_result["content"],
+                    "content": str(last_result["content"]),
                 }],
             })
 
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=1024,
-            system=self._system,
-            tools=self._tools,
-            messages=self._messages,
-        )
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=1024,
+                system=self._system,
+                tools=self._tools,
+                messages=self._messages,
+            )
+        except anthropic.APIError as exc:
+            raise RuntimeError(f"Anthropic API error: {exc}") from exc
 
         # Add assistant response to history
         self._messages.append({"role": "assistant", "content": response.content})

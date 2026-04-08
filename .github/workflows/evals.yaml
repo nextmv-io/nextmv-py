@@ -9,17 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       run_llm_evals:
-        description: "Run LLM evals (requires API keys in secrets)"
+        description: "Run LLM evals with Claude (requires ANTHROPIC_API_KEY secret)"
         type: boolean
         default: false
-      provider:
-        description: "LLM provider to eval"
-        type: choice
-        options:
-          - anthropic
-          - openai
-          - all
-        default: anthropic
 
 jobs:
   deterministic:
@@ -38,12 +30,9 @@ jobs:
         run: pytest tests/evals/ -v -m "not llm"
 
   llm-anthropic:
-    name: LLM Evals (Anthropic)
+    name: LLM Evals (Claude)
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      inputs.run_llm_evals &&
-      (inputs.provider == 'anthropic' || inputs.provider == 'all')
+    if: github.event_name == 'workflow_dispatch' && inputs.run_llm_evals
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -52,29 +41,10 @@ jobs:
       - name: Install dependencies
         working-directory: nextmv
         run: pip install -e ".[mcp,evals]" pytest
-      - name: Run Anthropic evals
+      - name: Run Claude evals
         working-directory: nextmv
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: pytest tests/evals/test_llm.py::TestAnthropicEvals -v -s
-
-  llm-openai:
-    name: LLM Evals (OpenAI)
-    runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      inputs.run_llm_evals &&
-      (inputs.provider == 'openai' || inputs.provider == 'all')
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install dependencies
-        working-directory: nextmv
-        run: pip install -e ".[mcp,evals]" pytest
-      - name: Run OpenAI evals
-        working-directory: nextmv
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: pytest tests/evals/test_llm.py::TestOpenAIEvals -v -s
+    # Note: Ollama evals (TestOllamaEvals) require a local GPU and model
+    # downloads, so they are run manually rather than in CI.

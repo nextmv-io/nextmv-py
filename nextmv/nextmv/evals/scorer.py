@@ -35,7 +35,7 @@ def score_outcome(
 
     if "contains" in criteria:
         substring = criteria["contains"]
-        found = any(substring in r.get("content", "") for r in tool_results)
+        found = any(substring in str(r.get("content", "")) for r in tool_results)
         if not found:
             return False
 

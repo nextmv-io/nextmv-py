@@ -58,8 +58,11 @@ class EvalRunner:
             if action is None:
                 break
 
-            content_list, _ = await self._server.call_tool(action.name, action.arguments)
-            result_text = content_list[0].text if content_list else ""
+            try:
+                content_list, _ = await self._server.call_tool(action.name, action.arguments)
+                result_text = content_list[0].text if content_list else ""
+            except Exception as exc:
+                result_text = f"Error: {exc}"
 
             tools_called.append(action.name)
             tool_results.append({
