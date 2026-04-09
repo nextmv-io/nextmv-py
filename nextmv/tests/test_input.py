@@ -381,14 +381,14 @@ class TestInput(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=None)
 
-        self.assertIn("data_files must be provided", str(context.exception))
+        self.assertIn("`data_files` must be provided", str(context.exception))
 
     def test_load_multi_file_invalid_data_files_type(self):
         """Test that ValueError is raised when data_files is not a list."""
         with self.assertRaises(ValueError) as context:
             nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files="not_a_list")
 
-        self.assertIn("data_files must be a list", str(context.exception))
+        self.assertIn("`data_files` must be a list", str(context.exception))
 
     def test_load_multi_file_default_directory(self):
         """Test loading multi-file with default directory 'inputs'."""
