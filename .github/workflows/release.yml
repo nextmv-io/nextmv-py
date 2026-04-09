@@ -21,6 +21,7 @@ jobs:
   release-binaries:
     name: Release ${{ matrix.os }}-${{ matrix.arch }} binaries
     needs: [release-nextmv]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' }}
     permissions:
       contents: write # This is required for uploading assets to GitHub releases
     runs-on: ${{ matrix.runner }}
