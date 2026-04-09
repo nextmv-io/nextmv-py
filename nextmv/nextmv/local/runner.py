@@ -103,10 +103,9 @@ def run(
     # Prepare manifest dictionary for execution. We need to convert relative paths to
     # absolute paths to allow execution in a different directory.
     manifest_dict = manifest.to_dict()
-    if manifest_dict.get("python", {}).get("pip-requirements", None) is not None:
-        manifest_dict["python"]["pip-requirements"] = os.path.abspath(
-            os.path.join(src, manifest_dict["python"]["pip-requirements"])
-        )
+    pip_requirements = manifest_dict.get("python", {}).get("pip-requirements", None)
+    if pip_requirements is not None and isinstance(pip_requirements, str):
+        manifest_dict["python"]["pip-requirements"] = os.path.abspath(os.path.join(src, pip_requirements))
 
     # Start the process as a daemon (detached) so we don't wait for it to
     # finish. We send the input via stdin and close it immediately without
