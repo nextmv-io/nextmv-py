@@ -1,0 +1,71 @@
+name: single binary build
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  single-binary-build:
+    name: Single binary build for ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      # Keep this in line with the matrix in the release workflow to ensure tests are accurate
+      matrix:
+        include:
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+            ext: ""
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            ext: ""
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+            ext: ""
+          - os: macos
+            arch: arm64
+            runner: macos-latest
+            ext: ""
+          - os: windows
+            arch: x64
+            runner: windows-latest
+            ext: ".exe"
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup Python
+        uses: actions/setup-python@v6
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install .
+        working-directory: nextmv/
+
+      - name: build binary with PyInstaller
+        # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
+        run: pyinstaller --name nextmv --onefile --console nextmv/cli/main.py
+        working-directory: nextmv/
+
+      - name: smoketest binary (windows)
+        if: ${{ matrix.os == 'windows' }}
+        run: |
+          nextmv.exe --help
+          nextmv.exe version
+        shell: cmd
+        working-directory: nextmv/dist
+
+      - name: smoketest binary (linux/macos)
+        if: ${{ matrix.os != 'windows' }}
+        run: |
+          ./nextmv --help
+          ./nextmv version
+        shell: bash
+        working-directory: nextmv/dist
