@@ -20,6 +20,7 @@ from nextmv.cloud.assets import RunAsset
 from nextmv.cloud.client import get_size
 from nextmv.cloud.input_set import ManagedInput
 from nextmv.cloud.url import DownloadURL
+from nextmv.content_format import ContentFormat
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
@@ -658,7 +659,7 @@ class ApplicationRunMixin:
         if (
             run_information.metadata.input_size > _MAX_RUN_SIZE
             or run_information.metadata.format.format_input.input_type
-            in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}
+            in {InputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}
         ):
             query_params = {"format": "url"}
             large = True
@@ -1375,7 +1376,7 @@ class ApplicationRunMixin:
         non_json_payload = False
         if isinstance(input, str):
             non_json_payload = True
-        elif isinstance(input, Input) and input.input_format != InputFormat.JSON:
+        elif isinstance(input, Input) and input.input_format != ContentFormat.JSON:
             non_json_payload = True
         elif tar_file is not None and tar_file != "":
             non_json_payload = True

@@ -11,7 +11,7 @@ from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -66,11 +66,11 @@ def update(
     ] = None,
     # Options for updating the instance configuration.
     content_format: Annotated[
-        InputFormat | None,
+        ContentFormat | None,
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format for the instance. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format for the instance. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),

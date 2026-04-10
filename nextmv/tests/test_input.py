@@ -66,7 +66,7 @@ class TestInput(unittest.TestCase):
             input_data = input_loader.load()
 
         self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.JSON)
+        self.assertEqual(input_data.input_format, nextmv.ContentFormat.JSON)
         self.assertEqual(input_data.data, {"empanadas": "are_life"})
         self.assertIsNone(input_data.options)
 
@@ -91,7 +91,7 @@ class TestInput(unittest.TestCase):
             input_data = input_loader.load(options=options)
 
         self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.JSON)
+        self.assertEqual(input_data.input_format, nextmv.ContentFormat.JSON)
         self.assertEqual(input_data.data, {"empanadas": "are_life"})
         self.assertIsNotNone(input_data.options)
         self.assertDictEqual(input_data.options.to_dict(), options.to_dict())
@@ -104,7 +104,7 @@ class TestInput(unittest.TestCase):
             input_data = input_loader.load(path="input.json")
 
         self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.JSON)
+        self.assertEqual(input_data.input_format, nextmv.ContentFormat.JSON)
         self.assertEqual(input_data.data, {"empanadas": "are_life"})
         self.assertIsNone(input_data.options)
 
@@ -334,10 +334,10 @@ class TestInput(unittest.TestCase):
             nextmv.text_data_file("test_data.txt"),
         ]
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.MULTI_FILE)
+        self.assertEqual(input_data.input_format, nextmv.ContentFormat.MULTI_FILE)
 
         # Check that all files were loaded
         self.assertIn("test_data.json", input_data.data)
@@ -361,10 +361,10 @@ class TestInput(unittest.TestCase):
             ),
         ]
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         self.assertIsInstance(input_data, nextmv.Input)
-        self.assertEqual(input_data.input_format, nextmv.InputFormat.MULTI_FILE)
+        self.assertEqual(input_data.input_format, nextmv.ContentFormat.MULTI_FILE)
 
         # Check that all files were loaded including Excel
         self.assertIn("test_data.json", input_data.data)
@@ -379,14 +379,14 @@ class TestInput(unittest.TestCase):
     def test_load_multi_file_missing_data_files(self):
         """Test that ValueError is raised when data_files is None for MULTI_FILE format."""
         with self.assertRaises(ValueError) as context:
-            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=None)
+            nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=None)
 
         self.assertIn("`data_files` must be provided", str(context.exception))
 
     def test_load_multi_file_invalid_data_files_type(self):
         """Test that ValueError is raised when data_files is not a list."""
         with self.assertRaises(ValueError) as context:
-            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files="not_a_list")
+            nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files="not_a_list")
 
         self.assertIn("`data_files` must be a list", str(context.exception))
 
@@ -404,7 +404,7 @@ class TestInput(unittest.TestCase):
             data_files = [nextmv.json_data_file("test_data"), nextmv.csv_data_file("test_data")]
 
             # Load without specifying path (should use default "inputs" directory)
-            input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files)
+            input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files)
 
             self.assertIsInstance(input_data, nextmv.Input)
             self.assertIn("test_data.json", input_data.data)
@@ -419,7 +419,7 @@ class TestInput(unittest.TestCase):
         data_files = [nextmv.json_data_file("test_data")]
 
         with self.assertRaises(ValueError) as context:
-            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path="nonexistent_directory")
+            nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path="nonexistent_directory")
 
         self.assertIn("path nonexistent_directory is not a directory", str(context.exception))
 
@@ -434,7 +434,7 @@ class TestInput(unittest.TestCase):
             data_files = [nextmv.json_data_file("test_data")]
 
             with self.assertRaises(ValueError) as context:
-                nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=test_file)
+                nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=test_file)
 
             self.assertIn(f"path {test_file} is not a directory", str(context.exception))
 
@@ -461,7 +461,7 @@ class TestInput(unittest.TestCase):
             name="custom.json", loader=custom_json_loader, loader_kwargs={"prefix": "custom", "parse_float": str}
         )
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         result = input_data.data["custom.json"]
         expected = {"custom_value": "3.14", "custom_count": 42}
@@ -489,7 +489,7 @@ class TestInput(unittest.TestCase):
             nextmv.DataFile(name="config.txt", loader=parse_config),  # Returns dict
         ]
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         # Verify different data types
         self.assertIsInstance(input_data.data["test_data.json"], dict)
@@ -510,7 +510,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual(data_file.input_data_key, "custom_json_key")
 
         # Test in multi-file context
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key instead of filename
         self.assertIn("custom_json_key", input_data.data)
@@ -525,7 +525,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual(data_file.input_data_key, "custom_csv_key")
 
         # Test in multi-file context
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key instead of filename
         self.assertIn("custom_csv_key", input_data.data)
@@ -540,7 +540,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual(data_file.input_data_key, "custom_text_key")
 
         # Test in multi-file context
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key instead of filename
         self.assertIn("custom_text_key", input_data.data)
@@ -560,7 +560,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual(data_file.input_data_key, "custom_direct_key")
 
         # Test in multi-file context
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key instead of filename
         self.assertIn("custom_direct_key", input_data.data)
@@ -575,7 +575,7 @@ class TestInput(unittest.TestCase):
             nextmv.text_data_file("test_data.txt", input_data_key="readme_content"),
         ]
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         # Check that custom keys are used where specified
         self.assertIn("json_config", input_data.data)
@@ -602,7 +602,7 @@ class TestInput(unittest.TestCase):
             "quoted", csv_configurations={"quoting": csv.QUOTE_ALL}, input_data_key="users_data"
         )
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key
         self.assertIn("users_data", input_data.data)
@@ -623,7 +623,7 @@ class TestInput(unittest.TestCase):
             "custom", json_configurations={"parse_float": str}, input_data_key="parsed_floats"
         )
 
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use custom key
         self.assertIn("parsed_floats", input_data.data)
@@ -641,7 +641,7 @@ class TestInput(unittest.TestCase):
         self.assertIsNone(data_file.input_data_key)
 
         # Test in multi-file context
-        input_data = nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
+        input_data = nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=[data_file], path=self.test_dir)
 
         # Should use filename as key
         self.assertIn("test_data.json", input_data.data)
@@ -661,7 +661,7 @@ class TestInput(unittest.TestCase):
 
         # Should raise ValueError for duplicate keys
         with self.assertRaises(ValueError) as context:
-            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+            nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         self.assertIn("Duplicate input data key found: shared_key", str(context.exception))
 
@@ -674,6 +674,6 @@ class TestInput(unittest.TestCase):
 
         # Should raise ValueError for duplicate keys
         with self.assertRaises(ValueError) as context:
-            nextmv.load(nextmv.InputFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
+            nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
         self.assertIn("Duplicate input data key found: test_data.json", str(context.exception))

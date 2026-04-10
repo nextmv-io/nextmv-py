@@ -10,7 +10,7 @@ def main():
 
     # Read the input from stdin.
     loaded_input = nextmv.load(
-        input_format=nextmv.InputFormat.MULTI_FILE,
+        input_format=nextmv.ContentFormat.MULTI_FILE,
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
         path="inputs",
     )

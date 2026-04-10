@@ -45,6 +45,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any
 
+from nextmv.content_format import ContentFormat
 from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.local import DEFAULT_OUTPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, OUTPUT_KEY, calculate_files_size
@@ -165,8 +166,8 @@ def execute_run(
             is_multi_file = (
                 manifest.configuration is not None
                 and manifest.configuration.content is not None
-                and manifest.configuration.content.format == InputFormat.MULTI_FILE
-            ) or run_config["format"]["input"]["type"] == InputFormat.MULTI_FILE.value
+                and manifest.configuration.content.format == ContentFormat.MULTI_FILE
+            ) or run_config["format"]["input"]["type"] == ContentFormat.MULTI_FILE.value
 
             log_file_path = os.path.join(logs_dir, LOGS_FILE)
             stdout_lines: list[str] = []
@@ -339,8 +340,8 @@ def process_run_input(
     """
 
     # For JSON and TEXT formats, we return the input data as a string.
-    if run_format in (InputFormat.JSON.value, InputFormat.TEXT.value):
-        if isinstance(input_data, dict) and run_format == InputFormat.JSON.value:
+    if run_format in (ContentFormat.JSON.value, InputFormat.TEXT.value):
+        if isinstance(input_data, dict) and run_format == ContentFormat.JSON.value:
             return json.dumps(input_data)
 
         if isinstance(input_data, str) and run_format == InputFormat.TEXT.value:
@@ -363,12 +364,12 @@ def process_run_input(
 
     # For MULTI-FILE format, we write the input files to an `inputs` directory,
     # or to a custom location specified in the manifest.
-    if run_format == InputFormat.MULTI_FILE.value:
+    if run_format == ContentFormat.MULTI_FILE.value:
         inputs_dir = os.path.join(temp_src, INPUTS_KEY)
         if (
             manifest.configuration is not None
             and manifest.configuration.content is not None
-            and manifest.configuration.content.format == InputFormat.MULTI_FILE
+            and manifest.configuration.content.format == ContentFormat.MULTI_FILE
             and manifest.configuration.content.multi_file is not None
         ):
             inputs_dir = os.path.join(temp_src, manifest.configuration.content.multi_file.input.path)

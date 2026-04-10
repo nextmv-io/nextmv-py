@@ -14,7 +14,7 @@ from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
 from nextmv.cli.message import enum_values, error, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.polling import default_polling_options
 from nextmv.run import Format, FormatInput, RunConfiguration
 
@@ -84,11 +84,11 @@ def create(
     ] = False,
     # Options for run configuration.
     content_format: Annotated[
-        InputFormat | None,
+        ContentFormat | None,
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format of the run to create. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format of the run to create. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Run configuration",
         ),
@@ -141,8 +141,7 @@ def create(
     the value can be one of the following:
 
     - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
-      the input data. Use with the [magenta]json[/magenta], and
-      [magenta]text[/magenta] content formats.
+      the input data. Use with the [magenta]json[/magenta] content format.
     - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
       containing the input data files. Use with the
       [magenta]multi-file[/magenta] content format.
@@ -222,7 +221,7 @@ def create(
         config = RunConfiguration()
         config.format = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_format),
+                input_type=ContentFormat(content_format),
             ),
         )
     run_options = build_run_options(options)

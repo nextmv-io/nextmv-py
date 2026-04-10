@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import yaml
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.local.registry import AppEntry, Registry, _get_registry_path
 
 
@@ -21,7 +21,7 @@ class TestAppEntry(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=os.path.abspath("path/to/app"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
             description="Test application",
@@ -29,7 +29,7 @@ class TestAppEntry(unittest.TestCase):
 
         self.assertEqual(entry.app_id, "test-app")
         self.assertEqual(entry.src, os.path.abspath("path/to/app"))
-        self.assertEqual(entry.content_format, InputFormat.JSON)
+        self.assertEqual(entry.content_format, ContentFormat.JSON)
         self.assertEqual(entry.created_at, now)
         self.assertEqual(entry.updated_at, now)
         self.assertEqual(entry.description, "Test application")
@@ -40,7 +40,7 @@ class TestAppEntry(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=os.path.abspath("path/to/app"),
-            content_format=InputFormat.CSV_ARCHIVE,
+            content_format=ContentFormat.MULTI_FILE,
             created_at=now,
             updated_at=now,
         )
@@ -54,7 +54,7 @@ class TestAppEntry(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=os.path.abspath("path/to/app"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
             description="Test application",
@@ -109,7 +109,7 @@ class TestRegistry(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=os.path.abspath("path/to/app"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -219,7 +219,7 @@ class TestRegistryRegister(unittest.TestCase):
         self.assertIsNotNone(entry.app_id)
         self.assertTrue(entry.app_id.startswith("local-app"))
         self.assertEqual(entry.src, os.path.abspath(self.app_dir))
-        self.assertEqual(entry.content_format, InputFormat.JSON)
+        self.assertEqual(entry.content_format, ContentFormat.JSON)
         self.assertIsNone(entry.description)
         self.assertEqual(len(registry.apps), 1)
 
@@ -297,10 +297,10 @@ class TestRegistryRegister(unittest.TestCase):
 
     @patch("nextmv.local.registry._get_registry_path")
     def test_register_with_csv_content_format(self, mock_get_path):
-        """Test registering an app with CSV archive content format."""
+        """Test registering an app with multi-file content format."""
         mock_get_path.return_value = self.registry_path
 
-        # Create manifest with CSV archive content format
+        # Create manifest with multi-file content format
         csv_app_dir = os.path.join(self.test_dir, "csv_app")
         os.makedirs(csv_app_dir)
 
@@ -312,7 +312,7 @@ class TestRegistryRegister(unittest.TestCase):
             "type": "python",
             "runtime": "ghcr.io/nextmv-io/runtime/python:3.11",
             "files": ["main.py"],
-            "configuration": {"content": {"format": "csv-archive"}},
+            "configuration": {"content": {"format": "multi-file"}},
         }
 
         with open(os.path.join(csv_app_dir, "app.yaml"), "w") as f:
@@ -321,7 +321,7 @@ class TestRegistryRegister(unittest.TestCase):
         registry = Registry()
         entry = registry.register(src=csv_app_dir, app_id="csv-app")
 
-        self.assertEqual(entry.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(entry.content_format, ContentFormat.MULTI_FILE)
 
 
 class TestRegistryEntry(unittest.TestCase):
@@ -339,14 +339,14 @@ class TestRegistryEntry(unittest.TestCase):
         self.entry1 = AppEntry(
             app_id="app-1",
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry2 = AppEntry(
             app_id="app-2",
             src=os.path.abspath("path/to/app2"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -413,7 +413,7 @@ class TestRegistryEntry(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=abs_path,
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -448,21 +448,21 @@ class TestRegistryDeleteEntry(unittest.TestCase):
         self.entry1 = AppEntry(
             app_id="app-1",
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry2 = AppEntry(
             app_id="app-2",
             src=os.path.abspath("path/to/app2"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         self.entry3 = AppEntry(
             app_id="app-3",
             src=os.path.abspath("path/to/app3"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -555,7 +555,7 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         self.entry1 = AppEntry(
             app_id="app-1",
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
             description="Original description",
@@ -563,7 +563,7 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         self.entry2 = AppEntry(
             app_id="app-2",
             src=os.path.abspath("path/to/app2"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -613,18 +613,18 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         # Update the entry with new content format
         updated = registry.update_entry(
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.CSV_ARCHIVE,
+            content_format=ContentFormat.MULTI_FILE,
         )
 
         # Check that the returned entry is correct
         self.assertIsNotNone(updated)
         self.assertEqual(updated.app_id, "app-1")
-        self.assertEqual(updated.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(updated.content_format, ContentFormat.MULTI_FILE)
         self.assertEqual(updated.description, "Original description")
 
         # Check that content format was updated in registry
         found = registry.entry(app_id="app-1")
-        self.assertEqual(found.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(found.content_format, ContentFormat.MULTI_FILE)
 
     @patch("nextmv.local.registry._get_registry_path")
     def test_update_entry_can_change_app_id(self, mock_get_path):
@@ -712,14 +712,14 @@ class TestRegistryUpdateEntry(unittest.TestCase):
             src=os.path.abspath("path/to/app1"),
             new_app_id="updated-app-id",
             description="Updated description",
-            content_format=InputFormat.CSV_ARCHIVE,
+            content_format=ContentFormat.MULTI_FILE,
         )
 
         # Check that the returned entry has all updates
         self.assertIsNotNone(updated)
         self.assertEqual(updated.app_id, "updated-app-id")
         self.assertEqual(updated.description, "Updated description")
-        self.assertEqual(updated.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(updated.content_format, ContentFormat.MULTI_FILE)
         self.assertEqual(updated.src, os.path.abspath("path/to/app1"))
 
         # Verify in registry
@@ -727,7 +727,7 @@ class TestRegistryUpdateEntry(unittest.TestCase):
         self.assertIsNotNone(found)
         self.assertEqual(found.app_id, "updated-app-id")
         self.assertEqual(found.description, "Updated description")
-        self.assertEqual(found.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(found.content_format, ContentFormat.MULTI_FILE)
 
     @patch("nextmv.local.registry._get_registry_path")
     def test_update_entry_by_app_id_only(self, mock_get_path):
@@ -817,21 +817,21 @@ class TestRegistryListEntries(unittest.TestCase):
         entry1 = AppEntry(
             app_id="app-1",
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         entry2 = AppEntry(
             app_id="app-2",
             src=os.path.abspath("path/to/app2"),
-            content_format=InputFormat.CSV_ARCHIVE,
+            content_format=ContentFormat.MULTI_FILE,
             created_at=now,
             updated_at=now,
         )
         entry3 = AppEntry(
             app_id="app-3",
             src=os.path.abspath("path/to/app3"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
@@ -881,7 +881,7 @@ class TestRegistryToYAML(unittest.TestCase):
         entry = AppEntry(
             app_id="test-app",
             src=os.path.abspath("path/to/app"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
             description="Test application",
@@ -909,14 +909,14 @@ class TestRegistryToYAML(unittest.TestCase):
         entry1 = AppEntry(
             app_id="app-1",
             src=os.path.abspath("path/to/app1"),
-            content_format=InputFormat.JSON,
+            content_format=ContentFormat.JSON,
             created_at=now,
             updated_at=now,
         )
         entry2 = AppEntry(
             app_id="app-2",
             src=os.path.abspath("path/to/app2"),
-            content_format=InputFormat.CSV_ARCHIVE,
+            content_format=ContentFormat.MULTI_FILE,
             created_at=now,
             updated_at=now,
             description="Second app",
@@ -1009,7 +1009,7 @@ class TestRegistryIntegration(unittest.TestCase):
             "type": "python",
             "runtime": "ghcr.io/nextmv-io/runtime/python:3.11",
             "files": ["main.py"],
-            "configuration": {"content": {"format": "csv-archive"}},
+            "configuration": {"content": {"format": "multi-file"}},
         }
 
         with open(os.path.join(self.app1_dir, "app.yaml"), "w") as f:
@@ -1041,8 +1041,8 @@ class TestRegistryIntegration(unittest.TestCase):
 
         # 3. Verify both are registered
         self.assertEqual(len(registry.apps), 2)
-        self.assertEqual(entry1.content_format, InputFormat.JSON)
-        self.assertEqual(entry2.content_format, InputFormat.CSV_ARCHIVE)
+        self.assertEqual(entry1.content_format, ContentFormat.JSON)
+        self.assertEqual(entry2.content_format, ContentFormat.MULTI_FILE)
 
         # 4. List all entries
         entries = registry.list_entries()

@@ -67,7 +67,6 @@ from pydantic import AliasChoices, Field, field_validator
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
-from nextmv.input import InputFormat
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
 
@@ -976,10 +975,10 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: InputFormat
+    format: ContentFormat
     """
-    The format of the content. Can only be `InputFormat.JSON`,
-    `InputFormat.MULTI_FILE`, or `InputFormat.CSV_ARCHIVE`.
+    The format of the content. Can only be `ContentFormat.JSON` or
+    `ContentFormat.MULTI_FILE`.
     """
     multi_file: ManifestContentMultiFile | None = Field(
         serialization_alias="multi-file",
@@ -1006,7 +1005,7 @@ class ManifestContent(BaseModel):
             If the format field contains an invalid value that is not one of the
             acceptable formats (JSON, MULTI_FILE, or CSV_ARCHIVE).
         """
-        acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
+        acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
 

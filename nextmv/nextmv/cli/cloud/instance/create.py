@@ -10,7 +10,7 @@ from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption
 from nextmv.cloud.instance import InstanceConfiguration
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.run import Format, FormatInput, RunQueuing
 
 # Set up subcommand application.
@@ -60,11 +60,11 @@ def create(
     ] = None,
     # Options for configuring the instance.
     content_format: Annotated[
-        InputFormat | None,
+        ContentFormat | None,
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format of the instance to create. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format of the instance to create. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),
@@ -233,7 +233,7 @@ def build_options(options: list[str] | None) -> dict[str, str] | None:
 def build_config(
     priority: int,
     no_queuing: bool,
-    content_format: InputFormat | None = None,
+    content_format: ContentFormat | None = None,
     execution_class: str | None = None,
     integration_id: str | None = None,
     options: dict | None = None,
@@ -248,7 +248,7 @@ def build_config(
         The priority of the instance.
     no_queuing : bool
         Whether to disable queuing for the instance.
-    content_format : InputFormat | None
+    content_format : ContentFormat | None
         The content format for the instance, if applicable.
     execution_class : str | None
         The execution class to use for the instance, if applicable.
@@ -282,7 +282,7 @@ def build_config(
     if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_format),
+                input_type=ContentFormat(content_format),
             ),
         )
 

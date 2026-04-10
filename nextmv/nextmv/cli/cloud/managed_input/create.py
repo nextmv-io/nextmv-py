@@ -9,7 +9,7 @@ import typer
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.run import Format, FormatInput
 
 # Set up subcommand application.
@@ -20,12 +20,12 @@ app = typer.Typer()
 def create(
     app_id: AppIDOption,
     content_format: Annotated[
-        InputFormat | None,
+        ContentFormat | None,
         typer.Option(
             "--content-format",
             "-c",
             help=f"The content format for the managed input. "
-            f"Allowed values are: {enum_values(InputFormat)}. Default is JSON.",
+            f"Allowed values are: {enum_values(ContentFormat)}. Default is JSON.",
             metavar="CONTENT_FORMAT",
         ),
     ] = None,
@@ -128,7 +128,7 @@ def create(
     if content_format is not None:
         format_obj = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_format),
+                input_type=ContentFormat(content_format),
             ),
         )
 
