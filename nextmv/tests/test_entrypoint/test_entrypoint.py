@@ -70,7 +70,7 @@ class TestEntrypoint(unittest.TestCase):
         model.save(destination, model_configuration)
 
         main_file = self._file_name("main.py", self.TWO_DIRS_UP)
-        args = [sys.executable, main_file]
+        args = [sys.executable, "-m", "uv", "run", main_file]
 
         try:
             result = subprocess.run(

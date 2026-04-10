@@ -50,7 +50,7 @@ class TestOptions(unittest.TestCase):
     def test_defaults(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
         )
@@ -61,7 +61,7 @@ class TestOptions(unittest.TestCase):
     def test_env_vars(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "DURATION": "60s", "THREADS": "8"},
@@ -73,7 +73,7 @@ class TestOptions(unittest.TestCase):
     def test_command_line_args_two_dashes(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "--duration", "90s", "--threads", "12"],
+            [sys.executable, "-m", "uv", "run", file, "--duration", "90s", "--threads", "12"],
             capture_output=True,
             text=True,
         )
@@ -84,7 +84,7 @@ class TestOptions(unittest.TestCase):
     def test_command_line_args_one_dash(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "-duration", "120s", "-threads", "16"],
+            [sys.executable, "-m", "uv", "run", file, "-duration", "120s", "-threads", "16"],
             capture_output=True,
             text=True,
         )
@@ -95,7 +95,7 @@ class TestOptions(unittest.TestCase):
     def test_command_line_args_precede_env_vars(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "--duration", "90s", "--threads", "12"],
+            [sys.executable, "-m", "uv", "run", file, "--duration", "90s", "--threads", "12"],
             capture_output=True,
             text=True,
             env={**os.environ, "DURATION": "60s", "THREADS": "8"},
@@ -107,7 +107,7 @@ class TestOptions(unittest.TestCase):
     def test_no_values(self):
         file = self._file_name("options2.py", "..")
         result = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
         )
@@ -128,7 +128,7 @@ class TestOptions(unittest.TestCase):
     def test_bad_type_command_line_arg(self):
         file = self._file_name("options2.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "--duration", "30s", "--threads", "four"],
+            [sys.executable, "-m", "uv", "run", file, "--duration", "30s", "--threads", "four"],
             capture_output=True,
             text=True,
         )
@@ -139,7 +139,7 @@ class TestOptions(unittest.TestCase):
     def test_bad_type_env_var(self):
         file = self._file_name("options2.py", "..")
         result = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "DURATION": "30s", "THREADS": "four"},
@@ -151,7 +151,7 @@ class TestOptions(unittest.TestCase):
     def test_full_help_message(self):
         file = self._file_name("options1.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "-h"],
+            [sys.executable, "-m", "uv", "run", file, "-h"],
             capture_output=True,
             text=True,
         )
@@ -163,7 +163,7 @@ class TestOptions(unittest.TestCase):
     def test_minimal_help_message(self):
         file = self._file_name("options3.py", "..")
         result = subprocess.run(
-            [sys.executable, file, "-h"],
+            [sys.executable, "-m", "uv", "run", file, "-h"],
             capture_output=True,
             text=True,
         )
@@ -176,7 +176,7 @@ class TestOptions(unittest.TestCase):
         file = self._file_name("options4.py", "..")
 
         result1 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "false"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "false"],
             capture_output=True,
             text=True,
         )
@@ -184,7 +184,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result1.stdout, "{'bool_opt': False}\n")
 
         result2 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "f"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "f"],
             capture_output=True,
             text=True,
         )
@@ -192,7 +192,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result2.stdout, "{'bool_opt': False}\n")
 
         result3 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "False"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "False"],
             capture_output=True,
             text=True,
         )
@@ -200,7 +200,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result3.stdout, "{'bool_opt': False}\n")
 
         result4 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "0"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "0"],
             capture_output=True,
             text=True,
         )
@@ -208,7 +208,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result4.stdout, "{'bool_opt': False}\n")
 
         result5 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "true"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "true"],
             capture_output=True,
             text=True,
         )
@@ -216,7 +216,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result5.stdout, "{'bool_opt': True}\n")
 
         result6 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "t"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "t"],
             capture_output=True,
             text=True,
         )
@@ -224,7 +224,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result6.stdout, "{'bool_opt': True}\n")
 
         result7 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "True"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "True"],
             capture_output=True,
             text=True,
         )
@@ -232,7 +232,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result7.stdout, "{'bool_opt': True}\n")
 
         result8 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "1"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "1"],
             capture_output=True,
             text=True,
         )
@@ -240,7 +240,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result8.stdout, "{'bool_opt': True}\n")
 
         result9 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "f"},
@@ -249,7 +249,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result9.stdout, "{'bool_opt': False}\n")
 
         result10 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "false"},
@@ -258,7 +258,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result10.stdout, "{'bool_opt': False}\n")
 
         result11 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "False"},
@@ -267,7 +267,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result11.stdout, "{'bool_opt': False}\n")
 
         result12 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "0"},
@@ -276,7 +276,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result12.stdout, "{'bool_opt': False}\n")
 
         result13 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "t"},
@@ -285,7 +285,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result13.stdout, "{'bool_opt': True}\n")
 
         result14 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "true"},
@@ -294,7 +294,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result14.stdout, "{'bool_opt': True}\n")
 
         result14 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "True"},
@@ -303,7 +303,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result14.stdout, "{'bool_opt': True}\n")
 
         result14 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "1"},
@@ -313,7 +313,7 @@ class TestOptions(unittest.TestCase):
 
         # Default case: nothing is specified.
         result15 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
         )
@@ -322,7 +322,7 @@ class TestOptions(unittest.TestCase):
 
         # Bad arg produces False.
         result16 = subprocess.run(
-            [sys.executable, file, "-bool_opt", "Frue"],
+            [sys.executable, "-m", "uv", "run", file, "-bool_opt", "Frue"],
             capture_output=True,
             text=True,
         )
@@ -331,7 +331,7 @@ class TestOptions(unittest.TestCase):
 
         # Bad env var produces False.
         result17 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
             env={**os.environ, "BOOL_OPT": "Frue"},
@@ -343,7 +343,7 @@ class TestOptions(unittest.TestCase):
         file = self._file_name("options5.py", "..")
 
         result1 = subprocess.run(
-            [sys.executable, file, "-str_opt", ""],
+            [sys.executable, "-m", "uv", "run", file, "-str_opt", ""],
             capture_output=True,
             text=True,
         )
@@ -351,7 +351,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result1.stdout, "str_opt: \n")
 
         result2 = subprocess.run(
-            [sys.executable, file, "-str_opt", "empanadas"],
+            [sys.executable, "-m", "uv", "run", file, "-str_opt", "empanadas"],
             capture_output=True,
             text=True,
         )
@@ -359,7 +359,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result2.stdout, "str_opt: empanadas\n")
 
         result3 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
         )
@@ -372,6 +372,9 @@ class TestOptions(unittest.TestCase):
         result1 = subprocess.run(
             [
                 sys.executable,
+                "-m",
+                "uv",
+                "run",
                 file,
                 "-dash-opt",
                 "empanadas",
@@ -390,7 +393,7 @@ class TestOptions(unittest.TestCase):
         file = self._file_name("options7.py", "..")
 
         result1 = subprocess.run(
-            [sys.executable, file, "-choice_opt", "choice2"],
+            [sys.executable, "-m", "uv", "run", file, "-choice_opt", "choice2"],
             capture_output=True,
             text=True,
         )
@@ -398,7 +401,7 @@ class TestOptions(unittest.TestCase):
         self.assertEqual(result1.stdout, "{'choice_opt': 'choice2'}\n")
 
         result2 = subprocess.run(
-            [sys.executable, file],
+            [sys.executable, "-m", "uv", "run", file],
             capture_output=True,
             text=True,
         )

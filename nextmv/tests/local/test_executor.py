@@ -605,7 +605,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Verify subprocess.Popen was called
         mock_subprocess_popen.assert_called_once()
         call_args = mock_subprocess_popen.call_args
-        self.assertEqual(call_args[0][0][:2], [sys.executable, os.path.join(temp_src, "main.py")])
+        self.assertEqual(call_args[0][0][:5], [sys.executable, "-m", "uv", "run", os.path.join(temp_src, "main.py")])
         self.assertIn("-duration", call_args[0][0])
         self.assertIn("10s", call_args[0][0])
 

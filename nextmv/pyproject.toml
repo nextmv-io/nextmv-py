@@ -25,6 +25,7 @@ dependencies = [
     "folium>=0.20.0",
     "plotly>=6.0.1",
     "questionary>=2.1.1",
+    "uv>=0.4.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
@@ -88,6 +89,7 @@ dev = [
     "pip>=26.0",
     "typer>=0.20.1",
     "questionary>=2.1.1",
+    "uv>=0.4.0",
 ]
 
 [tool.hatch.version]
