@@ -64,25 +64,32 @@ jobs:
         working-directory: nextmv/
 
       - name: build binary with PyInstaller
+        # We force bash to get more consistent behavior across platforms
+        shell: bash
         # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
-        run: pyinstaller --name nextmv --onefile --console nextmv/cli/main.py
+        run: |
+          pyinstaller \
+            --name nextmv \
+            --onefile \
+            --add-data "nextmv/templates:nextmv/templates" \
+            --console nextmv/cli/main.py
         working-directory: nextmv/
 
       - name: rename binary for distribution
-        shell: bash # Force bash shell for consistent behavior across OSes
+        shell: bash
         run: |
           mv dist/nextmv${{ matrix.ext }} dist/nextmv-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}
         working-directory: nextmv/
 
       - name: determine exact version being released
-        shell: bash # Force bash shell for consistent behavior across OSes
+        shell: bash
         run: |
           VERSION="nextmv-$(cat nextmv/nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION"
 
       - name: attach binary to GitHub release
-        shell: bash # Force bash shell for consistent behavior across OSes
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
