@@ -104,7 +104,7 @@ def run(
     # absolute paths to allow execution in a different directory.
     manifest_dict = manifest.to_dict()
     pip_requirements = manifest_dict.get("python", {}).get("pip-requirements", None)
-    if pip_requirements is not None and isinstance(pip_requirements, str):
+    if pip_requirements is not None and isinstance(pip_requirements, str) and pip_requirements.strip():
         manifest_dict["python"]["pip-requirements"] = os.path.abspath(os.path.join(src, pip_requirements))
 
     # Start the process as a daemon (detached) so we don't wait for it to
