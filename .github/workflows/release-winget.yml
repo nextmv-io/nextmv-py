@@ -22,15 +22,6 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION"
 
-      - name: compute binary SHA256
-        shell: bash
-        run: |
-          BINARY_URL="https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-${VERSION}/nextmv-windows-x64.exe"
-          curl -fsSL -o nextmv-windows-x64.exe "$BINARY_URL"
-          SHA256=$(sha256sum nextmv-windows-x64.exe | awk '{print toupper($1)}')
-          echo "SHA256=$SHA256" >> $GITHUB_ENV
-          echo "SHA256=$SHA256"
-
       - name: install wingetcreate
         shell: bash
         run: |
