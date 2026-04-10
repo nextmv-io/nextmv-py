@@ -4,139 +4,14 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.ensemble import create_ensemble as _create_ensemble
+from nextmv.cli.actions.ensemble import delete_ensemble as _delete_ensemble
+from nextmv.cli.actions.ensemble import ensemble_run_submit as _ensemble_run_submit
+from nextmv.cli.actions.ensemble import ensemble_run_with_result as _ensemble_run_with_result
+from nextmv.cli.actions.ensemble import get_ensemble as _get_ensemble
+from nextmv.cli.actions.ensemble import list_ensembles as _list_ensembles
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.cloud import Application
-from nextmv.cloud.ensemble import (
-    EvaluationRule,
-    RuleObjective,
-    RuleTolerance,
-    RuleToleranceType,
-    RunGroup,
-)
 from nextmv.polling import default_polling_options
-from nextmv.run import RunConfiguration, RunType, RunTypeConfiguration
-
-
-def _cloud_create_ensemble_impl(
-    app_id: str,
-    run_groups: list[dict[str, Any]],
-    rules: list[dict[str, Any]],
-    ensemble_id: str | None = None,
-    name: str | None = None,
-    description: str | None = None,
-) -> dict[str, Any] | str:
-    """Implementation for creating an ensemble definition."""
-
-    app = _helpers._get_app(app_id)
-
-    if not run_groups:
-        return "Error: run_groups must contain at least one run group."
-    if not rules:
-        return "Error: rules must contain at least one evaluation rule."
-
-    # Convert plain dicts to RunGroup/EvaluationRule objects so the
-    # SDK can call .to_dict() on them internally.
-    run_group_objs = []
-    for i, rg in enumerate(run_groups):
-        try:
-            run_group_objs.append(RunGroup.from_dict(rg))
-        except Exception as exc:
-            return (
-                f"Error: run_groups[{i}] is invalid (requires at least "
-                f"'id' and 'instance_id'): {exc}"
-            )
-
-    rule_objs = []
-    for i, r in enumerate(rules):
-        try:
-            rule_obj = _parse_evaluation_rule(r, i)
-            if isinstance(rule_obj, str):
-                return rule_obj  # Error message
-            rule_objs.append(rule_obj)
-        except KeyError as exc:
-            return (
-                f"Error: rules[{i}] is missing required field {exc}. "
-                f"Required: id, statistics_path, objective."
-            )
-        except Exception as exc:
-            return f"Error: rules[{i}] is invalid: {exc}"
-
-    ensemble = app.new_ensemble_definition(
-        run_groups=run_group_objs,
-        rules=rule_objs,
-        id=ensemble_id,
-        name=name,
-        description=description,
-    )
-    return ensemble.to_dict()
-
-
-def _parse_evaluation_rule(r: dict[str, Any], index: int) -> Any:
-    """Parse a single evaluation rule dict into an EvaluationRule.
-
-    Returns an ``EvaluationRule`` on success, or an error string on failure.
-    """
-
-    # Normalize the tolerance field: the LLM may pass a bare
-    # float (shorthand for a relative tolerance) or a full dict.
-    raw_tol = r.get("tolerance")
-    if isinstance(raw_tol, dict):
-        tol = RuleTolerance(
-            value=raw_tol["value"],
-            type=RuleToleranceType(raw_tol.get("type", "relative")),
-        )
-    else:
-        # Bare number — treat as relative tolerance.
-        tol = RuleTolerance(
-            value=float(raw_tol) if raw_tol is not None else 0.0,
-            type=RuleToleranceType.RELATIVE,
-        )
-
-    # Normalise objective shorthand: the LLM may send "min"/"max"
-    # instead of the full "minimize"/"maximize".
-    raw_obj = r["objective"]
-    obj_map = {"min": "minimize", "max": "maximize"}
-    mapped = obj_map.get(raw_obj, raw_obj)
-    valid_objectives = {o.value for o in RuleObjective}
-    if mapped not in valid_objectives:
-        return (
-            f"Error: rules[{index}] has unknown objective '{raw_obj}'; "
-            f"use one of: {sorted(valid_objectives)} "
-            f"(or shorthand 'min'/'max')."
-        )
-    objective = RuleObjective(mapped)
-
-    return EvaluationRule(
-        id=r["id"],
-        statistics_path=r["statistics_path"],
-        objective=objective,
-        tolerance=tol,
-        index=r.get("index", 0),
-    )
-
-
-def _build_ensemble_run_config(
-    app_id: str,
-    ensemble_id: str,
-    content_format: str | None,
-) -> tuple[Application, RunConfiguration]:
-    """Build the Application and RunConfiguration for an ensemble run.
-
-    Raises ``ValueError`` if required parameters are empty.
-    """
-
-    app_id = _helpers._require_non_empty(app_id, "app_id")
-    ensemble_id = _helpers._require_non_empty(ensemble_id, "ensemble_id")
-
-    content_format = _helpers._none_if_empty(content_format)
-
-    app = _helpers._get_app(app_id)
-    config = _helpers._build_run_configuration(content_format) or RunConfiguration()
-    config.run_type = RunTypeConfiguration(
-        run_type=RunType.ENSEMBLE,
-        definition_id=ensemble_id,
-    )
-    return app, config
 
 
 def register(mcp: FastMCP) -> None:
@@ -154,9 +29,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        ensembles = app.list_ensemble_definitions()
-        return [e.to_dict() for e in ensembles]
+        client = _helpers._get_client()
+        return _list_ensembles(client, app_id)
 
     @mcp.tool()
     def cloud_get_ensemble(
@@ -174,9 +48,10 @@ def register(mcp: FastMCP) -> None:
             ensemble_id: The ensemble definition ID.
         """
 
-        app = _helpers._get_app(app_id)
-        ensemble = app.ensemble_definition(ensemble_definition_id=ensemble_id)
-        return _helpers._save_to_json_file(ensemble.to_dict(), prefix=f"ensemble_{ensemble_id}")
+        client = _helpers._get_client()
+        data = _get_ensemble(client, app_id, ensemble_id)
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "ensemble", ensemble_id)
 
     @mcp.tool()
     def cloud_create_ensemble(
@@ -211,14 +86,24 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        return _cloud_create_ensemble_impl(
-            app_id=app_id,
-            run_groups=run_groups,
-            rules=rules,
-            ensemble_id=ensemble_id,
-            name=name,
-            description=description,
-        )
+        if not run_groups:
+            return "Error: run_groups must contain at least one run group."
+        if not rules:
+            return "Error: rules must contain at least one evaluation rule."
+
+        client = _helpers._get_client()
+        try:
+            return _create_ensemble(
+                client,
+                app_id,
+                run_groups=run_groups,
+                rules=rules,
+                ensemble_id=ensemble_id,
+                name=name,
+                description=description,
+            )
+        except Exception as exc:
+            return f"Error: {exc}"
 
     @mcp.tool()
     def cloud_delete_ensemble(app_id: str, ensemble_id: str) -> str:
@@ -229,8 +114,8 @@ def register(mcp: FastMCP) -> None:
             ensemble_id: The ensemble definition ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_ensemble_definition(ensemble_definition_id=ensemble_id)
+        client = _helpers._get_client()
+        _delete_ensemble(client, app_id, ensemble_id)
         return f"Deleted ensemble definition {ensemble_id}"
 
     @mcp.tool()
@@ -273,19 +158,29 @@ def register(mcp: FastMCP) -> None:
         content_format = _helpers._none_if_empty(content_format)
 
         try:
-            app, config = _build_ensemble_run_config(app_id, ensemble_id, content_format)
+            _helpers._require_non_empty(app_id, "app_id")
+            _helpers._require_non_empty(ensemble_id, "ensemble_id")
         except ValueError as e:
             return f"Error building ensemble run configuration: {e}"
 
-        run_result = app.new_run_with_result(
-            input=input,
-            input_dir_path=input_dir_path,
-            configuration=config,
-            run_options=run_options or {},
-            polling_options=default_polling_options(),
-            managed_input_id=managed_input_id,
-        )
-        return _helpers._save_to_json_file(run_result.to_dict(), prefix=f"ensemble_run_{app_id}_{ensemble_id}")
+        client = _helpers._get_client()
+        try:
+            result = _ensemble_run_with_result(
+                client,
+                app_id,
+                ensemble_id,
+                input=input,
+                input_dir_path=input_dir_path,
+                content_format=content_format,
+                run_options=run_options,
+                managed_input_id=managed_input_id,
+                polling_options=default_polling_options(),
+            )
+        except ValueError as e:
+            return f"Error building ensemble run configuration: {e}"
+
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(result, endpoint, "ensemble", ensemble_id, filename="run_result.json")
 
     @mcp.tool()
     def cloud_ensemble_run_submit(
@@ -325,14 +220,22 @@ def register(mcp: FastMCP) -> None:
         content_format = _helpers._none_if_empty(content_format)
 
         try:
-            app, config = _build_ensemble_run_config(app_id, ensemble_id, content_format)
+            _helpers._require_non_empty(app_id, "app_id")
+            _helpers._require_non_empty(ensemble_id, "ensemble_id")
         except ValueError as e:
             return f"Error building ensemble run configuration: {e}"
 
-        return app.new_run(
-            input=input,
-            input_dir_path=input_dir_path,
-            configuration=config,
-            options=run_options or {},
-            managed_input_id=managed_input_id,
-        )
+        client = _helpers._get_client()
+        try:
+            return _ensemble_run_submit(
+                client,
+                app_id,
+                ensemble_id,
+                input=input,
+                input_dir_path=input_dir_path,
+                content_format=content_format,
+                run_options=run_options,
+                managed_input_id=managed_input_id,
+            )
+        except ValueError as e:
+            return f"Error building ensemble run configuration: {e}"

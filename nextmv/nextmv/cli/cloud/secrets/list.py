@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.secrets import list_secrets_collections as _list_secrets_collections
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,10 +45,9 @@ def list(
         $ [dim]nextmv cloud secrets list --app-id hare-app --output secrets.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing secrets collections...")
-    collections = cloud_app.list_secrets_collections()
-    collections_dicts = [collection.to_dict() for collection in collections]
+    collections_dicts = _list_secrets_collections(client, app_id=app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

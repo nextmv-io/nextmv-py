@@ -4,9 +4,9 @@ This module defines the cloud app exists command for the Nextmv CLI.
 
 import typer
 
+from nextmv.cli.actions.app import app_exists as _app_exists
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
-from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
 # Set up subcommand application.
@@ -37,10 +37,7 @@ def exists(
     client = Client(profile=profile)
     in_progress(msg="Checking if application exists...")
 
-    ok = Application.exists(
-        client=client,
-        id=app_id,
-    )
+    ok = _app_exists(client, app_id=app_id)
     print_json({"exists": ok})
     if not ok:
         raise typer.Exit(code=1)

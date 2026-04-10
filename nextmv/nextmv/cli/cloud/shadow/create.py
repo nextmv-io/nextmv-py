@@ -8,9 +8,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.shadow import StartEvents, TerminationEvents
 
 # Set up subcommand application.
@@ -161,7 +162,8 @@ def create(
             --description "Testing cool bunnies" --comparisons "$COMPARISONS" --termination-maximum-runs 10[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     try:
         comparisons_dict = json.loads(comparisons)
@@ -169,7 +171,7 @@ def create(
         error(f"Invalid comparisons format: [magenta]{comparisons}[/magenta]. Error: {e}")
 
     in_progress(msg="Creating shadow test in draft mode...")
-    shadow_test = cloud_app.new_shadow_test(
+    shadow_test_dict = cloud_app.new_shadow_test(
         comparisons=comparisons_dict,
         termination_events=TerminationEvents(
             maximum_runs=termination_maximum_runs,
@@ -179,6 +181,6 @@ def create(
         name=name,
         description=description,
         start_events=StartEvents(time=start_time) if start_time is not None else None,
-    )
+    ).to_dict()
 
-    print_json(shadow_test.to_dict())
+    print_json(shadow_test_dict)

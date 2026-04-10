@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.instance import list_instances as _list_instances
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,10 +45,9 @@ def list(
         $ [dim]nextmv cloud instance list --app-id hare-app --output instances.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing instances...")
-    instances = cloud_app.list_instances()
-    instances_dicts = [instance.to_dict() for instance in instances]
+    instances_dicts = _list_instances(client, app_id=app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

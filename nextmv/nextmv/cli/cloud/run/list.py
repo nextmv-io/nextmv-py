@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.run import list_runs
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
@@ -66,8 +67,7 @@ def list(
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
-    runs = cloud_app.list_runs(status=status)
-    runs_dicts = [run.to_dict() for run in runs]
+    runs_dicts = list_runs(cloud_app, status=status.value if status else None)
 
     if output is not None and output != "":
         with open(output, "w") as f:

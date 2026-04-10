@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -51,10 +52,10 @@ def metadata(
         $ [dim]nextmv cloud scenario metadata --app-id hare-app --scenario-test-id hop-schedule --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Getting scenario test metadata...")
-    scenario_metadata = cloud_app.scenario_test_metadata(scenario_test_id=scenario_test_id)
-    scenario_metadata_dict = scenario_metadata.to_dict()
+    scenario_metadata_dict = cloud_app.scenario_test_metadata(scenario_test_id=scenario_test_id).to_dict()
 
     if output is not None and output != "":
         with open(output, "w") as f:

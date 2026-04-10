@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.app import get_app as _get_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
-from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
 # Set up subcommand application.
@@ -49,8 +49,7 @@ def get(
     client = Client(profile=profile)
     in_progress(msg="Getting application...")
 
-    cloud_app = Application.get(client=client, id=app_id)
-    cloud_app_dict = cloud_app.to_dict()
+    cloud_app_dict = _get_app(client, app_id=app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

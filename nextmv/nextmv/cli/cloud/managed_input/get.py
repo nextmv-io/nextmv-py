@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.managed_input import get_managed_input as _get_managed_input
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ManagedInputIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -47,10 +48,9 @@ def get(
             --output managed_input.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting managed input...")
-    managed_input = cloud_app.managed_input(managed_input_id=managed_input_id)
-    managed_input_dict = managed_input.to_dict()
+    managed_input_dict = _get_managed_input(client, app_id=app_id, managed_input_id=managed_input_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

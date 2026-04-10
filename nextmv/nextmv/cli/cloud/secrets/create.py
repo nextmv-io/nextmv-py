@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.secrets import create_secrets_collection as _create_secrets_collection
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.secrets import Secret, SecretType
 
 # Set up subcommand application.
@@ -119,19 +120,21 @@ def create(
             --secrets '{"type": "file", "location": "config/app.conf", "value": "server=prod\\nport=8080"}'[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Creating secrets collection...")
 
     # Build the secrets list from the CLI options
     secrets_list = build_secrets(secrets)
 
-    collection = cloud_app.new_secrets_collection(
+    collection_dict = _create_secrets_collection(
+        client,
+        app_id=app_id,
         secrets=secrets_list,
-        id=secrets_collection_id,
+        secrets_collection_id=secrets_collection_id,
         name=name,
         description=description,
     )
-    print_json(collection.to_dict())
+    print_json(collection_dict)
 
 
 def build_secrets(secrets: list[str]) -> list[Secret]:

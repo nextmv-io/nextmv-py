@@ -7,9 +7,9 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.app import list_apps as _list_apps
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import ProfileOption
-from nextmv.cloud.application import list_applications
 from nextmv.cloud.client import Client
 
 # Set up subcommand application.
@@ -47,8 +47,7 @@ def list(
     client = Client(profile=profile)
     in_progress(msg="Listing applications...")
 
-    cloud_apps = list_applications(client)
-    cloud_apps_dicts = [cloud_app.to_dict() for cloud_app in cloud_apps]
+    cloud_apps_dicts = _list_apps(client)
 
     if output is not None and output != "":
         with open(output, "w") as f:

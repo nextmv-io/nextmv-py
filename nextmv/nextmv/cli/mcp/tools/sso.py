@@ -2,8 +2,8 @@
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.sso import delete_domain as _delete_domain
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.cloud.sso import SSOConfiguration
 
 
 def register(mcp: FastMCP) -> None:
@@ -23,6 +23,5 @@ def register(mcp: FastMCP) -> None:
         """
 
         client = _helpers._get_client()
-        sso = SSOConfiguration.get(client=client)
-        sso.delete_domain(domain=domain)
+        _delete_domain(client, domain=domain)
         return f"Deleted SSO domain mapping for {domain}"

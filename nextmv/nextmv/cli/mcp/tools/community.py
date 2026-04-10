@@ -4,8 +4,8 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.community import clone_app, list_community_apps_dicts
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.cloud import clone_community_app, list_community_apps
 
 
 def register(mcp: FastMCP) -> None:
@@ -22,8 +22,7 @@ def register(mcp: FastMCP) -> None:
         """
 
         client = _helpers._get_client()
-        apps = list_community_apps(client)
-        return [a.to_dict() for a in apps]
+        return list_community_apps_dicts(client)
 
     @mcp.tool()
     def community_clone(app_name: str, target_dir: str = ".") -> str:
@@ -41,5 +40,5 @@ def register(mcp: FastMCP) -> None:
         """
 
         client = _helpers._get_client()
-        clone_community_app(client=client, app=app_name, directory=target_dir)
+        clone_app(client=client, app=app_name, directory=target_dir)
         return f"Cloned {app_name} to {target_dir}"

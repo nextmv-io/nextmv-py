@@ -4,6 +4,12 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.shadow import create_shadow_test as _create_shadow_test
+from nextmv.cli.actions.shadow import delete_shadow_test as _delete_shadow_test
+from nextmv.cli.actions.shadow import get_shadow_test as _get_shadow_test
+from nextmv.cli.actions.shadow import list_shadow_tests as _list_shadow_tests
+from nextmv.cli.actions.shadow import start_shadow_test as _start_shadow_test
+from nextmv.cli.actions.shadow import stop_shadow_test as _stop_shadow_test
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -22,9 +28,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        tests = app.list_shadow_tests()
-        return [t.to_dict() for t in tests]
+        client = _helpers._get_client()
+        return _list_shadow_tests(client, app_id)
 
     @mcp.tool()
     def cloud_get_shadow_test(
@@ -42,9 +47,10 @@ def register(mcp: FastMCP) -> None:
             shadow_test_id: The shadow test ID.
         """
 
-        app = _helpers._get_app(app_id)
-        test = app.shadow_test(shadow_test_id=shadow_test_id)
-        return _helpers._save_to_json_file(test.to_dict(), prefix=f"shadow_test_{shadow_test_id}")
+        client = _helpers._get_client()
+        data = _get_shadow_test(client, app_id, shadow_test_id)
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "shadow", shadow_test_id)
 
     @mcp.tool()
     def cloud_create_shadow_test(
@@ -81,8 +87,10 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        test = app.new_shadow_test(
+        client = _helpers._get_client()
+        return _create_shadow_test(
+            client,
+            app_id,
             comparisons=comparisons,
             termination_events=termination_events,
             shadow_test_id=shadow_test_id,
@@ -90,7 +98,6 @@ def register(mcp: FastMCP) -> None:
             description=description,
             start_events=start_events,
         )
-        return test.to_dict()
 
     @mcp.tool()
     def cloud_start_shadow_test(app_id: str, shadow_test_id: str) -> str:
@@ -104,8 +111,8 @@ def register(mcp: FastMCP) -> None:
             shadow_test_id: The shadow test ID to start.
         """
 
-        app = _helpers._get_app(app_id)
-        app.start_shadow_test(shadow_test_id=shadow_test_id)
+        client = _helpers._get_client()
+        _start_shadow_test(client, app_id, shadow_test_id)
         return f"Started shadow test {shadow_test_id}"
 
     @mcp.tool()
@@ -126,13 +133,8 @@ def register(mcp: FastMCP) -> None:
                 (default) or ``"promote"``.
         """
 
-        from nextmv.cloud import StopIntent
-
-        app = _helpers._get_app(app_id)
-        app.stop_shadow_test(
-            shadow_test_id=shadow_test_id,
-            intent=StopIntent(intent),
-        )
+        client = _helpers._get_client()
+        _stop_shadow_test(client, app_id, shadow_test_id, intent=intent)
         return f"Stopped shadow test {shadow_test_id} with intent {intent}"
 
     @mcp.tool()
@@ -144,6 +146,6 @@ def register(mcp: FastMCP) -> None:
             shadow_test_id: The shadow test ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_shadow_test(shadow_test_id=shadow_test_id)
+        client = _helpers._get_client()
+        _delete_shadow_test(client, app_id, shadow_test_id)
         return f"Deleted shadow test {shadow_test_id}"

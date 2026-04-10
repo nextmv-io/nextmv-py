@@ -4,9 +4,10 @@ This module defines the cloud version delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.version import delete_version as _delete_version
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, VersionIDOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,8 +45,8 @@ def delete(
             info(f"Version [magenta]{version_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_version(version_id=version_id)
+    client = Client(profile=profile)
+    _delete_version(client, app_id=app_id, version_id=version_id)
     success(
         f"Version [magenta]{version_id}[/magenta] deleted successfully from application [magenta]{app_id}[/magenta]."
     )

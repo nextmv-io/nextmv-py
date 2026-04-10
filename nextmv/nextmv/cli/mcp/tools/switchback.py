@@ -4,8 +4,13 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.switchback import create_switchback_test as _create_switchback_test
+from nextmv.cli.actions.switchback import delete_switchback_test as _delete_switchback_test
+from nextmv.cli.actions.switchback import get_switchback_test as _get_switchback_test
+from nextmv.cli.actions.switchback import list_switchback_tests as _list_switchback_tests
+from nextmv.cli.actions.switchback import start_switchback_test as _start_switchback_test
+from nextmv.cli.actions.switchback import stop_switchback_test as _stop_switchback_test
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.cloud import StopIntent, TestComparisonSingle
 
 
 def register(mcp: FastMCP) -> None:
@@ -23,9 +28,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        tests = app.list_switchback_tests()
-        return [t.to_dict() for t in tests]
+        client = _helpers._get_client()
+        return _list_switchback_tests(client, app_id)
 
     @mcp.tool()
     def cloud_get_switchback_test(
@@ -43,9 +47,10 @@ def register(mcp: FastMCP) -> None:
             switchback_test_id: The switchback test ID.
         """
 
-        app = _helpers._get_app(app_id)
-        test = app.switchback_test(switchback_test_id=switchback_test_id)
-        return _helpers._save_to_json_file(test.to_dict(), prefix=f"switchback_test_{switchback_test_id}")
+        client = _helpers._get_client()
+        data = _get_switchback_test(client, app_id, switchback_test_id)
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "switchback", switchback_test_id)
 
     @mcp.tool()
     def cloud_create_switchback_test(
@@ -83,20 +88,18 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        comparison = TestComparisonSingle(
+        client = _helpers._get_client()
+        return _create_switchback_test(
+            client,
+            app_id,
             baseline_instance_id=baseline_instance_id,
             candidate_instance_id=candidate_instance_id,
-        )
-        test = app.new_switchback_test(
-            comparison=comparison,
             unit_duration_minutes=unit_duration_minutes,
             units=units,
             switchback_test_id=switchback_test_id,
             name=name,
             description=description,
         )
-        return test.to_dict()
 
     @mcp.tool()
     def cloud_start_switchback_test(
@@ -113,8 +116,8 @@ def register(mcp: FastMCP) -> None:
             switchback_test_id: The switchback test ID to start.
         """
 
-        app = _helpers._get_app(app_id)
-        app.start_switchback_test(switchback_test_id=switchback_test_id)
+        client = _helpers._get_client()
+        _start_switchback_test(client, app_id, switchback_test_id)
         return f"Started switchback test {switchback_test_id}"
 
     @mcp.tool()
@@ -135,11 +138,8 @@ def register(mcp: FastMCP) -> None:
                 (default) or ``"promote"``.
         """
 
-        app = _helpers._get_app(app_id)
-        app.stop_switchback_test(
-            switchback_test_id=switchback_test_id,
-            intent=StopIntent(intent),
-        )
+        client = _helpers._get_client()
+        _stop_switchback_test(client, app_id, switchback_test_id, intent=intent)
         return f"Stopped switchback test {switchback_test_id} with intent {intent}"
 
     @mcp.tool()
@@ -154,6 +154,6 @@ def register(mcp: FastMCP) -> None:
             switchback_test_id: The switchback test ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_switchback_test(switchback_test_id=switchback_test_id)
+        client = _helpers._get_client()
+        _delete_switchback_test(client, app_id, switchback_test_id)
         return f"Deleted switchback test {switchback_test_id}"

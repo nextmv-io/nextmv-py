@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.input import InputFormat
 from nextmv.run import Format, FormatInput
 
@@ -121,7 +122,8 @@ def create(
             "or specify an existing run ID."
         )
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     # Build format if content_format is provided
     format_obj = None

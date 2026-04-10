@@ -7,9 +7,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.scenario import get_scenario_test as _get_scenario_test
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ScenarioTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -71,7 +73,7 @@ def get(
     - Get the scenario test using a specific profile.
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id lettuce-routes --profile prod[/dim]
     """
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -82,14 +84,13 @@ def get(
 
     in_progress(msg="Getting scenario test...")
     if should_wait:
-        scenario_test = cloud_app.scenario_test_with_polling(
+        cloud_app = Application(client=client, id=app_id)
+        scenario_test_dict = cloud_app.scenario_test_with_polling(
             scenario_test_id=scenario_test_id,
             polling_options=polling_options,
-        )
+        ).to_dict()
     else:
-        scenario_test = cloud_app.scenario_test(scenario_test_id=scenario_test_id)
-
-    scenario_test_dict = scenario_test.to_dict()
+        scenario_test_dict = _get_scenario_test(client, app_id, scenario_test_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

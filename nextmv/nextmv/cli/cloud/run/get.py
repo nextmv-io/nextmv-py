@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.run import run_result as action_run_result
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
@@ -171,7 +172,7 @@ def handle_outputs(
         kwargs["polling_options"] = polling_options
         run_result = cloud_app.run_result_with_polling(**kwargs)
     else:
-        run_result = cloud_app.run_result(**kwargs)
+        run_result = action_run_result(cloud_app, **kwargs)
 
     # Handle the case where output is embedded directly in the result: json and text.
     if content_format in {OutputFormat.JSON, OutputFormat.TEXT}:

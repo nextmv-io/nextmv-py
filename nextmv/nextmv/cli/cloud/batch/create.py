@@ -7,10 +7,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
 from nextmv.cloud.batch_experiment import BatchExperimentRun
+from nextmv.cloud.client import Client
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -247,7 +248,8 @@ def create(
             --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     # Build the runs list from the CLI options
     runs_list = build_runs(runs)
@@ -277,11 +279,10 @@ def create(
     polling_options.max_duration = timeout
 
     in_progress(msg="Getting batch experiment results...")
-    batch_experiment = cloud_app.batch_experiment_with_polling(
+    batch_experiment_dict = cloud_app.batch_experiment_with_polling(
         batch_id=batch_id,
         polling_options=polling_options,
-    )
-    batch_experiment_dict = batch_experiment.to_dict()
+    ).to_dict()
 
     # Handle output
     if output is not None and output != "":

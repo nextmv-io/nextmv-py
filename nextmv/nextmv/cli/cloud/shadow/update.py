@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,16 +71,15 @@ def update(
             --output updated-shadow-test.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     in_progress(msg="Updating shadow test...")
-    shadow_test = cloud_app.update_shadow_test(
+    shadow_test_dict = cloud_app.update_shadow_test(
         shadow_test_id=shadow_test_id,
         name=name,
         description=description,
-    )
-
-    shadow_test_dict = shadow_test.to_dict()
+    ).to_dict()
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] updated successfully "
         f"in application [magenta]{app_id}[/magenta]."

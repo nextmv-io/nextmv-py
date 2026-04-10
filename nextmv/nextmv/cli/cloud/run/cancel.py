@@ -4,6 +4,7 @@ This module defines the cloud run cancel command for the Nextmv CLI.
 
 import typer
 
+from nextmv.cli.actions.run import cancel_run
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
@@ -33,5 +34,5 @@ def cancel(
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg=f"Canceling run [magenta]{run_id}[/magenta]...")
-    cloud_app.cancel_run(run_id)
+    cancel_run(cloud_app, run_id=run_id)
     success(f"Run [magenta]{run_id}[/magenta] canceled.")

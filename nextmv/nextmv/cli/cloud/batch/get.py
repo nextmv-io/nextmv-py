@@ -7,9 +7,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.batch import get_batch as _get_batch
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -72,7 +74,7 @@ def get(
         $ [dim]nextmv cloud batch get --app-id hare-app --batch-experiment-id lettuce-routes --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -83,14 +85,13 @@ def get(
 
     in_progress(msg="Getting batch experiment...")
     if should_wait:
-        batch_experiment = cloud_app.batch_experiment_with_polling(
+        cloud_app = Application(client=client, id=app_id)
+        batch_experiment_dict = cloud_app.batch_experiment_with_polling(
             batch_id=batch_experiment_id,
             polling_options=polling_options,
-        )
+        ).to_dict()
     else:
-        batch_experiment = cloud_app.batch_experiment(batch_id=batch_experiment_id)
-
-    batch_experiment_dict = batch_experiment.to_dict()
+        batch_experiment_dict = _get_batch(client, app_id, batch_experiment_id)
 
     # Handle output
     if output is not None and output != "":

@@ -6,9 +6,9 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.app import create_app as _create_app
 from nextmv.cli.message import in_progress, print_json
 from nextmv.cli.options import ProfileOption
-from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
 # Set up subcommand application.
@@ -127,14 +127,14 @@ def create(
     else:
         in_progress(msg="Creating application...")
 
-    cloud_app = Application.new(
-        client=client,
+    cloud_app_dict = _create_app(
+        client,
         name=name,
-        id=app_id,
+        app_id=app_id,
         description=description,
         is_workflow=is_workflow,
         exist_ok=exist_ok,
         default_instance_id=default_instance_id,
         default_experiment_instance=default_experiment_instance,
     )
-    print_json(cloud_app.to_dict())
+    print_json(cloud_app_dict)

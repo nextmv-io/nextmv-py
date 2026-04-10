@@ -8,9 +8,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.cloud.input_set import ManagedInput
 from nextmv.safe import safe_id
 
@@ -139,7 +140,8 @@ def create(
             --end-time "2024-01-31T23:59:59Z"[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
     in_progress(msg="Creating input set...")
 
     # Generate a random input set ID if one is not provided.
@@ -156,8 +158,8 @@ def create(
             managed_input_list.append(i)
 
     input_set = cloud_app.new_input_set(
-        input_set_id,
-        name,
+        id=input_set_id,
+        name=name,
         description=description,
         instance_id=instance_id,
         run_ids=run_ids,

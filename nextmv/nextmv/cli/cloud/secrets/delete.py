@@ -4,9 +4,10 @@ This module defines the cloud secrets delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.secrets import delete_secrets_collection as _delete_secrets_collection
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SecretsCollectionIDOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -45,8 +46,8 @@ def delete(
             info(f"Secrets collection [magenta]{secrets_collection_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_secrets_collection(secrets_collection_id=secrets_collection_id)
+    client = Client(profile=profile)
+    _delete_secrets_collection(client, app_id=app_id, secrets_collection_id=secrets_collection_id)
     success(
         f"Secrets collection [magenta]{secrets_collection_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."

@@ -4,6 +4,7 @@ This module defines the cloud run delete command for the Nextmv CLI.
 
 import typer
 
+from nextmv.cli.actions.run import delete_run
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption, YesOption
@@ -46,5 +47,5 @@ def delete(
             return
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_run(run_id)
+    delete_run(cloud_app, run_id=run_id)
     success(f"Run [magenta]{run_id}[/magenta] from application [magenta]{app_id}[/magenta] deleted successfully.")

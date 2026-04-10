@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.shadow import stop_shadow_test as _stop_shadow_test
 from nextmv.cli.message import enum_values, in_progress, success
 from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
+from nextmv.cloud.client import Client
 from nextmv.cloud.shadow import StopIntent
 
 # Set up subcommand application.
@@ -45,8 +46,8 @@ def stop(
     """
 
     in_progress(msg="Stopping shadow test...")
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.stop_shadow_test(shadow_test_id=shadow_test_id, intent=StopIntent(intent))
+    client = Client(profile=profile)
+    _stop_shadow_test(client, app_id, shadow_test_id, intent=intent.value)
     success(
         f"Shadow test [magenta]{shadow_test_id}[/magenta] stopped successfully "
         f"in application [magenta]{app_id}[/magenta]."

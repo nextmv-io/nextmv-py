@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.scenario import list_scenario_tests as _list_scenario_tests
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -47,10 +48,9 @@ def list(
         $ [dim]nextmv cloud scenario list --app-id hare-app --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Listing scenario tests...")
-    scenario_tests = cloud_app.list_scenario_tests()
-    scenario_tests_dict = [exp.to_dict() for exp in scenario_tests]
+    scenario_tests_dict = _list_scenario_tests(client, app_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

@@ -6,10 +6,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.ensemble import create_ensemble as _create_ensemble
 from nextmv.cli.message import enum_values, error, in_progress, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
-from nextmv.cloud.ensemble import EvaluationRule, RuleObjective, RuleTolerance, RuleToleranceType, RunGroup
+from nextmv.cloud.client import Client
+from nextmv.cloud.ensemble import RuleObjective, RuleToleranceType
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -219,26 +220,28 @@ def create(
     ] = None,
     profile: ProfileOption = None,
 ) -> None:
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Creating ensemble definition...")
 
-    # Build the run groups and rules lists from the CLI options
-    run_groups_list = build_run_groups(run_groups)
-    rules_list = build_rules(rules)
+    # Build the run groups and rules dicts from the CLI JSON strings
+    run_groups_dicts = build_run_group_dicts(run_groups)
+    rules_dicts = build_rule_dicts(rules)
 
-    ensemble_definition = cloud_app.new_ensemble_definition(
-        run_groups=run_groups_list,
-        rules=rules_list,
-        id=ensemble_definition_id,
+    ensemble_definition_dict = _create_ensemble(
+        client=client,
+        app_id=app_id,
+        run_groups=run_groups_dicts,
+        rules=rules_dicts,
+        ensemble_id=ensemble_definition_id,
         name=name,
         description=description,
     )
-    print_json(ensemble_definition.to_dict())
+    print_json(ensemble_definition_dict)
 
 
-def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
+def build_run_group_dicts(run_groups: list[str]) -> list[dict]:
     """
-    Builds the run groups list from the CLI option(s).
+    Parse CLI JSON input into a list of run group dicts.
 
     Parameters
     ----------
@@ -247,8 +250,8 @@ def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
 
     Returns
     -------
-    list[RunGroup]
-        The built run groups list.
+    list[dict]
+        The parsed list of run group dicts.
     """
     import json
 
@@ -267,14 +270,7 @@ def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
                             f"[magenta]{run_group_str}[/magenta]. Each run group must have "
                             "[magenta]id[/magenta] and [magenta]instance_id[/magenta] fields."
                         )
-
-                    run_group = RunGroup(
-                        id=item["id"],
-                        instance_id=item["instance_id"],
-                        options=item.get("options"),
-                        repetitions=item.get("repetitions"),
-                    )
-                    run_groups_list.append(run_group)
+                    run_groups_list.append(item)
 
             # Handle the case where the value is a single run group.
             elif isinstance(run_group_data, dict):
@@ -283,14 +279,7 @@ def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
                         f"Invalid run group format in [magenta]{run_group_str}[/magenta]. "
                         "Each run group must have [magenta]id[/magenta] and [magenta]instance_id[/magenta] fields."
                     )
-
-                run_group = RunGroup(
-                    id=run_group_data["id"],
-                    instance_id=run_group_data["instance_id"],
-                    options=run_group_data.get("options"),
-                    repetitions=run_group_data.get("repetitions"),
-                )
-                run_groups_list.append(run_group)
+                run_groups_list.append(run_group_data)
 
             else:
                 error(
@@ -304,9 +293,9 @@ def build_run_groups(run_groups: list[str]) -> list[RunGroup]:
     return run_groups_list
 
 
-def build_rules(rules: list[str]) -> list[EvaluationRule]:
+def build_rule_dicts(rules: list[str]) -> list[dict]:
     """
-    Builds the rules list from the CLI option(s).
+    Parse CLI JSON input into a list of evaluation rule dicts.
 
     Parameters
     ----------
@@ -315,8 +304,8 @@ def build_rules(rules: list[str]) -> list[EvaluationRule]:
 
     Returns
     -------
-    list[EvaluationRule]
-        The built rules list.
+    list[dict]
+        The parsed list of rule dicts.
     """
     import json
 
@@ -329,15 +318,13 @@ def build_rules(rules: list[str]) -> list[EvaluationRule]:
             # Handle the case where the value is a list of rules.
             if isinstance(rule_data, list):
                 for ix, item in enumerate(rule_data):
-                    validate_rule_data(item, rule_str, ix)
-                    rule = create_evaluation_rule(item)
-                    rules_list.append(rule)
+                    _validate_rule_data(item, rule_str, ix)
+                    rules_list.append(item)
 
             # Handle the case where the value is a single rule.
             elif isinstance(rule_data, dict):
-                validate_rule_data(rule_data, rule_str)
-                rule = create_evaluation_rule(rule_data)
-                rules_list.append(rule)
+                _validate_rule_data(rule_data, rule_str)
+                rules_list.append(rule_data)
 
             else:
                 error(
@@ -351,7 +338,7 @@ def build_rules(rules: list[str]) -> list[EvaluationRule]:
     return rules_list
 
 
-def validate_rule_data(data: dict, rule_str: str, index: int | None = None) -> None:
+def _validate_rule_data(data: dict, rule_str: str, index: int | None = None) -> None:
     """
     Validates that rule data contains all required fields.
 
@@ -382,32 +369,3 @@ def validate_rule_data(data: dict, rule_str: str, index: int | None = None) -> N
             f"Invalid tolerance format{index_msg} in [magenta]{rule_str}[/magenta]. "
             "Tolerance must have [magenta]value[/magenta] and [magenta]type[/magenta] fields."
         )
-
-
-def create_evaluation_rule(data: dict) -> EvaluationRule:
-    """
-    Creates an EvaluationRule from validated data.
-
-    Parameters
-    ----------
-    data : dict
-        The validated rule data.
-
-    Returns
-    -------
-    EvaluationRule
-        The created evaluation rule.
-    """
-    tolerance_data = data["tolerance"]
-    tolerance = RuleTolerance(
-        value=float(tolerance_data["value"]),
-        type=RuleToleranceType(tolerance_data["type"]),
-    )
-
-    return EvaluationRule(
-        id=data["id"],
-        statistics_path=data["statistics_path"],
-        objective=RuleObjective(data["objective"]),
-        tolerance=tolerance,
-        index=int(data["index"]),
-    )

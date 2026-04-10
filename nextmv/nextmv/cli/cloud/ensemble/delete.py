@@ -4,9 +4,10 @@ This module defines the cloud ensemble delete command for the Nextmv CLI.
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.ensemble import delete_ensemble as _delete_ensemble
 from nextmv.cli.message import confirmation, info, success
 from nextmv.cli.options import AppIDOption, EnsembleDefinitionIDOption, ProfileOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -45,8 +46,8 @@ def delete(
             info(f"Ensemble definition [magenta]{ensemble_definition_id}[/magenta] will not be deleted.")
             return
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    cloud_app.delete_ensemble_definition(ensemble_definition_id=ensemble_definition_id)
+    client = Client(profile=profile)
+    _delete_ensemble(client, app_id, ensemble_definition_id)
     success(
         f"Ensemble definition [magenta]{ensemble_definition_id}[/magenta] deleted successfully "
         f"from application [magenta]{app_id}[/magenta]."

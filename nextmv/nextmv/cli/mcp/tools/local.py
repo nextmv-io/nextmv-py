@@ -5,12 +5,27 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.local import (
+    local_list_runs as _local_list_runs_action,
+)
+from nextmv.cli.actions.local import (
+    local_run_metadata as _local_run_metadata_action,
+)
+from nextmv.cli.actions.local import (
+    local_run_poll_result as _local_run_poll_result_action,
+)
+from nextmv.cli.actions.local import (
+    local_sync as _local_sync_action,
+)
+from nextmv.cli.actions.local import (
+    manifest_init as _manifest_init_action,
+)
+from nextmv.cli.actions.local import (
+    new_local_run,
+)
 from nextmv.cli.mcp.tools import _helpers
-from nextmv.content_format import ContentFormat
 from nextmv.input import INPUTS_KEY
 from nextmv.local.local import DEFAULT_INPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, NEXTMV_DIR, RUNS_KEY
-from nextmv.manifest import ManifestType, initialize_manifest
-from nextmv.polling import default_polling_options
 
 
 def _local_run_dir(app_dir: str, run_id: str) -> str:
@@ -41,7 +56,7 @@ def _local_run_logs_impl(
     app_dir: str,
     run_id: str,
 ) -> str:
-    """Implementation for getting the logs of a local run."""
+    """Implementation for getting the logs of a local run (path-based)."""
 
     run_dir = _local_run_dir(app_dir, run_id)
     logs_path = os.path.join(run_dir, LOGS_KEY, LOGS_FILE)
@@ -64,14 +79,14 @@ def _local_run_impl(
 
     app = _helpers._get_local_app(app_dir=app_dir)
     config = _helpers._build_run_configuration(content_format)
-    if input_dir_path is not None:
-        run_id = app.new_run(input_dir_path=input_dir_path, options=run_options, configuration=config)
-    else:
-        run_id = app.new_run(input=input, options=run_options, configuration=config)
-    app.run_result_with_polling(
-        run_id=run_id,
-        polling_options=default_polling_options(),
+    run_id = new_local_run(
+        app=app,
+        input=input if input_dir_path is None else None,
+        input_dir_path=input_dir_path,
+        configuration=config,
+        options=run_options,
     )
+    _local_run_poll_result_action(app=app, run_id=run_id)
     run_dir = _local_run_dir(app_dir, run_id)
     result_path = os.path.join(run_dir, f"{run_id}.json")
     return (
@@ -94,9 +109,13 @@ def _local_run_submit_impl(
 
     app = _helpers._get_local_app(app_dir=app_dir)
     config = _helpers._build_run_configuration(content_format)
-    if input_dir_path is not None:
-        return app.new_run(input_dir_path=input_dir_path, options=run_options, configuration=config)
-    return app.new_run(input=input, options=run_options, configuration=config)
+    return new_local_run(
+        app=app,
+        input=input if input_dir_path is None else None,
+        input_dir_path=input_dir_path,
+        configuration=config,
+        options=run_options,
+    )
 
 
 def _local_sync_impl(
@@ -113,7 +132,8 @@ def _local_sync_impl(
 
     local_app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
     cloud_target = _helpers._get_app(cloud_app_id)
-    local_app.sync(
+    _local_sync_action(
+        app=local_app,
         target=cloud_target,
         run_ids=run_ids,
         instance_id=instance_id,
@@ -128,9 +148,9 @@ def _manifest_init_impl(
 ) -> str:
     """Implementation for manifest_init."""
 
-    dst = initialize_manifest(
-        manifest_type=ManifestType(manifest_type),
-        content_format=ContentFormat(content_format),
+    dst = _manifest_init_action(
+        manifest_type=manifest_type,
+        content_format=content_format,
         dirpath=dirpath,
     )
     return f"Manifest initialized at {dst}"
@@ -251,8 +271,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        metadata = app.run_metadata(run_id=run_id)
-        return metadata.to_dict()
+        return _local_run_metadata_action(app=app, run_id=run_id)
 
     @mcp.tool()
     def local_run_result(
@@ -274,7 +293,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
 
         # Validate the run exists by calling run_metadata.
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        app.run_metadata(run_id=run_id)
+        _local_run_metadata_action(app=app, run_id=run_id)
         result_path = os.path.join(_local_run_dir(app_dir, run_id), f"{run_id}.json")
         return f"Data saved to {result_path} — use file-reading tools to inspect the contents."
 
@@ -297,10 +316,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        app.run_result_with_polling(
-            run_id=run_id,
-            polling_options=default_polling_options(),
-        )
+        _local_run_poll_result_action(app=app, run_id=run_id)
         result_path = os.path.join(_local_run_dir(app_dir, run_id), f"{run_id}.json")
         return f"Data saved to {result_path} — use file-reading tools to inspect the contents."
 
@@ -324,8 +340,7 @@ def _register_management_tools(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        runs = app.list_runs()
-        return [r.to_dict() for r in runs]
+        return _local_list_runs_action(app=app)
 
     @mcp.tool()
     def local_run_input(

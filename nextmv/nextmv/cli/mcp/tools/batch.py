@@ -4,6 +4,11 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from nextmv.cli.actions.batch import batch_metadata as _batch_metadata
+from nextmv.cli.actions.batch import create_batch as _create_batch
+from nextmv.cli.actions.batch import delete_batch as _delete_batch
+from nextmv.cli.actions.batch import get_batch as _get_batch
+from nextmv.cli.actions.batch import list_batches as _list_batches
 from nextmv.cli.mcp.tools import _helpers
 
 
@@ -38,14 +43,15 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        app = _helpers._get_app(app_id)
-        batch_id = app.new_batch_experiment(
+        client = _helpers._get_client()
+        return _create_batch(
+            client,
+            app_id,
             input_set_id=input_set_id,
             name=name,
             description=description,
             option_sets=option_sets,
         )
-        return batch_id
 
     @mcp.tool()
     def cloud_get_batch(app_id: str, batch_id: str) -> str:
@@ -60,9 +66,10 @@ def register(mcp: FastMCP) -> None:
             batch_id: The batch experiment ID.
         """
 
-        app = _helpers._get_app(app_id)
-        batch = app.batch_experiment(batch_id=batch_id)
-        return _helpers._save_to_json_file(batch.to_dict(), prefix=f"batch_{batch_id}")
+        client = _helpers._get_client()
+        data = _get_batch(client, app_id, batch_id)
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "batch", batch_id)
 
     @mcp.tool()
     def cloud_list_batches(app_id: str) -> list[dict[str, Any]]:
@@ -75,9 +82,8 @@ def register(mcp: FastMCP) -> None:
             app_id: The application ID.
         """
 
-        app = _helpers._get_app(app_id)
-        batches = app.list_batch_experiments()
-        return [b.to_dict() for b in batches]
+        client = _helpers._get_client()
+        return _list_batches(client, app_id)
 
     @mcp.tool()
     def cloud_batch_metadata(app_id: str, batch_id: str) -> str:
@@ -92,9 +98,10 @@ def register(mcp: FastMCP) -> None:
             batch_id: The batch experiment ID.
         """
 
-        app = _helpers._get_app(app_id)
-        metadata = app.batch_experiment_metadata(batch_id=batch_id)
-        return _helpers._save_to_json_file(metadata.to_dict(), prefix=f"batch_metadata_{batch_id}")
+        client = _helpers._get_client()
+        data = _batch_metadata(client, app_id, batch_id)
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(data, endpoint, "batch", batch_id, filename="metadata.json")
 
     @mcp.tool()
     def cloud_delete_batch(app_id: str, batch_id: str) -> str:
@@ -105,6 +112,6 @@ def register(mcp: FastMCP) -> None:
             batch_id: The batch experiment ID to delete.
         """
 
-        app = _helpers._get_app(app_id)
-        app.delete_batch_experiment(batch_id=batch_id)
+        client = _helpers._get_client()
+        _delete_batch(client, app_id, batch_id)
         return f"Deleted batch experiment {batch_id}"

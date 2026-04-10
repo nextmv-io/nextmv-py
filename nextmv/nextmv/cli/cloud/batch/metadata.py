@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.batch import batch_metadata as _batch_metadata
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -51,10 +52,9 @@ def metadata(
         $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id hop-schedule --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting batch experiment metadata...")
-    batch_metadata = cloud_app.batch_experiment_metadata(batch_id=batch_experiment_id)
-    batch_metadata_dict = batch_metadata.to_dict()
+    batch_metadata_dict = _batch_metadata(client, app_id, batch_experiment_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

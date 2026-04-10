@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.input_set import get_input_set as _get_input_set
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, InputSetIDOption, ProfileOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -47,10 +48,9 @@ def get(
             --output input-set.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting input set...")
-    input_set = cloud_app.input_set(input_set_id=input_set_id)
-    input_set_dict = input_set.to_dict()
+    input_set_dict = _get_input_set(client, app_id=app_id, input_set_id=input_set_id)
 
     if output is not None and output != "":
         with open(output, "w") as f:

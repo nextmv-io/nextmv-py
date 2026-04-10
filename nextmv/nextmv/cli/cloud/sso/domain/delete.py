@@ -6,9 +6,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_sso_config
+from nextmv.cli.actions.sso import delete_domain as _delete_domain
 from nextmv.cli.message import confirmation, in_progress, info, success
 from nextmv.cli.options import ProfileOption, YesOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -54,7 +55,7 @@ def delete(
             info("SSO mapped domain will not be deleted.")
             return
 
-    sso_config = build_sso_config(profile)
+    client = Client(profile=profile)
     in_progress(msg="Deleting SSO mapped domain from configuration...")
-    sso_config.delete_domain(domain=domain)
+    _delete_domain(client, domain=domain)
     success("SSO mapped domain deleted successfully.")

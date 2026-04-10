@@ -9,10 +9,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from nextmv.cli.actions.community import get_community_apps
 from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.client import Client
-from nextmv.cloud.community import CommunityApp, list_community_apps
+from nextmv.cloud.community import CommunityApp
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -86,7 +87,7 @@ def _apps_table(client: Client) -> None:
         The Nextmv Cloud client to use for the request.
     """
 
-    apps = list_community_apps(client)
+    apps = get_community_apps(client)
     table = Table("Name", "Type", "Latest", "Description", border_style="cyan", header_style="cyan")
     for app in apps:
         table.add_row(
@@ -109,7 +110,7 @@ def _apps_list(client: Client) -> None:
         The Nextmv Cloud client to use for the request.
     """
 
-    apps = list_community_apps(client)
+    apps = get_community_apps(client)
     names = [app.name for app in apps]
     print("\n".join(names))
 
@@ -187,7 +188,7 @@ def _find_app(client: Client, app: str) -> CommunityApp:
         If the community app is not found.
     """
 
-    comm_apps = list_community_apps(client)
+    comm_apps = get_community_apps(client)
     for comm_app in comm_apps:
         if comm_app.name == app:
             return comm_app

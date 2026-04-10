@@ -10,6 +10,7 @@ from typing import Annotated, Any
 
 import typer
 
+from nextmv.cli.actions.run import submit_run
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
@@ -341,7 +342,8 @@ def create(
         managed_input_id=managed_input_id,
         cloud_app=cloud_app,
     )
-    run_id = cloud_app.new_run(
+    run_id = submit_run(
+        cloud_app,
         **input_kwarg,
         instance_id=instance_id,
         name=name,

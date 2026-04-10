@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -70,16 +71,15 @@ def update(
             --output updated-batch.json[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
+    cloud_app = Application(client=client, id=app_id)
 
     in_progress(msg="Updating batch experiment...")
-    batch_experiment = cloud_app.update_batch_experiment(
+    batch_experiment_dict = cloud_app.update_batch_experiment(
         batch_experiment_id=batch_experiment_id,
         name=name,
         description=description,
-    )
-
-    batch_experiment_dict = batch_experiment.to_dict()
+    ).to_dict()
     success(
         f"Batch experiment [magenta]{batch_experiment_id}[/magenta] updated successfully "
         f"in application [magenta]{app_id}[/magenta]."

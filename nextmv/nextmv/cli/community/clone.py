@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
+from nextmv.cli.actions.community import clone_app
 from nextmv.cli.message import error
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.client import Client
-from nextmv.cloud.community import clone_community_app
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -78,7 +78,7 @@ def clone(
         error("The --version flag cannot be an empty string.")
 
     client = Client(profile=profile)
-    clone_community_app(
+    clone_app(
         client=client,
         app=app,
         directory=directory,

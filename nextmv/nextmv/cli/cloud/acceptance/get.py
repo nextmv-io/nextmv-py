@@ -7,9 +7,11 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.acceptance import get_acceptance_test as _get_acceptance_test
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AcceptanceTestIDOption, AppIDOption, ProfileOption
+from nextmv.cloud import Application
+from nextmv.cloud.client import Client
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -71,7 +73,7 @@ def get(
         $ [dim]nextmv cloud acceptance get --app-id hare-app --acceptance-test-id test-123 --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -82,14 +84,13 @@ def get(
 
     in_progress(msg="Getting acceptance test...")
     if should_wait:
-        acceptance_test = cloud_app.acceptance_test_with_polling(
+        cloud_app = Application(client=client, id=app_id)
+        acceptance_test_dict = cloud_app.acceptance_test_with_polling(
             acceptance_test_id=acceptance_test_id,
             polling_options=polling_options,
-        )
+        ).to_dict()
     else:
-        acceptance_test = cloud_app.acceptance_test(acceptance_test_id=acceptance_test_id)
-
-    acceptance_test_dict = acceptance_test.to_dict()
+        acceptance_test_dict = _get_acceptance_test(client, app_id, acceptance_test_id)
 
     # Handle output
     if output is not None and output != "":

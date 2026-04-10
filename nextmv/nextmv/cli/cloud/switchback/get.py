@@ -7,9 +7,10 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import build_cloud_app
+from nextmv.cli.actions.switchback import get_switchback_test as _get_switchback_test
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cloud.client import Client
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -44,11 +45,9 @@ def get(
             --profile prod[/dim]
     """
 
-    cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
+    client = Client(profile=profile)
     in_progress(msg="Getting switchback test...")
-    switchback_test = cloud_app.switchback_test(switchback_test_id=switchback_test_id)
-
-    switchback_test_dict = switchback_test.to_dict()
+    switchback_test_dict = _get_switchback_test(client, app_id, switchback_test_id)
 
     # Handle output
     if output is not None and output != "":
