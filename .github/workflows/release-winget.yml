@@ -1,0 +1,48 @@
+name: release-winget
+run-name: Winget release for ${{ github.event.release.tag_name }}
+
+on:
+  release:
+    types: [released] # 'released' excludes pre-releases; use 'published' to include them
+
+jobs:
+  release-winget:
+    name: Release winget package
+    # Only run for nextmv- releases (not nextmv-gurobipy-, nextmv-scikit-learn-, etc.)
+    if: ${{ startsWith(github.event.release.tag_name, 'nextmv-') && !contains(github.event.release.tag_name, 'gurobipy') && !contains(github.event.release.tag_name, 'scikit-learn') }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: strip version prefix
+        shell: bash
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#nextmv-}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
+
+      - name: compute binary SHA256
+        shell: bash
+        run: |
+          BINARY_URL="https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-${VERSION}/nextmv-windows-x64.exe"
+          curl -fsSL -o nextmv-windows-x64.exe "$BINARY_URL"
+          SHA256=$(sha256sum nextmv-windows-x64.exe | awk '{print toupper($1)}')
+          echo "SHA256=$SHA256" >> $GITHUB_ENV
+          echo "SHA256=$SHA256"
+
+      - name: install wingetcreate
+        shell: pwsh
+        run: |
+          winget install wingetcreate
+
+      - name: submit winget PR
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          wingetcreate update Nextmv.CLI \
+            --version "$VERSION" \
+            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-${VERSION}/nextmv-windows-x64.exe|x64|portable" \
+            --submit \
+            --token "$WINGET_TOKEN"
