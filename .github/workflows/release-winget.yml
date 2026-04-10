@@ -32,12 +32,12 @@ jobs:
           echo "SHA256=$SHA256"
 
       - name: install wingetcreate
-        shell: pwsh
+        shell: bash
         run: |
           winget install wingetcreate
 
       - name: submit winget PR
-        shell: pwsh
+        shell: bash
         env:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
         run: |
