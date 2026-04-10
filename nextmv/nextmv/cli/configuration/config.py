@@ -2,6 +2,7 @@
 This module contains configuration utilities for the Nextmv CLI.
 """
 
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,8 @@ API_KEY_KEY = "apikey"
 ENDPOINT_KEY = "endpoint"
 DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
 GO_CLI_PATH = CONFIG_DIR / "nextmv"
+if platform.system() == "Windows":
+    GO_CLI_PATH = CONFIG_DIR / "nextmv.exe"
 
 
 def load_config() -> dict[str, Any]:
