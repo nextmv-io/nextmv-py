@@ -847,7 +847,7 @@ class TestOutput(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             nextmv.Output(output_format=nextmv.OutputFormat.JSON, solution_files=[sol_file])
         self.assertIn(
-            "solution_files` are not `None`, but `output_format` is different from `OutputFormat.MULTI_FILE`",
+            "solution_files` are not `None`, but `output_format` is different from `ContentFormat.MULTI_FILE`",
             str(context.exception),
         )
 
@@ -859,7 +859,7 @@ class TestOutput(unittest.TestCase):
         # Test invalid solution_files type
         with self.assertRaises(TypeError) as context:
             nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files="not a list")
-        self.assertIn("unsupported Output.solution_files type", str(context.exception))
+        self.assertIn("unsupported `Output.solution_files` type", str(context.exception))
 
     def test_local_writer_multi_file_json(self):
         """Test LocalOutputWriter with MULTI_FILE format and JSON solution files."""
