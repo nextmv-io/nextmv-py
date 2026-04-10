@@ -361,6 +361,9 @@ class Application(BaseModel):
         # Get the path to the initial app structure template.
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
         template = f"{manifest_type.value}_{content_format.value}_{example}"
+        # Note: we are deliberately including the templates directory in the pyinstaller
+        # release, as it otherwise would not be included and the initialize function would
+        # break. Make sure to keep this in mind if changing the location of the templates.
         initial_app_structure_path = os.path.join(current_file_dir, "..", "templates", template)
         initial_app_structure_path = os.path.normpath(initial_app_structure_path)
 
