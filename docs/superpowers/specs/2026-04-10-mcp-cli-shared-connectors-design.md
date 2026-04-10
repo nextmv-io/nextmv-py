@@ -208,20 +208,20 @@ app = typer.Typer()
 LIST_EXAMPLES = (
     ("List all applications.",
         "nextmv cloud app list"),
-    ("List applications using the 'hare' profile.",
+    ("List all applications using the profile named [magenta]hare[/magenta].",
         "nextmv cloud app list --profile hare"),
-    ("List all applications and save to a file.",
+    ("List all applications and save the information to an [magenta]apps.json[/magenta] file.",
         "nextmv cloud app list --output apps.json"),
 )
 
 CREATE_EXAMPLES = (
-    ("Create an application with a given name.",
+    ("Create an application with the name [magenta]Hare App[/magenta]. A random ID will be generated.",
         'nextmv cloud app create --name "Hare App"'),
-    ("Create an application with a specific ID.",
+    ("Create an application with the specific ID [magenta]hare-app[/magenta].",
         'nextmv cloud app create --name "Hare App" --app-id hare-app'),
-    ("Create or get if it already exists.",
+    ("Create an application, or get it if it already exists.",
         'nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok'),
-    ("Create a workflow application.",
+    ("Create a [magenta]workflow[/magenta] application.",
         'nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow'),
 )
 
@@ -344,6 +344,22 @@ def _render_examples(examples: tuple[Example, ...]) -> str:
         lines.append("")
     return "\n".join(lines)
 ```
+
+**Rich markup inside descriptions is preserved.** The renderer adds only the
+surrounding structure — header, bullet prefix, `$ [dim]...[/dim]` wrapper,
+blank lines. Any `[magenta]...[/magenta]`, `[bold]...[/bold]`, `[link=...]`,
+etc. inside the description string is passed through verbatim. This gives
+per-example inline highlighting identical to the hand-written blocks on
+`develop`:
+
+- Hand-written today:
+  `- List all applications using the profile named [magenta]hare[/magenta].`
+- Produced by `_render_examples`:
+  `- List all applications using the profile named [magenta]hare[/magenta].`
+
+The **command** string is wrapped in `[dim]...[/dim]` so its entire contents
+render dimmed. Markup inside the command string is legal but unnecessary —
+everything is already dim.
 
 **Multi-line commands** (e.g., `create` with many flags) are handled by
 letting the `command` string contain embedded newlines and continuation
@@ -610,6 +626,13 @@ New tests added for the pilot:
     `(description, command)` pair from the tuple appearing in order).
   - Assert the "Examples" header is present when `examples=` is set and
     absent when it is not.
+  - **Snapshot comparison against the current hand-written help output**
+    for at least one example-rich command (`create`) and one simple
+    command (`list`). This confirms the rendered examples block matches
+    today's presentation byte-for-byte, including inline Rich markup
+    like `[magenta]hare[/magenta]` inside descriptions. Captured once at
+    the start of the pilot from the current `develop` output, stored
+    under `tests/cli/cloud/app/fixtures/`, and compared in the test.
 - `tests/cli/mcp/tools/test_app_schemas.py`:
   - Register the `app` MCP tools on a `FastMCP()` instance.
   - Call `server.list_tools()`.
