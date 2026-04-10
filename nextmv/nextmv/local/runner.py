@@ -176,6 +176,11 @@ def new_run(
     # First, ensure the runs directory exists.
     runs_dir = os.path.join(src, NEXTMV_DIR, RUNS_KEY)
     os.makedirs(runs_dir, exist_ok=True)
+    nextmv_gitignore_path = os.path.join(src, NEXTMV_DIR, ".gitignore")
+    if not os.path.exists(nextmv_gitignore_path):
+        with open(nextmv_gitignore_path, "w") as f:
+            f.write("*\n")
+            f.write("!.gitignore\n")
 
     # Create a new run directory.
     run_dir = os.path.join(runs_dir, run_id)
