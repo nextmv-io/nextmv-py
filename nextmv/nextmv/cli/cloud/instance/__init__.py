@@ -161,7 +161,18 @@ delete = cli.command(
     delete_instance,
     name="delete",
     progress="Deleting instance...",
-    on_success="Deleted instance [magenta]{instance_id}[/magenta] from application [magenta]{app_id}[/magenta].",
+    delete_confirm=cli.DeleteConfirmation(
+        confirm=(
+            "Are you sure you want to delete instance "
+            "[magenta]{instance_id}[/magenta] from application "
+            "[magenta]{app_id}[/magenta]? This action cannot be undone."
+        ),
+        decline="Instance [magenta]{instance_id}[/magenta] will not be deleted.",
+        succeeded=(
+            "Instance [magenta]{instance_id}[/magenta] deleted successfully "
+            "from application [magenta]{app_id}[/magenta]."
+        ),
+    ),
     examples=DELETE_EXAMPLES,
 )
 

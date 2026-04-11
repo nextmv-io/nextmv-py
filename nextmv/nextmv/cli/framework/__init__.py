@@ -13,7 +13,7 @@ See ``docs/superpowers/specs/2026-04-10-mcp-cli-shared-connectors-design.md``
 for the full design.
 """
 
-from nextmv.cli.framework.command import Example, command
+from nextmv.cli.framework.command import DeleteConfirmation, Example, command
 from nextmv.cli.framework.options import (
     AppDirOption,
     AppIdOption,
@@ -24,12 +24,14 @@ from nextmv.cli.framework.options import (
     ExistOkOption,
     IsWorkflowOption,
     NameOption,
+    YesOption,
 )
 from nextmv.cli.framework.result import emit, format_save_message
 from nextmv.cli.message import in_progress as progress  # short alias
 
 __all__ = [
     "command",
+    "DeleteConfirmation",
     "emit",
     "format_save_message",
     "progress",
@@ -43,4 +45,5 @@ __all__ = [
     "IsWorkflowOption",
     "ExistOkOption",
     "AppDirOption",
+    "YesOption",
 ]

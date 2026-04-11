@@ -130,6 +130,16 @@ AppDirOption: TypeAlias = Annotated[
     Field(description=_APP_DIR_HELP),
 ]
 
+_YES_HELP = (
+    "Agree to deletion confirmation prompt. Useful for non-interactive "
+    "sessions."
+)
+YesOption: TypeAlias = Annotated[
+    bool,
+    typer.Option("--yes", "-y", help=_YES_HELP),
+    Field(description=_YES_HELP),
+]
+
 
 # ---------------------------------------------------------------------------
 # Cloud entity ID aliases (required)

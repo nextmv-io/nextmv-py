@@ -398,5 +398,173 @@ class TestHandlesOwnOutput(unittest.TestCase):
         mock_client_cls.assert_called_once_with(profile="hare")
 
 
+class TestDeleteConfirm(unittest.TestCase):
+    """cli.command(delete_confirm=...) mode: injects --yes, prompts on
+    confirmation, and formats the three DeleteConfirmation templates."""
+
+    def _confirmation(self) -> "DeleteConfirmation":  # noqa: F821
+        from nextmv.cli.framework.command import DeleteConfirmation
+
+        return DeleteConfirmation(
+            confirm="Are you sure you want to delete [magenta]{app_id}[/magenta]?",
+            decline="[magenta]{app_id}[/magenta] will not be deleted.",
+            succeeded="[magenta]{app_id}[/magenta] deleted successfully.",
+        )
+
+    def test_rejects_combo_with_output_flag(self) -> None:
+        from nextmv.cli.framework.command import command
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete."""
+
+        app = typer.Typer()
+        with self.assertRaises(TypeError) as ctx:
+            command(
+                app,
+                delete_thing,
+                delete_confirm=self._confirmation(),
+                output_flag=True,
+            )
+        self.assertIn("delete_confirm", str(ctx.exception))
+
+    def test_rejects_combo_with_on_success(self) -> None:
+        from nextmv.cli.framework.command import command
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete."""
+
+        app = typer.Typer()
+        with self.assertRaises(TypeError) as ctx:
+            command(
+                app,
+                delete_thing,
+                delete_confirm=self._confirmation(),
+                on_success="Deleted.",
+            )
+        self.assertIn("delete_confirm", str(ctx.exception))
+
+    def test_rejects_combo_with_handles_own_output(self) -> None:
+        from nextmv.cli.framework.command import command
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete."""
+
+        app = typer.Typer()
+        with self.assertRaises(TypeError) as ctx:
+            command(
+                app,
+                delete_thing,
+                delete_confirm=self._confirmation(),
+                handles_own_output=True,
+            )
+        self.assertIn("delete_confirm", str(ctx.exception))
+
+    def test_injects_yes_flag_in_help(self) -> None:
+        from nextmv.cli.framework.command import command
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete."""
+
+        app = typer.Typer()
+        command(app, delete_thing, delete_confirm=self._confirmation())
+
+        result = CliRunner().invoke(app, ["--help"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        self.assertIn("--yes", result.output)
+        self.assertIn("-y", result.output)
+
+    @patch("nextmv.cli.framework.command.Client")
+    @patch("nextmv.cli.framework.command.success")
+    @patch("nextmv.cli.framework.command.info")
+    @patch("nextmv.cli.framework.command.confirmation")
+    def test_yes_flag_skips_prompt_and_deletes(
+        self, mock_confirmation, mock_info, mock_success, mock_client_cls
+    ) -> None:
+        """Passing --yes bypasses confirmation() and runs the action."""
+        from nextmv.cli.framework.command import command
+
+        captured = {"called": False}
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete a thing."""
+            captured["called"] = True
+
+        app = typer.Typer()
+        command(app, delete_thing, delete_confirm=self._confirmation())
+
+        result = CliRunner().invoke(app, ["--app-id", "foo", "--yes"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+        mock_confirmation.assert_not_called()
+        self.assertTrue(captured["called"])
+        mock_info.assert_not_called()
+        mock_success.assert_called_once_with(
+            "[magenta]foo[/magenta] deleted successfully.",
+        )
+
+    @patch("nextmv.cli.framework.command.Client")
+    @patch("nextmv.cli.framework.command.success")
+    @patch("nextmv.cli.framework.command.info")
+    @patch("nextmv.cli.framework.command.confirmation")
+    def test_confirmation_accepted_deletes(
+        self, mock_confirmation, mock_info, mock_success, mock_client_cls
+    ) -> None:
+        """When confirmation() returns True, the action runs and success is printed."""
+        from nextmv.cli.framework.command import command
+
+        mock_confirmation.return_value = True
+        captured = {"called": False}
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete a thing."""
+            captured["called"] = True
+
+        app = typer.Typer()
+        command(app, delete_thing, delete_confirm=self._confirmation())
+
+        result = CliRunner().invoke(app, ["--app-id", "foo"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+        mock_confirmation.assert_called_once_with(
+            "Are you sure you want to delete [magenta]foo[/magenta]?",
+        )
+        self.assertTrue(captured["called"])
+        mock_info.assert_not_called()
+        mock_success.assert_called_once_with(
+            "[magenta]foo[/magenta] deleted successfully.",
+        )
+
+    @patch("nextmv.cli.framework.command.Client")
+    @patch("nextmv.cli.framework.command.success")
+    @patch("nextmv.cli.framework.command.info")
+    @patch("nextmv.cli.framework.command.confirmation")
+    def test_confirmation_declined_aborts(
+        self, mock_confirmation, mock_info, mock_success, mock_client_cls
+    ) -> None:
+        """When confirmation() returns False, the action does NOT run and the
+        decline message is printed instead."""
+        from nextmv.cli.framework.command import command
+
+        mock_confirmation.return_value = False
+        captured = {"called": False}
+
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete a thing."""
+            captured["called"] = True  # should never happen
+
+        app = typer.Typer()
+        command(app, delete_thing, delete_confirm=self._confirmation())
+
+        result = CliRunner().invoke(app, ["--app-id", "foo"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+        mock_confirmation.assert_called_once()
+        self.assertFalse(captured["called"])
+        mock_info.assert_called_once_with(
+            "[magenta]foo[/magenta] will not be deleted.",
+        )
+        mock_success.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

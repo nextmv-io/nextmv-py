@@ -228,7 +228,14 @@ delete = cli.command(
     delete_app,
     name="delete",
     progress="Deleting application...",
-    on_success="Deleted application [magenta]{app_id}[/magenta].",
+    delete_confirm=cli.DeleteConfirmation(
+        confirm=(
+            "Are you sure you want to delete application "
+            "[magenta]{app_id}[/magenta]? This action cannot be undone."
+        ),
+        decline="Application [magenta]{app_id}[/magenta] will not be deleted.",
+        succeeded="Application [magenta]{app_id}[/magenta] deleted successfully.",
+    ),
     examples=DELETE_EXAMPLES,
 )
 

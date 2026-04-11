@@ -15,13 +15,13 @@ This module is imported at call sites as part of ``cli`` via::
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any
+from typing import Any, NamedTuple
 
 import typer
 
-from nextmv.cli.framework.options import _OutputOption
+from nextmv.cli.framework.options import YesOption, _OutputOption
 from nextmv.cli.framework.result import apply_on_success, emit
-from nextmv.cli.message import in_progress, success
+from nextmv.cli.message import confirmation, in_progress, info, success
 from nextmv.cli.options import ProfileOption
 from nextmv.cloud.client import Client
 
@@ -33,6 +33,34 @@ from nextmv.cloud.client import Client
 _REAL_CLIENT = Client
 
 Example = tuple[str, str]  # (description, command)
+
+
+class DeleteConfirmation(NamedTuple):
+    """Template messages for a delete command's interactive confirmation flow.
+
+    Passed to ``cli.command()`` via the ``delete_confirm`` parameter. When
+    set, the generated command injects a ``--yes/-y`` flag and, unless
+    ``--yes`` is supplied, prompts the user before calling the action.
+
+    Each template is formatted via ``str.format(**kwargs)`` where kwargs is
+    the dict passed to the action. Templates can contain Rich markup.
+
+    Attributes
+    ----------
+    confirm:
+        The confirmation prompt shown to the user (e.g.
+        ``"Are you sure you want to delete instance [magenta]{instance_id}[/magenta]?"``).
+    decline:
+        The message printed when the user declines the prompt (e.g.
+        ``"Instance [magenta]{instance_id}[/magenta] will not be deleted."``).
+    succeeded:
+        The message printed on successful deletion (e.g.
+        ``"Instance [magenta]{instance_id}[/magenta] deleted successfully."``).
+    """
+
+    confirm: str
+    decline: str
+    succeeded: str
 
 
 def _render_examples(examples: tuple[Example, ...]) -> str:
@@ -87,6 +115,7 @@ def _build_wrapper(
     saved_noun: str | None,
     on_success: str | Callable[[Any, dict[str, Any]], str] | None,
     handles_own_output: bool,
+    delete_confirm: DeleteConfirmation | None,
 ) -> Callable:
     """Build the runtime wrapper closure that ``cli.command()`` registers
     with Typer.
@@ -96,22 +125,39 @@ def _build_wrapper(
     concern (in ``command()``) from the runtime dispatch concern (here).
 
     The returned wrapper:
-    * Pops ``profile`` and optionally ``output`` from the kwargs passed by
-      Typer and builds a ``Client`` from the ``--profile`` flag.
+    * Pops ``profile`` and optionally ``output`` / ``yes`` from the kwargs
+      passed by Typer and builds a ``Client`` from the ``--profile`` flag.
     * Optionally prints a progress message.
-    * Calls the action and dispatches the result through one of four
-      branches (``handles_own_output`` → ``output_flag`` + ``--output`` →
-      ``on_success`` → default ``emit``), as documented on ``command()``.
+    * If ``delete_confirm`` is set and ``--yes`` was not supplied, prompts
+      the user and exits early on decline.
+    * Calls the action and dispatches the result through one of five
+      branches (``delete_confirm`` success → ``handles_own_output`` →
+      ``output_flag`` + ``--output`` → ``on_success`` → default ``emit``).
     """
 
     def wrapper(**kwargs: Any) -> None:
         profile = kwargs.pop("profile", None)
         output = kwargs.pop("output", None) if output_flag else None
+        yes = kwargs.pop("yes", False) if delete_confirm is not None else False
+
+        # Delete-confirmation gate: prompt before running the action unless
+        # --yes was passed. Declining the prompt short-circuits the action.
+        if delete_confirm is not None and not yes:
+            if not confirmation(delete_confirm.confirm.format(**kwargs)):
+                info(delete_confirm.decline.format(**kwargs))
+                return
+
         client = Client(profile=profile)
         if progress:
             in_progress(msg=progress)
 
         result = action(client=client, **kwargs)
+
+        # Delete success path: the action returned, so print the configured
+        # success message and exit. Delete actions are None-returning.
+        if delete_confirm is not None:
+            success(delete_confirm.succeeded.format(**kwargs))
+            return
 
         # handles_own_output: action printed everything itself, we're done.
         if handles_own_output:
@@ -147,6 +193,7 @@ def command(
     on_success: str | Callable[[Any, dict[str, Any]], str] | None = None,
     examples: tuple[Example, ...] | None = None,
     handles_own_output: bool = False,
+    delete_confirm: DeleteConfirmation | None = None,
 ) -> Callable:
     """Build and register a Typer command wrapper around a pure action.
 
@@ -191,6 +238,13 @@ def command(
         for interactive workflows (e.g. the push workflow) where the action
         manages all user-facing output. The action's return value is
         discarded. Incompatible with ``output_flag`` and ``on_success``.
+    delete_confirm:
+        A :class:`DeleteConfirmation` with three ``str.format`` templates
+        (confirm prompt, decline message, success message). When set, the
+        generated command injects a ``--yes/-y`` flag and, unless ``--yes``
+        is supplied, prompts the user before calling the action. The action
+        is expected to return ``None``. Incompatible with ``output_flag``,
+        ``on_success``, and ``handles_own_output``.
 
     Returns
     -------
@@ -206,6 +260,21 @@ def command(
         raise TypeError(
             f"{action.__name__}: handles_own_output=True is incompatible with "
             "on_success= (the action prints its own success messages)."
+        )
+    if delete_confirm is not None and output_flag:
+        raise TypeError(
+            f"{action.__name__}: delete_confirm= is incompatible with "
+            "output_flag=True (delete commands do not emit data)."
+        )
+    if delete_confirm is not None and on_success is not None:
+        raise TypeError(
+            f"{action.__name__}: delete_confirm= is incompatible with "
+            "on_success= (delete_confirm.succeeded drives the success message)."
+        )
+    if delete_confirm is not None and handles_own_output:
+        raise TypeError(
+            f"{action.__name__}: delete_confirm= is incompatible with "
+            "handles_own_output=True (delete_confirm manages the output flow)."
         )
 
     sig = _assert_first_param_is_client(action)
@@ -238,6 +307,15 @@ def command(
                 annotation=_OutputOption,
             )
         )
+    if delete_confirm is not None:
+        wrapper_params.append(
+            inspect.Parameter(
+                "yes",
+                kind=inspect.Parameter.KEYWORD_ONLY,
+                default=False,
+                annotation=YesOption,
+            )
+        )
 
     wrapper = _build_wrapper(
         action,
@@ -246,6 +324,7 @@ def command(
         saved_noun=saved_noun,
         on_success=on_success,
         handles_own_output=handles_own_output,
+        delete_confirm=delete_confirm,
     )
 
     # Make the wrapper look like the action to Typer's introspector and to

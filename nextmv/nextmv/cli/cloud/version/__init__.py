@@ -122,7 +122,18 @@ delete = cli.command(
     delete_version,
     name="delete",
     progress="Deleting version...",
-    on_success="Deleted version [magenta]{version_id}[/magenta].",
+    delete_confirm=cli.DeleteConfirmation(
+        confirm=(
+            "Are you sure you want to delete version "
+            "[magenta]{version_id}[/magenta] from application "
+            "[magenta]{app_id}[/magenta]? This action cannot be undone."
+        ),
+        decline="Version [magenta]{version_id}[/magenta] will not be deleted.",
+        succeeded=(
+            "Version [magenta]{version_id}[/magenta] deleted successfully "
+            "from application [magenta]{app_id}[/magenta]."
+        ),
+    ),
     examples=DELETE_EXAMPLES,
 )
 
