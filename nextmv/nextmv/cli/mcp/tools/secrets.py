@@ -1,103 +1,41 @@
 """MCP tools for cloud secrets management."""
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.secrets import create_secrets_collection as _create_secrets_collection
-from nextmv.cli.actions.secrets import delete_secrets_collection as _delete_secrets_collection
-from nextmv.cli.actions.secrets import get_secrets_collection as _get_secrets_collection
-from nextmv.cli.actions.secrets import list_secrets_collections as _list_secrets_collections
-from nextmv.cli.mcp.tools import _helpers
+from nextmv.cli.actions.secrets import (
+    create_secrets_collection,
+    delete_secrets_collection,
+    get_secrets_collection,
+    list_secrets_collections,
+    update_secrets_collection,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud secrets management tools."""
 
-    @mcp.tool()
-    def cloud_list_secrets_collections(app_id: str) -> list[dict[str, Any]]:
-        """List secrets collections for a Nextmv Cloud application.
+    mcp_fw.tool(mcp, list_secrets_collections, name="cloud_list_secrets_collections")
 
-        Secrets collections provide environment variables and files
-        to application instances at runtime (e.g., solver licenses,
-        API keys). Returns collection summaries without secret values.
+    mcp_fw.tool(mcp, get_secrets_collection, name="cloud_get_secrets_collection")
 
-        Args:
-            app_id: The application ID.
-        """
+    mcp_fw.tool(
+        mcp,
+        create_secrets_collection,
+        name="cloud_create_secrets_collection",
+        normalize_empty=["secrets_collection_id", "name", "description"],
+    )
 
-        client = _helpers._get_client()
-        return _list_secrets_collections(client, app_id=app_id)
+    mcp_fw.tool(
+        mcp,
+        update_secrets_collection,
+        name="cloud_update_secrets_collection",
+        normalize_empty=["name", "description"],
+    )
 
-    @mcp.tool()
-    def cloud_get_secrets_collection(
-        app_id: str,
-        secrets_collection_id: str,
-    ) -> dict[str, Any]:
-        """Get details of a secrets collection.
-
-        Returns the collection metadata and the list of secret
-        definitions (types and locations, but not the secret values).
-
-        Args:
-            app_id: The application ID.
-            secrets_collection_id: The secrets collection ID to
-                retrieve.
-        """
-
-        client = _helpers._get_client()
-        return _get_secrets_collection(client, app_id=app_id, secrets_collection_id=secrets_collection_id)
-
-    @mcp.tool()
-    def cloud_create_secrets_collection(
-        app_id: str,
-        secrets: list[dict[str, str]],
-        secrets_collection_id: str | None = None,
-        name: str | None = None,
-        description: str | None = None,
-    ) -> dict[str, Any]:
-        """Create a secrets collection for a Nextmv Cloud application.
-
-        Secrets are injected into the application instance at runtime
-        as environment variables or files.
-
-        Args:
-            app_id: The application ID.
-            secrets: List of secret definitions. Each is a dict with
-                keys: ``type`` (``"env"`` or ``"file"``), ``location``
-                (env var name or file path), ``value`` (the secret).
-            secrets_collection_id: Optional collection ID.
-                Auto-generated if omitted.
-            name: Optional human-readable name.
-            description: Optional description.
-        """
-
-        secrets_collection_id = _helpers._none_if_empty(secrets_collection_id)
-        name = _helpers._none_if_empty(name)
-        description = _helpers._none_if_empty(description)
-
-        client = _helpers._get_client()
-        return _create_secrets_collection(
-            client,
-            app_id=app_id,
-            secrets=secrets,
-            secrets_collection_id=secrets_collection_id,
-            name=name,
-            description=description,
-        )
-
-    @mcp.tool()
-    def cloud_delete_secrets_collection(
-        app_id: str,
-        secrets_collection_id: str,
-    ) -> str:
-        """Delete a secrets collection permanently.
-
-        Args:
-            app_id: The application ID.
-            secrets_collection_id: The secrets collection ID to delete.
-        """
-
-        client = _helpers._get_client()
-        _delete_secrets_collection(client, app_id=app_id, secrets_collection_id=secrets_collection_id)
-        return f"Deleted secrets collection {secrets_collection_id}"
+    mcp_fw.tool(
+        mcp,
+        delete_secrets_collection,
+        name="cloud_delete_secrets_collection",
+        result_message="Deleted secrets collection {secrets_collection_id}",
+    )
