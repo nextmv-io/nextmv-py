@@ -14,7 +14,7 @@ This module is imported at call sites as part of ``cli`` via::
 
 import functools
 import inspect
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
 
 import typer
 
@@ -31,7 +31,7 @@ from nextmv.cloud.client import Client
 # separate reference here sidesteps the patch.
 _REAL_CLIENT = Client
 
-Example = Tuple[str, str]  # (description, command)
+Example = tuple[str, str]  # (description, command)
 
 
 def _render_examples(examples: tuple[Example, ...]) -> str:
@@ -106,9 +106,11 @@ def command(
         Optional in-progress message printed before the action is invoked.
     output_flag:
         If ``True``, inject ``--output/-o OUTPUT_PATH`` as a keyword-only
-        option on the generated command. When the user supplies it, the
-        action's return value is written as JSON to the file and a
-        save-success message is printed, bypassing ``on_success``.
+        option on the generated command. When ``--output PATH`` is supplied
+        at invocation time, the action's return value is written as JSON
+        to the file and a save-success message is printed, bypassing
+        ``on_success``. When ``--output`` is omitted, ``on_success`` (if
+        set) runs normally, or the result is printed as JSON by default.
         Incompatible with ``handles_own_output=True``.
     saved_noun:
         The noun for the save-success message (e.g. ``"Application list information"``
@@ -210,6 +212,12 @@ def command(
 
     # Make the wrapper look like the action to Typer's introspector and to
     # downstream tracebacks.
+    # functools.update_wrapper contributes __module__, __name__,
+    # __type_params__, __wrapped__ (used by inspect.unwrap), and merges
+    # __dict__. The manual overrides below replace the metadata that
+    # needs wrapper-specific values (__signature__, __annotations__,
+    # __qualname__, __doc__). Do not delete update_wrapper — removing
+    # it breaks inspect.unwrap() consumers.
     functools.update_wrapper(wrapper, action)
     wrapper.__signature__ = sig.replace(parameters=wrapper_params)  # type: ignore[attr-defined]
     wrapper.__annotations__ = {p.name: p.annotation for p in wrapper_params}

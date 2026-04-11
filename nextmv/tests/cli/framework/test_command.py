@@ -275,6 +275,33 @@ class TestCommandInvocation(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, msg=result.output)
         mock_success.assert_called_once_with("Pushed /path to foo.")
 
+    @patch("nextmv.cli.framework.command.Client")
+    @patch("nextmv.cli.framework.command.success")
+    @patch("nextmv.cli.framework.command.emit")
+    def test_output_flag_with_on_success_falls_through_when_output_omitted(
+        self, mock_emit, mock_success, mock_client_cls
+    ) -> None:
+        """When output_flag=True but --output is omitted, on_success still
+        runs. This documents the ``conditional bypass'' wording in the
+        output_flag docstring: the bypass only fires when --output is
+        actually supplied at invocation time.
+        """
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
+            """Delete a thing."""
+
+        app, _ = self._build_app_with_action(
+            delete_thing,
+            output_flag=True,
+            saved_noun="Thing",
+            on_success="Deleted thing [magenta]{app_id}[/magenta].",
+        )
+        result = CliRunner().invoke(app, ["--app-id", "foo"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+        # --output not supplied → emit NOT called, on_success fires.
+        mock_emit.assert_not_called()
+        mock_success.assert_called_once_with("Deleted thing [magenta]foo[/magenta].")
+
 
 class TestHandlesOwnOutput(unittest.TestCase):
     """cli.command(handles_own_output=True) mode for interactive workflows
