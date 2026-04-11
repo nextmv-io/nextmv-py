@@ -16,6 +16,27 @@
 
 ---
 
+## Plan Amendment (mid-execution, after Task 2)
+
+**Discovery:** The current `nextmv/cli/cloud/app/push.py` is NOT a thin wrapper around the `push_app` action. It is a ~510-line CLI command that takes 8+ flags (`--manifest`, `--version-id`, `--version-yes`, `--version-no`, `--create-instance-id`, `--update-instance-id`) and drives a multi-step workflow: push → version creation (with confirmation prompts and auto-ID handling) → instance linking (create vs. update, with prompts). The action layer's `push_app(client, app_id, app_dir)` is a strict subset, sufficient for the MCP tool but not for the CLI command.
+
+**Decision (Option C, simplified):** Add a new CLI-only workflow function `run_push_workflow(client, app_id, app_dir, manifest, version_id, version_yes, version_no, create_instance_id, update_instance_id) -> None` that encapsulates the interactive push-and-version-and-instance flow. This function lives in `nextmv/cli/cloud/app/_workflows.py` (co-located with the connector table). It is CLI-only — the MCP side continues to use the thin `push_app` action. The framework gains a new `handles_own_output=True` flag on `cli.command()` so that `run_push_workflow` can print its own success/error messages without interference from `emit()` or `on_success`.
+
+**Rationale:** The thin `push_app` action stays pure and MCP-safe. The rich CLI workflow goes through the same `cli.command()` builder as every other command (so we get `--profile` injection and docstring handling for free), but opts out of the default output rendering because it already prints its own status messages. No new dual-purpose option aliases are needed: the push-specific flags are CLI-only, so they use inline Typer annotations on the workflow function instead of going through `options.py`.
+
+**Affected tasks:**
+- **Task 6**: adds `handles_own_output: bool = False` parameter to `cli.command()` plus wrapper-behavior change. Tests cover the new mode.
+- **New Task 10.5**: create `nextmv/cli/cloud/app/_workflows.py` with `run_push_workflow()`. Body is a near-copy of current `push.py` with the Typer decorator peeled off and the function reshaped to take `client: Client` first. Inline Typer annotations are preserved byte-for-byte so `rich_help_panel` grouping and `-d` short flag are identical to today's output.
+- **Task 11**: connector table registers `push = cli.command(app, run_push_workflow, handles_own_output=True, examples=PUSH_EXAMPLES)` instead of wrapping `push_app`. The thin `push_app` action is still migrated in Task 9 but only the MCP side consumes it.
+- **Task 12**: help-output snapshots cover `list` and `create` only (unchanged). Add a single structural test for `push --help` asserting exit 0 and presence of the rich flags; do not try to snapshot it byte-for-byte.
+- **Task 13**: unchanged. `cloud_push_app` MCP tool still wraps the thin `push_app` action via `mcp_fw.tool()`.
+
+**Unchanged tasks:** 1, 2 (already done), 3, 4, 5, 7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20.
+
+---
+
+---
+
 ## File Structure
 
 ### Created
