@@ -30,8 +30,9 @@ class TestSaveToFile(unittest.TestCase):
             os.unlink(path)
 
     @patch("nextmv.cli.mcp.tools._helpers._cloud_run_dir")
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_input_returns_file_path(self, mock_get_app, mock_run_dir):
+    def test_cloud_run_input_returns_file_path(self, mock_get_app, mock_app_cls, mock_run_dir):
         """Test that cloud_run_input saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
 
@@ -43,6 +44,7 @@ class TestSaveToFile(unittest.TestCase):
             mock_app.client.url = "https://api.cloud.nextmv.io"
             mock_app.run_input.return_value = {"depot": {"lat": 0, "lon": 0}, "stops": []}
             mock_get_app.return_value = mock_app
+            mock_app_cls.return_value = mock_app
 
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
@@ -54,8 +56,9 @@ class TestSaveToFile(unittest.TestCase):
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
     @patch("nextmv.cli.mcp.tools._helpers._cloud_run_dir")
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_result_returns_file_path(self, mock_get_app, mock_run_dir):
+    def test_cloud_run_result_returns_file_path(self, mock_get_app, mock_app_cls, mock_run_dir):
         """Test that cloud_run_result saves to file instead of returning raw data."""
         from nextmv.cli.mcp.server import create_server
 
@@ -69,6 +72,7 @@ class TestSaveToFile(unittest.TestCase):
             mock_result.to_dict.return_value = {"output": {"routes": []}}
             mock_app.run_result.return_value = mock_result
             mock_get_app.return_value = mock_app
+            mock_app_cls.return_value = mock_app
 
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_result"]

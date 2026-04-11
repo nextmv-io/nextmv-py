@@ -240,13 +240,15 @@ class TestMCPServerTools(unittest.TestCase):
             asyncio.run(tool.run({}))
             mock_list.assert_called_once_with(mock_client)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_cancel_run_calls_sdk(self, mock_get_app):
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    @patch("nextmv.cli.actions.run.Application")
+    def test_cloud_cancel_run_calls_sdk(self, mock_app_cls, mock_get_client):
         """Test that cloud_cancel_run delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app_instance = MagicMock()
-        mock_get_app.return_value = mock_app_instance
+        mock_app_cls.return_value = mock_app_instance
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_cancel_run"]
@@ -268,8 +270,9 @@ class TestMCPServerTools(unittest.TestCase):
         asyncio.run(tool.run({"app_id": "my-app"}))
         mock_app_instance.delete.assert_called_once()
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_list_runs_calls_sdk(self, mock_get_app):
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    @patch("nextmv.cli.actions.run.Application")
+    def test_cloud_list_runs_calls_sdk(self, mock_app_cls, mock_get_client):
         """Test that cloud_list_runs delegates to the SDK."""
         from nextmv.cli.mcp.server import create_server
 
@@ -277,7 +280,8 @@ class TestMCPServerTools(unittest.TestCase):
         mock_run = MagicMock()
         mock_run.to_dict.return_value = {"id": "run-1"}
         mock_app_instance.list_runs.return_value = [mock_run]
-        mock_get_app.return_value = mock_app_instance
+        mock_app_cls.return_value = mock_app_instance
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_list_runs"]

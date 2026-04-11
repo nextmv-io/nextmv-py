@@ -1,18 +1,22 @@
 """Tests for nextmv.cli.actions.run."""
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestSubmitRun(unittest.TestCase):
-    def test_returns_run_id(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_run_id(self, mock_app_cls):
         app = MagicMock()
         app.new_run.return_value = "run-123"
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run
 
-        result = submit_run(app, input={"key": "value"}, instance_id="latest")
+        client = MagicMock()
+        result = submit_run(client, app_id="a1", input={"key": "value"}, instance_id="latest")
 
+        mock_app_cls.assert_called_once_with(client=client, id="a1")
         app.new_run.assert_called_once_with(
             input={"key": "value"},
             input_dir_path=None,
@@ -26,26 +30,31 @@ class TestSubmitRun(unittest.TestCase):
         )
         self.assertEqual(result, "run-123")
 
-    def test_options_defaults_to_empty_dict(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_options_defaults_to_empty_dict(self, mock_app_cls):
         app = MagicMock()
         app.new_run.return_value = "run-456"
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run
 
-        submit_run(app)
+        submit_run(MagicMock(), app_id="a1")
 
         call_kwargs = app.new_run.call_args.kwargs
         self.assertEqual(call_kwargs["options"], {})
 
-    def test_passes_all_params(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_passes_all_params(self, mock_app_cls):
         app = MagicMock()
         app.new_run.return_value = "run-789"
+        mock_app_cls.return_value = app
         config = MagicMock()
 
         from nextmv.cli.actions.run import submit_run
 
         result = submit_run(
-            app,
+            MagicMock(),
+            app_id="a1",
             input={"x": 1},
             input_dir_path="/some/dir",
             configuration=config,
@@ -72,174 +81,201 @@ class TestSubmitRun(unittest.TestCase):
 
 
 class TestSubmitRunWithResult(unittest.TestCase):
-    def test_returns_run_result(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_run_result(self, mock_app_cls):
         app = MagicMock()
         mock_result = MagicMock()
         app.new_run_with_result.return_value = mock_result
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run_with_result
 
-        result = submit_run_with_result(app, input={"key": "value"})
+        result = submit_run_with_result(MagicMock(), app_id="a1", input={"key": "value"})
 
         self.assertEqual(result, mock_result)
         app.new_run_with_result.assert_called_once()
 
-    def test_uses_default_polling_options_when_none(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_uses_default_polling_options_when_none(self, mock_app_cls):
         app = MagicMock()
         app.new_run_with_result.return_value = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run_with_result
 
-        submit_run_with_result(app, input={})
+        submit_run_with_result(MagicMock(), app_id="a1", input={})
 
         call_kwargs = app.new_run_with_result.call_args.kwargs
-        # polling_options should not be None (default was applied)
         self.assertIsNotNone(call_kwargs["polling_options"])
 
-    def test_passes_custom_polling_options(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_passes_custom_polling_options(self, mock_app_cls):
         app = MagicMock()
         app.new_run_with_result.return_value = MagicMock()
+        mock_app_cls.return_value = app
         polling_opts = MagicMock()
 
         from nextmv.cli.actions.run import submit_run_with_result
 
-        submit_run_with_result(app, input={}, polling_options=polling_opts)
+        submit_run_with_result(MagicMock(), app_id="a1", input={}, polling_options=polling_opts)
 
         call_kwargs = app.new_run_with_result.call_args.kwargs
         self.assertEqual(call_kwargs["polling_options"], polling_opts)
 
-    def test_options_defaults_to_empty_dict(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_options_defaults_to_empty_dict(self, mock_app_cls):
         app = MagicMock()
         app.new_run_with_result.return_value = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run_with_result
 
-        submit_run_with_result(app)
+        submit_run_with_result(MagicMock(), app_id="a1")
 
         call_kwargs = app.new_run_with_result.call_args.kwargs
         self.assertEqual(call_kwargs["run_options"], {})
 
-    def test_passes_output_dir_path(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_passes_output_dir_path(self, mock_app_cls):
         app = MagicMock()
         app.new_run_with_result.return_value = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import submit_run_with_result
 
-        submit_run_with_result(app, output_dir_path="/out/dir")
+        submit_run_with_result(MagicMock(), app_id="a1", output_dir_path="/out/dir")
 
         call_kwargs = app.new_run_with_result.call_args.kwargs
         self.assertEqual(call_kwargs["output_dir_path"], "/out/dir")
 
 
 class TestRunMetadata(unittest.TestCase):
-    def test_returns_dict(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_dict(self, mock_app_cls):
         app = MagicMock()
         mock_metadata = MagicMock()
         mock_metadata.to_dict.return_value = {"id": "run-1", "status": "succeeded"}
         app.run_metadata.return_value = mock_metadata
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_metadata
 
-        result = run_metadata(app, run_id="run-1")
+        result = run_metadata(MagicMock(), app_id="a1", run_id="run-1")
 
         app.run_metadata.assert_called_once_with(run_id="run-1")
         self.assertEqual(result, {"id": "run-1", "status": "succeeded"})
 
 
 class TestRunResult(unittest.TestCase):
-    def test_returns_run_result_object(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_run_result_object(self, mock_app_cls):
         app = MagicMock()
         mock_result = MagicMock()
         app.run_result.return_value = mock_result
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_result
 
-        result = run_result(app, run_id="run-1")
+        result = run_result(MagicMock(), app_id="a1", run_id="run-1")
 
         app.run_result.assert_called_once_with(run_id="run-1", output_dir_path=None)
         self.assertEqual(result, mock_result)
 
-    def test_passes_output_dir_path(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_passes_output_dir_path(self, mock_app_cls):
         app = MagicMock()
         app.run_result.return_value = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_result
 
-        run_result(app, run_id="run-1", output_dir_path="/out/dir")
+        run_result(MagicMock(), app_id="a1", run_id="run-1", output_dir_path="/out/dir")
 
         app.run_result.assert_called_once_with(run_id="run-1", output_dir_path="/out/dir")
 
 
 class TestRunInput(unittest.TestCase):
-    def test_returns_input_data(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_input_data(self, mock_app_cls):
         app = MagicMock()
         app.run_input.return_value = {"key": "value"}
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_input
 
-        result = run_input(app, run_id="run-1")
+        result = run_input(MagicMock(), app_id="a1", run_id="run-1")
 
         app.run_input.assert_called_once_with(run_id="run-1", output_dir_path=None)
         self.assertEqual(result, {"key": "value"})
 
-    def test_passes_output_dir_path(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_passes_output_dir_path(self, mock_app_cls):
         app = MagicMock()
         app.run_input.return_value = None
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_input
 
-        run_input(app, run_id="run-1", output_dir_path="/some/dir")
+        run_input(MagicMock(), app_id="a1", run_id="run-1", output_dir_path="/some/dir")
 
         app.run_input.assert_called_once_with(run_id="run-1", output_dir_path="/some/dir")
 
 
 class TestRunLogs(unittest.TestCase):
-    def test_returns_logs_object(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_logs_object(self, mock_app_cls):
         app = MagicMock()
         mock_logs = MagicMock()
         app.run_logs.return_value = mock_logs
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import run_logs
 
-        result = run_logs(app, run_id="run-1")
+        result = run_logs(MagicMock(), app_id="a1", run_id="run-1")
 
         app.run_logs.assert_called_once_with(run_id="run-1")
         self.assertEqual(result, mock_logs)
 
 
 class TestCancelRun(unittest.TestCase):
-    def test_calls_cancel_run(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_calls_cancel_run(self, mock_app_cls):
         app = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import cancel_run
 
-        cancel_run(app, run_id="run-1")
+        cancel_run(MagicMock(), app_id="a1", run_id="run-1")
 
         app.cancel_run.assert_called_once_with(run_id="run-1")
 
-    def test_returns_none(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_none(self, mock_app_cls):
         app = MagicMock()
         app.cancel_run.return_value = None
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import cancel_run
 
-        result = cancel_run(app, run_id="run-1")
+        result = cancel_run(MagicMock(), app_id="a1", run_id="run-1")
 
         self.assertIsNone(result)
 
 
 class TestListRuns(unittest.TestCase):
-    def test_returns_list_of_dicts(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_list_of_dicts(self, mock_app_cls):
         app = MagicMock()
         mock_run1 = MagicMock()
         mock_run1.to_dict.return_value = {"id": "run-1", "status": "succeeded"}
         mock_run2 = MagicMock()
         mock_run2.to_dict.return_value = {"id": "run-2", "status": "failed"}
         app.list_runs.return_value = [mock_run1, mock_run2]
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import list_runs
 
-        result = list_runs(app)
+        result = list_runs(MagicMock(), app_id="a1")
 
         app.list_runs.assert_called_once_with(status=None)
         self.assertEqual(result, [
@@ -247,58 +283,68 @@ class TestListRuns(unittest.TestCase):
             {"id": "run-2", "status": "failed"},
         ])
 
-    def test_empty_list(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_empty_list(self, mock_app_cls):
         app = MagicMock()
         app.list_runs.return_value = []
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import list_runs
 
-        result = list_runs(app)
+        result = list_runs(MagicMock(), app_id="a1")
 
         self.assertEqual(result, [])
 
-    def test_filters_by_status(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_filters_by_status(self, mock_app_cls):
         app = MagicMock()
         mock_run = MagicMock()
         mock_run.to_dict.return_value = {"id": "run-1", "status": "succeeded"}
         app.list_runs.return_value = [mock_run]
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import list_runs
         from nextmv.status import StatusV2
 
-        result = list_runs(app, status="succeeded")
+        result = list_runs(MagicMock(), app_id="a1", status="succeeded")
 
         app.list_runs.assert_called_once_with(status=StatusV2("succeeded"))
         self.assertEqual(len(result), 1)
 
-    def test_no_status_filter_passes_none(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_no_status_filter_passes_none(self, mock_app_cls):
         app = MagicMock()
         app.list_runs.return_value = []
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import list_runs
 
-        list_runs(app, status=None)
+        list_runs(MagicMock(), app_id="a1", status=None)
 
         app.list_runs.assert_called_once_with(status=None)
 
 
 class TestDeleteRun(unittest.TestCase):
-    def test_calls_delete_run(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_calls_delete_run(self, mock_app_cls):
         app = MagicMock()
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import delete_run
 
-        delete_run(app, run_id="run-1")
+        delete_run(MagicMock(), app_id="a1", run_id="run-1")
 
         app.delete_run.assert_called_once_with(run_id="run-1")
 
-    def test_returns_none(self):
+    @patch("nextmv.cli.actions.run.Application")
+    def test_returns_none(self, mock_app_cls):
         app = MagicMock()
         app.delete_run.return_value = None
+        mock_app_cls.return_value = app
 
         from nextmv.cli.actions.run import delete_run
 
-        result = delete_run(app, run_id="run-1")
+        result = delete_run(MagicMock(), app_id="a1", run_id="run-1")
 
         self.assertIsNone(result)
 

@@ -385,14 +385,16 @@ class TestMultiFileRunSupport(unittest.TestCase):
         self.assertIsNotNone(config)
         self.assertEqual(config.format.format_input.input_type, InputFormat.MULTI_FILE)
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_submit_json_input(self, mock_get_app):
+    @patch("nextmv.cli.actions.run.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_run_submit_json_input(self, mock_get_client, mock_app_cls):
         """cloud_run_submit passes input dict to new_run for JSON apps."""
         from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-789"
-        mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_run_submit"]
@@ -410,15 +412,17 @@ class TestMultiFileRunSupport(unittest.TestCase):
         self.assertIsNone(call_kwargs.get("input_dir_path"))
         self.assertIsNone(call_kwargs.get("configuration"))
 
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_submit_multifile_input(self, mock_get_app):
+    @patch("nextmv.cli.actions.run.Application")
+    @patch("nextmv.cli.mcp.tools._helpers._get_client")
+    def test_cloud_run_submit_multifile_input(self, mock_get_client, mock_app_cls):
         """cloud_run_submit passes input_dir_path + configuration for multi-file apps."""
         from nextmv.cli.mcp.server import create_server
         from nextmv.input import InputFormat
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-mf-1"
-        mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
+        mock_get_client.return_value = MagicMock()
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_run_submit"]
@@ -540,8 +544,9 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertIn("Cached:", str(text))
             mock_app.run_result.assert_not_called()
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_result_downloads_on_miss(self, mock_get_app):
+    def test_cloud_run_result_downloads_on_miss(self, mock_get_app, mock_app_cls):
         """Test that cloud_run_result downloads, caches, and extracts outputs."""
         from nextmv.cli.mcp.server import create_server
 
@@ -559,6 +564,7 @@ class TestCloudRunCache(unittest.TestCase):
         mock_result.id = "run-1"
         mock_app.run_result.return_value = mock_result
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         run_dir = os.path.join(self.tmp_dir, "run-1")
 
@@ -784,8 +790,9 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertIn("Cached:", str(text))
             mock_app.run_input.assert_not_called()
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_input_downloads_on_miss(self, mock_get_app):
+    def test_cloud_run_input_downloads_on_miss(self, mock_get_app, mock_app_cls):
         """Test that cloud_run_input downloads and saves as inputs/input.json on miss."""
         from nextmv.cli.mcp.server import create_server
 
@@ -793,6 +800,7 @@ class TestCloudRunCache(unittest.TestCase):
         mock_app.client.url = "https://api.cloud.nextmv.io"
         mock_app.run_input.return_value = {"stops": []}
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         run_dir = os.path.join(self.tmp_dir, "run-1")
 
@@ -840,8 +848,9 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertIn("Cached:", str(text))
             mock_app.run_logs.assert_not_called()
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_logs_downloads_on_miss(self, mock_get_app):
+    def test_cloud_run_logs_downloads_on_miss(self, mock_get_app, mock_app_cls):
         """Test that cloud_run_logs downloads and caches as plain text."""
         from nextmv.cli.mcp.server import create_server
 
@@ -851,6 +860,7 @@ class TestCloudRunCache(unittest.TestCase):
         mock_logs.to_dict.return_value = {"log": "solver started\nsolver finished"}
         mock_app.run_logs.return_value = mock_logs
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         run_dir = os.path.join(self.tmp_dir, "run-1")
 
@@ -917,8 +927,9 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertIn("starting solver", lines[0])
             self.assertIn("solver complete", lines[1])
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_multifile_moves_outputs(self, mock_get_app):
+    def test_cloud_run_multifile_moves_outputs(self, mock_get_app, mock_app_cls):
         """Test that cloud_run with csv-archive extracts outputs into outputs/ dir."""
         from nextmv.cli.mcp.server import create_server
 
@@ -931,6 +942,7 @@ class TestCloudRunCache(unittest.TestCase):
             "output": {"url": "https://s3.example.com/output.tar.gz"},
         }
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         run_dir = os.path.join(self.tmp_dir, "run-csv")
         # Track the pending dir created by safe_id so we can verify it was moved.
@@ -994,8 +1006,9 @@ class TestCloudRunCache(unittest.TestCase):
             for d in pending_dirs_created:
                 self.assertFalse(os.path.exists(os.path.join(d, "outputs")))
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_input_multifile_downloads(self, mock_get_app):
+    def test_cloud_run_input_multifile_downloads(self, mock_get_app, mock_app_cls):
         """Test that cloud_run_input extracts multifile inputs into inputs/ dir."""
         from nextmv.cli.mcp.server import create_server
 
@@ -1015,6 +1028,7 @@ class TestCloudRunCache(unittest.TestCase):
 
         mock_app.run_input.side_effect = fake_run_input
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         with patch(
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
@@ -1058,8 +1072,9 @@ class TestCloudRunCache(unittest.TestCase):
             self.assertIn("Cached:", str(text))
             mock_app.run_input.assert_not_called()
 
+    @patch("nextmv.cli.actions.run.Application")
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_run_result_multifile_extracts_output(self, mock_get_app):
+    def test_cloud_run_result_multifile_extracts_output(self, mock_get_app, mock_app_cls):
         """Test that cloud_run_result for non-JSON extracts into outputs/ dir."""
         from nextmv.cli.mcp.server import create_server
 
@@ -1082,6 +1097,7 @@ class TestCloudRunCache(unittest.TestCase):
 
         mock_app.run_result.side_effect = fake_run_result
         mock_get_app.return_value = mock_app
+        mock_app_cls.return_value = mock_app
 
         with patch(
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",

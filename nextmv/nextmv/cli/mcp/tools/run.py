@@ -1,4 +1,11 @@
-"""MCP tools for cloud run management."""
+"""MCP tools for cloud run management.
+
+The simpler tools (``cloud_run_status``, ``cloud_list_runs``,
+``cloud_cancel_run``) wrap the thin actions via ``mcp_fw.tool()``. The
+rest remain inline because they involve on-disk caching of run inputs,
+outputs, and logs (see ``_helpers._save_cloud_run_file``,
+``_extract_cloud_run_outputs``, etc.) and streamed log polling.
+"""
 
 import os
 from typing import Any
@@ -15,6 +22,7 @@ from nextmv.cli.actions.run import (
     submit_run,
     submit_run_with_result,
 )
+from nextmv.cli.mcp import framework as mcp_fw
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.input import INPUTS_KEY
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
@@ -52,6 +60,52 @@ def _cloud_poll_run_logs_impl(app_id: str, run_id: str) -> str:
 
 def register(mcp: FastMCP) -> None:
     """Register cloud run management tools."""
+
+    # Split into helper functions to stay under the C901 complexity limit
+    # (multiple @mcp.tool closures in a single body exceed it).
+    _register_simple_tools(mcp)
+    _register_submit_tools(mcp)
+    _register_fetch_tools(mcp)
+    _register_log_tools(mcp)
+
+
+def _register_simple_tools(mcp: FastMCP) -> None:
+    """Register thin tools that wrap pure actions via mcp_fw."""
+
+    mcp_fw.tool(
+        mcp,
+        run_metadata,
+        name="cloud_run_status",
+        description=(
+            "Get the status and metadata of a Nextmv Cloud run. Returns a "
+            "dictionary with run metadata including status "
+            '("queued", "running", "succeeded", "failed", "canceled"), '
+            "duration, timestamps, and error information."
+        ),
+    )
+
+    mcp_fw.tool(
+        mcp,
+        list_runs,
+        name="cloud_list_runs",
+        description=(
+            "List runs for a Nextmv Cloud application. Returns a list of run "
+            "metadata dictionaries. Optionally filter by status to retrieve "
+            "only runs in a specific state."
+        ),
+        normalize_empty=["status"],
+    )
+
+    mcp_fw.tool(
+        mcp,
+        cancel_run,
+        name="cloud_cancel_run",
+        result_message="Cancelled run {run_id}",
+    )
+
+
+def _register_submit_tools(mcp: FastMCP) -> None:
+    """Register cloud_run + cloud_run_submit (both submit runs)."""
 
     @mcp.tool()
     def cloud_run(
@@ -99,6 +153,7 @@ def register(mcp: FastMCP) -> None:
         managed_input_id = _helpers._none_if_empty(managed_input_id)
         input_dir_path = _helpers._none_if_empty(input_dir_path)
 
+        client = _helpers._get_client()
         app = _helpers._get_app(app_id)
         endpoint = _helpers._endpoint_from_app(app)
         config = _helpers._build_run_configuration(content_format)
@@ -114,7 +169,8 @@ def register(mcp: FastMCP) -> None:
             )
 
         result = submit_run_with_result(
-            app,
+            client,
+            app_id=app_id,
             input=input,
             input_dir_path=input_dir_path,
             configuration=config,
@@ -184,10 +240,11 @@ def register(mcp: FastMCP) -> None:
         managed_input_id = _helpers._none_if_empty(managed_input_id)
         input_dir_path = _helpers._none_if_empty(input_dir_path)
 
-        app = _helpers._get_app(app_id)
+        client = _helpers._get_client()
         config = _helpers._build_run_configuration(content_format)
         return submit_run(
-            app,
+            client,
+            app_id=app_id,
             input=input,
             input_dir_path=input_dir_path,
             configuration=config,
@@ -196,21 +253,9 @@ def register(mcp: FastMCP) -> None:
             managed_input_id=managed_input_id,
         )
 
-    @mcp.tool()
-    def cloud_run_status(app_id: str, run_id: str) -> dict[str, Any]:
-        """Get the status and metadata of a Nextmv Cloud run.
 
-        Returns a dictionary with run metadata including status
-        (``"queued"``, ``"running"``, ``"succeeded"``, ``"failed"``,
-        ``"canceled"``), duration, timestamps, and error information.
-
-        Args:
-            app_id: The application ID.
-            run_id: The run ID returned from ``cloud_run_submit``.
-        """
-
-        app = _helpers._get_app(app_id)
-        return run_metadata(app, run_id=run_id)
+def _register_fetch_tools(mcp: FastMCP) -> None:
+    """Register cloud_run_result + cloud_run_input (artifact caching)."""
 
     @mcp.tool()
     def cloud_run_result(app_id: str, run_id: str) -> str:
@@ -225,6 +270,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
+        client = _helpers._get_client()
         app = _helpers._get_app(app_id)
         endpoint = _helpers._endpoint_from_app(app)
 
@@ -236,7 +282,7 @@ def register(mcp: FastMCP) -> None:
         # Download. For non-JSON, extract output archive into cache.
         run_dir = _helpers._cloud_run_dir(endpoint, run_id)
         output_subdir = os.path.join(run_dir, OUTPUTS_KEY)
-        result = run_result(app, run_id=run_id, output_dir_path=output_subdir)
+        result = run_result(client, app_id=app_id, run_id=run_id, output_dir_path=output_subdir)
 
         result_dict = result.to_dict()
         path = _helpers._save_cloud_run_file(
@@ -244,43 +290,6 @@ def register(mcp: FastMCP) -> None:
         )
         _helpers._extract_cloud_run_outputs(result_dict, endpoint, run_id)
         return f"Downloaded: {path}"
-
-    @mcp.tool()
-    def cloud_cancel_run(app_id: str, run_id: str) -> str:
-        """Cancel a queued or running Nextmv Cloud run.
-
-        The run must be in ``"queued"`` or ``"running"`` status.
-        Already completed or canceled runs cannot be canceled.
-
-        Args:
-            app_id: The application ID.
-            run_id: The run ID to cancel.
-        """
-
-        app = _helpers._get_app(app_id)
-        cancel_run(app, run_id=run_id)
-        return f"Cancelled run {run_id}"
-
-    @mcp.tool()
-    def cloud_list_runs(
-        app_id: str,
-        status: str | None = None,
-    ) -> list[dict[str, Any]]:
-        """List runs for a Nextmv Cloud application.
-
-        Returns a list of run metadata dictionaries. Optionally filter
-        by status to retrieve only runs in a specific state.
-
-        Args:
-            app_id: The application ID.
-            status: Optional status filter. Allowed values:
-                ``"succeeded"``, ``"failed"``, ``"running"``,
-                ``"queued"``, ``"canceled"``.
-        """
-
-        status = _helpers._none_if_empty(status)
-        app = _helpers._get_app(app_id)
-        return list_runs(app, status=status)
 
     @mcp.tool()
     def cloud_run_input(app_id: str, run_id: str) -> str:
@@ -294,6 +303,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
+        client = _helpers._get_client()
         app = _helpers._get_app(app_id)
         endpoint = _helpers._endpoint_from_app(app)
         run_dir = _helpers._cloud_run_dir(endpoint, run_id)
@@ -307,13 +317,17 @@ def register(mcp: FastMCP) -> None:
             return f"Cached: {inputs_dir}"
 
         # Download. For non-JSON, the SDK extracts files into inputs_dir.
-        data = run_input(app, run_id=run_id, output_dir_path=inputs_dir)
+        data = run_input(client, app_id=app_id, run_id=run_id, output_dir_path=inputs_dir)
         if data is not None:
             # JSON input — save it.
             path = _helpers._save_cloud_run_file(data, endpoint, run_id, INPUTS_KEY, "input.json")
             return f"Downloaded: {path}"
         # Non-JSON: files were extracted into inputs_dir by the SDK.
         return f"Downloaded: {inputs_dir}"
+
+
+def _register_log_tools(mcp: FastMCP) -> None:
+    """Register cloud_run_logs + cloud_poll_run_logs."""
 
     @mcp.tool()
     def cloud_run_logs(app_id: str, run_id: str) -> str:
@@ -329,6 +343,7 @@ def register(mcp: FastMCP) -> None:
             run_id: The run ID.
         """
 
+        client = _helpers._get_client()
         app = _helpers._get_app(app_id)
         endpoint = _helpers._endpoint_from_app(app)
 
@@ -337,7 +352,7 @@ def register(mcp: FastMCP) -> None:
         if cached:
             return f"Cached: {cached}"
 
-        logs = run_logs(app, run_id=run_id)
+        logs = run_logs(client, app_id=app_id, run_id=run_id)
         path = _helpers._save_cloud_run_logs(
             logs.to_dict(), endpoint, run_id,
         )
