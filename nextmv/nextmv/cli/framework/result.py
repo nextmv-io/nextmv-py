@@ -25,10 +25,12 @@ def format_save_message(*, output: str, saved_noun: str | None) -> str:
     The default noun is ``"Result"``. A user-supplied ``saved_noun`` is
     capitalized at the first letter (so ``"run list"`` becomes ``"Run list"``)
     and embedded before ``"saved to [magenta]{output}[/magenta]."``.
+
+    Whitespace-only ``saved_noun`` values (e.g. ``"   "``) are treated
+    the same as ``None`` — they fall back to ``"Result"``.
     """
-    noun = (saved_noun or "Result").strip()
-    if noun:
-        noun = noun[0].upper() + noun[1:]
+    noun = (saved_noun or "").strip() or "Result"
+    noun = noun[0].upper() + noun[1:]
     return f"{noun} saved to [magenta]{output}[/magenta]."
 
 

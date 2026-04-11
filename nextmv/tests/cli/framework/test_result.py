@@ -26,6 +26,10 @@ class TestFormatSaveMessage(unittest.TestCase):
         msg = fresult.format_save_message(output="/tmp/x.json", saved_noun="Run list")
         self.assertEqual(msg, "Run list saved to [magenta]/tmp/x.json[/magenta].")
 
+    def test_whitespace_only_noun_falls_back_to_result(self) -> None:
+        msg = fresult.format_save_message(output="/tmp/x.json", saved_noun="   ")
+        self.assertEqual(msg, "Result saved to [magenta]/tmp/x.json[/magenta].")
+
 
 class TestEmit(unittest.TestCase):
     @patch("nextmv.cli.framework.result.print_json")
