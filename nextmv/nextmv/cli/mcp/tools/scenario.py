@@ -2,34 +2,23 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.scenario import create_scenario_test as _create_scenario_test
-from nextmv.cli.actions.scenario import delete_scenario_test as _delete_scenario_test
-from nextmv.cli.actions.scenario import get_scenario_test as _get_scenario_test
-from nextmv.cli.actions.scenario import list_scenario_tests as _list_scenario_tests
+from nextmv.cli.actions.scenario import (
+    create_scenario_test,
+    delete_scenario_test,
+    get_scenario_test,
+    list_scenario_tests,
+    update_scenario_test,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 from nextmv.cli.mcp.tools import _helpers
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud scenario test tools."""
 
-    @mcp.tool()
-    def cloud_list_scenario_tests(app_id: str) -> list[dict[str, Any]]:
-        """List scenario tests for a Nextmv Cloud application.
-
-        Scenario tests run the application with multiple
-        configurations (scenarios) to compare different solver
-        setups side by side.
-
-        Args:
-            app_id: The application ID.
-        """
-
-        client = _helpers._get_client()
-        return _list_scenario_tests(client, app_id)
+    mcp_fw.tool(mcp, list_scenario_tests, name="cloud_list_scenario_tests")
 
     @mcp.tool()
     def cloud_get_scenario_test(
@@ -47,15 +36,17 @@ def register(mcp: FastMCP) -> None:
             scenario_test_id: The scenario test ID.
         """
 
-        client = _helpers._get_client()
-        data = _get_scenario_test(client, app_id, scenario_test_id)
+        client = mcp_fw.client()
+        data = get_scenario_test(
+            client, app_id=app_id, scenario_test_id=scenario_test_id
+        )
         endpoint = _helpers._endpoint_from_client(client)
         return _helpers._save_experiment_file(data, endpoint, "scenario", scenario_test_id)
 
     @mcp.tool()
     def cloud_create_scenario_test(
         app_id: str,
-        scenarios: list[dict[str, Any]],
+        scenarios: list[dict],
         scenario_test_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -101,11 +92,11 @@ def register(mcp: FastMCP) -> None:
         if not scenarios:
             return "Error: at least one scenario is required."
 
-        client = _helpers._get_client()
+        client = mcp_fw.client()
         try:
-            return _create_scenario_test(
+            return create_scenario_test(
                 client,
-                app_id,
+                app_id=app_id,
                 scenarios=scenarios,
                 scenario_test_id=scenario_test_id,
                 name=name,
@@ -116,18 +107,16 @@ def register(mcp: FastMCP) -> None:
         except (KeyError, ValueError) as exc:
             return f"Error: invalid scenario definition — {exc}"
 
-    @mcp.tool()
-    def cloud_delete_scenario_test(
-        app_id: str,
-        scenario_test_id: str,
-    ) -> str:
-        """Delete a scenario test permanently.
+    mcp_fw.tool(
+        mcp,
+        update_scenario_test,
+        name="cloud_update_scenario_test",
+        normalize_empty=["name", "description"],
+    )
 
-        Args:
-            app_id: The application ID.
-            scenario_test_id: The scenario test ID to delete.
-        """
-
-        client = _helpers._get_client()
-        _delete_scenario_test(client, app_id, scenario_test_id)
-        return f"Deleted scenario test {scenario_test_id}"
+    mcp_fw.tool(
+        mcp,
+        delete_scenario_test,
+        name="cloud_delete_scenario_test",
+        result_message="Deleted scenario test {scenario_test_id}",
+    )
