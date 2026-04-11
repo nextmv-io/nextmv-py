@@ -1,4 +1,10 @@
-"""Core community app actions."""
+"""Core community app actions.
+
+Pure functions that wrap SDK calls. No CLI or MCP presentation concerns.
+
+Community apps are pre-built decision models maintained in the
+nextmv-io/community-apps GitHub repository.
+"""
 
 from typing import Any
 
@@ -7,12 +13,23 @@ from nextmv.cloud.community import CommunityApp
 
 
 def get_community_apps(client: Client) -> list[CommunityApp]:
-    """Return the list of available community app objects."""
+    """Return the list of available community app objects.
+
+    Returns a list of ``CommunityApp`` instances with rich metadata
+    (name, app type, latest version, description, all versions).
+    This action is intended for CLI use where the objects are rendered
+    directly into Rich tables. MCP callers should use
+    ``list_community_apps_dicts`` instead.
+    """
     return list_community_apps(client)
 
 
 def list_community_apps_dicts(client: Client) -> list[dict[str, Any]]:
-    """List all available community apps as dicts."""
+    """List all available Nextmv community apps as dicts.
+
+    Each dict includes the app name, description, and supported
+    language/app type.
+    """
     return [a.to_dict() for a in list_community_apps(client)]
 
 
@@ -25,7 +42,12 @@ def clone_app(
     rich_print: bool = False,
     should_register: bool = False,
 ) -> None:
-    """Clone a community app to a local directory."""
+    """Clone a Nextmv community app to a local directory.
+
+    Downloads the community app source code to the target directory and
+    optionally registers it locally so it can be run via
+    ``nextmv local run``. By default the ``latest`` version is used.
+    """
     clone_community_app(
         client=client,
         app=app,

@@ -1,28 +1,15 @@
 """MCP tools for community apps."""
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.actions.community import clone_app, list_community_apps_dicts
-from nextmv.cli.mcp.tools import _helpers
+from nextmv.cli.mcp import framework as mcp_fw
 
 
 def register(mcp: FastMCP) -> None:
     """Register community app tools."""
 
-    @mcp.tool()
-    def community_list() -> list[dict[str, Any]]:
-        """List all available Nextmv community apps.
-
-        Community apps are pre-built decision models for common
-        optimization problems like vehicle routing, knapsack, shift
-        scheduling, and more. Each entry includes the app name,
-        description, and supported languages.
-        """
-
-        client = _helpers._get_client()
-        return list_community_apps_dicts(client)
+    mcp_fw.tool(mcp, list_community_apps_dicts, name="community_list")
 
     @mcp.tool()
     def community_clone(app_name: str, target_dir: str = ".") -> str:
@@ -39,6 +26,5 @@ def register(mcp: FastMCP) -> None:
                 current working directory.
         """
 
-        client = _helpers._get_client()
-        clone_app(client=client, app=app_name, directory=target_dir)
+        clone_app(client=mcp_fw.client(), app=app_name, directory=target_dir)
         return f"Cloned {app_name} to {target_dir}"
