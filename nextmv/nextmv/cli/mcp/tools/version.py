@@ -1,7 +1,5 @@
 """MCP tools for cloud version management."""
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
 from nextmv.cli.actions.version import (
@@ -10,110 +8,37 @@ from nextmv.cli.actions.version import (
     get_version,
     list_versions,
     update_version,
+    version_exists,
 )
-from nextmv.cli.mcp.tools import _helpers
+from nextmv.cli.mcp import framework as mcp_fw
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud version management tools."""
 
-    @mcp.tool()
-    def cloud_list_versions(app_id: str) -> list[dict[str, Any]]:
-        """List all versions of a Nextmv Cloud application.
+    mcp_fw.tool(mcp, list_versions, name="cloud_list_versions")
 
-        Each version represents a snapshot of the application code
-        that was pushed. Returns version ID, name, description, and
-        creation timestamp.
+    mcp_fw.tool(mcp, get_version, name="cloud_get_version")
 
-        Args:
-            app_id: The application ID.
-        """
+    mcp_fw.tool(
+        mcp,
+        create_version,
+        name="cloud_create_version",
+        normalize_empty=["version_id", "name", "description"],
+    )
 
-        return list_versions(_helpers._get_client(), app_id=app_id)
+    mcp_fw.tool(
+        mcp,
+        update_version,
+        name="cloud_update_version",
+        normalize_empty=["name", "description"],
+    )
 
-    @mcp.tool()
-    def cloud_get_version(app_id: str, version_id: str) -> dict[str, Any]:
-        """Get details of a specific version of a Nextmv Cloud application.
+    mcp_fw.tool(
+        mcp,
+        delete_version,
+        name="cloud_delete_version",
+        result_message="Deleted version {version_id}",
+    )
 
-        Args:
-            app_id: The application ID.
-            version_id: The version ID to retrieve.
-        """
-
-        return get_version(_helpers._get_client(), app_id=app_id, version_id=version_id)
-
-    @mcp.tool()
-    def cloud_create_version(
-        app_id: str,
-        version_id: str | None = None,
-        name: str | None = None,
-        description: str | None = None,
-    ) -> dict[str, Any]:
-        """Create a new version for a Nextmv Cloud application.
-
-        If ``version_id`` is provided and a version with that ID
-        already exists, the existing version is returned (idempotent).
-        If ``version_id`` is omitted, a unique ID is auto-generated.
-
-        Args:
-            app_id: The application ID.
-            version_id: Optional version ID. Auto-generated if omitted.
-            name: Optional human-readable name for the version.
-            description: Optional description of what changed in this
-                version.
-        """
-
-        version_id = _helpers._none_if_empty(version_id)
-        name = _helpers._none_if_empty(name)
-        description = _helpers._none_if_empty(description)
-
-        return create_version(
-            _helpers._get_client(),
-            app_id=app_id,
-            version_id=version_id,
-            name=name,
-            description=description,
-            exist_ok=version_id is not None,
-        )
-
-    @mcp.tool()
-    def cloud_update_version(
-        app_id: str,
-        version_id: str,
-        name: str | None = None,
-        description: str | None = None,
-    ) -> dict[str, Any]:
-        """Update a version of a Nextmv Cloud application.
-
-        Only the provided fields are updated; omitted fields remain
-        unchanged. Returns the updated version object.
-
-        Args:
-            app_id: The application ID.
-            version_id: The version ID to update.
-            name: New human-readable name.
-            description: New description.
-        """
-
-        name = _helpers._none_if_empty(name)
-        description = _helpers._none_if_empty(description)
-
-        return update_version(
-            _helpers._get_client(),
-            app_id=app_id,
-            version_id=version_id,
-            name=name,
-            description=description,
-        )
-
-    @mcp.tool()
-    def cloud_delete_version(app_id: str, version_id: str) -> str:
-        """Delete a version of a Nextmv Cloud application permanently.
-
-        Args:
-            app_id: The application ID.
-            version_id: The version ID to delete.
-        """
-
-        delete_version(_helpers._get_client(), app_id=app_id, version_id=version_id)
-        return f"Deleted version {version_id}"
+    mcp_fw.tool(mcp, version_exists, name="cloud_version_exists")

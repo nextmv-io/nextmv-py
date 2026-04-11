@@ -221,7 +221,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        self.assertEqual(len(tool_names), 89, f"Expected 89 tools, got {len(tool_names)}")
+        self.assertEqual(len(tool_names), 90, f"Expected 90 tools, got {len(tool_names)}")
 
     @patch("nextmv.cli.mcp.framework.tool._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
