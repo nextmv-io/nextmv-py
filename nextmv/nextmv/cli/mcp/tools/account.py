@@ -1,42 +1,27 @@
 """MCP tools for cloud account management."""
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.account import get_account as _get_account
-from nextmv.cli.actions.account import get_queue as _get_queue
-from nextmv.cli.mcp.tools import _helpers
+from nextmv.cli.actions.account import (
+    create_account,
+    delete_account,
+    get_account,
+    get_queue,
+    update_account,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud account tools."""
 
-    @mcp.tool()
-    def cloud_get_account(account_id: str) -> dict[str, Any]:
-        """Get details of a Nextmv Cloud account.
-
-        Returns account information including organization name,
-        plan details, and usage limits.
-
-        Args:
-            account_id: The account ID to retrieve.
-        """
-
-        client = _helpers._get_client()
-        return _get_account(client, account_id=account_id)
-
-    @mcp.tool()
-    def cloud_get_queue(account_id: str) -> dict[str, Any]:
-        """Get the run queue for a Nextmv Cloud account.
-
-        Returns information about currently queued and running runs
-        across all applications in the account, including queue
-        depth and concurrency usage.
-
-        Args:
-            account_id: The account ID.
-        """
-
-        client = _helpers._get_client()
-        return _get_queue(client, account_id=account_id)
+    mcp_fw.tool(mcp, get_account, name="cloud_get_account")
+    mcp_fw.tool(mcp, get_queue, name="cloud_get_queue")
+    mcp_fw.tool(mcp, create_account, name="cloud_create_account")
+    mcp_fw.tool(mcp, update_account, name="cloud_update_account")
+    mcp_fw.tool(
+        mcp,
+        delete_account,
+        name="cloud_delete_account",
+        result_message="Deleted account {account_id}",
+    )
