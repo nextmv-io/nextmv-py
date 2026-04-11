@@ -95,6 +95,7 @@ class TestCreateSwitchbackTest(unittest.TestCase):
             switchback_test_id="sb-id",
             name="My Switchback",
             description="desc",
+            start=None,
         )
         self.assertEqual(result, {"id": "new-sb"})
 
@@ -129,6 +130,7 @@ class TestCreateSwitchbackTest(unittest.TestCase):
             switchback_test_id=None,
             name=None,
             description=None,
+            start=None,
         )
         self.assertEqual(result, {"id": "auto-sb"})
 
