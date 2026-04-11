@@ -106,6 +106,7 @@ class TestCreateBatch(unittest.TestCase):
             name="My Batch",
             description="A test batch",
             option_sets={"fast": {"solve.duration": "5s"}},
+            runs=None,
         )
         self.assertEqual(result, "new-batch-id")
 
@@ -126,6 +127,7 @@ class TestCreateBatch(unittest.TestCase):
             name=None,
             description=None,
             option_sets=None,
+            runs=None,
         )
         self.assertEqual(result, "auto-batch-id")
 
