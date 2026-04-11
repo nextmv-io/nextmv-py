@@ -157,8 +157,6 @@ class TestCommandInvocation(unittest.TestCase):
     def test_simple_list_action_invokes_action_and_emits(
         self, mock_emit, mock_client_cls
     ) -> None:
-        mock_client = mock_client_cls.return_value
-
         def list_things(client: Client) -> list[dict]:
             """List things."""
             return [{"id": "a"}, {"id": "b"}]

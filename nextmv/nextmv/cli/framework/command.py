@@ -79,6 +79,63 @@ def _assert_first_param_is_client(action: Callable) -> inspect.Signature:
     return sig
 
 
+def _build_wrapper(
+    action: Callable,
+    *,
+    progress: str | None,
+    output_flag: bool,
+    saved_noun: str | None,
+    on_success: str | Callable[[Any, dict[str, Any]], str] | None,
+    handles_own_output: bool,
+) -> Callable:
+    """Build the runtime wrapper closure that ``cli.command()`` registers
+    with Typer.
+
+    Extracted from ``command()`` to keep each function's cyclomatic
+    complexity manageable and to separate the signature/metadata fixup
+    concern (in ``command()``) from the runtime dispatch concern (here).
+
+    The returned wrapper:
+    * Pops ``profile`` and optionally ``output`` from the kwargs passed by
+      Typer and builds a ``Client`` from the ``--profile`` flag.
+    * Optionally prints a progress message.
+    * Calls the action and dispatches the result through one of four
+      branches (``handles_own_output`` → ``output_flag`` + ``--output`` →
+      ``on_success`` → default ``emit``), as documented on ``command()``.
+    """
+
+    def wrapper(**kwargs: Any) -> None:
+        profile = kwargs.pop("profile", None)
+        output = kwargs.pop("output", None) if output_flag else None
+        client = Client(profile=profile)
+        if progress:
+            in_progress(msg=progress)
+
+        result = action(client=client, **kwargs)
+
+        # handles_own_output: action printed everything itself, we're done.
+        if handles_own_output:
+            return
+
+        # Output-to-file branch: bypasses on_success, uses save-message.
+        if output_flag and output:
+            emit(result, output=output, saved_noun=saved_noun)
+            return
+
+        # on_success override (template or callable). Most commonly used for
+        # None-returning actions that need a custom confirmation line.
+        success_msg = apply_on_success(on_success, result=result, kwargs=kwargs)
+        if success_msg is not None:
+            success(success_msg)
+            return
+
+        # Default: print JSON via emit() (which handles both dict/list/bool
+        # cases — rich.print_json handles non-dict scalars too).
+        emit(result, output=None, saved_noun=saved_noun)
+
+    return wrapper
+
+
 def command(
     typer_app: typer.Typer,
     action: Callable,
@@ -182,34 +239,14 @@ def command(
             )
         )
 
-    def wrapper(**kwargs: Any) -> None:
-        profile = kwargs.pop("profile", None)
-        output = kwargs.pop("output", None) if output_flag else None
-        client = Client(profile=profile)
-        if progress:
-            in_progress(msg=progress)
-
-        result = action(client=client, **kwargs)
-
-        # handles_own_output: action printed everything itself, we're done.
-        if handles_own_output:
-            return
-
-        # Output-to-file branch: bypasses on_success, uses save-message.
-        if output_flag and output:
-            emit(result, output=output, saved_noun=saved_noun)
-            return
-
-        # on_success override (template or callable). Most commonly used for
-        # None-returning actions that need a custom confirmation line.
-        success_msg = apply_on_success(on_success, result=result, kwargs=kwargs)
-        if success_msg is not None:
-            success(success_msg)
-            return
-
-        # Default: print JSON via emit() (which handles both dict/list/bool
-        # cases — rich.print_json handles non-dict scalars too).
-        emit(result, output=None, saved_noun=saved_noun)
+    wrapper = _build_wrapper(
+        action,
+        progress=progress,
+        output_flag=output_flag,
+        saved_noun=saved_noun,
+        on_success=on_success,
+        handles_own_output=handles_own_output,
+    )
 
     # Make the wrapper look like the action to Typer's introspector and to
     # downstream tracebacks.
