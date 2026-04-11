@@ -1,45 +1,34 @@
 """MCP tools for cloud shadow tests."""
 
-from typing import Any
+from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.shadow import create_shadow_test as _create_shadow_test
-from nextmv.cli.actions.shadow import delete_shadow_test as _delete_shadow_test
-from nextmv.cli.actions.shadow import get_shadow_test as _get_shadow_test
-from nextmv.cli.actions.shadow import list_shadow_tests as _list_shadow_tests
-from nextmv.cli.actions.shadow import start_shadow_test as _start_shadow_test
-from nextmv.cli.actions.shadow import stop_shadow_test as _stop_shadow_test
+from nextmv.cli.actions.shadow import (
+    create_shadow_test,
+    delete_shadow_test,
+    get_shadow_test,
+    list_shadow_tests,
+    shadow_test_metadata,
+    start_shadow_test,
+    stop_shadow_test,
+    update_shadow_test,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 from nextmv.cli.mcp.tools import _helpers
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud shadow test tools."""
 
-    @mcp.tool()
-    def cloud_list_shadow_tests(app_id: str) -> list[dict[str, Any]]:
-        """List shadow tests for a Nextmv Cloud application.
-
-        A shadow test mirrors live production traffic to a candidate
-        instance running alongside the baseline, allowing side-by-side
-        comparison of results without affecting production.
-
-        Args:
-            app_id: The application ID.
-        """
-
-        client = _helpers._get_client()
-        return _list_shadow_tests(client, app_id)
+    mcp_fw.tool(mcp, list_shadow_tests, name="cloud_list_shadow_tests")
 
     @mcp.tool()
-    def cloud_get_shadow_test(
-        app_id: str,
-        shadow_test_id: str,
-    ) -> str:
+    def cloud_get_shadow_test(app_id: str, shadow_test_id: str) -> str:
         """Get details and results of a shadow test.
 
-        Saves the full test data (including comparison results) to a
-        local temp file. Use file-reading tools to inspect the
+        Saves the full test data (including comparison results) to
+        ~/.nextmv/experiments/. Use file-reading tools to inspect the
         contents.
 
         Args:
@@ -47,21 +36,47 @@ def register(mcp: FastMCP) -> None:
             shadow_test_id: The shadow test ID.
         """
 
-        client = _helpers._get_client()
-        data = _get_shadow_test(client, app_id, shadow_test_id)
+        client = mcp_fw.client()
+        data = get_shadow_test(client, app_id=app_id, shadow_test_id=shadow_test_id)
         endpoint = _helpers._endpoint_from_client(client)
         return _helpers._save_experiment_file(data, endpoint, "shadow", shadow_test_id)
 
     @mcp.tool()
+    def cloud_shadow_test_metadata(app_id: str, shadow_test_id: str) -> str:
+        """Get metadata for a shadow test.
+
+        Returns test-level metadata only — status, run counts, and
+        timing. Saves the result to ~/.nextmv/experiments/. Use
+        file-reading tools to inspect the contents.
+
+        Args:
+            app_id: The application ID.
+            shadow_test_id: The shadow test ID.
+        """
+
+        client = mcp_fw.client()
+        data = shadow_test_metadata(
+            client, app_id=app_id, shadow_test_id=shadow_test_id
+        )
+        endpoint = _helpers._endpoint_from_client(client)
+        return _helpers._save_experiment_file(
+            data, endpoint, "shadow", shadow_test_id, filename="metadata.json"
+        )
+
+    # create stays inline: takes untyped dict parameters
+    # (termination_events, start_events) that the mcp_fw introspection
+    # layer can't describe usefully, and it benefits from catching bad
+    # LLM payloads with a friendly error string.
+    @mcp.tool()
     def cloud_create_shadow_test(
         app_id: str,
         comparisons: dict[str, list[str]],
-        termination_events: dict[str, Any],
+        termination_events: dict,
         shadow_test_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
-        start_events: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        start_events: dict | None = None,
+    ) -> dict | str:
         """Create a shadow test for a Nextmv Cloud application.
 
         A shadow test mirrors live traffic to candidate instances for
@@ -87,65 +102,45 @@ def register(mcp: FastMCP) -> None:
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
-        client = _helpers._get_client()
-        return _create_shadow_test(
-            client,
-            app_id,
-            comparisons=comparisons,
-            termination_events=termination_events,
-            shadow_test_id=shadow_test_id,
-            name=name,
-            description=description,
-            start_events=start_events,
-        )
+        client = mcp_fw.client()
+        try:
+            return create_shadow_test(
+                client,
+                app_id=app_id,
+                comparisons=comparisons,
+                termination_events=termination_events,
+                shadow_test_id=shadow_test_id,
+                name=name,
+                description=description,
+                start_events=start_events,
+            )
+        except (KeyError, ValueError) as exc:
+            return f"Error: invalid shadow test definition — {exc}"
 
-    @mcp.tool()
-    def cloud_start_shadow_test(app_id: str, shadow_test_id: str) -> str:
-        """Start a shadow test that is in draft state.
+    mcp_fw.tool(
+        mcp,
+        update_shadow_test,
+        name="cloud_update_shadow_test",
+        normalize_empty=["name", "description"],
+    )
 
-        The test must have been created but not yet started. Once
-        started, live traffic will be mirrored to candidate instances.
+    mcp_fw.tool(
+        mcp,
+        start_shadow_test,
+        name="cloud_start_shadow_test",
+        result_message="Started shadow test {shadow_test_id}",
+    )
 
-        Args:
-            app_id: The application ID.
-            shadow_test_id: The shadow test ID to start.
-        """
+    mcp_fw.tool(
+        mcp,
+        stop_shadow_test,
+        name="cloud_stop_shadow_test",
+        result_message="Stopped shadow test {shadow_test_id} with intent {intent}",
+    )
 
-        client = _helpers._get_client()
-        _start_shadow_test(client, app_id, shadow_test_id)
-        return f"Started shadow test {shadow_test_id}"
-
-    @mcp.tool()
-    def cloud_stop_shadow_test(
-        app_id: str,
-        shadow_test_id: str,
-        intent: str = "cancel",
-    ) -> str:
-        """Stop a running shadow test.
-
-        Use ``"cancel"`` to discard the test or ``"promote"`` to
-        promote the candidate instance to production.
-
-        Args:
-            app_id: The application ID.
-            shadow_test_id: The shadow test ID to stop.
-            intent: Stop intent. Allowed values: ``"cancel"``
-                (default) or ``"promote"``.
-        """
-
-        client = _helpers._get_client()
-        _stop_shadow_test(client, app_id, shadow_test_id, intent=intent)
-        return f"Stopped shadow test {shadow_test_id} with intent {intent}"
-
-    @mcp.tool()
-    def cloud_delete_shadow_test(app_id: str, shadow_test_id: str) -> str:
-        """Delete a shadow test permanently.
-
-        Args:
-            app_id: The application ID.
-            shadow_test_id: The shadow test ID to delete.
-        """
-
-        client = _helpers._get_client()
-        _delete_shadow_test(client, app_id, shadow_test_id)
-        return f"Deleted shadow test {shadow_test_id}"
+    mcp_fw.tool(
+        mcp,
+        delete_shadow_test,
+        name="cloud_delete_shadow_test",
+        result_message="Deleted shadow test {shadow_test_id}",
+    )
