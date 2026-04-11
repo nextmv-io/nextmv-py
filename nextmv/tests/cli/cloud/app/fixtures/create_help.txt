@@ -1,0 +1,83 @@
+                                                                                
+ Usage: nextmv cloud app create [OPTIONS]                                       
+                                                                                
+ Create a new Nextmv Cloud application.                                         
+                                                                                
+ Use the --exist-ok flag to avoid errors when creating an application with      
+ an ID that already exists. This is useful for scripts that need to ensure      
+ an application exists without worrying about whether it was created            
+ previously.                                                                    
+                                                                                
+ An application can be marked as a workflow using the --is-workflow flag.       
+ Workflows allow for more complex decision-making processes by leveraging       
+ Nextpipe to                                                                    
+ orchestrate multiple decision models.                                          
+                                                                                
+ Examples                                                                       
+                                                                                
+ - Create an application with the name Hare App. A random ID will be generated. 
+     $ nextmv cloud app create --name "Hare App"                                
+                                                                                
+ - Create an application with the specific ID hare-app.                         
+     $ nextmv cloud app create --name "Hare App" --app-id hare-app              
+                                                                                
+ - Create an application with an ID and description.                            
+     $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
+         --description "An application for routing hares"                       
+                                                                                
+ - Create an application, or get it if it already exists.                       
+     $ nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok   
+                                                                                
+ - Create a workflow application.                                               
+     $ nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow    
+ --is-workflow                                                                  
+                                                                                
+ - Create an application with a default instance ID.                            
+     $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
+         --default-instance-id burrow                                           
+                                                                                
+ - Create an application with a default experiment instance.                    
+     $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
+         --default-experiment-instance experiment-v1                            
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --app-id                -a      APP_ID                 An optional ID for    │
+│                                                        the Nextmv Cloud      │
+│                                                        application. If not   │
+│                                                        provided, a random ID │
+│                                                        will be generated.    │
+│                                                        [env var:             │
+│                                                        NEXTMV_APP_ID]        │
+│ --default-experiment-…  -x      DEFAULT_EXPERIMENT_IN  An optional default   │
+│                                 STANCE                 experiment instance   │
+│                                                        ID for the            │
+│                                                        application.          │
+│ --default-instance-id   -i      DEFAULT_INSTANCE_ID    An optional default   │
+│                                                        instance ID for the   │
+│                                                        application.          │
+│ --description           -d      DESCRIPTION            An optional           │
+│                                                        description for the   │
+│                                                        application.          │
+│ --exist-ok              -e                             If an application     │
+│                                                        with the given ID     │
+│                                                        already exists, do    │
+│                                                        not raise an error,   │
+│                                                        and simply return it. │
+│ --is-workflow           -w                             Whether the           │
+│                                                        application is a      │
+│                                                        workflow.             │
+│ --name                  -n      NAME                   An optional name for  │
+│                                                        the application. If   │
+│                                                        not provided, the     │
+│                                                        application ID will   │
+│                                                        be used as the name.  │
+│ --profile               -p      PROFILE_NAME           Profile to use for    │
+│                                                        this action. Use      │
+│                                                        nextmv configuration  │
+│                                                        to manage profiles.   │
+│                                                        [env var:             │
+│                                                        NEXTMV_PROFILE]       │
+│ --help                  -h                             Show this message and │
+│                                                        exit.                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+

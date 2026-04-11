@@ -1,0 +1,25 @@
+                                                                                
+ Usage: nextmv cloud app list [OPTIONS]                                         
+                                                                                
+ List all Nextmv Cloud applications.                                            
+                                                                                
+ Examples                                                                       
+                                                                                
+ - List all applications.                                                       
+     $ nextmv cloud app list                                                    
+                                                                                
+ - List all applications using the profile named hare.                          
+     $ nextmv cloud app list --profile hare                                     
+                                                                                
+ - List all applications and save the information to an apps.json file.         
+     $ nextmv cloud app list --output apps.json                                 
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --output   -o      OUTPUT_PATH   Saves the app list information to this      │
+│                                  location.                                   │
+│ --profile  -p      PROFILE_NAME  Profile to use for this action. Use nextmv  │
+│                                  configuration to manage profiles.           │
+│                                  [env var: NEXTMV_PROFILE]                   │
+│ --help     -h                    Show this message and exit.                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
