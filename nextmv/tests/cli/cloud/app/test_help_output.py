@@ -18,9 +18,8 @@ import os
 import re
 import unittest
 
-from typer.testing import CliRunner
-
 from nextmv.cli.cloud.app import app
+from typer.testing import CliRunner
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 

@@ -9,12 +9,10 @@ from typing import Annotated
 from unittest.mock import patch
 
 import typer
-from pydantic import Field
-from typer.testing import CliRunner
-
 from nextmv.cli.framework.options import AppDirOption, AppIdRequiredOption
 from nextmv.cloud.client import Client
-
+from pydantic import Field
+from typer.testing import CliRunner
 
 _NAME_HELP = "A name."
 _NameOpt = Annotated[

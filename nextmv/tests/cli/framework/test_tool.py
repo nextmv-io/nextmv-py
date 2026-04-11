@@ -6,9 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import typer
 from mcp.server.fastmcp import FastMCP
-from pydantic import Field
-
 from nextmv.cloud.client import Client
+from pydantic import Field
 
 _NAME_HELP = "A name."
 _NameOpt = Annotated[

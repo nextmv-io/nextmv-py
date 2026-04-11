@@ -13,8 +13,9 @@ Structured Data -> Rendered Markup").
 """
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from nextmv.cli.message import print_json, success
 

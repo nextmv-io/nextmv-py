@@ -14,7 +14,8 @@ This module is imported at call sites as part of ``cli`` via::
 
 import functools
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import typer
 

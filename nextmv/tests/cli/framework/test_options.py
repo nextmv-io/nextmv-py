@@ -15,13 +15,11 @@ incorrectly. Either way, stop and investigate.
 """
 
 import unittest
-from typing import Annotated
 
 import typer
+from nextmv.cli.framework import options as fopts
 from pydantic import TypeAdapter
 from typer.testing import CliRunner
-
-from nextmv.cli.framework import options as fopts
 
 
 # Note: AppIdRequiredOption and AppDirOption are intentionally omitted from
