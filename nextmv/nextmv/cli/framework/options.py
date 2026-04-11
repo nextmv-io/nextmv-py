@@ -498,6 +498,118 @@ OptionalSwitchbackTestIdOption: TypeAlias = Annotated[
 
 
 # ---------------------------------------------------------------------------
+# Marketplace aliases
+#
+# These are CLI-only today — marketplace is not currently exposed via MCP —
+# but they are added here for consistency with the rest of the framework so
+# the connector files import a single source of truth for option metadata.
+# ---------------------------------------------------------------------------
+
+_MARKETPLACE_APP_ID_HELP = "The Nextmv Marketplace application ID."
+MarketplaceAppIdOption: TypeAlias = Annotated[
+    str,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help=_MARKETPLACE_APP_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_APP_ID",
+        metavar="APP_ID",
+    ),
+    Field(description=_MARKETPLACE_APP_ID_HELP),
+]
+
+_OPTIONAL_MARKETPLACE_APP_ID_HELP = (
+    "An optional ID for the Nextmv Marketplace application. "
+    "If not provided, a random ID will be generated."
+)
+OptionalMarketplaceAppIdOption: TypeAlias = Annotated[
+    str | None,
+    typer.Option(
+        "--app-id",
+        "-a",
+        help=_OPTIONAL_MARKETPLACE_APP_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_APP_ID",
+        metavar="APP_ID",
+    ),
+    Field(description=_OPTIONAL_MARKETPLACE_APP_ID_HELP),
+]
+
+_MARKETPLACE_PARTNER_ID_HELP = "The Nextmv Marketplace partner ID."
+MarketplacePartnerIdOption: TypeAlias = Annotated[
+    str,
+    typer.Option(
+        "--partner-id",
+        "-n",
+        help=_MARKETPLACE_PARTNER_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_PARTNER_ID",
+        metavar="PARTNER_ID",
+    ),
+    Field(description=_MARKETPLACE_PARTNER_ID_HELP),
+]
+
+_OPTIONAL_MARKETPLACE_PARTNER_ID_HELP = (
+    "Only apps belonging to this partner will be listed. "
+    "If not provided, all apps are listed."
+)
+OptionalMarketplacePartnerIdOption: TypeAlias = Annotated[
+    str | None,
+    typer.Option(
+        "--partner-id",
+        "-n",
+        help=_OPTIONAL_MARKETPLACE_PARTNER_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_PARTNER_ID",
+        metavar="PARTNER_ID",
+    ),
+    Field(description=_OPTIONAL_MARKETPLACE_PARTNER_ID_HELP),
+]
+
+_MARKETPLACE_VERSION_ID_HELP = "The Nextmv Marketplace version ID."
+MarketplaceVersionIdOption: TypeAlias = Annotated[
+    str,
+    typer.Option(
+        "--version-id",
+        "-v",
+        help=_MARKETPLACE_VERSION_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_VERSION_ID",
+        metavar="VERSION_ID",
+    ),
+    Field(description=_MARKETPLACE_VERSION_ID_HELP),
+]
+
+_OPTIONAL_MARKETPLACE_VERSION_ID_HELP = (
+    "An optional ID for the Nextmv Marketplace version. "
+    "If not provided, a random ID will be generated."
+)
+OptionalMarketplaceVersionIdOption: TypeAlias = Annotated[
+    str | None,
+    typer.Option(
+        "--version-id",
+        "-v",
+        help=_OPTIONAL_MARKETPLACE_VERSION_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_VERSION_ID",
+        metavar="VERSION_ID",
+    ),
+    Field(description=_OPTIONAL_MARKETPLACE_VERSION_ID_HELP),
+]
+
+_MARKETPLACE_SUBSCRIPTION_ID_HELP = (
+    "The Nextmv Marketplace subscription ID. "
+    "Format: `<PARTNER_ID>-<APP_ID>`."
+)
+MarketplaceSubscriptionIdOption: TypeAlias = Annotated[
+    str,
+    typer.Option(
+        "--subscription-id",
+        "-s",
+        help=_MARKETPLACE_SUBSCRIPTION_ID_HELP,
+        envvar="NEXTMV_MARKETPLACE_SUBSCRIPTION_ID",
+        metavar="SUBSCRIPTION_ID",
+    ),
+    Field(description=_MARKETPLACE_SUBSCRIPTION_ID_HELP),
+]
+
+
+# ---------------------------------------------------------------------------
 # Framework-internal CLI-only aliases — NOT imported by domain connector files.
 # These are injected automatically by ``cli.command()`` when flags like
 # ``output_flag=True`` are set.
