@@ -16,7 +16,7 @@ import typer
 from rich.prompt import Prompt
 
 from nextmv import cloud, local
-from nextmv.cli.cloud.app.push import handle_push
+from nextmv.cli.cloud.app._workflows import handle_push
 from nextmv.cli.configuration.config import build_cloud_app, load_config, obscure_api_key
 from nextmv.cli.message import choice, confirmation, directory_path, error, in_progress, info, message, rule, success
 from nextmv.cloud.community import _get_valid_path
