@@ -137,7 +137,7 @@ class TestCreateEnsemble(unittest.TestCase):
             "my-app",
             run_groups=run_groups,
             rules=rules,
-            ensemble_id="ens-id",
+            ensemble_definition_id="ens-id",
             name="My Ensemble",
             description="desc",
         )

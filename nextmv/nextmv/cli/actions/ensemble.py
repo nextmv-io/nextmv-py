@@ -1,10 +1,26 @@
 """Core ensemble actions.
 
-Pure functions that wrap SDK calls. No CLI or MCP concerns.
+Pure functions that wrap SDK calls. No CLI or MCP presentation concerns.
+
+An ensemble definition coordinates multiple child runs for an
+application and selects the best result according to a set of
+evaluation rules. Each run group specifies an instance + options; each
+evaluation rule specifies a statistics path, an objective, and a
+tolerance. The ``parse_evaluation_rule`` helper accepts loose dicts
+(including shorthand forms like ``"min"``/``"max"`` or a bare-float
+tolerance) and converts them into typed SDK objects, so both the CLI
+and MCP surfaces can accept flexible input.
 """
 
 from typing import Any
 
+from nextmv.cli.framework.options import (
+    AppIdRequiredOption,
+    DescriptionOption,
+    EnsembleDefinitionIdOption,
+    NameOption,
+    OptionalEnsembleDefinitionIdOption,
+)
 from nextmv.cloud import Application, Client
 from nextmv.cloud.ensemble import (
     EvaluationRule,
@@ -17,9 +33,14 @@ from nextmv.run import RunConfiguration, RunType, RunTypeConfiguration
 
 
 def parse_evaluation_rule(r: dict[str, Any], index: int) -> EvaluationRule:
-    """Parse a single evaluation rule dict into an EvaluationRule.
+    """Parse a single evaluation rule dict into an ``EvaluationRule``.
 
-    Raises ValueError on invalid input (instead of returning an error string).
+    Accepts shorthand inputs: a bare float tolerance (interpreted as
+    relative) or a full ``{"value": ..., "type": ...}`` dict; shorthand
+    objectives ``"min"``/``"max"`` are expanded to
+    ``"minimize"``/``"maximize"``.
+
+    Raises ``ValueError`` on invalid input (not a string).
     """
 
     # Normalize the tolerance field: the LLM may pass a bare
@@ -66,30 +87,52 @@ def parse_evaluation_rule(r: dict[str, Any], index: int) -> EvaluationRule:
     )
 
 
-def list_ensembles(client: Client, app_id: str) -> list[dict[str, Any]]:
-    """List all ensemble definitions for an application."""
+def list_ensembles(
+    client: Client,
+    app_id: AppIdRequiredOption,
+) -> list[dict[str, Any]]:
+    """List all Nextmv Cloud ensemble definitions for an application.
+
+    Returns a list of ensemble definition dicts.
+    """
     app = Application(client=client, id=app_id)
     ensembles = app.list_ensemble_definitions()
     return [e.to_dict() for e in ensembles]
 
 
-def get_ensemble(client: Client, app_id: str, ensemble_id: str) -> dict[str, Any]:
-    """Get details of an ensemble definition."""
+def get_ensemble(
+    client: Client,
+    app_id: AppIdRequiredOption,
+    ensemble_definition_id: EnsembleDefinitionIdOption,
+) -> dict[str, Any]:
+    """Get details of a Nextmv Cloud ensemble definition.
+
+    Returns the run groups, evaluation rules, and configuration metadata
+    for the ensemble.
+    """
     app = Application(client=client, id=app_id)
-    ensemble = app.ensemble_definition(ensemble_definition_id=ensemble_id)
+    ensemble = app.ensemble_definition(ensemble_definition_id=ensemble_definition_id)
     return ensemble.to_dict()
 
 
 def create_ensemble(
     client: Client,
-    app_id: str,
+    app_id: AppIdRequiredOption,
     run_groups: list[dict[str, Any]],
     rules: list[dict[str, Any]],
-    ensemble_id: str | None = None,
-    name: str | None = None,
-    description: str | None = None,
+    ensemble_definition_id: OptionalEnsembleDefinitionIdOption = None,
+    name: NameOption = None,
+    description: DescriptionOption = None,
 ) -> dict[str, Any]:
-    """Create an ensemble definition. Returns the ensemble dict."""
+    """Create a new Nextmv Cloud ensemble definition.
+
+    Each ``run_groups`` entry is converted to an SDK ``RunGroup`` via
+    :meth:`RunGroup.from_dict`, and each ``rules`` entry is converted
+    via :func:`parse_evaluation_rule`. Raises ``ValueError`` if any
+    entry is invalid.
+
+    Returns the created ensemble definition dict.
+    """
     app = Application(client=client, id=app_id)
 
     run_group_objs = []
@@ -103,24 +146,54 @@ def create_ensemble(
     ensemble = app.new_ensemble_definition(
         run_groups=run_group_objs,
         rules=rule_objs,
-        id=ensemble_id,
+        id=ensemble_definition_id,
         name=name,
         description=description,
     )
     return ensemble.to_dict()
 
 
-def delete_ensemble(client: Client, app_id: str, ensemble_id: str) -> None:
-    """Delete an ensemble definition."""
+def update_ensemble(
+    client: Client,
+    app_id: AppIdRequiredOption,
+    ensemble_definition_id: EnsembleDefinitionIdOption,
+    name: NameOption = None,
+    description: DescriptionOption = None,
+) -> dict[str, Any]:
+    """Update a Nextmv Cloud ensemble definition.
+
+    Only the provided fields are updated; omitted fields remain
+    unchanged. To modify run groups or evaluation rules, you must
+    delete and recreate the ensemble definition.
+
+    Returns the updated ensemble definition dict.
+    """
     app = Application(client=client, id=app_id)
-    app.delete_ensemble_definition(ensemble_definition_id=ensemble_id)
+    return app.update_ensemble_definition(
+        id=ensemble_definition_id,
+        name=name,
+        description=description,
+    ).to_dict()
+
+
+def delete_ensemble(
+    client: Client,
+    app_id: AppIdRequiredOption,
+    ensemble_definition_id: EnsembleDefinitionIdOption,
+) -> None:
+    """Delete a Nextmv Cloud ensemble definition permanently.
+
+    This action cannot be undone.
+    """
+    app = Application(client=client, id=app_id)
+    app.delete_ensemble_definition(ensemble_definition_id=ensemble_definition_id)
 
 
 def build_ensemble_run_config(
     ensemble_id: str,
     content_format: str | None = None,
 ) -> RunConfiguration:
-    """Build a RunConfiguration for an ensemble run."""
+    """Build a ``RunConfiguration`` for an ensemble run."""
     from nextmv.cli.actions.config import build_run_configuration
 
     config = build_run_configuration(content_format) or RunConfiguration()

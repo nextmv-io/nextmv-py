@@ -4,12 +4,16 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.ensemble import create_ensemble as _create_ensemble
-from nextmv.cli.actions.ensemble import delete_ensemble as _delete_ensemble
-from nextmv.cli.actions.ensemble import ensemble_run_submit as _ensemble_run_submit
-from nextmv.cli.actions.ensemble import ensemble_run_with_result as _ensemble_run_with_result
-from nextmv.cli.actions.ensemble import get_ensemble as _get_ensemble
-from nextmv.cli.actions.ensemble import list_ensembles as _list_ensembles
+from nextmv.cli.actions.ensemble import (
+    create_ensemble,
+    delete_ensemble,
+    ensemble_run_submit,
+    ensemble_run_with_result,
+    get_ensemble,
+    list_ensembles,
+    update_ensemble,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.polling import default_polling_options
 
@@ -17,48 +21,24 @@ from nextmv.polling import default_polling_options
 def register(mcp: FastMCP) -> None:
     """Register cloud ensemble definition and run tools."""
 
-    @mcp.tool()
-    def cloud_list_ensembles(app_id: str) -> list[dict[str, Any]]:
-        """List ensemble definitions for a Nextmv Cloud application.
+    # Split into two helper functions to stay under the C901 complexity
+    # limit (multiple @mcp.tool closures in a single body exceeds it).
+    _register_definition_tools(mcp)
+    _register_run_tools(mcp)
 
-        An ensemble runs multiple instances or configurations in
-        parallel and selects the best result based on evaluation
-        rules.
 
-        Args:
-            app_id: The application ID.
-        """
+def _register_definition_tools(mcp: FastMCP) -> None:
+    """Register ensemble definition CRUD tools."""
 
-        client = _helpers._get_client()
-        return _list_ensembles(client, app_id)
-
-    @mcp.tool()
-    def cloud_get_ensemble(
-        app_id: str,
-        ensemble_id: str,
-    ) -> str:
-        """Get details of an ensemble definition.
-
-        Returns run groups, evaluation rules, and configuration.
-        Saves the result to a local temp file. Use file-reading
-        tools to inspect the contents.
-
-        Args:
-            app_id: The application ID.
-            ensemble_id: The ensemble definition ID.
-        """
-
-        client = _helpers._get_client()
-        data = _get_ensemble(client, app_id, ensemble_id)
-        endpoint = _helpers._endpoint_from_client(client)
-        return _helpers._save_experiment_file(data, endpoint, "ensemble", ensemble_id)
+    mcp_fw.tool(mcp, list_ensembles, name="cloud_list_ensembles")
+    mcp_fw.tool(mcp, get_ensemble, name="cloud_get_ensemble")
 
     @mcp.tool()
     def cloud_create_ensemble(
         app_id: str,
         run_groups: list[dict[str, Any]],
         rules: list[dict[str, Any]],
-        ensemble_id: str | None = None,
+        ensemble_definition_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any] | str:
@@ -77,12 +57,12 @@ def register(mcp: FastMCP) -> None:
                 "maximize"/"max"), tolerance (float for relative, or
                 dict with "value" and "type"), index (int, optional --
                 defaults to 0; lower indices are evaluated first).
-            ensemble_id: Optional ensemble definition ID.
+            ensemble_definition_id: Optional ensemble definition ID.
             name: Optional name.
             description: Optional description.
         """
 
-        ensemble_id = _helpers._none_if_empty(ensemble_id)
+        ensemble_definition_id = _helpers._none_if_empty(ensemble_definition_id)
         name = _helpers._none_if_empty(name)
         description = _helpers._none_if_empty(description)
 
@@ -91,32 +71,37 @@ def register(mcp: FastMCP) -> None:
         if not rules:
             return "Error: rules must contain at least one evaluation rule."
 
-        client = _helpers._get_client()
+        client = mcp_fw.client()
         try:
-            return _create_ensemble(
+            return create_ensemble(
                 client,
-                app_id,
+                app_id=app_id,
                 run_groups=run_groups,
                 rules=rules,
-                ensemble_id=ensemble_id,
+                ensemble_definition_id=ensemble_definition_id,
                 name=name,
                 description=description,
             )
         except Exception as exc:
             return f"Error: {exc}"
 
-    @mcp.tool()
-    def cloud_delete_ensemble(app_id: str, ensemble_id: str) -> str:
-        """Delete an ensemble definition permanently.
+    mcp_fw.tool(
+        mcp,
+        update_ensemble,
+        name="cloud_update_ensemble",
+        normalize_empty=["name", "description"],
+    )
 
-        Args:
-            app_id: The application ID.
-            ensemble_id: The ensemble definition ID to delete.
-        """
+    mcp_fw.tool(
+        mcp,
+        delete_ensemble,
+        name="cloud_delete_ensemble",
+        result_message="Deleted ensemble definition {ensemble_definition_id}",
+    )
 
-        client = _helpers._get_client()
-        _delete_ensemble(client, app_id, ensemble_id)
-        return f"Deleted ensemble definition {ensemble_id}"
+
+def _register_run_tools(mcp: FastMCP) -> None:
+    """Register ensemble run tools (inline — bespoke input handling)."""
 
     @mcp.tool()
     def cloud_ensemble_run(
@@ -163,9 +148,9 @@ def register(mcp: FastMCP) -> None:
         except ValueError as e:
             return f"Error building ensemble run configuration: {e}"
 
-        client = _helpers._get_client()
+        client = mcp_fw.client()
         try:
-            result = _ensemble_run_with_result(
+            result = ensemble_run_with_result(
                 client,
                 app_id,
                 ensemble_id,
@@ -225,9 +210,9 @@ def register(mcp: FastMCP) -> None:
         except ValueError as e:
             return f"Error building ensemble run configuration: {e}"
 
-        client = _helpers._get_client()
+        client = mcp_fw.client()
         try:
-            return _ensemble_run_submit(
+            return ensemble_run_submit(
                 client,
                 app_id,
                 ensemble_id,
