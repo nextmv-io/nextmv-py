@@ -24,6 +24,10 @@ from typer.testing import CliRunner
 from nextmv.cli.framework import options as fopts
 
 
+# Note: AppIdRequiredOption and AppDirOption are intentionally omitted from
+# this guard. They share type-metadata patterns with the aliases tested here
+# (required-string variants of AppIdOption) and are exercised transitively by
+# action and command tests added in later pilot tasks.
 class TestDualPurposeAliases(unittest.TestCase):
     """Assert every public dual-purpose alias works in both frontends."""
 
@@ -52,11 +56,19 @@ class TestDualPurposeAliases(unittest.TestCase):
 
         result = runner.invoke(app, [long_flag, sample])
         self.assertEqual(result.exit_code, 0, msg=result.output)
-        self.assertIn(f"value={sample}", result.stdout)
+        self.assertIn(
+            f"value={sample}",
+            result.stdout,
+            msg=f"Typer did not consume long flag {long_flag!r}: {result.output!r}",
+        )
 
         result = runner.invoke(app, [short_flag, sample])
         self.assertEqual(result.exit_code, 0, msg=result.output)
-        self.assertIn(f"value={sample}", result.stdout)
+        self.assertIn(
+            f"value={sample}",
+            result.stdout,
+            msg=f"Typer did not consume short flag {short_flag!r}: {result.output!r}",
+        )
 
     def test_app_id_option(self) -> None:
         self._assert_typer_consumes(fopts.AppIdOption, "--app-id", "-a", "my-app")
@@ -70,7 +82,7 @@ class TestDualPurposeAliases(unittest.TestCase):
         self._assert_typer_consumes(
             fopts.DescriptionOption, "--description", "-d", "Does stuff"
         )
-        self._assert_pydantic_description(fopts.DescriptionOption, "description")
+        self._assert_pydantic_description(fopts.DescriptionOption, "optional description")
 
     def test_default_instance_id_option(self) -> None:
         self._assert_typer_consumes(
@@ -98,17 +110,30 @@ class TestDualPurposeAliases(unittest.TestCase):
         self._assert_pydantic_description(fopts.ExistOkOption, "already exists")
 
     def test_bool_flag_works_via_typer(self) -> None:
-        """Smoke-test that an IsWorkflowOption flag is settable via Typer."""
+        """Smoke-test that IsWorkflowOption and ExistOkOption flags are
+        settable via Typer."""
         app = typer.Typer()
 
         @app.command()
-        def cmd(flag: fopts.IsWorkflowOption = False) -> None:  # type: ignore[valid-type]
-            typer.echo(f"flag={flag}")
+        def cmd(
+            workflow: fopts.IsWorkflowOption = False,  # type: ignore[valid-type]
+            exist_ok: fopts.ExistOkOption = False,  # type: ignore[valid-type]
+        ) -> None:
+            typer.echo(f"workflow={workflow} exist_ok={exist_ok}")
 
         runner = CliRunner()
+
         result = runner.invoke(app, ["--is-workflow"])
         self.assertEqual(result.exit_code, 0, msg=result.output)
-        self.assertIn("flag=True", result.stdout)
+        self.assertIn("workflow=True exist_ok=False", result.stdout)
+
+        result = runner.invoke(app, ["--exist-ok"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        self.assertIn("workflow=False exist_ok=True", result.stdout)
+
+        result = runner.invoke(app, ["--is-workflow", "--exist-ok"])
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        self.assertIn("workflow=True exist_ok=True", result.stdout)
 
 
 if __name__ == "__main__":
