@@ -90,6 +90,8 @@ class TestCreateInputSet(unittest.TestCase):
             instance_id=None,
             maximum_runs=None,
             run_ids=["run-1", "run-2"],
+            start_time=None,
+            end_time=None,
             inputs=None,
         )
         self.assertEqual(result, {"id": "set-1", "name": "Set One"})
@@ -120,6 +122,8 @@ class TestCreateInputSet(unittest.TestCase):
             instance_id="prod",
             maximum_runs=10,
             run_ids=None,
+            start_time=None,
+            end_time=None,
             inputs=None,
         )
         self.assertEqual(result, {"id": "set-2"})
@@ -176,6 +180,7 @@ class TestUpdateInputSet(unittest.TestCase):
             id="set-1",
             name="New Name",
             description="New desc",
+            inputs=None,
         )
         self.assertEqual(result, {"id": "set-1", "name": "New Name"})
 
@@ -197,6 +202,7 @@ class TestUpdateInputSet(unittest.TestCase):
             id="set-1",
             name=None,
             description=None,
+            inputs=None,
         )
         self.assertEqual(result, {"id": "set-1"})
 
