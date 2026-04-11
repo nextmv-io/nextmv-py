@@ -1,33 +1,22 @@
 """MCP tools for cloud acceptance tests."""
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.actions.acceptance import create_acceptance_test as _create_acceptance_test
-from nextmv.cli.actions.acceptance import delete_acceptance_test as _delete_acceptance_test
-from nextmv.cli.actions.acceptance import get_acceptance_test as _get_acceptance_test
-from nextmv.cli.actions.acceptance import list_acceptance_tests as _list_acceptance_tests
+from nextmv.cli.actions.acceptance import (
+    create_acceptance_test,
+    delete_acceptance_test,
+    get_acceptance_test,
+    list_acceptance_tests,
+    update_acceptance_test,
+)
+from nextmv.cli.mcp import framework as mcp_fw
 from nextmv.cli.mcp.tools import _helpers
 
 
 def register(mcp: FastMCP) -> None:
     """Register cloud acceptance test tools."""
 
-    @mcp.tool()
-    def cloud_list_acceptance_tests(app_id: str) -> list[dict[str, Any]]:
-        """List acceptance tests for a Nextmv Cloud application.
-
-        Acceptance tests compare a candidate instance against a
-        baseline using defined metrics. Returns a list of test
-        summaries.
-
-        Args:
-            app_id: The application ID.
-        """
-
-        client = _helpers._get_client()
-        return _list_acceptance_tests(client, app_id)
+    mcp_fw.tool(mcp, list_acceptance_tests, name="cloud_list_acceptance_tests")
 
     @mcp.tool()
     def cloud_get_acceptance_test(
@@ -37,81 +26,41 @@ def register(mcp: FastMCP) -> None:
         """Get details and results of an acceptance test.
 
         Saves the full test data (including metric comparisons and
-        pass/fail results) to a local temp file. Use file-reading
-        tools to inspect the contents.
-
-        Args:
-            app_id: The application ID.
-            acceptance_test_id: The acceptance test ID.
+        pass/fail results) to a local experiment cache file. Use file-
+        reading tools to inspect the contents.
         """
 
-        client = _helpers._get_client()
-        data = _get_acceptance_test(client, app_id, acceptance_test_id)
+        client = mcp_fw.client()
+        data = get_acceptance_test(
+            client, app_id=app_id, acceptance_test_id=acceptance_test_id
+        )
         endpoint = _helpers._endpoint_from_client(client)
-        return _helpers._save_experiment_file(data, endpoint, "acceptance", acceptance_test_id)
-
-    @mcp.tool()
-    def cloud_create_acceptance_test(
-        app_id: str,
-        candidate_instance_id: str,
-        baseline_instance_id: str,
-        metrics: list[dict[str, Any]],
-        acceptance_test_id: str | None = None,
-        name: str | None = None,
-        input_set_id: str | None = None,
-        description: str | None = None,
-    ) -> dict[str, Any]:
-        """Create an acceptance test comparing two instances.
-
-        An acceptance test runs both instances against the same input
-        set and compares results using the specified metrics to
-        determine whether the candidate meets acceptance criteria.
-
-        Args:
-            app_id: The application ID.
-            candidate_instance_id: The candidate instance to evaluate.
-            baseline_instance_id: The baseline instance to compare
-                the candidate against.
-            metrics: List of metric definitions. Each metric is a dict
-                with keys: ``field``, ``metric_type``, ``params``,
-                ``statistic``.
-            acceptance_test_id: Optional test ID. Auto-generated if
-                omitted.
-            name: Optional human-readable name.
-            input_set_id: Optional input set ID to run the test against.
-            description: Optional description.
-        """
-
-        acceptance_test_id = _helpers._none_if_empty(acceptance_test_id)
-        name = _helpers._none_if_empty(name)
-        input_set_id = _helpers._none_if_empty(input_set_id)
-        description = _helpers._none_if_empty(description)
-
-        client = _helpers._get_client()
-        return _create_acceptance_test(
-            client,
-            app_id,
-            candidate_instance_id=candidate_instance_id,
-            baseline_instance_id=baseline_instance_id,
-            metrics=metrics,
-            acceptance_test_id=acceptance_test_id,
-            name=name,
-            input_set_id=input_set_id,
-            description=description,
+        return _helpers._save_experiment_file(
+            data, endpoint, "acceptance", acceptance_test_id
         )
 
-    @mcp.tool()
-    def cloud_delete_acceptance_test(
-        app_id: str,
-        acceptance_test_id: str,
-    ) -> str:
-        """Delete an acceptance test permanently.
+    mcp_fw.tool(
+        mcp,
+        create_acceptance_test,
+        name="cloud_create_acceptance_test",
+        normalize_empty=[
+            "acceptance_test_id",
+            "name",
+            "input_set_id",
+            "description",
+        ],
+    )
 
-        Args:
-            app_id: The application ID.
-            acceptance_test_id: The acceptance test ID to delete.
-        """
+    mcp_fw.tool(
+        mcp,
+        update_acceptance_test,
+        name="cloud_update_acceptance_test",
+        normalize_empty=["name", "description"],
+    )
 
-        client = _helpers._get_client()
-        _delete_acceptance_test(client, app_id, acceptance_test_id)
-        return f"Deleted acceptance test {acceptance_test_id}"
+    mcp_fw.tool(
+        mcp,
+        delete_acceptance_test,
+        name="cloud_delete_acceptance_test",
+        result_message="Deleted acceptance test {acceptance_test_id}",
+    )
