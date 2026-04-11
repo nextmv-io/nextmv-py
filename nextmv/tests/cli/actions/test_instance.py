@@ -99,6 +99,7 @@ class TestCreateInstance(unittest.TestCase):
             name="My Instance",
             description="A test instance",
             configuration=mock_config,
+            exist_ok=False,
         )
         self.assertEqual(result, {"id": "prod", "name": "My Instance"})
 
@@ -122,6 +123,7 @@ class TestCreateInstance(unittest.TestCase):
             name=None,
             description=None,
             configuration=None,
+            exist_ok=False,
         )
         self.assertEqual(result, {"id": "auto-id", "name": ""})
 
@@ -156,6 +158,7 @@ class TestUpdateInstance(unittest.TestCase):
             version_id="v2",
             description="New desc",
             configuration={"execution_class": "high"},
+            locked=None,
         )
         self.assertEqual(result, {"id": "prod", "name": "New Name"})
 
@@ -179,6 +182,7 @@ class TestUpdateInstance(unittest.TestCase):
             version_id=None,
             description=None,
             configuration=None,
+            locked=None,
         )
         self.assertEqual(result, {"id": "prod", "name": "Unchanged"})
 
