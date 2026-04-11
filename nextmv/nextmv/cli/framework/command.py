@@ -14,10 +14,9 @@ This module is imported at call sites as part of ``cli`` via::
 
 import functools
 import inspect
-from typing import Annotated, Any, Callable, Tuple, get_args, get_origin
+from typing import Any, Callable, Tuple
 
 import typer
-from typer.models import ParameterInfo
 
 from nextmv.cli.framework.options import _OutputOption
 from nextmv.cli.framework.result import apply_on_success, emit
@@ -55,43 +54,6 @@ def _render_examples(examples: tuple[Example, ...]) -> str:
         lines.append(f"    $ [dim]{command}[/dim]")
         lines.append("")
     return "\n".join(lines)
-
-
-def _has_parameter_info(annotation: Any) -> bool:
-    """Return True if ``annotation`` is an ``Annotated[...]`` alias already
-    carrying a Typer ``ParameterInfo`` (e.g. ``typer.Option(...)``)."""
-    if get_origin(annotation) is not Annotated:
-        return False
-    for meta in get_args(annotation)[1:]:
-        if isinstance(meta, ParameterInfo):
-            return True
-    return False
-
-
-def _ensure_option_annotation(p: inspect.Parameter) -> inspect.Parameter:
-    """Ensure a user-declared action parameter is exposed as a Typer option.
-
-    Parameters whose annotation is already ``Annotated[..., typer.Option(...)]``
-    are left untouched. Parameters with a bare annotation (e.g. ``str``) or
-    an ``Annotated[...]`` alias that only carries a ``pydantic.Field(...)``
-    are wrapped with a synthetic ``typer.Option(...)`` default so Typer
-    renders them as named CLI options rather than positional arguments.
-    """
-    if _has_parameter_info(p.annotation):
-        return p.replace()
-
-    # Build a fresh annotation that fuses a typer.Option with whatever
-    # original metadata was present (so Pydantic ``Field`` metadata is
-    # preserved for MCP reuse).
-    if get_origin(p.annotation) is Annotated:
-        base, *metas = get_args(p.annotation)
-    else:
-        base = p.annotation if p.annotation is not inspect.Parameter.empty else str
-        metas = []
-
-    option = typer.Option()
-    new_annotation = Annotated[tuple([base, option, *metas])]  # type: ignore[valid-type]
-    return p.replace(annotation=new_annotation)
 
 
 def _assert_first_param_is_client(action: Callable) -> inspect.Signature:
@@ -197,15 +159,7 @@ def command(
         # Preserve parameter kind (POSITIONAL_OR_KEYWORD, KEYWORD_ONLY, etc.)
         # by using Parameter.replace() — the annotation and default carry over
         # as-is, which means Annotated[...] metadata flows through to Typer.
-        #
-        # However, if the action declared a plain bare annotation (e.g.
-        # ``app_id: str``) with no Typer ``ParameterInfo`` in its metadata,
-        # Typer would treat it as a positional CLI ARGUMENT. We want all
-        # action parameters to be exposed as CLI options to keep MCP/CLI
-        # parity (MCP only has named params). Auto-wrap such bare
-        # annotations with a default ``typer.Option(...)`` so Typer renders
-        # ``--app-id`` instead of a positional ``APP_ID``.
-        wrapper_params.append(_ensure_option_annotation(p))
+        wrapper_params.append(p.replace())
 
     wrapper_params.append(
         inspect.Parameter(

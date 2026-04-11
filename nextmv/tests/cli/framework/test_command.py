@@ -12,6 +12,7 @@ import typer
 from pydantic import Field
 from typer.testing import CliRunner
 
+from nextmv.cli.framework.options import AppDirOption, AppIdRequiredOption
 from nextmv.cloud.client import Client
 
 
@@ -239,7 +240,7 @@ class TestCommandInvocation(unittest.TestCase):
     def test_none_returning_action_uses_on_success_template(
         self, mock_success, mock_client_cls
     ) -> None:
-        def delete_thing(client: Client, app_id: str) -> None:
+        def delete_thing(client: Client, app_id: AppIdRequiredOption) -> None:
             """Delete a thing."""
 
         app, _ = self._build_app_with_action(
@@ -257,7 +258,9 @@ class TestCommandInvocation(unittest.TestCase):
     def test_none_returning_action_uses_on_success_callable(
         self, mock_success, mock_client_cls
     ) -> None:
-        def push_thing(client: Client, app_id: str, app_dir: str) -> None:
+        def push_thing(
+            client: Client, app_id: AppIdRequiredOption, app_dir: AppDirOption
+        ) -> None:
             """Push a thing."""
 
         app, _ = self._build_app_with_action(
@@ -319,7 +322,7 @@ class TestHandlesOwnOutput(unittest.TestCase):
 
         captured = {"called": False}
 
-        def workflow(client: Client, app_id: str) -> None:
+        def workflow(client: Client, app_id: AppIdRequiredOption) -> None:
             """A workflow that manages its own output."""
             captured["called"] = True
             captured["client"] = client
