@@ -1,7 +1,10 @@
                                                                                 
- Usage: nextmv cloud app list [OPTIONS]                                         
+ Usage: root list [OPTIONS]                                                     
                                                                                 
- List all Nextmv Cloud applications.                                            
+ List all Nextmv Cloud applications in the current account.                     
+                                                                                
+ Returns a list of application dictionaries containing each application's       
+ ID, name, description, and default instance.                                   
                                                                                 
  Examples                                                                       
                                                                                 
@@ -15,11 +18,10 @@
      $ nextmv cloud app list --output apps.json                                 
                                                                                 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --output   -o      OUTPUT_PATH   Saves the app list information to this      │
-│                                  location.                                   │
 │ --profile  -p      PROFILE_NAME  Profile to use for this action. Use nextmv  │
 │                                  configuration to manage profiles.           │
 │                                  [env var: NEXTMV_PROFILE]                   │
-│ --help     -h                    Show this message and exit.                 │
+│ --output   -o      OUTPUT_PATH   Save the result as JSON to this file path.  │
+│ --help                           Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 

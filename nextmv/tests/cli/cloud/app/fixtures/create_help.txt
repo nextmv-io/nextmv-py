@@ -1,17 +1,16 @@
                                                                                 
- Usage: nextmv cloud app create [OPTIONS]                                       
+ Usage: root create [OPTIONS]                                                   
                                                                                 
  Create a new Nextmv Cloud application.                                         
                                                                                 
- Use the --exist-ok flag to avoid errors when creating an application with      
- an ID that already exists. This is useful for scripts that need to ensure      
- an application exists without worrying about whether it was created            
- previously.                                                                    
+ Set ``exist_ok`` to avoid errors when an application with the given ID         
+ already exists; the existing application is returned instead.                  
                                                                                 
- An application can be marked as a workflow using the --is-workflow flag.       
- Workflows allow for more complex decision-making processes by leveraging       
- Nextpipe to                                                                    
- orchestrate multiple decision models.                                          
+ An application can be marked as a workflow via ``is_workflow``. Workflows      
+ leverage Nextpipe to orchestrate multiple decision models.                     
+                                                                                
+ Returns the created (or existing) application object. A version and            
+ default instance are automatically provisioned for new applications.           
                                                                                 
  Examples                                                                       
                                                                                 
@@ -23,7 +22,7 @@
                                                                                 
  - Create an application with an ID and description.                            
      $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
-         --description "An application for routing hares"                       
+     --description "An application for routing hares"                           
                                                                                 
  - Create an application, or get it if it already exists.                       
      $ nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok   
@@ -34,13 +33,18 @@
                                                                                 
  - Create an application with a default instance ID.                            
      $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
-         --default-instance-id burrow                                           
+     --default-instance-id burrow                                               
                                                                                 
  - Create an application with a default experiment instance.                    
      $ nextmv cloud app create --name "Hare App" --app-id hare-app \            
-         --default-experiment-instance experiment-v1                            
+     --default-experiment-instance experiment-v1                                
                                                                                 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --name                  -n      NAME                   A name for the        │
+│                                                        application. If not   │
+│                                                        provided, the         │
+│                                                        application ID will   │
+│                                                        be used as the name.  │
 │ --app-id                -a      APP_ID                 An optional ID for    │
 │                                                        the Nextmv Cloud      │
 │                                                        application. If not   │
@@ -48,36 +52,31 @@
 │                                                        will be generated.    │
 │                                                        [env var:             │
 │                                                        NEXTMV_APP_ID]        │
-│ --default-experiment-…  -x      DEFAULT_EXPERIMENT_IN  An optional default   │
-│                                 STANCE                 experiment instance   │
-│                                                        ID for the            │
-│                                                        application.          │
-│ --default-instance-id   -i      DEFAULT_INSTANCE_ID    An optional default   │
-│                                                        instance ID for the   │
-│                                                        application.          │
 │ --description           -d      DESCRIPTION            An optional           │
 │                                                        description for the   │
 │                                                        application.          │
+│ --is-workflow           -w                             Whether the           │
+│                                                        application is a      │
+│                                                        workflow.             │
 │ --exist-ok              -e                             If an application     │
 │                                                        with the given ID     │
 │                                                        already exists, do    │
 │                                                        not raise an error,   │
 │                                                        and simply return it. │
-│ --is-workflow           -w                             Whether the           │
-│                                                        application is a      │
-│                                                        workflow.             │
-│ --name                  -n      NAME                   An optional name for  │
-│                                                        the application. If   │
-│                                                        not provided, the     │
-│                                                        application ID will   │
-│                                                        be used as the name.  │
+│ --default-instance-id   -i      DEFAULT_INSTANCE_ID    An optional default   │
+│                                                        instance ID for the   │
+│                                                        application.          │
+│ --default-experiment-…  -x      DEFAULT_EXPERIMENT_IN  An optional default   │
+│                                 STANCE                 experiment instance   │
+│                                                        ID for the            │
+│                                                        application.          │
 │ --profile               -p      PROFILE_NAME           Profile to use for    │
 │                                                        this action. Use      │
 │                                                        nextmv configuration  │
 │                                                        to manage profiles.   │
 │                                                        [env var:             │
 │                                                        NEXTMV_PROFILE]       │
-│ --help                  -h                             Show this message and │
+│ --help                                                 Show this message and │
 │                                                        exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
