@@ -1,0 +1,51 @@
+- id: submit_run
+  task: "Submit a run for the app 'routing-demo' with input {\"stops\": 5}."
+  tool_groups: [run]
+  expected_tools:
+    - cloud_run_submit
+  success:
+    tool_called: cloud_run_submit
+  deterministic:
+    - tool: cloud_run_submit
+      args:
+        app_id: routing-demo
+        input:
+          stops: 5
+
+- id: get_run_result
+  task: "Get the result of run 'latest-abc123' for app 'routing-demo'."
+  tool_groups: [run]
+  expected_tools:
+    - cloud_run_result
+  success:
+    tool_called: cloud_run_result
+  deterministic:
+    - tool: cloud_run_result
+      args:
+        app_id: routing-demo
+        run_id: latest-abc123
+
+- id: check_run_status
+  task: "What is the status of run 'latest-abc123' for app 'routing-demo'?"
+  tool_groups: [run]
+  expected_tools:
+    - cloud_run_status
+  success:
+    tool_called: cloud_run_status
+  deterministic:
+    - tool: cloud_run_status
+      args:
+        app_id: routing-demo
+        run_id: latest-abc123
+
+- id: list_runs_for_app
+  task: "Show me all runs for the 'routing-demo' app."
+  tool_groups: [run]
+  expected_tools:
+    - cloud_list_runs
+  success:
+    tool_called: cloud_list_runs
+  deterministic:
+    - tool: cloud_list_runs
+      args:
+        app_id: routing-demo

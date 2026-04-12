@@ -1,0 +1,61 @@
+- id: list_apps
+  task: "List all my Nextmv Cloud applications."
+  tool_groups: [app]
+  expected_tools:
+    - cloud_list_apps
+  success:
+    tool_called: cloud_list_apps
+  deterministic:
+    - tool: cloud_list_apps
+      args: {}
+
+- id: get_app_by_id
+  task: "Get details for the app called 'routing-demo'."
+  tool_groups: [app]
+  expected_tools:
+    - cloud_get_app
+  success:
+    tool_called: cloud_get_app
+  deterministic:
+    - tool: cloud_get_app
+      args:
+        app_id: routing-demo
+
+- id: find_routing_app
+  task: "List my apps and find the one that has 'routing' in the name."
+  tool_groups: [app]
+  expected_tools:
+    - cloud_list_apps
+  success:
+    contains: routing
+  deterministic:
+    - tool: cloud_list_apps
+      args: {}
+
+- id: create_and_get_app
+  task: "Create a new app called 'eval-test' and then get its details."
+  tool_groups: [app]
+  expected_tools:
+    - cloud_create_app
+    - cloud_get_app
+  success:
+    tool_called: cloud_get_app
+  deterministic:
+    - tool: cloud_create_app
+      args:
+        name: eval-test
+    - tool: cloud_get_app
+      args:
+        app_id: eval-test
+
+- id: delete_nonexistent_app
+  task: "Delete the app 'does-not-exist-xyz'."
+  tool_groups: [app]
+  expected_tools:
+    - cloud_delete_app
+  success:
+    tool_called: cloud_delete_app
+  deterministic:
+    - tool: cloud_delete_app
+      args:
+        app_id: does-not-exist-xyz

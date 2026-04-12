@@ -1,0 +1,114 @@
+app:
+  - cloud_list_apps
+  - cloud_get_app
+  - cloud_create_app
+  - cloud_delete_app
+  - cloud_app_exists
+  - cloud_update_app
+  - cloud_push_app
+
+run:
+  - cloud_run_submit
+  - cloud_run
+  - cloud_run_result
+  - cloud_run_status
+  - cloud_run_input
+  - cloud_run_logs
+  - cloud_list_runs
+  - cloud_cancel_run
+  - cloud_poll_run_logs
+
+version:
+  - cloud_list_versions
+  - cloud_get_version
+  - cloud_create_version
+  - cloud_delete_version
+  - cloud_update_version
+
+instance:
+  - cloud_list_instances
+  - cloud_get_instance
+  - cloud_create_instance
+  - cloud_delete_instance
+  - cloud_update_instance
+
+input_set:
+  - cloud_list_input_sets
+  - cloud_get_input_set
+  - cloud_create_input_set
+  - cloud_delete_input_set
+  - cloud_update_input_set
+
+scenario:
+  - cloud_list_scenario_tests
+  - cloud_get_scenario_test
+  - cloud_create_scenario_test
+  - cloud_delete_scenario_test
+
+batch:
+  - cloud_list_batches
+  - cloud_get_batch
+  - cloud_create_batch
+  - cloud_delete_batch
+  - cloud_batch_metadata
+
+ensemble:
+  - cloud_list_ensembles
+  - cloud_get_ensemble
+  - cloud_create_ensemble
+  - cloud_delete_ensemble
+  - cloud_ensemble_run
+  - cloud_ensemble_run_submit
+
+shadow:
+  - cloud_list_shadow_tests
+  - cloud_get_shadow_test
+  - cloud_create_shadow_test
+  - cloud_delete_shadow_test
+  - cloud_start_shadow_test
+  - cloud_stop_shadow_test
+
+switchback:
+  - cloud_list_switchback_tests
+  - cloud_get_switchback_test
+  - cloud_create_switchback_test
+  - cloud_delete_switchback_test
+  - cloud_start_switchback_test
+  - cloud_stop_switchback_test
+
+acceptance:
+  - cloud_list_acceptance_tests
+  - cloud_get_acceptance_test
+  - cloud_create_acceptance_test
+  - cloud_delete_acceptance_test
+
+secrets:
+  - cloud_list_secrets_collections
+  - cloud_get_secrets_collection
+  - cloud_create_secrets_collection
+  - cloud_delete_secrets_collection
+
+account:
+  - cloud_get_account
+  - cloud_get_queue
+
+profile:
+  - cloud_list_profiles
+  - cloud_get_profile
+  - cloud_set_profile
+
+community:
+  - community_list
+  - community_clone
+
+local:
+  - local_run
+  - local_run_submit
+  - local_run_result
+  - local_run_poll_result
+  - local_run_status
+  - local_run_input
+  - local_run_logs
+  - local_list_runs
+  - local_sync
+  - manifest_init

@@ -1,0 +1,50 @@
+name: MCP Evals
+
+on:
+  pull_request:
+    paths:
+      - "nextmv/nextmv/evals/**"
+      - "nextmv/nextmv/cli/mcp/**"
+      - "nextmv/tests/evals/**"
+  workflow_dispatch:
+    inputs:
+      run_llm_evals:
+        description: "Run LLM evals with Claude (requires ANTHROPIC_API_KEY secret)"
+        type: boolean
+        default: false
+
+jobs:
+  deterministic:
+    name: Deterministic Evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        working-directory: nextmv
+        run: pip install -e ".[mcp,evals]" pytest
+      - name: Run deterministic evals
+        working-directory: nextmv
+        run: pytest tests/evals/ -v -m "not llm"
+
+  llm-anthropic:
+    name: LLM Evals (Claude)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.run_llm_evals
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        working-directory: nextmv
+        run: pip install -e ".[mcp,evals]" pytest
+      - name: Run Claude evals
+        working-directory: nextmv
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: pytest tests/evals/test_llm.py::TestAnthropicEvals -v -s
+    # Note: Ollama evals (TestOllamaEvals) require a local GPU and model
+    # downloads, so they are run manually rather than in CI.
