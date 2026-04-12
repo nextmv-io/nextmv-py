@@ -268,7 +268,7 @@ print(json.dumps(output))
         mock_popen.assert_called_once()
         popen_args = mock_popen.call_args
 
-        # Check the command
+        # Check the command (normal Python install, not frozen)
         self.assertEqual(popen_args[0][0], [sys.executable, "executor.py"])
 
         # Check that stdin was written to
@@ -295,6 +295,35 @@ print(json.dumps(output))
         self.assertEqual(stdin_json["input_data"], input_data)
         self.assertEqual(stdin_json["options"], options)
         self.assertEqual(stdin_json["run_config"], run_config)
+
+    @patch("nextmv.local.runner.subprocess.Popen")
+    @patch("nextmv.local.runner.safe_id")
+    def test_run_function_execution_frozen(self, mock_safe_id, mock_popen):
+        """Test that --run-script is used when running as a frozen PyInstaller binary."""
+        mock_safe_id.return_value = "test-run-id"
+        mock_process = Mock()
+        mock_process.stdin = Mock()
+        mock_popen.return_value = mock_process
+
+        manifest = Manifest(
+            files=["main.py"],
+            runtime=ManifestRuntime.PYTHON,
+        )
+
+        run_config = {"format": {"input": {"type": "json"}, "output": {"type": "json"}}}
+
+        with patch.object(sys, "frozen", True, create=True):
+            run(
+                app_id="sample-app",
+                src=self.test_src,
+                manifest=manifest,
+                run_config=run_config,
+                input_data={},
+                options={},
+            )
+
+        popen_args = mock_popen.call_args
+        self.assertEqual(popen_args[0][0], [sys.executable, "--run-script", "executor.py"])
 
     @patch("nextmv.local.runner.subprocess.Popen")
     @patch("nextmv.local.runner.safe_id")
