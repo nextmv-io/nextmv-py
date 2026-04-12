@@ -2,10 +2,13 @@
 Unit tests for the nextmv CLI main module.
 """
 
+import os
+import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
-from nextmv.cli.main import app
+from nextmv.cli.main import app, main
 from typer.testing import CliRunner
 
 
@@ -66,3 +69,53 @@ class TestHandleGoCli(unittest.TestCase):
         result = self.runner.invoke(self.app, ["version"])
         self.assertEqual(result.exit_code, 0)
         self.assertNotIn("deprecated", result.output)
+
+
+class TestRunScript(unittest.TestCase):
+    """Tests for the --run-script hidden flag."""
+
+    def _write_script(self, content: str) -> str:
+        """Write content to a temporary script file and return its path."""
+        fd, path = tempfile.mkstemp(suffix=".py")
+        with os.fdopen(fd, "w") as f:
+            f.write(content)
+        return path
+
+    def test_run_script_executes_script(self):
+        """Test that --run-script runs the given script."""
+        script = self._write_script("import sys; sys.exit(42)\n")
+        try:
+            with patch.object(sys, "argv", ["nextmv", "--run-script", script]):
+                with self.assertRaises(SystemExit) as cm:
+                    main()
+            self.assertEqual(cm.exception.code, 42)
+        finally:
+            os.unlink(script)
+
+    def test_run_script_forwards_trailing_args(self):
+        """Test that trailing arguments are visible to the script as sys.argv."""
+        # The script writes its own argv to a temp file so we can inspect it.
+        result_file = tempfile.mktemp(suffix=".txt")
+        script = self._write_script(f"import sys\nopen({result_file!r}, 'w').write(','.join(sys.argv))\n")
+        try:
+            with patch.object(sys, "argv", ["nextmv", "--run-script", script, "arg1", "arg2"]):
+                with self.assertRaises(SystemExit) as cm:
+                    main()
+            self.assertEqual(cm.exception.code, 0)
+            with open(result_file) as f:
+                recorded = f.read().split(",")
+            # The script sees itself as argv[0] and its own trailing args after.
+            self.assertEqual(recorded[0], script)
+            self.assertEqual(recorded[1], "arg1")
+            self.assertEqual(recorded[2], "arg2")
+        finally:
+            os.unlink(script)
+            if os.path.exists(result_file):
+                os.unlink(result_file)
+
+    def test_run_script_missing_path_exits_with_error(self):
+        """Test that omitting the script path prints an error and exits 1."""
+        with patch.object(sys, "argv", ["nextmv", "--run-script"]):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+        self.assertEqual(cm.exception.code, 1)

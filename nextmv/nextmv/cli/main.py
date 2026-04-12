@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import runpy
 import sys
 from typing import Annotated
 
@@ -175,6 +176,20 @@ def main() -> None:
     Catches all exceptions except Typer/Click exceptions (which handle their
     own exit codes) and displays a clean error message instead of a traceback.
     """
+
+    # Handle --run-script before Typer gets a chance to parse sys.argv. This allows
+    # running arbitrary Python scripts with the bundled interpreter and all of its
+    # dependencies — including when the CLI is packaged as a single binary via
+    # PyInstaller. Trailing arguments are forwarded to the script unchanged (the script
+    # sees them as its own sys.argv).
+    if len(sys.argv) > 1 and sys.argv[1] == "--run-script":
+        if len(sys.argv) < 3:
+            rich.print("[red]Error:[/red] --run-script requires a script path.", file=sys.stderr)
+            sys.exit(1)
+        script_path = sys.argv[2]
+        sys.argv = sys.argv[2:]  # script becomes argv[0]; its own args follow
+        runpy.run_path(script_path, run_name="__main__")
+        sys.exit(0)
 
     try:
         app()
