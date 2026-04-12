@@ -21,6 +21,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Any
 
+from nextmv.cli.message import info
 from nextmv.input import INPUTS_KEY
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
@@ -128,8 +129,15 @@ def run(
     # In a normal Python package install, sys.executable is a real interpreter
     # and executor.py can be launched directly.
     if getattr(sys, "frozen", False):
+        # TODO remove debug info messages
+        # Make sure executor.py exists.
+        executor_path = os.path.join(os.path.dirname(__file__), "executor.py")
+        if not os.path.exists(executor_path):
+            raise FileNotFoundError(f"executor.py not found at expected location: {executor_path}")
+        info(f"Running in frozen mode, using bundled Python interpreter: {sys.executable} --run-script executor.py")
         args = [sys.executable, "--run-script", "executor.py"]
     else:
+        info(f"Running in normal mode, using Python interpreter: {sys.executable} executor.py")
         args = [sys.executable, "executor.py"]
     process = subprocess.Popen(
         args,
