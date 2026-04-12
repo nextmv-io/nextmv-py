@@ -50,8 +50,21 @@ jobs:
         working-directory: nextmv/
 
       - name: build binary with PyInstaller
+        shell: bash
         # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
-        run: pyinstaller --name nextmv --onefile --console nextmv/cli/main.py
+        run: |
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            ADD_DATA_SEPARATOR=";"
+          else
+            ADD_DATA_SEPARATOR=":"
+          fi
+
+          pyinstaller \
+            --name nextmv \
+            --onefile \
+            --add-data "nextmv/templates${ADD_DATA_SEPARATOR}nextmv/templates" \
+             --add-data "nextmv\local\executor.py${ADD_DATA_SEPARATOR}nextmv\local\executor.py" \
+            --console nextmv/cli/main.py
         working-directory: nextmv/
 
       - name: smoketest binary (windows)
