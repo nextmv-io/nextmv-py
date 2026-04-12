@@ -144,13 +144,35 @@ def run(
         env=os.environ,
         text=True,
         stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         cwd=os.path.dirname(__file__),
-        start_new_session=True,  # Detach from parent process
+        # start_new_session=True,  # Detach from parent process
     )
-    process.stdin.write(stdin_input)
-    process.stdin.close()
+    # process.stdin.write(stdin_input)
+    # process.stdin.close()
+
+    # TODO remove debug code
+    # .communicate() sends stdin, waits for the process to exit, and reads all stdout/stderr into variables.
+    stdout_data, stderr_data = process.communicate(input=stdin_input)
+
+    print(f"Exit Code: {process.returncode}")
+
+    if process.returncode != 0:
+        print("--- STDERR LOG ---")
+        print(stderr_data)
+        print("--- STDOUT LOG ---")
+        print(stdout_data)
+
+    # Wait some time to make sure that the process starts properly, and if it already quit
+    # log it's status and details for debugging.
+
+    details = {
+        "run_id": run_id,
+        "process_id": process.pid,
+        "return_code": process.returncode,
+    }
+    info(f"Started local run with details: {details}")
 
     return run_id
 
