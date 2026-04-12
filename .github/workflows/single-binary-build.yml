@@ -63,7 +63,7 @@ jobs:
             --name nextmv \
             --onefile \
             --add-data "nextmv/templates${ADD_DATA_SEPARATOR}nextmv/templates" \
-             --add-data "nextmv\local\executor.py${ADD_DATA_SEPARATOR}nextmv\local\executor.py" \
+            --add-data "nextmv/local/executor.py${ADD_DATA_SEPARATOR}nextmv/local/executor.py" \
             --console nextmv/cli/main.py
         working-directory: nextmv/
 
