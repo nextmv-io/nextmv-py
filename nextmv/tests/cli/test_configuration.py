@@ -3,6 +3,7 @@ Unit tests for the nextmv configuration command.
 """
 
 import os
+import platform
 import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -313,7 +314,10 @@ class TestGoCliPath(unittest.TestCase):
     def test_go_cli_path_is_in_config_dir(self):
         """Test that GO_CLI_PATH is inside CONFIG_DIR."""
         self.assertEqual(GO_CLI_PATH.parent, CONFIG_DIR)
-        self.assertEqual(GO_CLI_PATH.name, "nextmv")
+        if platform.system() == "Windows":
+            self.assertEqual(GO_CLI_PATH.name, "nextmv.exe")
+        else:
+            self.assertEqual(GO_CLI_PATH.name, "nextmv")
 
 
 if __name__ == "__main__":
