@@ -12,6 +12,7 @@ import time
 import unittest
 from unittest.mock import Mock, patch
 
+from nextmv.content_format import ContentFormat
 from nextmv.local.executor import (
     _calculate_file_checksum,
     _copy_new_or_modified_files,
@@ -45,7 +46,11 @@ class TestLocalExecutor(unittest.TestCase):
         self.mock_manifest.files = []
         self.mock_manifest.execution = Mock(spec=ManifestExecution)
         self.mock_manifest.execution.entrypoint = "main.py"
-        self.mock_manifest.configuration = None
+        mock_configuration = Mock()
+        mock_content = Mock()
+        mock_content.format = ContentFormat.JSON
+        mock_configuration.content = mock_content
+        self.mock_manifest.configuration = mock_configuration
 
         # Create nested mock for format
         mock_format = Mock()
@@ -58,7 +63,7 @@ class TestLocalExecutor(unittest.TestCase):
         self.mock_manifest.format = mock_format
 
         # Create mock output format
-        self.mock_output_format = Mock(spec=OutputFormat)
+        self.mock_output_format = Mock(spec=ContentFormat)
         self.mock_output_format.type = "json"
         self.mock_output_format.value = "json"
 
@@ -463,7 +468,7 @@ class TestLocalExecutor(unittest.TestCase):
             self.temp_src,
             outputs_dir,
             stdout_output,
-            output_format=OutputFormat.MULTI_FILE,
+            output_format=ContentFormat.MULTI_FILE,
             manifest=self.mock_manifest,
             src=self.test_dir,
         )

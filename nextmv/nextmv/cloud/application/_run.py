@@ -24,7 +24,7 @@ from nextmv.content_format import ContentFormat
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
+from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
@@ -681,7 +681,7 @@ class ApplicationRunMixin:
 
         # See whether we can return the input directly or need to save to the given
         # directory
-        if run_information.metadata.format.format_input.input_type != OutputFormat.JSON:
+        if run_information.metadata.format.format_input.input_type != ContentFormat.JSON:
             if not output_dir_path or output_dir_path == "":
                 raise ValueError(
                     "If the input format is not JSON, an output_dir_path must be provided.",
@@ -925,7 +925,7 @@ class ApplicationRunMixin:
         # Get the run information to check how we need to handle the output.
         run_information = self.run_metadata(run_id=run_id)
         output_format = run_information.metadata.format.format_output.output_type
-        is_json = output_format == OutputFormat.JSON
+        is_json = output_format == ContentFormat.JSON
 
         # We need to specify `output_dir_path` for non-JSON.
         if not is_json and (not output_dir_path or output_dir_path == ""):
@@ -1326,7 +1326,7 @@ class ApplicationRunMixin:
         query_params = None
         use_presigned_url = False
         if (
-            run_information.metadata.format.format_output.output_type != OutputFormat.JSON
+            run_information.metadata.format.format_output.output_type != ContentFormat.JSON
             or run_information.metadata.output_size > _MAX_RUN_SIZE
         ):
             query_params = {"format": "url"}

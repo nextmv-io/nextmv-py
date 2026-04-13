@@ -35,7 +35,7 @@ def main():
 
     # Write output and metrics.
     output = nextmv.Output(
-        output_format=nextmv.OutputFormat.MULTI_FILE,
+        output_format=nextmv.ContentFormat.MULTI_FILE,
         options=options,
         solution_files=[nextmv.json_solution_file(name="output", data={"message": message})],
         metrics={

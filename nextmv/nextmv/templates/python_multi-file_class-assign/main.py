@@ -36,7 +36,7 @@ def main() -> None:
     nextmv.log(f"  Assigned: {solution['total_assigned']}/{solution['total_students']}")
 
     output = nextmv.Output(
-        output_format=nextmv.OutputFormat.MULTI_FILE,
+        output_format=nextmv.ContentFormat.MULTI_FILE,
         options=options,
         metrics=metrics,
         assets=visual_assets,

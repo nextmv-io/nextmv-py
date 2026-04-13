@@ -11,7 +11,7 @@ from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
-from nextmv.output import OutputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.polling import PollingOptions, default_polling_options
 
 # Set up subcommand application.
@@ -158,8 +158,8 @@ def handle_outputs(
     # Build kwargs for the result retrieval.
     kwargs = {"run_id": run_id}
 
-    # For MULTI_FILE and CSV_ARCHIVE, we need output_dir_path.
-    if content_format not in {OutputFormat.JSON, OutputFormat.TEXT}:
+    # For MULTI_FILE, we need output_dir_path.
+    if content_format != ContentFormat.JSON:
         output_dir = f"{run_id}-output" if output is None or output == "" else output
         kwargs["output_dir_path"] = output_dir
 
@@ -174,7 +174,7 @@ def handle_outputs(
         run_result = cloud_app.run_result(**kwargs)
 
     # Handle the case where output is embedded directly in the result: json and text.
-    if content_format in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if content_format == ContentFormat.JSON:
         if output is None or output == "":
             print_json(run_result.to_dict())
         else:

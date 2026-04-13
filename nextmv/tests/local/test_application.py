@@ -343,9 +343,9 @@ print(json.dumps(output))
         inputs_dir = os.path.join(self.test_dir, "inputs")
         os.makedirs(inputs_dir)
 
-        # Should raise error when inputs_dir_path is provided without configuration
+        # Should raise error when inputs_dir_path is provided without a format in configuration
         with self.assertRaises(ValueError):
-            self.app.new_run(input_dir_path=inputs_dir)
+            self.app.new_run(input_dir_path=inputs_dir, configuration=RunConfiguration())
 
         # Should work when both are provided
         with patch("nextmv.local.application.run") as mock_run:

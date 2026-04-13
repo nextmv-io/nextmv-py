@@ -167,7 +167,7 @@ class DemandAllocationFlow(FlowSpec):
         )
 
         return nextmv.Output(
-            output_format=nextmv.OutputFormat.MULTI_FILE,
+            output_format=nextmv.ContentFormat.MULTI_FILE,
             solution_files=[
                 nextmv.json_solution_file(
                     name="solution",

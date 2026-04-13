@@ -1394,7 +1394,7 @@ class Application(BaseModel):
         # See whether we can attach the output directly or need to save to the given
         # directory
         output_type = run_information.metadata.format.format_output.output_type
-        if output_type != OutputFormat.JSON and (not output_dir_path or output_dir_path == ""):
+        if output_type != ContentFormat.JSON and (not output_dir_path or output_dir_path == ""):
             raise ValueError(
                 "The output format is not JSON: an `output_dir_path` must be provided.",
             )
@@ -1402,10 +1402,10 @@ class Application(BaseModel):
         runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
         solutions_dir = os.path.join(runs_dir, run_id, OUTPUTS_KEY, SOLUTIONS_KEY)
 
-        if output_type == OutputFormat.JSON:
+        if output_type == ContentFormat.JSON:
             with open(os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)) as f:
                 result.output = json.load(f)
-        elif output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        elif output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             shutil.copytree(solutions_dir, output_dir_path, dirs_exist_ok=True)
         else:
             raise ValueError(f"Unknown output type: {output_type}")
@@ -1621,21 +1621,21 @@ class Application(BaseModel):
 
         # Resolve the output according to its type.
         output_type = run_result.metadata.format.format_output.output_type
-        if output_type == OutputFormat.JSON:
+        if output_type == ContentFormat.JSON:
             tracked_run.output = run_result.output
         else:
             tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
 
         # Resolve the statistics according to their type and presence. If
         # working with JSON, the statistics should be resolved from the output.
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             stats_file_path = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
             if os.path.exists(stats_file_path):
                 with open(stats_file_path) as f:
                     tracked_run.statistics = json.load(f)
 
         # Resolve the metrics
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             metrics_file_path = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
             if os.path.exists(metrics_file_path):
                 with open(metrics_file_path) as f:
@@ -1643,7 +1643,7 @@ class Application(BaseModel):
 
         # Resolve the assets according to their type and presence. If working
         # with JSON, the assets should be resolved from the output.
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             assets_file_path = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
             if os.path.exists(assets_file_path):
                 with open(assets_file_path) as f:

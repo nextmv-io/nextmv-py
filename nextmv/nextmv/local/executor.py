@@ -418,11 +418,7 @@ def process_run_output(
     os.makedirs(outputs_dir, exist_ok=True)
     temp_run_outputs_dir = os.path.join(temp_src, OUTPUTS_KEY)
 
-    output_format = resolve_output_format(
-        manifest=manifest,
-        temp_run_outputs_dir=temp_run_outputs_dir,
-        temp_src=temp_src,
-    )
+    output_format = manifest.configuration.content.format
     process_run_information(
         run_id=run_id,
         run_dir=run_dir,
@@ -464,47 +460,6 @@ def process_run_output(
         run_dir=run_dir,
         outputs_dir=outputs_dir,
     )
-
-
-def resolve_output_format(
-    manifest: Manifest,
-    temp_run_outputs_dir: str,
-    temp_src: str,
-) -> OutputFormat:
-    """
-    Resolves the output format of the run. This function checks the manifest
-    configuration for the output format. If not specified, it checks for the
-    presence of an `output` directory (for `csv-archive`), or an
-    `outputs/solutions` directory (for `multi-file`). If neither exist, it
-    defaults to `json`.
-
-    Parameters
-    ----------
-    manifest : Manifest
-        The application manifest containing configuration details.
-    temp_run_outputs_dir : str
-        The path to the temporary outputs directory.
-    temp_src : str
-        The path to the temporary source directory.
-
-    Returns
-    -------
-    OutputFormat
-        The determined output format (JSON, CSV_ARCHIVE, or MULTI_FILE).
-    """
-
-    if manifest.configuration is not None and manifest.configuration.content is not None:
-        return manifest.configuration.content.format
-
-    output_dir = os.path.join(temp_src, OUTPUT_KEY)
-    if os.path.exists(output_dir) and os.path.isdir(output_dir):
-        return OutputFormat.CSV_ARCHIVE
-
-    solutions_dir = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
-    if os.path.exists(solutions_dir) and os.path.isdir(solutions_dir):
-        return OutputFormat.MULTI_FILE
-
-    return OutputFormat.JSON
 
 
 def process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
@@ -584,7 +539,7 @@ def process_run_metrics(
     if (
         manifest.configuration is not None
         and manifest.configuration.content is not None
-        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.format == ContentFormat.MULTI_FILE
         and manifest.configuration.content.multi_file is not None
     ):
         metrics_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.metrics)
@@ -647,7 +602,7 @@ def process_run_statistics(
     if (
         manifest.configuration is not None
         and manifest.configuration.content is not None
-        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.format == ContentFormat.MULTI_FILE
         and manifest.configuration.content.multi_file is not None
     ):
         stats_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.statistics)
@@ -708,7 +663,7 @@ def process_run_assets(
     if (
         manifest.configuration is not None
         and manifest.configuration.content is not None
-        and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+        and manifest.configuration.content.format == ContentFormat.MULTI_FILE
         and manifest.configuration.content.multi_file is not None
     ):
         assets_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.assets)
@@ -742,7 +697,7 @@ def process_run_solutions(
     temp_src: str,
     outputs_dir: str,
     stdout_output: str | dict[str, Any],
-    output_format: OutputFormat,
+    output_format: ContentFormat,
     manifest: Manifest,
     src: str,
 ) -> None:
@@ -771,7 +726,7 @@ def process_run_solutions(
         The path to the outputs directory in the run directory.
     stdout_output : Union[str, dict[str, Any]]
         The stdout output of the run, either as raw string or parsed dictionary.
-    output_format : OutputFormat
+    output_format : ContentFormat
         The determined output format (JSON, CSV_ARCHIVE, MULTI_FILE, or TEXT).
     manifest : Manifest
         The application manifest containing configuration and custom paths.
@@ -790,12 +745,12 @@ def process_run_solutions(
     if output_format == OutputFormat.CSV_ARCHIVE:
         output_src = os.path.join(temp_src, OUTPUT_KEY)
         shutil.copytree(output_src, solutions_dst, dirs_exist_ok=True)
-    elif output_format == OutputFormat.MULTI_FILE:
+    elif output_format == ContentFormat.MULTI_FILE:
         solutions_src = os.path.join(temp_run_outputs_dir, SOLUTIONS_KEY)
         if (
             manifest.configuration is not None
             and manifest.configuration.content is not None
-            and manifest.configuration.content.format == OutputFormat.MULTI_FILE
+            and manifest.configuration.content.format == ContentFormat.MULTI_FILE
             and manifest.configuration.content.multi_file is not None
         ):
             solutions_src = os.path.join(temp_src, manifest.configuration.content.multi_file.output.solutions)

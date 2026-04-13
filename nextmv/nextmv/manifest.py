@@ -1042,7 +1042,16 @@ class ManifestConfiguration(BaseModel):
     options: ManifestOptions | None = None
     """Options for the decision model."""
     content: ManifestContent | None = None
-    """Content configuration for specifying how the app input/output is handled."""
+    """Content configuration for specifying how the app input/output is
+    handled."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Post-initialization validation to ensure content field is properly
+        initialized.
+        """
+        if self.content is None:
+            self.content = ManifestContent(format=ContentFormat.JSON)
 
 
 class ManifestExecution(BaseModel):
@@ -1201,6 +1210,18 @@ class Manifest(BaseModel):
     Optional execution configuration for the decision model. Allows configuration of
     entrypoint and more.
     """
+
+    def model_post_init(self, __context) -> None:
+        """
+        Post-initialization validation to ensure required fields are properly
+        initialized and to set default values for optional fields.
+        """
+        if self.configuration is None:
+            self.configuration = ManifestConfiguration(
+                content=ManifestContent(
+                    format=ContentFormat.JSON,
+                ),
+            )
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":
