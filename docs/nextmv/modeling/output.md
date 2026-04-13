@@ -72,68 +72,6 @@ output = nextmv.Output(
 )
 ```
 
-## `CSV_ARCHIVE` outputs
-
-Work with one, or multiple, `CSV` files. In the `.solution` property of the
-output, the keys are the filenames and the values are the dataframes,
-represented as a list of dictionaries. Each `CSV` file must be `utf-8`
-encoded.
-
-By default, the output is written to a directory named `output`, and the
-filenames are derived from the keys of the `.solution` dictionary. If you want
-to change the output directory, you can pass the `path` parameter to the
-[`write`][write] function.
-
-```python
-import nextmv
-
-output = nextmv.Output(
-    output_format=nextmv.OutputFormat.CSV_ARCHIVE,
-    solution={
-        "output": [
-            {"name": "Alice", "age": 30},
-            {"name": "Bob", "age": 40},
-        ],
-    },
-    statistics=nextmv.Statistics(
-        result=nextmv.ResultStatistics(
-            duration=1.0,
-            value=2.0,
-            custom={"custom": "result_value"},
-        ),
-        run=nextmv.RunStatistics(
-            duration=3.0,
-            iterations=4,
-            custom={"custom": "run_value"},
-        ),
-    ),
-)
-
-# Write multiple CSV fiules to a dir named "output".
-nextmv.write(output)
-
-# Write multiple CSV files to a custom dir.
-nextmv.write(output, "custom_dir")
-```
-
-Similarly to the `JSON` output, the `.statistics` property can be a
-[`Statistics`][statistics] object, or a dictionary.
-
-By default, `Output` serializes `CSV` using `,` as the separator. If you
-want to change the serialization behavior, you can pass the `csv_configurations`
-parameter. The provided values are passed to the underlying `csv.DictWriter`
-method. For example, to use `;` as the separator, you can set:
-
-```python
-output = nextmv.Output(
-    # ...
-    csv_configurations={
-        "delimiter": ";",  # Use semicolon as the separator
-    },
-    # ...
-)
-```
-
 ## `MULTI_FILE` outputs
 
 When you need to work with a diverse set of files, use the `MULTI_FILE` output
@@ -179,7 +117,7 @@ csv_file = nextmv.csv_solution_file("output.csv", [{"name": "Alice", "age": 30},
 text_file = nextmv.text_solution_file("output.txt", "Hello, World!")
 
 output = nextmv.Output(
-    output_format=nextmv.OutputFormat.MULTI_FILE,
+    output_format=nextmv.ContentFormat.MULTI_FILE,
     solution_files=[json_file, csv_file, text_file],
     statistics=nextmv.Statistics(
         result=nextmv.ResultStatistics(
@@ -240,7 +178,7 @@ excel_file = nextmv.SolutionFile(
 
 # Load the multi-file output with the defined solution files.
 multi_file_output = nextmv.Output(
-    output_format=nextmv.OutputFormat.MULTI_FILE,
+    output_format=nextmv.ContentFormat.MULTI_FILE,
     solution_files=[excel_file],
     statistics=nextmv.Statistics(
         result=nextmv.ResultStatistics(
