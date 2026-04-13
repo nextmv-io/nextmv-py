@@ -331,15 +331,15 @@ guidelines:
 - When showing the values of an `Enum`, use the `enum_values` function in the
   `message.py` file which will give a nicely colored, comma-separated list of
   the enum values. Consider the following example, where we get the allowed
-  values for the `InputFormat` class.
+  values for the `ContentFormat` class.
 
   ```python
       content_format: Annotated[
-        InputFormat | None,
+        ContentFormat | None,
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format for the instance. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format for the instance. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Instance configuration",
         ),

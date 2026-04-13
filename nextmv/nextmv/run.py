@@ -203,15 +203,15 @@ class Format(BaseModel):
 
     Examples
     --------
-    >>> from nextmv import Format, FormatInput, FormatOutput, ContentFormat, OutputFormat
+    >>> from nextmv import Format, FormatInput, FormatOutput, ContentFormat
     >>> format_config = Format(
     ...     format_input=FormatInput(input_type=ContentFormat.JSON),
-    ...     format_output=FormatOutput(output_type=OutputFormat.JSON)
+    ...     format_output=FormatOutput(output_type=ContentFormat.JSON)
     ... )
     >>> format_config.format_input.input_type
     <ContentFormat.JSON: 'json'>
     >>> format_config.format_output.output_type
-    <OutputFormat.JSON: 'json'>
+    <ContentFormat.JSON: 'json'>
     """
 
     format_input: FormatInput = Field(

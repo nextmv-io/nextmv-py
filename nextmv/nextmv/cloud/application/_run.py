@@ -281,17 +281,17 @@ class ApplicationRunMixin:
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `ManagedInput`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the `input_dir_path`
-            argument instead. This argument takes precedence over the `input`.
-            If `input_dir_path` is specified, this function looks for files in that
-            directory and tars them, to later be uploaded using the
-            `upload_data` method. If both the `input_dir_path` and `input`
-            arguments are provided, the `input` is ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
             also be provided. More specifically, the
@@ -300,8 +300,7 @@ class ApplicationRunMixin:
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
             When working with JSON or text data, use the `input` argument
             directly.
@@ -349,7 +348,7 @@ class ApplicationRunMixin:
             Path to a directory containing input files. If specified, the
             function will package the files in the directory into a tar file
             and upload it as a large input. This is useful for input formats
-            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            like `nextmv.ContentFormat.MULTI_FILE`.
             If both `input` and `input_dir_path` are specified, the `input` is
             ignored, and the files in the directory are used instead.
         managed_input_id: Optional[str]
@@ -490,17 +489,17 @@ class ApplicationRunMixin:
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `ManagedInput`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the `input_dir_path`
-            argument instead. This argument takes precedence over the `input`.
-            If `input_dir_path` is specified, this function looks for files in that
-            directory and tars them, to later be uploaded using the
-            `upload_data` method. If both the `input_dir_path` and `input`
-            arguments are provided, the `input` is ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
             also be provided. More specifically, the
@@ -509,8 +508,7 @@ class ApplicationRunMixin:
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
             When working with JSON or text data, use the `input` argument
             directly.
@@ -563,7 +561,7 @@ class ApplicationRunMixin:
             Path to a directory containing input files. If specified, the
             function will package the files in the directory into a tar file
             and upload it as a large input. This is useful for input formats
-            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            like `nextmv.ContentFormat.MULTI_FILE`.
             If both `input` and `input_dir_path` are specified, the `input` is
             ignored, and the files in the directory are used instead.
         output_dir_path : Optional[str], default="."
