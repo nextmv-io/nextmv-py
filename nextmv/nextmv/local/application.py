@@ -1454,12 +1454,13 @@ class Application(BaseModel):
                 "If `dir_path` is provided, `RunConfiguration.format` must also be provided.",
             )
 
-        input_type = config_format.format_input
-        if input_type is None:
+        format_input = config_format.format_input
+        if format_input is None:
             raise ValueError(
                 "If `dir_path` is provided, `RunConfiguration.format.format_input` must also be provided.",
             )
 
+        input_type = format_input.input_type
         if input_type is None or input_type in (ContentFormat.JSON, InputFormat.TEXT):
             raise ValueError(
                 "If `dir_path` is provided, `RunConfiguration.format.format_input.input_type` must be set to "

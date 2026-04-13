@@ -9,9 +9,10 @@ import typer
 
 from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json, success
+from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json, success
 from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -66,7 +67,7 @@ def update(
     ] = None,
     # Options for updating the instance configuration.
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
@@ -164,6 +165,8 @@ def update(
         $ [dim]nextmv cloud instance update --app-id hare-app --instance-id prod \\
             --options max_duration=30 --options timeout=60[/dim]
     """
+
+    content_format = parse_content_format(content_format)
 
     # Check if any configuration options are provided
     has_config_options = any(

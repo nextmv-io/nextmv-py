@@ -12,9 +12,10 @@ import typer
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
-from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
 from nextmv.run import Format, FormatInput, RunConfiguration
 
@@ -84,7 +85,7 @@ def create(
     ] = False,
     # Options for run configuration.
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
@@ -208,6 +209,8 @@ def create(
         $ [dim]nextmv local run create --app-src ./my-app --input input.json \\
             --options duration=10s --options verbose=true[/dim]
     """
+
+    content_format = parse_content_format(content_format)
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None

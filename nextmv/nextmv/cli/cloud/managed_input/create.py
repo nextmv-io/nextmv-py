@@ -7,9 +7,10 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json
+from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 from nextmv.run import Format, FormatInput
 
 # Set up subcommand application.
@@ -20,12 +21,12 @@ app = typer.Typer()
 def create(
     app_id: AppIDOption,
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
             help=f"The content format for the managed input. "
-            f"Allowed values are: {enum_values(ContentFormat)}. Default is JSON.",
+            f"Allowed values are: {enum_values(ContentFormat)}. Default is [magenta]json[/magenta].",
             metavar="CONTENT_FORMAT",
         ),
     ] = None,
@@ -113,6 +114,8 @@ def create(
         $ [dim]nextmv cloud managed-input create --app-id hare-app --name "CSV Input" \\
             --upload-id upl_123456789 --content-format csv[/dim]
     """
+
+    content_format = parse_content_format(content_format)
 
     if upload_id is None and run_id is None:
         error(

@@ -126,7 +126,11 @@ class FormatInput(BaseModel):
 
     Parameters
     ----------
-    input_type : ContentFormat, optional
+    input_type : ContentFormat | InputFormat, optional
+        !!! warning
+            `InputFormat` is deprecated but kept for backwards compatibility.
+            Use `ContentFormat` instead.
+
         Type of the input format. Defaults to `ContentFormat.JSON`.
 
     Examples
@@ -141,12 +145,28 @@ class FormatInput(BaseModel):
     <ContentFormat.MULTI_FILE: 'multi-file'>
     """
 
-    input_type: ContentFormat = Field(
+    input_type: ContentFormat | InputFormat = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "input_type"),
         default=ContentFormat.JSON,
     )
-    """Type of the input format."""
+    """
+    !!! warning
+        `InputFormat` is deprecated but kept for backwards compatibility. Use
+        `ContentFormat` instead.
+
+    Type of the input format.
+    """
+
+    def model_post_init(self, _context) -> None:
+        """Convert deprecated InputFormat to ContentFormat after initialization."""
+        if type(self.input_type) is ContentFormat:
+            return
+
+        if self.input_type == InputFormat.JSON:
+            self.input_type = ContentFormat.JSON
+        elif self.input_type == InputFormat.MULTI_FILE:
+            self.input_type = ContentFormat.MULTI_FILE
 
 
 class FormatOutput(BaseModel):
@@ -161,7 +181,11 @@ class FormatOutput(BaseModel):
 
     Parameters
     ----------
-    output_type : ContentFormat, optional
+    output_type : ContentFormat | OutputFormat, optional
+        !!! warning
+            `OutputFormat` is deprecated but kept for backwards compatibility.
+            Use `ContentFormat` instead.
+
         Type of the output format. Defaults to `ContentFormat.JSON`.
 
     Examples
@@ -176,12 +200,28 @@ class FormatOutput(BaseModel):
     <ContentFormat.MULTI_FILE: 'multi-file'>
     """
 
-    output_type: ContentFormat = Field(
+    output_type: ContentFormat | OutputFormat = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "output_type"),
         default=ContentFormat.JSON,
     )
-    """Type of the output format."""
+    """
+    !!! warning
+        `OutputFormat` is deprecated but kept for backwards compatibility. Use
+        `ContentFormat` instead.
+
+    Type of the output format.
+    """
+
+    def model_post_init(self, _context) -> None:
+        """Convert deprecated OutputFormat to ContentFormat after initialization."""
+        if type(self.output_type) is ContentFormat:
+            return
+
+        if self.output_type == OutputFormat.JSON:
+            self.output_type = ContentFormat.JSON
+        elif self.output_type == OutputFormat.MULTI_FILE:
+            self.output_type = ContentFormat.MULTI_FILE
 
 
 class Format(BaseModel):

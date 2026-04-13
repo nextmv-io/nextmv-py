@@ -67,6 +67,7 @@ from pydantic import AliasChoices, Field, field_validator
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
 
@@ -975,8 +976,11 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: ContentFormat
+    format: ContentFormat | InputFormat
     """
+    !!! warning
+        `InputFormat` is deprecated, but kept for backward compatibility. Use `ContentFormat` instead.
+
     The format of the content. Can only be `ContentFormat.JSON` or
     `ContentFormat.MULTI_FILE`.
     """
@@ -1003,9 +1007,18 @@ class ManifestContent(BaseModel):
         ------
         ValueError
             If the format field contains an invalid value that is not one of the
-            acceptable formats (JSON, MULTI_FILE, or CSV_ARCHIVE).
+            acceptable formats.
         """
-        acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE]
+
+        # Translate deprecated InputFormat values to ContentFormat for backward
+        # compatibility.
+        if type(self.format) is InputFormat:
+            if self.format == InputFormat.JSON:
+                self.format = ContentFormat.JSON
+            elif self.format == InputFormat.MULTI_FILE:
+                self.format = ContentFormat.MULTI_FILE
+
+        acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE, InputFormat.TEXT, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
 

@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json, warning
+from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json, warning
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
@@ -54,7 +54,7 @@ def track(
         ),
     ] = None,
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
@@ -62,7 +62,7 @@ def track(
             metavar="CONTENT_FORMAT",
             rich_help_panel="Tracked run configuration",
         ),
-    ] = ContentFormat.JSON,
+    ] = InputFormat.JSON,
     description: Annotated[
         str | None,
         typer.Option(
@@ -226,6 +226,9 @@ def track(
 
     if statistics:
         warning("The --statistics option is deprecated, use --metrics instead.")
+
+    content_format = parse_content_format(content_format)
+
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):

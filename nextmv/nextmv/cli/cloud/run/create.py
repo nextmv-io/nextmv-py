@@ -13,10 +13,11 @@ import typer
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
 from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
 
@@ -96,7 +97,7 @@ def create(
     ] = False,
     # Options for run configuration.
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
@@ -313,6 +314,8 @@ def create(
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
         $ [dim]nextmv cloud run create --app-id hare-app --managed-input-id carrot-input --output outputs[/dim]
     """
+
+    content_format = parse_content_format(content_format)
 
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None

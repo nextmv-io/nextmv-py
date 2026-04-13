@@ -7,8 +7,9 @@ from typing import Annotated
 import questionary
 import typer
 
-from nextmv.cli.message import choice, directory_path, enum_values, success
+from nextmv.cli.message import choice, directory_path, enum_values, parse_content_format, success
 from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
 from nextmv.manifest import ManifestType, initialize_manifest
 
 # Set up subcommand application.
@@ -18,7 +19,7 @@ app = typer.Typer()
 @app.command()
 def init(
     content_format: Annotated[
-        ContentFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
@@ -66,6 +67,8 @@ def init(
     - Initialize a [magenta]multi-file[/magenta] Java manifest in the [magenta]./my-app[/magenta] directory.
         $ [dim]nextmv manifest init --type java --content-format multi-file --dirpath ./my-app[/dim]
     """
+
+    content_format = parse_content_format(content_format)
 
     if manifest_type is None or manifest_type == "":
         manifest_type = choice(
