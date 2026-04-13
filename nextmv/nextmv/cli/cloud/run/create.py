@@ -436,7 +436,7 @@ def build_run_config(
     if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=ContentFormat(content_format),
+                input_type=content_format,
             ),
         )
     if secret_collection_id is not None:

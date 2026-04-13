@@ -131,7 +131,7 @@ def create(
     if content_format is not None:
         format_obj = Format(
             format_input=FormatInput(
-                input_type=ContentFormat(content_format),
+                input_type=content_format,
             ),
         )
 

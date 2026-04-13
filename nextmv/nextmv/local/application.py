@@ -112,8 +112,12 @@ class Application(BaseModel):
     will be written to the `src` directory, overriding any existing manifest
     file.
     """
-    content_format: ContentFormat | None = None
+    content_format: ContentFormat | InputFormat | None = None
     """
+    !!! warning
+        `InputFormat` is deprecated, but kept for backward compatibility. Use
+        `ContentFormat` instead.
+
     The content format of the application, which is determined by the manifest.
     """
 
@@ -147,6 +151,14 @@ class Application(BaseModel):
         content_format = ContentFormat.JSON
         if self.manifest.configuration is not None and self.manifest.configuration.content is not None:
             content_format = self.manifest.configuration.content.format
+
+        # Translate deprecated `InputFormat` to `ContentFormat` for backwards
+        # compatibility.
+        if type(content_format) is InputFormat:
+            if content_format == InputFormat.JSON:
+                content_format = ContentFormat.JSON
+            elif content_format == InputFormat.MULTI_FILE:
+                content_format = ContentFormat.MULTI_FILE
 
         self.content_format = content_format
 
@@ -383,7 +395,7 @@ class Application(BaseModel):
         local_app = cls(
             src=app_src,
             description=description,
-            content_format=ContentFormat(content_format),
+            content_format=content_format,
             manifest=manifest,
         )
 

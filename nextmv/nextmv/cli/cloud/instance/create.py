@@ -285,7 +285,7 @@ def build_config(
     if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=ContentFormat(content_format),
+                input_type=content_format,
             ),
         )
 

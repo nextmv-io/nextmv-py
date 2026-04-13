@@ -224,7 +224,7 @@ def create(
         config = RunConfiguration()
         config.format = Format(
             format_input=FormatInput(
-                input_type=ContentFormat(content_format),
+                input_type=content_format,
             ),
         )
     run_options = build_run_options(options)
