@@ -1,0 +1,39 @@
+name: release-winget
+run-name: Winget release for ${{ github.event.release.tag_name }}
+
+on:
+  release:
+    types: [released] # 'released' excludes pre-releases; use 'published' to include them
+
+jobs:
+  release-winget:
+    name: Release winget package
+    # Only run for nextmv- releases (not nextmv-gurobipy-, nextmv-scikit-learn-, etc.)
+    if: ${{ startsWith(github.event.release.tag_name, 'nextmv-') && !contains(github.event.release.tag_name, 'gurobipy') && !contains(github.event.release.tag_name, 'scikit-learn') }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: strip version prefix
+        shell: bash
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#nextmv-v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
+
+      - name: install wingetcreate
+        shell: bash
+        run: |
+          winget install wingetcreate
+
+      - name: submit winget PR
+        shell: bash
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          wingetcreate update Nextmv.CLI \
+            --version "$VERSION" \
+            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.exe|x64|portable" \
+            --submit \
+            --token "$WINGET_TOKEN"

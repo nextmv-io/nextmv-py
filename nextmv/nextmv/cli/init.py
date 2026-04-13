@@ -422,7 +422,7 @@ def _handle_local_run_create(local_app: local.Application, template: str) -> tup
     if template != "existing" and local_app.content_format == ContentFormat.JSON:
         default = "input.json"
     elif template != "existing" and local_app.content_format == ContentFormat.MULTI_FILE:
-        default = "inputs/"
+        default = "inputs"
 
     dirpath = directory_path(
         msg="Please select a directory or file to use as input for the local run",
@@ -805,7 +805,7 @@ def _handle_cloud_run_create(
     if is_template and local_app.content_format == ContentFormat.JSON:
         default = "input.json"
     elif is_template and local_app.content_format == ContentFormat.MULTI_FILE:
-        default = "inputs/"
+        default = "inputs"
 
     dirpath = directory_path(
         msg="Please select a directory or file to use as input for the [italic]remote[/italic] run",
