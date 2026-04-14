@@ -88,13 +88,16 @@ def callback(
     if "--help" in sys.argv or "-h" in sys.argv:
         return
 
-    # Skip checks for certain commands.
-    ignored_commands = {"configuration", "mcp", "local", "init", "manifest", "version"}
+    # Skip checks for certain commands entirely.
+    ignored_commands = {"configuration", "mcp", "manifest", "version"}
     if ctx.invoked_subcommand in ignored_commands:
         return
 
-    _handle_go_cli()
-    _handle_config_existence(ctx)
+    # 'init' and 'local' don't require the go CLI or config checks.
+    if ctx.invoked_subcommand not in {"init", "local"}:
+        _handle_go_cli()
+        _handle_config_existence(ctx)
+
     _handle_env_vars_and_profile(ctx)
 
 
@@ -152,6 +155,10 @@ def _handle_env_vars_and_profile(ctx: typer.Context) -> None:  # noqa: C901 # At
     ctx : typer.Context
         The Typer context object.
     """
+
+    # Only applies to: 'cloud ...', 'community ...', 'init', and 'local app sync'.
+    if ctx.invoked_subcommand == "local" and "sync" not in sys.argv:
+        return
 
     api_key = os.getenv("NEXTMV_API_KEY")
     api_key_set = api_key is not None
