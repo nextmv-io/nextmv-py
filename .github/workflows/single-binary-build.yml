@@ -45,7 +45,7 @@ jobs:
       - name: install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install pyinstaller uv
           pip install .
         working-directory: nextmv/
 
@@ -59,11 +59,18 @@ jobs:
             ADD_DATA_SEPARATOR=":"
           fi
 
+          # Resolve the path to the uv binary shipped with the uv Python package.
+          # We bundle it under the "uv_bin" sub-directory so executor.py can find
+          # it at runtime via sys._MEIPASS/uv_bin/uv[.exe].
+          UV_BIN=$(python -c "from uv import find_uv_bin; print(find_uv_bin())")
+          echo "Bundling uv binary from: $UV_BIN"
+
           pyinstaller \
             --name nextmv \
             --onefile \
             --add-data "nextmv/templates${ADD_DATA_SEPARATOR}nextmv/templates" \
-            --add-data "nextmv/local/executor.py${ADD_DATA_SEPARATOR}nextmv/local/executor.py" \
+            --add-data "nextmv/local/executor.py${ADD_DATA_SEPARATOR}nextmv/local" \
+            --add-data "${UV_BIN}${ADD_DATA_SEPARATOR}uv_bin" \
             --console nextmv/cli/main.py
         working-directory: nextmv/
 
@@ -72,6 +79,9 @@ jobs:
         run: |
           nextmv.exe --help
           nextmv.exe version
+          nextmv.exe community clone -a python-highs-knapsack
+          cd python-highs-knapsack
+          timeout 5s nextmv.exe local run create -i input.json --wait
         shell: cmd
         working-directory: nextmv/dist
 
@@ -80,5 +90,8 @@ jobs:
         run: |
           ./nextmv --help
           ./nextmv version
+          ./nextmv community clone -a python-highs-knapsack
+          cd python-highs-knapsack
+          timeout 5s ./nextmv local run create -i input.json --wait
         shell: bash
         working-directory: nextmv/dist

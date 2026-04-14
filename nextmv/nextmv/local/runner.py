@@ -128,17 +128,13 @@ def run(
     # --run-script mechanism to run executor.py with the bundled interpreter.
     # In a normal Python package install, sys.executable is a real interpreter
     # and executor.py can be launched directly.
+    # We always use the absolute path to executor.py so it can be resolved
+    # regardless of the working directory the binary was invoked from.
+    executor_path = os.path.join(os.path.dirname(__file__), "executor.py")
     if getattr(sys, "frozen", False):
-        # TODO remove debug info messages
-        # Make sure executor.py exists.
-        executor_path = os.path.join(os.path.dirname(__file__), "executor.py")
-        if not os.path.exists(executor_path):
-            raise FileNotFoundError(f"executor.py not found at expected location: {executor_path}")
-        info(f"Running in frozen mode, using bundled Python interpreter: {sys.executable} --run-script executor.py")
-        args = [sys.executable, "--run-script", "executor.py"]
+        args = [sys.executable, "--run-script", executor_path]
     else:
-        info(f"Running in normal mode, using Python interpreter: {sys.executable} executor.py")
-        args = [sys.executable, "executor.py"]
+        args = [sys.executable, executor_path]
     process = subprocess.Popen(
         args,
         env=os.environ,
@@ -146,7 +142,7 @@ def run(
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=os.path.dirname(__file__),
+        cwd=os.path.dirname(executor_path),
         # start_new_session=True,  # Detach from parent process
     )
     # process.stdin.write(stdin_input)
@@ -164,16 +160,12 @@ def run(
         print("--- STDOUT LOG ---")
         print(stdout_data)
 
-    # Wait some time to make sure that the process starts properly, and if it already quit
-    # log it's status and details for debugging.
-
     details = {
         "run_id": run_id,
         "process_id": process.pid,
         "return_code": process.returncode,
     }
     info(f"Started local run with details: {details}")
-
     return run_id
 
 

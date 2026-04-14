@@ -10,9 +10,12 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+import nextmv.local.runner as runner_module
 from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 from nextmv.local.runner import new_run, record_input, run
 from nextmv.manifest import Manifest, ManifestRuntime
+
+EXECUTOR_PATH = os.path.join(os.path.dirname(runner_module.__file__), "executor.py")
 
 
 class TestLocalRunner(unittest.TestCase):
@@ -269,7 +272,7 @@ print(json.dumps(output))
         popen_args = mock_popen.call_args
 
         # Check the command (normal Python install, not frozen)
-        self.assertEqual(popen_args[0][0], [sys.executable, "executor.py"])
+        self.assertEqual(popen_args[0][0], [sys.executable, EXECUTOR_PATH])
 
         # Check that stdin was written to
         mock_process.stdin.write.assert_called_once()
@@ -323,7 +326,7 @@ print(json.dumps(output))
             )
 
         popen_args = mock_popen.call_args
-        self.assertEqual(popen_args[0][0], [sys.executable, "--run-script", "executor.py"])
+        self.assertEqual(popen_args[0][0], [sys.executable, "--run-script", EXECUTOR_PATH])
 
     @patch("nextmv.local.runner.subprocess.Popen")
     @patch("nextmv.local.runner.safe_id")

@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import os
 import runpy
 import sys
 from typing import Annotated
@@ -31,6 +32,7 @@ from nextmv.cli.manifest import app as manifest_app
 from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
+from nextmv.local import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
 rich_utils.STYLE_HELPTEXT = ""
@@ -177,11 +179,9 @@ def main() -> None:
     own exit codes) and displays a clean error message instead of a traceback.
     """
 
-    # Handle --run-script before Typer gets a chance to parse sys.argv. This allows
-    # running arbitrary Python scripts with the bundled interpreter and all of its
-    # dependencies — including when the CLI is packaged as a single binary via
-    # PyInstaller. Trailing arguments are forwarded to the script unchanged (the script
-    # sees them as its own sys.argv).
+    # Handle --run-script and --run-uv for running scripts with the bundled Python
+    # interpreter or via uv. These are used internally in case of frozen PyInstaller
+    # distributions.
     if len(sys.argv) > 1 and sys.argv[1] == "--run-script":
         if len(sys.argv) < 3:
             rich.print("[red]Error:[/red] --run-script requires a script path.", file=sys.stderr)
@@ -189,6 +189,15 @@ def main() -> None:
         script_path = sys.argv[2]
         sys.argv = sys.argv[2:]  # script becomes argv[0]; its own args follow
         runpy.run_path(script_path, run_name="__main__")
+        sys.exit(0)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--run-uv":
+        if len(sys.argv) < 3:
+            rich.print("[red]Error:[/red] --run-uv requires a manifest path.", file=sys.stderr)
+            sys.exit(1)
+        uv_bin = _find_uv_binary()
+        script_path = sys.argv[2]
+        uv_args = [uv_bin, "run", script_path] + sys.argv[3:]
+        os.execv(uv_bin, uv_args)
         sys.exit(0)
 
     try:
