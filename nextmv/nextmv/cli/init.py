@@ -403,20 +403,6 @@ def _handle_local_run_create(local_app: local.Application, template: str) -> tup
             cmd = ExecutedCommand(cmd=cmd_str, explanation="Compile/build the application")
             commands.append(cmd)
 
-    # If the application is Python, we ask if the user wants to install
-    # dependencies with pip.
-    if man_type == ManifestType.PYTHON and template != "hello-world":
-        cmd_str = Prompt.ask(
-            prompt=f"This application is of type [magenta]{man_type.value}[/magenta]. "
-            "Please type the command needed to install deps (e.g. [code]pip install -r requirements.txt[/code]). "
-            "Leave blank to omit",
-            default="",
-        )
-        if cmd_str:
-            result = _cli_call(cmd_str.split())
-            cmd = ExecutedCommand(cmd=cmd_str, explanation="Install dependencies for the Python application")
-            commands.append(cmd)
-
     # Select the input path to run the local app.
     default = "."
     if template != "existing" and local_app.content_format == ContentFormat.JSON:
