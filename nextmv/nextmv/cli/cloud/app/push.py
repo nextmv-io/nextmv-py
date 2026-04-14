@@ -198,7 +198,7 @@ def handle_push(
     update_instance_id: str | None,
     create_defined: bool,
     create_instance_id: str | None,
-) -> None:
+) -> str:
     """
     Handle the core push flow: push the application, create a version, and link it to an instance.
 
@@ -226,6 +226,12 @@ def handle_push(
         Whether --create-instance-id was provided.
     create_instance_id : str | None
         The instance ID to create.
+
+    Returns
+    -------
+    str
+        The instance ID that was linked to the version, or an empty string if
+        no instance was linked.
     """
 
     # Do the normal push first.
@@ -247,7 +253,7 @@ def handle_push(
         now=now,
     )
     if not should_continue:
-        return
+        return ""
 
     # If the override for updating an instance was used, we update the instance
     # and we are done.
@@ -260,7 +266,7 @@ def handle_push(
             instance_id=update_instance_id,
         )
 
-        return
+        return update_instance_id
 
     # If the override for creating a new instance was used, we create the
     # instance and we are done.
@@ -274,15 +280,17 @@ def handle_push(
             now=now,
         )
 
-        return
+        return create_instance_id
 
     # If no overrides are used, we handle instance prompting.
-    _handle_instance_prompting(
+    instance_id = _handle_instance_prompting(
         cloud_app=cloud_app,
         app_id=app_id,
         version_id=version_id,
         now=now,
     )
+
+    return instance_id
 
 
 def _handle_version_creation(
@@ -363,7 +371,7 @@ def _handle_instance_prompting(
     app_id: str,
     version_id: str,
     now: datetime,
-) -> None:
+) -> str:
     """
     Handle interactive prompting for linking a version to an instance after a push.
 
@@ -379,7 +387,13 @@ def _handle_instance_prompting(
     version_id : str
         The version ID to link to an instance.
     now : datetime
-        The current datetime, used for instance description if a new instance is created.
+        The current datetime, used for instance description if a new instance
+        is created.
+
+    Returns
+    -------
+    str
+        The instance ID that was linked to the version, or an empty string if no instance was linked.
     """
 
     # If this is not an interactive terminal, do not ask for instance linking,
@@ -387,7 +401,7 @@ def _handle_instance_prompting(
     if not sys.stdin.isatty():
         info("Non-interactive terminal detected. Skipping instance linking.")
 
-        return
+        return ""
 
     # Prompt the user for an instance ID to link the new version to.
     instance_id = Prompt.ask(
@@ -397,7 +411,7 @@ def _handle_instance_prompting(
     )
     if instance_id == "":
         info("No instance ID provided. Skipping instance linking.")
-        return
+        return ""
 
     # Based on whether the instance exists or not, ask the user if they want to
     # update or create it.
@@ -413,7 +427,7 @@ def _handle_instance_prompting(
 
         if not should_update:
             info(f"Will not update instance [magenta]{instance_id}[/magenta].")
-            return
+            return ""
 
         _update_instance(
             cloud_app=cloud_app,
@@ -422,7 +436,7 @@ def _handle_instance_prompting(
             instance_id=instance_id,
         )
 
-        return
+        return instance_id
 
     # If the instance does not exist, ask if we want to create it.
     should_create = confirmation(
@@ -433,7 +447,7 @@ def _handle_instance_prompting(
 
     if not should_create:
         info(f"Will not create instance [magenta]{instance_id}[/magenta].")
-        return
+        return ""
 
     _create_instance(
         cloud_app=cloud_app,
@@ -442,6 +456,8 @@ def _handle_instance_prompting(
         instance_id=instance_id,
         now=now,
     )
+
+    return instance_id
 
 
 def _update_instance(
