@@ -11,7 +11,7 @@ from nextmv import local
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, info, print_json, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
-from nextmv.output import OutputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.polling import PollingOptions, default_polling_options
 from nextmv.status import StatusV2
 
@@ -165,13 +165,13 @@ def handle_outputs(
     if run_info.metadata.format.format_output is not None:
         content_format = run_info.metadata.format.format_output.output_type
     else:
-        content_format = OutputFormat(run_info.metadata.format.format_input.input_type.value)
+        content_format = ContentFormat(run_info.metadata.format.format_input.input_type.value)
 
     # Build kwargs for the result retrieval.
     kwargs = {"run_id": run_id}
 
     # For MULTI_FILE and CSV_ARCHIVE, we need output_dir_path.
-    if content_format not in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if content_format != ContentFormat.JSON:
         output_dir = f"{run_id}-output" if output is None or output == "" else output
         kwargs["output_dir_path"] = output_dir
 
@@ -186,7 +186,7 @@ def handle_outputs(
         run_result = local_app.run_result(**kwargs)
 
     # Handle the case where output is embedded directly in the result: json and text.
-    if content_format in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if content_format == ContentFormat.JSON:
         if output is None or output == "":
             print_json(run_result.to_dict())
         else:

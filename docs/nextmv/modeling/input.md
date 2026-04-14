@@ -28,44 +28,8 @@ json_input_1 = nextmv.load()
 print(json_input_1.data)
 
 # Can also specify JSON format directly, and read from a file.
-json_input_2 = nextmv.load(input_format=nextmv.InputFormat.JSON, path="input.json")
+json_input_2 = nextmv.load(input_format=nextmv.ContentFormat.JSON, path="input.json")
 print(json_input_2.data)
-```
-
-## `TEXT` inputs
-
-Work with plain, `utf-8` encoded, text inputs. Note that the data is not
-limited to exist as a `.txt` file, any file with `utf-8` encoded text can be
-used as input, like `.mip`, or `.lp` files.
-
-```python
-import nextmv
-
-# Read text from stdin.
-text_input_1 = nextmv.load(input_format=nextmv.InputFormat.TEXT)
-print(text_input_1.data)
-
-# Can also read from a file.
-text_input_2 = nextmv.load(input_format=nextmv.InputFormat.TEXT, path="input.txt")
-print(text_input_2.data)
-```
-
-## `CSV_ARCHIVE` inputs
-
-Work with one, or multiple, `CSV` files. In the resulting `.data` property of
-the input, the keys are the filenames and the values are the dataframes,
-represented as a list of dictionaries. Each `CSV` file must be `utf-8` encoded.
-
-```python
-import nextmv
-
-# Read multiple CSV files from a dir named "input".
-csv_archive_input_1 = nextmv.load(input_format=nextmv.InputFormat.CSV_ARCHIVE)
-print(csv_archive_input_1.data)
-
-# Read multiple CSV files from a custom dir.
-csv_archive_input_2 = nextmv.load(input_format=nextmv.InputFormat.CSV_ARCHIVE, path="custom_dir")
-print(csv_archive_input_2.data)
 ```
 
 ## `MULTI_FILE` inputs
@@ -101,14 +65,14 @@ text_file = nextmv.text_data_file("input.txt")
 
 # Load the multi-file input with the defined data files from a dir named "inputs".
 multi_file_input_1 = nextmv.load(
-    input_format=nextmv.InputFormat.MULTI_FILE,
+    input_format=nextmv.ContentFormat.MULTI_FILE,
     data_files=[json_file, csv_file, text_file],
 )
 print(multi_file_input_1.data)
 
 # Load the multi-file input with the defined data files from a custom dir.
 multi_file_input_2 = nextmv.load(
-    input_format=nextmv.InputFormat.MULTI_FILE,
+    input_format=nextmv.ContentFormat.MULTI_FILE,
     path="custom_dir",
     data_files=[json_file, csv_file, text_file],
 )
@@ -158,14 +122,14 @@ excel_file = nextmv.DataFile(
 
 # Load the multi-file input with the defined data files from a dir named "inputs".
 multi_file_input_3 = nextmv.load(
-    input_format=nextmv.InputFormat.MULTI_FILE,
+    input_format=nextmv.ContentFormat.MULTI_FILE,
     data_files=[excel_file],
 )
 print(multi_file_input_3.data)
 
 # Load the multi-file input with the defined data files from a custom dir.
 multi_file_input_4 = nextmv.load(
-    input_format=nextmv.InputFormat.MULTI_FILE,
+    input_format=nextmv.ContentFormat.MULTI_FILE,
     path="custom_dir",
     data_files=[excel_file],
 )
@@ -216,7 +180,7 @@ excel_file = nextmv.DataFile(
 
 # Load the multi-file input with the defined data files from a dir named "inputs".
 multi_file_input_5 = nextmv.load(
-    input_format=nextmv.InputFormat.MULTI_FILE,
+    input_format=nextmv.ContentFormat.MULTI_FILE,
     data_files=[json_file, csv_file, text_file, excel_file],
 )
 

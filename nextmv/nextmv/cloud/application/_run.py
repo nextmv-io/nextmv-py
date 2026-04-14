@@ -20,10 +20,11 @@ from nextmv.cloud.assets import RunAsset
 from nextmv.cloud.client import get_size
 from nextmv.cloud.input_set import ManagedInput
 from nextmv.cloud.url import DownloadURL
+from nextmv.content_format import ContentFormat
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, OutputFormat, Statistics
+from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
@@ -280,17 +281,17 @@ class ApplicationRunMixin:
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `ManagedInput`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the `input_dir_path`
-            argument instead. This argument takes precedence over the `input`.
-            If `input_dir_path` is specified, this function looks for files in that
-            directory and tars them, to later be uploaded using the
-            `upload_data` method. If both the `input_dir_path` and `input`
-            arguments are provided, the `input` is ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
             also be provided. More specifically, the
@@ -299,8 +300,7 @@ class ApplicationRunMixin:
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
             When working with JSON or text data, use the `input` argument
             directly.
@@ -348,7 +348,7 @@ class ApplicationRunMixin:
             Path to a directory containing input files. If specified, the
             function will package the files in the directory into a tar file
             and upload it as a large input. This is useful for input formats
-            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            like `nextmv.ContentFormat.MULTI_FILE`.
             If both `input` and `input_dir_path` are specified, the `input` is
             ignored, and the files in the directory are used instead.
         managed_input_id: Optional[str]
@@ -489,17 +489,17 @@ class ApplicationRunMixin:
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `ManagedInput`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the `input_dir_path`
-            argument instead. This argument takes precedence over the `input`.
-            If `input_dir_path` is specified, this function looks for files in that
-            directory and tars them, to later be uploaded using the
-            `upload_data` method. If both the `input_dir_path` and `input`
-            arguments are provided, the `input` is ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument must
             also be provided. More specifically, the
@@ -508,8 +508,7 @@ class ApplicationRunMixin:
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
             When working with JSON or text data, use the `input` argument
             directly.
@@ -562,7 +561,7 @@ class ApplicationRunMixin:
             Path to a directory containing input files. If specified, the
             function will package the files in the directory into a tar file
             and upload it as a large input. This is useful for input formats
-            like `nextmv.InputFormat.CSV_ARCHIVE` or `nextmv.InputFormat.MULTI_FILE`.
+            like `nextmv.ContentFormat.MULTI_FILE`.
             If both `input` and `input_dir_path` are specified, the `input` is
             ignored, and the files in the directory are used instead.
         output_dir_path : Optional[str], default="."
@@ -658,7 +657,7 @@ class ApplicationRunMixin:
         if (
             run_information.metadata.input_size > _MAX_RUN_SIZE
             or run_information.metadata.format.format_input.input_type
-            in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}
+            in {InputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}
         ):
             query_params = {"format": "url"}
             large = True
@@ -680,7 +679,7 @@ class ApplicationRunMixin:
 
         # See whether we can return the input directly or need to save to the given
         # directory
-        if run_information.metadata.format.format_input.input_type != OutputFormat.JSON:
+        if run_information.metadata.format.format_input.input_type != ContentFormat.JSON:
             if not output_dir_path or output_dir_path == "":
                 raise ValueError(
                     "If the input format is not JSON, an output_dir_path must be provided.",
@@ -924,7 +923,7 @@ class ApplicationRunMixin:
         # Get the run information to check how we need to handle the output.
         run_information = self.run_metadata(run_id=run_id)
         output_format = run_information.metadata.format.format_output.output_type
-        is_json = output_format == OutputFormat.JSON
+        is_json = output_format == ContentFormat.JSON
 
         # We need to specify `output_dir_path` for non-JSON.
         if not is_json and (not output_dir_path or output_dir_path == ""):
@@ -1325,7 +1324,7 @@ class ApplicationRunMixin:
         query_params = None
         use_presigned_url = False
         if (
-            run_information.metadata.format.format_output.output_type != OutputFormat.JSON
+            run_information.metadata.format.format_output.output_type != ContentFormat.JSON
             or run_information.metadata.output_size > _MAX_RUN_SIZE
         ):
             query_params = {"format": "url"}
@@ -1375,7 +1374,7 @@ class ApplicationRunMixin:
         non_json_payload = False
         if isinstance(input, str):
             non_json_payload = True
-        elif isinstance(input, Input) and input.input_format != InputFormat.JSON:
+        elif isinstance(input, Input) and input.input_format != ContentFormat.JSON:
             non_json_payload = True
         elif tar_file is not None and tar_file != "":
             non_json_payload = True

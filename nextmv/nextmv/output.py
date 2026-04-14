@@ -7,23 +7,6 @@ destinations.
 
 Classes
 -------
-RunStatistics
-    Deprecated: Statistics about a general run.
-ResultStatistics
-    Deprecated: Statistics about a specific result.
-DataPoint
-    A data point representing a 2D coordinate.
-Series
-    A series of data points for visualization or analysis.
-SeriesData
-    Data container for multiple series of data points.
-Statistics
-    Deprecated: Use metrics instead. Complete statistics container for a
-    solution, including run metrics and result data.
-Metrics
-    Metrics container for a solution.
-OutputFormat
-    Enumeration of supported output formats.
 SolutionFile
     Represents a solution to be written as a file.
 VisualSchema
@@ -71,6 +54,8 @@ from pydantic import AliasChoices, Field
 
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
+from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
 from nextmv.options import Options
 
@@ -528,6 +513,9 @@ class Asset(BaseModel):
 
 class OutputFormat(str, Enum):
     """
+    !!! warning
+        `OutputFormat` is deprecated, use `ContentFormat` instead.
+
     Enumeration of supported output formats.
 
     You can import the `OutputFormat` class directly from `nextmv`:
@@ -542,23 +530,55 @@ class OutputFormat(str, Enum):
     Attributes
     ----------
     JSON : str
+        !!! warning
+            `OutputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
         JSON format, utf-8 encoded.
     CSV_ARCHIVE : str
+        !!! warning
+            `OutputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         CSV archive format: multiple CSV files.
     MULTI_FILE : str
+        !!! warning
+            `OutputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Multi-file format: multiple files in a directory.
     TEXT : str
+        !!! warning
+            `OutputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Text format, utf-8 encoded.
     """
 
     JSON = "json"
-    """JSON format, utf-8 encoded."""
+    """
+    !!! warning
+        `OutputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
+    JSON format, utf-8 encoded.
+    """
     CSV_ARCHIVE = "csv-archive"
-    """CSV archive format: multiple CSV files."""
+    """
+    !!! warning
+        `OutputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    CSV archive format: multiple CSV files.
+    """
     MULTI_FILE = "multi-file"
-    """Multi-file format: multiple files in a directory."""
+    """
+    !!! warning
+        `OutputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Multi-file format: multiple files in a directory.
+    """
     TEXT = "text"
-    """Text format, utf-8 encoded."""
+    """
+    !!! warning
+        `OutputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Text format, utf-8 encoded.
+    """
 
 
 @dataclass
@@ -576,7 +596,7 @@ class SolutionFile:
     the filesystem. It includes the name of the file, the data to be written,
     and the writer function that will handle the serialization of the data.
     This `SolutionFile` class is typically used in the `Output`, when the
-    `Output.output_format` is set to `OutputFormat.MULTI_FILE`. Given that it
+    `Output.output_format` is set to `ContentFormat.MULTI_FILE`. Given that it
     is difficult to handle every edge case of how a solution is serialized, and
     written to a file, this class exists so that the user can implement the
     `writer` callable of their choice and provide it with any `writer_args`
@@ -867,15 +887,14 @@ class Output:
 
     The `solution`'s type must match the `output_format`:
 
-    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
-    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
-       Any]]]`. The keys represent the file names where the data should be
-       written. The values are lists of dictionaries, where each dictionary
-       represents a row in the CSV file.
+    - `ContentFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
+    - `ContentFormat.MULTI_FILE`: the data must be `dict[str, Any]`. When
+      working with multi-file, the solution is written to one or more files
+      in a specific directory.
 
-    If you are working with `OutputFormat.MULTI_FILE`, you should use
+    If you are working with `ContentFormat.MULTI_FILE`, you should use
     `solution_files` instead of `solution`. When `solution_files` is not
-    `None`, then the `output_format` _must_ be `OutputFormat.MULTI_FILE`.
+    `None`, then the `output_format` _must_ be `ContentFormat.MULTI_FILE`.
     `solution_files` is a list of `SolutionFile` objects, which allows you to
     define the name of the file, the data to be written, and the writer
     function that will handle the serialization of the data. This is useful when
@@ -898,9 +917,9 @@ class Output:
     options : Optional[Union[Options, dict[str, Any]]], optional
         Options that the `Output` was created with. These options can be of type
         `Options` or a simple dictionary. Default is None.
-    output_format : Optional[OutputFormat], optional
-        Format of the output data. Default is `OutputFormat.JSON`.
-    solution : Optional[Union[dict[str, Any], Any, dict[str, list[dict[str, Any]]]]], optional
+    output_format : Optional[ContentFormat], optional
+        Format of the output data. Default is `ContentFormat.JSON`.
+    solution : Optional[Union[dict[str, Any], Any]], optional
         The solution to the decision problem. The type must match the
         `output_format`. Default is None.
     statistics : Optional[Union[Statistics, dict[str, Any]]], optional
@@ -918,7 +937,7 @@ class Output:
         files are of type `SolutionFile`, which allows for custom serialization
         and writing of the solution data to files. When this field is
         specified, then the `output_format` must be set to
-        `OutputFormat.MULTI_FILE`, otherwise an exception will be raised. The
+        `ContentFormat.MULTI_FILE`, otherwise an exception will be raised. The
         `SolutionFile` class allows you to define the name of the file, the
         data to be written, and the writer function that will handle the
         serialization of the data. This is useful when you need to write the
@@ -944,11 +963,11 @@ class Output:
 
     Examples
     --------
-    >>> from nextmv.output import Output, OutputFormat, Statistics, RunStatistics
+    >>> from nextmv.output import Output, Statistics, RunStatistics
     >>> metrics = {"duration": 30.0, "iterations": 100}
     >>> solution = {"routes": [{"vehicle": 1, "stops": [1, 2, 3]}, {"vehicle": 2, "stops": [4, 5]}]}
     >>> output = Output(
-    ...     output_format=OutputFormat.JSON,
+    ...     output_format=ContentFormat.JSON,
     ...     solution=solution,
     ...     metrics=metrics,
     ...     json_configurations={"indent": 4}
@@ -974,10 +993,10 @@ class Output:
     }
     ```
     """
-    output_format: OutputFormat | None = OutputFormat.JSON
+    output_format: ContentFormat | None = ContentFormat.JSON
     """
-    Format of the output data. Default is `OutputFormat.JSON`. When set to
-    `OutputFormat.MULTI_FILE`, the `solution_files` field must be specified and
+    Format of the output data. Default is `ContentFormat.JSON`. When set to
+    `ContentFormat.MULTI_FILE`, the `solution_files` field must be specified and
     cannot be `None`.
     """
     solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None
@@ -985,19 +1004,17 @@ class Output:
     The solution to the decision problem. Use this filed when working with
     `output_format` of types:
 
-    - `OutputFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
-    - `OutputFormat.CSV_ARCHIVE`: the data must be `dict[str, list[dict[str,
-    Any]]]`. The keys represent the file names where the data will be written
-    to. The values are lists of dictionaries, where each dictionary represents
-    a row in the CSV file.
+    - `ContentFormat.JSON`: the data must be `dict[str, Any]` or `Any`.
 
-    Note that when the `output_format` is set to `OutputFormat.MULTI_FILE`,
+    Note that when the `output_format` is set to `ContentFormat.MULTI_FILE`,
     this `solution` field is ignored, as you should use the `solution_files`
     field instead.
     """
     statistics: Statistics | dict[str, Any] | None = None
     """
-    Deprecated: Use Metrics instead.
+    !!! warning
+        `statistics` is deprecated, use `metrics` instead.
+
     Statistics of the solution. These statistics can be of type `Statistics` or a
     simple dictionary. If the statistics are of type `Statistics`, they will be
     serialized to a dictionary using the `to_dict` method. If they are a
@@ -1010,14 +1027,13 @@ class Output:
     """
     csv_configurations: dict[str, Any] | None = None
     """
-    Optional configuration for writing CSV files, to be used when the
-    `output_format` is `OutputFormat.CSV_ARCHIVE`. These configurations are
+    Optional configuration for writing CSV files. These configurations are
     passed as kwargs to the `DictWriter` class from the `csv` module.
     """
     json_configurations: dict[str, Any] | None = None
     """
     Optional configuration for writing JSON files, to be used when the
-    `output_format` is `OutputFormat.JSON`. These configurations are passed as
+    `output_format` is `ContentFormat.JSON`. These configurations are passed as
     kwargs to the `json.dumps` function.
     """
     assets: list[Asset | dict[str, Any]] | None = None
@@ -1033,7 +1049,7 @@ class Output:
     Optional list of solution files to be included in the output. These files
     are of type `SolutionFile`, which allows for custom serialization and
     writing of the solution data to files. When this field is specified, then
-    the `output_format` must be set to `OutputFormat.MULTI_FILE`, otherwise an
+    the `output_format` must be set to `ContentFormat.MULTI_FILE`, otherwise an
     exception will be raised. The `SolutionFile` class allows you to define the
     name of the file, the data to be written, and the writer function that will
     handle the serialization of the data. This is useful when you need to write
@@ -1070,31 +1086,47 @@ class Output:
         new_options = copy.deepcopy(init_options)
         self.options = new_options
 
+        if type(self.output_format) is OutputFormat:
+            deprecated(name="OutputFormat", reason="`OutputFormat` is deprecated, use `ContentFormat` instead")
+            if self.output_format in {OutputFormat.TEXT, OutputFormat.CSV_ARCHIVE}:
+                deprecated(
+                    name="OutputFormat.TEXT/OutputFormat.CSV_ARCHIVE",
+                    reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
+                )
+            elif self.output_format in {OutputFormat.JSON, OutputFormat.MULTI_FILE}:
+                self.output_format = ContentFormat(self.output_format.value)
+            else:
+                raise ValueError(f"unsupported output_format: {self.output_format}")
+
         if self.solution is not None:
-            if self.output_format == OutputFormat.JSON:
+            if self.output_format == ContentFormat.JSON:
                 try:
                     _ = serialize_json(self.solution)
                 except (TypeError, OverflowError) as e:
                     raise ValueError(
-                        f"Output has output_format OutputFormat.JSON and "
-                        f"Output.solution is of type {type(self.solution)}, which is not JSON serializable"
+                        f"Output has `output_format` `ContentFormat.JSON` and "
+                        f"`Output.solution` is of type {type(self.solution)}, which is not JSON serializable"
                     ) from e
 
-            elif self.output_format == OutputFormat.CSV_ARCHIVE and not isinstance(self.solution, dict):
+            elif (
+                type(self.output_format) is OutputFormat
+                and self.output_format == OutputFormat.CSV_ARCHIVE
+                and not isinstance(self.solution, dict)
+            ):
                 raise ValueError(
                     f"unsupported Output.solution type: {type(self.solution)} with "
                     "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
                 )
 
-        if self.solution_files is not None and self.output_format != OutputFormat.MULTI_FILE:
+        if self.solution_files is not None and self.output_format != ContentFormat.MULTI_FILE:
             raise ValueError(
-                f"`solution_files` are not `None`, but `output_format` is different from `OutputFormat.MULTI_FILE`: "
+                f"`solution_files` are not `None`, but `output_format` is different from `ContentFormat.MULTI_FILE`: "
                 f"{self.output_format}. If you want to use `solution_files`, set `output_format` "
-                "to `OutputFormat.MULTI_FILE`."
+                "to `ContentFormat.MULTI_FILE`."
             )
         elif self.solution_files is not None and not isinstance(self.solution_files, list):
             raise TypeError(
-                f"unsupported Output.solution_files type: {type(self.solution_files)}, supported type is `list`"
+                f"unsupported `Output.solution_files` type: {type(self.solution_files)}, supported type is `list`"
             )
 
     def to_dict(self) -> dict[str, Any]:  # noqa: C901
@@ -1326,9 +1358,9 @@ class LocalOutputWriter(OutputWriter):
             json_configurations = output.json_configurations
 
         output_json = {
-                "options": output_dict.get("options", {}),
-                ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
-            }
+            "options": output_dict.get("options", {}),
+            ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
+        }
 
         if STATISTICS_KEY in output_dict:
             output_json[STATISTICS_KEY] = output_dict.get(STATISTICS_KEY, {})
@@ -1487,9 +1519,9 @@ class LocalOutputWriter(OutputWriter):
 
     # Callback functions for writing the output data.
     FILE_WRITERS = {
-        OutputFormat.JSON: _write_json,
+        ContentFormat.JSON: _write_json,
+        ContentFormat.MULTI_FILE: _write_multi_file,
         OutputFormat.CSV_ARCHIVE: _write_archive,
-        OutputFormat.MULTI_FILE: _write_multi_file,
         OutputFormat.TEXT: _write_json,
     }
     """Dictionary mapping output formats to writer functions."""
@@ -1512,9 +1544,10 @@ class LocalOutputWriter(OutputWriter):
             Output data to write. Can be an Output object, a dictionary, or a BaseModel.
         path : str, optional
             Path to write the output data to. The interpretation depends on the output format:
-            - For OutputFormat.JSON: File path for the JSON output. If None or empty, writes to stdout.
-            - For OutputFormat.CSV_ARCHIVE: Directory path for CSV files. If None or empty,
-              writes to a directory named "output" in the current working directory.
+            - For `ContentFormat.JSON`: file path for the JSON output. If None or empty, writes to stdout.
+            - For `ContentFormat.MULTI_FILE`: directory path for output files.
+            If None or empty, writes to a directory named "outputs" in the
+            current working directory.
         skip_stdout_reset : bool, optional
             Skip resetting stdout before writing the output data. Default is False.
 
@@ -1553,9 +1586,9 @@ class LocalOutputWriter(OutputWriter):
         if isinstance(output, Output):
             output_format = output.output_format
         elif isinstance(output, dict):
-            output_format = OutputFormat.JSON
+            output_format = ContentFormat.JSON
         elif isinstance(output, BaseModel):
-            output_format = OutputFormat.JSON
+            output_format = ContentFormat.JSON
         else:
             raise TypeError(
                 f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
@@ -1611,11 +1644,11 @@ def write(
         Path to write the output data to. The interpretation depends on the
         output format:
 
-        - For `OutputFormat.JSON`: File path for the JSON output. If None or
+        - For `ContentFormat.JSON`: file path for the JSON output. If None or
           empty, writes to stdout.
-        - For `OutputFormat.CSV_ARCHIVE`: Directory path for CSV files. If None
-          or empty, writes to a directory named "output" in the current working
-          directory.
+        - For `ContentFormat.MULTI_FILE`: directory path for output files. If
+          None or empty, writes to a directory named "output" in the current
+          working directory.
     skip_stdout_reset : bool, optional
         Skip resetting stdout before writing the output data. Default is False.
     writer : OutputWriter, optional
@@ -1631,12 +1664,11 @@ def write(
 
     Examples
     --------
-    >>> from nextmv.output import write, Output, OutputFormat
+    >>> from nextmv.output import write, Output
     >>> # Write JSON to a file
     >>> write(Output(solution={"result": 42}), path="result.json")
-    >>> # Write CSV archive
-    >>> data = {"vehicles": [{"id": 1, "capacity": 100}, {"id": 2, "capacity": 150}]}
-    >>> write(Output(output_format=OutputFormat.CSV_ARCHIVE, solution=data), path="output_dir")
+    >>> # Write multi-file to a directory
+    >>> write(Output(output_format=ContentFormat.MULTI_FILE, solution_files=[...]), path="output_dir")
     """
 
     writer.write(output, path, skip_stdout_reset)

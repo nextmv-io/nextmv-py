@@ -5,8 +5,7 @@ Application mixin for handling app managed inputs.
 from typing import TYPE_CHECKING, Any
 
 from nextmv.cloud.input_set import ManagedInput
-from nextmv.input import InputFormat
-from nextmv.output import OutputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.run import Format, FormatInput, FormatOutput
 from nextmv.safe import safe_id
 
@@ -168,8 +167,8 @@ class ApplicationManagedInputMixin:
             payload["format"] = format.to_dict() if isinstance(format, Format) else format
         else:
             payload["format"] = Format(
-                format_input=FormatInput(input_type=InputFormat.JSON),
-                format_output=FormatOutput(output_type=OutputFormat.JSON),
+                format_input=FormatInput(input_type=ContentFormat.JSON),
+                format_output=FormatOutput(output_type=ContentFormat.JSON),
             ).to_dict()
 
         response = self.client.request(

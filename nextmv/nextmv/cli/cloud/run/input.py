@@ -10,7 +10,7 @@ import typer
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
-from nextmv.output import OutputFormat
+from nextmv.content_format import ContentFormat
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -61,7 +61,7 @@ def input(
 
     # If the input is multi-file, we need to provide an `output_dir_path` to
     # save the files to.
-    if run_info.metadata.format.format_input.input_type not in {OutputFormat.JSON, OutputFormat.TEXT}:
+    if run_info.metadata.format.format_input.input_type != ContentFormat.JSON:
         # If no output path is provided, use the run ID as the directory name.
         output = f"{run_id}-input" if output is None or output == "" else output
         cloud_app.run_input(run_id=run_id, output_dir_path=output)
