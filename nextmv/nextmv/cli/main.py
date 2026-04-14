@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import os
 import sys
 from typing import Annotated
 
@@ -30,6 +31,7 @@ from nextmv.cli.manifest import app as manifest_app
 from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
+from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
 
 # Disable dim text for the extended help of commands.
 rich_utils.STYLE_HELPTEXT = ""
@@ -91,11 +93,12 @@ def callback(
     if ctx.invoked_subcommand in ignored_commands:
         return
 
-    handle_go_cli()
-    handle_config_existence(ctx)
+    _handle_go_cli()
+    _handle_config_existence(ctx)
+    _handle_env_vars_and_profile(ctx)
 
 
-def handle_go_cli() -> None:
+def _handle_go_cli() -> None:
     """
     Handle the presence of the deprecated Go CLI by notifying the user.
 
@@ -103,14 +106,14 @@ def handle_go_cli() -> None:
     remove it to avoid conflicts with the Python CLI.
     """
 
-    exists = go_cli_exists()
+    exists = _go_cli_exists()
     if exists:
         delete = confirmation(
             "Do you want to delete the [italic red]deprecated[/italic red] Nextmv CLI "
             f"at [magenta]{GO_CLI_PATH}[/magenta] now?"
         )
         if delete:
-            remove_go_cli()
+            _remove_go_cli()
             return
 
         info(
@@ -121,7 +124,7 @@ def handle_go_cli() -> None:
         )
 
 
-def handle_config_existence(ctx: typer.Context) -> None:
+def _handle_config_existence(ctx: typer.Context) -> None:
     """
     Check if configuration exists and show an error if it does not.
 
@@ -136,7 +139,90 @@ def handle_config_existence(ctx: typer.Context) -> None:
         error("No configuration found. Please run [code]nextmv configuration create[/code].")
 
 
-def go_cli_exists() -> bool:
+def _handle_env_vars_and_profile(ctx: typer.Context) -> None:  # noqa: C901 # At the edge, breaking it reduces readability.
+    """
+    Warn when environment variables conflict with profile settings.
+
+    Checks NEXTMV_API_KEY, NEXTMV_ENDPOINT, and NEXTMV_PROFILE against the
+    active profile (from --profile/-p or NEXTMV_PROFILE) and emits warnings
+    when values differ or both a profile env var and flag are set simultaneously.
+
+    Parameters
+    ----------
+    ctx : typer.Context
+        The Typer context object.
+    """
+
+    api_key = os.getenv("NEXTMV_API_KEY")
+    api_key_set = api_key is not None
+
+    endpoint_var = os.getenv("NEXTMV_ENDPOINT")
+    endpoint_set = endpoint_var is not None
+
+    profile_var = os.getenv("NEXTMV_PROFILE")
+    profile_var_set = profile_var is not None
+
+    profile_opts = {"--profile", "-p"}
+    profile_opt_set = not profile_opts.isdisjoint(sys.argv)
+
+    # First, check if we don't have to warn or inform of anything.
+    override_not_used = not api_key_set and not endpoint_set
+    if override_not_used and not profile_var_set and not profile_opt_set:
+        return
+
+    # Get the value of the profile option, if set.
+    profile_from_opt = None
+    if profile_opt_set:
+        profile_from_opt = next(
+            (sys.argv[i + 1] for i, arg in enumerate(sys.argv[:-1]) if arg in profile_opts),
+            None,
+        )
+
+    # Determine the profile to use based on the environment variable and option.
+    profile = None
+    profile_name = "default"
+    if profile_var_set:
+        profile = profile_var
+        profile_name = profile_var
+    elif profile_opt_set:
+        profile = profile_from_opt
+        profile_name = profile_from_opt
+
+    # Warn if conflicting profile specifications are found.
+    if profile_var_set and profile_opt_set and profile_var != profile_from_opt:
+        warning(
+            "Both the [magenta]NEXTMV_PROFILE[/magenta] environment variable and the [magenta]--profile/-p[/magenta] "
+            "option are set with [italic]different[/italic] values. This may cause an unexpected behavior. "
+            "The env var takes precedence."
+        )
+
+    # Warn if API key specs are conflicting.
+    if api_key_set:
+        conf_key = retrieve_key_from_config(profile=profile)
+        if conf_key != api_key:
+            warning(
+                "The [magenta]NEXTMV_API_KEY[/magenta] environment variable is set, "
+                "and its value [italic]differs[/italic] "
+                f"from the API key of the [magenta]{profile_name}[/magenta] profile. "
+                "This may cause an unexpected behavior. The env var takes precedence."
+            )
+
+    # Warn if endpoint specs are conflicting.
+    if endpoint_set:
+        if not endpoint_var.startswith("https://") and not endpoint_var.startswith("http://"):
+            endpoint = f"https://{endpoint_var}"
+
+        conf_endpoint = retrieve_endpoint_from_config(profile=profile)
+        if conf_endpoint != endpoint:
+            warning(
+                "The [magenta]NEXTMV_ENDPOINT[/magenta] environment variable is set, "
+                "and its value [italic]differs[/italic] "
+                f"from the endpoint of the [magenta]{profile_name}[/magenta] profile. "
+                "This may cause an unexpected behavior. The env var takes precedence."
+            )
+
+
+def _go_cli_exists() -> bool:
     """
     Check if the Go CLI is installed by looking for the 'nextmv' executable
     under the config dir.
@@ -158,7 +244,7 @@ def go_cli_exists() -> bool:
     return exists
 
 
-def remove_go_cli() -> None:
+def _remove_go_cli() -> None:
     """
     Remove the Go CLI executable if it exists and notify about PATH cleanup.
     """
