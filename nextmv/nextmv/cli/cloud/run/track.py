@@ -11,8 +11,9 @@ import typer
 
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, in_progress, print_json, warning
+from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json, warning
 from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
 
@@ -53,11 +54,11 @@ def track(
         ),
     ] = None,
     content_format: Annotated[
-        InputFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format of the run to track. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format of the run to track. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Tracked run configuration",
         ),
@@ -155,18 +156,18 @@ def track(
     Please see the help of the --content-type option for details on valid
     content types.
 
-    If the content type is [magenta]json[/magenta] or [magenta]text[/magenta],
-    then input for the run can be given through [magenta]stdin[/magenta]. The
-    --input option allows you to specify a file or directory path for the
-    input, instead of using [magenta]stdin[/magenta]. In the case of
-    [magenta]multi-file[/magenta] content type, the input must be given through
-    a directory specified via the --input option.
+    If the content type is [magenta]json[/magenta], then input for the run can
+    be given through [magenta]stdin[/magenta]. The --input option allows you to
+    specify a file or directory path for the input, instead of using
+    [magenta]stdin[/magenta]. In the case of [magenta]multi-file[/magenta]
+    content type, the input must be given through a directory specified via the
+    --input option.
 
     The --output option allows you to specify a file or directory path for the
     output of the run. The behavior depends on the content type. If the content
-    type is [magenta]json[/magenta] or [magenta]text[/magenta], then a file
-    path must be provided. If the content type is
-    [magenta]multi-file[/magenta], then a directory path must be provided.
+    type is [magenta]json[/magenta], then a file path must be provided. If the
+    content type is [magenta]multi-file[/magenta], then a directory path must
+    be provided.
 
     Run logs, assets, and metrics can be provided via files using the
     --logs, --assets, and --metrics options, respectively. Assets and
@@ -203,11 +204,6 @@ def track(
         $ [dim]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
             --error-msg "Solver timed out"[/dim]
 
-    - Track a [magenta]successful[/magenta] [magenta]text[/magenta] run with text content type,
-      for an app with ID [magenta]hare-app[/magenta].
-        $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.txt \\
-            --output output.txt --content-type text[/dim]
-
     - Track a [magenta]successful[/magenta] [magenta]multi-file[/magenta] run from an
       [magenta]inputs[/magenta] directory with output to an
       [magenta]outputs[/magenta] directory, for an app with ID
@@ -230,6 +226,9 @@ def track(
 
     if statistics:
         warning("The --statistics option is deprecated, use --metrics instead.")
+
+    content_format = parse_content_format(content_format)
+
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == ""):
@@ -284,7 +283,7 @@ def build_tracked_run_input(
     description: str | None,
     stdin: str | None,
     input: str | None,
-    content_format: InputFormat,
+    content_format: ContentFormat,
     output: str,
     assets: str | None = None,
     logs: str | None = None,
@@ -314,8 +313,8 @@ def build_tracked_run_input(
         The input provided via stdin, if any.
     input : str | None
         The input file or directory path, if any.
-    content_format : InputFormat
-        The content format of the input (json or text).
+    content_format : ContentFormat
+        The content format of the input (json or multi-file).
     output : str
         The output file or directory path.
     assets : str | None
@@ -385,7 +384,7 @@ def resolve_input(
     tracked_run: TrackedRun,
     stdin: str | None,
     input: str | None,
-    content_format: InputFormat,
+    content_format: ContentFormat,
 ) -> TrackedRun:
     """
     Resolves the input for the tracked run, either from stdin or from a
@@ -399,8 +398,8 @@ def resolve_input(
         The input provided via stdin, if any.
     input : str | None
         The input file or directory path, if any.
-    content_format : InputFormat
-        The content format of the input (json or text).
+    content_format : ContentFormat
+        The content format of the input (json or multi-file).
 
     Returns
     -------
@@ -411,7 +410,7 @@ def resolve_input(
         # Handle the case where stdin is provided as JSON for a JSON app.
         try:
             input_data = json.loads(stdin)
-            if content_format != InputFormat.JSON:
+            if content_format != ContentFormat.JSON:
                 error(
                     "Input provided via [magenta]stdin[/magenta] is [magenta]json[/magenta], "
                     f"but the specified content format is {content_format.value}. "
@@ -427,6 +426,11 @@ def resolve_input(
                     "--content-format should be set to [magenta]text[/magenta]."
                 )
 
+            warning(
+                "[magenta]text[/magenta] is being deprecated as a content format, "
+                "please use [magenta]multi-file[/magenta] instead."
+            )
+
         tracked_run.input = input_data
 
         return tracked_run
@@ -436,7 +440,7 @@ def resolve_input(
     input_path = Path(input)
 
     if input_path.is_file():
-        if content_format == InputFormat.JSON:
+        if content_format == ContentFormat.JSON:
             try:
                 with input_path.open("r") as f:
                     input_data = json.load(f)
@@ -449,6 +453,10 @@ def resolve_input(
                 error(f"Failed to parse input file [magenta]{input}[/magenta] as [magenta]json[/magenta]: {e}.")
 
         elif content_format == InputFormat.TEXT:
+            warning(
+                "[magenta]text[/magenta] is being deprecated as a content format, "
+                "please use [magenta]multi-file[/magenta] instead.",
+            )
             input_data = input_path.read_text()
             tracked_run.input = input_data
 
@@ -470,7 +478,7 @@ def resolve_input(
 def resolve_output(
     tracked_run: TrackedRun,
     output: str,
-    content_format: InputFormat,
+    content_format: ContentFormat,
 ) -> TrackedRun:
     """
     Resolves the output for the tracked run.
@@ -481,7 +489,7 @@ def resolve_output(
         The tracked run to set the output for.
     output : str
         The output file or directory path.
-    content_format : InputFormat
+    content_format : ContentFormat
         The content format of the output (json or text).
 
     Returns
@@ -492,7 +500,7 @@ def resolve_output(
 
     output_path = Path(output)
     if output_path.is_file():
-        if content_format == InputFormat.JSON:
+        if content_format == ContentFormat.JSON:
             try:
                 with output_path.open("r") as f:
                     output_data = json.load(f)
@@ -507,6 +515,10 @@ def resolve_output(
         elif content_format == InputFormat.TEXT:
             output_data = output_path.read_text()
             tracked_run.output = output_data
+            warning(
+                "[magenta]text[/magenta] is being deprecated as a content format, "
+                "please use [magenta]multi-file[/magenta] instead.",
+            )
 
             return tracked_run
 

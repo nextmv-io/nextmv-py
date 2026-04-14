@@ -118,11 +118,11 @@ def init() -> None:
             commands.extend(cmds4)
             rule()
 
-            cmd5 = _handle_app_push(cloud_app)
+            instance_id, cmd5 = _handle_app_push(cloud_app)
             commands.append(cmd5)
             rule()
 
-            cloud_run_id, cmd6 = _handle_cloud_run_create(cloud_app, local_app, template)
+            cloud_run_id, cmd6 = _handle_cloud_run_create(cloud_app, local_app, template, instance_id)
             commands.append(cmd6)
             rule()
 
@@ -403,20 +403,6 @@ def _handle_local_run_create(local_app: local.Application, template: str) -> tup
             cmd = ExecutedCommand(cmd=cmd_str, explanation="Compile/build the application")
             commands.append(cmd)
 
-    # If the application is Python, we ask if the user wants to install
-    # dependencies with pip.
-    if man_type == ManifestType.PYTHON and template != "hello-world":
-        cmd_str = Prompt.ask(
-            prompt=f"This application is of type [magenta]{man_type.value}[/magenta]. "
-            "Please type the command needed to install deps (e.g. [code]pip install -r requirements.txt[/code]). "
-            "Leave blank to omit",
-            default="",
-        )
-        if cmd_str:
-            result = _cli_call(cmd_str.split())
-            cmd = ExecutedCommand(cmd=cmd_str, explanation="Install dependencies for the Python application")
-            commands.append(cmd)
-
     # Select the input path to run the local app.
     default = "."
     if template != "existing" and local_app.content_format == ContentFormat.JSON:
@@ -685,7 +671,7 @@ def _handle_app_sync() -> tuple[cloud.Application, list[ExecutedCommand]]:
     return cloud_app, commands
 
 
-def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
+def _handle_app_push(cloud_app: cloud.Application) -> tuple[str, ExecutedCommand]:
     """
     Prompt the user to push their application to Nextmv Cloud.
 
@@ -701,8 +687,9 @@ def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
 
     Returns
     -------
-    ExecutedCommand
-        The command that was executed to push the app to Nextmv Cloud.
+    tuple[str, ExecutedCommand]
+        The instance ID returned by the push command and the command that was
+        executed to perform the push.
 
     Raises
     ------
@@ -736,7 +723,7 @@ def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
     # Actually execute the command to push the app to Nextmv Cloud.
     str_cmd = f"nextmv cloud app push --app-id {cloud_app.id}"
     in_progress(f"Pushing application with command: [code]{str_cmd}[/code]")
-    handle_push(
+    instance_id = handle_push(
         cloud_app=cloud_app,
         app_id=cloud_app.id,
         app_dir=None,
@@ -750,13 +737,14 @@ def _handle_app_push(cloud_app: cloud.Application) -> ExecutedCommand:
         create_instance_id=None,
     )
 
-    return ExecutedCommand(cmd=str_cmd, explanation="Push the application to Nextmv Cloud")
+    return instance_id, ExecutedCommand(cmd=str_cmd, explanation="Push the application to Nextmv Cloud")
 
 
 def _handle_cloud_run_create(
     cloud_app: cloud.Application,
     local_app: local.Application,
     is_template: bool,
+    instance_id: str,
 ) -> tuple[str, ExecutedCommand]:
     """
     Prompt the user to start a run for their Cloud application.
@@ -773,6 +761,9 @@ def _handle_cloud_run_create(
         The local application to use as input for the run.
     is_template : bool
         Whether the local application is a template.
+    instance_id : str
+        The instance ID returned by the push command, which can be used as
+        input for the run.
 
     Returns
     -------
@@ -815,6 +806,9 @@ def _handle_cloud_run_create(
 
     # Actually execute the command to start the Cloud run.
     command = ["nextmv", "cloud", "run", "create", "--app-id", cloud_app.id, "--input", dirpath]
+    if instance_id:
+        command.extend(["--instance-id", instance_id])
+
     str_cmd = " ".join(command)
     in_progress(f"Starting [italic]remote[/italic] run with command: [code]{str_cmd}[/code]")
     result = _cli_call(command)

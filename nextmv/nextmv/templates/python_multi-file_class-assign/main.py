@@ -20,7 +20,7 @@ def main() -> None:
     options = nextmv.Manifest.from_yaml(".").extract_options()
 
     loaded_data = nextmv.load(
-        input_format=nextmv.InputFormat.MULTI_FILE,
+        input_format=nextmv.ContentFormat.MULTI_FILE,
         options=options,
         path="inputs",
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
@@ -36,7 +36,7 @@ def main() -> None:
     nextmv.log(f"  Assigned: {solution['total_assigned']}/{solution['total_students']}")
 
     output = nextmv.Output(
-        output_format=nextmv.OutputFormat.MULTI_FILE,
+        output_format=nextmv.ContentFormat.MULTI_FILE,
         options=options,
         metrics=metrics,
         assets=visual_assets,

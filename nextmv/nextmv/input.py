@@ -2,13 +2,11 @@
 Module for handling input sources and data.
 
 This module provides classes and functions for loading and handling input data
-in various formats for decision problems. It supports JSON, plain text, CSV,
-and CSV archive formats and can load data from standard input or files.
+in various formats for decision problems. It supports JSON and multi-file
+formats and can load data from standard input or files.
 
 Classes
 -------
-InputFormat
-    Enum defining supported input data formats (JSON, TEXT, CSV, CSV_ARCHIVE).
 Input
     Container for input data with format specification and options.
 InputLoader
@@ -38,6 +36,8 @@ from enum import Enum
 from typing import Any
 
 from nextmv._serialization import serialize_json
+from nextmv.content_format import ContentFormat
+from nextmv.deprecated import deprecated
 from nextmv.options import Options
 
 INPUTS_KEY = "inputs"
@@ -48,6 +48,9 @@ Inputs key constant used for identifying inputs in the run.
 
 class InputFormat(str, Enum):
     """
+    !!! warning
+        `InputFormat` is deprecated, use `nextmv.ContentFormat` instead.
+
     Format of an `Input`.
 
     You can import the `InputFormat` class directly from `nextmv`:
@@ -61,23 +64,55 @@ class InputFormat(str, Enum):
     Attributes
     ----------
     JSON : str
+        !!! warning
+            `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
         JSON format, utf-8 encoded.
     TEXT : str
+        !!! warning
+            `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Text format, utf-8 encoded.
     CSV_ARCHIVE : str
+        !!! warning
+            `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         CSV archive format: multiple CSV files.
     MULTI_FILE : str
+        !!! warning
+            `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
         Multi-file format, used for loading multiple files in a single input.
     """
 
     JSON = "json"
-    """JSON format, utf-8 encoded."""
+    """
+    !!! warning
+        `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
+    JSON format, utf-8 encoded.
+    """
     TEXT = "text"
-    """Text format, utf-8 encoded."""
+    """
+    !!! warning
+        `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Text format, utf-8 encoded.
+    """
     CSV_ARCHIVE = "csv-archive"
-    """CSV archive format: multiple CSV files."""
+    """
+    !!! warning
+        `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    CSV archive format: multiple CSV files.
+    """
     MULTI_FILE = "multi-file"
-    """Multi-file format, used for loading multiple files in a single input."""
+    """
+    !!! warning
+        `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Multi-file format, used for loading multiple files in a single input.
+    """
 
 
 @dataclass
@@ -95,7 +130,7 @@ class DataFile:
     filesystem. It includes the name of the file, and the reader function that
     will handle the loading, and deserialization of the data from the file.
     This `DataFile` class is typically used in the `Input`, when the
-    `Input.input_format` is set to `InputFormat.MULTI_FILE`. Given that it is
+    `Input.input_format` is set to `ContentFormat.MULTI_FILE`. Given that it is
     difficul to handle every edge case of how data is deserialized, and read
     from a file, this class exists so that the user can implement the `reader`
     callable of their choice and provide it with any `reader_args` and
@@ -164,7 +199,7 @@ class DataFile:
     """
     Use this parameter to set a custom key to represent your file.
 
-    When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+    When using `ContentFormat.MULTI_FILE` as the `input_format` of the `Input`,
     the data from the file is loaded to the `.data` parameter of the `Input`.
     In that case, the type of `.data` is `dict[str, Any]`, where each key
     represents the file name (with extension) and the value is the data that is
@@ -196,7 +231,7 @@ def json_data_file(
     input_data_key : str, optional
         A custom key to represent the data from this file.
 
-        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        When using `ContentFormat.MULTI_FILE` as the `input_format` of the `Input`,
         the data from the file is loaded to the `.data` parameter of the `Input`.
         In that case, the type of `.data` is `dict[str, Any]`, where each key
         represents the file name (with extension) and the value is the data that is
@@ -260,7 +295,7 @@ def csv_data_file(
     input_data_key : str, optional
         A custom key to represent the data from this file.
 
-        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        When using `ContentFormat.MULTI_FILE` as the `input_format` of the `Input`,
         the data from the file is loaded to the `.data` parameter of the `Input`.
         In that case, the type of `.data` is `dict[str, Any]`, where each key
         represents the file name (with extension) and the value is the data that is
@@ -321,7 +356,7 @@ def text_data_file(name: str, input_data_key: str | None = None) -> DataFile:
     input_data_key : str, optional
         A custom key to represent the data from this file.
 
-        When using `InputFormat.MULTI_FILE` as the `input_format` of the `Input`,
+        When using `ContentFormat.MULTI_FILE` as the `input_format` of the `Input`,
         the data from the file is loaded to the `.data` parameter of the `Input`.
         In that case, the type of `.data` is `dict[str, Any]`, where each key
         represents the file name (with extension) and the value is the data that is
@@ -367,29 +402,24 @@ class Input:
 
     The `data`'s type must match the `input_format`:
 
-    - `InputFormat.JSON`: the data is `Union[dict[str, Any], Any]`. This just
+    - `ContentFormat.JSON`: the data is `Union[dict[str, Any], Any]`. This just
        means that the data must be JSON-deserializable, which includes dicts and
        lists.
-    - `InputFormat.TEXT`: the data is `str`, and it must be utf-8 encoded.
-    - `InputFormat.CSV_ARCHIVE`: the data is `dict[str, list[dict[str, Any]]]`,
-       where each key is the name of a CSV file and the value is a list of dicts
-       representing the rows in that CSV file.
-    - `InputFormat.MULTI_FILE`: the data is `dict[str, Any]`, where for each
+    - `ContentFormat.MULTI_FILE`: the data is `dict[str, Any]`, where for each
        item, the key is the file name (with the extension) and the actual data
        from the file is the value. When working with multi-file, data is loaded
        from one or more files in a specific directory. Given that each file can
        be of different types (JSON, CSV, Excel, etc...), the data captured from
        each might vary. To reflect this, the data is loaded as a dict of items.
-       You can have a custom key for the data, that is not the file name,  if
+       You can have a custom key for the data, that is not the file name, if
        you use the `input_data_key` parameter of the `DataFile` class.
 
     Parameters
     ----------
-    data : Union[Union[dict[str, Any], Any], str, list[dict[str, Any]],
-    dict[str, list[dict[str, Any]]], dict[str, Any]]
+    data : Union[dict[str, Any], Any, dict[str, Any]]
         The actual data.
-    input_format : InputFormat, optional
-        Format of the input data. Default is `InputFormat.JSON`.
+    input_format : ContentFormat, optional
+        Format of the input data. Default is `ContentFormat.JSON`.
     options : Options, optional
         Options that the input was created with.
 
@@ -407,18 +437,15 @@ class Input:
 
     The data can be of various types, depending on the input format:
 
-    - For `JSON`: `Union[dict[str, Any], Any]`
-    - For `TEXT`: `str`
-    - For `CSV`: `list[dict[str, Any]]`
-    - For `CSV_ARCHIVE`: `dict[str, list[dict[str, Any]]]`
-    - For `MULTI_FILE`: `dict[str, Any]`
+    - For `ContentFormat.JSON`: `Union[dict[str, Any], Any]`
+    - For `ContentFormat.MULTI_FILE`: `dict[str, Any]`
     """
 
-    input_format: InputFormat | None = InputFormat.JSON
+    input_format: ContentFormat | None = ContentFormat.JSON
     """
     Format of the input data.
 
-    Default is `InputFormat.JSON`.
+    Default is `ContentFormat.JSON`.
     """
 
     options: Options | None = None
@@ -444,31 +471,53 @@ class Input:
             If the data type doesn't match the expected type for the given format.
         """
 
-        if self.input_format == InputFormat.JSON:
+        # Support deprecated formats but warn the user about them.
+        if type(self.input_format) is InputFormat:
+            deprecated(name="InputFormat", reason="`InputFormat` is deprecated, use `ContentFormat` instead")
+
+            if self.input_format in {InputFormat.TEXT, InputFormat.CSV_ARCHIVE}:
+                deprecated(
+                    name="InputFormat.TEXT/InputFormat.CSV_ARCHIVE",
+                    reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
+                )
+            elif self.input_format in {InputFormat.JSON, InputFormat.MULTI_FILE}:
+                self.input_format = ContentFormat(self.input_format.value)
+            else:
+                raise ValueError(f"unsupported input_format: {self.input_format}")
+
+        if self.input_format == ContentFormat.JSON:
             try:
                 _ = serialize_json(self.data)
             except (TypeError, OverflowError) as e:
                 raise ValueError(
-                    f"Input has input_format InputFormat.JSON and "
+                    f"Input has input_format `ContentFormat.JSON` and "
                     f"data is of type {type(self.data)}, which is not JSON serializable"
                 ) from e
 
-        elif self.input_format == InputFormat.TEXT and not isinstance(self.data, str):
+        elif (
+            type(self.input_format) is InputFormat
+            and self.input_format == InputFormat.TEXT
+            and not isinstance(self.data, str)
+        ):
             raise ValueError(
                 f"unsupported Input.data type: {type(self.data)} with "
                 "input_format InputFormat.TEXT, supported type is `str`"
             )
 
-        elif self.input_format == InputFormat.CSV_ARCHIVE and not isinstance(self.data, dict):
+        elif (
+            type(self.input_format) is InputFormat
+            and self.input_format == InputFormat.CSV_ARCHIVE
+            and not isinstance(self.data, dict)
+        ):
             raise ValueError(
                 f"unsupported Input.data type: {type(self.data)} with "
                 "input_format InputFormat.CSV_ARCHIVE, supported type is `dict`"
             )
 
-        elif self.input_format == InputFormat.MULTI_FILE and not isinstance(self.data, dict):
+        elif self.input_format == ContentFormat.MULTI_FILE and not isinstance(self.data, dict):
             raise ValueError(
                 f"unsupported Input.data type: {type(self.data)} with "
-                "input_format InputFormat.MULTI_FILE, supported type is `dict`"
+                "input_format `ContentFormat.MULTI_FILE`, supported type is `dict`"
             )
 
         # Capture a snapshot of the options that were used to create the class
@@ -483,7 +532,7 @@ class Input:
 
         This method serializes the Input object to a dictionary format that can
         be easily converted to JSON or other serialization formats. When the
-        `input_type` is set to `InputFormat.MULTI_FILE`, it will not include
+        `input_type` is set to `ContentFormat.MULTI_FILE`, it will not include
         the `data` field, as it is uncertain how data is deserialized from the file.
 
         Returns
@@ -502,8 +551,8 @@ class Input:
 
         Examples
         --------
-        >>> from nextmv.input import Input, InputFormat
-        >>> input_obj = Input(data={"key": "value"}, input_format=InputFormat.JSON)
+        >>> from nextmv.input import Input, ContentFormat
+        >>> input_obj = Input(data={"key": "value"}, input_format=ContentFormat.JSON)
         >>> input_dict = input_obj.to_dict()
         >>> print(input_dict)
         {'data': {'key': 'value'}, 'input_format': 'json', 'options': None}
@@ -514,7 +563,7 @@ class Input:
             "options": self.options.to_dict() if self.options is not None else None,
         }
 
-        if self.input_format == InputFormat.MULTI_FILE:
+        if self.input_format == ContentFormat.MULTI_FILE:
             return input_dict
 
         input_dict["data"] = self.data
@@ -538,7 +587,7 @@ class InputLoader:
 
     def load(
         self,
-        input_format: InputFormat = InputFormat.JSON,
+        input_format: ContentFormat = ContentFormat.JSON,
         options: Options | None = None,
         *args,
         **kwargs,
@@ -549,8 +598,8 @@ class InputLoader:
 
         Parameters
         ----------
-        input_format : InputFormat, optional
-            Format of the input data. Default is `InputFormat.JSON`.
+        input_format : ContentFormat, optional
+            Format of the input data. Default is `ContentFormat.JSON`.
         options : Options, optional
             Options for loading the input data.
         *args
@@ -583,17 +632,17 @@ class LocalInputLoader(InputLoader):
     ```
 
     This class can load input data from the local filesystem, by using stdin,
-    a file, or a directory, where applicable. It supports various input formats
-    like JSON, TEXT, CSV, and CSV archive.
+    a file, or a directory, where applicable. It supports JSON and multi-file
+    formats.
 
     Call the `load` method to read the input data.
 
     Examples
     --------
-    >>> from nextmv.input import LocalInputLoader, InputFormat
+    >>> from nextmv.input import LocalInputLoader, ContentFormat
     >>> loader = LocalInputLoader()
     >>> # Load JSON from stdin or file
-    >>> input_obj = loader.load(input_format=InputFormat.JSON, path="data.json")
+    >>> input_obj = loader.load(input_format=ContentFormat.JSON, path="data.json")
     """
 
     def _read_text(path: str, _) -> str:
@@ -655,13 +704,13 @@ class LocalInputLoader(InputLoader):
 
     # All of these readers are callback functions.
     STDIN_READERS = {
-        InputFormat.JSON: lambda _: json.load(sys.stdin),
+        ContentFormat.JSON: lambda _: json.load(sys.stdin),
         InputFormat.TEXT: lambda _: sys.stdin.read().rstrip("\n"),
     }
     """
     Dictionary of functions to read from standard input.
 
-    Each key is an InputFormat, and each value is a function that reads from
+    Each key is a ContentFormat, and each value is a function that reads from
     standard input in that format.
     """
 
@@ -669,53 +718,45 @@ class LocalInputLoader(InputLoader):
     # multiple lines. By using `open`, we needed the `with` to be able to close
     # the file.
     FILE_READERS = {
-        InputFormat.JSON: _read_json,
+        ContentFormat.JSON: _read_json,
         InputFormat.TEXT: _read_text,
         "CSV": _read_csv,
     }
     """
     Dictionary of functions to read from files.
 
-    Each key is an InputFormat, and each value is a function that reads from
+    Each key is a ContentFormat, and each value is a function that reads from
     a file in that format.
     """
 
-    def load(
+    def load(  # noqa: C901
         self,
-        input_format: InputFormat | None = InputFormat.JSON,
+        input_format: ContentFormat | None = ContentFormat.JSON,
         options: Options | None = None,
         path: str | None = None,
         csv_configurations: dict[str, Any] | None = None,
         data_files: list[DataFile] | None = None,
     ) -> Input:
         """
-        Load the input data. The input data can be in various formats. For
-        `InputFormat.JSON` and `InputFormat.TEXT`, the data can be streamed
+        Load the input data. For `ContentFormat.JSON`, the data can be streamed
         from stdin or read from a file. When the `path` argument is provided
         (and valid), the input data is read from the file specified by `path`,
-        otherwise, it is streamed from stdin. For `InputFormat.CSV_ARCHIVE`,
-        the input data is read from the directory specified by `path`. If the
-        `path` is not provided, the default location `input` is used. The
-        directory should contain one or more files, where each file in the
-        directory is a CSV file.
+        otherwise, it is streamed from stdin.
 
         The `Input` that is returned contains the `data` attribute. This data
         can be of different types, depending on the provided `input_format`:
 
-        - `InputFormat.JSON`: the data is a `dict[str, Any]`.
-        - `InputFormat.TEXT`: the data is a `str`.
-        - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str,
-          Any]]]`. Each key is the name of the CSV file, minus the `.csv`
-          extension.
-        - `InputFormat.MULTI_FILE`: the data is a `dict[str, Any]`, where each
-          key is the file name (with extension) and the value is the data read
-          from the file. The data can be of any type, depending on the file
-          type and the reader function provided in the `DataFile` instances.
+        - `ContentFormat.JSON`: the data is a `dict[str, Any]`.
+        - `ContentFormat.MULTI_FILE`: the data is a `dict[str, Any]`, where
+          each key is the file name (with extension) and the value is the data
+          read from the file. The data can be of any type, depending on the
+          file type and the reader function provided in the `DataFile`
+          instances.
 
         Parameters
         ----------
-        input_format : InputFormat, optional
-            Format of the input data. Default is `InputFormat.JSON`.
+        input_format : ContentFormat, optional
+            Format of the input data. Default is `ContentFormat.JSON`.
         options : Options, optional
             Options for loading the input data.
         path : str, optional
@@ -726,14 +767,14 @@ class LocalInputLoader(InputLoader):
             dictionary with custom kwargs for the `DictReader`.
         data_files : list[DataFile], optional
             List of `DataFile` instances to read from. This is used when the
-            `input_format` is set to `InputFormat.MULTI_FILE`. Each `DataFile`
-            instance should have a `name` (the file name with extension) and a
-            `loader` function that reads the data from the file. The `loader`
-            function should accept the file path as its first argument and
-            return the data read from the file. The `loader` can also accept
-            additional positional and keyword arguments, which can be provided
-            through the `loader_args` and `loader_kwargs` attributes of the
-            `DataFile` instance.
+            `input_format` is set to `ContentFormat.MULTI_FILE`. Each
+            `DataFile` instance should have a `name` (the file name with
+            extension) and a `loader` function that reads the data from the
+            file. The `loader` function should accept the file path as its
+            first argument and return the data read from the file. The `loader`
+            can also accept additional positional and keyword arguments, which
+            can be provided through the `loader_args` and `loader_kwargs`
+            attributes of the `DataFile` instance.
 
         Returns
         -------
@@ -743,25 +784,40 @@ class LocalInputLoader(InputLoader):
         Raises
         ------
         ValueError
-            If the path is not a directory when working with CSV_ARCHIVE.
+            If the path is not a valid directory.
         """
+
+        if type(input_format) is InputFormat:
+            deprecated(
+                name="InputFormat",
+                reason="using `InputFormat` as the type for `input_format` is deprecated, use `ContentFormat` instead",
+            )
+            if input_format in {InputFormat.TEXT, InputFormat.CSV_ARCHIVE}:
+                deprecated(
+                    name="InputFormat.TEXT/InputFormat.CSV_ARCHIVE",
+                    reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
+                )
+            elif input_format in {InputFormat.JSON, InputFormat.MULTI_FILE}:
+                input_format = ContentFormat(input_format.value)
 
         data: Any = None
         if csv_configurations is None:
             csv_configurations = {}
 
-        if input_format in [InputFormat.JSON, InputFormat.TEXT]:
+        if input_format == ContentFormat.JSON:
             data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
-        elif input_format == InputFormat.CSV_ARCHIVE:
-            data = self._load_archive(path=path, csv_configurations=csv_configurations)
-        elif input_format == InputFormat.MULTI_FILE:
+        elif input_format == ContentFormat.MULTI_FILE:
             if data_files is None:
-                raise ValueError("data_files must be provided when input_format is InputFormat.MULTI_FILE")
+                raise ValueError("`data_files` must be provided when input_format is `ContentFormat.MULTI_FILE`")
 
             if not isinstance(data_files, list):
-                raise ValueError("data_files must be a list of DataFile instances")
+                raise ValueError("`data_files` must be a list of `DataFile` instances")
 
             data = self._load_multi_file(data_files=data_files, path=path)
+        elif type(input_format) is InputFormat and input_format == InputFormat.TEXT:
+            data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
+        elif type(input_format) is InputFormat and input_format == InputFormat.CSV_ARCHIVE:
+            data = self._load_archive(path=path, csv_configurations=csv_configurations)
 
         return Input(data=data, input_format=input_format, options=options)
 
@@ -769,7 +825,7 @@ class LocalInputLoader(InputLoader):
         self,
         csv_configurations: dict[str, Any] | None,
         path: str | None = None,
-        input_format: InputFormat | str | None = InputFormat.JSON,
+        input_format: ContentFormat | str | None = ContentFormat.JSON,
         use_file_reader: bool = False,
     ) -> dict[str, Any] | str | list[dict[str, Any]]:
         """
@@ -784,7 +840,7 @@ class LocalInputLoader(InputLoader):
             Configuration parameters for the CSV DictReader.
         path : str, optional
             Path to the file to read from. If None or empty, reads from stdin.
-        input_format : InputFormat, optional
+        input_format : ContentFormat, optional
             Format of the input data. Default is JSON.
         use_file_reader : bool, optional
             Whether to force using the file reader even if path is None.
@@ -943,7 +999,7 @@ _LOCAL_INPUT_LOADER = LocalInputLoader()
 
 
 def load(
-    input_format: InputFormat | None = InputFormat.JSON,
+    input_format: ContentFormat | None = ContentFormat.JSON,
     options: Options | None = None,
     path: str | None = None,
     csv_configurations: dict[str, Any] | None = None,
@@ -965,18 +1021,15 @@ def load(
     The input data can be in various formats and can be loaded from different
     sources depending on the loader:
 
-    - `InputFormat.JSON`: the data is a `dict[str, Any]`
-    - `InputFormat.TEXT`: the data is a `str`
-    - `InputFormat.CSV_ARCHIVE`: the data is a `dict[str, list[dict[str, Any]]]`
-        Each key is the name of the CSV file, minus the `.csv` extension.
-    - `InputFormat.MULTI_FILE`: the data is a `dict[str, Any]`
-        where each key is the file name (with extension) and the value is the
-        data read from the file. This is used for loading multiple files in a
-        single input, where each file can be of different types (JSON, CSV,
-        Excel, etc.). The data is loaded as a dict of items, where each item
-        corresponds to a file and its content.
+    - `ContentFormat.JSON`: the data is a `dict[str, Any]`
+    - `ContentFormat.MULTI_FILE`: the data is a `dict[str, Any]`, where each
+      key is the file name (with extension) and the value is the data read from
+      the file. This is used for loading multiple files in a single input,
+      where each file can be of different types (JSON, CSV, Excel, etc.). The
+      data is loaded as a dict of items, where each item corresponds to a file
+      and its content.
 
-    When specifying `input_format` as `InputFormat.MULTI_FILE`, the
+    When specifying `input_format` as `ContentFormat.MULTI_FILE`, the
     `data_files` argument must be provided. This argument is a list of
     `DataFile` instances, each representing a file to be read. Each `DataFile`
     instance should have a `name` (the file name with extension) and a `loader`
@@ -1002,15 +1055,15 @@ def load(
 
     Parameters
     ----------
-    input_format : InputFormat, optional
-        Format of the input data. Default is `InputFormat.JSON`.
+    input_format : ContentFormat, optional
+        Format of the input data. Default is `ContentFormat.JSON`.
     options : Options, optional
         Options for loading the input data.
     path : str, optional
         Path to the input data. For file-based loaders:
         - If provided, reads from the specified file or directory
-        - If None, typically reads from stdin (for JSON, TEXT, CSV)
-          or uses a default directory (for CSV_ARCHIVE)
+        - If None, reads from stdin (for JSON) or uses a default directory
+          (for multi-file)
     csv_configurations : dict[str, Any], optional
         Configurations for loading CSV files. Custom kwargs for
         Python's `csv.DictReader`.
@@ -1019,7 +1072,7 @@ def load(
         Default is an instance of `LocalInputLoader`.
     data_files : list[DataFile], optional
         List of `DataFile` instances to read from. This is used when the
-        `input_format` is set to `InputFormat.MULTI_FILE`. Each `DataFile`
+        `input_format` is set to `ContentFormat.MULTI_FILE`. Each `DataFile`
         instance should have a `name` (the file name with extension) and a
         `loader` function that reads the data from the file. The `loader`
         function should accept the file path as its first argument and return
@@ -1048,11 +1101,11 @@ def load(
 
     Examples
     --------
-    >>> from nextmv.input import load, InputFormat
+    >>> from nextmv.input import load, ContentFormat
     >>> # Load JSON from stdin
-    >>> input_obj = load(input_format=InputFormat.JSON)
-    >>> # Load CSV archive from a directory
-    >>> input_obj = load(input_format=InputFormat.CSV_ARCHIVE, path="input_dir")
+    >>> input_obj = load(input_format=ContentFormat.JSON)
+    >>> # Load multi-file from a directory
+    >>> input_obj = load(input_format=ContentFormat.MULTI_FILE, path="input_dir")
     """
 
     return loader.load(input_format, options, path, csv_configurations, data_files)

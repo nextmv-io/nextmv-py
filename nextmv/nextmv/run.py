@@ -51,6 +51,7 @@ from pydantic import AliasChoices, Field, field_validator
 
 from nextmv._serialization import serialize_json
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
 from nextmv.input import Input, InputFormat
 from nextmv.output import Asset, Output, OutputFormat, Statistics
 from nextmv.status import StatusV2
@@ -125,27 +126,47 @@ class FormatInput(BaseModel):
 
     Parameters
     ----------
-    input_type : InputFormat, optional
-        Type of the input format. Defaults to `InputFormat.JSON`.
+    input_type : ContentFormat | InputFormat, optional
+        !!! warning
+            `InputFormat` is deprecated but kept for backwards compatibility.
+            Use `ContentFormat` instead.
+
+        Type of the input format. Defaults to `ContentFormat.JSON`.
 
     Examples
     --------
-    >>> from nextmv import FormatInput, InputFormat
+    >>> from nextmv import FormatInput, ContentFormat
     >>> format_input = FormatInput()
     >>> format_input.input_type
-    <InputFormat.JSON: 'json'>
+    <ContentFormat.JSON: 'json'>
 
-    >>> format_input = FormatInput(input_type=InputFormat.TEXT)
+    >>> format_input = FormatInput(input_type=ContentFormat.MULTI_FILE)
     >>> format_input.input_type
-    <InputFormat.TEXT: 'text'>
+    <ContentFormat.MULTI_FILE: 'multi-file'>
     """
 
-    input_type: InputFormat = Field(
+    input_type: ContentFormat | InputFormat = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "input_type"),
-        default=InputFormat.JSON,
+        default=ContentFormat.JSON,
     )
-    """Type of the input format."""
+    """
+    !!! warning
+        `InputFormat` is deprecated but kept for backwards compatibility. Use
+        `ContentFormat` instead.
+
+    Type of the input format.
+    """
+
+    def model_post_init(self, _context) -> None:
+        """Convert deprecated InputFormat to ContentFormat after initialization."""
+        if type(self.input_type) is ContentFormat:
+            return
+
+        if self.input_type == InputFormat.JSON:
+            self.input_type = ContentFormat.JSON
+        elif self.input_type == InputFormat.MULTI_FILE:
+            self.input_type = ContentFormat.MULTI_FILE
 
 
 class FormatOutput(BaseModel):
@@ -160,27 +181,47 @@ class FormatOutput(BaseModel):
 
     Parameters
     ----------
-    output_type : OutputFormat, optional
-        Type of the output format. Defaults to `OutputFormat.JSON`.
+    output_type : ContentFormat | OutputFormat, optional
+        !!! warning
+            `OutputFormat` is deprecated but kept for backwards compatibility.
+            Use `ContentFormat` instead.
+
+        Type of the output format. Defaults to `ContentFormat.JSON`.
 
     Examples
     --------
-    >>> from nextmv import FormatOutput, OutputFormat
+    >>> from nextmv import FormatOutput, ContentFormat
     >>> format_output = FormatOutput()
     >>> format_output.output_type
-    <OutputFormat.JSON: 'json'>
+    <ContentFormat.JSON: 'json'>
 
-    >>> format_output = FormatOutput(output_type=OutputFormat.CSV_ARCHIVE)
+    >>> format_output = FormatOutput(output_type=ContentFormat.MULTI_FILE)
     >>> format_output.output_type
-    <OutputFormat.CSV_ARCHIVE: 'csv_archive'>
+    <ContentFormat.MULTI_FILE: 'multi-file'>
     """
 
-    output_type: OutputFormat = Field(
+    output_type: ContentFormat | OutputFormat = Field(
         serialization_alias="type",
         validation_alias=AliasChoices("type", "output_type"),
-        default=OutputFormat.JSON,
+        default=ContentFormat.JSON,
     )
-    """Type of the output format."""
+    """
+    !!! warning
+        `OutputFormat` is deprecated but kept for backwards compatibility. Use
+        `ContentFormat` instead.
+
+    Type of the output format.
+    """
+
+    def model_post_init(self, _context) -> None:
+        """Convert deprecated OutputFormat to ContentFormat after initialization."""
+        if type(self.output_type) is ContentFormat:
+            return
+
+        if self.output_type == OutputFormat.JSON:
+            self.output_type = ContentFormat.JSON
+        elif self.output_type == OutputFormat.MULTI_FILE:
+            self.output_type = ContentFormat.MULTI_FILE
 
 
 class Format(BaseModel):
@@ -202,15 +243,15 @@ class Format(BaseModel):
 
     Examples
     --------
-    >>> from nextmv import Format, FormatInput, FormatOutput, InputFormat, OutputFormat
+    >>> from nextmv import Format, FormatInput, FormatOutput, ContentFormat
     >>> format_config = Format(
-    ...     format_input=FormatInput(input_type=InputFormat.JSON),
-    ...     format_output=FormatOutput(output_type=OutputFormat.JSON)
+    ...     format_input=FormatInput(input_type=ContentFormat.JSON),
+    ...     format_output=FormatOutput(output_type=ContentFormat.JSON)
     ... )
     >>> format_config.format_input.input_type
-    <InputFormat.JSON: 'json'>
+    <ContentFormat.JSON: 'json'>
     >>> format_config.format_output.output_type
-    <OutputFormat.JSON: 'json'>
+    <ContentFormat.JSON: 'json'>
     """
 
     format_input: FormatInput = Field(
@@ -1387,7 +1428,7 @@ class RunConfiguration(BaseModel):
         >>> config = RunConfiguration()
         >>> config.resolve({"key": "value"})
         >>> config.format.format_input.input_type
-        <InputFormat.JSON: 'json'>
+        <ContentFormat.JSON: 'json'>
 
         >>> config = RunConfiguration()
         >>> config.resolve("text input")
@@ -1397,7 +1438,7 @@ class RunConfiguration(BaseModel):
         >>> config = RunConfiguration()
         >>> config.resolve({}, dir_path="/path/to/files")
         >>> config.format.format_input.input_type
-        <InputFormat.MULTI_FILE: 'multi_file'>
+        <ContentFormat.MULTI_FILE: 'multi_file'>
         """
 
         # If the value is set by the user, do not change it.
@@ -1405,33 +1446,33 @@ class RunConfiguration(BaseModel):
             return
 
         self.format = Format(
-            format_input=FormatInput(input_type=InputFormat.JSON),
-            format_output=FormatOutput(output_type=OutputFormat.JSON),
+            format_input=FormatInput(input_type=ContentFormat.JSON),
+            format_output=FormatOutput(output_type=ContentFormat.JSON),
         )
 
         if isinstance(input, dict):
-            self.format.format_input.input_type = InputFormat.JSON
+            self.format.format_input.input_type = ContentFormat.JSON
         elif isinstance(input, str):
             self.format.format_input.input_type = InputFormat.TEXT
         elif dir_path is not None and dir_path != "":
             # Kinda hard to detect if we should be working with CSV_ARCHIVE or
             # MULTI_FILE, so we default to MULTI_FILE.
-            self.format.format_input.input_type = InputFormat.MULTI_FILE
+            self.format.format_input.input_type = ContentFormat.MULTI_FILE
         elif isinstance(input, Input):
             self.format.format_input.input_type = input.input_format
 
         # As input and output are symmetric, we set the output according to the input
         # format.
-        if self.format.format_input.input_type == InputFormat.JSON:
-            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
+        if self.format.format_input.input_type == ContentFormat.JSON:
+            self.format.format_output = FormatOutput(output_type=ContentFormat.JSON)
         elif self.format.format_input.input_type == InputFormat.TEXT:  # Text still maps to json
-            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
+            self.format.format_output = FormatOutput(output_type=ContentFormat.JSON)
         elif self.format.format_input.input_type == InputFormat.CSV_ARCHIVE:
             self.format.format_output = FormatOutput(output_type=OutputFormat.CSV_ARCHIVE)
-        elif self.format.format_input.input_type == InputFormat.MULTI_FILE:
-            self.format.format_output = FormatOutput(output_type=OutputFormat.MULTI_FILE)
+        elif self.format.format_input.input_type == ContentFormat.MULTI_FILE:
+            self.format.format_output = FormatOutput(output_type=ContentFormat.MULTI_FILE)
         else:
-            self.format.format_output = FormatOutput(output_type=OutputFormat.JSON)
+            self.format.format_output = FormatOutput(output_type=ContentFormat.JSON)
 
 
 class ExternalRunResult(BaseModel):

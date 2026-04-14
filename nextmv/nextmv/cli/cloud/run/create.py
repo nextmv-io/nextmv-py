@@ -13,9 +13,10 @@ import typer
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, print_json, success
+from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
 from nextmv.cloud.application import Application
+from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
 from nextmv.run import Format, FormatInput, RunConfiguration, RunQueuing, RunType, RunTypeConfiguration
@@ -96,11 +97,11 @@ def create(
     ] = False,
     # Options for run configuration.
     content_format: Annotated[
-        InputFormat | None,
+        InputFormat | None,  # Keep deprecated type for backwards compatibility, translated in the code.
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format of the run to create. Allowed values are: {enum_values(InputFormat)}.",
+            help=f"The content format of the run to create. Allowed values are: {enum_values(ContentFormat)}.",
             metavar="CONTENT_FORMAT",
             rich_help_panel="Run configuration",
         ),
@@ -225,8 +226,7 @@ def create(
     When using the --input flag, the value can be one of the following:
 
     - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
-      the input data. Use with the [magenta]json[/magenta], and
-      [magenta]text[/magenta] content formats.
+      the input data. Use with the [magenta]json[/magenta] content format.
     - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
       containing the input data files. Use with the
       [magenta]multi-file[/magenta] content format.
@@ -315,6 +315,8 @@ def create(
         $ [dim]nextmv cloud run create --app-id hare-app --managed-input-id carrot-input --output outputs[/dim]
     """
 
+    content_format = parse_content_format(content_format)
+
     # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
     if stdin is None and (input is None or input == "") and (managed_input_id is None or managed_input_id == ""):
@@ -387,7 +389,7 @@ def build_run_config(
     priority: int,
     no_queuing: bool,
     execution_class: str | None = None,
-    content_format: InputFormat | None = None,
+    content_format: ContentFormat | None = None,
     secret_collection_id: str | None = None,
     integration_id: str | None = None,
     definition_id: str | None = None,
@@ -405,7 +407,7 @@ def build_run_config(
         Whether to disable queuing for the run.
     execution_class : str | None
         The execution class to use for the run, if applicable.
-    content_format : InputFormat | None
+    content_format : ContentFormat | None
         The content format of the run to create, if applicable.
     secret_collection_id : str | None
         The secret collection ID to use for the run, if applicable.
@@ -434,7 +436,7 @@ def build_run_config(
     if content_format is not None:
         config.format = Format(
             format_input=FormatInput(
-                input_type=InputFormat(content_format),
+                input_type=content_format,
             ),
         )
     if secret_collection_id is not None:

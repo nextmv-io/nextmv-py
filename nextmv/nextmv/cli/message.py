@@ -15,6 +15,9 @@ import typer
 from rich.console import Console
 from rich.rule import Rule
 
+from nextmv.content_format import ContentFormat
+from nextmv.input import InputFormat
+
 # Shared questionary style that matches the CLI's [code] tag rendering:
 # bold with no color overrides, letting the terminal's default foreground
 # color show through.
@@ -333,6 +336,44 @@ def rule() -> None:
 
     console = Console(file=sys.stderr, highlight=False)
     console.print(Rule(style="magenta"))
+
+
+def parse_content_format(content_format: InputFormat | None) -> ContentFormat | InputFormat | None:
+    """
+    This function is used to print a warning message when a deprecated content
+    format is used, and parse to the appropriate `ContentFormat`.
+
+    In CLI uses, we need to keep the original type as `InputFormat` to be able
+    to accept deprecated content formats, but we translate the appropriate type
+    here.
+
+    Parameters
+    ----------
+    content_format : InputFormat | None
+        The content format to parse.
+
+    Returns
+    -------
+    ContentFormat | InputFormat | None
+        The parsed content format. If the content format is deprecated, a
+        warning is printed and the original content format is returned.
+    """
+
+    if content_format is None:
+        return None
+
+    if content_format == InputFormat.JSON:
+        return ContentFormat.JSON
+
+    if content_format == InputFormat.MULTI_FILE:
+        return ContentFormat.MULTI_FILE
+
+    warning(
+        f"--content-format set to [magenta]{content_format.value}[/magenta], which is deprecated. "
+        "Please use a valid --content-format."
+    )
+
+    return content_format
 
 
 def _format(msg: str) -> str:

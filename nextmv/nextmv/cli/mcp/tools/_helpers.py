@@ -8,7 +8,7 @@ from typing import Any
 
 from nextmv import local
 from nextmv.cloud import Application, Client
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.local.executor import process_run_visuals
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.logger import log
@@ -118,7 +118,7 @@ def _get_local_app(app_dir: str, app_id: str | None = None) -> local.Application
     return app
 
 
-_VALID_CONTENT_FORMATS = {f.value for f in InputFormat}
+_VALID_CONTENT_FORMATS = {f.value for f in ContentFormat}
 
 
 def _validate_content_format(content_format: str) -> None:
@@ -137,7 +137,7 @@ def _build_run_configuration(content_format: str | None):
     _validate_content_format(content_format)
     config = RunConfiguration()
     config.format = Format(
-        format_input=FormatInput(input_type=InputFormat(content_format)),
+        format_input=FormatInput(input_type=ContentFormat(content_format)),
     )
     return config
 

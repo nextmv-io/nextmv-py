@@ -3,6 +3,7 @@ Unit tests for the nextmv configuration command.
 """
 
 import os
+import platform
 import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -18,7 +19,7 @@ from nextmv.cli.configuration.config import (
     obscure_api_key,
     save_config,
 )
-from nextmv.cli.main import app, go_cli_exists, remove_go_cli
+from nextmv.cli.main import _go_cli_exists, _remove_go_cli, app
 from typer.testing import CliRunner
 
 
@@ -268,7 +269,7 @@ class TestGoCliExists(unittest.TestCase):
         """Test that go_cli_exists returns True when the Go CLI file exists."""
         mock_exists.return_value = True
 
-        result = go_cli_exists()
+        result = _go_cli_exists()
 
         self.assertTrue(result)
 
@@ -277,7 +278,7 @@ class TestGoCliExists(unittest.TestCase):
         """Test that go_cli_exists returns False when the Go CLI file does not exist."""
         mock_exists.return_value = False
 
-        result = go_cli_exists()
+        result = _go_cli_exists()
 
         self.assertFalse(result)
 
@@ -292,7 +293,7 @@ class TestRemoveGoCli(unittest.TestCase):
         """Test that remove_go_cli deletes the file when it exists."""
         mock_exists.return_value = True
 
-        remove_go_cli()
+        _remove_go_cli()
 
         mock_unlink.assert_called_once()
 
@@ -302,7 +303,7 @@ class TestRemoveGoCli(unittest.TestCase):
         """Test that remove_go_cli does not attempt to delete when file does not exist."""
         mock_exists.return_value = False
 
-        remove_go_cli()
+        _remove_go_cli()
 
         mock_unlink.assert_not_called()
 
@@ -313,7 +314,10 @@ class TestGoCliPath(unittest.TestCase):
     def test_go_cli_path_is_in_config_dir(self):
         """Test that GO_CLI_PATH is inside CONFIG_DIR."""
         self.assertEqual(GO_CLI_PATH.parent, CONFIG_DIR)
-        self.assertEqual(GO_CLI_PATH.name, "nextmv")
+        if platform.system() == "Windows":
+            self.assertEqual(GO_CLI_PATH.name, "nextmv.exe")
+        else:
+            self.assertEqual(GO_CLI_PATH.name, "nextmv")
 
 
 if __name__ == "__main__":

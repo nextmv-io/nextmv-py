@@ -603,16 +603,16 @@ class Client:
         """
         if self.url is not None and self.url != "":
             url = self.url
-        elif (url_env := os.getenv("NEXTMV_ENDPOINT")):
+        elif url_env := os.getenv("NEXTMV_ENDPOINT"):
             url = url_env
         elif profile is not None and profile != "":
-            url = _retrieve_endpoint_from_config(profile)
+            url = retrieve_endpoint_from_config(profile)
         else:
             # The fallback behavior is to attempt to retrieve the default endpoint
             # from the config file. If everything fails, we return the hardcoded
             # default endpoint.
             try:
-                url = _retrieve_endpoint_from_config()
+                url = retrieve_endpoint_from_config()
             except (RuntimeError, ValueError):
                 url = "https://api.cloud.nextmv.io"
 
@@ -659,13 +659,13 @@ class Client:
             return api_key_env
 
         if profile is not None and profile != "":
-            api_key = _retrieve_key_from_config(profile)
+            api_key = retrieve_key_from_config(profile)
             return api_key
 
         # The fallback behavior is to attempt to retrieve the default api key
         # from the config file. If the key is missing, an exception is raised.
         try:
-            api_key = _retrieve_key_from_config()
+            api_key = retrieve_key_from_config()
         except (RuntimeError, ValueError) as e:
             raise ValueError(
                 "API key is missing. Please set the API key in one of the following ways: "
@@ -783,7 +783,7 @@ def _load_config() -> dict[str, Any]:
     return config
 
 
-def _retrieve_key_from_config(profile: str | None = None) -> str:
+def retrieve_key_from_config(profile: str | None = None) -> str:
     """
     Retrieves the API key for the given profile. If no profile is given, the
     default profile is used. If the API key is missing, an exception is raised.
@@ -828,7 +828,7 @@ def _retrieve_key_from_config(profile: str | None = None) -> str:
     return api_key
 
 
-def _retrieve_endpoint_from_config(profile: str | None = None) -> str:
+def retrieve_endpoint_from_config(profile: str | None = None) -> str:
     """
     Retrieves the endpoint for the given profile. If no profile is given, the
     default profile is used. If the endpoint is missing, an exception is

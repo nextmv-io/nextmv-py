@@ -1,15 +1,36 @@
 """Unit tests for the nextmv MCP server module."""
 
 import asyncio
+import contextvars
+import importlib
+import inspect
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
 from nextmv.cli.main import app
+from nextmv.cli.mcp.server import _get_client, _mask_key, _save_to_json_file, create_server
+from nextmv.cli.mcp.tools._helpers import (
+    ProfileSession,
+    _build_run_configuration,
+    _cloud_run_dir,
+    _cloud_run_file_exists,
+    _endpoint_from_app,
+    _extract_cloud_run_outputs,
+    _none_if_empty,
+    _require_non_empty,
+    _save_cloud_run_file,
+    session,
+)
+from nextmv.cloud import Application, Client
+from nextmv.cloud.ensemble import EvaluationRule, RuleObjective, RuleToleranceType, RunGroup
+from nextmv.cloud.scenario import Scenario, ScenarioInput, ScenarioInputType
+from nextmv.content_format import ContentFormat
 from typer.testing import CliRunner
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
@@ -26,7 +47,7 @@ class TestMCPServeCommand(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_help(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp --help` shows the MCP help text."""
@@ -37,7 +58,7 @@ class TestMCPServeCommand(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Model Context Protocol", result.output)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_serve_help(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp serve --help` shows serve help text."""
@@ -51,7 +72,7 @@ class TestMCPServeCommand(unittest.TestCase):
         self.assertIn("--transport", output)
         self.assertIn("--port", output)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_skips_config_check(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp` skips config existence check."""
@@ -68,14 +89,12 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_create_server_returns_fastmcp(self):
         """Test that create_server returns a FastMCP instance."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         self.assertEqual(server.name, "nextmv")
 
     def test_server_has_all_profile_tools(self):
         """Test that profile tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -84,7 +103,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_cloud_app_tools(self):
         """Test that cloud app tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -102,7 +120,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_cloud_run_tools(self):
         """Test that cloud run tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -122,7 +139,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_version_instance_tools(self):
         """Test that version and instance tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -143,7 +159,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_experiment_tools(self):
         """Test that batch, input set, acceptance, scenario tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -172,7 +187,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_ensemble_shadow_switchback_tools(self):
         """Test that ensemble, shadow, and switchback tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -199,7 +213,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_admin_tools(self):
         """Test that secrets, account, managed input, cross-app tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -221,7 +234,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_community_tools(self):
         """Test that community tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -230,7 +242,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_all_local_tools(self):
         """Test that local tools are registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -251,7 +262,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_server_has_workflow_guide_tool(self):
         """Test that the workflow guide tool is registered."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -259,7 +269,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_workflow_guide_returns_content(self):
         """Test that the workflow guide tool returns the guide content."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool = server._tool_manager._tools["nextmv_workflow_guide"]
@@ -274,7 +283,6 @@ class TestMCPServerTools(unittest.TestCase):
 
     def test_total_tool_count(self):
         """Test that the server has the expected total number of tools."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
@@ -283,7 +291,6 @@ class TestMCPServerTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
         """Test that cloud_list_apps delegates to the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
@@ -300,7 +307,6 @@ class TestMCPServerTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_cancel_run_calls_sdk(self, mock_get_app):
         """Test that cloud_cancel_run delegates to the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app_instance = MagicMock()
         mock_get_app.return_value = mock_app_instance
@@ -313,7 +319,6 @@ class TestMCPServerTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_delete_app_calls_sdk(self, mock_get_app):
         """Test that cloud_delete_app delegates to the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app_instance = MagicMock()
         mock_get_app.return_value = mock_app_instance
@@ -326,7 +331,6 @@ class TestMCPServerTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_list_runs_calls_sdk(self, mock_get_app):
         """Test that cloud_list_runs delegates to the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app_instance = MagicMock()
         mock_run = MagicMock()
@@ -346,7 +350,6 @@ class TestGetClient(unittest.TestCase):
     @patch.dict("os.environ", {"NEXTMV_API_KEY": "test-key-123"}, clear=False)
     def test_get_client_from_env(self):
         """Test that _get_client uses NEXTMV_API_KEY env var."""
-        from nextmv.cli.mcp.server import _get_client
 
         client = _get_client()
         self.assertEqual(client.api_key, "test-key-123")
@@ -355,7 +358,6 @@ class TestGetClient(unittest.TestCase):
     @patch.dict("os.environ", {"NEXTMV_API_KEY": "key", "NEXTMV_ENDPOINT": "custom.api.io"}, clear=False)
     def test_get_client_custom_endpoint(self):
         """Test that _get_client respects NEXTMV_ENDPOINT env var."""
-        from nextmv.cli.mcp.server import _get_client
 
         client = _get_client()
         self.assertEqual(client.url, "https://custom.api.io")
@@ -364,7 +366,6 @@ class TestGetClient(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers.Client", side_effect=Exception("no config"))
     def test_get_client_no_key_no_config_raises(self, mock_client):
         """Test that _get_client raises when no API key or config is available."""
-        from nextmv.cli.mcp.server import _get_client
 
         with self.assertRaises(ValueError) as ctx:
             _get_client()
@@ -376,7 +377,6 @@ class TestSaveToFile(unittest.TestCase):
 
     def test_save_to_file_creates_json(self):
         """Test that _save_to_file writes valid JSON and returns a path message."""
-        from nextmv.cli.mcp.server import _save_to_json_file
 
         data = {"stops": [{"id": "s1"}, {"id": "s2"}]}
         msg = _save_to_json_file(data, prefix="test")
@@ -395,7 +395,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_returns_file_path(self, mock_get_app, mock_run_dir):
         """Test that cloud_run_input saves to file instead of returning raw data."""
-        from nextmv.cli.mcp.server import create_server
 
         tmp_dir = tempfile.mkdtemp()
         try:
@@ -419,7 +418,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_returns_file_path(self, mock_get_app, mock_run_dir):
         """Test that cloud_run_result saves to file instead of returning raw data."""
-        from nextmv.cli.mcp.server import create_server
 
         tmp_dir = tempfile.mkdtemp()
         try:
@@ -443,7 +441,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_managed_input_with_raw_data(self, mock_get_app):
         """Test that cloud_create_managed_input uploads raw data when input is provided."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_upload_url = MagicMock()
@@ -481,7 +478,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_input_set_with_managed_input_ids(self, mock_get_app):
         """Test that cloud_create_input_set passes managed inputs correctly."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_input_set = MagicMock()
@@ -508,7 +504,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_input_set_with_run_ids(self, mock_get_app):
         """Test that cloud_create_input_set passes run_ids correctly."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_input_set = MagicMock()
@@ -534,7 +529,6 @@ class TestSaveToFile(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_scenario_test_converts_dicts(self, mock_get_app):
         """Test that cloud_create_scenario_test converts dicts to Scenario objects."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "st-123"
@@ -591,7 +585,6 @@ class TestProfiles(unittest.TestCase):
 
     def test_mask_key(self):
         """Test that _mask_key masks keys correctly."""
-        from nextmv.cli.mcp.server import _mask_key
 
         self.assertIsNone(_mask_key(None))
         self.assertEqual(_mask_key("abcd"), "XXXX")
@@ -600,7 +593,6 @@ class TestProfiles(unittest.TestCase):
 
     def test_set_and_get_profile(self):
         """Test that cloud_set_profile and cloud_get_profile work together."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_config = {
             "apikey": "test-key",
@@ -642,7 +634,6 @@ class TestProfiles(unittest.TestCase):
 
     def test_list_profiles(self):
         """Test that cloud_list_profiles reads config correctly."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_config = {
             "apikey": "my-secret-key-1234",
@@ -673,7 +664,6 @@ class TestProfiles(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers.Client")
     def test_get_client_uses_profile(self, mock_client):
         """Test that _get_client passes the profile to Client."""
-        from nextmv.cli.mcp.tools._helpers import session
 
         mock_client.return_value = MagicMock()
 
@@ -692,7 +682,6 @@ class TestProfiles(unittest.TestCase):
     @patch.dict("os.environ", {"NEXTMV_API_KEY": "env-key"}, clear=False)
     def test_get_client_env_skipped_when_profile_set(self):
         """Test that env var is skipped when a profile is active."""
-        from nextmv.cli.mcp.tools._helpers import session
 
         with patch("nextmv.cli.mcp.tools._helpers.Client") as mock_client:
             mock_client.return_value = MagicMock()
@@ -710,7 +699,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_with_dicts(self, mock_get_app):
         """Bug 1: cloud_create_ensemble must accept plain dicts for run_groups and rules."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_ensemble = MagicMock()
@@ -744,7 +732,6 @@ class TestBugFixes(unittest.TestCase):
         mock_app.new_ensemble_definition.assert_called_once()
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
         # run_groups should be RunGroup objects, not dicts.
-        from nextmv.cloud.ensemble import EvaluationRule, RunGroup
 
         self.assertIsInstance(call_kwargs["run_groups"][0], RunGroup)
         self.assertIsInstance(call_kwargs["run_groups"][1], RunGroup)
@@ -757,7 +744,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_with_shorthand_objective(self, mock_get_app):
         """Bug 1: objective shorthand 'min'/'max' should be accepted."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_ensemble = MagicMock()
@@ -785,14 +771,12 @@ class TestBugFixes(unittest.TestCase):
             )
         )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
-        from nextmv.cloud.ensemble import RuleObjective
 
         self.assertEqual(call_kwargs["rules"][0].objective, RuleObjective.MINIMIZE)
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_with_dict_tolerance(self, mock_get_app):
         """Bug 1: rules with a dict tolerance should be converted correctly."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_ensemble = MagicMock()
@@ -820,7 +804,6 @@ class TestBugFixes(unittest.TestCase):
             )
         )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
-        from nextmv.cloud.ensemble import RuleToleranceType
 
         rule = call_kwargs["rules"][0]
         self.assertEqual(rule.tolerance.value, 5.0)
@@ -829,7 +812,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_missing_run_group_field(self, mock_get_app):
         """Bug 1: Missing required run_group fields give a clear error string."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_get_app.return_value = MagicMock()
 
@@ -859,7 +841,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_missing_rule_field(self, mock_get_app):
         """Bug 1: Missing required rule fields give a clear error string."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_get_app.return_value = MagicMock()
 
@@ -881,12 +862,10 @@ class TestBugFixes(unittest.TestCase):
 
     def test_cloud_create_scenario_test_has_content_type_param(self):
         """Bug 2: cloud_create_scenario_test should accept a content_type parameter."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_create_scenario_test"]
         # Verify the tool's function accepts content_type in its signature.
-        import inspect
 
         sig = inspect.signature(tool.fn)
         self.assertIn("content_type", sig.parameters)
@@ -894,7 +873,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_scenario_test_content_type_path(self, mock_get_app):
         """Bug 2: content_type is passed through to the SDK's new_scenario_test."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "scenario-test-123"
@@ -929,7 +907,6 @@ class TestBugFixes(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_create_ensemble_missing_rule_fields(self, mock_get_app):
         """Bug 1: missing rule fields return a user-friendly error, not an exception."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_get_app.return_value = mock_app
@@ -959,7 +936,6 @@ class TestBugFixes(unittest.TestCase):
         mock_get_app,
     ):
         """Bug 2: content_type is passed to SDK for multi-input scenarios."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_scenario_test.return_value = "scenario-test-456"
@@ -995,26 +971,22 @@ class TestMultiFileRunSupport(unittest.TestCase):
 
     def test_build_run_configuration_none(self):
         """_build_run_configuration returns None when content_format is None."""
-        from nextmv.cli.mcp.tools._helpers import _build_run_configuration
 
         self.assertIsNone(_build_run_configuration(None))
 
     def test_build_run_configuration_multi_file(self):
         """_build_run_configuration builds a RunConfiguration for 'multi-file'."""
-        from nextmv.cli.mcp.tools._helpers import _build_run_configuration
-        from nextmv.input import InputFormat
 
         config = _build_run_configuration("multi-file")
         self.assertIsNotNone(config)
         self.assertEqual(
             config.format.format_input.input_type,
-            InputFormat.MULTI_FILE,
+            ContentFormat.MULTI_FILE,
         )
 
     @patch("nextmv.cli.mcp.tools._helpers._get_local_app")
     def test_local_run_submit_json_input(self, mock_get_local_app):
         """local_run_submit passes input dict to new_run for JSON apps."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-123"
@@ -1039,8 +1011,6 @@ class TestMultiFileRunSupport(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_local_app")
     def test_local_run_submit_multifile_input(self, mock_get_local_app):
         """local_run_submit passes input_dir_path + configuration for multi-file apps."""
-        from nextmv.cli.mcp.server import create_server
-        from nextmv.input import InputFormat
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-456"
@@ -1062,12 +1032,11 @@ class TestMultiFileRunSupport(unittest.TestCase):
         self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
         config = call_kwargs.get("configuration")
         self.assertIsNotNone(config)
-        self.assertEqual(config.format.format_input.input_type, InputFormat.MULTI_FILE)
+        self.assertEqual(config.format.format_input.input_type, ContentFormat.MULTI_FILE)
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_submit_json_input(self, mock_get_app):
         """cloud_run_submit passes input dict to new_run for JSON apps."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-789"
@@ -1092,8 +1061,6 @@ class TestMultiFileRunSupport(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_submit_multifile_input(self, mock_get_app):
         """cloud_run_submit passes input_dir_path + configuration for multi-file apps."""
-        from nextmv.cli.mcp.server import create_server
-        from nextmv.input import InputFormat
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-mf-1"
@@ -1115,63 +1082,53 @@ class TestMultiFileRunSupport(unittest.TestCase):
         self.assertEqual(call_kwargs["input_dir_path"], "/some/input-dir")
         config = call_kwargs.get("configuration")
         self.assertIsNotNone(config)
-        self.assertEqual(config.format.format_input.input_type, InputFormat.MULTI_FILE)
+        self.assertEqual(config.format.format_input.input_type, ContentFormat.MULTI_FILE)
 
 
 class TestHelperFunctions(unittest.TestCase):
     """Tests for _none_if_empty and _require_non_empty helper functions."""
 
     def test_none_if_empty_with_none(self):
-        from nextmv.cli.mcp.tools._helpers import _none_if_empty
 
         self.assertIsNone(_none_if_empty(None))
 
     def test_none_if_empty_with_empty_string(self):
-        from nextmv.cli.mcp.tools._helpers import _none_if_empty
 
         self.assertIsNone(_none_if_empty(""))
 
     def test_none_if_empty_with_whitespace(self):
-        from nextmv.cli.mcp.tools._helpers import _none_if_empty
 
         self.assertIsNone(_none_if_empty("   "))
 
     def test_none_if_empty_with_value(self):
-        from nextmv.cli.mcp.tools._helpers import _none_if_empty
 
         self.assertEqual(_none_if_empty("hello"), "hello")
 
     def test_none_if_empty_strips_whitespace(self):
-        from nextmv.cli.mcp.tools._helpers import _none_if_empty
 
         self.assertEqual(_none_if_empty("  hello  "), "hello")
 
     def test_require_non_empty_with_valid_value(self):
-        from nextmv.cli.mcp.tools._helpers import _require_non_empty
 
         self.assertEqual(_require_non_empty("hello", "field"), "hello")
 
     def test_require_non_empty_strips_whitespace(self):
-        from nextmv.cli.mcp.tools._helpers import _require_non_empty
 
         self.assertEqual(_require_non_empty("  hello  ", "field"), "hello")
 
     def test_require_non_empty_with_empty_string(self):
-        from nextmv.cli.mcp.tools._helpers import _require_non_empty
 
         with self.assertRaises(ValueError) as ctx:
             _require_non_empty("", "field")
         self.assertIn("field", str(ctx.exception))
 
     def test_require_non_empty_with_whitespace(self):
-        from nextmv.cli.mcp.tools._helpers import _require_non_empty
 
         with self.assertRaises(ValueError) as ctx:
             _require_non_empty("   ", "field")
         self.assertIn("field", str(ctx.exception))
 
     def test_require_non_empty_with_none(self):
-        from nextmv.cli.mcp.tools._helpers import _require_non_empty
 
         with self.assertRaises(ValueError):
             _require_non_empty(None, "field")
@@ -1183,7 +1140,6 @@ class TestEnsembleRunTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_ensemble_run_returns_file_path(self, mock_get_app):
         """cloud_ensemble_run polls and saves result to a temp file."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_result = MagicMock()
@@ -1211,7 +1167,6 @@ class TestEnsembleRunTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_ensemble_run_submit_returns_run_id(self, mock_get_app):
         """cloud_ensemble_run_submit returns the run ID immediately."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.new_run.return_value = "run-ens-42"
@@ -1235,7 +1190,6 @@ class TestEnsembleRunTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_ensemble_run_empty_app_id_returns_error(self, mock_get_app):
         """cloud_ensemble_run returns an error for empty app_id."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run"]
@@ -1255,7 +1209,6 @@ class TestEnsembleRunTools(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_ensemble_run_submit_empty_ensemble_id_returns_error(self, mock_get_app):
         """cloud_ensemble_run_submit returns an error for whitespace-only ensemble_id."""
-        from nextmv.cli.mcp.server import create_server
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_ensemble_run_submit"]
@@ -1284,7 +1237,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_cloud_run_dir(self):
         """Test that _cloud_run_dir returns the expected path."""
-        from nextmv.cli.mcp.tools._helpers import _cloud_run_dir
 
         result = _cloud_run_dir("api.cloud.nextmv.io", "run-123")
         expected = os.path.join(str(os.path.expanduser("~")), ".nextmv", "runs", "api.cloud.nextmv.io", "run-123")
@@ -1292,7 +1244,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_cloud_run_file_exists_returns_path(self):
         """Test that _cloud_run_file_exists returns the path when the file exists."""
-        from nextmv.cli.mcp.tools._helpers import _cloud_run_file_exists
 
         # Create a file inside the temp dir.
         run_dir = os.path.join(self.tmp_dir, "run-1")
@@ -1310,7 +1261,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_cloud_run_file_exists_returns_none(self):
         """Test that _cloud_run_file_exists returns None for nonexistent files."""
-        from nextmv.cli.mcp.tools._helpers import _cloud_run_file_exists
 
         with patch(
             "nextmv.cli.mcp.tools._helpers._cloud_run_dir",
@@ -1321,7 +1271,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_endpoint_from_app(self):
         """Test that _endpoint_from_app strips the URL scheme."""
-        from nextmv.cli.mcp.tools._helpers import _endpoint_from_app
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1332,7 +1281,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_save_cloud_run_file(self):
         """Test that _save_cloud_run_file creates the file with correct JSON."""
-        from nextmv.cli.mcp.tools._helpers import _save_cloud_run_file
 
         run_dir = os.path.join(self.tmp_dir, "run-1")
         data = {"output": {"routes": []}}
@@ -1350,7 +1298,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_uses_cache(self, mock_get_app):
         """Test that cloud_run_result returns cached data without calling the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1377,7 +1324,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_downloads_on_miss(self, mock_get_app):
         """Test that cloud_run_result downloads, caches, and extracts outputs."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1441,7 +1387,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_skips_missing(self):
         """Test that _extract_cloud_run_outputs skips components that are absent."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-partial")
 
@@ -1465,7 +1410,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_empty_solution(self):
         """Test that _extract_cloud_run_outputs writes solution.json even for empty solution."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-empty-sol")
 
@@ -1486,7 +1430,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_csv_archive_noop(self):
         """Test that _extract_cloud_run_outputs is a no-op for csv-archive results."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-csv-noop")
 
@@ -1502,7 +1445,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_no_output_key(self):
         """Test that _extract_cloud_run_outputs is a no-op when output is missing."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-empty")
 
@@ -1515,7 +1457,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_generates_visuals(self):
         """Test that _extract_cloud_run_outputs generates HTML visuals from Plotly assets."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-visuals")
 
@@ -1563,7 +1504,6 @@ class TestCloudRunCache(unittest.TestCase):
 
     def test_extract_cloud_run_outputs_visual_failure_is_ignored(self):
         """Test that visual generation failure does not lose the run result."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-bad-visual")
 
@@ -1593,7 +1533,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_uses_cache(self, mock_get_app):
         """Test that cloud_run_input returns cached data without calling the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1621,7 +1560,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_downloads_on_miss(self, mock_get_app):
         """Test that cloud_run_input downloads and saves as inputs/input.json on miss."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1649,7 +1587,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_logs_uses_cache(self, mock_get_app):
         """Test that cloud_run_logs returns cached data without calling the SDK."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1677,7 +1614,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_logs_downloads_on_miss(self, mock_get_app):
         """Test that cloud_run_logs downloads and caches as plain text."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1710,7 +1646,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_poll_run_logs_writes_plain_text(self, mock_get_app):
         """Test that cloud_poll_run_logs writes timestamped entries as plain text."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1753,14 +1688,13 @@ class TestCloudRunCache(unittest.TestCase):
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_multifile_moves_outputs(self, mock_get_app):
-        """Test that cloud_run with csv-archive extracts outputs into outputs/ dir."""
-        from nextmv.cli.mcp.server import create_server
+        """Test that cloud_run with multi-file extracts outputs into outputs/ dir."""
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
         mock_result = MagicMock()
         mock_result.id = "run-csv"
-        # For csv-archive, output is a URL, not inline data.
+        # For multi-file, output is a URL, not inline data.
         mock_result.to_dict.return_value = {
             "output": {"url": "https://s3.example.com/output.tar.gz"},
         }
@@ -1808,7 +1742,7 @@ class TestCloudRunCache(unittest.TestCase):
                     {
                         "app_id": "my-app",
                         "input_dir_path": "/some/csvs",
-                        "content_format": "csv-archive",
+                        "content_format": "multi-file",
                     }
                 )
             )
@@ -1831,7 +1765,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_multifile_downloads(self, mock_get_app):
         """Test that cloud_run_input extracts multifile inputs into inputs/ dir."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1868,7 +1801,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_input_multifile_uses_cache(self, mock_get_app):
         """Test that cloud_run_input returns cached multifile inputs without re-downloading."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1895,7 +1827,6 @@ class TestCloudRunCache(unittest.TestCase):
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
     def test_cloud_run_result_multifile_extracts_output(self, mock_get_app):
         """Test that cloud_run_result for non-JSON extracts into outputs/ dir."""
-        from nextmv.cli.mcp.server import create_server
 
         mock_app = MagicMock()
         mock_app.client.url = "https://api.cloud.nextmv.io"
@@ -1941,8 +1872,6 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
     def test_mcp_init_raises_when_mcp_missing(self):
         """Importing nextmv.cli.mcp raises ImportError when mcp is not installed."""
-        import importlib
-        import sys
 
         with patch("importlib.util.find_spec", return_value=None):
             # Remove cached module so the guard re-executes.
@@ -1964,7 +1893,7 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         with (
             patch(
-                "nextmv.cli.main.go_cli_exists",
+                "nextmv.cli.main._go_cli_exists",
                 return_value=False,
             ),
             patch(
@@ -1986,14 +1915,12 @@ class TestProfileSessionIsolation(unittest.TestCase):
 
     def test_profile_default_is_none(self):
         """A fresh ProfileSession starts with profile=None."""
-        from nextmv.cli.mcp.tools._helpers import ProfileSession
 
         s = ProfileSession()
         self.assertIsNone(s.profile)
 
     def test_profile_set_get(self):
         """Setting and getting profile works."""
-        from nextmv.cli.mcp.tools._helpers import ProfileSession
 
         s = ProfileSession()
         s.profile = "staging"
@@ -2003,7 +1930,6 @@ class TestProfileSessionIsolation(unittest.TestCase):
 
     def test_async_context_isolation(self):
         """Profile set in one asyncio.run() does not leak to the next."""
-        from nextmv.cli.mcp.tools._helpers import ProfileSession
 
         s = ProfileSession()
 
@@ -2024,9 +1950,6 @@ class TestProfileSessionIsolation(unittest.TestCase):
 
     def test_copied_contexts_are_isolated(self):
         """Two copied contexts have independent profile state."""
-        import contextvars
-
-        from nextmv.cli.mcp.tools._helpers import ProfileSession
 
         s = ProfileSession()
         results = {}
@@ -2059,7 +1982,6 @@ class TestVisualGenerationWarning(unittest.TestCase):
 
     def test_visual_failure_logs_warning(self):
         """_extract_cloud_run_outputs logs a warning when visuals fail."""
-        from nextmv.cli.mcp.tools._helpers import _extract_cloud_run_outputs
 
         run_dir = os.path.join(self.tmp_dir, "run-warn")
 
@@ -2092,7 +2014,6 @@ class TestSDKContentType(unittest.TestCase):
 
     def _make_app(self):
         """Create an Application with a mock client."""
-        from nextmv.cloud import Application, Client
 
         client = Client(api_key="test-key", url="https://api.test.io")
         client.request = MagicMock()
@@ -2138,8 +2059,6 @@ class TestSDKContentType(unittest.TestCase):
         mock_input_set.id = "is-1"
         mock_input_set.input_ids = ["inp-1"]
         mock_input_set.inputs = []
-
-        from nextmv.cloud.scenario import Scenario, ScenarioInput, ScenarioInputType
 
         scenario = Scenario(
             scenario_input=ScenarioInput(
