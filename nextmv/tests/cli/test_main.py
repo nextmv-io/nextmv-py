@@ -95,23 +95,24 @@ class TestRunScript(unittest.TestCase):
     def test_run_script_forwards_trailing_args(self):
         """Test that trailing arguments are visible to the script as sys.argv."""
         # The script writes its own argv to a temp file so we can inspect it.
-        result_file = tempfile.mktemp(suffix=".txt")
-        script = self._write_script(f"import sys\nopen({result_file!r}, 'w').write(','.join(sys.argv))\n")
-        try:
-            with patch.object(sys, "argv", ["nextmv", "--run-script", script, "arg1", "arg2"]):
-                with self.assertRaises(SystemExit) as cm:
-                    main()
-            self.assertEqual(cm.exception.code, 0)
-            with open(result_file) as f:
-                recorded = f.read().split(",")
-            # The script sees itself as argv[0] and its own trailing args after.
-            self.assertEqual(recorded[0], script)
-            self.assertEqual(recorded[1], "arg1")
-            self.assertEqual(recorded[2], "arg2")
-        finally:
-            os.unlink(script)
-            if os.path.exists(result_file):
-                os.unlink(result_file)
+        with tempfile.NamedTemporaryFile(suffix=".txt") as tmp:
+            result_file = tmp.name
+            script = self._write_script(f"import sys\nopen({result_file!r}, 'w').write(','.join(sys.argv))\n")
+            try:
+                with patch.object(sys, "argv", ["nextmv", "--run-script", script, "arg1", "arg2"]):
+                    with self.assertRaises(SystemExit) as cm:
+                        main()
+                self.assertEqual(cm.exception.code, 0)
+                with open(result_file) as f:
+                    recorded = f.read().split(",")
+                # The script sees itself as argv[0] and its own trailing args after.
+                self.assertEqual(recorded[0], script)
+                self.assertEqual(recorded[1], "arg1")
+                self.assertEqual(recorded[2], "arg2")
+            finally:
+                os.unlink(script)
+                if os.path.exists(result_file):
+                    os.unlink(result_file)
 
     def test_run_script_missing_path_exits_with_error(self):
         """Test that omitting the script path prints an error and exits 1."""
