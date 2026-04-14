@@ -976,10 +976,13 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: InputFormat
+    format: ContentFormat | InputFormat
     """
-    The format of the content. Can only be `InputFormat.JSON`,
-    `InputFormat.MULTI_FILE`, or `InputFormat.CSV_ARCHIVE`.
+    !!! warning
+        `InputFormat` is deprecated, but kept for backward compatibility. Use `ContentFormat` instead.
+
+    The format of the content. Can only be `ContentFormat.JSON` or
+    `ContentFormat.MULTI_FILE`.
     """
     multi_file: ManifestContentMultiFile | None = Field(
         serialization_alias="multi-file",
@@ -1004,9 +1007,18 @@ class ManifestContent(BaseModel):
         ------
         ValueError
             If the format field contains an invalid value that is not one of the
-            acceptable formats (JSON, MULTI_FILE, or CSV_ARCHIVE).
+            acceptable formats.
         """
-        acceptable_formats = [InputFormat.JSON, InputFormat.MULTI_FILE, InputFormat.CSV_ARCHIVE]
+
+        # Translate deprecated InputFormat values to ContentFormat for backward
+        # compatibility.
+        if type(self.format) is InputFormat:
+            if self.format == InputFormat.JSON:
+                self.format = ContentFormat.JSON
+            elif self.format == InputFormat.MULTI_FILE:
+                self.format = ContentFormat.MULTI_FILE
+
+        acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE, InputFormat.TEXT, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
 
@@ -1043,7 +1055,16 @@ class ManifestConfiguration(BaseModel):
     options: ManifestOptions | None = None
     """Options for the decision model."""
     content: ManifestContent | None = None
-    """Content configuration for specifying how the app input/output is handled."""
+    """Content configuration for specifying how the app input/output is
+    handled."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Post-initialization validation to ensure content field is properly
+        initialized.
+        """
+        if self.content is None:
+            self.content = ManifestContent(format=ContentFormat.JSON)
 
 
 class ManifestExecution(BaseModel):
@@ -1202,6 +1223,18 @@ class Manifest(BaseModel):
     Optional execution configuration for the decision model. Allows configuration of
     entrypoint and more.
     """
+
+    def model_post_init(self, __context) -> None:
+        """
+        Post-initialization validation to ensure required fields are properly
+        initialized and to set default values for optional fields.
+        """
+        if self.configuration is None:
+            self.configuration = ManifestConfiguration(
+                content=ManifestContent(
+                    format=ContentFormat.JSON,
+                ),
+            )
 
     @classmethod
     def from_yaml(cls, dirpath: str) -> "Manifest":

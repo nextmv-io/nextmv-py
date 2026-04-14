@@ -21,7 +21,7 @@ import yaml
 from pydantic import Field
 
 from nextmv.base_model import BaseModel
-from nextmv.input import InputFormat
+from nextmv.content_format import ContentFormat
 from nextmv.local.local import NEXTMV_DIR, REGISTRY_FILE
 from nextmv.manifest import Manifest
 from nextmv.safe import safe_id
@@ -45,7 +45,7 @@ class AppEntry(BaseModel):
         The unique identifier of the application.
     src : str
         The file system path where the application is located.
-    content_format : InputFormat
+    content_format : ContentFormat
         The content format of the application, which is determined by the manifest.
     created_at : datetime
         The timestamp when the application was registered in the local registry.
@@ -63,7 +63,7 @@ class AppEntry(BaseModel):
     """
     The file system path where the application is located.
     """
-    content_format: InputFormat
+    content_format: ContentFormat
     """
     The content format of the application, which is determined by the manifest.
     """
@@ -324,7 +324,7 @@ class Registry(BaseModel):
         if app_id is None or app_id == "":
             app_id = safe_id("local-app")
 
-        content_format = InputFormat.JSON
+        content_format = ContentFormat.JSON
         if manifest.configuration is not None and manifest.configuration.content is not None:
             content_format = manifest.configuration.content.format
 
@@ -384,7 +384,7 @@ class Registry(BaseModel):
         app_id: str | None = None,
         new_app_id: str | None = None,
         description: str | None = None,
-        content_format: InputFormat | None = None,
+        content_format: ContentFormat | None = None,
     ) -> AppEntry | None:
         """
         Update an existing entry in the local app registry.
@@ -407,7 +407,7 @@ class Registry(BaseModel):
             The new app_id to set. If None, the app_id will not be updated.
         description : str | None
             The new description to set. If None, the description will not be updated.
-        content_format : InputFormat | None
+        content_format : ContentFormat | None
             The new content format to set. If None, the content_format will not be updated.
 
         Returns
@@ -419,7 +419,7 @@ class Registry(BaseModel):
         Examples
         --------
         >>> from nextmv.local import Registry
-        >>> from nextmv.input import InputFormat
+        >>> from nextmv.content_format import ContentFormat
         >>> registry = Registry.from_yaml()
         >>> # Update by src only
         >>> updated = registry.update_entry(src="/path/to/app", description="Updated description")
@@ -431,13 +431,13 @@ class Registry(BaseModel):
         >>> updated = registry.update_entry(
         ...     src="/path/to/app",
         ...     new_app_id="new-app-id",
-        ...     content_format=InputFormat.CSV_ARCHIVE
+        ...     content_format=ContentFormat.MULTI_FILE,
         ... )
         >>> # Update by both src and app_id (both must match)
         >>> updated = registry.update_entry(
         ...     src="/path/to/app",
         ...     app_id="my-app",
-        ...     description="Updated description"
+        ...     description="Updated description",
         ... )
         """
 

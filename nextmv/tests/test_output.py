@@ -190,7 +190,7 @@ class TestOutput(unittest.TestCase):
             metrics={"custom_metric": {"value": 99.9}},
             assets=[asset],
             solution={"value": 42},
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             json_configurations={"indent": 4},
         )
 
@@ -216,7 +216,7 @@ class TestOutput(unittest.TestCase):
             metrics={"custom_metric": {"value": 99.9}},
             assets=[asset],
             solution={"value": 42},
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             json_configurations={"indent": 4},
         )
 
@@ -269,7 +269,7 @@ class TestOutput(unittest.TestCase):
 
     def test_local_writer_json_stdout(self):
         output = nextmv.Output(
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
         )
@@ -290,7 +290,7 @@ class TestOutput(unittest.TestCase):
 
     def test_local_writer_json_stdout_with_configurations(self):
         output = nextmv.Output(
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
             json_configurations={
@@ -316,7 +316,7 @@ class TestOutput(unittest.TestCase):
 
         output = nextmv.Output(
             options=options,
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
         )
@@ -341,7 +341,7 @@ class TestOutput(unittest.TestCase):
     def test_local_writer_json_stdout_with_options_json(self):
         output = nextmv.Output(
             options={"duration": 5, "solver": "highs"},
-            output_format=nextmv.OutputFormat.JSON,
+            output_format=nextmv.ContentFormat.JSON,
             solution={"empanadas": "are_life"},
             statistics={"foo": "bar"},
         )
@@ -845,21 +845,21 @@ class TestOutput(unittest.TestCase):
 
         # Should raise error when using solution_files with non-MULTI_FILE format
         with self.assertRaises(ValueError) as context:
-            nextmv.Output(output_format=nextmv.OutputFormat.JSON, solution_files=[sol_file])
+            nextmv.Output(output_format=nextmv.ContentFormat.JSON, solution_files=[sol_file])
         self.assertIn(
-            "solution_files` are not `None`, but `output_format` is different from `OutputFormat.MULTI_FILE`",
+            "solution_files` are not `None`, but `output_format` is different from `ContentFormat.MULTI_FILE`",
             str(context.exception),
         )
 
         # Should work with MULTI_FILE format
-        output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file])
+        output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file])
         self.assertEqual(len(output.solution_files), 1)
         self.assertEqual(output.solution_files[0].name, "test.json")
 
         # Test invalid solution_files type
         with self.assertRaises(TypeError) as context:
-            nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files="not a list")
-        self.assertIn("unsupported Output.solution_files type", str(context.exception))
+            nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files="not a list")
+        self.assertIn("unsupported `Output.solution_files` type", str(context.exception))
 
     def test_local_writer_multi_file_json(self):
         """Test LocalOutputWriter with MULTI_FILE format and JSON solution files."""
@@ -876,7 +876,7 @@ class TestOutput(unittest.TestCase):
             sol_file = nextmv.json_solution_file("solution", data)
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE,
+                output_format=nextmv.ContentFormat.MULTI_FILE,
                 solution_files=[sol_file],
                 statistics={"total_items": 3},
                 options={"duration": 5},
@@ -912,7 +912,7 @@ class TestOutput(unittest.TestCase):
             data = [{"id": 1, "name": "Alice", "score": 95}, {"id": 2, "name": "Bob", "score": 87}]
             sol_file = nextmv.csv_solution_file("results", data)
 
-            output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file])
+            output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file])
 
             output_writer = nextmv.LocalOutputWriter()
             output_writer.write(output, path=test_dir)
@@ -946,7 +946,7 @@ class TestOutput(unittest.TestCase):
             data = "This is a test solution\nwith multiple lines\nof text data"
             sol_file = nextmv.text_solution_file("log.txt", data)
 
-            output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file])
+            output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file])
 
             output_writer = nextmv.LocalOutputWriter()
             output_writer.write(output, path=test_dir)
@@ -981,7 +981,7 @@ class TestOutput(unittest.TestCase):
                 writer=lambda file_path, write_data: pd.DataFrame(write_data).to_excel(file_path, index=False),
             )
 
-            output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file])
+            output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file])
 
             output_writer = nextmv.LocalOutputWriter()
             output_writer.write(output, path=test_dir)
@@ -1021,7 +1021,7 @@ class TestOutput(unittest.TestCase):
             ]
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=sol_files, statistics={"files_created": 3}
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=sol_files, statistics={"files_created": 3}
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1063,7 +1063,7 @@ class TestOutput(unittest.TestCase):
         try:
             # Test with invalid solution file type
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=["not a SolutionFile object"]
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=["not a SolutionFile object"]
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1095,7 +1095,7 @@ class TestOutput(unittest.TestCase):
             statistics = nextmv.Statistics(run=run_stats, result=result_stats)
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file], statistics=statistics
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file], statistics=statistics
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1132,7 +1132,7 @@ class TestOutput(unittest.TestCase):
             statistics = {"custom_metric": 123.45, "total_processed": 1000, "success_rate": 0.95}
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file], statistics=statistics
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file], statistics=statistics
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1185,7 +1185,7 @@ class TestOutput(unittest.TestCase):
             ]
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file], assets=assets
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file], assets=assets
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1248,7 +1248,7 @@ class TestOutput(unittest.TestCase):
             ]
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[sol_file], assets=assets
+                output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file], assets=assets
             )
 
             output_writer = nextmv.LocalOutputWriter()
@@ -1333,7 +1333,7 @@ class TestOutput(unittest.TestCase):
             options.solver = "custom_optimizer"
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE,
+                output_format=nextmv.ContentFormat.MULTI_FILE,
                 solution_files=sol_files,
                 statistics=statistics,
                 assets=assets,
@@ -1407,7 +1407,7 @@ class TestOutput(unittest.TestCase):
             sol_file = nextmv.json_solution_file("basic", {"result": "test"})
 
             output = nextmv.Output(
-                output_format=nextmv.OutputFormat.MULTI_FILE,
+                output_format=nextmv.ContentFormat.MULTI_FILE,
                 solution_files=[sol_file],
                 statistics={},  # Empty statistics
                 assets=[],  # Empty assets
@@ -1449,7 +1449,7 @@ class TestOutput(unittest.TestCase):
                 "config_test", csv_data, csv_configurations={"delimiter": "|", "quoting": csv.QUOTE_ALL}
             )
 
-            output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE, solution_files=[json_sol, csv_sol])
+            output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[json_sol, csv_sol])
 
             output_writer = nextmv.LocalOutputWriter()
             output_writer.write(output, path=test_dir)

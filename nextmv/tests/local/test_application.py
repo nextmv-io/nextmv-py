@@ -6,11 +6,11 @@ import unittest
 from unittest.mock import Mock, patch
 
 import yaml
-from nextmv.input import Input, InputFormat
+from nextmv.content_format import ContentFormat
+from nextmv.input import Input
 from nextmv.local.application import Application
 from nextmv.local.local import NEXTMV_DIR, RUNS_KEY
 from nextmv.options import Options
-from nextmv.output import OutputFormat
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions
 from nextmv.run import Format, FormatInput, FormatOutput, RunConfiguration, RunInformation, RunResult
 from nextmv.status import StatusV2
@@ -179,8 +179,8 @@ print(json.dumps(output))
             input_dir_path=inputs_dir,
             configuration=RunConfiguration(
                 format=Format(
-                    format_input=FormatInput(input_type=InputFormat.CSV_ARCHIVE),
-                    format_output=FormatOutput(output_type=OutputFormat.CSV_ARCHIVE),
+                    format_input=FormatInput(input_type=ContentFormat.MULTI_FILE),
+                    format_output=FormatOutput(output_type=ContentFormat.MULTI_FILE),
                 )
             ),
         )
@@ -281,8 +281,8 @@ print(json.dumps(output))
 
         config = RunConfiguration(
             format=Format(
-                format_input=FormatInput(input_type=InputFormat.JSON),
-                format_output=FormatOutput(output_type=OutputFormat.JSON),
+                format_input=FormatInput(input_type=ContentFormat.JSON),
+                format_output=FormatOutput(output_type=ContentFormat.JSON),
             )
         )
 
@@ -312,8 +312,8 @@ print(json.dumps(output))
             input_dir_path=inputs_dir,
             configuration=RunConfiguration(
                 format=Format(
-                    format_input=FormatInput(input_type=InputFormat.MULTI_FILE),
-                    format_output=FormatOutput(output_type=OutputFormat.MULTI_FILE),
+                    format_input=FormatInput(input_type=ContentFormat.MULTI_FILE),
+                    format_output=FormatOutput(output_type=ContentFormat.MULTI_FILE),
                 )
             ),
         )
@@ -343,9 +343,9 @@ print(json.dumps(output))
         inputs_dir = os.path.join(self.test_dir, "inputs")
         os.makedirs(inputs_dir)
 
-        # Should raise error when inputs_dir_path is provided without configuration
+        # Should raise error when inputs_dir_path is provided without a format in configuration
         with self.assertRaises(ValueError):
-            self.app.new_run(input_dir_path=inputs_dir)
+            self.app.new_run(input_dir_path=inputs_dir, configuration=RunConfiguration())
 
         # Should work when both are provided
         with patch("nextmv.local.application.run") as mock_run:
@@ -355,8 +355,8 @@ print(json.dumps(output))
                 input_dir_path=inputs_dir,
                 configuration=RunConfiguration(
                     format=Format(
-                        format_input=FormatInput(input_type=InputFormat.MULTI_FILE),
-                        format_output=FormatOutput(output_type=OutputFormat.MULTI_FILE),
+                        format_input=FormatInput(input_type=ContentFormat.MULTI_FILE),
+                        format_output=FormatOutput(output_type=ContentFormat.MULTI_FILE),
                     )
                 ),
             )

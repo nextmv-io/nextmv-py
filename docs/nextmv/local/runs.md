@@ -193,10 +193,9 @@ input which can be:
   to run an app.
 * A `str`: represents a text payload, which must be `utf-8` encoded.
 * An [`Input`][input]: represents a Nextmv input object. The `.data` property
-  holds the input data. The `.input_format` property must be set to one of
-  [`InputFormat.JSON`][inputformat] or
-  [`InputFormat.TEXT`][inputformat]. This matches the above two data
-  types, but it is a more structured way to pass the input data.
+  holds the input data. The `.input_format` property must be set to
+  [`ContentFormat.JSON`][contentformat]. This matches the above two data types,
+  but it is a more structured way to pass the input data.
 
 Here is a simple example showcasing how to run an app with JSON and text
 inputs:
@@ -229,8 +228,7 @@ the method directly.
 You can use the `input_dir_path` argument to read inputs from the local
 filesystem. The following input format are supported:
 
-* [`InputFormat.CSV_ARCHIVE`][inputformat]: one, or more, CSV files.
-* [`InputFormat.MULTI_FILE`][inputformat]: one, or more, files. This is the
+* [`ContentFormat.MULTI_FILE`][contentformat]: one, or more, files. This is the
       most flexible input format, as it supports all the file formats that have
       been mentioned previously (JSON, `utf-8` encoded text, CSV). In addition,
       Excel files are supported as well.
@@ -248,12 +246,10 @@ Please note the following:
   cases, the input files are read from the directory specified by
   `input_dir_path`, copied, and submitted to the runner.
 
-      * [`InputFormat.CSV_ARCHIVE`][inputformat]: the input format will be set to `csv-archive`.
-      * [`InputFormat.MULTI_FILE`][inputformat]: the input format will be set to `multi-file`.
+      * [`ContentFormat.MULTI_FILE`][contentformat]: the input format will be set to `multi-file`.
 
-* The output format is also specified in the configuration. It can be set to
-  either `csv-archive` or `multi-file` (see
-  [`.output_type`][output-type-param]), depending on the input format.
+* The output format is also specified in the configuration. It can only be set
+  to `multi-file` (see [`.output_type`][output-type-param]).
 
 Here is an example of how to run an app with a directory of input files:
 
@@ -266,31 +262,12 @@ from nextmv import local
 app = local.Application(src="<YOUR_APP_SRC>")
 
 
-# Run with CSV_ARCHIVE input.
-csv_run_id = app.new_run(
-    configuration=nextmv.RunConfiguration(
-        format=nextmv.Format(
-            format_input=nextmv.FormatInput(
-                input_type=nextmv.InputFormat.CSV_ARCHIVE,
-            ),
-            format_output=nextmv.FormatOutput(
-                output_type=nextmv.OutputFormat.CSV_ARCHIVE,
-            ),
-        )
-    ),
-    input_dir_path="input", # Files are in the "input" directory.
-)
-print(f"CSV run ID: {csv_run_id}")
-
 # Run with MULTI_FILE input.
 multi_file_run_id = app.new_run(
     configuration=nextmv.RunConfiguration(
         format=nextmv.Format(
             format_input=nextmv.FormatInput(
-                input_type=nextmv.InputFormat.MULTI_FILE,
-            ),
-            format_output=nextmv.FormatOutput(
-                output_type=nextmv.OutputFormat.MULTI_FILE,
+                input_type=nextmv.ContentFormat.MULTI_FILE,
             ),
         )
     ),
@@ -365,6 +342,6 @@ $ python main.py
 [app-run-result-with-polling]: ./reference/application.md#nextmv.nextmv.local.application.Application.run_result_with_polling
 [app-new-run-with-result]: ./reference/application.md#nextmv.nextmv.local.application.Application.new_run_with_result
 [input]: ../modeling/reference/input.md#nextmv.nextmv.input.Input
-[inputformat]: ../modeling/reference/input.md#nextmv.nextmv.input.InputFormat
+[contentformat]: ../modeling/reference/input.md#nextmv.nextmv.content_format.ContentFormat
 [input-type-param]: ../modeling/reference/run.md#nextmv.nextmv.run.FormatInput
 [output-type-param]: ../modeling/reference/run.md#nextmv.nextmv.run.FormatOutput

@@ -112,8 +112,12 @@ class Application(BaseModel):
     will be written to the `src` directory, overriding any existing manifest
     file.
     """
-    content_format: InputFormat | None = None
+    content_format: ContentFormat | InputFormat | None = None
     """
+    !!! warning
+        `InputFormat` is deprecated, but kept for backward compatibility. Use
+        `ContentFormat` instead.
+
     The content format of the application, which is determined by the manifest.
     """
 
@@ -144,9 +148,17 @@ class Application(BaseModel):
                 f"Could not find app.yaml in `{self.src}`. Maybe specify a different `src` dir?"
             ) from e
 
-        content_format = InputFormat.JSON
+        content_format = ContentFormat.JSON
         if self.manifest.configuration is not None and self.manifest.configuration.content is not None:
             content_format = self.manifest.configuration.content.format
+
+        # Translate deprecated `InputFormat` to `ContentFormat` for backwards
+        # compatibility.
+        if type(content_format) is InputFormat:
+            if content_format == InputFormat.JSON:
+                content_format = ContentFormat.JSON
+            elif content_format == InputFormat.MULTI_FILE:
+                content_format = ContentFormat.MULTI_FILE
 
         self.content_format = content_format
 
@@ -383,7 +395,7 @@ class Application(BaseModel):
         local_app = cls(
             src=app_src,
             description=description,
-            content_format=InputFormat(content_format),
+            content_format=content_format,
             manifest=manifest,
         )
 
@@ -486,17 +498,16 @@ class Application(BaseModel):
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the
-            `input_dir_path` argument instead. This argument takes precedence
-            over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them. If both the
-            `input_dir_path` and `input` arguments are provided, the `input`
-            is ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them. If both the `input_dir_path` and `input` arguments are
+            provided, the `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument
             must also be provided. More specifically, the
@@ -505,11 +516,9 @@ class Application(BaseModel):
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
-            When working with JSON or text data, use the `input` argument
-            directly.
+            When working with JSON data, use the `input` argument directly.
         name: Optional[str]
             Name of the local run.
         description: Optional[str]
@@ -531,10 +540,9 @@ class Application(BaseModel):
             customize the serialization before data is sent.
         input_dir_path: Optional[str]
             Path to a directory containing input files. This is useful for
-            input formats like `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`. If both `input` and
-            `input_dir_path` are specified, the `input` is ignored, and the
-            files in the directory are used instead.
+            input formats like `nextmv.ContentFormat.MULTI_FILE`. If both
+            `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
 
         Returns
         -------
@@ -618,17 +626,16 @@ class Application(BaseModel):
             Input to use for the run. This can be a `nextmv.Input` object,
             `dict`, `BaseModel` or `str`.
 
-            If `nextmv.Input` is used, and the `input_format` is either
-            `nextmv.InputFormat.JSON` or `nextmv.InputFormat.TEXT`, then the
-            input data is extracted from the `.data` property.
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
 
-            If you want to work with `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`, you should use the
-            `input_dir_path` argument instead. This argument takes precedence
-            over the `input`. If `input_dir_path` is specified, this function
-            looks for files in that directory and tars them. If both the
-            `input_dir_path` and `input` arguments are provided, the `input` is
-            ignored.
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them. If both the `input_dir_path` and `input` arguments are
+            provided, the `input` is ignored.
 
             When `input_dir_path` is specified, the `configuration` argument
             must also be provided. More specifically, the
@@ -637,11 +644,9 @@ class Application(BaseModel):
             Make sure that this parameter is specified when working with the
             following input formats:
 
-            - `nextmv.InputFormat.CSV_ARCHIVE`
-            - `nextmv.InputFormat.MULTI_FILE`
+            - `nextmv.ContentFormat.MULTI_FILE`
 
-            When working with JSON or text data, use the `input` argument
-            directly.
+            When working with JSON data, use the `input` argument directly.
         name: Optional[str]
             Name of the local run.
         description: Optional[str]
@@ -665,10 +670,9 @@ class Application(BaseModel):
             customize the serialization before data is sent.
         input_dir_path: Optional[str]
             Path to a directory containing input files. This is useful for
-            input formats like `nextmv.InputFormat.CSV_ARCHIVE` or
-            `nextmv.InputFormat.MULTI_FILE`. If both `input` and
-            `input_dir_path` are specified, the `input` is ignored, and the
-            files in the directory are used instead.
+            input formats like `nextmv.ContentFormat.MULTI_FILE`. If both
+            `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
         output_dir_path : Optional[str], default="."
             Path to a directory where non-JSON output files will be saved. This
             is required if the output is non-JSON. If the directory does not
@@ -773,13 +777,13 @@ class Application(BaseModel):
         # directory
         run_information = self.run_metadata(run_id=run_id)
         input_type = run_information.metadata.format.format_input.input_type
-        if input_type != InputFormat.JSON and (not output_dir_path or output_dir_path == ""):
+        if input_type != ContentFormat.JSON and (not output_dir_path or output_dir_path == ""):
             raise ValueError(
                 "The format of the input is not JSON: an `output_dir_path` must be provided.",
             )
 
         inputs_path = os.path.join(run_dir, INPUTS_KEY)
-        if input_type == InputFormat.JSON:
+        if input_type == ContentFormat.JSON:
             input_file = os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)
             if not os.path.exists(input_file):
                 return None
@@ -799,7 +803,7 @@ class Application(BaseModel):
 
             return input_data
 
-        elif input_type in {InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE}:
+        elif input_type in {InputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             if not os.path.exists(inputs_path):
                 return None
 
@@ -1314,7 +1318,7 @@ class Application(BaseModel):
         self,
         app_id: str | None = None,
         description: str | None = None,
-        content_format: InputFormat | None = None,
+        content_format: ContentFormat | None = None,
     ) -> None:
         """
         Update the local application.
@@ -1330,7 +1334,7 @@ class Application(BaseModel):
         description : Optional[str]
             New description for the application. If None, the description is not
             updated.
-        content_format : Optional[InputFormat]
+        content_format : Optional[ContentFormat]
             New content format for the application. If None, the content format
             is not updated.
         """
@@ -1405,7 +1409,7 @@ class Application(BaseModel):
         # See whether we can attach the output directly or need to save to the given
         # directory
         output_type = run_information.metadata.format.format_output.output_type
-        if output_type != OutputFormat.JSON and (not output_dir_path or output_dir_path == ""):
+        if output_type != ContentFormat.JSON and (not output_dir_path or output_dir_path == ""):
             raise ValueError(
                 "The output format is not JSON: an `output_dir_path` must be provided.",
             )
@@ -1413,10 +1417,10 @@ class Application(BaseModel):
         runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
         solutions_dir = os.path.join(runs_dir, run_id, OUTPUTS_KEY, SOLUTIONS_KEY)
 
-        if output_type == OutputFormat.JSON:
+        if output_type == ContentFormat.JSON:
             with open(os.path.join(solutions_dir, DEFAULT_OUTPUT_JSON_FILE)) as f:
                 result.output = json.load(f)
-        elif output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        elif output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             shutil.copytree(solutions_dir, output_dir_path, dirs_exist_ok=True)
         else:
             raise ValueError(f"Unknown output type: {output_type}")
@@ -1462,16 +1466,17 @@ class Application(BaseModel):
                 "If `dir_path` is provided, `RunConfiguration.format` must also be provided.",
             )
 
-        input_type = config_format.format_input
-        if input_type is None:
+        format_input = config_format.format_input
+        if format_input is None:
             raise ValueError(
                 "If `dir_path` is provided, `RunConfiguration.format.format_input` must also be provided.",
             )
 
-        if input_type is None or input_type in (InputFormat.JSON, InputFormat.TEXT):
+        input_type = format_input.input_type
+        if input_type is None or input_type in (ContentFormat.JSON, InputFormat.TEXT):
             raise ValueError(
                 "If `dir_path` is provided, `RunConfiguration.format.format_input.input_type` must be set to "
-                f"a valid type. Valid types are: {[InputFormat.CSV_ARCHIVE, InputFormat.MULTI_FILE]}",
+                f"a valid type. Valid types are: {[ContentFormat.MULTI_FILE]}",
             )
 
         return configuration
@@ -1621,7 +1626,7 @@ class Application(BaseModel):
 
         # Resolve the input according to its type.
         inputs_path = os.path.join(run_dir, INPUTS_KEY)
-        if input_type == InputFormat.JSON:
+        if input_type == ContentFormat.JSON:
             with open(os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)) as f:
                 tracked_run.input = json.load(f)
         elif input_type == InputFormat.TEXT:
@@ -1632,21 +1637,21 @@ class Application(BaseModel):
 
         # Resolve the output according to its type.
         output_type = run_result.metadata.format.format_output.output_type
-        if output_type == OutputFormat.JSON:
+        if output_type == ContentFormat.JSON:
             tracked_run.output = run_result.output
         else:
             tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
 
         # Resolve the statistics according to their type and presence. If
         # working with JSON, the statistics should be resolved from the output.
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             stats_file_path = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
             if os.path.exists(stats_file_path):
                 with open(stats_file_path) as f:
                     tracked_run.statistics = json.load(f)
 
         # Resolve the metrics
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             metrics_file_path = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
             if os.path.exists(metrics_file_path):
                 with open(metrics_file_path) as f:
@@ -1654,7 +1659,7 @@ class Application(BaseModel):
 
         # Resolve the assets according to their type and presence. If working
         # with JSON, the assets should be resolved from the output.
-        if output_type in {OutputFormat.CSV_ARCHIVE, OutputFormat.MULTI_FILE}:
+        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
             assets_file_path = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
             if os.path.exists(assets_file_path):
                 with open(assets_file_path) as f:
@@ -1729,13 +1734,13 @@ class Application(BaseModel):
 
         return True
 
-    def __validate_inputs(self, run_dir: str, input_type: InputFormat) -> bool:
+    def __validate_inputs(self, run_dir: str, input_type: ContentFormat) -> bool:
         """Validate that the inputs directory and files exist for the given input type."""
         inputs_path = os.path.join(run_dir, INPUTS_KEY)
         if not os.path.exists(inputs_path):
             return False
 
-        if input_type == InputFormat.JSON:
+        if input_type == ContentFormat.JSON:
             input_file = os.path.join(inputs_path, DEFAULT_INPUT_JSON_FILE)
 
             return os.path.isfile(input_file)

@@ -34,7 +34,7 @@ def main() -> None:
     options = manifest.extract_options()
 
     loaded_input = nextmv.load(
-        input_format=nextmv.InputFormat.MULTI_FILE,
+        input_format=nextmv.ContentFormat.MULTI_FILE,
         options=options,
         path="inputs",
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
@@ -167,7 +167,7 @@ class DemandAllocationFlow(FlowSpec):
         )
 
         return nextmv.Output(
-            output_format=nextmv.OutputFormat.MULTI_FILE,
+            output_format=nextmv.ContentFormat.MULTI_FILE,
             solution_files=[
                 nextmv.json_solution_file(
                     name="solution",
