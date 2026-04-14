@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import in_progress, info, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.content_format import ContentFormat
@@ -176,6 +176,16 @@ def handle_outputs(
     # Handle the case where output is embedded directly in the result: json and text.
     if content_format == ContentFormat.JSON:
         if output is None or output == "":
+            # To avoid overflowing the terminal with a huge output, we trim the assets.
+            res_output = run_result.output
+            if isinstance(res_output, dict) and "assets" in res_output.keys():
+                info(
+                    "Removed [magenta]assets[/magenta] from output for cleaner display, "
+                    "use --output to save the full output."
+                )
+                del res_output["assets"]
+                run_result.output = res_output
+
             print_json(run_result.to_dict())
         else:
             with open(output, "w") as f:
