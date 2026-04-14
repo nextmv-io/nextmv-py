@@ -16,7 +16,7 @@ class TestCallback(unittest.TestCase):
         self.runner = CliRunner()
         self.app = app
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_callback_skips_config_check_for_configure(self, mock_load_config, mock_go_cli_exists):
         """Test that the callback skips config check when running configuration."""
@@ -28,7 +28,7 @@ class TestCallback(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Configure the CLI", result.output)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_callback_shows_error_when_no_config(self, mock_load_config, mock_go_cli_exists):
         """Test that the callback shows error when no config exists for other commands."""
@@ -38,7 +38,7 @@ class TestCallback(unittest.TestCase):
         result = self.runner.invoke(self.app, ["version"])
         self.assertEqual(result.exit_code, 0)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_callback_allows_command_when_config_exists(self, mock_load_config, mock_go_cli_exists):
         """Test that the callback allows commands when config exists."""
@@ -56,7 +56,7 @@ class TestHandleGoCli(unittest.TestCase):
         self.runner = CliRunner()
         self.app = app
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_no_prompt_when_go_cli_not_exists(self, mock_load_config, mock_go_cli_exists):
         """Test that no prompt is shown when Go CLI does not exist."""

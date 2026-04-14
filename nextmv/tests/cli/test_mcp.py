@@ -47,7 +47,7 @@ class TestMCPServeCommand(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_help(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp --help` shows the MCP help text."""
@@ -58,7 +58,7 @@ class TestMCPServeCommand(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Model Context Protocol", result.output)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_serve_help(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp serve --help` shows serve help text."""
@@ -72,7 +72,7 @@ class TestMCPServeCommand(unittest.TestCase):
         self.assertIn("--transport", output)
         self.assertIn("--port", output)
 
-    @patch("nextmv.cli.main.go_cli_exists")
+    @patch("nextmv.cli.main._go_cli_exists")
     @patch("nextmv.cli.main.load_config")
     def test_mcp_skips_config_check(self, mock_load_config, mock_go_cli_exists):
         """Test that `nextmv mcp` skips config existence check."""
@@ -1893,7 +1893,7 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         with (
             patch(
-                "nextmv.cli.main.go_cli_exists",
+                "nextmv.cli.main._go_cli_exists",
                 return_value=False,
             ),
             patch(
