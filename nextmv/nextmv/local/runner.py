@@ -21,7 +21,6 @@ import sys
 from datetime import datetime, timezone
 from typing import Any
 
-from nextmv.cli.message import info
 from nextmv.input import INPUTS_KEY
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
@@ -140,32 +139,14 @@ def run(
         env=os.environ,
         text=True,
         stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         cwd=os.path.dirname(executor_path),
-        # start_new_session=True,  # Detach from parent process
+        start_new_session=True,
     )
-    # process.stdin.write(stdin_input)
-    # process.stdin.close()
+    process.stdin.write(stdin_input)
+    process.stdin.close()
 
-    # TODO remove debug code
-    # .communicate() sends stdin, waits for the process to exit, and reads all stdout/stderr into variables.
-    stdout_data, stderr_data = process.communicate(input=stdin_input)
-
-    print(f"Exit Code: {process.returncode}")
-
-    if process.returncode != 0:
-        print("--- STDERR LOG ---")
-        print(stderr_data)
-        print("--- STDOUT LOG ---")
-        print(stdout_data)
-
-    details = {
-        "run_id": run_id,
-        "process_id": process.pid,
-        "return_code": process.returncode,
-    }
-    info(f"Started local run with details: {details}")
     return run_id
 
 

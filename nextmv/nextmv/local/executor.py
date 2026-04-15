@@ -43,7 +43,6 @@ import sys
 import tempfile
 import threading
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from nextmv.content_format import ContentFormat
@@ -83,22 +82,6 @@ def main() -> None:
         options=input.data["options"],
         input_data=input.data["input_data"],
     )
-
-
-# TODO remove debug code
-home = Path.home()
-
-LOG_FILE = os.path.join(home, "Downloads", "nextmv-test", "local.log")
-with open(LOG_FILE, "w") as f:
-    f.write(f"{datetime.now().isoformat()} - Log file initialized\n")
-
-
-def local_log(msg: str) -> None:
-    """
-    Logs a message to a local file 'local.log'.
-    """
-    with open(LOG_FILE, "a") as f:
-        f.write(f"{datetime.now().isoformat()} - {msg}\n")
 
 
 def execute_run(
@@ -141,10 +124,6 @@ def execute_run(
     # execution process.
     logs_dir = os.path.join(run_dir, LOGS_KEY)
     os.makedirs(logs_dir, exist_ok=True)
-
-    # TODO remove debug code
-    local_log(f"Starting run with ID: {run_id}")
-    local_log(f"Created logs directory at: {logs_dir}")
 
     # The complete execution is wrapped to capture any errors.
     try:
@@ -198,22 +177,6 @@ def execute_run(
             # streams are written to the log file in real time.
             child_env = os.environ.copy()
             child_env["PYTHONUNBUFFERED"] = "1"
-
-            # TODO remove debug code
-            run_details = {
-                "temp_src": temp_src,
-                "run_id": run_id,
-                "logs_dir": logs_dir,
-                "entrypoint": entrypoint,
-                "cwd": cwd,
-                "args": args,
-                "is_multi_file": is_multi_file,
-                "child_env": child_env,
-            }
-
-            local_log("Details of run start:")
-            for key, value in run_details.items():
-                local_log(f"  {key}: {value}")
 
             # This is the process that actually executes the entrypoint script.
             # We use subprocess.Popen instead of subprocess.run because we need
@@ -281,9 +244,6 @@ def execute_run(
             process.wait()
             log_f.close()
 
-            # TODO remove debug code
-            local_log(f"Run with ID: {run_id} completed with return code: {process.returncode}")
-
             # Assemble a CompletedProcess so the rest of the pipeline can treat this
             # the same as a synchronous subprocess.run() result.
             result = subprocess.CompletedProcess(
@@ -306,9 +266,6 @@ def execute_run(
         # If we encounter an exception, we log it to the stderr log file.
         with open(os.path.join(logs_dir, LOGS_FILE), "a") as f:
             f.write(f"\nException during run execution: {str(e)}\n")
-
-        # TODO remove debug code
-        local_log(f"Exception during run execution: {str(e)}")
 
         # Also, we update the run information file to set the status to failed.
         info_file = os.path.join(run_dir, f"{run_id}.json")
