@@ -39,10 +39,10 @@ def _find_uv_binary() -> str:
 
     # 2. Fall back to finding uv via the installed module (if available).
     try:
-        import uv  # type: ignore[import]
+        from uv import find_uv_bin  # type: ignore[import]
 
-        return uv.find_uv_bin()
-    except ImportError:
+        return find_uv_bin()
+    except (ImportError, AttributeError):
         pass
 
     # 3. Finally, check if uv is available on the system PATH.

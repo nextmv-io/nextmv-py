@@ -284,13 +284,12 @@ def main() -> None:
         sys.exit(0)
     elif len(sys.argv) > 1 and sys.argv[1] == "--run-uv":
         if len(sys.argv) < 3:
-            rich.print("[red]Error:[/red] --run-uv requires a manifest path.", file=sys.stderr)
+            rich.print("[red]Error:[/red] --run-uv requires a script path.", file=sys.stderr)
             sys.exit(1)
         uv_bin = _find_uv_binary()
         script_path = sys.argv[2]
         uv_args = [uv_bin, "run", script_path] + sys.argv[3:]
         os.execv(uv_bin, uv_args)
-        sys.exit(0)
 
     try:
         app()

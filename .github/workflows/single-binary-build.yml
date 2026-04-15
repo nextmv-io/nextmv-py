@@ -77,12 +77,12 @@ jobs:
       - name: smoketest binary (windows)
         if: ${{ matrix.os == 'windows' }}
         run: |
-          nextmv.exe --help
-          nextmv.exe version
-          nextmv.exe community clone -a python-highs-knapsack
+          ./nextmv.exe --help
+          ./nextmv.exe version
+          ./nextmv.exe community clone -a python-highs-knapsack
           cd python-highs-knapsack
-          timeout 5s nextmv.exe local run create -i input.json --wait
-        shell: cmd
+          timeout 5s ../nextmv.exe local run create -i input.json --wait
+        shell: bash
         working-directory: nextmv/dist
 
       - name: smoketest binary (linux/macos)
