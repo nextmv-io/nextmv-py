@@ -853,8 +853,11 @@ class ManifestContentMultiFileInput(BaseModel):
     'data/input/'
     """
 
-    path: str
-    """The path to the input file or directory."""
+    path: str | None = "inputs/"
+    """
+    The path to the input file or directory. The default value is a directory
+    named `inputs/`.
+    """
 
 
 class ManifestContentMultiFileOutput(BaseModel):
@@ -890,13 +893,13 @@ class ManifestContentMultiFileOutput(BaseModel):
     'my-outputs/metrics.json'
     """
 
-    statistics: str | None = ""
+    statistics: str | None = "outputs/statistics/statistics.json"
     """Deprecated: Use `metrics` instead. The path to the statistics file."""
-    metrics: str | None = ""
+    metrics: str | None = "outputs/metrics/metrics.json"
     """The path to the metrics file."""
-    assets: str | None = ""
+    assets: str | None = "outputs/assets/assets.json"
     """The path to the assets file."""
-    solutions: str | None = ""
+    solutions: str | None = "outputs/solutions/"
     """The path to the solutions directory."""
 
 
@@ -933,10 +936,23 @@ class ManifestContentMultiFile(BaseModel):
 
     """
 
-    input: ManifestContentMultiFileInput
+    input: ManifestContentMultiFileInput | None = None
     """Configuration for multi-file content format input."""
-    output: ManifestContentMultiFileOutput
+    output: ManifestContentMultiFileOutput | None = None
     """Configuration for multi-file content format output."""
+
+    def model_post_init(self, __context) -> None:
+        if self.input is None:
+            self.input = ManifestContentMultiFileInput(
+                path="inputs/",
+            )
+
+        if self.output is None:
+            self.output = ManifestContentMultiFileOutput(
+                solutions="outputs/solutions/",
+                metrics="outputs/metrics/metrics.json",
+                assets="outputs/assets/assets.json",
+            )
 
 
 class ManifestContent(BaseModel):
@@ -976,7 +992,7 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: ContentFormat | InputFormat
+    format: ContentFormat | InputFormat | None = ContentFormat.JSON
     """
     !!! warning
         `InputFormat` is deprecated, but kept for backward compatibility. Use `ContentFormat` instead.
@@ -1021,6 +1037,18 @@ class ManifestContent(BaseModel):
         acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE, InputFormat.TEXT, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
+
+        if self.format == ContentFormat.MULTI_FILE and self.multi_file is None:
+            self.multi_file = ManifestContentMultiFile(
+                input=ManifestContentMultiFileInput(
+                    path="inputs/",
+                ),
+                output=ManifestContentMultiFileOutput(
+                    solutions="outputs/solutions/",
+                    metrics="outputs/metrics/metrics.json",
+                    assets="outputs/assets/assets.json",
+                ),
+            )
 
 
 class ManifestConfiguration(BaseModel):
@@ -1237,7 +1265,7 @@ class Manifest(BaseModel):
             )
 
     @classmethod
-    def from_yaml(cls, dirpath: str) -> "Manifest":
+    def from_yaml(cls, dirpath: str = ".") -> "Manifest":
         """
         Load a manifest from a YAML file.
 
@@ -1246,8 +1274,9 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
-            Path to the directory containing the `app.yaml` file.
+        dirpath : str, optional
+            Path to the directory containing the `app.yaml` file. Defaults to
+            the current directory `.`.
 
         Returns
         -------
@@ -1276,6 +1305,8 @@ class Manifest(BaseModel):
         >>> from nextmv import Manifest
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
+        >>> # If the `app.yaml` file is in the current directory:
+        >>> # manifest = Manifest.from_yaml() # This is equivalent to Manifest.from_yaml(".")
         """
 
         dirpath = os.path.normpath(os.path.expanduser(dirpath))
@@ -1285,7 +1316,7 @@ class Manifest(BaseModel):
 
         return cls.from_dict(raw_manifest)
 
-    def to_yaml(self, dirpath: str) -> None:
+    def to_yaml(self, dirpath: str = ".") -> None:
         """
         Write the manifest to a YAML file.
 
@@ -1294,8 +1325,9 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
-            Path to the directory where the `app.yaml` file will be written.
+        dirpath : str, optional
+            Path to the directory where the `app.yaml` file will be written. Defaults to
+            the current directory `.`.
 
         Raises
         ------
@@ -1309,6 +1341,7 @@ class Manifest(BaseModel):
         >>> from nextmv import Manifest
         >>> manifest = Manifest(files=["solver.py"], type="python")
         >>> # manifest.to_yaml("./output_dir") # This would create ./output_dir/app.yaml
+        >>> # manifest.to_yaml() # This would create ./app.yaml
         """
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME), "w") as file:
