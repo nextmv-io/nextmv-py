@@ -77,7 +77,7 @@ jobs:
       - name: smoketest binary
         env:
           NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
-          BINARY: ${{ matrix.os == 'windows-latest' && './nextmv.exe' || './nextmv' }}
+          BINARY: ${{ matrix.os == 'windows' && './nextmv.exe' || './nextmv' }}
         run: |
           $BINARY --help
           $BINARY configuration create -a $NEXTMV_API_KEY
