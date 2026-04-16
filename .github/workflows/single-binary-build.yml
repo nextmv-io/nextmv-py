@@ -74,30 +74,17 @@ jobs:
             --console nextmv/cli/main.py
         working-directory: nextmv/
 
-      - name: smoketest binary (windows)
-        if: ${{ matrix.os == 'windows' }}
+      - name: smoketest binary
         env:
           NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
+          BINARY: ${{ matrix.os == 'windows-latest' && './nextmv.exe' || './nextmv' }}
         run: |
-          ./nextmv.exe --help
-          ./nextmv.exe configuration create -a $NEXTMV_API_KEY
-          ./nextmv.exe version
-          ./nextmv.exe community clone -a python-highs-knapsack
+          $BINARY --help
+          $BINARY configuration create -a $NEXTMV_API_KEY
+          $BINARY version
+          $BINARY community clone -a python-highs-knapsack
           cd python-highs-knapsack
-          timeout 30s ../nextmv.exe local run create -i input.json --wait
-        shell: bash
-        working-directory: nextmv/dist
-
-      - name: smoketest binary (linux/macos)
-        if: ${{ matrix.os != 'windows' }}
-        env:
-          NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
-        run: |
-          ./nextmv --help
-          ./nextmv configuration create -a $NEXTMV_API_KEY
-          ./nextmv version
-          ./nextmv community clone -a python-highs-knapsack
-          cd python-highs-knapsack
-          timeout 30s ../nextmv local run create -i input.json --wait
+          # Use Python to run command with timeout since timeout is not available on macOS.
+          python3 -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=30)"
         shell: bash
         working-directory: nextmv/dist
