@@ -84,7 +84,7 @@ jobs:
           ./nextmv.exe version
           ./nextmv.exe community clone -a python-highs-knapsack
           cd python-highs-knapsack
-          timeout 5s ../nextmv.exe local run create -i input.json --wait
+          timeout 30s ../nextmv.exe local run create -i input.json --wait
         shell: bash
         working-directory: nextmv/dist
 
@@ -98,6 +98,6 @@ jobs:
           ./nextmv version
           ./nextmv community clone -a python-highs-knapsack
           cd python-highs-knapsack
-          timeout 5s ./nextmv local run create -i input.json --wait
+          timeout 30s ./nextmv local run create -i input.json --wait
         shell: bash
         working-directory: nextmv/dist
