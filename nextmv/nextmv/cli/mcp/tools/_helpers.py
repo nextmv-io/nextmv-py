@@ -1,6 +1,5 @@
 """Shared helpers for MCP tool modules."""
 
-import contextvars
 import json
 import os
 import tempfile
@@ -19,28 +18,25 @@ DEFAULT_NEXTMV_ENDPOINT = "https://api.cloud.nextmv.io"
 
 
 class ProfileSession:
-    """Manages the active Nextmv Cloud profile for the current async context.
+    """Manages the active Nextmv Cloud profile for the MCP session.
 
-    Uses ``contextvars.ContextVar`` internally so that each async task
-    (and therefore each concurrent HTTP request in streamable-http
-    transport) gets its own isolated profile state.
+    Stores the profile as a plain instance attribute so that the value
+    set by ``cloud_set_profile`` persists across all subsequent tool calls
+    within the same server process.
     """
 
     def __init__(self) -> None:
-        self._profile: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-            "nextmv_profile",
-            default=None,
-        )
+        self._profile: str | None = None
 
     @property
     def profile(self) -> str | None:
         """Return the current profile name, or ``None`` for the default."""
 
-        return self._profile.get()
+        return self._profile
 
     @profile.setter
     def profile(self, value: str | None) -> None:
-        self._profile.set(value)
+        self._profile = value
 
     def get_client(self, profile: str | None = None) -> Client:
         """Build a Nextmv Cloud client from env var or CLI config.
