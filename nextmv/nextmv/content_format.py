@@ -51,3 +51,72 @@ class ContentFormat(str, Enum):
         }
 
         return descriptions[self]
+
+
+class InputFormat(str, Enum):
+    """
+    !!! warning
+        `InputFormat` is deprecated, use `nextmv.ContentFormat` instead.
+
+    Format of an `Input`.
+
+    You can import the `InputFormat` class directly from `nextmv`:
+
+    ```python
+    from nextmv import InputFormat
+    ```
+
+    This enum specifies the supported formats for input data.
+
+    Attributes
+    ----------
+    JSON : str
+        !!! warning
+            `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
+        JSON format, utf-8 encoded.
+    TEXT : str
+        !!! warning
+            `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+        Text format, utf-8 encoded.
+    CSV_ARCHIVE : str
+        !!! warning
+            `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+        CSV archive format: multiple CSV files.
+    MULTI_FILE : str
+        !!! warning
+            `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+        Multi-file format, used for loading multiple files in a single input.
+    """
+
+    JSON = "json"
+    """
+    !!! warning
+        `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
+
+    JSON format, utf-8 encoded.
+    """
+    TEXT = "text"
+    """
+    !!! warning
+        `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Text format, utf-8 encoded.
+    """
+    CSV_ARCHIVE = "csv-archive"
+    """
+    !!! warning
+        `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    CSV archive format: multiple CSV files.
+    """
+    MULTI_FILE = "multi-file"
+    """
+    !!! warning
+        `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
+
+    Multi-file format, used for loading multiple files in a single input.
+    """

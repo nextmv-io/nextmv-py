@@ -58,6 +58,7 @@ MANIFEST_FILE_NAME
 import glob
 import os
 import shutil
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -66,9 +67,7 @@ from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
-from nextmv.content_format import ContentFormat
-from nextmv.input import InputFormat
-from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
+from nextmv.content_format import ContentFormat, InputFormat
 from nextmv.options import Option, Options, OptionsEnforcement
 
 MANIFEST_FILE_NAME = "app.yaml"
@@ -86,6 +85,15 @@ Notes
 -----
 All Nextmv applications must include an app.yaml file for proper deployment.
 """
+
+# When working with the `Model`, we expect to be working in a notebook
+# environment, and not interact with the local filesystem a lot. We use the
+# `ModelConfiguration` to specify the dependencies that the `Model` requires.
+# To work with the "push" logic of uploading an app to Nextmv Cloud, we need a
+# requirement file that we use to gather dependencies, install them, and bundle
+# them in the app. This file is used as a placeholder for the dependencies that
+# the model requires and that we install and bundle with the app.
+_REQUIREMENTS_FILE = "model_requirements.txt"
 
 
 class ManifestType(str, Enum):
@@ -1127,6 +1135,57 @@ class ManifestExecution(BaseModel):
     """The entrypoint for the decision model, e.g.: `./app.py`."""
     cwd: str | None = None
     """The working directory to set when running the app, e.g.: `./src/`."""
+
+
+@dataclass
+class ModelConfiguration:
+    """
+    Configuration class for Nextmv models.
+
+    You can import the `ModelConfiguration` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ModelConfiguration
+    ```
+
+    This class holds the configuration for a model, defining how a Python model
+    is encoded and loaded for use in Nextmv Cloud.
+
+    Parameters
+    ----------
+    name : str
+        A personalized name for the model. This is required.
+    requirements : list[str], optional
+        A list of Python dependencies that the decision model requires,
+        formatted as they would appear in a requirements.txt file.
+    options : Options, optional
+        Options that the decision model requires.
+    options_enforcement:
+        Enforcement of options for the model. This controls how options
+        are handled when the model is run.
+
+    Examples
+    --------
+    >>> from nextmv import ModelConfiguration, Options
+    >>> config = ModelConfiguration(
+    ...     name="my_routing_model",
+    ...     requirements=["nextroute>=1.0.0"],
+    ...     options=Options({"max_time": 60}),
+    ...     options_enforcement=OptionsEnforcement(
+                strict=True,
+                validation_enforce=True
+            )
+    ... )
+    """
+
+    name: str
+    """The name of the decision model."""
+    requirements: list[str] | None = None
+    """A list of Python dependencies that the decision model requires."""
+    options: Options | None = None
+    """Options that the decision model requires."""
+    options_enforcement: OptionsEnforcement | None = None
+    """Enforcement of options for the model."""
 
 
 class Manifest(BaseModel):

@@ -5,9 +5,9 @@ from .account import AccountMemberRole as AccountMemberRole
 from .base_model import BaseModel as BaseModel
 from .base_model import from_dict as from_dict
 from .content_format import ContentFormat as ContentFormat
+from .content_format import InputFormat as InputFormat
 from .input import DataFile as DataFile
 from .input import Input as Input
-from .input import InputFormat as InputFormat
 from .input import InputLoader as InputLoader
 from .input import LocalInputLoader as LocalInputLoader
 from .input import csv_data_file as csv_data_file
@@ -27,11 +27,11 @@ from .manifest import ManifestPythonArch as ManifestPythonArch
 from .manifest import ManifestPythonModel as ManifestPythonModel
 from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
+from .manifest import ModelConfiguration as ModelConfiguration
 from .manifest import default_python_manifest as default_python_manifest
 from .manifest import find_files as find_files
 from .manifest import initialize_manifest as initialize_manifest
 from .model import Model as Model
-from .model import ModelConfiguration as ModelConfiguration
 from .options import Option as Option
 from .options import Options as Options
 from .output import Asset as Asset

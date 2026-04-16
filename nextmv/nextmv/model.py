@@ -26,6 +26,7 @@ from typing import Any
 
 from nextmv.input import Input
 from nextmv.logger import log
+from nextmv.manifest import _REQUIREMENTS_FILE
 from nextmv.options import Options, OptionsEnforcement
 from nextmv.output import Output
 
@@ -94,14 +95,6 @@ def _custom_showwarning(message, category, filename, lineno, file=None, line=Non
 
 warnings.showwarning = _custom_showwarning
 
-# When working with the `Model`, we expect to be working in a notebook
-# environment, and not interact with the local filesystem a lot. We use the
-# `ModelConfiguration` to specify the dependencies that the `Model` requires.
-# To work with the "push" logic of uploading an app to Nextmv Cloud, we need a
-# requirement file that we use to gather dependencies, install them, and bundle
-# them in the app. This file is used as a placeholder for the dependencies that
-# the model requires and that we install and bundle with the app.
-_REQUIREMENTS_FILE = "model_requirements.txt"
 
 # When working in a notebook environment, we don't really create a `main.py`
 # file with the main entrypoint of the program. Because the logic is mostly
