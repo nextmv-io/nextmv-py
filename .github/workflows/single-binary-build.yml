@@ -76,9 +76,11 @@ jobs:
 
       - name: smoketest binary (windows)
         if: ${{ matrix.os == 'windows' }}
+        env:
+          NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
         run: |
           ./nextmv.exe --help
-          ./nextmv.exe configuration create -a {{ secrets.NEXTMV_API_KEY }}
+          ./nextmv.exe configuration create -a $NEXTMV_API_KEY
           ./nextmv.exe version
           ./nextmv.exe community clone -a python-highs-knapsack
           cd python-highs-knapsack
@@ -88,9 +90,11 @@ jobs:
 
       - name: smoketest binary (linux/macos)
         if: ${{ matrix.os != 'windows' }}
+        env:
+          NEXTMV_API_KEY: ${{ secrets.NEXTMV_API_KEY }}
         run: |
           ./nextmv --help
-          ./nextmv configuration create -a {{ secrets.NEXTMV_API_KEY }}
+          ./nextmv configuration create -a $NEXTMV_API_KEY
           ./nextmv version
           ./nextmv community clone -a python-highs-knapsack
           cd python-highs-knapsack
