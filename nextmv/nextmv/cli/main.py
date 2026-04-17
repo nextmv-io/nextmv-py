@@ -284,7 +284,12 @@ def setup_encoding():
                 errors="replace",  # Don't crash on bad chars
                 line_buffering=True,
             )
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer,
+                encoding="utf-8",
+                errors="replace",
+                line_buffering=True,
+            )
         except Exception:
             # If wrapping fails (e.g. in some CI environments),
             # fall back to the original stream rather than crashing.
