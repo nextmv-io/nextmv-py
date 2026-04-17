@@ -38,7 +38,7 @@ from nextmv._serialization import serialize_json
 from nextmv.content_format import ContentFormat
 from nextmv.content_format import InputFormat as InputFormat
 from nextmv.deprecated import deprecated
-from nextmv.manifest import MANIFEST_FILE_NAME, Manifest
+from nextmv.manifest import Manifest, resolve_manifest
 from nextmv.options import Options
 
 INPUTS_KEY = "inputs"
@@ -727,7 +727,7 @@ class LocalInputLoader(InputLoader):
             If the path is not a valid directory.
         """
 
-        manifest = self.__resolve_manifest(manifest)
+        manifest = resolve_manifest(manifest)
         content_format = self.__resolve_content_format(input_format, manifest)
         path = self.__resolve_path(content_format=content_format, path=path, manifest=manifest)
 
@@ -934,20 +934,37 @@ class LocalInputLoader(InputLoader):
 
         return data
 
-    def __resolve_manifest(self, manifest: Manifest | None = None) -> Manifest | None:
-        if manifest is not None:
-            return manifest
-
-        if os.path.exists(MANIFEST_FILE_NAME):
-            return Manifest.from_yaml()
-
-        return None
-
     def __resolve_content_format(
         self,
         input_format: ContentFormat | None = None,
         manifest: Manifest | None = None,
     ) -> ContentFormat:
+        """
+        Resolve the content format to use for loading the input data.
+
+        Priority order: explicitly provided ``input_format`` > value from
+        ``manifest`` > default ``ContentFormat.JSON``. Deprecated
+        ``InputFormat`` values are handled with appropriate warnings.
+
+        Parameters
+        ----------
+        input_format : ContentFormat, optional
+            Explicitly provided content format. Takes precedence over the
+            manifest if given.
+        manifest : Manifest, optional
+            Manifest from which to read the content format when
+            ``input_format`` is not provided.
+
+        Returns
+        -------
+        ContentFormat
+            The resolved content format.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported ``InputFormat`` value is provided.
+        """
         content_format = None
         if input_format is not None:
             content_format = input_format
@@ -981,6 +998,39 @@ class LocalInputLoader(InputLoader):
         path: str | None = None,
         manifest: Manifest | None = None,
     ) -> str:
+        """
+        Resolve the path to use for loading the input data.
+
+        If ``path`` is provided it is returned unchanged. Otherwise the
+        default path is inferred from the ``content_format``:
+
+        - ``ContentFormat.JSON`` / ``InputFormat.TEXT``: empty string
+          (stdin).
+        - ``InputFormat.CSV_ARCHIVE``: ``"input"``.
+        - ``ContentFormat.MULTI_FILE``: the path configured in the manifest
+          (``manifest.configuration.content.multi_file.input.path``) when a
+          manifest is available, otherwise ``"inputs"``.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format that will be used to load the data.
+        path : str, optional
+            Explicitly provided path. Returned as-is when given.
+        manifest : Manifest, optional
+            Manifest from which to read the multi-file input path when
+            ``path`` is not provided.
+
+        Returns
+        -------
+        str
+            The resolved path.
+
+        Raises
+        ------
+        ValueError
+            If ``content_format`` is not one of the expected formats.
+        """
         if path is not None:
             return path
 
@@ -993,7 +1043,7 @@ class LocalInputLoader(InputLoader):
         # At this point, we should be using multi-file, but we check it and
         # raise an exception if it's not the case, just to be safe.
         if content_format != ContentFormat.MULTI_FILE:
-            raise ValueError(f"unexpected content format: {content_format}")
+            raise ValueError(f"unexpected content format for the input: {content_format}")
 
         if manifest is not None:
             return manifest.configuration.content.multi_file.input.path
@@ -1001,6 +1051,27 @@ class LocalInputLoader(InputLoader):
         return "inputs"
 
     def __resolve_options(self, options: Options | None = None, manifest: Manifest | None = None) -> Options:
+        """
+        Resolve the options to use for loading the input data.
+
+        If ``options`` are provided directly they are returned as-is.
+        Otherwise, the options are extracted from the manifest when one is
+        available. If neither is provided, ``None`` is returned.
+
+        Parameters
+        ----------
+        options : Options, optional
+            Explicitly provided options. Returned as-is when given.
+        manifest : Manifest, optional
+            Manifest from which to extract options when ``options`` is not
+            provided.
+
+        Returns
+        -------
+        Options or None
+            The resolved options, or ``None`` if neither ``options`` nor a
+            manifest is available.
+        """
         if options is not None:
             return options
 

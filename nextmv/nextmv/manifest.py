@@ -48,6 +48,8 @@ find_files
     Find all files matching the given filters in the given directory.
 initialize_manifest
     Initialize a manifest file of a given type in a specified directory.
+resolve_manifest
+    Resolve a manifest file from a specified path, returning a `Manifest` object.
 
 Constants
 --------
@@ -1815,3 +1817,31 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     dst = shutil.copy(src, destination)
 
     return dst
+
+
+def resolve_manifest(self, manifest: Manifest | None = None) -> Manifest | None:
+    """
+    Resolve the manifest to use for loading the input data.
+
+    If a manifest is provided directly, it is returned as-is. Otherwise, the
+    method looks for an `app.yaml` file in the current working directory and
+    loads it as a manifest if it exists.
+
+    Parameters
+    ----------
+    manifest : Manifest, optional
+        The manifest to use. If provided, it is returned unchanged.
+
+    Returns
+    -------
+    Manifest or None
+        The resolved manifest, or `None` if no manifest is found.
+    """
+
+    if manifest is not None:
+        return manifest
+
+    if os.path.exists(MANIFEST_FILE_NAME):
+        return Manifest.from_yaml()
+
+    return None
