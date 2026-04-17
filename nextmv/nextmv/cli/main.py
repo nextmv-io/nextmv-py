@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import io
 import os
 import runpy
 import sys
@@ -263,6 +264,14 @@ def _remove_go_cli() -> None:
         success(f"Deleted [italic red]deprecated[/italic red] [magenta]{GO_CLI_PATH}[/magenta].")
 
 
+def setup_encoding():
+    # Only perform this override if we are on Windows
+    if sys.platform == "win32":
+        # Wrap stdout and stderr with a UTF-8 encoder
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
+
 def main() -> None:
     """
     Entry point for the CLI with global exception handling.
@@ -270,6 +279,9 @@ def main() -> None:
     Catches all exceptions except Typer/Click exceptions (which handle their
     own exit codes) and displays a clean error message instead of a traceback.
     """
+
+    # Set up UTF-8 encoding for Windows to ensure proper display of rich text and emojis.
+    setup_encoding()
 
     # Handle --run-script and --run-uv for running scripts with the bundled Python
     # interpreter or via uv. These are used internally in case of frozen PyInstaller
