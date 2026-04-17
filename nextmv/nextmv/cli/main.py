@@ -265,11 +265,30 @@ def _remove_go_cli() -> None:
 
 
 def setup_encoding():
-    # Only perform this override if we are on Windows
-    if sys.platform == "win32":
-        # Wrap stdout and stderr with a UTF-8 encoder
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+    """
+    Configure UTF-8 encoding for Windows platforms to make sure emojis and rich text do
+    not cause encoding errors.
+    """
+    # Only force UTF-8 encoding on Windows where the default encoding is not already UTF-8
+    # and where sys.stdout has a buffer attribute (indicating it's a real stream and not a
+    # mock).
+    if (
+        sys.platform == "win32"
+        and getattr(sys.stdout, "encoding", "").lower() != "utf-8"
+        and hasattr(sys.stdout, "buffer")
+    ):
+        try:
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer,
+                encoding="utf-8",
+                errors="replace",  # Don't crash on bad chars
+                line_buffering=True,
+            )
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+        except Exception:
+            # If wrapping fails (e.g. in some CI environments),
+            # fall back to the original stream rather than crashing.
+            pass
 
 
 def main() -> None:
@@ -280,7 +299,7 @@ def main() -> None:
     own exit codes) and displays a clean error message instead of a traceback.
     """
 
-    # Set up UTF-8 encoding for Windows to ensure proper display of rich text and emojis.
+    # Improve compatibility with Windows terminals.
     setup_encoding()
 
     # Handle --run-script and --run-uv for running scripts with the bundled Python
