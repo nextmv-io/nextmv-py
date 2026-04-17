@@ -64,7 +64,6 @@ jobs:
         working-directory: nextmv/
 
       - name: build binary with PyInstaller
-        # We force bash to get more consistent behavior across platforms
         shell: bash
         # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
         run: ./.github/scripts/build-single-binary.sh
