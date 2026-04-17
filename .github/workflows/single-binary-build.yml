@@ -51,9 +51,8 @@ jobs:
 
       - name: build binary with PyInstaller
         shell: bash
-        # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
+        # Binary will be located at nextmv/dist/nextmv (or nextmv/dist/nextmv.exe on Windows)
         run: ./.github/scripts/build-single-binary.sh
-        working-directory: nextmv/
 
       - name: smoketest binary
         env:
