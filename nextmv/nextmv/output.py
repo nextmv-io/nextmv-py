@@ -1486,6 +1486,38 @@ class LocalOutputWriter(OutputWriter):
         path: str | None = None,
         manifest: Manifest | None = None,
     ) -> str | dict[str, str]:
+        """
+        Resolve the output path(s) based on the content format.
+
+        For `ContentFormat.JSON`, returns a single file path string. If an
+        explicit `path` is provided it is used as-is; otherwise an empty string
+        is returned, signalling that the output should be written to stdout.
+
+        For `ContentFormat.MULTI_FILE`, returns a dictionary mapping the keys
+        ``solutions``, ``metrics``, ``statistics``, and ``assets`` to their
+        respective file/directory paths. The resolution order is: explicit
+        ``path`` argument → manifest configuration → built-in defaults.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format used for writing the output.
+        path : str, optional
+            Explicit path provided by the caller.
+        manifest : Manifest, optional
+            Manifest whose configuration specifies multi-file output paths.
+
+        Returns
+        -------
+        str or dict[str, str]
+            A single path string for JSON output, or a mapping of output
+            section names to paths for multi-file output.
+
+        Raises
+        ------
+        ValueError
+            If an unexpected content format is encountered.
+        """
         if path is not None and content_format != ContentFormat.MULTI_FILE:
             return path
 
@@ -1528,6 +1560,31 @@ class LocalOutputWriter(OutputWriter):
         output_dict: dict[str, Any] | None = None,
         options: Options | dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        """
+        Resolve the options to a plain dictionary.
+
+        If explicit ``options`` are provided they take precedence over whatever
+        is stored in ``output_dict``. An `Options` instance is converted via
+        its ``to_dict`` method; a plain ``dict`` is used as-is.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for options when no explicit value is given.
+        options : Options or dict[str, Any], optional
+            Explicit options to resolve.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved options dictionary, or ``None`` if no options are available.
+
+        Raises
+        ------
+        TypeError
+            If ``options`` is of an unsupported type.
+        """
         if options is not None:
             if isinstance(options, Options):
                 return options.to_dict()
@@ -1547,6 +1604,25 @@ class LocalOutputWriter(OutputWriter):
         output_dict: dict[str, Any] | None = None,
         metrics: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        """
+        Resolve the metrics dictionary.
+
+        Explicit ``metrics`` take precedence over any metrics stored in
+        ``output_dict``.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for metrics when no explicit value is given.
+        metrics : dict[str, Any], optional
+            Explicit metrics to resolve.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved metrics dictionary, or ``None`` if no metrics are available.
+        """
         if metrics is not None:
             return metrics
 
@@ -1556,6 +1632,21 @@ class LocalOutputWriter(OutputWriter):
         return None
 
     def __resolve_statistics(self, output_dict: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """
+        Resolve the statistics dictionary from the output dictionary.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output from which to extract
+            statistics.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Statistics dictionary if present in ``output_dict``, otherwise
+            ``None``.
+        """
         if output_dict is None:
             return None
 
@@ -1566,6 +1657,32 @@ class LocalOutputWriter(OutputWriter):
         output_dict: dict[str, Any] | None = None,
         assets: list[Asset | dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]] | None:
+        """
+        Resolve the list of assets to plain dictionaries.
+
+        Explicit ``assets`` take precedence over any assets stored in
+        ``output_dict``. Each element is normalised to a ``dict``: `Asset`
+        instances are converted via ``to_dict``; plain dicts are used as-is.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for assets when no explicit value is given.
+        assets : list[Asset or dict[str, Any]], optional
+            Explicit list of assets to resolve.
+
+        Returns
+        -------
+        list[dict[str, Any]] or None
+            List of resolved asset dictionaries, or ``None`` if no assets are
+            available.
+
+        Raises
+        ------
+        TypeError
+            If an element in ``assets`` is of an unsupported type.
+        """
         if assets is not None:
             resolved_assets = []
             for ix, asset in enumerate(assets):
@@ -1593,6 +1710,45 @@ class LocalOutputWriter(OutputWriter):
         solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
         solution_files: list[SolutionFile] | None = None,
     ) -> dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | list[SolutionFile] | None:
+        """
+        Resolve the solution to write.
+
+        The resolution behaviour depends on ``content_format``:
+
+        - For non-``MULTI_FILE`` formats the explicit ``solution`` argument
+          takes precedence, falling back to the value stored in
+          ``output_dict``. Providing ``solution_files`` with a non-multi-file
+          format raises a ``ValueError``.
+        - For ``ContentFormat.MULTI_FILE`` only ``solution_files`` are
+          accepted. Providing a plain ``solution`` (either directly or via
+          ``output_dict``) raises a ``ValueError``.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format used for writing the output.
+        output : Output or dict[str, Any] or BaseModel, optional
+            Original output object, used to retrieve ``solution_files`` when
+            they are not passed explicitly.
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output.
+        solution : dict[str, Any] or Any, optional
+            Explicit solution data for non-multi-file formats.
+        solution_files : list[SolutionFile], optional
+            Explicit list of solution files for multi-file format.
+
+        Returns
+        -------
+        dict[str, Any] or Any or list[SolutionFile] or None
+            The resolved solution or solution files, or ``None`` if none are
+            available.
+
+        Raises
+        ------
+        ValueError
+            If ``solution_files`` are provided for a non-multi-file format, or
+            if a plain ``solution`` is provided for ``ContentFormat.MULTI_FILE``.
+        """
         if content_format != ContentFormat.MULTI_FILE:
             if solution_files is not None:
                 raise ValueError(
@@ -1637,6 +1793,26 @@ class LocalOutputWriter(OutputWriter):
         json_configurations: dict[str, Any] | None = None,
         output_dict: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        """
+        Resolve the JSON serialization configuration.
+
+        Explicit ``json_configurations`` take precedence over any configuration
+        stored in ``output_dict``.
+
+        Parameters
+        ----------
+        json_configurations : dict[str, Any], optional
+            Explicit JSON configuration options (e.g. ``indent``).
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for JSON configuration when no explicit value is given.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved JSON configuration dictionary, or ``None`` if none are
+            available.
+        """
         if json_configurations is not None:
             return json_configurations
 
@@ -1650,6 +1826,27 @@ class LocalOutputWriter(OutputWriter):
         csv_configurations: dict[str, Any] | None = None,
         output_dict: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        """
+        Resolve the CSV serialization configuration.
+
+        Explicit ``csv_configurations`` take precedence over any configuration
+        stored in ``output_dict``.
+
+        Parameters
+        ----------
+        csv_configurations : dict[str, Any], optional
+            Explicit CSV configuration options passed as kwargs to
+            ``csv.DictWriter``.
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for CSV configuration when no explicit value is given.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved CSV configuration dictionary, or ``None`` if none are
+            available.
+        """
         if csv_configurations is not None:
             return csv_configurations
 
@@ -1698,14 +1895,29 @@ class LocalOutputWriter(OutputWriter):
         """
         Write output in JSON format.
 
+        Assembles a JSON payload from the provided components and writes it
+        either to the file at ``path`` or to stdout when ``path`` is ``None``
+        or an empty string.
+
         Parameters
         ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
+        options : dict[str, Any], optional
+            Options dictionary to include in the output payload.
+        solution : dict[str, Any] or Any, optional
+            Solution data to include in the output payload.
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries to include in the output payload.
+        metrics : dict[str, Any], optional
+            Metrics dictionary to include in the output payload.
+        statistics : dict[str, Any], optional
+            Statistics dictionary to include in the output payload. Omitted
+            from the payload when ``None``.
         path : str, optional
-            Path to write the output. If None or empty, writes to stdout.
+            File path to write the serialized JSON to. When ``None`` or an
+            empty string the payload is printed to stdout instead.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer
+            (e.g. ``{"indent": 2}``).
         """
         json_configurations = json_configurations or {}
 
@@ -1745,20 +1957,39 @@ class LocalOutputWriter(OutputWriter):
         """
         Write output in CSV archive format.
 
+        The non-solution fields (options, assets, metrics, statistics) are
+        serialized to JSON and printed to stdout.  The solution — which must
+        be a ``dict`` mapping table names to lists of row dicts — is written
+        as one CSV file per key inside ``path`` (or ``"output"`` by default).
+
         Parameters
         ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration and solution data.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
+        options : dict[str, Any], optional
+            Options dictionary included in the JSON payload written to stdout.
+        solution : dict[str, Any] or Any, optional
+            Solution data. When not ``None`` it must be a ``dict`` whose
+            values are lists of row dictionaries; each entry becomes a
+            separate CSV file.
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries included in the JSON payload.
+        metrics : dict[str, Any], optional
+            Metrics dictionary included in the JSON payload.
+        statistics : dict[str, Any], optional
+            Statistics dictionary included in the JSON payload. Omitted when
+            ``None``.
         path : str, optional
-            Directory path to write the CSV files. If None or empty,
-            writes to a directory named "output" in the current working directory.
+            Directory path to write the CSV files to. Defaults to
+            ``"output"`` when ``None`` or empty.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer.
+        csv_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to ``csv.DictWriter``.
 
         Raises
         ------
         ValueError
-            If the path is an existing file instead of a directory.
+            If ``path`` refers to an existing file rather than a directory, or
+            if ``solution`` is not a ``dict``.
         """
 
         json_configurations = json_configurations or {}
@@ -1818,20 +2049,27 @@ class LocalOutputWriter(OutputWriter):
         """
         Write output to multiple files.
 
+        Dispatches each output section (statistics, metrics, assets, and
+        solution files) to the appropriate helper methods, each of which
+        creates the necessary directory structure and writes the data.
+
         Parameters
         ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration and solution data.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
-        path : str, optional
-            Directory path to write the CSV files. If None or empty,
-            writes to a directory named "output" in the current working directory.
-
-        Raises
-        ------
-        ValueError
-            If the path is an existing file instead of a directory.
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries to write.
+        metrics : dict[str, Any], optional
+            Metrics dictionary to write.
+        statistics : dict[str, Any], optional
+            Statistics dictionary to write.
+        solution_files : list[SolutionFile], optional
+            Solution files to write. Each file is written using its own
+            ``writer`` callable.
+        paths : dict[str, str], optional
+            Mapping of output section names (``"solutions"``, ``"metrics"``,
+            ``"statistics"``, ``"assets"``) to their destination paths.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer
+            for non-solution sections.
         """
 
         json_configurations = json_configurations or {}
@@ -1864,8 +2102,31 @@ class LocalOutputWriter(OutputWriter):
         json_configurations: dict[str, Any] | None = None,
     ):
         """
-        Auxiliary function to write a specific element of the output
-        dictionary to a file in the specified parent directory.
+        Write a single output section (e.g. metrics, statistics, assets) to a
+        JSON file.
+
+        The element is serialized under its key (e.g.
+        ``{"metrics": {...}}``) and written to the file path looked up from
+        ``paths`` using ``element_key``.  The parent directory is created
+        automatically when it does not yet exist.
+
+        Parameters
+        ----------
+        element_key : str
+            Key used to look up the destination path in ``paths`` and to wrap
+            the element in the serialized payload.
+        paths : dict[str, str]
+            Mapping of section names to file paths.
+        element : dict[str, Any], optional
+            The data to serialize and write. Skipped when ``None`` or empty.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer.
+
+        Raises
+        ------
+        ValueError
+            If the path resolved for ``element_key`` is a directory rather
+            than a file path (i.e. has no file extension).
         """
 
         if element is None or not element:
@@ -1892,8 +2153,28 @@ class LocalOutputWriter(OutputWriter):
         solution_files: list[SolutionFile] | None = None,
     ):
         """
-        Auxiliary function to write the solution files to the specified
-        directory.
+        Write each `SolutionFile` to the solutions directory.
+
+        The destination directory is derived from ``paths[SOLUTIONS_KEY]`` and
+        is created automatically when it does not yet exist.  Each
+        `SolutionFile` is written by calling its ``writer`` callable with the
+        resolved file path, the data, and any additional ``writer_args`` /
+        ``writer_kwargs``.
+
+        Parameters
+        ----------
+        paths : dict[str, str]
+            Mapping of section names to paths. The ``"solutions"`` key must
+            point to the target directory.
+        solution_files : list[SolutionFile], optional
+            List of solution files to write. When ``None`` the method returns
+            immediately without writing anything.
+
+        Raises
+        ------
+        TypeError
+            If any element of ``solution_files`` is not a `SolutionFile`
+            instance.
         """
 
         if solution_files is None:
