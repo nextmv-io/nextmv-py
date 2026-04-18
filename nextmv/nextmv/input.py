@@ -1105,8 +1105,9 @@ def load(
     ```
 
     This is a convenience function for loading an `Input` object. By default,
-    it uses the `LocalInputLoader` to load data from local sources. When
-    working with the local filesystem, please consider the following:
+    it uses the `LocalInputLoader` to load data from local sources like files
+    or stdin. When working with the local filesystem, please consider the
+    following.
 
     There are two main ways in which you can use this function:
 

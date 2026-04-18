@@ -2,6 +2,7 @@ import csv
 import json
 import os
 import shutil
+import tempfile
 import unittest
 from io import StringIO
 from typing import Any
@@ -9,6 +10,21 @@ from unittest.mock import patch
 
 import pandas as pd
 from nextmv.base_model import BaseModel
+from nextmv.content_format import ContentFormat
+from nextmv.manifest import (
+    MANIFEST_FILE_NAME,
+    Manifest,
+    ManifestConfiguration,
+    ManifestContent,
+    ManifestContentMultiFile,
+    ManifestContentMultiFileInput,
+    ManifestContentMultiFileOutput,
+    ManifestOption,
+    ManifestOptions,
+    ManifestRuntime,
+    ManifestType,
+)
+from nextmv.options import Option, Options
 
 import nextmv
 
@@ -1491,3 +1507,974 @@ class TestOutput(unittest.TestCase):
         finally:
             if os.path.exists(test_dir):
                 shutil.rmtree(test_dir)
+
+
+# ---------------------------------------------------------------------------
+# Helpers shared by manifest-based write tests
+# ---------------------------------------------------------------------------
+
+
+def _make_json_manifest(
+    options_items: list[dict[str, Any]] | None = None,
+) -> Manifest:
+    """Build a Manifest that uses ContentFormat.JSON, optionally with options."""
+    cfg_kwargs: dict[str, Any] = {
+        "content": ManifestContent(format=ContentFormat.JSON),
+    }
+    if options_items:
+        cfg_kwargs["options"] = ManifestOptions(
+            items=[
+                ManifestOption(
+                    name=o["name"],
+                    option_type=o["option_type"],
+                    default=o.get("default"),
+                    required=o.get("required", False),
+                )
+                for o in options_items
+            ]
+        )
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        configuration=ManifestConfiguration(**cfg_kwargs),
+    )
+
+
+def _make_multi_file_manifest(
+    input_path: str = "inputs/",
+    solutions_path: str = "outputs/solutions/",
+    metrics_path: str = "outputs/metrics/metrics.json",
+    assets_path: str = "outputs/assets/assets.json",
+    statistics_path: str = "outputs/statistics/statistics.json",
+) -> Manifest:
+    """Build a Manifest that uses ContentFormat.MULTI_FILE with configurable paths."""
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        configuration=ManifestConfiguration(
+            content=ManifestContent(
+                format=ContentFormat.MULTI_FILE,
+                multi_file=ManifestContentMultiFile(
+                    input=ManifestContentMultiFileInput(path=input_path),
+                    output=ManifestContentMultiFileOutput(
+                        solutions=solutions_path,
+                        metrics=metrics_path,
+                        assets=assets_path,
+                        statistics=statistics_path,
+                    ),
+                ),
+            )
+        ),
+    )
+
+
+def _write_app_yaml(dirpath: str, manifest: Manifest) -> None:
+    """Serialize a Manifest to app.yaml inside dirpath."""
+    manifest.to_yaml(dirpath)
+
+
+# ---------------------------------------------------------------------------
+# Tests: write() – manifest resolution
+# ---------------------------------------------------------------------------
+
+
+class TestWriteNoManifest(unittest.TestCase):
+    """write() behaviour when no manifest is available at all."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_json_to_stdout_default(self):
+        """No manifest, Output with JSON → writes to stdout."""
+        output = nextmv.Output(solution={"answer": 42})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"], {"answer": 42})
+
+    def test_json_to_file(self):
+        """No manifest, explicit path → writes JSON to file."""
+        output = nextmv.Output(solution={"saved": True})
+        fpath = os.path.join(self.tmp_dir, "out.json")
+        nextmv.write(output, path=fpath)
+
+        with open(fpath) as f:
+            got = json.load(f)
+        self.assertEqual(got["solution"], {"saved": True})
+
+    def test_json_no_options_empty_dict_in_output(self):
+        """No options → output contains empty options dict."""
+        output = nextmv.Output(solution={"x": 1})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["options"], {})
+
+    def test_multi_file_no_manifest_default_paths(self):
+        """No manifest, MULTI_FILE → uses 'outputs/solutions' default path."""
+        sol_file = nextmv.json_solution_file("result", {"val": 7})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+
+        output_dir = os.path.join(self.tmp_dir, "outputs", "solutions")
+        nextmv.write(output)
+
+        self.assertTrue(os.path.exists(os.path.join(output_dir, "result.json")))
+        with open(os.path.join(output_dir, "result.json")) as f:
+            self.assertEqual(json.load(f), {"val": 7})
+
+        shutil.rmtree(os.path.join(self.tmp_dir, "outputs"), ignore_errors=True)
+
+    def test_multi_file_no_manifest_metrics_default_paths(self):
+        """No manifest, MULTI_FILE → metrics go to 'outputs/metrics/metrics.json'."""
+        sol_file = nextmv.json_solution_file("result", {"val": 1})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+            metrics={"elapsed": 1.5},
+        )
+
+        nextmv.write(output)
+
+        metrics_path = os.path.join(self.tmp_dir, "outputs", "metrics", "metrics.json")
+        self.assertTrue(os.path.exists(metrics_path))
+        with open(metrics_path) as f:
+            content = json.load(f)
+        self.assertEqual(content["metrics"]["elapsed"], 1.5)
+
+        shutil.rmtree(os.path.join(self.tmp_dir, "outputs"), ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestWriteManifestProvidedDirectly(unittest.TestCase):
+    """write() behaviour when a Manifest is supplied as the `manifest` argument."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    # ------------------------------------------------------------------
+    # JSON format from manifest
+    # ------------------------------------------------------------------
+
+    def test_json_format_from_manifest_to_stdout(self):
+        """Manifest with JSON format → output is written as JSON to stdout."""
+        manifest = _make_json_manifest()
+        output = nextmv.Output(solution={"qty": 10})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, manifest=manifest, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["qty"], 10)
+
+    def test_json_format_from_manifest_to_file(self):
+        """Manifest with JSON format and explicit path → writes to file."""
+        manifest = _make_json_manifest()
+        output = nextmv.Output(solution={"file_written": True})
+        fpath = os.path.join(self.tmp_dir, "manifest_out.json")
+
+        nextmv.write(output, path=fpath, manifest=manifest)
+
+        with open(fpath) as f:
+            got = json.load(f)
+        self.assertEqual(got["solution"]["file_written"], True)
+
+    def test_json_manifest_with_metrics(self):
+        """Manifest JSON format: metrics are included in output."""
+        manifest = _make_json_manifest()
+        output = nextmv.Output(solution={"x": 1}, metrics={"speed": 2.5})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, manifest=manifest, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["metrics"]["speed"], 2.5)
+
+    # ------------------------------------------------------------------
+    # MULTI_FILE format from manifest
+    # ------------------------------------------------------------------
+
+    def test_multi_file_format_from_manifest(self):
+        """Manifest with MULTI_FILE: content format is used for writing."""
+        sol_dir = os.path.join(self.tmp_dir, "m_solutions")
+        metrics_path = os.path.join(self.tmp_dir, "m_metrics", "metrics.json")
+        assets_path = os.path.join(self.tmp_dir, "m_assets", "assets.json")
+        stats_path = os.path.join(self.tmp_dir, "m_stats", "stats.json")
+
+        manifest = _make_multi_file_manifest(
+            input_path=os.path.join(self.tmp_dir, "inputs"),
+            solutions_path=sol_dir,
+            metrics_path=metrics_path,
+            assets_path=assets_path,
+            statistics_path=stats_path,
+        )
+
+        sol_file = nextmv.json_solution_file("plan", {"route": [1, 2, 3]})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+
+        nextmv.write(output, manifest=manifest)
+
+        plan_path = os.path.join(sol_dir, "plan.json")
+        self.assertTrue(os.path.exists(plan_path))
+        with open(plan_path) as f:
+            self.assertEqual(json.load(f), {"route": [1, 2, 3]})
+
+    def test_multi_file_manifest_custom_metrics_path(self):
+        """Manifest specifies a custom metrics path; metrics end up there."""
+        custom_metrics = os.path.join(self.tmp_dir, "custom_metrics.json")
+        manifest = _make_multi_file_manifest(
+            solutions_path=os.path.join(self.tmp_dir, "sols"),
+            metrics_path=custom_metrics,
+            assets_path=os.path.join(self.tmp_dir, "assets.json"),
+            statistics_path=os.path.join(self.tmp_dir, "stats.json"),
+        )
+
+        sol_file = nextmv.json_solution_file("sol", {"ok": True})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+            metrics={"latency": 0.42},
+        )
+
+        nextmv.write(output, manifest=manifest)
+
+        self.assertTrue(os.path.exists(custom_metrics))
+        with open(custom_metrics) as f:
+            content = json.load(f)
+        self.assertEqual(content["metrics"]["latency"], 0.42)
+
+    def test_multi_file_explicit_path_overrides_manifest_paths(self):
+        """Explicit path overrides the multi-file paths from the manifest."""
+        manifest = _make_multi_file_manifest(
+            solutions_path="manifest_solutions/",
+            metrics_path="manifest_metrics/metrics.json",
+            assets_path="manifest_assets/assets.json",
+            statistics_path="manifest_stats/stats.json",
+        )
+
+        explicit_out = os.path.join(self.tmp_dir, "explicit_output")
+        sol_file = nextmv.json_solution_file("data", {"n": 5})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+
+        nextmv.write(output, path=explicit_out, manifest=manifest)
+
+        # Must be under explicit_output/solutions/
+        expected = os.path.join(explicit_out, "solutions", "data.json")
+        self.assertTrue(os.path.exists(expected))
+        # Must NOT be under manifest_solutions/
+        self.assertFalse(os.path.exists("manifest_solutions"))
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestWriteManifestFromCwd(unittest.TestCase):
+    """write() behaviour when app.yaml is found in the current working directory."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_json_format_from_cwd_manifest(self):
+        """app.yaml with JSON format in cwd is detected and used."""
+        manifest = _make_json_manifest()
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        output = nextmv.Output(solution={"cwd": True})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["cwd"], True)
+
+    def test_multi_file_format_from_cwd_manifest(self):
+        """app.yaml with MULTI_FILE in cwd: output goes to manifest-specified paths."""
+        sol_dir = os.path.join(self.tmp_dir, "cwd_solutions")
+        metrics_file = os.path.join(self.tmp_dir, "cwd_metrics.json")
+        assets_file = os.path.join(self.tmp_dir, "cwd_assets.json")
+        stats_file = os.path.join(self.tmp_dir, "cwd_stats.json")
+
+        manifest = _make_multi_file_manifest(
+            solutions_path=sol_dir,
+            metrics_path=metrics_file,
+            assets_path=assets_file,
+            statistics_path=stats_file,
+        )
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        sol_file = nextmv.json_solution_file("output", {"cwd_mf": 1})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+        nextmv.write(output)
+
+        self.assertTrue(os.path.exists(os.path.join(sol_dir, "output.json")))
+
+    def test_no_app_yaml_in_cwd_defaults_to_json_stdout(self):
+        """No app.yaml in cwd → defaults to JSON to stdout."""
+        self.assertFalse(os.path.exists(MANIFEST_FILE_NAME))
+
+        output = nextmv.Output(solution={"default": 1})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["default"], 1)
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestWriteResolutionPriority(unittest.TestCase):
+    """
+    Priority order for write():
+    explicit kwarg > manifest > Output field > default
+    """
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    # ------------------------------------------------------------------
+    # content_format resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_content_format_overrides_manifest(self):
+        """Explicit content_format kwarg beats manifest format."""
+        # Manifest says MULTI_FILE; explicit says JSON.
+        manifest = _make_multi_file_manifest()
+        output = nextmv.Output(solution={"override": True})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(
+                output,
+                content_format=ContentFormat.JSON,
+                manifest=manifest,
+                skip_stdout_reset=True,
+            )
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["override"], True)
+
+    def test_explicit_content_format_overrides_output_format(self):
+        """Explicit content_format kwarg beats Output.output_format."""
+        # Output says MULTI_FILE; explicit says JSON.
+        sol_file = nextmv.json_solution_file("x", {"v": 1})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+            solution=None,
+        )
+
+        # Providing a plain solution with the JSON override.
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(
+                output,
+                content_format=ContentFormat.JSON,
+                solution={"forced_json": True},
+                skip_stdout_reset=True,
+            )
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["forced_json"], True)
+
+    def test_manifest_format_overrides_output_format(self):
+        """Manifest format overrides the format set on the Output object."""
+        # Manifest says JSON; Output says MULTI_FILE → JSON wins.
+        sol_file = nextmv.json_solution_file("x", {"v": 1})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+        manifest = _make_json_manifest()
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(
+                output,
+                manifest=manifest,
+                solution={"manifest_json": True},
+                skip_stdout_reset=True,
+            )
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["manifest_json"], True)
+
+    def test_content_format_from_output_object_when_no_manifest(self):
+        """No manifest: content_format comes from Output.output_format."""
+        sol_file = nextmv.json_solution_file("widget", {"count": 3})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sol_file],
+        )
+        out_dir = os.path.join(self.tmp_dir, "from_output")
+        nextmv.write(output, path=out_dir)
+
+        self.assertTrue(os.path.exists(os.path.join(out_dir, "solutions", "widget.json")))
+
+    def test_dict_output_defaults_to_json_format(self):
+        """A plain dict as output defaults to JSON."""
+        output = {"solution": {"plain": "dict"}}
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertIn("solution", got)
+
+    # ------------------------------------------------------------------
+    # options resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_options_override_output_options(self):
+        """Explicit options kwarg overrides Output.options."""
+        output = nextmv.Output(
+            options={"duration": 10},
+            solution={"v": 1},
+        )
+        override_opts = {"duration": 999, "solver": "custom"}
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, options=override_opts, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["options"]["duration"], 999)
+        self.assertEqual(got["options"]["solver"], "custom")
+
+    def test_explicit_options_object_override_output_options(self):
+        """Explicit Options instance overrides Output.options dict."""
+        output = nextmv.Output(options={"duration": 10}, solution={"v": 1})
+
+        opts = Options(Option("duration", int, default=777, required=False))
+        with patch("sys.argv", ["prog"]):
+            opts.parse()
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, options=opts, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["options"]["duration"], 777)
+
+    def test_output_options_used_when_no_explicit_options(self):
+        """Output.options used when no explicit options are passed."""
+        output = nextmv.Output(options={"threads": 4}, solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["options"]["threads"], 4)
+
+    # ------------------------------------------------------------------
+    # metrics resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_metrics_override_output_metrics(self):
+        """Explicit metrics kwarg overrides Output.metrics."""
+        output = nextmv.Output(metrics={"elapsed": 1.0}, solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, metrics={"elapsed": 99.9}, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["metrics"]["elapsed"], 99.9)
+
+    def test_output_metrics_used_when_no_explicit_metrics(self):
+        """Output.metrics used when no explicit metrics are passed."""
+        output = nextmv.Output(metrics={"score": 42.0}, solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["metrics"]["score"], 42.0)
+
+    # ------------------------------------------------------------------
+    # assets resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_assets_override_output_assets(self):
+        """Explicit assets kwarg overrides Output.assets."""
+        output_asset = nextmv.Asset(name="original", content={"original": True})
+        override_asset = nextmv.Asset(name="override", content={"override": True})
+
+        output = nextmv.Output(assets=[output_asset], solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, assets=[override_asset], skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(len(got["assets"]), 1)
+        self.assertEqual(got["assets"][0]["name"], "override")
+
+    def test_output_assets_used_when_no_explicit_assets(self):
+        """Output.assets used when no explicit assets are passed."""
+        asset = nextmv.Asset(name="chart", content={"data": [1, 2, 3]})
+        output = nextmv.Output(assets=[asset], solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(len(got["assets"]), 1)
+        self.assertEqual(got["assets"][0]["name"], "chart")
+
+    def test_explicit_assets_as_dicts_override_output_assets(self):
+        """Explicit assets as dicts override Output.assets."""
+        output_asset = nextmv.Asset(name="original", content={"x": 1})
+        override_asset_dict = {"name": "dict_asset", "content": {"y": 2}}
+
+        output = nextmv.Output(assets=[output_asset], solution={})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, assets=[override_asset_dict], skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["assets"][0]["name"], "dict_asset")
+
+    # ------------------------------------------------------------------
+    # solution resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_solution_overrides_output_solution(self):
+        """Explicit solution kwarg overrides Output.solution."""
+        output = nextmv.Output(solution={"original": True})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, solution={"overridden": True}, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"], {"overridden": True})
+
+    def test_output_solution_used_when_no_explicit_solution(self):
+        """Output.solution used when no explicit solution is passed."""
+        output = nextmv.Output(solution={"from_output": 123})
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["from_output"], 123)
+
+    # ------------------------------------------------------------------
+    # json_configurations resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_json_configs_override_output_configs(self):
+        """Explicit json_configurations kwarg overrides Output.json_configurations."""
+        output = nextmv.Output(
+            solution={"z": 1},
+            json_configurations={"indent": 4},
+        )
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            # Override to compact format (no indent, custom separators, sorted keys).
+            nextmv.write(
+                output,
+                json_configurations={"indent": None, "separators": (",", ":"), "sort_keys": True},
+                skip_stdout_reset=True,
+            )
+            raw = mock_out.getvalue().strip()
+
+        # Compact: no spaces after separators, keys sorted.
+        self.assertNotIn("\n    ", raw)
+        self.assertIn('"assets":[]', raw)
+
+    def test_output_json_configs_used_when_no_explicit_configs(self):
+        """Output.json_configurations used when no explicit configs are passed."""
+        output = nextmv.Output(
+            solution={"a": 1, "b": 2},
+            json_configurations={"sort_keys": True, "indent": None, "separators": (",", ":")},
+        )
+
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            raw = mock_out.getvalue().strip()
+
+        # Keys should be sorted, compact.
+        self.assertIn('"assets":[]', raw)
+
+    # ------------------------------------------------------------------
+    # solution_files resolution
+    # ------------------------------------------------------------------
+
+    def test_explicit_solution_files_override_output_solution_files(self):
+        """Explicit solution_files kwarg overrides Output.solution_files."""
+        original_sf = nextmv.json_solution_file("original", {"v": 0})
+        override_sf = nextmv.json_solution_file("override", {"v": 1})
+
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[original_sf],
+        )
+        out_dir = os.path.join(self.tmp_dir, "sf_override")
+
+        nextmv.write(
+            output,
+            solution_files=[override_sf],
+            path=out_dir,
+        )
+
+        self.assertTrue(os.path.exists(os.path.join(out_dir, "solutions", "override.json")))
+        self.assertFalse(os.path.exists(os.path.join(out_dir, "solutions", "original.json")))
+
+    def test_output_solution_files_used_when_no_explicit(self):
+        """Output.solution_files used when no explicit solution_files are passed."""
+        sf = nextmv.json_solution_file("from_output", {"source": "output"})
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sf],
+        )
+        out_dir = os.path.join(self.tmp_dir, "sf_from_output")
+
+        nextmv.write(output, path=out_dir)
+
+        self.assertTrue(os.path.exists(os.path.join(out_dir, "solutions", "from_output.json")))
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestWriteStandaloneArguments(unittest.TestCase):
+    """write() with standalone kwargs and no Output object (output=None)."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_json_standalone_solution(self):
+        """write with only solution kwarg, no Output object → JSON to stdout."""
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(solution={"standalone": True}, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["standalone"], True)
+
+    def test_json_standalone_metrics(self):
+        """write with only metrics kwarg → metrics in JSON output."""
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(metrics={"m": 3.14}, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["metrics"]["m"], 3.14)
+
+    def test_json_standalone_assets(self):
+        """write with only assets kwarg → assets appear in JSON output."""
+        asset = nextmv.Asset(name="standalone_asset", content={"a": 1})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(assets=[asset], skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["assets"][0]["name"], "standalone_asset")
+
+    def test_json_standalone_options(self):
+        """write with only options kwarg → options in JSON output."""
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(options={"alpha": 0.01}, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["options"]["alpha"], 0.01)
+
+    def test_json_standalone_solution_and_metrics_and_assets(self):
+        """Combine solution+metrics+assets as standalone kwargs."""
+        asset = nextmv.Asset(name="a", content={"x": 9})
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(
+                solution={"res": 5},
+                metrics={"t": 0.1},
+                assets=[asset],
+                skip_stdout_reset=True,
+            )
+            got = json.loads(mock_out.getvalue())
+
+        self.assertEqual(got["solution"]["res"], 5)
+        self.assertEqual(got["metrics"]["t"], 0.1)
+        self.assertEqual(got["assets"][0]["name"], "a")
+
+    def test_multi_file_standalone_solution_files(self):
+        """write with content_format=MULTI_FILE and solution_files kwarg."""
+        sf = nextmv.json_solution_file("standalone_sol", {"standalone": True})
+        out_dir = os.path.join(self.tmp_dir, "standalone_out")
+
+        nextmv.write(
+            content_format=ContentFormat.MULTI_FILE,
+            solution_files=[sf],
+            path=out_dir,
+        )
+
+        sol_path = os.path.join(out_dir, "solutions", "standalone_sol.json")
+        self.assertTrue(os.path.exists(sol_path))
+        with open(sol_path) as f:
+            self.assertEqual(json.load(f), {"standalone": True})
+
+    def test_multi_file_standalone_metrics_and_assets(self):
+        """write MULTI_FILE with standalone metrics and assets kwargs."""
+        sf = nextmv.json_solution_file("sol", {"ok": True})
+        asset = nextmv.Asset(name="vis", content={"type": "chart"})
+        out_dir = os.path.join(self.tmp_dir, "standalone_mf")
+
+        nextmv.write(
+            content_format=ContentFormat.MULTI_FILE,
+            solution_files=[sf],
+            metrics={"elapsed": 1.23},
+            assets=[asset],
+            path=out_dir,
+        )
+
+        metrics_path = os.path.join(out_dir, "metrics", "metrics.json")
+        assets_path = os.path.join(out_dir, "assets", "assets.json")
+        self.assertTrue(os.path.exists(metrics_path))
+        self.assertTrue(os.path.exists(assets_path))
+
+        with open(metrics_path) as f:
+            self.assertEqual(json.load(f)["metrics"]["elapsed"], 1.23)
+
+        with open(assets_path) as f:
+            content = json.load(f)
+        self.assertEqual(content["assets"][0]["name"], "vis")
+
+    def test_json_to_file_via_path_kwarg(self):
+        """write to file using path kwarg, no Output object."""
+        fpath = os.path.join(self.tmp_dir, "result.json")
+        nextmv.write(
+            solution={"file_result": 99},
+            path=fpath,
+        )
+
+        with open(fpath) as f:
+            got = json.load(f)
+        self.assertEqual(got["solution"]["file_result"], 99)
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestWriteResolutionErrorCases(unittest.TestCase):
+    """Error conditions in the write() resolution logic."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_solution_files_with_json_format_raises(self):
+        """Providing solution_files with JSON format raises ValueError."""
+        sf = nextmv.json_solution_file("x", {"v": 1})
+        with self.assertRaises(ValueError):
+            with patch("sys.stdout", new=StringIO()):
+                nextmv.write(
+                    content_format=ContentFormat.JSON,
+                    solution_files=[sf],
+                    skip_stdout_reset=True,
+                )
+
+    def test_solution_with_multi_file_format_raises(self):
+        """Providing solution with MULTI_FILE format raises ValueError."""
+        sf = nextmv.json_solution_file("x", {"v": 1})
+        out_dir = os.path.join(self.tmp_dir, "err_out")
+        with self.assertRaises(ValueError):
+            nextmv.write(
+                content_format=ContentFormat.MULTI_FILE,
+                solution_files=[sf],
+                solution={"should_fail": True},
+                path=out_dir,
+            )
+
+    def test_output_solution_with_multi_file_content_format_raises(self):
+        """
+        Output.solution != None with MULTI_FILE content_format (via kwarg) raises.
+        """
+        # Output only has solution set (not solution_files).
+        output = nextmv.Output(solution={"oops": True})
+        out_dir = os.path.join(self.tmp_dir, "err_out2")
+        with self.assertRaises(ValueError):
+            nextmv.write(
+                output,
+                content_format=ContentFormat.MULTI_FILE,
+                path=out_dir,
+            )
+
+    def test_bad_output_type_raises_type_error(self):
+        """Non-Output/dict/BaseModel output raises TypeError."""
+        with self.assertRaises(TypeError):
+            nextmv.write("not a valid output type")
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestLoadWriteEndToEnd(unittest.TestCase):
+    """
+    End-to-end tests: load input → write output in both JSON and MULTI_FILE
+    modes, with various manifest configurations.
+    """
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_json_roundtrip_no_manifest(self):
+        """JSON load + JSON write without any manifest."""
+        data = {"locations": [1, 2, 3], "vehicles": 2}
+        sample = json.dumps(data) + "\n"
+
+        with patch("sys.stdin", new=StringIO(sample)):
+            inp = nextmv.load()
+
+        out_path = os.path.join(self.tmp_dir, "output.json")
+        nextmv.write(
+            solution=inp.data,
+            metrics={"vehicles": inp.data["vehicles"]},
+            path=out_path,
+        )
+
+        with open(out_path) as f:
+            got = json.load(f)
+
+        self.assertEqual(got["solution"]["locations"], [1, 2, 3])
+        self.assertEqual(got["metrics"]["vehicles"], 2)
+
+    def test_multi_file_roundtrip_no_manifest(self):
+        """MULTI_FILE load + MULTI_FILE write without any manifest."""
+        inputs_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(inputs_dir)
+        stops = [{"id": 1, "lat": 10.0}, {"id": 2, "lat": 20.0}]
+        with open(os.path.join(inputs_dir, "stops.json"), "w") as f:
+            json.dump(stops, f)
+
+        inp = nextmv.load(
+            input_format=ContentFormat.MULTI_FILE,
+            data_files=[nextmv.json_data_file("stops")],
+        )
+
+        out_dir = os.path.join(self.tmp_dir, "outputs")
+        sf = nextmv.json_solution_file("assignments", {"count": len(inp.data["stops.json"])})
+        nextmv.write(
+            content_format=ContentFormat.MULTI_FILE,
+            solution_files=[sf],
+            path=out_dir,
+        )
+
+        asgn_path = os.path.join(out_dir, "solutions", "assignments.json")
+        self.assertTrue(os.path.exists(asgn_path))
+        with open(asgn_path) as f:
+            self.assertEqual(json.load(f)["count"], 2)
+
+    def test_json_roundtrip_with_manifest_directly(self):
+        """JSON load + write both use a directly-provided manifest."""
+        manifest = _make_json_manifest(
+            options_items=[{"name": "limit", "option_type": "int", "default": 5, "required": False}]
+        )
+
+        fpath = os.path.join(self.tmp_dir, "in.json")
+        with open(fpath, "w") as f:
+            json.dump({"demand": 10}, f)
+
+        inp = nextmv.load(manifest=manifest, path=fpath)
+        self.assertEqual(inp.options.limit, 5)
+
+        out_path = os.path.join(self.tmp_dir, "out.json")
+        nextmv.write(
+            solution={"served": inp.data["demand"] // inp.options.limit},
+            manifest=manifest,
+            path=out_path,
+        )
+
+        with open(out_path) as f:
+            got = json.load(f)
+        self.assertEqual(got["solution"]["served"], 2)
+
+    def test_multi_file_roundtrip_with_cwd_manifest(self):
+        """MULTI_FILE load + write both go through app.yaml in cwd."""
+        inputs_dir = os.path.join(self.tmp_dir, "data_inputs")
+        outputs_dir = os.path.join(self.tmp_dir, "data_outputs")
+        os.makedirs(inputs_dir)
+
+        manifest = _make_multi_file_manifest(
+            input_path=inputs_dir,
+            solutions_path=os.path.join(outputs_dir, "solutions"),
+            metrics_path=os.path.join(outputs_dir, "metrics.json"),
+            assets_path=os.path.join(outputs_dir, "assets.json"),
+            statistics_path=os.path.join(outputs_dir, "stats.json"),
+        )
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        orders = [{"order_id": 1, "qty": 100}]
+        with open(os.path.join(inputs_dir, "orders.json"), "w") as f:
+            json.dump(orders, f)
+
+        inp = nextmv.load(data_files=[nextmv.json_data_file("orders")])
+        self.assertEqual(inp.input_format, ContentFormat.MULTI_FILE)
+
+        sf = nextmv.json_solution_file(
+            "plan",
+            {"assignments": [{"order_id": o["order_id"]} for o in inp.data["orders.json"]]},
+        )
+        output = nextmv.Output(
+            output_format=ContentFormat.MULTI_FILE,
+            solution_files=[sf],
+            metrics={"total_orders": len(inp.data["orders.json"])},
+        )
+        nextmv.write(output)
+
+        plan_path = os.path.join(outputs_dir, "solutions", "plan.json")
+        self.assertTrue(os.path.exists(plan_path))
+        with open(plan_path) as f:
+            plan = json.load(f)
+        self.assertEqual(plan["assignments"][0]["order_id"], 1)
+
+        metrics_path = os.path.join(outputs_dir, "metrics.json")
+        self.assertTrue(os.path.exists(metrics_path))
+        with open(metrics_path) as f:
+            m = json.load(f)
+        self.assertEqual(m["metrics"]["total_orders"], 1)

@@ -1315,13 +1315,47 @@ class LocalOutputWriter(OutputWriter):
         output : Union[Output, dict[str, Any], BaseModel]
             Output data to write. Can be an Output object, a dictionary, or a BaseModel.
         path : str, optional
-            Path to write the output data to. The interpretation depends on the output format:
-            - For `ContentFormat.JSON`: file path for the JSON output. If None or empty, writes to stdout.
-            - For `ContentFormat.MULTI_FILE`: directory path for output files.
-            If None or empty, writes to a directory named "outputs" in the
-            current working directory.
+            Path to write the output data to. The interpretation depends on the
+            output format:
+
+            - For `ContentFormat.JSON`: file path for the JSON output. If None or
+              empty, writes to stdout.
+            - For `ContentFormat.MULTI_FILE`: directory path for output files. If
+              None or empty, writes to a directory named "outputs" in the current
+              working directory.
         skip_stdout_reset : bool, optional
             Skip resetting stdout before writing the output data. Default is False.
+        content_format : ContentFormat, optional
+            The content format to use for writing the output. If not provided, it
+            is resolved from the manifest, the output object, or defaults to
+            `ContentFormat.JSON`.
+        manifest : Manifest, optional
+            Manifest object used to resolve the content format and output paths. If
+            not provided, a manifest is attempted to be loaded from the current
+            working directory.
+        options : Union[Options, dict[str, Any]], optional
+            Options to include in the output. Takes priority over the options in
+            the `output` argument. Default is None.
+        metrics : dict[str, Any], optional
+            Metrics to include in the output. Takes priority over the metrics in
+            the `output` argument. Default is None.
+        assets : list[Union[Asset, dict[str, Any]]], optional
+            List of assets to include in the output. Takes priority over the assets
+            in the `output` argument. Default is None.
+        solution : Union[dict[str, Any], Any], optional
+            Solution data to include in the output. Takes priority over the solution
+            in the `output` argument. Only used for non-`ContentFormat.MULTI_FILE`
+            formats. Default is None.
+        solution_files : list[SolutionFile], optional
+            List of solution files to include in the output. Takes priority over
+            the solution files in the `output` argument. Only used with
+            `ContentFormat.MULTI_FILE`. Default is None.
+        csv_configurations : dict[str, Any], optional
+            Configuration options for CSV serialization, passed as kwargs to
+            `csv.DictWriter`. Default is None.
+        json_configurations : dict[str, Any], optional
+            Configuration options for JSON serialization, passed as kwargs to
+            `json.dumps` (e.g. ``{"indent": 2}``). Default is None.
 
         Raises
         ------
@@ -1342,12 +1376,31 @@ class LocalOutputWriter(OutputWriter):
 
         Examples
         --------
-        >>> from nextmv.output import LocalOutputWriter, Output
+        >>> from nextmv import LocalOutputWriter, Output, json_solution_file
+        >>> from nextmv.content_format import ContentFormat
         >>> writer = LocalOutputWriter()
-        >>> # Write JSON to a file
+        >>> # Write JSON output to stdout using an Output object
+        >>> writer.write(Output(solution={"result": 42}, metrics={"duration": 1.5}))
+        >>> # Write JSON output to a file
         >>> writer.write(Output(solution={"result": 42}), path="result.json")
-        >>> # Write JSON to stdout
-        >>> writer.write({"simple": "data"})
+        >>> # Write JSON output directly via arguments, without an Output object
+        >>> writer.write(solution={"result": 42}, metrics={"duration": 1.5}, path="result.json")
+        >>> # Write multi-file output to a directory using an Output object
+        >>> solution_file = json_solution_file(name="solution", data={"result": 42})
+        >>> writer.write(
+        ...     Output(
+        ...         output_format=ContentFormat.MULTI_FILE,
+        ...         solution_files=[solution_file],
+        ...     ),
+        ...     path="output_dir",
+        ... )
+        >>> # Write multi-file output directly via arguments, without an Output object
+        >>> writer.write(
+        ...     content_format=ContentFormat.MULTI_FILE,
+        ...     solution_files=[solution_file],
+        ...     metrics={"duration": 1.5},
+        ...     path="output_dir",
+        ... )
         """
 
         # If the user forgot to reset stdout after redirecting it, we need to
@@ -2238,8 +2291,54 @@ def write(
     from nextmv import write
     ```
 
-    This is a convenience function for writing output data using a provided writer.
-    By default, it uses the `LocalOutputWriter` to write to files or stdout.
+    This is a convenience function for writing output data using a provided
+    writer. By default, it uses the `LocalOutputWriter` to write to local
+    sources like files or stdout. When working with the local filesystem,
+    please consider the following.
+
+    To use this function you have two main options:
+
+    - Provide arguments directly, such as `solution`, `metrics`, `assets`,
+      `solution_files`.
+    - Provide an `Output` object to the `output` argument. The `Output` class
+      is in charge of aggregating output elements.
+
+    This function will resolve each of the required element in the following
+    order:
+
+    1. If the argument is provided, it takes priority. For example, if you use
+       the `solution` argument and the `output` argument (passing an `Output`
+       class with a valid `.solution` field), the `solution` argument will be
+       used.
+    2. If the argument is not provided, but the `output` argument is provided
+       and has the corresponding field, the value from the `Output` object will
+       be used.
+    3. If neither the argument nor the `Output` field is provided, the element
+       will be considered not available and treated as `None`.
+
+    There are two special cases to consider: the `path` and the
+    `content_format` arguments.
+
+    1. If the argument is provided, it is used as it takes priority.
+    2. If a `manifest` object is used, then it is used to resolve the `path`
+       and `content_format`.
+    3. If a `manifest` object is not given, a manifest is attempted to be
+       loaded from the current working directory. If an `app.yaml` manifest
+       exists, then the manifest is used to resolve the `path` and
+       `content_format`.
+    4. If the `output` argument is provided and is an `Output` object, then its
+       `output_format` field is used to resolve the `content_format`.
+    5. If none of the above applies, the `content_format` defaults to
+       `ContentFormat.JSON` and the `path` uses default values based on the
+       content format.
+
+    It is preferred that you either use the `manifest` argument or rely on an
+    `app.yaml` manifest to be present so that the `path` and `content_format`
+    are resolved from the manifest configuration.
+
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    `skip_stdout_reset` parameter to `True`.
 
     Parameters
     ----------
@@ -2259,6 +2358,37 @@ def write(
     writer : OutputWriter, optional
         The writer to use for writing the output. Default is a
         `LocalOutputWriter` instance.
+    content_format : ContentFormat, optional
+        The content format to use for writing the output. If not provided, it
+        is resolved from the manifest, the output object, or defaults to
+        `ContentFormat.JSON`.
+    manifest : Manifest, optional
+        Manifest object used to resolve the content format and output paths. If
+        not provided, a manifest is attempted to be loaded from the current
+        working directory.
+    options : Union[Options, dict[str, Any]], optional
+        Options to include in the output. Takes priority over the options in
+        the `output` argument. Default is None.
+    metrics : dict[str, Any], optional
+        Metrics to include in the output. Takes priority over the metrics in
+        the `output` argument. Default is None.
+    assets : list[Union[Asset, dict[str, Any]]], optional
+        List of assets to include in the output. Takes priority over the assets
+        in the `output` argument. Default is None.
+    solution : Union[dict[str, Any], Any], optional
+        Solution data to include in the output. Takes priority over the solution
+        in the `output` argument. Only used for non-`ContentFormat.MULTI_FILE`
+        formats. Default is None.
+    solution_files : list[SolutionFile], optional
+        List of solution files to include in the output. Takes priority over
+        the solution files in the `output` argument. Only used with
+        `ContentFormat.MULTI_FILE`. Default is None.
+    csv_configurations : dict[str, Any], optional
+        Configuration options for CSV serialization, passed as kwargs to
+        `csv.DictWriter`. Default is None.
+    json_configurations : dict[str, Any], optional
+        Configuration options for JSON serialization, passed as kwargs to
+        `json.dumps` (e.g. ``{"indent": 2}``). Default is None.
 
     Raises
     ------
@@ -2269,11 +2399,32 @@ def write(
 
     Examples
     --------
-    >>> from nextmv.output import write, Output
-    >>> # Write JSON to a file
+    >>> from nextmv import write, Output, json_solution_file
+    >>> from nextmv.content_format import ContentFormat
+    >>> # Write JSON output to stdout using an Output object
+    >>> write(Output(solution={"result": 42}, metrics={"duration": 1.5}))
+    >>> # Write JSON output to a file
     >>> write(Output(solution={"result": 42}), path="result.json")
-    >>> # Write multi-file to a directory
-    >>> write(Output(output_format=ContentFormat.MULTI_FILE, solution_files=[...]), path="output_dir")
+    >>> # Write JSON output directly via arguments, without an Output object
+    >>> write(solution={"result": 42}, metrics={"duration": 1.5}, path="result.json")
+    >>> # Write JSON output with custom indentation
+    >>> write(solution={"result": 42}, json_configurations={"indent": 2})
+    >>> # Write multi-file output to a directory using an Output object
+    >>> solution_file = json_solution_file(name="solution", data={"result": 42})
+    >>> write(
+    ...     Output(
+    ...         output_format=ContentFormat.MULTI_FILE,
+    ...         solution_files=[solution_file],
+    ...     ),
+    ...     path="output_dir",
+    ... )
+    >>> # Write multi-file output directly via arguments, without an Output object
+    >>> write(
+    ...     content_format=ContentFormat.MULTI_FILE,
+    ...     solution_files=[solution_file],
+    ...     metrics={"duration": 1.5},
+    ...     path="output_dir",
+    ... )
     """
 
     writer.write(

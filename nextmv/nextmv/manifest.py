@@ -1819,7 +1819,7 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     return dst
 
 
-def resolve_manifest(self, manifest: Manifest | None = None) -> Manifest | None:
+def resolve_manifest(manifest: Manifest | None = None) -> Manifest | None:
     """
     Resolve the manifest to use for loading the input data.
 
