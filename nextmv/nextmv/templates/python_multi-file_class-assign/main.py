@@ -17,15 +17,12 @@ def main() -> None:
     Loads options and input data, invokes the solver, logs progress, and
     writes the output using the nextmv framework.
     """
-    options = nextmv.Manifest.from_yaml(".").extract_options()
 
-    loaded_data = nextmv.load(
-        input_format=nextmv.ContentFormat.MULTI_FILE,
-        options=options,
-        path="inputs",
+    loaded_input = nextmv.load(
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
     )
-    input_data = loaded_data.data["input"]
+    options = loaded_input.options
+    input_data = loaded_input.data["input"]
 
     nextmv.log("Solving school class assignment problem...")
     nextmv.log(f"  Students: {len(input_data.get('students', []))}")
@@ -35,14 +32,11 @@ def main() -> None:
 
     nextmv.log(f"  Assigned: {solution['total_assigned']}/{solution['total_students']}")
 
-    output = nextmv.Output(
-        output_format=nextmv.ContentFormat.MULTI_FILE,
-        options=options,
+    nextmv.write(
         metrics=metrics,
         assets=visual_assets,
         solution_files=[nextmv.json_solution_file(name="solution", data=solution)],
     )
-    nextmv.write(output, path="outputs")
 
 
 def solve(

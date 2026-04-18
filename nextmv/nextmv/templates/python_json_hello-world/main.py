@@ -8,13 +8,10 @@ import nextmv
 def main():
     """Main function that runs the model."""
 
-    # Read the input from stdin.
+    # Read the input.
     loaded_input = nextmv.load()
     name = loaded_input.data["name"]
-
-    # Extract options from the manifest.
-    manifest = nextmv.Manifest.from_yaml(".")
-    options = manifest.extract_options()
+    options = loaded_input.options
 
     ##### Insert model here
 
@@ -29,7 +26,7 @@ def main():
     assets = _create_visuals(name, loaded_input.data["radius"], loaded_input.data["distance"])
 
     # Write output and metrics.
-    output = nextmv.Output(
+    nextmv.write(
         options=options,
         solution={"message": message},
         metrics={
@@ -38,8 +35,6 @@ def main():
         },
         assets=assets,
     )
-
-    nextmv.write(output)
 
 
 def _create_visuals(name: str, radius: float, distance: float) -> list[nextmv.Asset]:

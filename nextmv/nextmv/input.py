@@ -1072,6 +1072,7 @@ class LocalInputLoader(InputLoader):
             The resolved options, or ``None`` if neither ``options`` nor a
             manifest is available.
         """
+
         if options is not None:
             return options
 
@@ -1086,7 +1087,7 @@ _LOCAL_INPUT_LOADER = LocalInputLoader()
 
 
 def load(
-    input_format: ContentFormat | None = ContentFormat.JSON,
+    input_format: ContentFormat | None = None,
     options: Options | None = None,
     path: str | None = None,
     csv_configurations: dict[str, Any] | None = None,
