@@ -1358,14 +1358,18 @@ class LocalOutputWriter(OutputWriter):
         output_dict = self.__output_to_dict(output)
         manifest = resolve_manifest(manifest)
         content_format = self.__resolve_content_format(output, manifest, content_format)
-        paths = self.__resolve_paths(content_format, path, manifest)
         options = self.__resolve_options(output_dict, options)
         metrics = self.__resolve_metrics(output_dict, metrics)
         statistics = self.__resolve_statistics(output_dict)
         assets = self.__resolve_assets(output_dict, assets)
-        solution = self.__resolve_solution(content_format, output, output_dict, solution, solution_files)
         json_configs = self.__resolve_json_configs(json_configurations, output_dict)
         csv_configs = self.__resolve_csv_configs(csv_configurations, output_dict)
+
+        # Can be a single path or a dict of paths.
+        paths = self.__resolve_paths(content_format, path, manifest)
+
+        # This resolves both the solution and the solution_files for all content formats.
+        solution = self.__resolve_solution(content_format, output, output_dict, solution, solution_files)
 
         if content_format in {ContentFormat.JSON, OutputFormat.TEXT}:
             self.__write_json(
@@ -1393,7 +1397,7 @@ class LocalOutputWriter(OutputWriter):
                 assets,
                 metrics,
                 statistics,
-                solution_files,
+                solution_files=solution,
                 paths=paths,
                 json_configurations=json_configs,
             )
@@ -1774,7 +1778,8 @@ class LocalOutputWriter(OutputWriter):
 
         # Same here, in case the user passes the solution via the output.
         if output_dict:
-            if "solution" in output_dict.keys():
+            sol = output_dict.get("solution")
+            if sol:
                 raise ValueError(
                     "`Output.solution` is not `None`, but `content_format` is `ContentFormat.MULTI_FILE`. "
                     "Only use `Output.solution_files` with this content format."

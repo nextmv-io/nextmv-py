@@ -263,6 +263,9 @@ class TestOutput(unittest.TestCase):
             expected = {
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
+                "options": {},
+                "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -284,6 +287,7 @@ class TestOutput(unittest.TestCase):
                 "statistics": {"foo": "bar"},
                 "options": {},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -306,7 +310,7 @@ class TestOutput(unittest.TestCase):
 
             self.assertEqual(
                 mock_stdout.getvalue(),
-                '{"assets":[],"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
+                '{"assets":[],"metrics":{},"options":{},"solution":{"empanadas":"are_life"},"statistics":{"foo":"bar"}}\n',
             )
 
     def test_local_writer_json_stdout_with_options(self):
@@ -334,6 +338,7 @@ class TestOutput(unittest.TestCase):
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -359,6 +364,7 @@ class TestOutput(unittest.TestCase):
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -382,6 +388,7 @@ class TestOutput(unittest.TestCase):
                 "solution": {"empanadas": "are_life"},
                 "statistics": {"foo": "bar"},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -471,7 +478,12 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, skip_stdout_reset=True)
 
             got = json.loads(mock_stdout.getvalue())
-            expected = output
+            expected = {
+                "options": {},
+                "solution": {},
+                "assets": [],
+                "metrics": {},
+            }
 
             self.assertDictEqual(got, expected)
 
@@ -495,9 +507,14 @@ class TestOutput(unittest.TestCase):
 
             got = json.loads(mock_stdout.getvalue())
 
-            # We test that the `write` method calls the `.to_dict()` method if
-            # it detects the output type to be an instance of `BaseModel`.
-            expected = {"output": output}
+            # The writer extracts known Output fields from the BaseModel's dict;
+            # custom fields are not preserved in the envelope.
+            expected = {
+                "options": {},
+                "solution": {},
+                "assets": [],
+                "metrics": {},
+            }
 
             self.assertDictEqual(got, expected)
 
@@ -510,11 +527,11 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, skip_stdout_reset=True)
 
             got = json.loads(mock_stdout.getvalue())
-            expected = expected = {
+            expected = {
                 "options": {},
                 "solution": {},
-                "statistics": {},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -551,7 +568,6 @@ class TestOutput(unittest.TestCase):
             expected = {
                 "options": {},
                 "solution": {},
-                "statistics": {},
                 "assets": [
                     {
                         "content": {"foo": "bar"},
@@ -571,6 +587,7 @@ class TestOutput(unittest.TestCase):
                         "name": "bar",
                     },
                 ],
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -606,8 +623,8 @@ class TestOutput(unittest.TestCase):
             expected = {
                 "options": {},
                 "solution": {},
-                "statistics": {},
                 "assets": assets,
+                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -718,6 +735,7 @@ class TestOutput(unittest.TestCase):
                 },
                 "statistics": {"foo": "bar"},
                 "assets": [],
+                "metrics": {},
             }
 
             self.assertDictEqual(stdout_got, stdout_expected)
