@@ -1045,7 +1045,7 @@ class LocalInputLoader(InputLoader):
         if content_format != ContentFormat.MULTI_FILE:
             raise ValueError(f"unexpected content format for the input: {content_format}")
 
-        if manifest is not None:
+        if manifest is not None and manifest.configuration.content.multi_file is not None:
             return manifest.configuration.content.multi_file.input.path
 
         return "inputs"

@@ -1541,6 +1541,29 @@ def _make_json_manifest(
     )
 
 
+def _make_json_manifest_with_multi_file_config() -> Manifest:
+    """Attempt to build a Manifest with format=JSON but a multi-file config block.
+    ManifestContent.model_post_init must raise ValueError."""
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        configuration=ManifestConfiguration(
+            content=ManifestContent(
+                format=ContentFormat.JSON,
+                multi_file=ManifestContentMultiFile(
+                    input=ManifestContentMultiFileInput(path="inputs/"),
+                    output=ManifestContentMultiFileOutput(
+                        solutions="outputs/solutions/",
+                        metrics="outputs/metrics/metrics.json",
+                        assets="outputs/assets/assets.json",
+                    ),
+                ),
+            )
+        ),
+    )
+
+
 def _make_multi_file_manifest(
     input_path: str = "inputs/",
     solutions_path: str = "outputs/solutions/",
@@ -1789,6 +1812,12 @@ class TestWriteManifestProvidedDirectly(unittest.TestCase):
         self.assertTrue(os.path.exists(expected))
         # Must NOT be under manifest_solutions/
         self.assertFalse(os.path.exists("manifest_solutions"))
+
+    def test_json_manifest_with_multi_file_config_raises_value_error(self):
+        """Building a Manifest with format=JSON but a multi-file config block must
+        raise a ValueError inside ManifestContent.model_post_init."""
+        with self.assertRaises(ValueError):
+            _make_json_manifest_with_multi_file_config()
 
 
 # ---------------------------------------------------------------------------

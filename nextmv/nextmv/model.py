@@ -21,13 +21,11 @@ import shutil
 import sqlite3
 import time
 import warnings
-from dataclasses import dataclass
 from typing import Any
 
 from nextmv.input import Input
 from nextmv.logger import log
-from nextmv.manifest import _REQUIREMENTS_FILE
-from nextmv.options import Options, OptionsEnforcement
+from nextmv.manifest import _REQUIREMENTS_FILE, ModelConfiguration
 from nextmv.output import Output
 
 # The following block of code is used to suppress warnings from mlflow. We
@@ -105,57 +103,6 @@ _ENTRYPOINT_FILE = "__entrypoint__.py"
 
 # Required mlflow dependency version for model packaging.
 _MLFLOW_DEPENDENCY = "mlflow>=2.18.0"
-
-
-@dataclass
-class ModelConfiguration:
-    """
-    Configuration class for Nextmv models.
-
-    You can import the `ModelConfiguration` class directly from `nextmv`:
-
-    ```python
-    from nextmv import ModelConfiguration
-    ```
-
-    This class holds the configuration for a model, defining how a Python model
-    is encoded and loaded for use in Nextmv Cloud.
-
-    Parameters
-    ----------
-    name : str
-        A personalized name for the model. This is required.
-    requirements : list[str], optional
-        A list of Python dependencies that the decision model requires,
-        formatted as they would appear in a requirements.txt file.
-    options : Options, optional
-        Options that the decision model requires.
-    options_enforcement:
-        Enforcement of options for the model. This controls how options
-        are handled when the model is run.
-
-    Examples
-    --------
-    >>> from nextmv import ModelConfiguration, Options
-    >>> config = ModelConfiguration(
-    ...     name="my_routing_model",
-    ...     requirements=["nextroute>=1.0.0"],
-    ...     options=Options({"max_time": 60}),
-    ...     options_enforcement=OptionsEnforcement(
-                strict=True,
-                validation_enforce=True
-            )
-    ... )
-    """
-
-    name: str
-    """The name of the decision model."""
-    requirements: list[str] | None = None
-    """A list of Python dependencies that the decision model requires."""
-    options: Options | None = None
-    """Options that the decision model requires."""
-    options_enforcement: OptionsEnforcement | None = None
-    """Enforcement of options for the model."""
 
 
 class Model:

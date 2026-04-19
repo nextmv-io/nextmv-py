@@ -12,8 +12,8 @@ import tempfile
 import rich
 
 from nextmv.logger import log
-from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, find_files
-from nextmv.model import Model, ModelConfiguration, _cleanup_python_model
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, ModelConfiguration, find_files
+from nextmv.model import Model, _cleanup_python_model
 
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],

@@ -1060,6 +1060,13 @@ class ManifestContent(BaseModel):
                 ),
             )
 
+        if self.format != ContentFormat.MULTI_FILE and self.multi_file is not None:
+            raise ValueError(
+                f"'multi-file' configuration is set but content format is `{self.format}`, not "
+                f"`{ContentFormat.MULTI_FILE}`. Remove the 'multi-file' configuration or change "
+                "the content format to `multi-file`."
+            )
+
 
 class ManifestConfiguration(BaseModel):
     """

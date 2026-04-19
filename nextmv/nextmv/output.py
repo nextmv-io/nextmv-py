@@ -1589,7 +1589,7 @@ class LocalOutputWriter(OutputWriter):
         if content_format != ContentFormat.MULTI_FILE:
             raise ValueError(f"unexpected content format for the output: {content_format}")
 
-        if path is not None:
+        if path:
             return {
                 "solutions": os.path.join(path, "solutions"),
                 "metrics": os.path.join(path, "metrics/metrics.json"),
