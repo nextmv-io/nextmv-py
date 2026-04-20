@@ -5,14 +5,15 @@ on:
   release:
     types: [released] # 'released' excludes pre-releases; use 'published' to include them
 
+permissions:
+  contents: read
+
 jobs:
   release-winget:
     name: Release winget package
     # Only run for nextmv- releases (not nextmv-gurobipy-, nextmv-scikit-learn-, etc.)
     if: ${{ startsWith(github.event.release.tag_name, 'nextmv-') && !contains(github.event.release.tag_name, 'gurobipy') && !contains(github.event.release.tag_name, 'scikit-learn') }}
     runs-on: windows-latest
-    permissions:
-      contents: read
     steps:
       - name: strip version prefix
         shell: bash
