@@ -264,7 +264,7 @@ def _remove_go_cli() -> None:
         success(f"Deleted [italic red]deprecated[/italic red] [magenta]{GO_CLI_PATH}[/magenta].")
 
 
-def setup_encoding():
+def setup_encoding() -> None:
     """
     Configure UTF-8 encoding for Windows platforms to make sure emojis and rich text do
     not cause encoding errors.

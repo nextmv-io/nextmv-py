@@ -65,6 +65,6 @@ jobs:
           $BINARY community clone -a python-highs-knapsack
           cd python-highs-knapsack
           # Use Python to run command with timeout since timeout is not available on macOS.
-          python3 -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=30)"
+          python -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=30)"
         shell: bash
         working-directory: nextmv/dist
