@@ -3,11 +3,16 @@ run-name: Release by @${{ github.actor }} from ${{ github.ref_name }}
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   # >>> 'nextmv' package jobs.
   release-nextmv:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
+    permissions:
+      contents: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -151,6 +156,8 @@ jobs:
   release-nextmv-gurobipy:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
+    permissions:
+      contents: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -207,6 +214,8 @@ jobs:
   release-nextmv-scikit-learn:
     if: ${{ github.ref_type == 'branch' }}
     uses: nextmv-io/release/.github/workflows/release.yml@develop
+    permissions:
+      contents: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
