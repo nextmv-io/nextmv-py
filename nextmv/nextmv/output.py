@@ -31,8 +31,6 @@ Attributes
 ----------
 ASSETS_KEY : str
     Assets key constant used for identifying assets in the run output.
-STATISTICS_KEY : str
-    Deprecated: Use METRICS_KEY instead. Statistics key constant used for identifying statistics in the run output.
 METRICS_KEY : str
     Metrics key constant used for identifying metrics in the run output.
 SOLUTIONS_KEY : str
@@ -57,6 +55,7 @@ from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
 from nextmv.deprecated import deprecated
 from nextmv.logger import reset_stdout
+from nextmv.manifest import Manifest, resolve_manifest
 from nextmv.options import Options
 
 ASSETS_KEY = "assets"
@@ -1164,7 +1163,7 @@ class Output:
             )
 
         if self.metrics is None:
-            metrics = None
+            metrics = {}
         elif isinstance(self.metrics, dict):
             metrics = self.metrics
         else:
@@ -1195,14 +1194,12 @@ class Output:
             "options": options,
             "solution": self.solution if self.solution is not None else {},
             ASSETS_KEY: assets,
+            METRICS_KEY: metrics,
         }
 
         # Only include statistics in output if it's not None
         if statistics is not None:
             output_dict[STATISTICS_KEY] = statistics
-
-        if metrics is not None:
-            output_dict[METRICS_KEY] = metrics
 
         # Add the auxiliary configurations to the output dictionary if they are
         # defined and not empty.
@@ -1212,6 +1209,13 @@ class Output:
             and self.csv_configurations != {}
         ):
             output_dict["csv_configurations"] = self.csv_configurations
+
+        if (
+            self.output_format == ContentFormat.JSON
+            and self.json_configurations is not None
+            and self.json_configurations != {}
+        ):
+            output_dict["json_configurations"] = self.json_configurations
 
         return output_dict
 
@@ -1285,252 +1289,20 @@ class LocalOutputWriter(OutputWriter):
     >>> writer.write(output, path="results.json")
     """
 
-    def _write_json(
-        self,
-        output: Output | dict[str, Any] | BaseModel,
-        output_dict: dict[str, Any],
-        path: str | None = None,
-    ) -> None:
-        """
-        Write output in JSON format.
-
-        Parameters
-        ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
-        path : str, optional
-            Path to write the output. If None or empty, writes to stdout.
-        """
-        json_configurations = {}
-        if hasattr(output, "json_configurations") and output.json_configurations is not None:
-            json_configurations = output.json_configurations
-
-        serialized = serialize_json(
-            output_dict,
-            json_configurations=json_configurations,
-        )
-
-        if path is None or path == "":
-            print(serialized, file=sys.stdout)
-            return
-
-        with open(path, "w", encoding="utf-8") as file:
-            file.write(serialized + "\n")
-
-    def _write_archive(
-        self,
-        output: Output | dict[str, Any] | BaseModel,
-        output_dict: dict[str, Any],
-        path: str | None = None,
-    ) -> None:
-        """
-        Write output in CSV archive format.
-
-        Parameters
-        ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration and solution data.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
-        path : str, optional
-            Directory path to write the CSV files. If None or empty,
-            writes to a directory named "output" in the current working directory.
-
-        Raises
-        ------
-        ValueError
-            If the path is an existing file instead of a directory.
-        """
-        dir_path = "output"
-        if path is not None and path != "":
-            if os.path.isfile(path):
-                raise ValueError(f"The path refers to an existing file: {path}")
-
-            dir_path = path
-
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        json_configurations = {}
-        if hasattr(output, "json_configurations") and output.json_configurations is not None:
-            json_configurations = output.json_configurations
-
-        output_json = {
-            "options": output_dict.get("options", {}),
-            ASSETS_KEY: output_dict.get(ASSETS_KEY, []),
-        }
-
-        if STATISTICS_KEY in output_dict:
-            output_json[STATISTICS_KEY] = output_dict.get(STATISTICS_KEY, {})
-
-        if METRICS_KEY in output_dict:
-            output_json[METRICS_KEY] = output_dict.get(METRICS_KEY, {})
-
-        serialized = serialize_json(
-            output_json,
-            json_configurations=json_configurations,
-        )
-        print(serialized, file=sys.stdout)
-
-        if output.solution is None:
-            return
-
-        csv_configurations = output.csv_configurations
-        if csv_configurations is None:
-            csv_configurations = {}
-
-        for file_name, data in output.solution.items():
-            file_path = os.path.join(dir_path, f"{file_name}.csv")
-            with open(file_path, "w", encoding="utf-8", newline="") as file:
-                writer = csv.DictWriter(
-                    file,
-                    fieldnames=data[0].keys(),
-                    **csv_configurations,
-                )
-                writer.writeheader()
-                writer.writerows(data)
-
-    def _write_multi_file(
-        self,
-        output: Output | dict[str, Any] | BaseModel,
-        output_dict: dict[str, Any],
-        path: str | None = None,
-    ) -> None:
-        """
-        Write output to multiple files.
-
-        Parameters
-        ----------
-        output : Union[Output, dict[str, Any], BaseModel]
-            The output object containing configuration and solution data.
-        output_dict : dict[str, Any]
-            Dictionary representation of the output to write.
-        path : str, optional
-            Directory path to write the CSV files. If None or empty,
-            writes to a directory named "output" in the current working directory.
-
-        Raises
-        ------
-        ValueError
-            If the path is an existing file instead of a directory.
-        """
-        dir_path = OUTPUTS_KEY
-        if path is not None and path != "":
-            if os.path.isfile(path):
-                raise ValueError(f"The path refers to an existing file: {path}")
-
-            dir_path = path
-
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        json_configurations = {}
-        if hasattr(output, "json_configurations") and output.json_configurations is not None:
-            json_configurations = output.json_configurations
-
-        self._write_multi_file_element(
-            parent_dir=dir_path,
-            json_configurations=json_configurations,
-            output_dict=output_dict,
-            element_key=STATISTICS_KEY,
-        )
-        self._write_multi_file_element(
-            parent_dir=dir_path,
-            json_configurations=json_configurations,
-            output_dict=output_dict,
-            element_key=METRICS_KEY,
-        )
-        self._write_multi_file_element(
-            parent_dir=dir_path,
-            json_configurations=json_configurations,
-            output_dict=output_dict,
-            element_key=ASSETS_KEY,
-        )
-        self._write_multi_file_solution(dir_path=dir_path, output=output)
-
-    def _write_multi_file_element(
-        self,
-        parent_dir: str,
-        output_dict: dict[str, Any],
-        element_key: str,
-        json_configurations: dict[str, Any] | None = None,
-    ):
-        """
-        Auxiliary function to write a specific element of the output
-        dictionary to a file in the specified parent directory.
-        """
-
-        element = output_dict.get(element_key)
-        if element is None or not element:
-            return
-
-        final_dir = os.path.join(parent_dir, element_key)
-
-        if not os.path.exists(final_dir):
-            os.makedirs(final_dir)
-
-        keyed_element = {element_key: element}  # The element is expected behind its key.
-
-        serialized = serialize_json(keyed_element, json_configurations=json_configurations)
-
-        with open(os.path.join(final_dir, f"{element_key}.json"), "w", encoding="utf-8") as file:
-            file.write(serialized + "\n")
-
-    def _write_multi_file_solution(
-        self,
-        dir_path: str,
-        output: Output,
-    ):
-        """
-        Auxiliary function to write the solution files to the specified
-        directory.
-        """
-
-        if output.solution_files is None:
-            return
-
-        solutions_dir = os.path.join(dir_path, SOLUTIONS_KEY)
-
-        if not os.path.exists(solutions_dir):
-            os.makedirs(solutions_dir)
-
-        for solution_file in output.solution_files:
-            if not isinstance(solution_file, SolutionFile):
-                raise TypeError(
-                    f"unsupported solution_file type: {type(solution_file)}, supported type is `SolutionFile`"
-                )
-
-            file_path = os.path.join(solutions_dir, solution_file.name)
-            if solution_file.writer_args is None:
-                solution_file.writer_args = []
-            if solution_file.writer_kwargs is None:
-                solution_file.writer_kwargs = {}
-
-            # Call the writer function with the final path, and user provided
-            # arguments and keyword arguments.
-            solution_file.writer(
-                file_path,
-                solution_file.data,
-                *solution_file.writer_args,
-                **solution_file.writer_kwargs,
-            )
-
-    # Callback functions for writing the output data.
-    FILE_WRITERS = {
-        ContentFormat.JSON: _write_json,
-        ContentFormat.MULTI_FILE: _write_multi_file,
-        OutputFormat.CSV_ARCHIVE: _write_archive,
-        OutputFormat.TEXT: _write_json,
-    }
-    """Dictionary mapping output formats to writer functions."""
-
     def write(
         self,
-        output: Output | dict[str, Any] | BaseModel,
+        output: Output | dict[str, Any] | BaseModel | None = None,
         path: str | None = None,
         skip_stdout_reset: bool = False,
+        content_format: ContentFormat | None = None,
+        manifest: Manifest | None = None,
+        options: Options | dict[str, Any] | None = None,
+        metrics: dict[str, Any] | None = None,
+        assets: list[Asset | dict[str, Any]] | None = None,
+        solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
+        solution_files: list[SolutionFile] | None = None,
+        csv_configurations: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
     ) -> None:
         """
         Write the output to the local filesystem or stdout.
@@ -1543,13 +1315,47 @@ class LocalOutputWriter(OutputWriter):
         output : Union[Output, dict[str, Any], BaseModel]
             Output data to write. Can be an Output object, a dictionary, or a BaseModel.
         path : str, optional
-            Path to write the output data to. The interpretation depends on the output format:
-            - For `ContentFormat.JSON`: file path for the JSON output. If None or empty, writes to stdout.
-            - For `ContentFormat.MULTI_FILE`: directory path for output files.
-            If None or empty, writes to a directory named "outputs" in the
-            current working directory.
+            Path to write the output data to. The interpretation depends on the
+            output format:
+
+            - For `ContentFormat.JSON`: file path for the JSON output. If None or
+              empty, writes to stdout.
+            - For `ContentFormat.MULTI_FILE`: directory path for output files. If
+              None or empty, writes to a directory named "outputs" in the current
+              working directory.
         skip_stdout_reset : bool, optional
             Skip resetting stdout before writing the output data. Default is False.
+        content_format : ContentFormat, optional
+            The content format to use for writing the output. If not provided, it
+            is resolved from the manifest, the output object, or defaults to
+            `ContentFormat.JSON`.
+        manifest : Manifest, optional
+            Manifest object used to resolve the content format and output paths. If
+            not provided, a manifest is attempted to be loaded from the current
+            working directory.
+        options : Union[Options, dict[str, Any]], optional
+            Options to include in the output. Takes priority over the options in
+            the `output` argument. Default is None.
+        metrics : dict[str, Any], optional
+            Metrics to include in the output. Takes priority over the metrics in
+            the `output` argument. Default is None.
+        assets : list[Union[Asset, dict[str, Any]]], optional
+            List of assets to include in the output. Takes priority over the assets
+            in the `output` argument. Default is None.
+        solution : Union[dict[str, Any], Any], optional
+            Solution data to include in the output. Takes priority over the solution
+            in the `output` argument. Only used for non-`ContentFormat.MULTI_FILE`
+            formats. Default is None.
+        solution_files : list[SolutionFile], optional
+            List of solution files to include in the output. Takes priority over
+            the solution files in the `output` argument. Only used with
+            `ContentFormat.MULTI_FILE`. Default is None.
+        csv_configurations : dict[str, Any], optional
+            Configuration options for CSV serialization, passed as kwargs to
+            `csv.DictWriter`. Default is None.
+        json_configurations : dict[str, Any], optional
+            Configuration options for JSON serialization, passed as kwargs to
+            `json.dumps` (e.g. ``{"indent": 2}``). Default is None.
 
         Raises
         ------
@@ -1570,12 +1376,31 @@ class LocalOutputWriter(OutputWriter):
 
         Examples
         --------
-        >>> from nextmv.output import LocalOutputWriter, Output
+        >>> from nextmv import LocalOutputWriter, Output, json_solution_file
+        >>> from nextmv.content_format import ContentFormat
         >>> writer = LocalOutputWriter()
-        >>> # Write JSON to a file
+        >>> # Write JSON output to stdout using an Output object
+        >>> writer.write(Output(solution={"result": 42}, metrics={"duration": 1.5}))
+        >>> # Write JSON output to a file
         >>> writer.write(Output(solution={"result": 42}), path="result.json")
-        >>> # Write JSON to stdout
-        >>> writer.write({"simple": "data"})
+        >>> # Write JSON output directly via arguments, without an Output object
+        >>> writer.write(solution={"result": 42}, metrics={"duration": 1.5}, path="result.json")
+        >>> # Write multi-file output to a directory using an Output object
+        >>> solution_file = json_solution_file(name="solution", data={"result": 42})
+        >>> writer.write(
+        ...     Output(
+        ...         output_format=ContentFormat.MULTI_FILE,
+        ...         solution_files=[solution_file],
+        ...     ),
+        ...     path="output_dir",
+        ... )
+        >>> # Write multi-file output directly via arguments, without an Output object
+        >>> writer.write(
+        ...     content_format=ContentFormat.MULTI_FILE,
+        ...     solution_files=[solution_file],
+        ...     metrics={"duration": 1.5},
+        ...     path="output_dir",
+        ... )
         """
 
         # If the user forgot to reset stdout after redirecting it, we need to
@@ -1583,35 +1408,859 @@ class LocalOutputWriter(OutputWriter):
         if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
-        if isinstance(output, Output):
-            output_format = output.output_format
-        elif isinstance(output, dict):
-            output_format = ContentFormat.JSON
-        elif isinstance(output, BaseModel):
-            output_format = ContentFormat.JSON
-        else:
-            raise TypeError(
-                f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
-            )
+        output_dict = self.__output_to_dict(output)
+        manifest = resolve_manifest(manifest)
+        content_format = self.__resolve_content_format(output, manifest, content_format)
+        options = self.__resolve_options(output_dict, options)
+        metrics = self.__resolve_metrics(output_dict, metrics)
+        statistics = self.__resolve_statistics(output_dict)
+        assets = self.__resolve_assets(output_dict, assets)
+        json_configs = self.__resolve_json_configs(json_configurations, output_dict)
+        csv_configs = self.__resolve_csv_configs(csv_configurations, output_dict)
 
-        output_dict = {}
-        if isinstance(output, Output):
-            output_dict = output.to_dict()
-        elif isinstance(output, BaseModel):
-            output_dict = output.to_dict()
-        elif isinstance(output, dict):
-            output_dict = output
-        else:
-            raise TypeError(
-                f"unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
-            )
+        # Can be a single path or a dict of paths.
+        paths = self.__resolve_paths(content_format, path, manifest)
 
-        self.FILE_WRITERS[output_format](
-            self,
-            output=output,
-            output_dict=output_dict,
-            path=path,
+        # This resolves both the solution and the solution_files for all content formats.
+        solution = self.__resolve_solution(content_format, output, output_dict, solution, solution_files)
+
+        if content_format in {ContentFormat.JSON, OutputFormat.TEXT}:
+            self.__write_json(
+                options,
+                solution,
+                assets,
+                metrics,
+                statistics,
+                path=paths,
+                json_configurations=json_configs,
+            )
+        elif content_format == OutputFormat.CSV_ARCHIVE:
+            self.__write_archive(
+                options,
+                solution,
+                assets,
+                metrics,
+                statistics,
+                path=paths,
+                json_configurations=json_configs,
+                csv_configurations=csv_configs,
+            )
+        elif content_format == ContentFormat.MULTI_FILE:
+            self.__write_multi_file(
+                assets,
+                metrics,
+                statistics,
+                solution_files=solution,
+                paths=paths,
+                json_configurations=json_configs,
+            )
+        else:
+            raise ValueError(f"unsupported content format: {content_format} in the `LocalOutputWriter.write` method")
+
+    def __resolve_content_format(
+        self,
+        output: Output | dict[str, Any] | BaseModel | None = None,
+        manifest: Manifest | None = None,
+        content_format: ContentFormat | None = None,
+    ) -> ContentFormat:
+        """
+        Resolve the content format to use for writing the output.
+
+        The resolution order is:
+        1. If `content_format` is explicitly provided, use it.
+        2. Else if `manifest` is provided, use the format from its configuration.
+        3. Else if `output` is provided, derive the format from the output type:
+           - `Output`: uses `output.output_format`.
+           - `dict` or `BaseModel`: defaults to `ContentFormat.JSON`.
+        4. Otherwise, defaults to `ContentFormat.JSON`.
+
+        Deprecated `OutputFormat` values are handled with a deprecation
+        warning and converted to their `ContentFormat` equivalents where
+        possible.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel], optional
+            The output object from which to derive the content format.
+        manifest : Manifest, optional
+            Manifest whose configuration specifies the content format.
+        content_format : ContentFormat, optional
+            Explicit content format to use, taking highest precedence.
+
+        Returns
+        -------
+        ContentFormat
+            The resolved content format.
+
+        Raises
+        ------
+        ValueError
+            If the content format cannot be resolved from the provided output
+            type, or if an unsupported `OutputFormat` value is encountered.
+        """
+
+        resolved_content_format = None
+        if content_format is not None:
+            resolved_content_format = content_format
+        elif manifest is not None:
+            resolved_content_format = manifest.configuration.content.format
+        elif output is not None:
+            if isinstance(output, Output):
+                resolved_content_format = output.output_format
+            elif isinstance(output, dict) or isinstance(output, BaseModel):
+                resolved_content_format = ContentFormat.JSON
+            else:
+                raise ValueError(
+                    "`content_format` cannot be resolved from the provided `Output`, "
+                    "please provide a `content_format` explicitly. "
+                    f"Unsupported output type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`"
+                )
+        else:
+            resolved_content_format = ContentFormat.JSON
+
+        if type(resolved_content_format) is ContentFormat:
+            return resolved_content_format
+
+        deprecated(
+            name="OutputFormat",
+            reason="using `OutputFormat` as the type for `content_format` is deprecated, use `ContentFormat` instead",
         )
+        if resolved_content_format in {OutputFormat.TEXT, OutputFormat.CSV_ARCHIVE}:
+            deprecated(
+                name="OutputFormat.TEXT/OutputFormat.CSV_ARCHIVE",
+                reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
+            )
+        elif resolved_content_format in {OutputFormat.JSON, OutputFormat.MULTI_FILE}:
+            return ContentFormat(resolved_content_format.value)
+        else:
+            raise ValueError(f"unsupported content_format: {resolved_content_format}")
+
+        return resolved_content_format
+
+    def __resolve_paths(
+        self,
+        content_format: ContentFormat,
+        path: str | None = None,
+        manifest: Manifest | None = None,
+    ) -> str | dict[str, str]:
+        """
+        Resolve the output path(s) based on the content format.
+
+        For `ContentFormat.JSON`, returns a single file path string. If an
+        explicit `path` is provided it is used as-is; otherwise an empty string
+        is returned, signalling that the output should be written to stdout.
+
+        For `ContentFormat.MULTI_FILE`, returns a dictionary mapping the keys
+        ``solutions``, ``metrics``, ``statistics``, and ``assets`` to their
+        respective file/directory paths. The resolution order is: explicit
+        ``path`` argument → manifest configuration → built-in defaults.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format used for writing the output.
+        path : str, optional
+            Explicit path provided by the caller.
+        manifest : Manifest, optional
+            Manifest whose configuration specifies multi-file output paths.
+
+        Returns
+        -------
+        str or dict[str, str]
+            A single path string for JSON output, or a mapping of output
+            section names to paths for multi-file output.
+
+        Raises
+        ------
+        ValueError
+            If an unexpected content format is encountered.
+        """
+        if path is not None and content_format != ContentFormat.MULTI_FILE:
+            return path
+
+        if content_format in {ContentFormat.JSON, OutputFormat.TEXT}:
+            return ""
+
+        if content_format == OutputFormat.CSV_ARCHIVE:
+            return "output"
+
+        # At this point, we should be using multi-file, but we check it and
+        # raise an exception if it's not the case, just to be safe.
+        if content_format != ContentFormat.MULTI_FILE:
+            raise ValueError(f"unexpected content format for the output: {content_format}")
+
+        if path:
+            return {
+                "solutions": os.path.join(path, "solutions"),
+                "metrics": os.path.join(path, "metrics.json"),
+                "statistics": os.path.join(path, "statistics.json"),
+                "assets": os.path.join(path, "assets.json"),
+            }
+
+        if manifest is not None:
+            return {
+                "solutions": manifest.configuration.content.multi_file.output.solutions,
+                "metrics": manifest.configuration.content.multi_file.output.metrics,
+                "statistics": manifest.configuration.content.multi_file.output.statistics,
+                "assets": manifest.configuration.content.multi_file.output.assets,
+            }
+
+        return {
+            "solutions": "outputs/solutions",
+            "metrics": "outputs/metrics.json",
+            "statistics": "outputs/statistics.json",
+            "assets": "outputs/assets.json",
+        }
+
+    def __resolve_options(
+        self,
+        output_dict: dict[str, Any] | None = None,
+        options: Options | dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Resolve the options to a plain dictionary.
+
+        If explicit ``options`` are provided they take precedence over whatever
+        is stored in ``output_dict``. An `Options` instance is converted via
+        its ``to_dict`` method; a plain ``dict`` is used as-is.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for options when no explicit value is given.
+        options : Options or dict[str, Any], optional
+            Explicit options to resolve.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved options dictionary, or ``None`` if no options are available.
+
+        Raises
+        ------
+        TypeError
+            If ``options`` is of an unsupported type.
+        """
+        if options is not None:
+            if isinstance(options, Options):
+                return options.to_dict()
+
+            if isinstance(options, dict):
+                return options
+
+            raise TypeError(f"unsupported `options` type: {type(options)}, supported types are `Options` or `dict`")
+
+        if output_dict:
+            return output_dict.get("options")
+
+        return None
+
+    def __resolve_metrics(
+        self,
+        output_dict: dict[str, Any] | None = None,
+        metrics: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Resolve the metrics dictionary.
+
+        Explicit ``metrics`` take precedence over any metrics stored in
+        ``output_dict``.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for metrics when no explicit value is given.
+        metrics : dict[str, Any], optional
+            Explicit metrics to resolve.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved metrics dictionary, or ``None`` if no metrics are available.
+        """
+        if metrics is not None:
+            return metrics
+
+        if output_dict:
+            return output_dict.get(METRICS_KEY)
+
+        return None
+
+    def __resolve_statistics(self, output_dict: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """
+        Resolve the statistics dictionary from the output dictionary.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output from which to extract
+            statistics.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Statistics dictionary if present in ``output_dict``, otherwise
+            ``None``.
+        """
+        if output_dict is None:
+            return None
+
+        return output_dict.get(STATISTICS_KEY)
+
+    def __resolve_assets(
+        self,
+        output_dict: dict[str, Any] | None = None,
+        assets: list[Asset | dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]] | None:
+        """
+        Resolve the list of assets to plain dictionaries.
+
+        Explicit ``assets`` take precedence over any assets stored in
+        ``output_dict``. Each element is normalised to a ``dict``: `Asset`
+        instances are converted via ``to_dict``; plain dicts are used as-is.
+
+        Parameters
+        ----------
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for assets when no explicit value is given.
+        assets : list[Asset or dict[str, Any]], optional
+            Explicit list of assets to resolve.
+
+        Returns
+        -------
+        list[dict[str, Any]] or None
+            List of resolved asset dictionaries, or ``None`` if no assets are
+            available.
+
+        Raises
+        ------
+        TypeError
+            If an element in ``assets`` is of an unsupported type.
+        """
+        if assets is not None:
+            resolved_assets = []
+            for ix, asset in enumerate(assets):
+                if isinstance(asset, Asset):
+                    resolved_assets.append(asset.to_dict())
+                elif isinstance(asset, dict):
+                    resolved_assets.append(asset)
+                else:
+                    raise TypeError(
+                        f"unsupported asset {ix}, type: {type(asset)}; supported types are `Asset` or `dict`"
+                    )
+
+            return resolved_assets
+
+        if output_dict:
+            return output_dict.get(ASSETS_KEY)
+
+        return None
+
+    def __resolve_solution(
+        self,
+        content_format: ContentFormat,
+        output: Output | dict[str, Any] | BaseModel | None = None,
+        output_dict: dict[str, Any] | None = None,
+        solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
+        solution_files: list[SolutionFile] | None = None,
+    ) -> dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | list[SolutionFile] | None:
+        """
+        Resolve the solution to write.
+
+        The resolution behaviour depends on ``content_format``:
+
+        - For non-``MULTI_FILE`` formats the explicit ``solution`` argument
+          takes precedence, falling back to the value stored in
+          ``output_dict``. Providing ``solution_files`` with a non-multi-file
+          format raises a ``ValueError``.
+        - For ``ContentFormat.MULTI_FILE`` only ``solution_files`` are
+          accepted. Providing a plain ``solution`` (either directly or via
+          ``output_dict``) raises a ``ValueError``.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format used for writing the output.
+        output : Output or dict[str, Any] or BaseModel, optional
+            Original output object, used to retrieve ``solution_files`` when
+            they are not passed explicitly.
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output.
+        solution : dict[str, Any] or Any, optional
+            Explicit solution data for non-multi-file formats.
+        solution_files : list[SolutionFile], optional
+            Explicit list of solution files for multi-file format.
+
+        Returns
+        -------
+        dict[str, Any] or Any or list[SolutionFile] or None
+            The resolved solution or solution files, or ``None`` if none are
+            available.
+
+        Raises
+        ------
+        ValueError
+            If ``solution_files`` are provided for a non-multi-file format, or
+            if a plain ``solution`` is provided for ``ContentFormat.MULTI_FILE``.
+        """
+        if content_format != ContentFormat.MULTI_FILE:
+            if solution_files is not None:
+                raise ValueError(
+                    f"`solution_files` are not `None`, but `content_format` is different from "
+                    f"`ContentFormat.MULTI_FILE`: {content_format}. If you want to use `solution_files`, "
+                    f"set `content_format` to `ContentFormat.MULTI_FILE`."
+                )
+
+            if solution is not None:
+                return solution
+
+            if output_dict:
+                return output_dict.get("solution")
+
+        # At this point we are working with multi-file.
+        # We do not support a solution with multi-file because we don't know
+        # what the user's intent is for serialization.
+        if solution is not None:
+            raise ValueError(
+                "`solution` is not `None`, but `content_format` is `ContentFormat.MULTI_FILE`. "
+                "Only use `solution_files` with this content format."
+            )
+
+        # Same here, in case the user passes the solution via the output.
+        if output_dict:
+            sol = output_dict.get("solution")
+            if sol:
+                raise ValueError(
+                    "`Output.solution` is not `None`, but `content_format` is `ContentFormat.MULTI_FILE`. "
+                    "Only use `Output.solution_files` with this content format."
+                )
+
+        if solution_files is not None:
+            return solution_files
+
+        elif output is not None and isinstance(output, Output) and output.solution_files is not None:
+            return output.solution_files
+
+        return None
+
+    def __resolve_json_configs(
+        self,
+        json_configurations: dict[str, Any] | None = None,
+        output_dict: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Resolve the JSON serialization configuration.
+
+        Explicit ``json_configurations`` take precedence over any configuration
+        stored in ``output_dict``.
+
+        Parameters
+        ----------
+        json_configurations : dict[str, Any], optional
+            Explicit JSON configuration options (e.g. ``indent``).
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for JSON configuration when no explicit value is given.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved JSON configuration dictionary, or ``None`` if none are
+            available.
+        """
+        if json_configurations is not None:
+            return json_configurations
+
+        if output_dict:
+            return output_dict.get("json_configurations", {})
+
+        return None
+
+    def __resolve_csv_configs(
+        self,
+        csv_configurations: dict[str, Any] | None = None,
+        output_dict: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Resolve the CSV serialization configuration.
+
+        Explicit ``csv_configurations`` take precedence over any configuration
+        stored in ``output_dict``.
+
+        Parameters
+        ----------
+        csv_configurations : dict[str, Any], optional
+            Explicit CSV configuration options passed as kwargs to
+            ``csv.DictWriter``.
+        output_dict : dict[str, Any], optional
+            Dictionary representation of the output, used as a fallback source
+            for CSV configuration when no explicit value is given.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            Resolved CSV configuration dictionary, or ``None`` if none are
+            available.
+        """
+        if csv_configurations is not None:
+            return csv_configurations
+
+        if output_dict:
+            return output_dict.get("csv_configurations", {})
+
+    def __output_to_dict(self, output: Output | dict[str, Any] | BaseModel | None = None) -> dict[str, Any]:
+        """
+        Convert the output to a dictionary, based on its type.
+
+        Parameters
+        ----------
+        output : Union[Output, dict[str, Any], BaseModel]
+            The output to convert to a dictionary.
+
+        Returns
+        -------
+        dict[str, Any]
+            The dictionary representation of the output.
+        """
+
+        if output is None:
+            return {}
+
+        if isinstance(output, Output):
+            return output.to_dict()
+
+        if isinstance(output, BaseModel):
+            return output.to_dict()
+
+        if isinstance(output, dict):
+            return output
+
+        raise TypeError(f"unsupported `output` type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`")
+
+    def __write_json(
+        self,
+        options: dict[str, Any] | None = None,
+        solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
+        assets: list[dict[str, Any]] | None = None,
+        metrics: dict[str, Any] | None = None,
+        statistics: dict[str, Any] | None = None,
+        path: str | None = None,
+        json_configurations: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Write output in JSON format.
+
+        Assembles a JSON payload from the provided components and writes it
+        either to the file at ``path`` or to stdout when ``path`` is ``None``
+        or an empty string.
+
+        Parameters
+        ----------
+        options : dict[str, Any], optional
+            Options dictionary to include in the output payload.
+        solution : dict[str, Any] or Any, optional
+            Solution data to include in the output payload.
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries to include in the output payload.
+        metrics : dict[str, Any], optional
+            Metrics dictionary to include in the output payload.
+        statistics : dict[str, Any], optional
+            Statistics dictionary to include in the output payload. Omitted
+            from the payload when ``None``.
+        path : str, optional
+            File path to write the serialized JSON to. When ``None`` or an
+            empty string the payload is printed to stdout instead.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer
+            (e.g. ``{"indent": 2}``).
+        """
+        json_configurations = json_configurations or {}
+
+        output_dict = {
+            "options": options or {},
+            "solution": solution or {},
+            ASSETS_KEY: assets or [],
+            METRICS_KEY: metrics or {},
+        }
+
+        if statistics is not None:
+            output_dict[STATISTICS_KEY] = statistics
+
+        serialized = serialize_json(
+            output_dict,
+            json_configurations=json_configurations,
+        )
+
+        if path is None or path == "":
+            print(serialized, file=sys.stdout)
+            return
+
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(serialized + "\n")
+
+    def __write_archive(
+        self,
+        options: dict[str, Any] | None = None,
+        solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
+        assets: list[dict[str, Any]] | None = None,
+        metrics: dict[str, Any] | None = None,
+        statistics: dict[str, Any] | None = None,
+        path: str | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        csv_configurations: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Write output in CSV archive format.
+
+        The non-solution fields (options, assets, metrics, statistics) are
+        serialized to JSON and printed to stdout.  The solution — which must
+        be a ``dict`` mapping table names to lists of row dicts — is written
+        as one CSV file per key inside ``path`` (or ``"output"`` by default).
+
+        Parameters
+        ----------
+        options : dict[str, Any], optional
+            Options dictionary included in the JSON payload written to stdout.
+        solution : dict[str, Any] or Any, optional
+            Solution data. When not ``None`` it must be a ``dict`` whose
+            values are lists of row dictionaries; each entry becomes a
+            separate CSV file.
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries included in the JSON payload.
+        metrics : dict[str, Any], optional
+            Metrics dictionary included in the JSON payload.
+        statistics : dict[str, Any], optional
+            Statistics dictionary included in the JSON payload. Omitted when
+            ``None``.
+        path : str, optional
+            Directory path to write the CSV files to. Defaults to
+            ``"output"`` when ``None`` or empty.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer.
+        csv_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to ``csv.DictWriter``.
+
+        Raises
+        ------
+        ValueError
+            If ``path`` refers to an existing file rather than a directory, or
+            if ``solution`` is not a ``dict``.
+        """
+
+        json_configurations = json_configurations or {}
+        csv_configurations = csv_configurations or {}
+
+        dir_path = "output"
+        if path is not None and path != "":
+            if os.path.isfile(path):
+                raise ValueError(f"The path refers to an existing file: {path}")
+
+            dir_path = path
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        output_json = {
+            "options": options or {},
+            ASSETS_KEY: assets or [],
+            METRICS_KEY: metrics or {},
+        }
+
+        if statistics is not None:
+            output_json[STATISTICS_KEY] = statistics
+
+        serialized = serialize_json(
+            output_json,
+            json_configurations=json_configurations,
+        )
+        print(serialized, file=sys.stdout)
+
+        if solution is None:
+            return
+
+        if not isinstance(solution, dict):
+            raise ValueError("For `OutputFormat.CSV_ARCHIVE`, when `solution` is not `None`, it must be a `dict`.")
+
+        for file_name, data in solution.items():
+            file_path = os.path.join(dir_path, f"{file_name}.csv")
+            with open(file_path, "w", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=data[0].keys(),
+                    **csv_configurations,
+                )
+                writer.writeheader()
+                writer.writerows(data)
+
+    def __write_multi_file(
+        self,
+        assets: list[dict[str, Any]] | None = None,
+        metrics: dict[str, Any] | None = None,
+        statistics: dict[str, Any] | None = None,
+        solution_files: list[SolutionFile] | None = None,
+        paths: dict[str, str] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Write output to multiple files.
+
+        Dispatches each output section (statistics, metrics, assets, and
+        solution files) to the appropriate helper methods, each of which
+        creates the necessary directory structure and writes the data.
+
+        Parameters
+        ----------
+        assets : list[dict[str, Any]], optional
+            List of asset dictionaries to write.
+        metrics : dict[str, Any], optional
+            Metrics dictionary to write.
+        statistics : dict[str, Any], optional
+            Statistics dictionary to write.
+        solution_files : list[SolutionFile], optional
+            Solution files to write. Each file is written using its own
+            ``writer`` callable.
+        paths : dict[str, str], optional
+            Mapping of output section names (``"solutions"``, ``"metrics"``,
+            ``"statistics"``, ``"assets"``) to their destination paths.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer
+            for non-solution sections.
+        """
+
+        json_configurations = json_configurations or {}
+
+        self.__write_multi_file_element(
+            element_key=STATISTICS_KEY,
+            paths=paths,
+            element=statistics,
+            json_configurations=json_configurations,
+        )
+        self.__write_multi_file_element(
+            element_key=METRICS_KEY,
+            paths=paths,
+            element=metrics,
+            json_configurations=json_configurations,
+        )
+        self.__write_multi_file_element(
+            element_key=ASSETS_KEY,
+            paths=paths,
+            element=assets,
+            json_configurations=json_configurations,
+        )
+        self.__write_multi_file_solution(paths, solution_files)
+
+    def __write_multi_file_element(
+        self,
+        element_key: str,
+        paths: dict[str, str],
+        element: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+    ):
+        """
+        Write a single output section (e.g. metrics, statistics, assets) to a
+        JSON file.
+
+        The element is serialized under its key (e.g.
+        ``{"metrics": {...}}``) and written to the file path looked up from
+        ``paths`` using ``element_key``.  The parent directory is created
+        automatically when it does not yet exist.
+
+        Parameters
+        ----------
+        element_key : str
+            Key used to look up the destination path in ``paths`` and to wrap
+            the element in the serialized payload.
+        paths : dict[str, str]
+            Mapping of section names to file paths.
+        element : dict[str, Any], optional
+            The data to serialize and write. Skipped when ``None`` or empty.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer.
+
+        Raises
+        ------
+        ValueError
+            If the path resolved for ``element_key`` is a directory rather
+            than a file path (i.e. has no file extension).
+        """
+
+        if element is None or not element:
+            return
+
+        element_path = paths.get(element_key)
+
+        _, ext = os.path.splitext(element_path)
+        if ext:
+            # element_path points to a file; ensure the parent directory exists.
+            os.makedirs(os.path.dirname(element_path), exist_ok=True)
+        else:
+            raise ValueError(f"expected a file path for element '{element_key}', but got a dir: {element_path}")
+
+        # The element is expected behind its key.
+        keyed_element = {element_key: element}
+        serialized = serialize_json(keyed_element, json_configurations=json_configurations)
+        with open(element_path, "w", encoding="utf-8") as file:
+            file.write(serialized + "\n")
+
+    def __write_multi_file_solution(
+        self,
+        paths: dict[str, str],
+        solution_files: list[SolutionFile] | None = None,
+    ):
+        """
+        Write each `SolutionFile` to the solutions directory.
+
+        The destination directory is derived from ``paths[SOLUTIONS_KEY]`` and
+        is created automatically when it does not yet exist.  Each
+        `SolutionFile` is written by calling its ``writer`` callable with the
+        resolved file path, the data, and any additional ``writer_args`` /
+        ``writer_kwargs``.
+
+        Parameters
+        ----------
+        paths : dict[str, str]
+            Mapping of section names to paths. The ``"solutions"`` key must
+            point to the target directory.
+        solution_files : list[SolutionFile], optional
+            List of solution files to write. When ``None`` the method returns
+            immediately without writing anything.
+
+        Raises
+        ------
+        TypeError
+            If any element of ``solution_files`` is not a `SolutionFile`
+            instance.
+        """
+
+        if solution_files is None:
+            return
+
+        path = paths.get(SOLUTIONS_KEY)
+        os.makedirs(path, exist_ok=True)
+
+        for solution_file in solution_files:
+            if not isinstance(solution_file, SolutionFile):
+                raise TypeError(
+                    f"unsupported solution_file type: {type(solution_file)}, supported type is `SolutionFile`"
+                )
+
+            file_path = os.path.join(path, solution_file.name)
+            if solution_file.writer_args is None:
+                solution_file.writer_args = []
+            if solution_file.writer_kwargs is None:
+                solution_file.writer_kwargs = {}
+
+            # Call the writer function with the final path, and user provided
+            # arguments and keyword arguments.
+            solution_file.writer(
+                file_path,
+                solution_file.data,
+                *solution_file.writer_args,
+                **solution_file.writer_kwargs,
+            )
 
 
 _LOCAL_OUTPUT_WRITER = LocalOutputWriter()
@@ -1619,10 +2268,19 @@ _LOCAL_OUTPUT_WRITER = LocalOutputWriter()
 
 
 def write(
-    output: Output | dict[str, Any] | BaseModel,
+    output: Output | dict[str, Any] | BaseModel | None = None,
     path: str | None = None,
     skip_stdout_reset: bool = False,
     writer: OutputWriter | None = _LOCAL_OUTPUT_WRITER,
+    content_format: ContentFormat | None = None,
+    manifest: Manifest | None = None,
+    options: Options | dict[str, Any] | None = None,
+    metrics: dict[str, Any] | None = None,
+    assets: list[Asset | dict[str, Any]] | None = None,
+    solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
+    solution_files: list[SolutionFile] | None = None,
+    csv_configurations: dict[str, Any] | None = None,
+    json_configurations: dict[str, Any] | None = None,
 ) -> None:
     """
     Write the output to the specified destination.
@@ -1633,8 +2291,54 @@ def write(
     from nextmv import write
     ```
 
-    This is a convenience function for writing output data using a provided writer.
-    By default, it uses the `LocalOutputWriter` to write to files or stdout.
+    This is a convenience function for writing output data using a provided
+    writer. By default, it uses the `LocalOutputWriter` to write to local
+    sources like files or stdout. When working with the local filesystem,
+    please consider the following.
+
+    To use this function you have two main options:
+
+    - Provide arguments directly, such as `solution`, `metrics`, `assets`,
+      `solution_files`.
+    - Provide an `Output` object to the `output` argument. The `Output` class
+      is in charge of aggregating output elements.
+
+    This function will resolve each of the required element in the following
+    order:
+
+    1. If the argument is provided, it takes priority. For example, if you use
+       the `solution` argument and the `output` argument (passing an `Output`
+       class with a valid `.solution` field), the `solution` argument will be
+       used.
+    2. If the argument is not provided, but the `output` argument is provided
+       and has the corresponding field, the value from the `Output` object will
+       be used.
+    3. If neither the argument nor the `Output` field is provided, the element
+       will be considered not available and treated as `None`.
+
+    There are two special cases to consider: the `path` and the
+    `content_format` arguments.
+
+    1. If the argument is provided, it is used as it takes priority.
+    2. If a `manifest` object is used, then it is used to resolve the `path`
+       and `content_format`.
+    3. If a `manifest` object is not given, a manifest is attempted to be
+       loaded from the current working directory. If an `app.yaml` manifest
+       exists, then the manifest is used to resolve the `path` and
+       `content_format`.
+    4. If the `output` argument is provided and is an `Output` object, then its
+       `output_format` field is used to resolve the `content_format`.
+    5. If none of the above applies, the `content_format` defaults to
+       `ContentFormat.JSON` and the `path` uses default values based on the
+       content format.
+
+    It is preferred that you either use the `manifest` argument or rely on an
+    `app.yaml` manifest to be present so that the `path` and `content_format`
+    are resolved from the manifest configuration.
+
+    This function detects if stdout was redirected and resets it to avoid
+    unexpected behavior. If you want to skip this behavior, set the
+    `skip_stdout_reset` parameter to `True`.
 
     Parameters
     ----------
@@ -1654,6 +2358,37 @@ def write(
     writer : OutputWriter, optional
         The writer to use for writing the output. Default is a
         `LocalOutputWriter` instance.
+    content_format : ContentFormat, optional
+        The content format to use for writing the output. If not provided, it
+        is resolved from the manifest, the output object, or defaults to
+        `ContentFormat.JSON`.
+    manifest : Manifest, optional
+        Manifest object used to resolve the content format and output paths. If
+        not provided, a manifest is attempted to be loaded from the current
+        working directory.
+    options : Union[Options, dict[str, Any]], optional
+        Options to include in the output. Takes priority over the options in
+        the `output` argument. Default is None.
+    metrics : dict[str, Any], optional
+        Metrics to include in the output. Takes priority over the metrics in
+        the `output` argument. Default is None.
+    assets : list[Union[Asset, dict[str, Any]]], optional
+        List of assets to include in the output. Takes priority over the assets
+        in the `output` argument. Default is None.
+    solution : Union[dict[str, Any], Any], optional
+        Solution data to include in the output. Takes priority over the solution
+        in the `output` argument. Only used for non-`ContentFormat.MULTI_FILE`
+        formats. Default is None.
+    solution_files : list[SolutionFile], optional
+        List of solution files to include in the output. Takes priority over
+        the solution files in the `output` argument. Only used with
+        `ContentFormat.MULTI_FILE`. Default is None.
+    csv_configurations : dict[str, Any], optional
+        Configuration options for CSV serialization, passed as kwargs to
+        `csv.DictWriter`. Default is None.
+    json_configurations : dict[str, Any], optional
+        Configuration options for JSON serialization, passed as kwargs to
+        `json.dumps` (e.g. ``{"indent": 2}``). Default is None.
 
     Raises
     ------
@@ -1664,11 +2399,45 @@ def write(
 
     Examples
     --------
-    >>> from nextmv.output import write, Output
-    >>> # Write JSON to a file
+    >>> from nextmv import write, Output, json_solution_file
+    >>> from nextmv.content_format import ContentFormat
+    >>> # Write JSON output to stdout using an Output object
+    >>> write(Output(solution={"result": 42}, metrics={"duration": 1.5}))
+    >>> # Write JSON output to a file
     >>> write(Output(solution={"result": 42}), path="result.json")
-    >>> # Write multi-file to a directory
-    >>> write(Output(output_format=ContentFormat.MULTI_FILE, solution_files=[...]), path="output_dir")
+    >>> # Write JSON output directly via arguments, without an Output object
+    >>> write(solution={"result": 42}, metrics={"duration": 1.5}, path="result.json")
+    >>> # Write JSON output with custom indentation
+    >>> write(solution={"result": 42}, json_configurations={"indent": 2})
+    >>> # Write multi-file output to a directory using an Output object
+    >>> solution_file = json_solution_file(name="solution", data={"result": 42})
+    >>> write(
+    ...     Output(
+    ...         output_format=ContentFormat.MULTI_FILE,
+    ...         solution_files=[solution_file],
+    ...     ),
+    ...     path="output_dir",
+    ... )
+    >>> # Write multi-file output directly via arguments, without an Output object
+    >>> write(
+    ...     content_format=ContentFormat.MULTI_FILE,
+    ...     solution_files=[solution_file],
+    ...     metrics={"duration": 1.5},
+    ...     path="output_dir",
+    ... )
     """
 
-    writer.write(output, path, skip_stdout_reset)
+    writer.write(
+        output,
+        path,
+        skip_stdout_reset,
+        content_format,
+        manifest,
+        options,
+        metrics,
+        assets,
+        solution,
+        solution_files,
+        csv_configurations,
+        json_configurations,
+    )

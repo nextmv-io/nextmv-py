@@ -1,2 +1,2 @@
-nextmv>=1.1.2
+nextmv>=1.7.0
 plotly>=6.5.2

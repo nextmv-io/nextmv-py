@@ -10,16 +10,11 @@ def main():
 
     # Read the input from stdin.
     loaded_input = nextmv.load(
-        input_format=nextmv.ContentFormat.MULTI_FILE,
         data_files=[nextmv.json_data_file(name="input", input_data_key="input")],
-        path="inputs",
     )
+    options = loaded_input.options
     input_data = loaded_input.data["input"]
     name = input_data["name"]
-
-    # Extract options from the manifest.
-    manifest = nextmv.Manifest.from_yaml(".")
-    options = manifest.extract_options()
 
     ##### Insert model here
 
@@ -34,9 +29,7 @@ def main():
     assets = _create_visuals(name, input_data["radius"], input_data["distance"])
 
     # Write output and metrics.
-    output = nextmv.Output(
-        output_format=nextmv.ContentFormat.MULTI_FILE,
-        options=options,
+    nextmv.write(
         solution_files=[nextmv.json_solution_file(name="output", data={"message": message})],
         metrics={
             "value": 1.23,
@@ -44,8 +37,6 @@ def main():
         },
         assets=assets,
     )
-
-    nextmv.write(output, path="outputs")
 
 
 def _create_visuals(name: str, radius: float, distance: float) -> list[nextmv.Asset]:

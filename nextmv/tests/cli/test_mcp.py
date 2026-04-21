@@ -1374,13 +1374,13 @@ class TestCloudRunCache(unittest.TestCase):
                 self.assertEqual(json.load(f), {"statistics": {"duration": 0.5}})
 
             # metrics.json is raw (matching local).
-            metrics_path = os.path.join(run_dir, "outputs", "metrics", "metrics.json")
+            metrics_path = os.path.join(run_dir, "outputs", "metrics.json")
             self.assertTrue(os.path.exists(metrics_path))
             with open(metrics_path) as f:
                 self.assertEqual(json.load(f), {"cost": 42})
 
             # assets.json is wrapped with {"assets": ...} (matching local).
-            assets_path = os.path.join(run_dir, "outputs", "assets", "assets.json")
+            assets_path = os.path.join(run_dir, "outputs", "assets.json")
             self.assertTrue(os.path.exists(assets_path))
             with open(assets_path) as f:
                 self.assertEqual(json.load(f), {"assets": [{"name": "chart"}]})
@@ -1490,7 +1490,7 @@ class TestCloudRunCache(unittest.TestCase):
             _extract_cloud_run_outputs(result_dict, "ep", "run-visuals")
 
             # Verify assets.json was written.
-            assets_path = os.path.join(run_dir, "outputs", "assets", "assets.json")
+            assets_path = os.path.join(run_dir, "outputs", "assets.json")
             self.assertTrue(os.path.exists(assets_path))
 
             # Verify visuals/ directory was created with HTML file.
@@ -1513,7 +1513,7 @@ class TestCloudRunCache(unittest.TestCase):
                 return_value=run_dir,
             ),
             patch(
-                "nextmv.local.executor.process_run_visuals",
+                "nextmv.local.executor._process_run_visuals",
                 side_effect=RuntimeError("plotly exploded"),
             ),
         ):
@@ -1991,7 +1991,7 @@ class TestVisualGenerationWarning(unittest.TestCase):
                 return_value=run_dir,
             ),
             patch(
-                "nextmv.cli.mcp.tools._helpers.process_run_visuals",
+                "nextmv.cli.mcp.tools._helpers._process_run_visuals",
                 side_effect=RuntimeError("plotly exploded"),
             ),
             patch(
