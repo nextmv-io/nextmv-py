@@ -18,9 +18,9 @@ from nextmv.manifest import (
     ManifestRuntime,
     ManifestType,
     ManifestValidation,
+    ModelConfiguration,
     initialize_manifest,
 )
-from nextmv.model import ModelConfiguration
 from nextmv.options import Option, Options, OptionsEnforcement
 
 

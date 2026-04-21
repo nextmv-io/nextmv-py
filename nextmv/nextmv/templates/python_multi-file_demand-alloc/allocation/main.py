@@ -34,11 +34,9 @@ def main() -> None:
     returns early.
     """
 
-    manifest = nextmv.Manifest.from_yaml(".")
-    options = manifest.extract_options()
-
-    inp = nextmv.load(options=options)
-    demand, supply, num_warehouses, num_stores, store_labels, warehouse_labels, cost = parse_inputs(inp.data)
+    loaded_input = nextmv.load()
+    options = loaded_input.options
+    demand, supply, num_warehouses, num_stores, store_labels, warehouse_labels, cost = parse_inputs(loaded_input.data)
 
     nextmv.log(f"Warehouses: {num_warehouses}, total supply: {sum(supply)}")
     nextmv.log(f"Stores: {num_stores}, total demand: {sum(demand)}")
@@ -50,29 +48,34 @@ def main() -> None:
     results, solver_name, mapped_status = solve_model(model, options)
 
     if mapped_status in ("infeasible", "unbounded"):
-        output = nextmv.Output(
-            solution={"allocations": [], "unmet_demand": []},
-            metrics={
-                "status": mapped_status,
-                "total_demand": sum(demand),
-                "total_supply": sum(supply),
-                "solver": solver_name,
-            },
-        )
-    else:
-        model.solutions.load_from(results)
-        output = extract_solution(
-            model,
-            demand,
-            supply,
-            cost,
-            warehouse_labels,
-            store_labels,
-            solver_name,
-            mapped_status,
-        )
+        solution = {"allocations": [], "unmet_demand": []}
+        metrics = {
+            "status": mapped_status,
+            "total_demand": sum(demand),
+            "total_supply": sum(supply),
+            "solver": solver_name,
+        }
 
-    nextmv.write(output)
+        # Option 1: you can write output elements directly with the `write` func.
+        nextmv.write(options=options, solution=solution, metrics=metrics)
+
+        return
+
+    model.solutions.load_from(results)
+    output = extract_solution(
+        model,
+        demand,
+        supply,
+        cost,
+        warehouse_labels,
+        store_labels,
+        solver_name,
+        mapped_status,
+        options,
+    )
+
+    # Option 2: you can build an `Output` object and pass it to the `write` func.
+    nextmv.write(output=output)
 
 
 def parse_inputs(

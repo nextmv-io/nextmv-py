@@ -48,8 +48,8 @@ from nextmv.cloud.application._version import ApplicationVersionMixin
 from nextmv.cloud.client import Client
 from nextmv.cloud.url import UploadURL
 from nextmv.logger import log
-from nextmv.manifest import Manifest
-from nextmv.model import Model, ModelConfiguration
+from nextmv.manifest import Manifest, ModelConfiguration
+from nextmv.model import Model
 from nextmv.safe import safe_id
 
 

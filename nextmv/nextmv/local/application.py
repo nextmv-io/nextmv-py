@@ -1005,6 +1005,11 @@ class Application(BaseModel):
 
         info = RunInformation.from_dict(info_dict)
 
+        # Attach metrics if they are available.
+        metrics = self.__run_metrics(run_id)
+        if metrics is not None:
+            info.metadata.metrics = metrics
+
         return info
 
     def run_result(self, run_id: str, output_dir_path: str | None = ".") -> RunResult:
@@ -1425,7 +1430,182 @@ class Application(BaseModel):
         else:
             raise ValueError(f"Unknown output type: {output_type}")
 
+        # Attach metrics if they are available.
+        metrics = self.__run_metrics(run_id)
+        if metrics is not None:
+            result.metadata.metrics = metrics
+
         return result
+
+    def __run_metrics(self, run_id: str) -> dict[str, Any] | None:
+        """
+        Retrieve the metrics for a local run.
+
+        Looks for a metrics file in two possible locations under the run's
+        outputs directory: directly as ``metrics.json`` or nested under a
+        ``metrics/`` subdirectory. Returns the value of the ``metrics`` key
+        if present, otherwise returns the raw file contents.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve metrics for.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            The metrics dictionary, or ``None`` if no metrics file is found.
+
+        Raises
+        ------
+        ValueError
+            If the ``.nextmv/runs`` directory or the specified run directory
+            does not exist.
+        """
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`__run_metrics: .nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`__run_metrics: {run_id}` run dir does not exist at: {runs_dir}")
+
+        metrics_src_1 = os.path.join(run_dir, OUTPUTS_KEY, f"{METRICS_KEY}.json")
+        metrics_src_2 = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
+
+        if os.path.exists(metrics_src_1):
+            with open(metrics_src_1) as f:
+                raw_metrics = json.load(f)
+
+        elif os.path.exists(metrics_src_2):
+            with open(metrics_src_2) as f:
+                raw_metrics = json.load(f)
+
+        else:
+            return None
+
+        metrics = None
+        if METRICS_KEY in raw_metrics.keys():
+            metrics = raw_metrics[METRICS_KEY]
+        else:
+            metrics = raw_metrics
+
+        return metrics
+
+    def __run_statistics(self, run_id: str) -> dict[str, Any] | None:
+        """
+        Retrieve the statistics for a local run.
+
+        !!! warning
+            Statistics are deprecated in favour of metrics. Use
+            ``__run_metrics`` instead.
+
+        Looks for a statistics file in two possible locations under the run's
+        outputs directory: directly as ``statistics.json`` or nested under a
+        ``statistics/`` subdirectory. Returns the value of the ``statistics``
+        key if present, otherwise returns the raw file contents.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve statistics for.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            The statistics dictionary, or ``None`` if no statistics file is
+            found.
+
+        Raises
+        ------
+        ValueError
+            If the ``.nextmv/runs`` directory or the specified run directory
+            does not exist.
+        """
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`__run_statistics: .nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`__run_statistics: {run_id}` run dir does not exist at: {runs_dir}")
+
+        stats_src_1 = os.path.join(run_dir, OUTPUTS_KEY, f"{STATISTICS_KEY}.json")
+        stats_src_2 = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
+
+        if os.path.exists(stats_src_1):
+            with open(stats_src_1) as f:
+                raw_statistics = json.load(f)
+
+        elif os.path.exists(stats_src_2):
+            with open(stats_src_2) as f:
+                raw_statistics = json.load(f)
+
+        else:
+            return None
+
+        statistics = None
+        if STATISTICS_KEY in raw_statistics.keys():
+            statistics = raw_statistics[STATISTICS_KEY]
+        else:
+            statistics = raw_statistics
+
+        return statistics
+
+    def __run_assets(self, run_id: str) -> dict[str, Any] | None:
+        """
+        Retrieve the assets for a local run.
+
+        Looks for an assets file in two possible locations under the run's
+        outputs directory: directly as ``assets.json`` or nested under an
+        ``assets/`` subdirectory. Returns the value of the ``assets`` key if
+        present, otherwise returns the raw file contents.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve assets for.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            The assets dictionary, or ``None`` if no assets file is found.
+
+        Raises
+        ------
+        ValueError
+            If the ``.nextmv/runs`` directory or the specified run directory
+            does not exist.
+        """
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`__run_assets: .nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`__run_assets: {run_id}` run dir does not exist at: {runs_dir}")
+
+        assets_src_1 = os.path.join(run_dir, OUTPUTS_KEY, f"{ASSETS_KEY}.json")
+        assets_src_2 = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
+
+        if os.path.exists(assets_src_1):
+            with open(assets_src_1) as f:
+                raw_assets = json.load(f)
+
+        elif os.path.exists(assets_src_2):
+            with open(assets_src_2) as f:
+                raw_assets = json.load(f)
+
+        else:
+            return None
+
+        assets = None
+        if ASSETS_KEY in raw_assets.keys():
+            assets = raw_assets[ASSETS_KEY]
+        else:
+            assets = raw_assets
+
+        return assets
 
     def __validate_input_dir_path_and_configuration(
         self,
@@ -1642,28 +1822,22 @@ class Application(BaseModel):
         else:
             tracked_run.output_dir_path = os.path.join(run_dir, OUTPUTS_KEY, SOLUTIONS_KEY)
 
-        # Resolve the statistics according to their type and presence. If
-        # working with JSON, the statistics should be resolved from the output.
+        # Sync output elements that are only relevant for file-based outputs.
         if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
-            stats_file_path = os.path.join(run_dir, OUTPUTS_KEY, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
-            if os.path.exists(stats_file_path):
-                with open(stats_file_path) as f:
-                    tracked_run.statistics = json.load(f)
+            # At some point, we are going to stop syncing statistics.
+            stats = self.__run_statistics(run_id)
+            if stats is not None:
+                tracked_run.statistics = stats
 
-        # Resolve the metrics
-        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
-            metrics_file_path = os.path.join(run_dir, OUTPUTS_KEY, METRICS_KEY, f"{METRICS_KEY}.json")
-            if os.path.exists(metrics_file_path):
-                with open(metrics_file_path) as f:
-                    tracked_run.metrics = json.load(f)
+            # Resolve the metrics.
+            metrics = self.__run_metrics(run_id)
+            if metrics is not None:
+                tracked_run.metrics = metrics
 
-        # Resolve the assets according to their type and presence. If working
-        # with JSON, the assets should be resolved from the output.
-        if output_type in {OutputFormat.CSV_ARCHIVE, ContentFormat.MULTI_FILE}:
-            assets_file_path = os.path.join(run_dir, OUTPUTS_KEY, ASSETS_KEY, f"{ASSETS_KEY}.json")
-            if os.path.exists(assets_file_path):
-                with open(assets_file_path) as f:
-                    tracked_run.assets = json.load(f)
+            # Resolve the assets.
+            assets = self.__run_assets(run_id)
+            if assets is not None:
+                tracked_run.assets = assets
 
         # Actually sync the run by tracking it remotely on Nextmv Cloud.
         configuration = RunConfiguration(

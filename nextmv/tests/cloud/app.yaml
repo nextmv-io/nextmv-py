@@ -71,7 +71,7 @@ configuration:
         required: false
         local_only: true
   content:
-    format: "multi-file"
+    format: multi-file
     multi-file:
       input:
         path: "my-inputs"

@@ -32,87 +32,19 @@ import os
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any
 
 from nextmv._serialization import serialize_json
 from nextmv.content_format import ContentFormat
+from nextmv.content_format import InputFormat as InputFormat
 from nextmv.deprecated import deprecated
+from nextmv.manifest import Manifest, resolve_manifest
 from nextmv.options import Options
 
 INPUTS_KEY = "inputs"
 """
 Inputs key constant used for identifying inputs in the run.
 """
-
-
-class InputFormat(str, Enum):
-    """
-    !!! warning
-        `InputFormat` is deprecated, use `nextmv.ContentFormat` instead.
-
-    Format of an `Input`.
-
-    You can import the `InputFormat` class directly from `nextmv`:
-
-    ```python
-    from nextmv import InputFormat
-    ```
-
-    This enum specifies the supported formats for input data.
-
-    Attributes
-    ----------
-    JSON : str
-        !!! warning
-            `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
-
-        JSON format, utf-8 encoded.
-    TEXT : str
-        !!! warning
-            `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-        Text format, utf-8 encoded.
-    CSV_ARCHIVE : str
-        !!! warning
-            `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-        CSV archive format: multiple CSV files.
-    MULTI_FILE : str
-        !!! warning
-            `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-        Multi-file format, used for loading multiple files in a single input.
-    """
-
-    JSON = "json"
-    """
-    !!! warning
-        `InputFormat.JSON` is deprecated, use `ContentFormat.JSON` instead.
-
-    JSON format, utf-8 encoded.
-    """
-    TEXT = "text"
-    """
-    !!! warning
-        `InputFormat.TEXT` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-    Text format, utf-8 encoded.
-    """
-    CSV_ARCHIVE = "csv-archive"
-    """
-    !!! warning
-        `InputFormat.CSV_ARCHIVE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-    CSV archive format: multiple CSV files.
-    """
-    MULTI_FILE = "multi-file"
-    """
-    !!! warning
-        `InputFormat.MULTI_FILE` is deprecated, use `ContentFormat.MULTI_FILE` instead.
-
-    Multi-file format, used for loading multiple files in a single input.
-    """
 
 
 @dataclass
@@ -731,11 +663,12 @@ class LocalInputLoader(InputLoader):
 
     def load(  # noqa: C901
         self,
-        input_format: ContentFormat | None = ContentFormat.JSON,
+        input_format: ContentFormat | None = None,
         options: Options | None = None,
         path: str | None = None,
         csv_configurations: dict[str, Any] | None = None,
         data_files: list[DataFile] | None = None,
+        manifest: Manifest | None = None,
     ) -> Input:
         """
         Load the input data. For `ContentFormat.JSON`, the data can be streamed
@@ -775,6 +708,13 @@ class LocalInputLoader(InputLoader):
             can also accept additional positional and keyword arguments, which
             can be provided through the `loader_args` and `loader_kwargs`
             attributes of the `DataFile` instance.
+        manifest : Manifest, optional
+            The manifest to use for loading the input data. If not provided,
+            the method will look for an `app.yaml` file in the current working
+            directory and use it as the manifest if it exists. The manifest can
+            provide default values for `input_format`, `path`, and `options`,
+            which can be overridden by the corresponding arguments if they are
+            provided directly to the method.
 
         Returns
         -------
@@ -787,41 +727,42 @@ class LocalInputLoader(InputLoader):
             If the path is not a valid directory.
         """
 
-        if type(input_format) is InputFormat:
-            deprecated(
-                name="InputFormat",
-                reason="using `InputFormat` as the type for `input_format` is deprecated, use `ContentFormat` instead",
-            )
-            if input_format in {InputFormat.TEXT, InputFormat.CSV_ARCHIVE}:
-                deprecated(
-                    name="InputFormat.TEXT/InputFormat.CSV_ARCHIVE",
-                    reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
-                )
-            elif input_format in {InputFormat.JSON, InputFormat.MULTI_FILE}:
-                input_format = ContentFormat(input_format.value)
+        manifest = resolve_manifest(manifest)
+        content_format = self.__resolve_content_format(input_format, manifest)
+        path = self.__resolve_path(content_format=content_format, path=path, manifest=manifest)
 
         data: Any = None
         if csv_configurations is None:
             csv_configurations = {}
 
-        if input_format == ContentFormat.JSON:
-            data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
-        elif input_format == ContentFormat.MULTI_FILE:
+        if content_format == ContentFormat.JSON:
+            data = self.__load_utf8_encoded(
+                path=path,
+                input_format=content_format,
+                csv_configurations=csv_configurations,
+            )
+        elif content_format == ContentFormat.MULTI_FILE:
             if data_files is None:
                 raise ValueError("`data_files` must be provided when input_format is `ContentFormat.MULTI_FILE`")
 
             if not isinstance(data_files, list):
                 raise ValueError("`data_files` must be a list of `DataFile` instances")
 
-            data = self._load_multi_file(data_files=data_files, path=path)
-        elif type(input_format) is InputFormat and input_format == InputFormat.TEXT:
-            data = self._load_utf8_encoded(path=path, input_format=input_format, csv_configurations=csv_configurations)
-        elif type(input_format) is InputFormat and input_format == InputFormat.CSV_ARCHIVE:
-            data = self._load_archive(path=path, csv_configurations=csv_configurations)
+            data = self.__load_multi_file(data_files=data_files, path=path)
+        elif type(content_format) is InputFormat and content_format == InputFormat.TEXT:
+            data = self.__load_utf8_encoded(
+                path=path,
+                input_format=content_format,
+                csv_configurations=csv_configurations,
+            )
+        elif type(content_format) is InputFormat and content_format == InputFormat.CSV_ARCHIVE:
+            data = self.__load_archive(path=path, csv_configurations=csv_configurations)
 
-        return Input(data=data, input_format=input_format, options=options)
+        options = self.__resolve_options(options, manifest)
 
-    def _load_utf8_encoded(
+        return Input(data=data, input_format=content_format, options=options)
+
+    def __load_utf8_encoded(
         self,
         csv_configurations: dict[str, Any] | None,
         path: str | None = None,
@@ -863,7 +804,7 @@ class LocalInputLoader(InputLoader):
         # Lastly, we can use the file reader if a path is provided.
         return self.FILE_READERS[input_format](path, csv_configurations)
 
-    def _load_archive(
+    def __load_archive(
         self,
         csv_configurations: dict[str, Any] | None,
         path: str | None = None,
@@ -909,7 +850,7 @@ class LocalInputLoader(InputLoader):
         for file in os.listdir(dir_path):
             if file.endswith(csv_ext):
                 stripped = file.removesuffix(csv_ext)
-                data[stripped] = self._load_utf8_encoded(
+                data[stripped] = self.__load_utf8_encoded(
                     path=os.path.join(dir_path, file),
                     input_format="CSV",
                     use_file_reader=True,
@@ -918,7 +859,7 @@ class LocalInputLoader(InputLoader):
 
         return data
 
-    def _load_multi_file(
+    def __load_multi_file(
         self,
         data_files: list[DataFile],
         path: str | None = None,
@@ -993,18 +934,166 @@ class LocalInputLoader(InputLoader):
 
         return data
 
+    def __resolve_content_format(
+        self,
+        input_format: ContentFormat | None = None,
+        manifest: Manifest | None = None,
+    ) -> ContentFormat:
+        """
+        Resolve the content format to use for loading the input data.
+
+        Priority order: explicitly provided ``input_format`` > value from
+        ``manifest`` > default ``ContentFormat.JSON``. Deprecated
+        ``InputFormat`` values are handled with appropriate warnings.
+
+        Parameters
+        ----------
+        input_format : ContentFormat, optional
+            Explicitly provided content format. Takes precedence over the
+            manifest if given.
+        manifest : Manifest, optional
+            Manifest from which to read the content format when
+            ``input_format`` is not provided.
+
+        Returns
+        -------
+        ContentFormat
+            The resolved content format.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported ``InputFormat`` value is provided.
+        """
+        content_format = None
+        if input_format is not None:
+            content_format = input_format
+        elif manifest is not None:
+            content_format = manifest.configuration.content.format
+        else:
+            content_format = ContentFormat.JSON
+
+        if type(content_format) is ContentFormat:
+            return content_format
+
+        deprecated(
+            name="InputFormat",
+            reason="using `InputFormat` as the type for `input_format` is deprecated, use `ContentFormat` instead",
+        )
+        if content_format in {InputFormat.TEXT, InputFormat.CSV_ARCHIVE}:
+            deprecated(
+                name="InputFormat.TEXT/InputFormat.CSV_ARCHIVE",
+                reason="`text`/`csv-archive` format is no longer supported, use `ContentFormat.MULTI_FILE` instead",
+            )
+        elif content_format in {InputFormat.JSON, InputFormat.MULTI_FILE}:
+            content_format = ContentFormat(content_format.value)
+        else:
+            raise ValueError(f"unsupported input_format: {content_format}")
+
+        return content_format
+
+    def __resolve_path(
+        self,
+        content_format: ContentFormat,
+        path: str | None = None,
+        manifest: Manifest | None = None,
+    ) -> str:
+        """
+        Resolve the path to use for loading the input data.
+
+        If ``path`` is provided it is returned unchanged. Otherwise the
+        default path is inferred from the ``content_format``:
+
+        - ``ContentFormat.JSON`` / ``InputFormat.TEXT``: empty string
+          (stdin).
+        - ``InputFormat.CSV_ARCHIVE``: ``"input"``.
+        - ``ContentFormat.MULTI_FILE``: the path configured in the manifest
+          (``manifest.configuration.content.multi_file.input.path``) when a
+          manifest is available, otherwise ``"inputs"``.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format that will be used to load the data.
+        path : str, optional
+            Explicitly provided path. Returned as-is when given.
+        manifest : Manifest, optional
+            Manifest from which to read the multi-file input path when
+            ``path`` is not provided.
+
+        Returns
+        -------
+        str
+            The resolved path.
+
+        Raises
+        ------
+        ValueError
+            If ``content_format`` is not one of the expected formats.
+        """
+        if path is not None:
+            return path
+
+        if content_format in {ContentFormat.JSON, InputFormat.TEXT}:
+            return ""
+
+        if content_format == InputFormat.CSV_ARCHIVE:
+            return "input"
+
+        # At this point, we should be using multi-file, but we check it and
+        # raise an exception if it's not the case, just to be safe.
+        if content_format != ContentFormat.MULTI_FILE:
+            raise ValueError(f"unexpected content format for the input: {content_format}")
+
+        if manifest is not None and manifest.configuration.content.multi_file is not None:
+            return manifest.configuration.content.multi_file.input.path
+
+        return "inputs"
+
+    def __resolve_options(self, options: Options | None = None, manifest: Manifest | None = None) -> Options:
+        """
+        Resolve the options to use for loading the input data.
+
+        If ``options`` are provided directly they are returned as-is.
+        Otherwise, the options are extracted from the manifest when one is
+        available. If neither is provided, ``None`` is returned.
+
+        Parameters
+        ----------
+        options : Options, optional
+            Explicitly provided options. Returned as-is when given.
+        manifest : Manifest, optional
+            Manifest from which to extract options when ``options`` is not
+            provided.
+
+        Returns
+        -------
+        Options or None
+            The resolved options, or ``None`` if neither ``options`` nor a
+            manifest is available.
+        """
+
+        if options is not None:
+            return options
+
+        if manifest is not None:
+            return manifest.extract_options()
+
+        return None
+
 
 _LOCAL_INPUT_LOADER = LocalInputLoader()
 """Default instance of LocalInputLoader used by the load function."""
 
 
 def load(
-    input_format: ContentFormat | None = ContentFormat.JSON,
+    input_format: ContentFormat | None = None,
     options: Options | None = None,
     path: str | None = None,
     csv_configurations: dict[str, Any] | None = None,
     loader: InputLoader | None = _LOCAL_INPUT_LOADER,
     data_files: list[DataFile] | None = None,
+    manifest: Manifest | None = None,
 ) -> Input:
     """
     Load input data using the specified loader.
@@ -1016,7 +1105,26 @@ def load(
     ```
 
     This is a convenience function for loading an `Input` object. By default,
-    it uses the `LocalInputLoader` to load data from local sources.
+    it uses the `LocalInputLoader` to load data from local sources like files
+    or stdin. When working with the local filesystem, please consider the
+    following.
+
+    There are two main ways in which you can use this function:
+
+    - Having an `app.yaml` (app manifest) present in the current working
+      directory (recommended). In this case, you just use the function as
+      `load()`, and it will automatically resolve the `input_format`, `path`,
+      and `options` from the manifest. Alternatively, you can also provide the
+      manifest explicitly as the `manifest` argument.
+    - Providing the `input_format`, `path`, and `options` arguments directly to
+      the function.
+
+    When both a manifest can be used (via the current working directory or the
+    `manifest` argument) and the `input_format`, `path`, or `options` arguments
+    are provided directly, the function will prioritize using the provided
+    arguments over the manifest values. This allows you to override the
+    manifest values when needed, while still having the convenience of using
+    the manifest for default configurations.
 
     The input data can be in various formats and can be loaded from different
     sources depending on the loader:
@@ -1029,7 +1137,7 @@ def load(
       data is loaded as a dict of items, where each item corresponds to a file
       and its content.
 
-    When specifying `input_format` as `ContentFormat.MULTI_FILE`, the
+    When working with `input_format` as `ContentFormat.MULTI_FILE`, the
     `data_files` argument must be provided. This argument is a list of
     `DataFile` instances, each representing a file to be read. Each `DataFile`
     instance should have a `name` (the file name with extension) and a `loader`
@@ -1047,7 +1155,7 @@ def load(
     - `text_data_file`: Creates a `DataFile` that reads utf-8 encoded text
       data.
 
-    When workiing with data in other formats, such as Excel files, you are
+    When working with data in other formats, such as Excel files, you are
     encouraged to create your own `DataFile` objects with your own
     implementation of the `loader` function. This allows you to read data
     from files in a way that suits your needs, while still adhering to the
@@ -1088,6 +1196,13 @@ def load(
         with your own implementation of the `loader` function. This allows you
         to read data from files in a way that suits your needs, while still
         adhering to the `DataFile` interface.
+    manifest : Manifest, optional
+        The manifest to use for loading the input data. If not provided, the
+        function will look for an `app.yaml` file in the current working
+        directory and use it as the manifest if it exists. The manifest can
+        provide default values for `input_format`, `path`, and `options`, which
+        can be overridden by the corresponding arguments if they are provided
+        directly to the function.
 
     Returns
     -------
@@ -1097,15 +1212,19 @@ def load(
     Raises
     ------
     ValueError
-        If the path is invalid or data format is incorrect.
+        If one of many validations fails.
 
     Examples
     --------
-    >>> from nextmv.input import load, ContentFormat
-    >>> # Load JSON from stdin
-    >>> input_obj = load(input_format=ContentFormat.JSON)
-    >>> # Load multi-file from a directory
-    >>> input_obj = load(input_format=ContentFormat.MULTI_FILE, path="input_dir")
+    >>> import nextmv
+    >>> input = nextmv.load()
     """
 
-    return loader.load(input_format, options, path, csv_configurations, data_files)
+    return loader.load(
+        input_format,
+        options,
+        path,
+        csv_configurations,
+        data_files,
+        manifest,
+    )

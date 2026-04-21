@@ -9,7 +9,7 @@ from typing import Any
 from nextmv import local
 from nextmv.cloud import Application, Client
 from nextmv.content_format import ContentFormat
-from nextmv.local.executor import process_run_visuals
+from nextmv.local.executor import _process_run_visuals
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.logger import log
 from nextmv.output import ASSETS_KEY, METRICS_KEY, OUTPUTS_KEY, SOLUTIONS_KEY, STATISTICS_KEY
@@ -239,9 +239,9 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
     Mirrors the local run ``outputs/`` directory structure:
 
     * ``outputs/solutions/solution.json`` — the full output dict (matches local)
-    * ``outputs/metrics/metrics.json`` — raw metrics value
-    * ``outputs/statistics/statistics.json`` — wrapped as ``{"statistics": ...}``
-    * ``outputs/assets/assets.json`` — wrapped as ``{"assets": ...}``
+    * ``outputs/metrics.json`` — raw metrics value
+    * ``outputs/statistics.json`` — wrapped as ``{"statistics": ...}``
+    * ``outputs/assets.json`` — wrapped as ``{"assets": ...}``
 
     Skipped when *output* is not a dict with inline data (e.g. csv-archive
     results where the SDK already extracted files via ``output_dir_path``).
@@ -261,15 +261,15 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
     with open(path, "w") as fh:
         json.dump(output, fh, indent=2)
 
-    # metrics → outputs/metrics/metrics.json (raw, matching local)
+    # metrics → outputs/metrics.json (raw, matching local)
     metrics = output.get(METRICS_KEY)
     if metrics:
-        path = os.path.join(outputs_dir, METRICS_KEY, f"{METRICS_KEY}.json")
+        path = os.path.join(outputs_dir, f"{METRICS_KEY}.json")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as fh:
             json.dump(metrics, fh, indent=2)
 
-    # statistics → outputs/statistics/statistics.json (wrapped, matching local)
+    # statistics → outputs/statistics.json (wrapped, matching local)
     statistics = output.get(STATISTICS_KEY)
     if statistics:
         path = os.path.join(outputs_dir, STATISTICS_KEY, f"{STATISTICS_KEY}.json")
@@ -277,17 +277,17 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
         with open(path, "w") as fh:
             json.dump({STATISTICS_KEY: statistics}, fh, indent=2)
 
-    # assets → outputs/assets/assets.json (wrapped, matching local)
+    # assets → outputs/assets.json (wrapped, matching local)
     assets = output.get(ASSETS_KEY)
     if assets:
-        path = os.path.join(outputs_dir, ASSETS_KEY, f"{ASSETS_KEY}.json")
+        path = os.path.join(outputs_dir, f"{ASSETS_KEY}.json")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as fh:
             json.dump({ASSETS_KEY: assets}, fh, indent=2)
 
     # Generate visuals from assets (Plotly/GeoJSON → HTML), matching local.
     try:
-        process_run_visuals(run_dir=run_dir, outputs_dir=outputs_dir)
+        _process_run_visuals(run_dir=run_dir, outputs_dir=outputs_dir)
     except Exception as exc:
         log(f"Visual generation failed for run {run_id}: {exc}")
 

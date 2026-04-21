@@ -34,11 +34,9 @@ def main() -> None:
     returns early.
     """
 
-    manifest = nextmv.Manifest.from_yaml(".")
-    options = manifest.extract_options()
-
-    inp = nextmv.load(options=options)
-    demand, supply, num_warehouses, num_stores, store_labels, warehouse_labels, cost = parse_inputs(inp.data)
+    loaded_input = nextmv.load()
+    demand, supply, num_warehouses, num_stores, store_labels, warehouse_labels, cost = parse_inputs(loaded_input.data)
+    options = loaded_input.options
 
     nextmv.log(f"Warehouses: {num_warehouses}, total supply: {sum(supply)}")
     nextmv.log(f"Stores: {num_stores}, total demand: {sum(demand)}")
@@ -50,29 +48,34 @@ def main() -> None:
     results, solver_name, mapped_status = solve_model(model, options)
 
     if mapped_status in ("infeasible", "unbounded"):
-        output = nextmv.Output(
-            solution={"allocations": [], "unmet_demand": []},
-            metrics={
-                "status": mapped_status,
-                "total_demand": sum(demand),
-                "total_supply": sum(supply),
-                "solver": solver_name,
-            },
-        )
-    else:
-        model.solutions.load_from(results)
-        output = extract_solution(
-            model,
-            demand,
-            supply,
-            cost,
-            warehouse_labels,
-            store_labels,
-            solver_name,
-            mapped_status,
-        )
+        solution = {"allocations": [], "unmet_demand": []}
+        metrics = {
+            "status": mapped_status,
+            "total_demand": sum(demand),
+            "total_supply": sum(supply),
+            "solver": solver_name,
+        }
 
-    nextmv.write(output)
+        # Option 1: you can write output elements directly with the `write` func.
+        nextmv.write(options=options, solution=solution, metrics=metrics)
+
+        return
+
+    model.solutions.load_from(results)
+    output = extract_solution(
+        model,
+        demand,
+        supply,
+        cost,
+        warehouse_labels,
+        store_labels,
+        solver_name,
+        mapped_status,
+        options,
+    )
+
+    # Option 2: you can build an `Output` object and pass it to the `write` func.
+    nextmv.write(output=output)
 
 
 def parse_inputs(
@@ -361,6 +364,7 @@ def extract_solution(
     store_labels: list[str],
     solver_name: str,
     mapped_status: str,
+    options: nextmv.Options,
 ) -> nextmv.Output:
     """Extract allocations and unmet demand from a solved model and build the output.
 
@@ -389,6 +393,8 @@ def extract_solution(
         Normalised solver key used for this run (e.g. ``"highs"``).
     mapped_status : str
         Human-readable solver status (e.g. ``"optimal"``, ``"suboptimal"``).
+    options : nextmv.Options
+        Parsed run options, passed through to the output for visibility.
 
     Returns
     -------
@@ -465,21 +471,21 @@ def extract_solution(
         store_labels=store_labels,
     )
 
-    return nextmv.Output(
-        solution={"allocations": allocations, "unmet_demand": unmet},
-        assets=[chart],
-        metrics={
-            "result_value": round(value(model.obj), 2),
-            "transportation_cost": round(transport_cost, 2),
-            "fill_rate": round(fill_rate, 4),
-            "total_units_allocated": round(total_allocated, 2),
-            "total_demand": total_demand,
-            "total_supply": sum(supply),
-            "num_unmet_stores": len(unmet),
-            "status": mapped_status,
-            "solver": solver_name,
-        },
-    )
+    solution = {"allocations": allocations, "unmet_demand": unmet}
+    assets = [chart]
+    metrics = {
+        "result_value": round(value(model.obj), 2),
+        "transportation_cost": round(transport_cost, 2),
+        "fill_rate": round(fill_rate, 4),
+        "total_units_allocated": round(total_allocated, 2),
+        "total_demand": total_demand,
+        "total_supply": sum(supply),
+        "num_unmet_stores": len(unmet),
+        "status": mapped_status,
+        "solver": solver_name,
+    }
+
+    return nextmv.Output(options=options, solution=solution, metrics=metrics, assets=assets)
 
 
 if __name__ == "__main__":

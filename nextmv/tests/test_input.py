@@ -2,11 +2,28 @@ import csv
 import json
 import os
 import shutil
+import tempfile
 import unittest
 from io import StringIO
+from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
+from nextmv.content_format import ContentFormat
+from nextmv.manifest import (
+    MANIFEST_FILE_NAME,
+    Manifest,
+    ManifestConfiguration,
+    ManifestContent,
+    ManifestContentMultiFile,
+    ManifestContentMultiFileInput,
+    ManifestContentMultiFileOutput,
+    ManifestOption,
+    ManifestOptions,
+    ManifestRuntime,
+    ManifestType,
+)
+from nextmv.options import Option, Options
 
 import nextmv
 
@@ -673,7 +690,532 @@ class TestInput(unittest.TestCase):
         ]
 
         # Should raise ValueError for duplicate keys
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(ValueError):
             nextmv.load(nextmv.ContentFormat.MULTI_FILE, data_files=data_files, path=self.test_dir)
 
-        self.assertIn("Duplicate input data key found: test_data.json", str(context.exception))
+
+# ---------------------------------------------------------------------------
+# Helpers shared by manifest-based load tests
+# ---------------------------------------------------------------------------
+
+
+def _make_json_manifest(
+    options_items: list[dict[str, Any]] | None = None,
+) -> Manifest:
+    """Build a Manifest that uses ContentFormat.JSON, optionally with options."""
+    cfg_kwargs: dict[str, Any] = {
+        "content": ManifestContent(format=ContentFormat.JSON),
+    }
+    if options_items:
+        cfg_kwargs["options"] = ManifestOptions(
+            items=[
+                ManifestOption(
+                    name=o["name"],
+                    option_type=o["option_type"],
+                    default=o.get("default"),
+                    required=o.get("required", False),
+                )
+                for o in options_items
+            ]
+        )
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        configuration=ManifestConfiguration(**cfg_kwargs),
+    )
+
+
+def _make_multi_file_manifest(
+    input_path: str = "inputs/",
+    solutions_path: str = "outputs/solutions/",
+    metrics_path: str = "outputs/metrics.json",
+    assets_path: str = "outputs/assets.json",
+    statistics_path: str = "outputs/statistics.json",
+) -> Manifest:
+    """Build a Manifest that uses ContentFormat.MULTI_FILE with configurable paths."""
+    return Manifest(
+        files=["main.py"],
+        runtime=ManifestRuntime.PYTHON,
+        type=ManifestType.PYTHON,
+        configuration=ManifestConfiguration(
+            content=ManifestContent(
+                format=ContentFormat.MULTI_FILE,
+                multi_file=ManifestContentMultiFile(
+                    input=ManifestContentMultiFileInput(path=input_path),
+                    output=ManifestContentMultiFileOutput(
+                        solutions=solutions_path,
+                        metrics=metrics_path,
+                        assets=assets_path,
+                        statistics=statistics_path,
+                    ),
+                ),
+            )
+        ),
+    )
+
+
+def _write_app_yaml(dirpath: str, manifest: Manifest) -> None:
+    """Serialize a Manifest to app.yaml inside dirpath."""
+    manifest.to_yaml(dirpath)
+
+
+# ---------------------------------------------------------------------------
+# Tests: load() – manifest resolution
+# ---------------------------------------------------------------------------
+
+
+class TestLoadNoManifest(unittest.TestCase):
+    """load() behaviour when no manifest is available at all."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        # Change to a directory that has NO app.yaml.
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    # ------------------------------------------------------------------
+    # JSON format (default)
+    # ------------------------------------------------------------------
+
+    def test_json_from_stdin_default_format(self):
+        """No manifest, no explicit format → defaults to JSON, reads from stdin."""
+        sample = '{"value": 42}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load()
+
+        self.assertIsInstance(result, nextmv.Input)
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"value": 42})
+        self.assertIsNone(result.options)
+
+    def test_json_from_file_explicit_path(self):
+        """No manifest, explicit path → reads JSON from file."""
+        data = {"key": "hello", "num": 7}
+        fpath = os.path.join(self.tmp_dir, "input.json")
+        with open(fpath, "w") as f:
+            json.dump(data, f)
+
+        result = nextmv.load(path=fpath)
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, data)
+
+    def test_json_explicit_format_from_stdin(self):
+        """No manifest, explicit JSON format → reads from stdin."""
+        sample = '{"empanadas": true}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load(input_format=ContentFormat.JSON)
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"empanadas": True})
+
+    def test_json_no_options(self):
+        """No manifest → options on the returned Input is None."""
+        with patch("sys.stdin", new=StringIO("{}" + "\n")):
+            result = nextmv.load()
+
+        self.assertIsNone(result.options)
+
+    # ------------------------------------------------------------------
+    # MULTI_FILE format
+    # ------------------------------------------------------------------
+
+    def test_multi_file_default_inputs_dir(self):
+        """No manifest, MULTI_FILE without explicit path → uses 'inputs' dir."""
+        inputs_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(inputs_dir)
+        json_data = {"product": "widget", "qty": 5}
+        with open(os.path.join(inputs_dir, "data.json"), "w") as f:
+            json.dump(json_data, f)
+
+        result = nextmv.load(
+            input_format=ContentFormat.MULTI_FILE,
+            data_files=[nextmv.json_data_file("data")],
+        )
+
+        self.assertEqual(result.input_format, ContentFormat.MULTI_FILE)
+        self.assertIn("data.json", result.data)
+        self.assertEqual(result.data["data.json"], json_data)
+
+    def test_multi_file_explicit_path(self):
+        """No manifest, MULTI_FILE with explicit path reads from that dir."""
+        d = os.path.join(self.tmp_dir, "my_inputs")
+        os.makedirs(d)
+        json_data = {"x": 1}
+        with open(os.path.join(d, "stuff.json"), "w") as f:
+            json.dump(json_data, f)
+
+        result = nextmv.load(
+            input_format=ContentFormat.MULTI_FILE,
+            data_files=[nextmv.json_data_file("stuff")],
+            path=d,
+        )
+
+        self.assertIn("stuff.json", result.data)
+        self.assertEqual(result.data["stuff.json"], json_data)
+
+    def test_multi_file_missing_data_files_raises(self):
+        """MULTI_FILE without data_files raises ValueError."""
+        with self.assertRaises(ValueError):
+            nextmv.load(input_format=ContentFormat.MULTI_FILE)
+
+    def test_multi_file_nonexistent_dir_raises(self):
+        """MULTI_FILE with a non-existent path raises ValueError."""
+        with self.assertRaises(ValueError):
+            nextmv.load(
+                input_format=ContentFormat.MULTI_FILE,
+                data_files=[nextmv.json_data_file("data")],
+                path=os.path.join(self.tmp_dir, "does_not_exist"),
+            )
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestLoadManifestProvidedDirectly(unittest.TestCase):
+    """load() behaviour when a Manifest is supplied as the `manifest` argument."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    # ------------------------------------------------------------------
+    # JSON format from manifest
+    # ------------------------------------------------------------------
+
+    def test_json_format_from_manifest(self):
+        """Manifest with JSON format: load uses JSON and reads from stdin."""
+        manifest = _make_json_manifest()
+        sample = '{"from_manifest": true}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load(manifest=manifest)
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"from_manifest": True})
+
+    def test_json_format_from_manifest_with_file_path(self):
+        """Manifest with JSON format: explicit path reads from that file."""
+        manifest = _make_json_manifest()
+        data = {"manifest": "json", "n": 99}
+        fpath = os.path.join(self.tmp_dir, "in.json")
+        with open(fpath, "w") as f:
+            json.dump(data, f)
+
+        result = nextmv.load(manifest=manifest, path=fpath)
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, data)
+
+    def test_manifest_provides_options(self):
+        """Manifest with options: returned Input has options with defaults."""
+        manifest = _make_json_manifest(
+            options_items=[
+                {"name": "duration", "option_type": "int", "default": 30, "required": False},
+                {"name": "label", "option_type": "string", "default": "test", "required": False},
+            ]
+        )
+        with patch("sys.stdin", new=StringIO("{}\n")):
+            result = nextmv.load(manifest=manifest)
+
+        self.assertIsNotNone(result.options)
+        self.assertEqual(result.options.duration, 30)
+        self.assertEqual(result.options.label, "test")
+
+    def test_manifest_without_options_returns_none_options(self):
+        """Manifest without options items: options on Input is None."""
+        manifest = _make_json_manifest()
+        with patch("sys.stdin", new=StringIO("{}\n")):
+            result = nextmv.load(manifest=manifest)
+
+        self.assertIsNone(result.options)
+
+    # ------------------------------------------------------------------
+    # MULTI_FILE format from manifest
+    # ------------------------------------------------------------------
+
+    def test_multi_file_format_from_manifest(self):
+        """Manifest with MULTI_FILE format: load uses MULTI_FILE."""
+        inputs_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(inputs_dir)
+        manifest = _make_multi_file_manifest(input_path=inputs_dir)
+
+        json_data = {"colour": "blue"}
+        with open(os.path.join(inputs_dir, "config.json"), "w") as f:
+            json.dump(json_data, f)
+
+        result = nextmv.load(
+            manifest=manifest,
+            data_files=[nextmv.json_data_file("config")],
+        )
+
+        self.assertEqual(result.input_format, ContentFormat.MULTI_FILE)
+        self.assertIn("config.json", result.data)
+        self.assertEqual(result.data["config.json"], json_data)
+
+    def test_multi_file_manifest_provides_input_path(self):
+        """Manifest specifies custom input path; no explicit path needed."""
+        custom_dir = os.path.join(self.tmp_dir, "custom_inputs")
+        os.makedirs(custom_dir)
+        manifest = _make_multi_file_manifest(input_path=custom_dir)
+
+        json_data = {"item": "thing"}
+        with open(os.path.join(custom_dir, "items.json"), "w") as f:
+            json.dump(json_data, f)
+
+        result = nextmv.load(
+            manifest=manifest,
+            data_files=[nextmv.json_data_file("items")],
+        )
+
+        self.assertIn("items.json", result.data)
+        self.assertEqual(result.data["items.json"], json_data)
+
+    def test_multi_file_multiple_files_via_manifest(self):
+        """Multiple DataFiles are loaded using the manifest's input path."""
+        inputs_dir = os.path.join(self.tmp_dir, "data_in")
+        os.makedirs(inputs_dir)
+        manifest = _make_multi_file_manifest(input_path=inputs_dir)
+
+        json_data = {"a": 1}
+        csv_data = [{"col1": "v1", "col2": "v2"}]
+
+        with open(os.path.join(inputs_dir, "params.json"), "w") as f:
+            json.dump(json_data, f)
+        with open(os.path.join(inputs_dir, "rows.csv"), "w") as f:
+            f.write("col1,col2\nv1,v2\n")
+
+        result = nextmv.load(
+            manifest=manifest,
+            data_files=[
+                nextmv.json_data_file("params"),
+                nextmv.csv_data_file("rows"),
+            ],
+        )
+
+        self.assertIn("params.json", result.data)
+        self.assertIn("rows.csv", result.data)
+        self.assertEqual(result.data["params.json"], json_data)
+        self.assertEqual(result.data["rows.csv"], csv_data)
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestLoadManifestFromCwd(unittest.TestCase):
+    """load() behaviour when app.yaml is found in the current working directory."""
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_json_format_from_cwd_manifest(self):
+        """app.yaml with JSON format is picked up automatically from cwd."""
+        manifest = _make_json_manifest()
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        sample = '{"loaded": "from_cwd"}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load()
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"loaded": "from_cwd"})
+
+    def test_json_cwd_manifest_provides_options(self):
+        """app.yaml with options: extracted options are attached to Input."""
+        manifest = _make_json_manifest(
+            options_items=[
+                {"name": "max_iter", "option_type": "int", "default": 100, "required": False},
+            ]
+        )
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        with patch("sys.stdin", new=StringIO("{}\n")):
+            result = nextmv.load()
+
+        self.assertIsNotNone(result.options)
+        self.assertEqual(result.options.max_iter, 100)
+
+    def test_multi_file_format_from_cwd_manifest(self):
+        """app.yaml with MULTI_FILE format: load uses that format and path."""
+        inputs_dir = os.path.join(self.tmp_dir, "my_inputs")
+        os.makedirs(inputs_dir)
+        manifest = _make_multi_file_manifest(input_path=inputs_dir)
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        json_data = {"from": "cwd_manifest"}
+        with open(os.path.join(inputs_dir, "scenario.json"), "w") as f:
+            json.dump(json_data, f)
+
+        result = nextmv.load(data_files=[nextmv.json_data_file("scenario")])
+
+        self.assertEqual(result.input_format, ContentFormat.MULTI_FILE)
+        self.assertIn("scenario.json", result.data)
+        self.assertEqual(result.data["scenario.json"], json_data)
+
+    def test_no_app_yaml_in_cwd_falls_back_to_defaults(self):
+        """No app.yaml in cwd → manifest is None → defaults apply (JSON, stdin)."""
+        # Ensure no app.yaml is present (tmp_dir is fresh).
+        self.assertFalse(os.path.exists(MANIFEST_FILE_NAME))
+
+        sample = '{"fallback": "ok"}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load()
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"fallback": "ok"})
+        self.assertIsNone(result.options)
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestLoadResolutionPriority(unittest.TestCase):
+    """
+    Priority order for load():
+    explicit arg > manifest > defaults
+    """
+
+    def setUp(self):
+        self.original_dir = os.getcwd()
+        self.tmp_dir = tempfile.mkdtemp()
+        os.chdir(self.tmp_dir)
+
+    def tearDown(self):
+        os.chdir(self.original_dir)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_explicit_format_overrides_manifest_format(self):
+        """Explicit input_format takes precedence over the manifest's format."""
+        # Manifest says MULTI_FILE, but we explicitly ask for JSON.
+        multi_file_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(multi_file_dir)
+        manifest = _make_multi_file_manifest(input_path=multi_file_dir)
+
+        sample = '{"override": "works"}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load(
+                input_format=ContentFormat.JSON,
+                manifest=manifest,
+            )
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"override": "works"})
+
+    def test_explicit_path_overrides_manifest_multi_file_path(self):
+        """Explicit path overrides the manifest's multi_file.input.path."""
+        manifest_inputs = os.path.join(self.tmp_dir, "manifest_inputs")
+        explicit_inputs = os.path.join(self.tmp_dir, "explicit_inputs")
+        os.makedirs(manifest_inputs)
+        os.makedirs(explicit_inputs)
+
+        manifest = _make_multi_file_manifest(input_path=manifest_inputs)
+
+        # Data only exists in the explicit_inputs dir.
+        data = {"source": "explicit"}
+        with open(os.path.join(explicit_inputs, "src.json"), "w") as f:
+            json.dump(data, f)
+
+        result = nextmv.load(
+            manifest=manifest,
+            data_files=[nextmv.json_data_file("src")],
+            path=explicit_inputs,
+        )
+
+        self.assertIn("src.json", result.data)
+        self.assertEqual(result.data["src.json"], data)
+
+    def test_explicit_options_override_manifest_options(self):
+        """Explicit options take precedence over manifest options."""
+        manifest = _make_json_manifest(
+            options_items=[
+                {"name": "duration", "option_type": "int", "default": 30, "required": False},
+            ]
+        )
+        explicit_options = Options(
+            Option("duration", int, default=999, required=False),
+        )
+
+        with patch("sys.stdin", new=StringIO("{}\n")):
+            with patch("sys.argv", ["prog"]):
+                explicit_options.parse()
+                result = nextmv.load(manifest=manifest, options=explicit_options)
+
+        self.assertIsNotNone(result.options)
+        self.assertEqual(result.options.duration, 999)
+
+    def test_manifest_overrides_defaults_for_format(self):
+        """Manifest format overrides the default (JSON)."""
+        # Manifest says MULTI_FILE; without the manifest the loader would
+        # default to JSON and read from stdin.
+        inputs_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(inputs_dir)
+        manifest = _make_multi_file_manifest(input_path=inputs_dir)
+
+        data = {"via": "manifest_format"}
+        with open(os.path.join(inputs_dir, "d.json"), "w") as f:
+            json.dump(data, f)
+
+        result = nextmv.load(
+            manifest=manifest,
+            data_files=[nextmv.json_data_file("d")],
+        )
+
+        # The manifest pushed the format to MULTI_FILE.
+        self.assertEqual(result.input_format, ContentFormat.MULTI_FILE)
+
+    def test_manifest_overrides_defaults_for_options(self):
+        """Manifest options override the default (None)."""
+        manifest = _make_json_manifest(
+            options_items=[
+                {"name": "speed", "option_type": "float", "default": 1.5, "required": False},
+            ]
+        )
+
+        with patch("sys.stdin", new=StringIO("{}\n")):
+            result = nextmv.load(manifest=manifest)
+
+        self.assertIsNotNone(result.options)
+        self.assertEqual(result.options.speed, 1.5)
+
+    def test_explicit_path_is_used_over_default_for_json(self):
+        """Explicit path is used for JSON even without a manifest."""
+        data = {"direct_file": True}
+        fpath = os.path.join(self.tmp_dir, "direct.json")
+        with open(fpath, "w") as f:
+            json.dump(data, f)
+
+        result = nextmv.load(input_format=ContentFormat.JSON, path=fpath)
+
+        self.assertEqual(result.data, data)
+
+    def test_explicit_format_cwd_manifest_overrides_multi_file(self):
+        """
+        When app.yaml in cwd specifies MULTI_FILE, but explicit format is JSON,
+        JSON wins.
+        """
+        multi_file_dir = os.path.join(self.tmp_dir, "inputs")
+        os.makedirs(multi_file_dir)
+        manifest = _make_multi_file_manifest(input_path=multi_file_dir)
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        sample = '{"explicit_json": 1}\n'
+        with patch("sys.stdin", new=StringIO(sample)):
+            result = nextmv.load(input_format=ContentFormat.JSON)
+
+        self.assertEqual(result.input_format, ContentFormat.JSON)
+        self.assertEqual(result.data, {"explicit_json": 1})

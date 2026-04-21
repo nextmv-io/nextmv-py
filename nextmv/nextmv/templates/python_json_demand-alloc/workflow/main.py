@@ -30,11 +30,10 @@ def main() -> None:
     seed option into the payload, runs the ``DemandAllocationFlow``, and writes
     the final ``nextmv.Output`` to the configured output path.
     """
-    manifest = nextmv.Manifest.from_yaml(".")
-    options = manifest.extract_options()
 
-    loaded_input = nextmv.load(options=options)
+    loaded_input = nextmv.load()
     data = loaded_input.data
+    options = loaded_input.options
 
     # Inject options so forecast_demand can read the random seed.
     data["options"] = {}

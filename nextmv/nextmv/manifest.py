@@ -48,6 +48,8 @@ find_files
     Find all files matching the given filters in the given directory.
 initialize_manifest
     Initialize a manifest file of a given type in a specified directory.
+resolve_manifest
+    Resolve a manifest file from a specified path, returning a `Manifest` object.
 
 Constants
 --------
@@ -58,6 +60,7 @@ MANIFEST_FILE_NAME
 import glob
 import os
 import shutil
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -66,9 +69,7 @@ from pydantic import AliasChoices, Field, field_validator
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
-from nextmv.content_format import ContentFormat
-from nextmv.input import InputFormat
-from nextmv.model import _REQUIREMENTS_FILE, ModelConfiguration
+from nextmv.content_format import ContentFormat, InputFormat
 from nextmv.options import Option, Options, OptionsEnforcement
 
 MANIFEST_FILE_NAME = "app.yaml"
@@ -86,6 +87,15 @@ Notes
 -----
 All Nextmv applications must include an app.yaml file for proper deployment.
 """
+
+# When working with the `Model`, we expect to be working in a notebook
+# environment, and not interact with the local filesystem a lot. We use the
+# `ModelConfiguration` to specify the dependencies that the `Model` requires.
+# To work with the "push" logic of uploading an app to Nextmv Cloud, we need a
+# requirement file that we use to gather dependencies, install them, and bundle
+# them in the app. This file is used as a placeholder for the dependencies that
+# the model requires and that we install and bundle with the app.
+_REQUIREMENTS_FILE = "model_requirements.txt"
 
 
 class ManifestType(str, Enum):
@@ -853,8 +863,11 @@ class ManifestContentMultiFileInput(BaseModel):
     'data/input/'
     """
 
-    path: str
-    """The path to the input file or directory."""
+    path: str | None = "inputs/"
+    """
+    The path to the input file or directory. The default value is a directory
+    named `inputs/`.
+    """
 
 
 class ManifestContentMultiFileOutput(BaseModel):
@@ -892,11 +905,11 @@ class ManifestContentMultiFileOutput(BaseModel):
 
     statistics: str | None = ""
     """Deprecated: Use `metrics` instead. The path to the statistics file."""
-    metrics: str | None = ""
+    metrics: str | None = "outputs/metrics.json"
     """The path to the metrics file."""
-    assets: str | None = ""
+    assets: str | None = "outputs/assets.json"
     """The path to the assets file."""
-    solutions: str | None = ""
+    solutions: str | None = "outputs/solutions/"
     """The path to the solutions directory."""
 
 
@@ -933,10 +946,23 @@ class ManifestContentMultiFile(BaseModel):
 
     """
 
-    input: ManifestContentMultiFileInput
+    input: ManifestContentMultiFileInput | None = None
     """Configuration for multi-file content format input."""
-    output: ManifestContentMultiFileOutput
+    output: ManifestContentMultiFileOutput | None = None
     """Configuration for multi-file content format output."""
+
+    def model_post_init(self, __context) -> None:
+        if self.input is None:
+            self.input = ManifestContentMultiFileInput(
+                path="inputs/",
+            )
+
+        if self.output is None:
+            self.output = ManifestContentMultiFileOutput(
+                solutions="outputs/solutions/",
+                metrics="outputs/metrics.json",
+                assets="outputs/assets.json",
+            )
 
 
 class ManifestContent(BaseModel):
@@ -976,7 +1002,7 @@ class ManifestContent(BaseModel):
     'data/input/'
     """
 
-    format: ContentFormat | InputFormat
+    format: ContentFormat | InputFormat | None = ContentFormat.JSON
     """
     !!! warning
         `InputFormat` is deprecated, but kept for backward compatibility. Use `ContentFormat` instead.
@@ -1021,6 +1047,25 @@ class ManifestContent(BaseModel):
         acceptable_formats = [ContentFormat.JSON, ContentFormat.MULTI_FILE, InputFormat.TEXT, InputFormat.CSV_ARCHIVE]
         if self.format not in acceptable_formats:
             raise ValueError(f"Invalid format: {self.format}. Must be one of {acceptable_formats}.")
+
+        if self.format == ContentFormat.MULTI_FILE and self.multi_file is None:
+            self.multi_file = ManifestContentMultiFile(
+                input=ManifestContentMultiFileInput(
+                    path="inputs/",
+                ),
+                output=ManifestContentMultiFileOutput(
+                    solutions="outputs/solutions/",
+                    metrics="outputs/metrics.json",
+                    assets="outputs/assets.json",
+                ),
+            )
+
+        if self.format != ContentFormat.MULTI_FILE and self.multi_file is not None:
+            raise ValueError(
+                f"'multi-file' configuration is set but content format is `{self.format}`, not "
+                f"`{ContentFormat.MULTI_FILE}`. Remove the 'multi-file' configuration or change "
+                "the content format to `multi-file`."
+            )
 
 
 class ManifestConfiguration(BaseModel):
@@ -1099,6 +1144,57 @@ class ManifestExecution(BaseModel):
     """The entrypoint for the decision model, e.g.: `./app.py`."""
     cwd: str | None = None
     """The working directory to set when running the app, e.g.: `./src/`."""
+
+
+@dataclass
+class ModelConfiguration:
+    """
+    Configuration class for Nextmv models.
+
+    You can import the `ModelConfiguration` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ModelConfiguration
+    ```
+
+    This class holds the configuration for a model, defining how a Python model
+    is encoded and loaded for use in Nextmv Cloud.
+
+    Parameters
+    ----------
+    name : str
+        A personalized name for the model. This is required.
+    requirements : list[str], optional
+        A list of Python dependencies that the decision model requires,
+        formatted as they would appear in a requirements.txt file.
+    options : Options, optional
+        Options that the decision model requires.
+    options_enforcement:
+        Enforcement of options for the model. This controls how options
+        are handled when the model is run.
+
+    Examples
+    --------
+    >>> from nextmv import ModelConfiguration, Options
+    >>> config = ModelConfiguration(
+    ...     name="my_routing_model",
+    ...     requirements=["nextroute>=1.0.0"],
+    ...     options=Options({"max_time": 60}),
+    ...     options_enforcement=OptionsEnforcement(
+                strict=True,
+                validation_enforce=True
+            )
+    ... )
+    """
+
+    name: str
+    """The name of the decision model."""
+    requirements: list[str] | None = None
+    """A list of Python dependencies that the decision model requires."""
+    options: Options | None = None
+    """Options that the decision model requires."""
+    options_enforcement: OptionsEnforcement | None = None
+    """Enforcement of options for the model."""
 
 
 class Manifest(BaseModel):
@@ -1237,7 +1333,7 @@ class Manifest(BaseModel):
             )
 
     @classmethod
-    def from_yaml(cls, dirpath: str) -> "Manifest":
+    def from_yaml(cls, dirpath: str = ".") -> "Manifest":
         """
         Load a manifest from a YAML file.
 
@@ -1246,8 +1342,9 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
-            Path to the directory containing the `app.yaml` file.
+        dirpath : str, optional
+            Path to the directory containing the `app.yaml` file. Defaults to
+            the current directory `.`.
 
         Returns
         -------
@@ -1276,6 +1373,8 @@ class Manifest(BaseModel):
         >>> from nextmv import Manifest
         >>> # manifest = Manifest.from_yaml("./my_app_dir") # This would be run
         >>> # assert manifest.type == "python"
+        >>> # If the `app.yaml` file is in the current directory:
+        >>> # manifest = Manifest.from_yaml() # This is equivalent to Manifest.from_yaml(".")
         """
 
         dirpath = os.path.normpath(os.path.expanduser(dirpath))
@@ -1285,7 +1384,7 @@ class Manifest(BaseModel):
 
         return cls.from_dict(raw_manifest)
 
-    def to_yaml(self, dirpath: str) -> None:
+    def to_yaml(self, dirpath: str = ".") -> None:
         """
         Write the manifest to a YAML file.
 
@@ -1294,8 +1393,9 @@ class Manifest(BaseModel):
 
         Parameters
         ----------
-        dirpath : str
-            Path to the directory where the `app.yaml` file will be written.
+        dirpath : str, optional
+            Path to the directory where the `app.yaml` file will be written. Defaults to
+            the current directory `.`.
 
         Raises
         ------
@@ -1309,6 +1409,7 @@ class Manifest(BaseModel):
         >>> from nextmv import Manifest
         >>> manifest = Manifest(files=["solver.py"], type="python")
         >>> # manifest.to_yaml("./output_dir") # This would create ./output_dir/app.yaml
+        >>> # manifest.to_yaml() # This would create ./app.yaml
         """
 
         with open(os.path.join(dirpath, MANIFEST_FILE_NAME), "w") as file:
@@ -1723,3 +1824,31 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     dst = shutil.copy(src, destination)
 
     return dst
+
+
+def resolve_manifest(manifest: Manifest | None = None) -> Manifest | None:
+    """
+    Resolve the manifest to use for loading the input data.
+
+    If a manifest is provided directly, it is returned as-is. Otherwise, the
+    method looks for an `app.yaml` file in the current working directory and
+    loads it as a manifest if it exists.
+
+    Parameters
+    ----------
+    manifest : Manifest, optional
+        The manifest to use. If provided, it is returned unchanged.
+
+    Returns
+    -------
+    Manifest or None
+        The resolved manifest, or `None` if no manifest is found.
+    """
+
+    if manifest is not None:
+        return manifest
+
+    if os.path.exists(MANIFEST_FILE_NAME):
+        return Manifest.from_yaml()
+
+    return None
