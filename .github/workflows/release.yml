@@ -13,6 +13,7 @@ jobs:
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     permissions:
       contents: write
+      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -158,6 +159,7 @@ jobs:
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     permissions:
       contents: write
+      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -216,6 +218,7 @@ jobs:
     uses: nextmv-io/release/.github/workflows/release.yml@develop
     permissions:
       contents: write
+      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
