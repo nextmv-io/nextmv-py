@@ -239,7 +239,7 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
     Mirrors the local run ``outputs/`` directory structure:
 
     * ``outputs/solutions/solution.json`` — the full output dict (matches local)
-    * ``outputs//metrics.json`` — raw metrics value
+    * ``outputs/metrics.json`` — raw metrics value
     * ``outputs/statistics.json`` — wrapped as ``{"statistics": ...}``
     * ``outputs/assets.json`` — wrapped as ``{"assets": ...}``
 
@@ -261,7 +261,7 @@ def _extract_cloud_run_outputs(result_dict: dict[str, Any], endpoint: str, run_i
     with open(path, "w") as fh:
         json.dump(output, fh, indent=2)
 
-    # metrics → outputs//metrics.json (raw, matching local)
+    # metrics → outputs/metrics.json (raw, matching local)
     metrics = output.get(METRICS_KEY)
     if metrics:
         path = os.path.join(outputs_dir, f"{METRICS_KEY}.json")

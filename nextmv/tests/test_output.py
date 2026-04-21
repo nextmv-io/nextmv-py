@@ -1661,7 +1661,7 @@ class TestWriteNoManifest(unittest.TestCase):
         shutil.rmtree(os.path.join(self.tmp_dir, "outputs"), ignore_errors=True)
 
     def test_multi_file_no_manifest_metrics_default_paths(self):
-        """No manifest, MULTI_FILE → metrics go to 'outputs//metrics.json'."""
+        """No manifest, MULTI_FILE → metrics go to 'outputs/metrics.json'."""
         sol_file = nextmv.json_solution_file("result", {"val": 1})
         output = nextmv.Output(
             output_format=ContentFormat.MULTI_FILE,
