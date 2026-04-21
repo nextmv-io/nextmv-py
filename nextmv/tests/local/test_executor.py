@@ -14,16 +14,15 @@ from unittest.mock import Mock, patch
 
 from nextmv.content_format import ContentFormat
 from nextmv.local.executor import (
-    _calculate_file_checksum,
     _copy_new_or_modified_files,
+    _process_run_assets,
+    _process_run_solutions,
+    _process_run_statistics,
     execute_run,
     main,
     options_args,
-    process_run_assets,
     process_run_input,
     process_run_output,
-    process_run_solutions,
-    process_run_statistics,
 )
 from nextmv.local.local import LOGS_FILE, LOGS_KEY
 from nextmv.manifest import Manifest, ManifestExecution
@@ -270,21 +269,21 @@ class TestLocalExecutor(unittest.TestCase):
         self.assertIn("input data must be None for csv-archive or multi-file format", str(context.exception))
 
     def test_process_run_statistics_from_directory(self):
-        """Test process_run_statistics when statistics directory exists."""
-        # Create temp outputs directory with statistics
+        """Test process_run_statistics when statistics.json exists in outputs dir."""
+        # Create temp outputs directory with statistics.json file
         temp_outputs_dir = os.path.join(self.temp_src, OUTPUTS_KEY)
-        stats_src = os.path.join(temp_outputs_dir, STATISTICS_KEY)
-        os.makedirs(stats_src)
+        os.makedirs(temp_outputs_dir)
 
-        with open(os.path.join(stats_src, "timing.json"), "w") as f:
-            json.dump({"duration": 1.5}, f)
+        stats_src = os.path.join(temp_outputs_dir, f"{STATISTICS_KEY}.json")
+        with open(stats_src, "w") as f:
+            json.dump({"statistics": {"duration": 1.5}}, f)
 
         outputs_dir = os.path.join(self.run_dir, OUTPUTS_KEY)
         os.makedirs(outputs_dir)
 
         stdout_output = {}
 
-        process_run_statistics(
+        _process_run_statistics(
             temp_outputs_dir,
             outputs_dir,
             stdout_output,
@@ -292,10 +291,9 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=self.mock_manifest,
         )
 
-        # Check that statistics directory was copied
-        stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
+        # Check that statistics.json file was copied
+        stats_dst = os.path.join(outputs_dir, f"{STATISTICS_KEY}.json")
         self.assertTrue(os.path.exists(stats_dst))
-        self.assertTrue(os.path.exists(os.path.join(stats_dst, "timing.json")))
 
     def test_process_run_statistics_from_stdout(self):
         """Test process_run_statistics when statistics are in stdout."""
@@ -305,7 +303,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {STATISTICS_KEY: {"duration": 2.5, "iterations": 100}}
 
-        process_run_statistics(
+        _process_run_statistics(
             temp_outputs_dir,
             outputs_dir,
             stdout_output,
@@ -313,11 +311,8 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=self.mock_manifest,
         )
 
-        # Check that statistics.json was created
-        stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
-        self.assertTrue(os.path.exists(stats_dst))
-
-        stats_file = os.path.join(stats_dst, f"{STATISTICS_KEY}.json")
+        # Check that statistics.json was created directly in outputs_dir
+        stats_file = os.path.join(outputs_dir, f"{STATISTICS_KEY}.json")
         self.assertTrue(os.path.exists(stats_file))
 
         with open(stats_file) as f:
@@ -334,7 +329,7 @@ class TestLocalExecutor(unittest.TestCase):
 
         stdout_output = {}
 
-        process_run_statistics(
+        _process_run_statistics(
             temp_outputs_dir,
             outputs_dir,
             stdout_output,
@@ -342,26 +337,26 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=self.mock_manifest,
         )
 
-        # Check that statistics directory was not created
-        stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
-        self.assertTrue(os.path.exists(stats_dst))
+        # Check that statistics.json was not created when there are no statistics
+        stats_file = os.path.join(outputs_dir, f"{STATISTICS_KEY}.json")
+        self.assertFalse(os.path.exists(stats_file))
 
     def test_process_run_assets_from_directory(self):
-        """Test process_run_assets when assets directory exists."""
-        # Create temp outputs directory with assets
+        """Test process_run_assets when assets.json exists in outputs dir."""
+        # Create temp outputs directory with assets.json file
         temp_outputs_dir = os.path.join(self.temp_src, OUTPUTS_KEY)
-        assets_src = os.path.join(temp_outputs_dir, ASSETS_KEY)
-        os.makedirs(assets_src)
+        os.makedirs(temp_outputs_dir)
 
-        with open(os.path.join(assets_src, "plot.png"), "w") as f:
-            f.write("fake image data")
+        assets_src = os.path.join(temp_outputs_dir, f"{ASSETS_KEY}.json")
+        with open(assets_src, "w") as f:
+            json.dump({"assets": [{"name": "plot.png", "url": "http://example.com/plot.png"}]}, f)
 
         outputs_dir = os.path.join(self.run_dir, OUTPUTS_KEY)
         os.makedirs(outputs_dir)
 
         stdout_output = {}
 
-        process_run_assets(
+        _process_run_assets(
             temp_outputs_dir,
             outputs_dir,
             stdout_output,
@@ -369,10 +364,9 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=self.mock_manifest,
         )
 
-        # Check that assets directory was copied
-        assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
+        # Check that assets.json file was copied
+        assets_dst = os.path.join(outputs_dir, f"{ASSETS_KEY}.json")
         self.assertTrue(os.path.exists(assets_dst))
-        self.assertTrue(os.path.exists(os.path.join(assets_dst, "plot.png")))
 
     def test_process_run_assets_from_stdout(self):
         """Test process_run_assets when assets are in stdout."""
@@ -387,7 +381,7 @@ class TestLocalExecutor(unittest.TestCase):
             ]
         }
 
-        process_run_assets(
+        _process_run_assets(
             temp_outputs_dir,
             outputs_dir,
             stdout_output,
@@ -395,11 +389,8 @@ class TestLocalExecutor(unittest.TestCase):
             manifest=self.mock_manifest,
         )
 
-        # Check that assets.json was created
-        assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
-        self.assertTrue(os.path.exists(assets_dst))
-
-        assets_file = os.path.join(assets_dst, f"{ASSETS_KEY}.json")
+        # Check that assets.json was created directly in outputs_dir
+        assets_file = os.path.join(outputs_dir, f"{ASSETS_KEY}.json")
         self.assertTrue(os.path.exists(assets_file))
 
         with open(assets_file) as f:
@@ -426,7 +417,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions(
+        _process_run_solutions(
             "test_run_id",
             self.run_dir,
             temp_outputs_dir,
@@ -461,7 +452,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions(
+        _process_run_solutions(
             "test_run_id",
             self.run_dir,
             temp_outputs_dir,
@@ -489,7 +480,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions(
+        _process_run_solutions(
             "test_run_id",
             self.run_dir,
             temp_outputs_dir,
@@ -524,7 +515,7 @@ class TestLocalExecutor(unittest.TestCase):
         # Create metadata file that process_run_solutions expects
         self._create_metadata_file()
 
-        process_run_solutions(
+        _process_run_solutions(
             "test_run_id",
             self.run_dir,
             temp_outputs_dir,
@@ -735,9 +726,9 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor._process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor._process_run_assets") as mock_assets,
+            patch("nextmv.local.executor._process_run_solutions") as mock_solutions,
         ):
             process_run_output(
                 manifest=self.mock_manifest,
@@ -767,9 +758,9 @@ class TestLocalExecutor(unittest.TestCase):
         self._create_metadata_file()
 
         with (
-            patch("nextmv.local.executor.process_run_statistics") as mock_stats,
-            patch("nextmv.local.executor.process_run_assets") as mock_assets,
-            patch("nextmv.local.executor.process_run_solutions") as mock_solutions,
+            patch("nextmv.local.executor._process_run_statistics") as mock_stats,
+            patch("nextmv.local.executor._process_run_assets") as mock_assets,
+            patch("nextmv.local.executor._process_run_solutions") as mock_solutions,
         ):
             process_run_output(
                 manifest=self.mock_manifest,
@@ -1141,33 +1132,6 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
 
         # File should still be copied
         self._assert_file_exists_with_content(os.path.join(self.dst_dir, "file1.txt"), "content1")
-
-    def test_checksum_calculation_correctness(self):
-        """Test that file checksum calculation works correctly for determining modifications."""
-
-        # Create files with same content
-        content = "This is test content for checksum verification."
-        original_file = self._create_file(self.original_src_dir, "test_file.txt", content)
-        runtime_file = self._create_file(self.runtime_dir, "test_file.txt", content)
-
-        # Verify checksums are the same
-        original_checksum = _calculate_file_checksum(original_file)
-        runtime_checksum = _calculate_file_checksum(runtime_file)
-        self.assertEqual(original_checksum, runtime_checksum)
-
-        # Modify content slightly
-        modified_content = content + " Modified!"
-        with open(runtime_file, "w") as f:
-            f.write(modified_content)
-
-        # Verify checksums are now different
-        modified_checksum = _calculate_file_checksum(runtime_file)
-        self.assertNotEqual(original_checksum, modified_checksum)
-
-        _copy_new_or_modified_files(self.runtime_dir, self.dst_dir, self.original_src_dir, self.mock_manifest)
-
-        # Modified file should be copied due to different checksum
-        self._assert_file_exists_with_content(os.path.join(self.dst_dir, "test_file.txt"), modified_content)
 
     def test_preserve_file_permissions_and_metadata(self):
         """Test that file permissions and metadata are preserved during copying."""

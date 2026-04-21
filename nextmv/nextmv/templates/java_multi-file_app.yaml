@@ -23,5 +23,5 @@ configuration:
         path: inputs # Directory where the app will read input files from.
       output:
         solutions: outputs/solutions # Directory where the app will write solution files to.
-        metrics: outputs/metrics/metrics.json # Path where the app will write metrics to.
-        assets: outputs/assets/assets.json # Path where the app will write assets to.
+        metrics: outputs//metrics.json # Path where the app will write metrics to.
+        assets: outputs/assets.json # Path where the app will write assets to.

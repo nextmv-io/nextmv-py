@@ -729,9 +729,9 @@ def _make_json_manifest(
 def _make_multi_file_manifest(
     input_path: str = "inputs/",
     solutions_path: str = "outputs/solutions/",
-    metrics_path: str = "outputs/metrics/metrics.json",
-    assets_path: str = "outputs/assets/assets.json",
-    statistics_path: str = "outputs/statistics/statistics.json",
+    metrics_path: str = "outputs/metrics.json",
+    assets_path: str = "outputs/assets.json",
+    statistics_path: str = "outputs/statistics.json",
 ) -> Manifest:
     """Build a Manifest that uses ContentFormat.MULTI_FILE with configurable paths."""
     return Manifest(

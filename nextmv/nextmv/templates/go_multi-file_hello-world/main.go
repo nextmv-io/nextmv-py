@@ -66,7 +66,7 @@ func main() {
 
 	// Write the metrics file.
 	if err := writeJSON(
-		filepath.Join("outputs", "metrics", "metrics.json"),
+		filepath.Join("outputs", "metrics.json"),
 		Metrics{
 			Metrics: map[string]any{
 				"value":   1.23,

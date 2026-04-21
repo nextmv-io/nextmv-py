@@ -34,7 +34,6 @@ resolve_stdout
     Function to parse subprocess stdout output.
 """
 
-import hashlib
 import json
 import os
 import shutil
@@ -419,33 +418,33 @@ def process_run_output(
     temp_run_outputs_dir = os.path.join(temp_src, OUTPUTS_KEY)
 
     output_format = manifest.configuration.content.format
-    process_run_information(
+    _process_run_information(
         run_id=run_id,
         run_dir=run_dir,
         result=result,
     )
-    process_run_metrics(
+    _process_run_metrics(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
     )
-    process_run_statistics(
+    _process_run_statistics(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
     )
-    process_run_assets(
+    _process_run_assets(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
         stdout_output=stdout_output,
         temp_src=temp_src,
         manifest=manifest,
     )
-    process_run_solutions(
+    _process_run_solutions(
         run_id=run_id,
         run_dir=run_dir,
         temp_run_outputs_dir=temp_run_outputs_dir,
@@ -456,13 +455,13 @@ def process_run_output(
         manifest=manifest,
         src=src,
     )
-    process_run_visuals(
+    _process_run_visuals(
         run_dir=run_dir,
         outputs_dir=outputs_dir,
     )
 
 
-def process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
+def _process_run_information(run_id: str, run_dir: str, result: subprocess.CompletedProcess[str]) -> None:
     """
     Processes the run information, updating properties such as duration and
     status.
@@ -505,7 +504,7 @@ def process_run_information(run_id: str, run_dir: str, result: subprocess.Comple
         json.dump(info, f, indent=2)
 
 
-def process_run_metrics(
+def _process_run_metrics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
     stdout_output: str | dict[str, Any],
@@ -531,9 +530,8 @@ def process_run_metrics(
         The application manifest containing configuration and custom paths.
     """
 
-    metrics_dst = os.path.join(outputs_dir, METRICS_KEY)
-    os.makedirs(metrics_dst, exist_ok=True)
     metrics_file = f"{METRICS_KEY}.json"
+    metrics_dst = os.path.join(outputs_dir, metrics_file)
 
     # Check for custom location in manifest and override metrics_src if needed.
     if (
@@ -546,26 +544,32 @@ def process_run_metrics(
 
         # If the custom metrics file exists, copy it to the metrics destination
         if os.path.exists(metrics_src_file) and os.path.isfile(metrics_src_file):
-            metrics_dst_file = os.path.join(metrics_dst, metrics_file)
-            shutil.copy2(metrics_src_file, metrics_dst_file)
+            shutil.copy2(metrics_src_file, metrics_dst)
             return
 
-    metrics_src = os.path.join(temp_run_outputs_dir, METRICS_KEY)
-    if os.path.exists(metrics_src) and os.path.isdir(metrics_src):
-        shutil.copytree(metrics_src, metrics_dst, dirs_exist_ok=True)
+    # If no custom location, check for default metrics in 2 possible locations.
+    metrics_src = os.path.join(temp_run_outputs_dir, metrics_file)
+    metrics_src_2 = os.path.join(temp_run_outputs_dir, METRICS_KEY, metrics_file)
+    if os.path.exists(metrics_src) and os.path.isfile(metrics_src):
+        shutil.copy2(metrics_src, metrics_dst)
+        return
+    elif os.path.exists(metrics_src_2) and os.path.isfile(metrics_src_2):
+        shutil.copy2(metrics_src_2, metrics_dst)
         return
 
+    # At this point, we look for metrics in `stdout`.
     if not isinstance(stdout_output, dict):
         return
 
     if METRICS_KEY not in stdout_output:
         return
 
-    with open(os.path.join(metrics_dst, metrics_file), "w") as f:
-        json.dump(stdout_output[METRICS_KEY], f, indent=2)
+    with open(metrics_dst, "w") as f:
+        metrics = {METRICS_KEY: stdout_output[METRICS_KEY]}
+        json.dump(metrics, f, indent=2)
 
 
-def process_run_statistics(
+def _process_run_statistics(
     temp_run_outputs_dir: str,
     outputs_dir: str,
     stdout_output: str | dict[str, Any],
@@ -574,7 +578,7 @@ def process_run_statistics(
 ) -> None:
     """
     !!! warning
-        `process_run_statistics` is deprecated, use `process_run_metrics` instead.
+        `_process_run_statistics` is deprecated, use `_process_run_metrics` instead.
 
     Processes the statistics of the run. Checks for an outputs/statistics folder
     or custom statistics file location from manifest. If found, copies to run
@@ -594,9 +598,8 @@ def process_run_statistics(
         The application manifest containing configuration and custom paths.
     """
 
-    stats_dst = os.path.join(outputs_dir, STATISTICS_KEY)
-    os.makedirs(stats_dst, exist_ok=True)
-    statistics_file = f"{STATISTICS_KEY}.json"
+    stats_file = f"{STATISTICS_KEY}.json"
+    stats_dst = os.path.join(outputs_dir, stats_file)
 
     # Check for custom location in manifest and override stats_src if needed.
     if (
@@ -607,29 +610,34 @@ def process_run_statistics(
     ):
         stats_src_file = os.path.join(temp_src, manifest.configuration.content.multi_file.output.statistics)
 
-        # If the custom statistics file exists, copy it to the stats destination
+        # If the custom stats file exists, copy it to the stats destination
         if os.path.exists(stats_src_file) and os.path.isfile(stats_src_file):
-            stats_dst_file = os.path.join(stats_dst, statistics_file)
-            shutil.copy2(stats_src_file, stats_dst_file)
+            shutil.copy2(stats_src_file, stats_dst)
             return
 
-    stats_src = os.path.join(temp_run_outputs_dir, STATISTICS_KEY)
-    if os.path.exists(stats_src) and os.path.isdir(stats_src):
-        shutil.copytree(stats_src, stats_dst, dirs_exist_ok=True)
+    # If no custom location, check for default stats in 2 possible locations.
+    stats_src = os.path.join(temp_run_outputs_dir, stats_file)
+    stats_src_2 = os.path.join(temp_run_outputs_dir, STATISTICS_KEY, stats_file)
+    if os.path.exists(stats_src) and os.path.isfile(stats_src):
+        shutil.copy2(stats_src, stats_dst)
+        return
+    elif os.path.exists(stats_src_2) and os.path.isfile(stats_src_2):
+        shutil.copy2(stats_src_2, stats_dst)
         return
 
+    # At this point, we look for stats in `stdout`.
     if not isinstance(stdout_output, dict):
         return
 
     if STATISTICS_KEY not in stdout_output:
         return
 
-    with open(os.path.join(stats_dst, statistics_file), "w") as f:
-        statistics = {STATISTICS_KEY: stdout_output[STATISTICS_KEY]}
-        json.dump(statistics, f, indent=2)
+    with open(stats_dst, "w") as f:
+        stats = {STATISTICS_KEY: stdout_output[STATISTICS_KEY]}
+        json.dump(stats, f, indent=2)
 
 
-def process_run_assets(
+def _process_run_assets(
     temp_run_outputs_dir: str,
     outputs_dir: str,
     stdout_output: str | dict[str, Any],
@@ -655,9 +663,8 @@ def process_run_assets(
         The application manifest containing configuration and custom paths.
     """
 
-    assets_dst = os.path.join(outputs_dir, ASSETS_KEY)
-    os.makedirs(assets_dst, exist_ok=True)
     assets_file = f"{ASSETS_KEY}.json"
+    assets_dst = os.path.join(outputs_dir, assets_file)
 
     # Check for custom location in manifest and override assets_src if needed.
     if (
@@ -670,27 +677,32 @@ def process_run_assets(
 
         # If the custom assets file exists, copy it to the assets destination
         if os.path.exists(assets_src_file) and os.path.isfile(assets_src_file):
-            assets_dst_file = os.path.join(assets_dst, assets_file)
-            shutil.copy2(assets_src_file, assets_dst_file)
+            shutil.copy2(assets_src_file, assets_dst)
             return
 
-    assets_src = os.path.join(temp_run_outputs_dir, ASSETS_KEY)
-    if os.path.exists(assets_src) and os.path.isdir(assets_src):
-        shutil.copytree(assets_src, assets_dst, dirs_exist_ok=True)
+    # If no custom location, check for default assets in 2 possible locations.
+    assets_src = os.path.join(temp_run_outputs_dir, assets_file)
+    assets_src_2 = os.path.join(temp_run_outputs_dir, ASSETS_KEY, assets_file)
+    if os.path.exists(assets_src) and os.path.isfile(assets_src):
+        shutil.copy2(assets_src, assets_dst)
+        return
+    elif os.path.exists(assets_src_2) and os.path.isfile(assets_src_2):
+        shutil.copy2(assets_src_2, assets_dst)
         return
 
+    # At this point, we look for assets in `stdout`.
     if not isinstance(stdout_output, dict):
         return
 
     if ASSETS_KEY not in stdout_output:
         return
 
-    with open(os.path.join(assets_dst, assets_file), "w") as f:
+    with open(assets_dst, "w") as f:
         assets = {ASSETS_KEY: stdout_output[ASSETS_KEY]}
         json.dump(assets, f, indent=2)
 
 
-def process_run_solutions(
+def _process_run_solutions(
     run_id: str,
     run_dir: str,
     temp_run_outputs_dir: str,
@@ -782,7 +794,7 @@ def process_run_solutions(
         json.dump(info, f, indent=2)
 
 
-def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
+def _process_run_visuals(run_dir: str, outputs_dir: str) -> None:
     """
     Processes the visuals from the assets in the run output. This function looks
     for visual assets (Plotly and GeoJSON) in the assets.json file and generates
@@ -796,13 +808,15 @@ def process_run_visuals(run_dir: str, outputs_dir: str) -> None:
         The path to the outputs directory in the run directory containing assets.
     """
 
-    # Get the assets.
-    assets_dir = os.path.join(outputs_dir, ASSETS_KEY)
-    if not os.path.exists(assets_dir):
-        return
-
-    assets_file = os.path.join(assets_dir, f"{ASSETS_KEY}.json")
-    if not os.path.exists(assets_file):
+    # Check for the existence of the assets file in 2 possible locations. If
+    # there are no assets, exit early.
+    assets_file_1 = os.path.join(outputs_dir, f"{ASSETS_KEY}.json")
+    assets_file_2 = os.path.join(outputs_dir, ASSETS_KEY, f"{ASSETS_KEY}.json")
+    if os.path.exists(assets_file_1):
+        assets_file = assets_file_1
+    elif os.path.exists(assets_file_2):
+        assets_file = assets_file_2
+    else:
         return
 
     with open(assets_file) as f:
@@ -1022,27 +1036,6 @@ def _remove_empty_directories(directory: str) -> None:
             except OSError:
                 # Directory might not be empty due to hidden files or permissions
                 pass
-
-
-def _calculate_file_checksum(file_path: str) -> str:
-    """
-    Calculate MD5 checksum of a file.
-
-    Parameters
-    ----------
-    file_path : str
-        The path to the file.
-
-    Returns
-    -------
-    str
-        The MD5 checksum of the file.
-    """
-    hash_md5 = hashlib.md5()
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
 
 
 def __determine_entrypoint(manifest: Manifest) -> str:

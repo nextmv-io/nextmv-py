@@ -903,11 +903,11 @@ class ManifestContentMultiFileOutput(BaseModel):
     'my-outputs/metrics.json'
     """
 
-    statistics: str | None = "outputs/statistics/statistics.json"
+    statistics: str | None = ""
     """Deprecated: Use `metrics` instead. The path to the statistics file."""
-    metrics: str | None = "outputs/metrics/metrics.json"
+    metrics: str | None = "outputs/metrics.json"
     """The path to the metrics file."""
-    assets: str | None = "outputs/assets/assets.json"
+    assets: str | None = "outputs/assets.json"
     """The path to the assets file."""
     solutions: str | None = "outputs/solutions/"
     """The path to the solutions directory."""
@@ -960,8 +960,8 @@ class ManifestContentMultiFile(BaseModel):
         if self.output is None:
             self.output = ManifestContentMultiFileOutput(
                 solutions="outputs/solutions/",
-                metrics="outputs/metrics/metrics.json",
-                assets="outputs/assets/assets.json",
+                metrics="outputs/metrics.json",
+                assets="outputs/assets.json",
             )
 
 
@@ -1055,8 +1055,8 @@ class ManifestContent(BaseModel):
                 ),
                 output=ManifestContentMultiFileOutput(
                     solutions="outputs/solutions/",
-                    metrics="outputs/metrics/metrics.json",
-                    assets="outputs/assets/assets.json",
+                    metrics="outputs/metrics.json",
+                    assets="outputs/assets.json",
                 ),
             )
 

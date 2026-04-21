@@ -72,7 +72,7 @@ public class Main {
         metrics.metrics.put("value", 1.23);
         metrics.metrics.put("message", message);
         try {
-            writeJSON(mapper, "outputs/metrics/metrics.json", metrics);
+            writeJSON(mapper, "outputs/metrics.json", metrics);
         } catch (Exception e) {
             System.err.println("error writing metrics: " + e.getMessage());
             System.exit(1);

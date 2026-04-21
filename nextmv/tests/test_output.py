@@ -1136,7 +1136,7 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, path=test_dir)
 
             # Verify statistics file exists
-            stats_path = os.path.join(test_dir, "statistics", "statistics.json")
+            stats_path = os.path.join(test_dir, "statistics.json")
             self.assertTrue(os.path.exists(stats_path))
 
             # Verify statistics content
@@ -1173,7 +1173,7 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, path=test_dir)
 
             # Verify statistics file exists
-            stats_path = os.path.join(test_dir, "statistics", "statistics.json")
+            stats_path = os.path.join(test_dir, "statistics.json")
             self.assertTrue(os.path.exists(stats_path))
 
             # Verify statistics content
@@ -1188,7 +1188,7 @@ class TestOutput(unittest.TestCase):
                 shutil.rmtree(test_dir)
 
     def test_local_writer_multi_file_assets(self):
-        """Test LocalOutputWriter with MULTI_FILE format writes assets to assets/assets.json."""
+        """Test LocalOutputWriter with MULTI_FILE format writes assets to assets.json."""
 
         test_dir = "test_output_multi_file_assets"
 
@@ -1226,7 +1226,7 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, path=test_dir)
 
             # Verify assets file exists
-            assets_path = os.path.join(test_dir, "assets", "assets.json")
+            assets_path = os.path.join(test_dir, "assets.json")
             self.assertTrue(os.path.exists(assets_path))
 
             # Verify assets content
@@ -1253,7 +1253,7 @@ class TestOutput(unittest.TestCase):
                 shutil.rmtree(test_dir)
 
     def test_local_writer_multi_file_assets_dict(self):
-        """Test LocalOutputWriter with MULTI_FILE format writes dictionary assets to assets/assets.json."""
+        """Test LocalOutputWriter with MULTI_FILE format writes dictionary assets to assets.json."""
 
         test_dir = "test_output_multi_file_assets_dict"
 
@@ -1289,7 +1289,7 @@ class TestOutput(unittest.TestCase):
             output_writer.write(output, path=test_dir)
 
             # Verify assets file exists
-            assets_path = os.path.join(test_dir, "assets", "assets.json")
+            assets_path = os.path.join(test_dir, "assets.json")
             self.assertTrue(os.path.exists(assets_path))
 
             # Verify assets content
@@ -1380,8 +1380,8 @@ class TestOutput(unittest.TestCase):
             # Verify directory structure
             self.assertTrue(os.path.exists(test_dir))
             self.assertTrue(os.path.exists(os.path.join(test_dir, "solutions")))
-            self.assertTrue(os.path.exists(os.path.join(test_dir, "statistics")))
-            self.assertTrue(os.path.exists(os.path.join(test_dir, "assets")))
+            self.assertTrue(os.path.exists(os.path.join(test_dir, "statistics.json")))
+            self.assertTrue(os.path.exists(os.path.join(test_dir, "assets.json")))
 
             # Verify solution files
             self.assertTrue(os.path.exists(os.path.join(test_dir, "solutions", "optimization_result.json")))
@@ -1389,7 +1389,7 @@ class TestOutput(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(test_dir, "solutions", "summary.log")))
 
             # Verify statistics file
-            stats_path = os.path.join(test_dir, "statistics", "statistics.json")
+            stats_path = os.path.join(test_dir, "statistics.json")
             self.assertTrue(os.path.exists(stats_path))
             with open(stats_path) as f:
                 stats_content = json.loads(f.read())
@@ -1398,7 +1398,7 @@ class TestOutput(unittest.TestCase):
                 self.assertEqual(stats_content["statistics"]["result"]["value"], 150.5)
 
             # Verify assets file
-            assets_path = os.path.join(test_dir, "assets", "assets.json")
+            assets_path = os.path.join(test_dir, "assets.json")
             self.assertTrue(os.path.exists(assets_path))
             with open(assets_path) as f:
                 assets_content = json.loads(f.read())
@@ -1555,8 +1555,8 @@ def _make_json_manifest_with_multi_file_config() -> Manifest:
                     input=ManifestContentMultiFileInput(path="inputs/"),
                     output=ManifestContentMultiFileOutput(
                         solutions="outputs/solutions/",
-                        metrics="outputs/metrics/metrics.json",
-                        assets="outputs/assets/assets.json",
+                        metrics="outputs/metrics.json",
+                        assets="outputs/assets.json",
                     ),
                 ),
             )
@@ -1567,9 +1567,9 @@ def _make_json_manifest_with_multi_file_config() -> Manifest:
 def _make_multi_file_manifest(
     input_path: str = "inputs/",
     solutions_path: str = "outputs/solutions/",
-    metrics_path: str = "outputs/metrics/metrics.json",
-    assets_path: str = "outputs/assets/assets.json",
-    statistics_path: str = "outputs/statistics/statistics.json",
+    metrics_path: str = "outputs/metrics.json",
+    assets_path: str = "outputs/assets.json",
+    statistics_path: str = "outputs/statistics.json",
 ) -> Manifest:
     """Build a Manifest that uses ContentFormat.MULTI_FILE with configurable paths."""
     return Manifest(
@@ -1661,7 +1661,7 @@ class TestWriteNoManifest(unittest.TestCase):
         shutil.rmtree(os.path.join(self.tmp_dir, "outputs"), ignore_errors=True)
 
     def test_multi_file_no_manifest_metrics_default_paths(self):
-        """No manifest, MULTI_FILE → metrics go to 'outputs/metrics/metrics.json'."""
+        """No manifest, MULTI_FILE → metrics go to 'outputs//metrics.json'."""
         sol_file = nextmv.json_solution_file("result", {"val": 1})
         output = nextmv.Output(
             output_format=ContentFormat.MULTI_FILE,
@@ -1671,7 +1671,7 @@ class TestWriteNoManifest(unittest.TestCase):
 
         nextmv.write(output)
 
-        metrics_path = os.path.join(self.tmp_dir, "outputs", "metrics", "metrics.json")
+        metrics_path = os.path.join(self.tmp_dir, "outputs", "metrics.json")
         self.assertTrue(os.path.exists(metrics_path))
         with open(metrics_path) as f:
             content = json.load(f)
@@ -1793,8 +1793,8 @@ class TestWriteManifestProvidedDirectly(unittest.TestCase):
         """Explicit path overrides the multi-file paths from the manifest."""
         manifest = _make_multi_file_manifest(
             solutions_path="manifest_solutions/",
-            metrics_path="manifest_metrics/metrics.json",
-            assets_path="manifest_assets/assets.json",
+            metrics_path="manifest_metrics.json",
+            assets_path="manifest_assets.json",
             statistics_path="manifest_stats/stats.json",
         )
 
@@ -2291,8 +2291,8 @@ class TestWriteStandaloneArguments(unittest.TestCase):
             path=out_dir,
         )
 
-        metrics_path = os.path.join(out_dir, "metrics", "metrics.json")
-        assets_path = os.path.join(out_dir, "assets", "assets.json")
+        metrics_path = os.path.join(out_dir, "metrics.json")
+        assets_path = os.path.join(out_dir, "assets.json")
         self.assertTrue(os.path.exists(metrics_path))
         self.assertTrue(os.path.exists(assets_path))
 

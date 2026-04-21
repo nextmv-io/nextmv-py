@@ -1592,9 +1592,9 @@ class LocalOutputWriter(OutputWriter):
         if path:
             return {
                 "solutions": os.path.join(path, "solutions"),
-                "metrics": os.path.join(path, "metrics/metrics.json"),
-                "statistics": os.path.join(path, "statistics/statistics.json"),
-                "assets": os.path.join(path, "assets/assets.json"),
+                "metrics": os.path.join(path, "metrics.json"),
+                "statistics": os.path.join(path, "statistics.json"),
+                "assets": os.path.join(path, "assets.json"),
             }
 
         if manifest is not None:
@@ -1607,9 +1607,9 @@ class LocalOutputWriter(OutputWriter):
 
         return {
             "solutions": "outputs/solutions",
-            "metrics": "outputs/metrics/metrics.json",
-            "statistics": "outputs/statistics/statistics.json",
-            "assets": "outputs/assets/assets.json",
+            "metrics": "outputs/metrics.json",
+            "statistics": "outputs/statistics.json",
+            "assets": "outputs/assets.json",
         }
 
     def __resolve_options(
