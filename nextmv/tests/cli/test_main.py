@@ -120,3 +120,57 @@ class TestRunScript(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 main()
         self.assertEqual(cm.exception.code, 1)
+
+
+class TestRunUv(unittest.TestCase):
+    """Tests for the --run-uv hidden flag."""
+
+    def test_run_uv_missing_args_exits_with_error(self):
+        """--run-uv with no further arguments prints an error and exits 1."""
+        with patch.object(sys, "argv", ["nextmv", "--run-uv"]):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch("nextmv.cli.main._find_uv_binary")
+    @patch("os.execv")
+    def test_run_uv_calls_execv_with_correct_args(self, mock_execv, mock_find_uv):
+        """--run-uv resolves the uv binary and calls os.execv with 'uv run <args>'."""
+        mock_find_uv.return_value = "/usr/bin/uv"
+        # os.execv normally replaces the process and never returns; raise SystemExit
+        # so that main() stops at that point rather than falling through to app().
+        mock_execv.side_effect = SystemExit(0)
+
+        with patch.object(sys, "argv", ["nextmv", "--run-uv", "script.py", "--option", "val"]):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+        self.assertEqual(cm.exception.code, 0)
+
+        mock_find_uv.assert_called_once()
+        mock_execv.assert_called_once_with(
+            "/usr/bin/uv",
+            ["/usr/bin/uv", "run", "script.py", "--option", "val"],
+        )
+
+    @patch("nextmv.cli.main._find_uv_binary")
+    @patch("os.execv")
+    def test_run_uv_single_extra_arg(self, mock_execv, mock_find_uv):
+        """--run-uv works with a single extra argument."""
+        mock_find_uv.return_value = "/opt/uv/uv"
+        mock_execv.side_effect = SystemExit(0)
+
+        with patch.object(sys, "argv", ["nextmv", "--run-uv", "app.py"]):
+            with self.assertRaises(SystemExit):
+                main()
+
+        mock_execv.assert_called_once_with(
+            "/opt/uv/uv",
+            ["/opt/uv/uv", "run", "app.py"],
+        )
+
+    @patch("nextmv.cli.main._find_uv_binary", side_effect=FileNotFoundError("uv not found"))
+    def test_run_uv_uv_binary_not_found_raises(self, mock_find_uv):
+        """--run-uv propagates FileNotFoundError when the uv binary cannot be located."""
+        with patch.object(sys, "argv", ["nextmv", "--run-uv", "script.py"]):
+            with self.assertRaises(FileNotFoundError):
+                main()
