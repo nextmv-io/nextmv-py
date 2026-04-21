@@ -21,7 +21,7 @@ files:
 configuration:
   # Define the content format of the app, one of: json, multi-file.
   content:
-    format: "multi-file" # Read and write files from disk.
+    format: multi-file # Read and write files from disk.
     # Configuration of the multi-file format.
     multi-file:
       input:
