@@ -122,7 +122,18 @@ def run(
             "options": options,
         }
     )
-    args = [sys.executable, "executor.py"]
+    # When frozen as a single binary (PyInstaller), sys.executable points to
+    # the binary itself rather than a Python interpreter, so we use the
+    # --run-script mechanism to run executor.py with the bundled interpreter.
+    # In a normal Python package install, sys.executable is a real interpreter
+    # and executor.py can be launched directly.
+    # We always use the absolute path to executor.py so it can be resolved
+    # regardless of the working directory the binary was invoked from.
+    executor_path = os.path.join(os.path.dirname(__file__), "executor.py")
+    if getattr(sys, "frozen", False):
+        args = [sys.executable, "--run-script", executor_path]
+    else:
+        args = [sys.executable, executor_path]
     process = subprocess.Popen(
         args,
         env=os.environ,
@@ -130,8 +141,8 @@ def run(
         stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        cwd=os.path.dirname(__file__),
-        start_new_session=True,  # Detach from parent process
+        cwd=os.path.dirname(executor_path),
+        start_new_session=True,
     )
     process.stdin.write(stdin_input)
     process.stdin.close()

@@ -1078,6 +1078,12 @@ def __determine_command(manifest: Manifest) -> list[str]:
     """
     Returns the command to execute based on the application type.
 
+    When running Python apps as a frozen PyInstaller single binary, ``sys.executable``
+    points to the binary itself rather than a Python interpreter, so the normal
+    ``[sys.executable, "-m", "uv", "run", ...]`` invocation cannot work. Instead, we use a
+    special ``[sys.executable, "--run-uv", ...]`` invocation that signals to our own
+    binary to re-execute and pass to the bundled uv binary.
+
     Parameters
     ----------
     manifest : Manifest
@@ -1089,26 +1095,23 @@ def __determine_command(manifest: Manifest) -> list[str]:
         The command prefix to use for execution. Empty list for binary executables.
     """
     if manifest.type == ManifestType.PYTHON:
+        is_frozen = getattr(sys, "frozen", False)
+        entry_point = [sys.executable, "-m", "uv", "run"] if not is_frozen else [sys.executable, "--run-uv"]
+
         if manifest.python and manifest.python.pip_requirements:
             if isinstance(manifest.python.pip_requirements, list):
                 return [
-                    sys.executable,
-                    "-m",
-                    "uv",
-                    "run",
+                    *entry_point,
                     "--with",
                     ",".join(manifest.python.pip_requirements),
                 ]
             elif isinstance(manifest.python.pip_requirements, str):
                 return [
-                    sys.executable,
-                    "-m",
-                    "uv",
-                    "run",
+                    *entry_point,
                     "--with-requirements",
                     manifest.python.pip_requirements,
                 ]
-        return [sys.executable, "-m", "uv", "run"]
+        return [*entry_point]
     elif manifest.type == ManifestType.GO:
         return []
     elif manifest.type == ManifestType.BINARY:

@@ -13,7 +13,9 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import io
 import os
+import runpy
 import sys
 from typing import Annotated
 
@@ -32,6 +34,7 @@ from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
 from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
+from nextmv.local.uv_handler import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
 rich_utils.STYLE_HELPTEXT = ""
@@ -261,6 +264,38 @@ def _remove_go_cli() -> None:
         success(f"Deleted [italic red]deprecated[/italic red] [magenta]{GO_CLI_PATH}[/magenta].")
 
 
+def setup_encoding() -> None:
+    """
+    Configure UTF-8 encoding for Windows platforms to make sure emojis and rich text do
+    not cause encoding errors.
+    """
+    # Only force UTF-8 encoding on Windows where the default encoding is not already UTF-8
+    # and where sys.stdout has a buffer attribute (indicating it's a real stream and not a
+    # mock).
+    if (
+        sys.platform == "win32"
+        and getattr(sys.stdout, "encoding", "").lower() != "utf-8"
+        and hasattr(sys.stdout, "buffer")
+    ):
+        try:
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer,
+                encoding="utf-8",
+                errors="replace",  # Don't crash on bad chars
+                line_buffering=True,
+            )
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer,
+                encoding="utf-8",
+                errors="replace",
+                line_buffering=True,
+            )
+        except Exception:
+            # If wrapping fails (e.g. in some CI environments),
+            # fall back to the original stream rather than crashing.
+            pass
+
+
 def main() -> None:
     """
     Entry point for the CLI with global exception handling.
@@ -268,6 +303,28 @@ def main() -> None:
     Catches all exceptions except Typer/Click exceptions (which handle their
     own exit codes) and displays a clean error message instead of a traceback.
     """
+
+    # Improve compatibility with Windows terminals.
+    setup_encoding()
+
+    # Handle --run-script and --run-uv for running scripts with the bundled Python
+    # interpreter or via uv. These are used internally in case of frozen PyInstaller
+    # distributions.
+    if len(sys.argv) > 1 and sys.argv[1] == "--run-script":
+        if len(sys.argv) < 3:
+            rich.print("[red]Error:[/red] --run-script requires a script path.", file=sys.stderr)
+            sys.exit(1)
+        script_path = sys.argv[2]
+        sys.argv = sys.argv[2:]  # script becomes argv[0]; its own args follow
+        runpy.run_path(script_path, run_name="__main__")
+        sys.exit(0)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--run-uv":
+        if len(sys.argv) < 3:
+            rich.print("[red]Error:[/red] --run-uv requires arguments for 'uv run'.", file=sys.stderr)
+            sys.exit(1)
+        uv_bin = _find_uv_binary()
+        uv_args = [uv_bin, "run"] + sys.argv[2:]
+        os.execv(uv_bin, uv_args)
 
     try:
         app()

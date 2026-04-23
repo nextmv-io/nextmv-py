@@ -65,28 +65,14 @@ jobs:
       - name: install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install pyinstaller uv
           pip install .
         working-directory: nextmv/
 
       - name: build binary with PyInstaller
-        # We force bash to get more consistent behavior across platforms
         shell: bash
-        # Binary will be located at dist/nextmv (or dist/nextmv.exe on Windows)
-        run: |
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            ADD_DATA_SEPARATOR=";"
-          else
-            ADD_DATA_SEPARATOR=":"
-          fi
-
-          pyinstaller \
-            --name nextmv \
-            --onefile \
-            --add-data "nextmv/templates${ADD_DATA_SEPARATOR}nextmv/templates" \
-            --add-data "nextmv/local/executor.py${ADD_DATA_SEPARATOR}nextmv/local/executor.py" \
-            --console nextmv/cli/main.py
-        working-directory: nextmv/
+        # Binary will be located at nextmv/dist/nextmv (or nextmv/dist/nextmv.exe on Windows)
+        run: ./.github/scripts/build-single-binary.sh
 
       - name: rename binary for distribution
         shell: bash
