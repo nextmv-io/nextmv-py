@@ -52,11 +52,14 @@ jobs:
         run: |
           winget install wingetcreate --disable-interactivity --accept-source-agreements
 
-      # - name: Sync fork
-      #   env:
-      #     GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
-      #   run: |
-      #     gh repo sync merschformann/winget-pkgs --branch master
+      - name: Delete repo fork to avoid sync issues
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          gh repo delete merschformann/winget-pkgs --yes
+          # We have to wait a bit for GitHub to process the deletion before we can fork again.
+          sleep 20
 
       - name: submit winget PR
         shell: bash
