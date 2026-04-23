@@ -1,9 +1,19 @@
 name: release-winget
-run-name: Winget release for ${{ github.event.release.tag_name }}
+run-name: Winget release for ${{ github.event.release.tag_name || inputs.version }}
 
 on:
+  # 'published' fires for all releases (including pre-releases).
+  # Pre-releases are filtered out in the job condition below.
+  # NOTE: 'released' does NOT fire reliably when using `gh release create`
+  # without --latest, which is why this workflow previously had zero runs.
   release:
-    types: [released] # 'released' excludes pre-releases; use 'published' to include them
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to submit (e.g. nextmv-v0.1.2, v0.1.2, or 0.1.2)"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,15 +21,31 @@ permissions:
 jobs:
   release-winget:
     name: Release winget package
-    # Only run for nextmv- releases (not nextmv-gurobipy-, nextmv-scikit-learn-, etc.)
-    if: ${{ startsWith(github.event.release.tag_name, 'nextmv-') && !contains(github.event.release.tag_name, 'gurobipy') && !contains(github.event.release.tag_name, 'scikit-learn') }}
+    # For release events: only run for full (non-pre-release) nextmv- releases.
+    # (Filter out nextmv-gurobipy- and nextmv-scikit-learn- tags)
+    # For manual dispatch: always run (caller is responsible for passing a stable version).
+    if: |
+      (
+        github.event_name == 'workflow_dispatch'
+      ) || (
+        github.event_name == 'release' &&
+        github.event.release.prerelease == false &&
+        startsWith(github.event.release.tag_name, 'nextmv-') &&
+        !contains(github.event.release.tag_name, 'gurobipy') &&
+        !contains(github.event.release.tag_name, 'scikit-learn')
+      )
     runs-on: windows-latest
     steps:
-      - name: strip version prefix
+      - name: resolve tag name
         shell: bash
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#nextmv-v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.version }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+          VERSION="${TAG#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"     # strip leading 'v' if present
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION=$VERSION"
 
