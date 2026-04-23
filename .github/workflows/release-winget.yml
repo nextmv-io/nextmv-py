@@ -52,11 +52,11 @@ jobs:
         run: |
           winget install wingetcreate --disable-interactivity --accept-source-agreements
 
-      - name: Sync fork
-        env:
-          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        run: |
-          gh repo sync merschformann/winget-pkgs --branch master
+      # - name: Sync fork
+      #   env:
+      #     GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      #   run: |
+      #     gh repo sync merschformann/winget-pkgs --branch master
 
       - name: submit winget PR
         shell: bash
