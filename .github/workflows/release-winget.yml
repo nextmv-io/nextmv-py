@@ -2,12 +2,10 @@ name: release-winget
 run-name: Winget release for ${{ github.event.release.tag_name || inputs.version }}
 
 on:
-  # 'published' fires for all releases (including pre-releases).
+  # We are reacting on all release creations ('created').
   # Pre-releases are filtered out in the job condition below.
-  # NOTE: 'released' does NOT fire reliably when using `gh release create`
-  # without --latest, which is why this workflow previously had zero runs.
   release:
-    types: [published]
+    types: [created]
   workflow_dispatch:
     inputs:
       version:
@@ -52,7 +50,7 @@ jobs:
       - name: install wingetcreate
         shell: bash
         run: |
-          winget install wingetcreate
+          winget install wingetcreate --disable-interactivity --accept-source-agreements
 
       - name: submit winget PR
         shell: bash
