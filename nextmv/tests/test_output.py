@@ -32,39 +32,6 @@ import nextmv
 class TestOutput(unittest.TestCase):
     """Tests for the various classes for writing an output."""
 
-    def test_post_init_validation(self):
-        """Test the validation in __post_init__ for different scenarios."""
-
-        # Test with None solution - should not raise any errors
-        output = nextmv.Output()
-        self.assertIsNone(output.solution)
-
-        # Test valid JSON serializable object
-        output = nextmv.Output(solution={"test": 123})
-        self.assertEqual(output.solution, {"test": 123})
-
-        # Test JSON with non-serializable object
-        with self.assertRaises(ValueError) as context:
-
-            class NonSerializable:
-                pass
-
-            nextmv.Output(solution=NonSerializable())
-
-        self.assertIn("which is not JSON serializable", str(context.exception))
-
-        # Test CSV_ARCHIVE with valid dict
-        output = nextmv.Output(
-            output_format=nextmv.OutputFormat.CSV_ARCHIVE, solution={"file": [{"col1": 1, "col2": 2}]}
-        )
-        self.assertEqual(output.solution, {"file": [{"col1": 1, "col2": 2}]})
-
-        # Test CSV_ARCHIVE with non-dict
-        with self.assertRaises(ValueError) as context:
-            nextmv.Output(output_format=nextmv.OutputFormat.CSV_ARCHIVE, solution=["not a dict"])
-
-        self.assertIn("supported type is `dict`", str(context.exception))
-
     def test_post_init_options_copied(self):
         """Test that options are deep-copied in __post_init__."""
 
@@ -76,6 +43,22 @@ class TestOutput(unittest.TestCase):
 
         # The output's options should not be affected by the modification
         self.assertEqual(output.options["duration"], 10)
+
+    def test_output_format_json_converted_to_content_format(self):
+        """Test that deprecated OutputFormat.JSON is converted to ContentFormat.JSON in __post_init__."""
+
+        output = nextmv.Output(output_format=nextmv.OutputFormat.JSON)
+
+        self.assertIsInstance(output.output_format, nextmv.ContentFormat)
+        self.assertEqual(output.output_format, nextmv.ContentFormat.JSON)
+
+    def test_output_format_multi_file_converted_to_content_format(self):
+        """Test that deprecated OutputFormat.MULTI_FILE is converted to ContentFormat.MULTI_FILE in __post_init__."""
+
+        output = nextmv.Output(output_format=nextmv.OutputFormat.MULTI_FILE)
+
+        self.assertIsInstance(output.output_format, nextmv.ContentFormat)
+        self.assertEqual(output.output_format, nextmv.ContentFormat.MULTI_FILE)
 
     def test_to_dict(self):
         """Test the to_dict method for different cases."""
@@ -870,30 +853,6 @@ class TestOutput(unittest.TestCase):
         self.assertEqual(solution_file.name, "test.xlsx")
         self.assertEqual(solution_file.data, data)
         self.assertIsNotNone(solution_file.writer)
-
-    def test_output_with_solution_files_validation(self):
-        """Test Output validation for solution_files."""
-
-        # Test that solution_files requires MULTI_FILE format
-        sol_file = nextmv.json_solution_file("test", {"data": "value"})
-
-        # Should raise error when using solution_files with non-MULTI_FILE format
-        with self.assertRaises(ValueError) as context:
-            nextmv.Output(output_format=nextmv.ContentFormat.JSON, solution_files=[sol_file])
-        self.assertIn(
-            "solution_files` are not `None`, but `output_format` is different from `ContentFormat.MULTI_FILE`",
-            str(context.exception),
-        )
-
-        # Should work with MULTI_FILE format
-        output = nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files=[sol_file])
-        self.assertEqual(len(output.solution_files), 1)
-        self.assertEqual(output.solution_files[0].name, "test.json")
-
-        # Test invalid solution_files type
-        with self.assertRaises(TypeError) as context:
-            nextmv.Output(output_format=nextmv.ContentFormat.MULTI_FILE, solution_files="not a list")
-        self.assertIn("unsupported `Output.solution_files` type", str(context.exception))
 
     def test_local_writer_multi_file_json(self):
         """Test LocalOutputWriter with MULTI_FILE format and JSON solution files."""

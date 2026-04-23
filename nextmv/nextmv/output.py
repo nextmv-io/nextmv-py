@@ -992,11 +992,10 @@ class Output:
     }
     ```
     """
-    output_format: ContentFormat | None = ContentFormat.JSON
+    output_format: ContentFormat | None = None
     """
-    Format of the output data. Default is `ContentFormat.JSON`. When set to
-    `ContentFormat.MULTI_FILE`, the `solution_files` field must be specified and
-    cannot be `None`.
+    Format of the output data. When set to `ContentFormat.MULTI_FILE`, the
+    `solution_files` field must be specified and cannot be `None`.
     """
     solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None
     """
@@ -1066,7 +1065,7 @@ class Output:
     handle the serialization of the data.
     """
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: C901
         """
         Initialize and validate the Output instance.
 
@@ -1085,7 +1084,7 @@ class Output:
         new_options = copy.deepcopy(init_options)
         self.options = new_options
 
-        if type(self.output_format) is OutputFormat:
+        if self.output_format is not None and type(self.output_format) is OutputFormat:
             deprecated(name="OutputFormat", reason="`OutputFormat` is deprecated, use `ContentFormat` instead")
             if self.output_format in {OutputFormat.TEXT, OutputFormat.CSV_ARCHIVE}:
                 deprecated(
@@ -1096,37 +1095,6 @@ class Output:
                 self.output_format = ContentFormat(self.output_format.value)
             else:
                 raise ValueError(f"unsupported output_format: {self.output_format}")
-
-        if self.solution is not None:
-            if self.output_format == ContentFormat.JSON:
-                try:
-                    _ = serialize_json(self.solution)
-                except (TypeError, OverflowError) as e:
-                    raise ValueError(
-                        f"Output has `output_format` `ContentFormat.JSON` and "
-                        f"`Output.solution` is of type {type(self.solution)}, which is not JSON serializable"
-                    ) from e
-
-            elif (
-                type(self.output_format) is OutputFormat
-                and self.output_format == OutputFormat.CSV_ARCHIVE
-                and not isinstance(self.solution, dict)
-            ):
-                raise ValueError(
-                    f"unsupported Output.solution type: {type(self.solution)} with "
-                    "output_format OutputFormat.CSV_ARCHIVE, supported type is `dict`"
-                )
-
-        if self.solution_files is not None and self.output_format != ContentFormat.MULTI_FILE:
-            raise ValueError(
-                f"`solution_files` are not `None`, but `output_format` is different from `ContentFormat.MULTI_FILE`: "
-                f"{self.output_format}. If you want to use `solution_files`, set `output_format` "
-                "to `ContentFormat.MULTI_FILE`."
-            )
-        elif self.solution_files is not None and not isinstance(self.solution_files, list):
-            raise TypeError(
-                f"unsupported `Output.solution_files` type: {type(self.solution_files)}, supported type is `list`"
-            )
 
     def to_dict(self) -> dict[str, Any]:  # noqa: C901
         """
@@ -1204,14 +1172,15 @@ class Output:
         # Add the auxiliary configurations to the output dictionary if they are
         # defined and not empty.
         if (
-            self.output_format == OutputFormat.CSV_ARCHIVE
+            self.output_format is not None
+            and self.output_format == OutputFormat.CSV_ARCHIVE
             and self.csv_configurations is not None
             and self.csv_configurations != {}
         ):
             output_dict["csv_configurations"] = self.csv_configurations
 
         if (
-            self.output_format == ContentFormat.JSON
+            (self.output_format is None or self.output_format == ContentFormat.JSON)
             and self.json_configurations is not None
             and self.json_configurations != {}
         ):
@@ -1505,9 +1474,9 @@ class LocalOutputWriter(OutputWriter):
         elif manifest is not None:
             resolved_content_format = manifest.configuration.content.format
         elif output is not None:
-            if isinstance(output, Output):
+            if isinstance(output, Output) and output.output_format is not None:
                 resolved_content_format = output.output_format
-            elif isinstance(output, dict) or isinstance(output, BaseModel):
+            elif isinstance(output, (Output, dict, BaseModel)):
                 resolved_content_format = ContentFormat.JSON
             else:
                 raise ValueError(
