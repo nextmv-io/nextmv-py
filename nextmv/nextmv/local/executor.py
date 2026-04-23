@@ -418,11 +418,6 @@ def process_run_output(
     temp_run_outputs_dir = os.path.join(temp_src, OUTPUTS_KEY)
 
     output_format = manifest.configuration.content.format
-    _process_run_information(
-        run_id=run_id,
-        run_dir=run_dir,
-        result=result,
-    )
     _process_run_metrics(
         temp_run_outputs_dir=temp_run_outputs_dir,
         outputs_dir=outputs_dir,
@@ -458,6 +453,16 @@ def process_run_output(
     _process_run_visuals(
         run_dir=run_dir,
         outputs_dir=outputs_dir,
+    )
+    # NOTE: _process_run_information must be called last. It sets status_v2 to "succeeded"
+    # or "failed", which signals to pollers that the run is complete. format.output
+    # (written by _process_run_solutions) must already be on disk before that status
+    # transition is visible, otherwise a poller can observe status=succeeded with
+    # format_output=None and crash.
+    _process_run_information(
+        run_id=run_id,
+        run_dir=run_dir,
+        result=result,
     )
 
 
