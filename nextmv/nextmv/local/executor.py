@@ -791,7 +791,7 @@ def _process_run_solutions(
         )
     else:
         if bool(stdout_output):
-                with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w", encoding="utf-8") as f:
+            with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w", encoding="utf-8") as f:
                 if isinstance(stdout_output, dict):
                     json.dump(stdout_output, f, indent=2)
                 elif isinstance(stdout_output, str):
