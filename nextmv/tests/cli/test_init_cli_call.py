@@ -62,7 +62,7 @@ class TestCliCallEncoding(unittest.TestCase):
         """Normal UTF-8 stderr (including non-ASCII) must be preserved exactly."""
         result = self._invoke(
             stdout_bytes=b"",
-            stderr_bytes="info: résumé 日本語\n".encode("utf-8"),
+            stderr_bytes="info: résumé 日本語\n".encode(),
         )
         self.assertIn("résumé", result.stderr)
         self.assertIn("日本語", result.stderr)
