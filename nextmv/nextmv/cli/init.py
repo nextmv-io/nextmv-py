@@ -942,6 +942,7 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
 
         stdout_lines = []
         stderr_lines = []
+        stdout_exc: list[BaseException] = []
 
         def stream_stderr():
             for raw_line in process.stderr:
@@ -950,10 +951,14 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
                 stderr_lines.append(line)
 
         def stream_stdout():
-            for raw_line in process.stdout:
-                line = raw_line.decode("utf-8")
-                rich.print(line, end="")
-                stdout_lines.append(line)
+            try:
+                for raw_line in process.stdout:
+                    line = raw_line.decode("utf-8")
+                    rich.print(line, end="")
+                    stdout_lines.append(line)
+            except Exception as exc:
+                # Capture so we can re-raise on the main thread after joining.
+                stdout_exc.append(exc)
 
         # Use threads to read both streams concurrently without deadlocking
         stderr_thread = threading.Thread(target=stream_stderr)
@@ -965,6 +970,11 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
         stderr_thread.join()
         stdout_thread.join()
         process.wait()
+
+        # Re-raise any decoding error from stdout on the calling thread so it
+        # surfaces as a clear UnicodeDecodeError rather than being swallowed.
+        if stdout_exc:
+            raise stdout_exc[0]
 
         result = subprocess.CompletedProcess(
             args=command,

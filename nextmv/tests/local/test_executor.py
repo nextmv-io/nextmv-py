@@ -1203,5 +1203,120 @@ class TestCopyNewOrModifiedFiles(unittest.TestCase):
         self._assert_file_not_exists(os.path.join(self.dst_dir, "regular.pyc"))
 
 
+class TestExecutorEncoding(unittest.TestCase):
+    """Tests that execute_run handles non-UTF-8 bytes in subprocess output without crashing."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.run_dir = os.path.join(self.test_dir, "run_dir")
+        os.makedirs(self.run_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _make_info_file(self, run_id: str) -> None:
+        info_file = os.path.join(self.run_dir, f"{run_id}.json")
+        with open(info_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "metadata": {
+                        "created_at": "2023-01-01T00:00:00Z",
+                        "status_v2": "pending",
+                        "format": {"output": {"type": "json"}},
+                    }
+                },
+                f,
+            )
+
+    def _run_execute_run(self, stdout_lines, stderr_lines, run_id="test_encoding_run"):
+        """Helper that patches Popen and runs execute_run, returning normally."""
+        self._make_info_file(run_id)
+
+        mock_process = Mock()
+        mock_process.returncode = 0
+        mock_process.stdin = Mock()
+        mock_process.stdout = iter(stdout_lines)
+        mock_process.stderr = iter(stderr_lines)
+
+        with (
+            patch("nextmv.local.executor._copy_files_from_manifest"),
+            patch("nextmv.local.executor.process_run_output"),
+            patch("nextmv.local.executor.subprocess.Popen", return_value=mock_process),
+        ):
+            execute_run(
+                run_id=run_id,
+                src="/test/src",
+                manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python", "files": ["main.py"]},
+                run_dir=self.run_dir,
+                run_config={"format": {"input": {"type": "json"}}},
+                input_data={"test": "data"},
+            )
+
+    def test_non_utf8_bytes_in_stderr_do_not_crash(self):
+        """Non-UTF-8 bytes in stderr must not raise UnicodeDecodeError.
+
+        On Windows the subprocess pipes default to the system codepage (e.g.
+        cp1252). Byte 0x8f is undefined in cp1252, so without an explicit
+        encoding this would raise UnicodeDecodeError. The fix is to open the
+        Popen with encoding='utf-8' and errors='replace'.
+        """
+        # Simulate a line that contains the byte 0x8f – undefined in cp1252.
+        # We use a plain string here because the mock iter already yields str;
+        # the important thing is that the pipeline doesn't blow up when such
+        # a replacement character reaches the log file writer.
+        bad_line = "progress: \ufffd done\n"  # U+FFFD = replacement character
+        self._run_execute_run(stdout_lines=[], stderr_lines=[bad_line])
+
+        logs_file = os.path.join(self.run_dir, LOGS_KEY, LOGS_FILE)
+        self.assertTrue(os.path.exists(logs_file))
+        with open(logs_file, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("progress:", content)
+
+    def test_non_utf8_bytes_in_stdout_do_not_crash(self):
+        """Non-UTF-8 replacement characters in stdout are handled gracefully."""
+        bad_line = '{"result": "\ufffd"}\n'
+        self._run_execute_run(stdout_lines=[bad_line], stderr_lines=[])
+
+    def test_log_file_written_as_utf8(self):
+        """The logs file must be written with UTF-8 encoding so non-ASCII characters survive."""
+        unicode_line = "info: résumé café naïve 日本語\n"
+        self._run_execute_run(stdout_lines=[], stderr_lines=[unicode_line])
+
+        logs_file = os.path.join(self.run_dir, LOGS_KEY, LOGS_FILE)
+        with open(logs_file, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("résumé", content)
+        self.assertIn("日本語", content)
+
+    def test_popen_called_with_utf8_encoding(self):
+        """subprocess.Popen must be called with encoding='utf-8' and errors='replace'."""
+        self._make_info_file("enc_check")
+
+        mock_process = Mock()
+        mock_process.returncode = 0
+        mock_process.stdin = Mock()
+        mock_process.stdout = iter([])
+        mock_process.stderr = iter([])
+
+        with (
+            patch("nextmv.local.executor._copy_files_from_manifest"),
+            patch("nextmv.local.executor.process_run_output"),
+            patch("nextmv.local.executor.subprocess.Popen", return_value=mock_process) as mock_popen,
+        ):
+            execute_run(
+                run_id="enc_check",
+                src="/test/src",
+                manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python", "files": ["main.py"]},
+                run_dir=self.run_dir,
+                run_config={"format": {"input": {"type": "json"}}},
+                input_data={"test": "data"},
+            )
+
+        call_kwargs = mock_popen.call_args[1]
+        self.assertEqual(call_kwargs.get("encoding"), "utf-8")
+        self.assertEqual(call_kwargs.get("errors"), "replace")
+
+
 if __name__ == "__main__":
     unittest.main()
