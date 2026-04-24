@@ -138,8 +138,6 @@ def run(
         args,
         env=os.environ,
         text=True,
-        encoding="utf-8",
-        errors="replace",
         stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

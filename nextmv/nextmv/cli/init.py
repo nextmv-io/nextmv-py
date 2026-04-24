@@ -927,12 +927,15 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
     """
 
     try:
+        # Use binary mode so we can apply different decoding strategies to each
+        # stream: stdout is machine-readable (JSON) and must be decoded strictly
+        # so corruption surfaces as a clear UnicodeDecodeError rather than a
+        # confusing JSONDecodeError; stderr is human-facing and uses
+        # errors="replace" so stray non-UTF-8 bytes (common on Windows with
+        # codepage cp1252) never crash the thread.
         process = subprocess.Popen(
             command,
             env=os.environ,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -941,12 +944,14 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
         stderr_lines = []
 
         def stream_stderr():
-            for line in process.stderr:
+            for raw_line in process.stderr:
+                line = raw_line.decode("utf-8", errors="replace")
                 rich.print(line, end="", file=sys.stderr)
                 stderr_lines.append(line)
 
         def stream_stdout():
-            for line in process.stdout:
+            for raw_line in process.stdout:
+                line = raw_line.decode("utf-8")
                 rich.print(line, end="")
                 stdout_lines.append(line)
 
