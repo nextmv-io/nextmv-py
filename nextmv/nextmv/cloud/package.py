@@ -325,6 +325,8 @@ def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str
         stdout=subprocess.PIPE if redirect_out_err else None,
         stderr=subprocess.PIPE if redirect_out_err else None,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
     if redirect_out_err:
