@@ -931,6 +931,8 @@ def _cli_call(command: list[str]) -> subprocess.CompletedProcess:
             command,
             env=os.environ,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
