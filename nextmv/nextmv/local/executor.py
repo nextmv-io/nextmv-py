@@ -146,7 +146,7 @@ def execute_run(
 
             # Set the run status to running.
             info_file = os.path.join(run_dir, f"{run_id}.json")
-            with open(info_file, "r+") as f:
+            with open(info_file, "r+", encoding="utf-8") as f:
                 info = json.load(f)
                 info["metadata"]["status_v2"] = "running"
                 f.seek(0)
@@ -173,9 +173,12 @@ def execute_run(
             stderr_lines: list[str] = []
 
             # Force unbuffered stdout/stderr in child processes so both
-            # streams are written to the log file in real time.
+            # streams are written to the log file in real time. Also force
+            # UTF-8 encoding for all stdio so Windows codepage mismatches
+            # (e.g. cp1252) do not cause UnicodeDecodeError.
             child_env = os.environ.copy()
             child_env["PYTHONUNBUFFERED"] = "1"
+            child_env["PYTHONIOENCODING"] = "utf-8"
 
             # This is the process that actually executes the entrypoint script.
             # We use subprocess.Popen instead of subprocess.run because we need
@@ -185,6 +188,8 @@ def execute_run(
                 args,
                 env=child_env,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -199,7 +204,7 @@ def execute_run(
             # A lock to serialize writes from the stdout and stderr threads so log
             # lines are never interleaved in the log file.
             log_lock = threading.Lock()
-            log_f = open(log_file_path, "a")
+            log_f = open(log_file_path, "a", encoding="utf-8")
 
             def stream_stderr() -> None:
                 # Stderr is always streamed live to the log file so errors appear
@@ -263,12 +268,12 @@ def execute_run(
 
     except Exception as e:
         # If we encounter an exception, we log it to the stderr log file.
-        with open(os.path.join(logs_dir, LOGS_FILE), "a") as f:
+        with open(os.path.join(logs_dir, LOGS_FILE), "a", encoding="utf-8") as f:
             f.write(f"\nException during run execution: {str(e)}\n")
 
         # Also, we update the run information file to set the status to failed.
         info_file = os.path.join(run_dir, f"{run_id}.json")
-        with open(info_file, "r+") as f:
+        with open(info_file, "r+", encoding="utf-8") as f:
             info = json.load(f)
             info["metadata"]["status_v2"] = "failed"
             info["metadata"]["error"] = "Run failed, please check logs for details."
@@ -483,7 +488,7 @@ def _process_run_information(run_id: str, run_dir: str, result: subprocess.Compl
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
 
-    with open(info_file) as f:
+    with open(info_file, encoding="utf-8") as f:
         info = json.load(f)
 
     # Calculate duration.
@@ -505,7 +510,7 @@ def _process_run_information(run_id: str, run_dir: str, result: subprocess.Compl
     info["metadata"]["status_v2"] = status
     info["metadata"]["error"] = error
 
-    with open(info_file, "w") as f:
+    with open(info_file, "w", encoding="utf-8") as f:
         json.dump(info, f, indent=2)
 
 
@@ -569,7 +574,7 @@ def _process_run_metrics(
     if METRICS_KEY not in stdout_output:
         return
 
-    with open(metrics_dst, "w") as f:
+    with open(metrics_dst, "w", encoding="utf-8") as f:
         metrics = {METRICS_KEY: stdout_output[METRICS_KEY]}
         json.dump(metrics, f, indent=2)
 
@@ -637,7 +642,7 @@ def _process_run_statistics(
     if STATISTICS_KEY not in stdout_output:
         return
 
-    with open(stats_dst, "w") as f:
+    with open(stats_dst, "w", encoding="utf-8") as f:
         stats = {STATISTICS_KEY: stdout_output[STATISTICS_KEY]}
         json.dump(stats, f, indent=2)
 
@@ -702,7 +707,7 @@ def _process_run_assets(
     if ASSETS_KEY not in stdout_output:
         return
 
-    with open(assets_dst, "w") as f:
+    with open(assets_dst, "w", encoding="utf-8") as f:
         assets = {ASSETS_KEY: stdout_output[ASSETS_KEY]}
         json.dump(assets, f, indent=2)
 
@@ -753,7 +758,7 @@ def _process_run_solutions(
 
     info_file = os.path.join(run_dir, f"{run_id}.json")
 
-    with open(info_file) as f:
+    with open(info_file, encoding="utf-8") as f:
         info = json.load(f)
 
     solutions_dst = os.path.join(outputs_dir, SOLUTIONS_KEY)
@@ -786,7 +791,7 @@ def _process_run_solutions(
         )
     else:
         if bool(stdout_output):
-            with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w") as f:
+                with open(os.path.join(solutions_dst, DEFAULT_OUTPUT_JSON_FILE), "w", encoding="utf-8") as f:
                 if isinstance(stdout_output, dict):
                     json.dump(stdout_output, f, indent=2)
                 elif isinstance(stdout_output, str):
@@ -795,7 +800,7 @@ def _process_run_solutions(
     # Update the run information file with the output size and type.
     calculate_files_size(run_dir, run_id, solutions_dst, metadata_key="output_size")
     info["metadata"]["format"]["output"] = {"type": output_format.value}
-    with open(info_file, "w") as f:
+    with open(info_file, "w", encoding="utf-8") as f:
         json.dump(info, f, indent=2)
 
 
@@ -824,7 +829,7 @@ def _process_run_visuals(run_dir: str, outputs_dir: str) -> None:
     else:
         return
 
-    with open(assets_file) as f:
+    with open(assets_file, encoding="utf-8") as f:
         assets = json.load(f)
 
     # Create visuals directory.
