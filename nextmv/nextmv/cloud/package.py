@@ -11,6 +11,7 @@ import tempfile
 
 import rich
 
+from nextmv.local.uv_handler import _find_uv_binary
 from nextmv.logger import log
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, ModelConfiguration, find_files
 from nextmv.model import Model, _cleanup_python_model
@@ -239,62 +240,36 @@ def __install_dependencies(  # noqa: C901 # complexity
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
 
-    platform_filter = []
+    dep_dir = os.path.join(".nextmv", "python", "deps")
+    target_dir = os.path.join(temp_dir, dep_dir)
+
+    python_version = "3.11"
+    if manifest.python.version:
+        __confirm_python_bundling_version(manifest.python.version)
+        python_version = manifest.python.version
+
     if not manifest.python.arch or manifest.python.arch == "arm64":
-        platform_filter.extend(
-            [
-                "--platform=manylinux2014_aarch64",
-                "--platform=manylinux_2_17_aarch64",
-                "--platform=manylinux_2_24_aarch64",
-                "--platform=manylinux_2_26_aarch64",
-                "--platform=manylinux_2_28_aarch64",
-                "--platform=manylinux_2_34_aarch64",
-                "--platform=linux_aarch64",
-            ]
-        )
+        uv_platform = "aarch64-unknown-linux-gnu"
     elif manifest.python.arch == "amd64":
-        platform_filter.extend(
-            [
-                "--platform=manylinux2014_x86_64",
-                "--platform=manylinux_2_17_x86_64",
-                "--platform=manylinux_2_24_x86_64",
-                "--platform=manylinux_2_26_x86_64",
-                "--platform=manylinux_2_28_x86_64",
-                "--platform=manylinux_2_34_x86_64",
-                "--platform=linux_x86_64",
-            ]
-        )
+        uv_platform = "x86_64-unknown-linux-gnu"
     else:
         raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
-    version_filter = ["--python-version=3.11"]
-    if manifest.python.version:
-        __confirm_python_bundling_version(manifest.python.version)
-        version_filter = [f"--python-version={manifest.python.version}"]
-
-    py_cmd = __get_python_command()
-    dep_dir = os.path.join(".nextmv", "python", "deps")
-    command = (
-        [
-            py_cmd,
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            pip_requirements,
-            "--only-binary=:all:",
-            "--implementation=cp",
-            "--upgrade",
-            "--no-warn-conflicts",
-            "--target",
-            os.path.join(temp_dir, dep_dir),
-            "--no-user",  # We explicitly avoid user mode (mainly to fix issues with Windows store Python installations)
-            "--no-input",
-            "--quiet",
-        ]
-        + platform_filter
-        + version_filter
-    )
+    uv_bin = _find_uv_binary()
+    command = [
+        uv_bin,
+        "pip",
+        "install",
+        "-r",
+        pip_requirements,
+        "--only-binary=:all:",
+        "--upgrade",
+        "--target",
+        target_dir,
+        "--quiet",
+        f"--python-platform={uv_platform}",
+        f"--python-version={python_version}",
+    ]
     result = subprocess.run(
         command,
         cwd=app_dir,
@@ -304,100 +279,6 @@ def __install_dependencies(  # noqa: C901 # complexity
     )
     if result.returncode != 0:
         raise Exception(f"error installing dependencies: {os.linesep}{result.stdout}")
-
-
-def __run_command(binary: str, dir: str, redirect_out_err: bool, *arguments: str) -> str:
-    os_agnostic_cmd = binary
-    if arguments:
-        os_agnostic_cmd += " " + " ".join(arguments)
-
-    if platform.system() == "Windows":
-        bin = "cmd"
-        args = ["/c", os_agnostic_cmd]
-    else:
-        bin = "bash"
-        args = ["-c", os_agnostic_cmd]
-
-    cmd = subprocess.Popen(
-        [bin] + args,
-        cwd=dir if dir else None,
-        env=os.environ,
-        stdout=subprocess.PIPE if redirect_out_err else None,
-        stderr=subprocess.PIPE if redirect_out_err else None,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-
-    if redirect_out_err:
-        out, err = cmd.communicate()
-        if cmd.returncode != 0:
-            raise Exception(f"Command failed with error: {err}")
-        return out
-    else:
-        cmd.wait()
-        if cmd.returncode != 0:
-            raise Exception("Command failed")
-        return ""
-
-
-def __get_python_command() -> str:
-    py_cmds = ["python3", "python"]
-    py_cmd = ""
-    for cmd in py_cmds:
-        try:
-            output = __run_command(cmd, "", True, "--version")
-            __confirm_python_version(output)
-            py_cmd = cmd
-            break
-        except Exception:
-            continue
-
-    if not py_cmd:
-        raise Exception("Python not found in PATH")
-
-    output = __run_command(py_cmd, "", True, "-m", "pip", "--version")
-    __confirm_pip_version(output)
-
-    return py_cmd
-
-
-def __confirm_pip_version(output: str) -> None:
-    elements = output.split()
-    if len(elements) < 2:
-        raise Exception("pip version not found")
-
-    version = elements[1].strip()
-    re_version = re.compile(r"\d+\.\d+")
-    if re_version.match(version):
-        try:
-            major, _, _ = map(int, version.split("."))
-        except ValueError:
-            major, _ = map(int, version.split("."))
-
-        if major >= 22:
-            return
-
-    raise Exception("pip version 22.0 or higher is required")
-
-
-def __confirm_python_version(output: str) -> None:
-    elements = output.split()
-    if len(elements) < 2:
-        raise Exception("python version not found")
-
-    version = elements[1].strip()
-    re_version = re.compile(r"\d+\.\d+\.\d+")
-    if re_version.match(version):
-        try:
-            major, minor, _ = map(int, version.split("."))
-        except ValueError:
-            major, minor = map(int, version.split("."))
-
-        if major == 3 and minor >= 10:
-            return
-
-    raise Exception("python version 3.10 or higher is required")
 
 
 def __confirm_python_bundling_version(version: str) -> None:
