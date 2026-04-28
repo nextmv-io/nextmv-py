@@ -1,5 +1,5 @@
 """
-Unit tests for the _find_uv_binary() function in nextmv.local.uv_handler.
+Unit tests for the _find_uv_binary() function in nextmv.uv_handler.
 """
 
 import os
@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
-from nextmv.local.uv_handler import _find_uv_binary
+from nextmv.uv_handler import _find_uv_binary
 
 
 class TestFindUvBinary(unittest.TestCase):

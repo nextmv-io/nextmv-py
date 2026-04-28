@@ -11,10 +11,10 @@ import tempfile
 
 import rich
 
-from nextmv.local.uv_handler import _find_uv_binary
 from nextmv.logger import log
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, ModelConfiguration, find_files
 from nextmv.model import Model, _cleanup_python_model
+from nextmv.uv_handler import _find_uv_binary
 
 _MANDATORY_FILES_PER_TYPE = {
     ManifestType.PYTHON: ["main.py"],
