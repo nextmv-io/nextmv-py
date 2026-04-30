@@ -7,7 +7,7 @@ from typing import Annotated
 import questionary
 import typer
 
-from nextmv.cli.message import choice, directory_path, enum_values, parse_content_format, success
+from nextmv.cli.message import choice, confirmation, directory_path, enum_values, error, parse_content_format, success
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.manifest import ManifestType, initialize_manifest
@@ -23,7 +23,8 @@ def init(
         typer.Option(
             "--content-format",
             "-c",
-            help=f"The content format of the manifest. Allowed values are: {enum_values(ContentFormat)}.",
+            help=f"The content format of the manifest. Allowed values are: {enum_values(ContentFormat)}. "
+            "Useful for non-interactive sessions.",
             metavar="CONTENT_FORMAT",
         ),
     ] = None,
@@ -46,15 +47,31 @@ def init(
             metavar="TYPE",
         ),
     ] = None,
+    options_yes: Annotated[
+        bool | None,
+        typer.Option(
+            "--options-yes",
+            "-y",
+            help="Add options (parameters) to the manifest. Useful for non-interactive sessions.",
+        ),
+    ] = None,
+    options_no: Annotated[
+        bool | None,
+        typer.Option(
+            "--options-no",
+            "-n",
+            help="Do not add options (parameters) to the manifest. Useful for non-interactive sessions.",
+        ),
+    ] = None,
 ) -> None:
     """
     Initialize an [magenta]app.yaml[/magenta] (app manifest) file.
 
     Creates a sample [magenta]app.yaml[/magenta] manifest file by prompting the
-    user to provide certain information. You can use the --content-format,
-    --dirpath, and --type options to skip the prompts. If the directory does not
-    exist, it will be created. If a manifest file already exists in the
-    directory, it will be overwritten.
+    user to provide certain information. You can use --content-format,
+    --dirpath, --type, --options-yes, and --options-no to skip the prompts. If
+    the directory does not exist, it will be created. If a manifest file
+    already exists in the directory, it will be overwritten.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -67,6 +84,9 @@ def init(
     - Initialize a [magenta]multi-file[/magenta] Java manifest in the [magenta]./my-app[/magenta] directory.
         $ [dim]nextmv manifest init --type java --content-format multi-file --dirpath ./my-app[/dim]
     """
+
+    if options_yes is not None and options_no is not None:
+        error("Cannot specify both --options-yes and --options-no. Please choose one.")
 
     content_format = parse_content_format(content_format)
 
@@ -100,8 +120,28 @@ def init(
         )
         dirpath = dirpath or "."
 
-    dst = initialize_manifest(manifest_type=manifest_type, content_format=content_format, dirpath=dirpath)
-    success(
-        f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
-        f"initialized at [magenta]{dst}[/magenta]."
+    if options_yes is None and options_no is None:
+        with_options = confirmation(
+            msg="Would you like to add options (parameters) to your manifest?",
+            default=True,
+        )
+    else:
+        with_options = options_yes is not None
+
+    dst = initialize_manifest(
+        manifest_type=manifest_type,
+        content_format=content_format,
+        dirpath=dirpath,
+        with_options=with_options,
     )
+
+    msg = (
+        f"[magenta]{manifest_type.value}[/magenta], [magenta]{content_format.value}[/magenta] manifest "
+        f"initialized at [magenta]{dst}[/magenta]"
+    )
+    if with_options:
+        msg += ", [italic]with[/italic] options."
+    else:
+        msg += ", [italic]without[/italic] options."
+
+    success(msg)

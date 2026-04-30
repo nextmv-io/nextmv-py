@@ -19,6 +19,10 @@ ManifestPythonModel
     Class for model-specific instructions for Python apps.
 ManifestPython
     Class for Python-specific instructions in the manifest.
+ControlType
+    Enum for control types for options in the manifest UI.
+ManifestOptionType
+    Enum for option types for options in the manifest.
 ManifestOptionUI
     Class for UI attributes of options in the manifest.
 ManifestOption
@@ -37,6 +41,10 @@ ManifestContent
     Class for content configuration specifying how app input/output is handled.
 ManifestConfiguration
     Class for configuration settings for the decision model.
+ManifestExecution
+    Class for execution configuration for the decision model.
+ModelConfiguration
+    Dataclass for configuration settings for Nextmv models.
 Manifest
     Main class representing an app manifest for Nextmv.
 
@@ -66,7 +74,7 @@ from enum import Enum
 from typing import Any
 
 import yaml
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
@@ -412,41 +420,142 @@ class ManifestPython(BaseModel):
     from the app bundle.
     """
 
-    @field_validator("version", mode="before")
-    @classmethod
-    def validate_version(cls, v: str | float | None) -> str | None:
-        """
-        Validate and convert the Python version field to a string.
-
-        This validator allows the version to be specified as either a float or string
-        in the manifest for convenience, but ensures it's stored internally as a string.
-
-        Parameters
-        ----------
-        v : Optional[Union[str, float]]
-            The version value to validate. Can be None, a string, or a float.
-
-        Returns
-        -------
-        Optional[str]
-            The version as a string, or None if the input was None.
-
-        Examples
-        --------
-        >>> ManifestPython.validate_version(3.11)
-        '3.11'
-        >>> ManifestPython.validate_version("3.11")
-        '3.11'
-        >>> ManifestPython.validate_version(None) is None
-        True
-        """
+    def model_post_init(self, __context) -> None:
+        """Convert version from float to string for convenience."""
         # We allow the version to be a float in the manifest for convenience, but we want
         # to store it as a string internally.
-        if v is None:
-            return None
-        if isinstance(v, float):
-            return str(v)
-        return v
+        if isinstance(self.version, float):
+            self.version = str(self.version)
+
+
+class ControlType(str, Enum):
+    """
+    Control types for options in the manifest UI.
+
+    You can import the `ControlType` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ControlType
+    ```
+
+    This enum defines the valid control types for options in the Nextmv Cloud UI.
+
+    Attributes
+    ----------
+    INPUT : str
+        An input field for string or numeric values.
+    SELECT : str
+        A dropdown select for a fixed set of values.
+    MULTISELECT : str
+        A multi-select dropdown for choosing multiple values from a fixed set.
+    SLIDER : str
+        A slider control for numeric values within a range.
+    TOGGLE : str
+        A toggle switch for boolean values.
+
+    Examples
+    --------
+    >>> from nextmv import ControlType
+    >>> ControlType.INPUT
+    'input'
+    >>> ControlType.SELECT
+    'select'
+    >>> ControlType.MULTISELECT
+    'multiselect'
+    >>> ControlType.SLIDER
+    'slider'
+    >>> ControlType.TOGGLE
+    'toggle'
+    """
+
+    INPUT = "input"
+    """An input field for string or numeric values."""
+    SELECT = "select"
+    """A dropdown select for a fixed set of values."""
+    MULTISELECT = "multiselect"
+    """A multi-select dropdown for choosing multiple values from a fixed set."""
+    SLIDER = "slider"
+    """A slider control for numeric values within a range."""
+    TOGGLE = "toggle"
+    """A toggle switch for boolean values."""
+
+
+class ManifestOptionType(str, Enum):
+    """
+    Option types for options in the manifest.
+
+    You can import the `ManifestOptionType` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestOptionType
+    ```
+
+    This enum defines the valid option types for options in the manifest.
+
+    Attributes
+    ----------
+    STRING : str
+        A string option type.
+    BOOL : str
+        A boolean option type.
+    INT : str
+        An integer option type.
+    FLOAT : str
+        A float option type.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestOptionType
+    >>> ManifestOptionType.STRING
+    'string'
+    >>> ManifestOptionType.BOOL
+    'bool'
+    >>> ManifestOptionType.INT
+    'int'
+    >>> ManifestOptionType.FLOAT
+    'float'
+    """
+
+    STRING = "string"
+    """A string option type."""
+    BOOL = "bool"
+    """A boolean option type."""
+    INT = "int"
+    """An integer option type."""
+    FLOAT = "float"
+    """A float option type."""
+
+
+_VALID_CONTROLS_PER_OPTION_TYPE = {
+    ManifestOptionType.STRING: {ControlType.INPUT, ControlType.SELECT, ControlType.MULTISELECT},
+    ManifestOptionType.BOOL: {ControlType.TOGGLE},
+    ManifestOptionType.INT: {ControlType.INPUT, ControlType.SLIDER, ControlType.SELECT},
+    ManifestOptionType.FLOAT: {ControlType.INPUT, ControlType.SLIDER, ControlType.SELECT},
+}
+"""Valid control types per option type."""
+
+_VALID_ADDITIONAL_ATTRS = {
+    (ManifestOptionType.STRING, ControlType.INPUT): {"max_length", "min_length"},
+    (ManifestOptionType.STRING, ControlType.SELECT): {"values"},
+    (ManifestOptionType.STRING, ControlType.MULTISELECT): {"values"},
+    (ManifestOptionType.INT, ControlType.INPUT): {"min", "max", "step"},
+    (ManifestOptionType.INT, ControlType.SLIDER): {"min", "max", "step"},
+    (ManifestOptionType.INT, ControlType.SELECT): {"values"},
+    (ManifestOptionType.FLOAT, ControlType.INPUT): {"min", "max", "step"},
+    (ManifestOptionType.FLOAT, ControlType.SLIDER): {"min", "max", "step"},
+    (ManifestOptionType.FLOAT, ControlType.SELECT): {"values"},
+}
+"""Valid additional attributes per (option_type, control_type) combination."""
+
+_REQUIRED_ADDITIONAL_ATTRS = {
+    (ManifestOptionType.STRING, ControlType.SELECT): {"values"},
+    (ManifestOptionType.STRING, ControlType.MULTISELECT): {"values"},
+    (ManifestOptionType.INT, ControlType.SLIDER): {"min", "max", "step"},
+    (ManifestOptionType.INT, ControlType.SELECT): {"values"},
+    (ManifestOptionType.FLOAT, ControlType.SLIDER): {"min", "max", "step"},
+    (ManifestOptionType.FLOAT, ControlType.SELECT): {"values"},
+}
+"""Required additional attributes per (option_type, control_type) combination."""
 
 
 class ManifestOptionUI(BaseModel):
@@ -461,14 +570,15 @@ class ManifestOptionUI(BaseModel):
 
     Parameters
     ----------
-    control_type : str, optional
-        The type of control to use for the option in the Nextmv Cloud UI. This is
-        useful for defining how the option should be presented in the Nextmv
-        Cloud UI. Current control types include "input", "select", "slider", and
-        "toggle". This attribute is not used in the local `Options` class, but
-        it is used in the Nextmv Cloud UI to define the type of control to use for
-        the option. This will be validated by the Nextmv Cloud, and availability
-        is based on option_type.
+    control_type : Optional[ControlType], default=None
+        The type of control to use for the option in the Nextmv Cloud UI. This
+        is useful for defining how the option should be presented in the Nextmv
+        Cloud UI. Current control types include "input", "select",
+        "multiselect", "slider", and "toggle". This attribute is not used in
+        the local `Options` class, but it is used in the Nextmv Cloud UI to
+        define the type of control to use for the option. This will be
+        validated by the Nextmv Cloud, and availability is based on
+        option_type.
     hidden_from : list[AccountMemberRole], optional
         A list of team roles to which this option will be hidden in the UI. For
         example, if you want to hide an option from the "operator" role, you can
@@ -483,12 +593,12 @@ class ManifestOptionUI(BaseModel):
     Examples
     --------
     >>> from nextmv import ManifestOptionUI
-    >>> ui_config = ManifestOptionUI(control_type="input")
+    >>> ui_config = ManifestOptionUI(control_type=ControlType.INPUT)
     >>> ui_config.control_type
-    'input'
+    <ControlType.INPUT: 'input'>
     """
 
-    control_type: str | None = None
+    control_type: ControlType | None = None
     """The type of control to use for the option in the Nextmv Cloud UI."""
     hidden_from: list[AccountMemberRole] | None = None
     """A list of team roles for which this option will be hidden in the UI."""
@@ -512,7 +622,7 @@ class ManifestOption(BaseModel):
     ----------
     name : str
         The name of the option.
-    option_type : str
+    option_type : ManifestOptionType
         The type of the option. This is a string representation of the
         `nextmv.Option` class (e.g., "string", "int", "bool", "float").
         Aliases: `type`.
@@ -552,7 +662,7 @@ class ManifestOption(BaseModel):
 
     name: str
     """The name of the option"""
-    option_type: str = Field(
+    option_type: ManifestOptionType = Field(
         serialization_alias="option_type",
         validation_alias=AliasChoices("type", "option_type"),
     )
@@ -585,6 +695,47 @@ class ManifestOption(BaseModel):
         # since this would make Platform runs via UI cumbersome to impossible.
         if self.required and self.local_only:
             raise ValueError(f"Option '{self.name}' cannot be both required and local only.")
+
+        control_type = self.ui.control_type if self.ui else None
+
+        # Validate that control_type is compatible with option_type.
+        if control_type is not None:
+            valid_controls = _VALID_CONTROLS_PER_OPTION_TYPE.get(self.option_type, set())
+            if control_type not in valid_controls:
+                raise ValueError(
+                    f"Option '{self.name}': control_type '{control_type.value}' is not valid for "
+                    f"option_type '{self.option_type.value}'. "
+                    f"Valid control_types are: {sorted(valid_controls)}."
+                )
+
+        # Validate additional_attributes keys and required presence.
+        key = (self.option_type, control_type)
+        required_attrs = _REQUIRED_ADDITIONAL_ATTRS.get(key, set())
+        if required_attrs:
+            if self.additional_attributes is None:
+                raise ValueError(
+                    f"Option '{self.name}': additional_attributes with "
+                    f"{sorted(required_attrs)} are required for option_type "
+                    f"'{self.option_type}' and control_type '{control_type}'."
+                )
+            missing_attrs = required_attrs - set(self.additional_attributes.keys())
+            if missing_attrs:
+                raise ValueError(
+                    f"Option '{self.name}': missing required additional_attributes "
+                    f"{sorted(missing_attrs)} for option_type '{self.option_type}' "
+                    f"and control_type '{control_type}'."
+                )
+
+        if self.additional_attributes is not None and control_type is not None:
+            valid_attrs = _VALID_ADDITIONAL_ATTRS.get(key, set())
+            invalid_attrs = set(self.additional_attributes.keys()) - valid_attrs
+            if invalid_attrs:
+                raise ValueError(
+                    f"Option '{self.name}': invalid additional_attributes "
+                    f"{sorted(invalid_attrs)} for option_type '{self.option_type}' "
+                    f"and control_type '{control_type}'. "
+                    f"Valid attributes are: {sorted(valid_attrs)}."
+                )
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
@@ -631,13 +782,13 @@ class ManifestOption(BaseModel):
 
         return cls(
             name=option.name,
-            option_type=option_type,
+            option_type=ManifestOptionType(option_type),
             default=option.default,
             description=option.description,
             required=option.required,
             additional_attributes=option.additional_attributes,
             ui=ManifestOptionUI(
-                control_type=option.control_type,
+                control_type=ControlType(option.control_type) if option.control_type else None,
                 hidden_from=option.hidden_from,
                 display_name=option.display_name,
             )
@@ -729,6 +880,12 @@ class ManifestValidation(BaseModel):
     validation rules will be enforced on the options, and runs will not be
     created if any of the rules of the options are violated.
     """
+
+    def model_post_init(self, __context) -> None:
+        """Validate that enforce is one of the accepted values."""
+        valid_values = {"none", "all"}
+        if self.enforce not in valid_values:
+            raise ValueError(f"Invalid enforce value '{self.enforce}'. Must be one of: {sorted(valid_values)}.")
 
 
 class ManifestOptions(BaseModel):
@@ -1780,7 +1937,12 @@ def find_files(
     return found, missing, files
 
 
-def initialize_manifest(manifest_type: ManifestType, content_format: ContentFormat, dirpath: str | None = ".") -> str:
+def initialize_manifest(
+    manifest_type: ManifestType,
+    content_format: ContentFormat,
+    dirpath: str | None = ".",
+    with_options: bool = True,
+) -> str:
     """
     Writes a sample manifest file, based on the given type and content format,
     to the given directory path.
@@ -1807,6 +1969,9 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     dirpath : Optional[str], default="."
         The directory path where the sample manifest file will be written. If
         not provided, it defaults to the current directory.
+    with_options : bool, default=True
+        Whether to include options in the initialized manifest. If `False`, a
+        manifest without options will be initialized.
 
     Returns
     -------
@@ -1819,7 +1984,10 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     destination = os.path.join(dirpath, MANIFEST_FILE_NAME)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    template = f"{manifest_type.value}_{content_format.value}_app.yaml"
+    templ_config = f"{manifest_type.value}_{content_format.value}"
+    if with_options:
+        templ_config += "_opt"
+    template = f"{templ_config}.yaml"
     src = os.path.join(current_dir, "templates", template)
 
     dst = shutil.copy(src, destination)
