@@ -68,6 +68,6 @@ jobs:
         run: |
           wingetcreate update Nextmv.CLI \
             --version "$VERSION" \
-            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.exe|x64|portable" \
+            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.zip|x64|zip" \
             --submit \
             --token "$WINGET_TOKEN"
