@@ -60,6 +60,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: build and zip binary
+        id: build-binary
         uses: ./.github/actions/build-binary
         with:
           os: ${{ matrix.os }}
@@ -77,7 +78,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload $VERSION dist/nextmv-${{ matrix.os }}-${{ matrix.arch }}.zip --clobber
+          gh release upload $VERSION dist/${{ steps.build-binary.outputs.zip-name }} --clobber
         working-directory: nextmv/
 
   # Unfortunately, PyPI publishing does not support reusable workflows, so we
