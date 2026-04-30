@@ -57,7 +57,7 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: build and zip binary
         id: build-binary
@@ -94,12 +94,12 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ github.ref_name }}
 
       - name: set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
 
       - name: install dependencies
         run: |
@@ -111,7 +111,7 @@ jobs:
         working-directory: ./nextmv
 
       - name: python - publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
           packages-dir: ./nextmv/dist
 
@@ -153,12 +153,12 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ github.ref_name }}
 
       - name: set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
 
       - name: install dependencies
         run: |
@@ -170,7 +170,7 @@ jobs:
         working-directory: ./nextmv-gurobipy
 
       - name: python - publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
           packages-dir: ./nextmv-gurobipy/dist
 
@@ -212,10 +212,10 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
 
       - name: Install dependencies
         run: |
@@ -227,7 +227,7 @@ jobs:
         working-directory: ./nextmv-scikit-learn
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
         with:
           packages-dir: ./nextmv-scikit-learn/dist
 
