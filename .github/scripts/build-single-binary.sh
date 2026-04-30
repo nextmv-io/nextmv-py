@@ -22,7 +22,7 @@ echo "Bundling uv binary from: $UV_BIN"
 # Run PyInstaller
 uv run --with pyinstaller pyinstaller \
     --name nextmv \
-    --onefile \
+    --onedir \
     --clean \
     --add-data "nextmv/templates${ADD_DATA_SEPARATOR}nextmv/templates" \
     --add-data "nextmv/local/executor.py${ADD_DATA_SEPARATOR}nextmv/local" \
