@@ -1,0 +1,61 @@
+name: Build and zip binary
+description: >
+  Sets up Python, installs dependencies, builds the nextmv binary with
+  PyInstaller, and zips the output directory for distribution.
+
+inputs:
+  os:
+    description: Target OS label (linux, macos, windows)
+    required: true
+  arch:
+    description: Target architecture label (x64, arm64)
+    required: true
+
+outputs:
+  zip-name:
+    description: File name of the produced zip archive
+    value: ${{ steps.zip.outputs.zip-name }}
+
+runs:
+  using: composite
+  steps:
+    - name: setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller uv
+        pip install .
+      working-directory: nextmv/
+
+    - name: build binary with PyInstaller
+      shell: bash
+      # Binary will be located at nextmv/dist/nextmv/nextmv (or nextmv/dist/nextmv/nextmv.exe on Windows)
+      run: ./.github/scripts/build-single-binary.sh
+
+    - name: zip binary directory for distribution
+      id: zip
+      shell: python
+      run: |
+        import zipfile, os, pathlib
+
+        os_label   = "${{ inputs.os }}"
+        arch_label = "${{ inputs.arch }}"
+        zip_name   = f"nextmv-{os_label}-{arch_label}.zip"
+
+        src_dir  = pathlib.Path("nextmv/dist/nextmv")
+        zip_path = pathlib.Path("nextmv/dist") / zip_name
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file in src_dir.rglob("*"):
+                zf.write(file, file.relative_to(src_dir))
+
+        print(f"Created {zip_path} ({zip_path.stat().st_size} bytes)")
+
+        # Expose the zip name as a step output
+        with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+            fh.write(f"zip-name={zip_name}\n")

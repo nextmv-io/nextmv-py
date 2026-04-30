@@ -39,22 +39,11 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: setup Python
-        uses: actions/setup-python@v6
+      - name: build and zip binary
+        uses: ./.github/actions/build-binary
         with:
-          python-version: "3.13"
-
-      - name: install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller uv
-          pip install .
-        working-directory: nextmv/
-
-      - name: build binary with PyInstaller
-        shell: bash
-        # Binary will be located at nextmv/dist/nextmv (or nextmv/dist/nextmv.exe on Windows)
-        run: ./.github/scripts/build-single-binary.sh
+          os: ${{ matrix.os }}
+          arch: ${{ matrix.arch }}
 
       - name: smoketest binary
         env:
@@ -69,4 +58,4 @@ jobs:
           # Use Python to run command with timeout since timeout is not available on macOS.
           python -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=30)"
         shell: bash
-        working-directory: nextmv/dist
+        working-directory: nextmv/dist/nextmv
