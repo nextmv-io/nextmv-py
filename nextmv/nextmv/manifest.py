@@ -60,6 +60,7 @@ MANIFEST_FILE_NAME
 import glob
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -1927,5 +1928,20 @@ def resolve_manifest(manifest: Manifest | None = None) -> Manifest | None:
 
     if os.path.exists(MANIFEST_FILE_NAME):
         return Manifest.from_yaml()
+
+    # Fall back to the directory containing the main script so that running
+    # `python dir1/dir2/main.py` from a parent directory still finds the
+    # app.yaml that lives next to main.py.
+    main_module = sys.modules.get("__main__")
+    if main_module is None:
+        return None
+
+    main_file = getattr(main_module, "__file__", None)
+    if main_file is None:
+        return None
+
+    script_dir = os.path.dirname(os.path.abspath(main_file))
+    if os.path.exists(os.path.join(script_dir, MANIFEST_FILE_NAME)):
+        return Manifest.from_yaml(script_dir)
 
     return None
