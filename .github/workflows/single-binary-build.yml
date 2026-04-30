@@ -39,29 +39,11 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: setup Python
-        uses: actions/setup-python@v6
+      - name: build and zip binary
+        uses: ./.github/actions/build-binary
         with:
-          python-version: "3.13"
-
-      - name: install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller uv
-          pip install .
-        working-directory: nextmv/
-
-      - name: build binary with PyInstaller
-        shell: bash
-        # Binary will be located at nextmv/dist/nextmv/nextmv (or nextmv/dist/nextmv/nextmv.exe on Windows)
-        run: ./.github/scripts/build-single-binary.sh
-
-      - name: test zip binary directory for distribution
-        shell: bash
-        run: |
-          cd dist/nextmv
-          zip -r ../nextmv-${{ matrix.os }}-${{ matrix.arch }}.zip *
-        working-directory: nextmv/
+          os: ${{ matrix.os }}
+          arch: ${{ matrix.arch }}
 
       - name: smoketest binary
         env:
