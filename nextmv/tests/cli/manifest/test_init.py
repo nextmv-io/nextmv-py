@@ -2,6 +2,7 @@
 Unit tests for the `nextmv manifest init` CLI command.
 """
 
+import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -256,25 +257,29 @@ class TestManifestInitHelp(unittest.TestCase):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
         self.assertEqual(result.exit_code, 0)
 
+    @staticmethod
+    def _strip_ansi(text: str) -> str:
+        return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
     def test_help_documents_content_format_option(self):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
-        self.assertIn("--content-format", result.output)
+        self.assertIn("--content-format", self._strip_ansi(result.output))
 
     def test_help_documents_type_option(self):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
-        self.assertIn("--type", result.output)
+        self.assertIn("--type", self._strip_ansi(result.output))
 
     def test_help_documents_dirpath_option(self):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
-        self.assertIn("--dirpath", result.output)
+        self.assertIn("--dirpath", self._strip_ansi(result.output))
 
     def test_help_documents_options_yes(self):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
-        self.assertIn("--options-yes", result.output)
+        self.assertIn("--options-yes", self._strip_ansi(result.output))
 
     def test_help_documents_options_no(self):
         result = self.runner.invoke(app, ["manifest", "init", "--help"])
-        self.assertIn("--options-no", result.output)
+        self.assertIn("--options-no", self._strip_ansi(result.output))
 
 
 if __name__ == "__main__":
