@@ -65,7 +65,7 @@ from enum import Enum
 from typing import Any
 
 import yaml
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
@@ -411,41 +411,47 @@ class ManifestPython(BaseModel):
     from the app bundle.
     """
 
-    @field_validator("version", mode="before")
-    @classmethod
-    def validate_version(cls, v: str | float | None) -> str | None:
-        """
-        Validate and convert the Python version field to a string.
-
-        This validator allows the version to be specified as either a float or string
-        in the manifest for convenience, but ensures it's stored internally as a string.
-
-        Parameters
-        ----------
-        v : Optional[Union[str, float]]
-            The version value to validate. Can be None, a string, or a float.
-
-        Returns
-        -------
-        Optional[str]
-            The version as a string, or None if the input was None.
-
-        Examples
-        --------
-        >>> ManifestPython.validate_version(3.11)
-        '3.11'
-        >>> ManifestPython.validate_version("3.11")
-        '3.11'
-        >>> ManifestPython.validate_version(None) is None
-        True
-        """
+    def model_post_init(self, __context) -> None:
+        """Convert version from float to string for convenience."""
         # We allow the version to be a float in the manifest for convenience, but we want
         # to store it as a string internally.
-        if v is None:
-            return None
-        if isinstance(v, float):
-            return str(v)
-        return v
+        if isinstance(self.version, float):
+            self.version = str(self.version)
+
+
+_VALID_CONTROL_TYPES = {"input", "select", "multiselect", "slider", "toggle"}
+"""Valid control types for options in the manifest UI."""
+
+_VALID_CONTROLS_PER_OPTION_TYPE = {
+    "string": {"input", "select", "multiselect"},
+    "bool": {"toggle"},
+    "int": {"input", "slider", "select"},
+    "float": {"input", "slider", "select"},
+}
+"""Valid control types per option type."""
+
+_VALID_ADDITIONAL_ATTRS = {
+    ("string", "input"): {"max_length", "min_length"},
+    ("string", "select"): {"values"},
+    ("string", "multiselect"): {"values"},
+    ("int", "input"): {"min", "max", "step"},
+    ("int", "slider"): {"min", "max", "step"},
+    ("int", "select"): {"values"},
+    ("float", "input"): {"min", "max", "step"},
+    ("float", "slider"): {"min", "max", "step"},
+    ("float", "select"): {"values"},
+}
+"""Valid additional attributes per (option_type, control_type) combination."""
+
+_REQUIRED_ADDITIONAL_ATTRS = {
+    ("string", "select"): {"values"},
+    ("string", "multiselect"): {"values"},
+    ("int", "slider"): {"min", "max", "step"},
+    ("int", "select"): {"values"},
+    ("float", "slider"): {"min", "max", "step"},
+    ("float", "select"): {"values"},
+}
+"""Required additional attributes per (option_type, control_type) combination."""
 
 
 class ManifestOptionUI(BaseModel):
@@ -495,6 +501,13 @@ class ManifestOptionUI(BaseModel):
     """An optional display name for the option. This is useful for making
     the option more user-friendly in the UI.
     """
+
+    def model_post_init(self, __context) -> None:
+        """Validate control_type is a recognized value."""
+        if self.control_type is not None and self.control_type not in _VALID_CONTROL_TYPES:
+            raise ValueError(
+                f"Invalid control_type '{self.control_type}'. Must be one of: {sorted(_VALID_CONTROL_TYPES)}."
+            )
 
 
 class ManifestOption(BaseModel):
@@ -584,6 +597,53 @@ class ManifestOption(BaseModel):
         # since this would make Platform runs via UI cumbersome to impossible.
         if self.required and self.local_only:
             raise ValueError(f"Option '{self.name}' cannot be both required and local only.")
+
+        valid_types = {"string", "bool", "int", "float"}
+        if self.option_type not in valid_types:
+            raise ValueError(
+                f"Option '{self.name}' has invalid type '{self.option_type}'. Valid types are: {valid_types}."
+            )
+
+        control_type = self.ui.control_type if self.ui else None
+
+        # Validate that control_type is compatible with option_type.
+        if control_type is not None:
+            valid_controls = _VALID_CONTROLS_PER_OPTION_TYPE.get(self.option_type, set())
+            if control_type not in valid_controls:
+                raise ValueError(
+                    f"Option '{self.name}': control_type '{control_type}' is not valid for "
+                    f"option_type '{self.option_type}'. "
+                    f"Valid control_types are: {sorted(valid_controls)}."
+                )
+
+        # Validate additional_attributes keys and required presence.
+        key = (self.option_type, control_type)
+        required_attrs = _REQUIRED_ADDITIONAL_ATTRS.get(key, set())
+        if required_attrs:
+            if self.additional_attributes is None:
+                raise ValueError(
+                    f"Option '{self.name}': additional_attributes with "
+                    f"{sorted(required_attrs)} are required for option_type "
+                    f"'{self.option_type}' and control_type '{control_type}'."
+                )
+            missing_attrs = required_attrs - set(self.additional_attributes.keys())
+            if missing_attrs:
+                raise ValueError(
+                    f"Option '{self.name}': missing required additional_attributes "
+                    f"{sorted(missing_attrs)} for option_type '{self.option_type}' "
+                    f"and control_type '{control_type}'."
+                )
+
+        if self.additional_attributes is not None and control_type is not None:
+            valid_attrs = _VALID_ADDITIONAL_ATTRS.get(key, set())
+            invalid_attrs = set(self.additional_attributes.keys()) - valid_attrs
+            if invalid_attrs:
+                raise ValueError(
+                    f"Option '{self.name}': invalid additional_attributes "
+                    f"{sorted(invalid_attrs)} for option_type '{self.option_type}' "
+                    f"and control_type '{control_type}'. "
+                    f"Valid attributes are: {sorted(valid_attrs)}."
+                )
 
     @classmethod
     def from_option(cls, option: Option) -> "ManifestOption":
@@ -728,6 +788,12 @@ class ManifestValidation(BaseModel):
     validation rules will be enforced on the options, and runs will not be
     created if any of the rules of the options are violated.
     """
+
+    def model_post_init(self, __context) -> None:
+        """Validate that enforce is one of the accepted values."""
+        valid_values = {"none", "all"}
+        if self.enforce not in valid_values:
+            raise ValueError(f"Invalid enforce value '{self.enforce}'. Must be one of: {sorted(valid_values)}.")
 
 
 class ManifestOptions(BaseModel):
@@ -1779,7 +1845,12 @@ def find_files(
     return found, missing, files
 
 
-def initialize_manifest(manifest_type: ManifestType, content_format: ContentFormat, dirpath: str | None = ".") -> str:
+def initialize_manifest(
+    manifest_type: ManifestType,
+    content_format: ContentFormat,
+    dirpath: str | None = ".",
+    with_options: bool = True,
+) -> str:
     """
     Writes a sample manifest file, based on the given type and content format,
     to the given directory path.
@@ -1806,6 +1877,9 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     dirpath : Optional[str], default="."
         The directory path where the sample manifest file will be written. If
         not provided, it defaults to the current directory.
+    with_options : bool, default=True
+        Whether to include options in the initialized manifest. If `False`, a
+        manifest without options will be initialized.
 
     Returns
     -------
@@ -1818,7 +1892,10 @@ def initialize_manifest(manifest_type: ManifestType, content_format: ContentForm
     destination = os.path.join(dirpath, MANIFEST_FILE_NAME)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    template = f"{manifest_type.value}_{content_format.value}_app.yaml"
+    templ_config = f"{manifest_type.value}_{content_format.value}"
+    if with_options:
+        templ_config += "_opt"
+    template = f"{templ_config}.yaml"
     src = os.path.join(current_dir, "templates", template)
 
     dst = shutil.copy(src, destination)

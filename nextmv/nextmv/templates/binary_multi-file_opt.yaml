@@ -1,0 +1,92 @@
+# This manifest holds the information the app needs to run on Nextmv.
+
+# Type and runtime specify the language and environment of the app.
+type: binary
+runtime: ghcr.io/nextmv-io/runtime/default:latest
+
+# Directives to build the binary of the app.
+build:
+  command: echo "Sample command, replace with actual build command"
+  # Specify environment variables needed for the build process.
+  environment:
+    FOO: bar
+    BAZ: qux
+
+# List all files/directories that should be included in the app. Globbing
+# (e.g.: configs/*.json) is supported.
+files:
+  - main
+
+# Application configurations.
+configuration:
+  # Define the content format of the app, one of: json, multi-file.
+  content:
+    format: multi-file # Read and write files from disk.
+    # Configuration of the multi-file format.
+    multi-file:
+      input:
+        path: inputs # Directory where the app will read input files from.
+      output:
+        solutions: outputs/solutions # Directory where the app will write solution files to.
+        metrics: outputs/metrics.json # Path where the app will write metrics to.
+        assets: outputs/assets.json # Path where the app will write assets to.
+  # Options (parameters) that the app can receive at runtime.
+  options:
+    strict: false # If `true`, only the listed options will be allowed.
+    items: # Add as many options as needed.
+      - name: string_option
+        option_type: string
+        default: "An optional, default value."
+        description: "An example of a string option."
+        required: false # Normally false when a default is provided.
+        # OPTIONAL: Use the following fields for a customized Nextmv Console experience.
+        ui:
+          display_name: "String Option"
+          # hidden_from: viewer # Uncomment to hide for a role.
+          control_type: select # Can be one of: input, select, multiselect.
+        additional_attributes:
+          values: # Required for select and multiselect control types.
+            - one_value
+            - another_value
+          # max_length: 42 # Optional, for input control type.
+          # min_length: 3 # Optional, for input control type.
+      - name: integer_option
+        option_type: int
+        # default: 42 # Normally, when a default is not provided, it is required.
+        description: "An example of an integer option."
+        required: true
+        # OPTIONAL: Use the following fields for a customized Nextmv Console experience.
+        ui:
+          display_name: "Integer Option"
+          # hidden_from: viewer # Uncomment to hide for a role.
+          control_type: slider # Can be one of: input, slider, select.
+        additional_attributes:
+          min: 0 # Optional, useful for slider control type.
+          max: 100 # Optional, useful for slider control type.
+          step: 1 # Optional, useful for slider control type.
+          # values: [0, 10, 42, 100] # Required for select control type.
+      - name: float_option
+        option_type: float
+        # default: 3.14 # Normally, when a default is not provided, it is required.
+        description: "An example of a float option."
+        required: true
+        # OPTIONAL: Use the following fields for a customized Nextmv Console experience.
+        ui:
+          display_name: "Float Option"
+          # hidden_from: viewer # Uncomment to hide for a role.
+          control_type: slider # Can be one of: input, slider, select.
+        additional_attributes:
+          min: 0.0 # Optional, useful for slider control type.
+          max: 1.0 # Optional, useful for slider control type.
+          step: 0.01 # Optional, useful for slider control type.
+          # values: [0.0, 0.25, 0.5, 1.0] # Required for select control type.
+      - name: boolean_option
+        option_type: bool
+        default: true
+        description: "An example of a boolean option."
+        required: false
+        # OPTIONAL: Use the following fields for a customized Nextmv Console experience.
+        ui:
+          display_name: "Boolean Option"
+          # hidden_from: viewer # Uncomment to hide for a role.
+          control_type: toggle # Optional.

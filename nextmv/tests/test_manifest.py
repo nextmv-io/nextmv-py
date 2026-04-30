@@ -666,3 +666,281 @@ class TestWriteSampleManifest(unittest.TestCase):
             expected = os.path.join(normalized, MANIFEST_FILE_NAME)
             self.assertEqual(dst, expected)
             self.assertTrue(os.path.isfile(dst))
+
+
+class TestManifestOptionUIValidation(unittest.TestCase):
+    def test_valid_control_types_accepted(self):
+        for ct in ("input", "select", "multiselect", "slider", "toggle"):
+            with self.subTest(control_type=ct):
+                ui = ManifestOptionUI(control_type=ct)
+                self.assertEqual(ui.control_type, ct)
+
+    def test_none_control_type_accepted(self):
+        ui = ManifestOptionUI(control_type=None)
+        self.assertIsNone(ui.control_type)
+
+    def test_invalid_control_type_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOptionUI(control_type="checkbox")
+        self.assertIn("checkbox", str(ctx.exception))
+        self.assertIn("control_type", str(ctx.exception))
+
+
+class TestManifestOptionControlTypeValidation(unittest.TestCase):
+    """Tests that control_type must be compatible with option_type."""
+
+    def test_string_valid_control_types(self):
+        for ct in ("input", "select", "multiselect"):
+            with self.subTest(control_type=ct):
+                extra = {"values": ["a"]} if ct in ("select", "multiselect") else None
+                ManifestOption(
+                    name="opt", option_type="string", ui=ManifestOptionUI(control_type=ct), additional_attributes=extra
+                )
+
+    def test_bool_valid_control_type(self):
+        ManifestOption(name="opt", option_type="bool", ui=ManifestOptionUI(control_type="toggle"))
+
+    def test_int_valid_control_types(self):
+        for ct, attrs in (
+            ("input", None),
+            ("slider", {"min": 0, "max": 10, "step": 1}),
+            ("select", {"values": [1, 2]}),
+        ):
+            with self.subTest(control_type=ct):
+                ManifestOption(
+                    name="opt", option_type="int", ui=ManifestOptionUI(control_type=ct), additional_attributes=attrs
+                )
+
+    def test_float_valid_control_types(self):
+        for ct, attrs in (
+            ("input", None),
+            ("slider", {"min": 0.0, "max": 1.0, "step": 0.1}),
+            ("select", {"values": [1.0]}),
+        ):
+            with self.subTest(control_type=ct):
+                ManifestOption(
+                    name="opt", option_type="float", ui=ManifestOptionUI(control_type=ct), additional_attributes=attrs
+                )
+
+    def test_string_with_slider_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="string", ui=ManifestOptionUI(control_type="slider"))
+        self.assertIn("slider", str(ctx.exception))
+        self.assertIn("string", str(ctx.exception))
+
+    def test_string_with_toggle_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="string", ui=ManifestOptionUI(control_type="toggle"))
+        self.assertIn("toggle", str(ctx.exception))
+
+    def test_bool_with_input_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="bool", ui=ManifestOptionUI(control_type="input"))
+        self.assertIn("input", str(ctx.exception))
+        self.assertIn("bool", str(ctx.exception))
+
+    def test_bool_with_select_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="bool", ui=ManifestOptionUI(control_type="select"))
+        self.assertIn("select", str(ctx.exception))
+
+    def test_int_with_toggle_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="int", ui=ManifestOptionUI(control_type="toggle"))
+        self.assertIn("toggle", str(ctx.exception))
+        self.assertIn("int", str(ctx.exception))
+
+    def test_float_with_toggle_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="float", ui=ManifestOptionUI(control_type="toggle"))
+        self.assertIn("toggle", str(ctx.exception))
+        self.assertIn("float", str(ctx.exception))
+
+    def test_error_message_contains_option_name(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="my_special_opt", option_type="bool", ui=ManifestOptionUI(control_type="slider"))
+        self.assertIn("my_special_opt", str(ctx.exception))
+
+
+class TestManifestOptionAdditionalAttributesValidation(unittest.TestCase):
+    """Tests for required and invalid additional_attributes per (option_type, control_type)."""
+
+    # --- select / multiselect: values is required ---
+
+    def test_string_select_requires_values(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="string", ui=ManifestOptionUI(control_type="select"))
+        self.assertIn("values", str(ctx.exception))
+
+    def test_string_multiselect_requires_values(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="string", ui=ManifestOptionUI(control_type="multiselect"))
+        self.assertIn("values", str(ctx.exception))
+
+    def test_int_select_requires_values(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="int", ui=ManifestOptionUI(control_type="select"))
+        self.assertIn("values", str(ctx.exception))
+
+    def test_float_select_requires_values(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="float", ui=ManifestOptionUI(control_type="select"))
+        self.assertIn("values", str(ctx.exception))
+
+    # --- slider: min, max, step are required ---
+
+    def test_int_slider_requires_min_max_step(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="int", ui=ManifestOptionUI(control_type="slider"))
+        self.assertIn("min", str(ctx.exception))
+
+    def test_int_slider_with_partial_attrs_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="opt",
+                option_type="int",
+                ui=ManifestOptionUI(control_type="slider"),
+                additional_attributes={"min": 0, "max": 100},
+            )
+        self.assertIn("step", str(ctx.exception))
+
+    def test_float_slider_requires_min_max_step(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(name="opt", option_type="float", ui=ManifestOptionUI(control_type="slider"))
+        self.assertIn("min", str(ctx.exception))
+
+    def test_float_slider_with_partial_attrs_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="opt",
+                option_type="float",
+                ui=ManifestOptionUI(control_type="slider"),
+                additional_attributes={"min": 0.0},
+            )
+        # Both max and step are missing; at least one should appear in the error.
+        msg = str(ctx.exception)
+        self.assertTrue("max" in msg or "step" in msg)
+
+    # --- invalid attribute keys for a given combination ---
+
+    def test_string_input_rejects_unknown_attr(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="opt",
+                option_type="string",
+                ui=ManifestOptionUI(control_type="input"),
+                additional_attributes={"max_length": 50, "unknown_key": True},
+            )
+        self.assertIn("unknown_key", str(ctx.exception))
+
+    def test_int_input_rejects_values_attr(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="opt",
+                option_type="int",
+                ui=ManifestOptionUI(control_type="input"),
+                additional_attributes={"min": 0, "max": 10, "values": [1, 2]},
+            )
+        self.assertIn("values", str(ctx.exception))
+
+    def test_float_input_rejects_unknown_attr(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="opt",
+                option_type="float",
+                ui=ManifestOptionUI(control_type="input"),
+                additional_attributes={"min": 0.0, "bad_key": 99},
+            )
+        self.assertIn("bad_key", str(ctx.exception))
+
+    # --- additional_attributes without control_type should NOT be validated ---
+
+    def test_additional_attributes_without_control_type_not_validated(self):
+        # When no control_type is set, we don't validate additional_attributes keys.
+        opt = ManifestOption(
+            name="opt",
+            option_type="string",
+            additional_attributes={"anything": "goes"},
+        )
+        self.assertEqual(opt.additional_attributes, {"anything": "goes"})
+
+    # --- valid full configurations that should pass ---
+
+    def test_string_input_with_valid_attrs(self):
+        opt = ManifestOption(
+            name="opt",
+            option_type="string",
+            ui=ManifestOptionUI(control_type="input"),
+            additional_attributes={"max_length": 100, "min_length": 1},
+        )
+        self.assertEqual(opt.additional_attributes["max_length"], 100)
+
+    def test_string_select_with_values(self):
+        opt = ManifestOption(
+            name="opt",
+            option_type="string",
+            ui=ManifestOptionUI(control_type="select"),
+            additional_attributes={"values": ["a", "b", "c"]},
+        )
+        self.assertEqual(opt.additional_attributes["values"], ["a", "b", "c"])
+
+    def test_int_slider_with_all_required_attrs(self):
+        opt = ManifestOption(
+            name="opt",
+            option_type="int",
+            ui=ManifestOptionUI(control_type="slider"),
+            additional_attributes={"min": 0, "max": 100, "step": 5},
+        )
+        self.assertEqual(opt.additional_attributes["step"], 5)
+
+    def test_float_slider_with_all_required_attrs(self):
+        opt = ManifestOption(
+            name="opt",
+            option_type="float",
+            ui=ManifestOptionUI(control_type="slider"),
+            additional_attributes={"min": 0.0, "max": 1.0, "step": 0.1},
+        )
+        self.assertAlmostEqual(opt.additional_attributes["step"], 0.1)
+
+    def test_error_message_contains_option_name(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestOption(
+                name="solver_timeout",
+                option_type="string",
+                ui=ManifestOptionUI(control_type="select"),
+            )
+        self.assertIn("solver_timeout", str(ctx.exception))
+
+
+class TestManifestValidationEnforce(unittest.TestCase):
+    def test_valid_enforce_none(self):
+        v = ManifestValidation(enforce="none")
+        self.assertEqual(v.enforce, "none")
+
+    def test_valid_enforce_all(self):
+        v = ManifestValidation(enforce="all")
+        self.assertEqual(v.enforce, "all")
+
+    def test_default_enforce_is_none(self):
+        v = ManifestValidation()
+        self.assertEqual(v.enforce, "none")
+
+    def test_invalid_enforce_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestValidation(enforce="partial")
+        self.assertIn("partial", str(ctx.exception))
+
+    def test_invalid_enforce_empty_string_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestValidation(enforce="")
+        self.assertIn("enforce", str(ctx.exception).lower())
+
+    def test_invalid_enforce_uppercase_raises(self):
+        # Enforce is case-sensitive; "ALL" and "NONE" should not be accepted.
+        with self.assertRaises(ValueError):
+            ManifestValidation(enforce="ALL")
+
+    def test_invalid_enforce_unknown_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            ManifestValidation(enforce="strict")
+        self.assertIn("strict", str(ctx.exception))
