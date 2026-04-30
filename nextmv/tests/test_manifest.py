@@ -667,6 +667,36 @@ class TestWriteSampleManifest(unittest.TestCase):
             self.assertEqual(dst, expected)
             self.assertTrue(os.path.isfile(dst))
 
+    def test_with_options_false_omits_options_json(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            dst = initialize_manifest(ManifestType.PYTHON, ContentFormat.JSON, dirpath, with_options=False)
+            self.assertTrue(os.path.isfile(dst))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.PYTHON)
+            # The non-_opt template must not define any options items.
+            options = manifest.configuration.options if manifest.configuration else None
+            self.assertIsNone(options)
+
+    def test_with_options_false_omits_options_multi_file(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            dst = initialize_manifest(ManifestType.PYTHON, ContentFormat.MULTI_FILE, dirpath, with_options=False)
+            self.assertTrue(os.path.isfile(dst))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertEqual(manifest.type, ManifestType.PYTHON)
+            self.assertEqual(manifest.configuration.content.format.value, ContentFormat.MULTI_FILE.value)
+            options = manifest.configuration.options if manifest.configuration else None
+            self.assertIsNone(options)
+
+    def test_with_options_true_includes_options(self):
+        with tempfile.TemporaryDirectory() as dirpath:
+            dst = initialize_manifest(ManifestType.PYTHON, ContentFormat.JSON, dirpath, with_options=True)
+            self.assertTrue(os.path.isfile(dst))
+            manifest = Manifest.from_yaml(dirpath)
+            self.assertIsNotNone(manifest.configuration)
+            self.assertIsNotNone(manifest.configuration.options)
+            self.assertIsNotNone(manifest.configuration.options.items)
+            self.assertGreater(len(manifest.configuration.options.items), 0)
+
 
 class TestManifestOptionUIValidation(unittest.TestCase):
     def test_valid_control_types_accepted(self):

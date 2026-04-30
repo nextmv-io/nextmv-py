@@ -48,9 +48,9 @@ configuration:
           # hidden_from: viewer # Uncomment to hide for a role.
           control_type: slider # Can be one of: input, slider, select.
         additional_attributes:
-          min: 0 # Optional, useful for slider control type.
-          max: 100 # Optional, useful for slider control type.
-          step: 1 # Optional, useful for slider control type.
+          min: 0 # Required for slider control type.
+          max: 100 # Required for slider control type.
+          step: 1 # Required for slider control type.
           # values: [0, 10, 42, 100] # Required for select control type.
       - name: float_option
         option_type: float
@@ -63,9 +63,9 @@ configuration:
           # hidden_from: viewer # Uncomment to hide for a role.
           control_type: slider # Can be one of: input, slider, select.
         additional_attributes:
-          min: 0.0 # Optional, useful for slider control type.
-          max: 1.0 # Optional, useful for slider control type.
-          step: 0.01 # Optional, useful for slider control type.
+          min: 0.0 # Required for slider control type.
+          max: 1.0 # Required for slider control type.
+          step: 0.01 # Required for slider control type.
           # values: [0.0, 0.25, 0.5, 1.0] # Required for select control type.
       - name: boolean_option
         option_type: bool
