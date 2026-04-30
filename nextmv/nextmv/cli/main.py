@@ -34,7 +34,7 @@ from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
 from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
-from nextmv.local.uv_handler import _find_uv_binary
+from nextmv.uv_handler import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
 rich_utils.STYLE_HELPTEXT = ""
