@@ -26,7 +26,7 @@ def create(
         typer.Option(
             "--batch-experiment-id",
             "-b",
-            help="ID for the batch experiment. Will be generated if not provided.",
+            help="Optional ID for the batch experiment. Will be generated if not provided.",
             envvar="NEXTMV_BATCH_EXPERIMENT_ID",
             metavar="BATCH_EXPERIMENT_ID",
             rich_help_panel="Batch experiment configuration",
@@ -57,7 +57,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="Name of the batch experiment. If not provided, the ID will be used as the name.",
+            help="Optional name of the batch experiment. If not provided, the ID will be used as the name.",
             metavar="NAME",
             rich_help_panel="Batch experiment configuration",
         ),
@@ -180,7 +180,7 @@ def create(
             "instance_id": "warren-planner-v1"
         }'
         nextmv cloud batch create --app-id hare-app --batch-experiment-id bunny-hop-test \\
-            --name "Spring Meadow Routes" --input-set-id spring-gardens --runs "$RUN"[/dim]
+            --input-set-id spring-gardens --runs "$RUN"[/dim]
 
     - Create with multiple runs by repeating the flag.
         $ [dim]RUN1='{
@@ -191,8 +191,7 @@ def create(
             "input_id": "lettuce-field-2",
             "instance_id": "hop-optimizer"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-experiment-id lettuce-routes \\
-            --name "Lettuce Delivery Optimization" --input-set-id veggie-gardens \\
+        nextmv cloud batch create --app-id hare-app --input-set-id veggie-gardens \\
             --runs "$RUN1" --runs "$RUN2"[/dim]
 
     - Create with multiple runs in a single [magenta]json[/magenta] array.
@@ -206,16 +205,14 @@ def create(
                 "version_id": "tunnel-planner-v3"
             }
         ]'
-        nextmv cloud batch create --app-id hare-app --batch-experiment-id warren-expansion \\
-            --name "Warren Construction Plans" --input-set-id burrow-sites --runs "$RUNS"[/dim]
+        nextmv cloud batch create --app-id hare-app --input-set-id burrow-sites --runs "$RUNS"[/dim]
 
     - Create a batch experiment and wait for it to complete.
         $ [dim]RUN='{
             "input_id": "carrot-harvest",
             "instance_id": "foraging-route"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-experiment-id harvest-time \\
-            --name "Autumn Carrot Collection" --input-set-id harvest-season \\
+        nextmv cloud batch create --app-id hare-app --input-set-id harvest-season \\
             --runs "$RUN" --wait[/dim]
 
     - Create a batch experiment and save the results to a file, waiting for completion.
@@ -223,8 +220,7 @@ def create(
             "input_id": "predator-zones",
             "instance_id": "safe-hopper"
         }'
-        nextmv cloud batch create --app-id hare-app --batch-experiment-id safety-analysis \\
-            --name "Fox Avoidance Routes" --input-set-id danger-zones \\
+        nextmv cloud batch create --app-id hare-app --input-set-id danger-zones \\
             --runs "$RUN" --output bunny-safety-results.json[/dim]
 
     - Create a batch experiment with option sets.
@@ -242,8 +238,7 @@ def create(
             "fast-hops": {"max_speed": "10", "caution_level": "low"},
             "careful-hops": {"max_speed": "5", "caution_level": "high"}
         }'
-        nextmv cloud batch create --app-id hare-app --batch-experiment-id hop-comparison \\
-            --name "Speed vs Safety Analysis" --input-set-id garden-paths \\
+        nextmv cloud batch create --app-id hare-app --input-set-id garden-paths \\
             --runs "$RUN1" --runs "$RUN2" --option-sets "$OPTION_SETS"[/dim]
     """
 

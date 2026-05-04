@@ -35,8 +35,8 @@ def create(
 
     Subscribe to a marketplace application by providing the subscription ID,
     which combines the partner ID and application ID in the format
-    [dim]<PARTNER_ID>-<APP_ID>[/dim]. This allows you to access and use the
-    marketplace application in your account.
+    [magenta]<PARTNER_ID>-<APP_ID>[/magenta]. This allows you to access and use
+    the marketplace application in your account.
 
     [bold][underline]Examples[/underline][/bold]
 

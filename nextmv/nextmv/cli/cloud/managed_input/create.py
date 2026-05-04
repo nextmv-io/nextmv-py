@@ -54,7 +54,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="A name for the managed input. If not provided, the ID will be used as the name.",
+            help="Optional name for the managed input. If not provided, the ID will be used as the name.",
             metavar="NAME",
         ),
     ] = None,
@@ -99,14 +99,12 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a managed input from an upload.
-        $ [dim]nextmv cloud managed-input create --app-id hare-app --name "Test Input 1" \
-            --upload-id upl_123456789[/dim]
+        $ [dim]nextmv cloud managed-input create --app-id hare-app --upload-id upl_123456789[/dim]
 
     - Create a managed input from a run.
-        $ [dim]nextmv cloud managed-input create --app-id hare-app --name "Baseline Run" \
-            --run-id run_123456789[/dim]
+        $ [dim]nextmv cloud managed-input create --app-id hare-app --run-id run_123456789[/dim]
 
-    - Create a managed input with a specific ID and description.
+    - Create a managed input with a specific ID, name, and description.
         $ [dim]nextmv cloud managed-input create --app-id hare-app --name "Test Input" \\
             --managed-input-id inp_custom --description "Test case for validation" --upload-id upl_123456789[/dim]
 
