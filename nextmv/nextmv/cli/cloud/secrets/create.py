@@ -45,7 +45,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="A name for the secrets collection.",
+            help="An optional name for the secrets collection. If not provided, the ID will be used as the name.",
             metavar="NAME",
         ),
     ] = None,

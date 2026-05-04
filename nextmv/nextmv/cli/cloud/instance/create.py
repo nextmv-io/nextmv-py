@@ -55,7 +55,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="A name for the instance. If a name is not provided, the instance ID will be used as the name.",
+            help="Optional name for the instance. If a name is not provided, the instance ID will be used as the name.",
             metavar="NAME",
         ),
     ] = None,
