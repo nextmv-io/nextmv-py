@@ -15,7 +15,7 @@ from nextmv.cli.configuration.config import (
     obscure_api_key,
     save_config,
 )
-from nextmv.cli.message import error, message, success
+from nextmv.cli.message import error, message, success, warning
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -81,12 +81,18 @@ def create(
 
     config = load_config()
 
-    if not api_key:
-        api_key = Prompt.ask(
-            "Please enter your Nextmv API key to create the configuration",
-            case_sensitive=True,
-            password=True,
-        )
+    if api_key is None or not api_key.strip():
+        while True:
+            api_key_prompt = Prompt.ask(
+                "Please enter your Nextmv API key to create the configuration",
+                case_sensitive=True,
+                password=True,
+            )
+            api_key = api_key_prompt.strip()
+            if api_key:
+                break
+
+            warning("API key cannot be empty. Please try again.")
 
     if profile is None:
         config[API_KEY_KEY] = api_key
