@@ -39,7 +39,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="A name for the version. If a name is not provided, the version ID will be used as the name.",
+            help="Pptional name for the version. If a name is not provided, the version ID will be used as the name.",
             metavar="NAME",
         ),
     ] = None,

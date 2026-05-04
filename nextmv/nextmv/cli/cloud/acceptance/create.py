@@ -80,7 +80,7 @@ app = typer.Typer()
             }},
             "statistic": "mean"
         }}'
-        nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
+        nextmv cloud acceptance create --app-id hare-app \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC" --input-set-id input-set-123[/dim]
 
@@ -103,7 +103,7 @@ app = typer.Typer()
             }},
             "statistic": "p95"
         }}'
-        nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
+        nextmv cloud acceptance create --app-id hare-app \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC1" --metrics "$METRIC2" --input-set-id input-set-123[/dim]
 
@@ -128,7 +128,7 @@ app = typer.Typer()
                 "statistic": "p95"
             }}
         ]'
-        nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
+        nextmv cloud acceptance create --app-id hare-app \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRICS" --input-set-id input-set-123[/dim]
 
@@ -142,7 +142,7 @@ app = typer.Typer()
             }},
             "statistic": "mean"
         }}'
-        nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
+        nextmv cloud acceptance create --app-id hare-app \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC" --input-set-id input-set-123 --wait[/dim]
 
@@ -156,7 +156,7 @@ app = typer.Typer()
             }},
             "statistic": "mean"
         }}'
-        nextmv cloud acceptance create --app-id hare-app --acceptance-test-id test-123 \\
+        nextmv cloud acceptance create --app-id hare-app \\
             --candidate-instance-id candidate-123 --baseline-instance-id baseline-456 \\
             --metrics "$METRIC" --input-set-id input-set-123 --output results.json[/dim]
     """
@@ -164,17 +164,6 @@ app = typer.Typer()
 def create(
     app_id: AppIDOption,
     # Options for acceptance test configuration.
-    acceptance_test_id: Annotated[
-        str,
-        typer.Option(
-            "--acceptance-test-id",
-            "-t",
-            help="ID for the acceptance test.",
-            envvar="NEXTMV_ACCEPTANCE_TEST_ID",
-            metavar="ACCEPTANCE_TEST_ID",
-            rich_help_panel="Acceptance test configuration",
-        ),
-    ],
     baseline_instance_id: Annotated[
         str,
         typer.Option(
@@ -207,6 +196,17 @@ def create(
             rich_help_panel="Acceptance test configuration",
         ),
     ],
+    acceptance_test_id: Annotated[
+        str | None,
+        typer.Option(
+            "--acceptance-test-id",
+            "-t",
+            help="An optional ID for the acceptance test. If not provided, a random ID will be generated.",
+            envvar="NEXTMV_ACCEPTANCE_TEST_ID",
+            metavar="ACCEPTANCE_TEST_ID",
+            rich_help_panel="Acceptance test configuration",
+        ),
+    ] = None,
     description: Annotated[
         str | None,
         typer.Option(
@@ -233,7 +233,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="Name of the acceptance test. If not provided, the ID will be used as the name.",
+            help="Optional name of the acceptance test. If not provided, the ID will be used as the name.",
             metavar="NAME",
             rich_help_panel="Acceptance test configuration",
         ),

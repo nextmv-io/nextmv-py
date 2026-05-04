@@ -56,7 +56,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="Name of the shadow test. If not provided, the ID will be used as the name.",
+            help="Optional name of the shadow test. If not provided, the ID will be used as the name.",
             metavar="NAME",
         ),
     ] = None,
@@ -65,7 +65,7 @@ def create(
         typer.Option(
             "--shadow-test-id",
             "-s",
-            help="ID for the shadow test. Will be generated if not provided.",
+            help="Optional ID for the shadow test. Will be generated if not provided.",
             envvar="NEXTMV_SHADOW_TEST_ID",
             metavar="SHADOW_TEST_ID",
         ),

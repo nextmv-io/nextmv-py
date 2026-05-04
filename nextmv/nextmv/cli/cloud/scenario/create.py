@@ -48,7 +48,7 @@ def create(
         typer.Option(
             "--name",
             "-n",
-            help="Name of the scenario test. If not provided, the ID will be used as the name.",
+            help="Optional name of the scenario test. If not provided, the ID will be used as the name.",
             metavar="NAME",
             rich_help_panel="Scenario test configuration",
         ),
@@ -172,7 +172,7 @@ def create(
                 }
             }
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Spring Meadow Routes" --scenarios "$SCENARIO"[/dim]
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO"[/dim]
 
     - Create with multiple scenarios by repeating the flag.
         $ [dim]SCENARIO1='{
@@ -195,8 +195,7 @@ def create(
                 }
             }
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Lettuce Delivery Optimization" \\
-            --scenarios "$SCENARIO1" --scenarios "$SCENARIO2"[/dim]
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO1" --scenarios "$SCENARIO2"[/dim]
 
     - Create with multiple scenarios in a single [magenta]json[/magenta] array.
         $ [dim]SCENARIOS='[
@@ -221,8 +220,7 @@ def create(
                 }
             }
         ]'
-        nextmv cloud scenario create --app-id hare-app --name "Warren Construction Plans" \\
-            --scenarios "$SCENARIOS"[/dim]
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIOS"[/dim]
 
     - Create a scenario test and wait for it to complete.
         $ [dim]SCENARIO='{
@@ -235,7 +233,7 @@ def create(
                 }
             }
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Autumn Carrot Collection" --scenarios "$SCENARIO" \\
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO" \\
             --wait[/dim]
 
     - Create a scenario test and save the results to a file, waiting for completion.
@@ -249,7 +247,7 @@ def create(
                 }
             }
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Fox Avoidance Routes" --scenarios "$SCENARIO" \\
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO" \\
             --output bunny-safety-results.json[/dim]
 
     - Create a scenario test with configuration options.
@@ -269,7 +267,7 @@ def create(
                 }
             ]
         }'
-        nextmv cloud scenario create --app-id hare-app --name "Speed Analysis" --scenarios "$SCENARIO"[/dim]
+        nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO"[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)

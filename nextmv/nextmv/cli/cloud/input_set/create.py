@@ -21,15 +21,25 @@ app = typer.Typer()
 @app.command()
 def create(
     app_id: AppIDOption,
-    name: Annotated[
-        str,
+    description: Annotated[
+        str | None,
         typer.Option(
-            "--name",
-            "-n",
-            help="A name for the input set.",
-            metavar="NAME",
+            "--description",
+            "-d",
+            help="An optional description for the input set.",
+            metavar="DESCRIPTION",
         ),
-    ],
+    ] = None,
+    end_time: Annotated[
+        datetime | None,
+        typer.Option(
+            "--end-time",
+            formats=["%Y-%m-%dT%H:%M:%S%z"],
+            help="End time for filtering runs in [magenta]RFC 3339[/magenta] format. "
+            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
+            metavar="END_TIME",
+        ),
+    ] = None,
     input_set_id: Annotated[
         str | None,
         typer.Option(
@@ -49,13 +59,31 @@ def create(
             metavar="INSTANCE_ID",
         ),
     ] = None,
-    description: Annotated[
+    managed_inputs: Annotated[
         str | None,
         typer.Option(
-            "--description",
-            "-d",
-            help="An optional description for the input set.",
-            metavar="DESCRIPTION",
+            "--managed-inputs",
+            help="Managed inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
+            "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
+            metavar="MANAGED_INPUTS",
+        ),
+    ] = None,
+    maximum_runs: Annotated[
+        int | None,
+        typer.Option(
+            "--maximum-runs",
+            "-m",
+            help="Maximum number of runs to include (max [magenta]20[/magenta]).",
+            metavar="MAXIMUM_RUNS",
+        ),
+    ] = 20,
+    name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="An optional name for the input set. If not provided, the ID will be used as the name.",
+            metavar="NAME",
         ),
     ] = None,
     run_ids: Annotated[
@@ -77,34 +105,6 @@ def create(
             metavar="START_TIME",
         ),
     ] = None,
-    end_time: Annotated[
-        datetime | None,
-        typer.Option(
-            "--end-time",
-            formats=["%Y-%m-%dT%H:%M:%S%z"],
-            help="End time for filtering runs in [magenta]RFC 3339[/magenta] format. "
-            "Object format: [dim]'2024-01-01T00:00:00Z'[/dim]",
-            metavar="END_TIME",
-        ),
-    ] = None,
-    maximum_runs: Annotated[
-        int | None,
-        typer.Option(
-            "--maximum-runs",
-            "-m",
-            help="Maximum number of runs to include (max [magenta]20[/magenta]).",
-            metavar="MAXIMUM_RUNS",
-        ),
-    ] = 20,
-    managed_inputs: Annotated[
-        str | None,
-        typer.Option(
-            "--managed-inputs",
-            help="Managed inputs for the input set. Data should be valid [magenta]json[/magenta]. Object "
-            "format: [dim][{'id': 'id', 'name': 'name', 'description': 'description'}][/dim].",
-            metavar="MANAGED_INPUTS",
-        ),
-    ] = None,
     profile: ProfileOption = None,
 ) -> None:
     """
@@ -123,18 +123,18 @@ def create(
     - Create an input set for application [magenta]hare-app[/magenta] from runs.
       A random input set ID will be generated if one is not provided.
         $ [dim]nextmv cloud input-set create --app-id hare-app \\
-            --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/dim]
+            --run-ids run-1 --run-ids run-2 --run-ids run-3"[/dim]
 
-    - Create an input set with a specific ID.
+    - Create an input set with a specific ID and name.
         $ [dim]nextmv cloud input-set create --app-id hare-app --input-set-id hare-input-set \\
             --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3"[/dim]
 
     - Create an input set using existing managed inputs.
-        $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
+        $ [dim]nextmv cloud input-set create --app-id hare-app \\
             --managed-inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Create an input set from runs using a specific instance and time range.
-        $ [dim]nextmv cloud input-set create --app-id hare-app --name "Hare Input Set" \\
+        $ [dim]nextmv cloud input-set create --app-id hare-app \\
             --instance-id hare-instance --start-time "2024-01-01T00:00:00Z" \\
             --end-time "2024-01-31T23:59:59Z"[/dim]
     """
@@ -156,8 +156,8 @@ def create(
             managed_input_list.append(i)
 
     input_set = cloud_app.new_input_set(
-        input_set_id,
-        name,
+        id=input_set_id,
+        name=name,
         description=description,
         instance_id=instance_id,
         run_ids=run_ids,

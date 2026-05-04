@@ -5,6 +5,7 @@ This module defines the configuration create command for the Nextmv CLI.
 from typing import Annotated
 
 import typer
+from rich.prompt import Prompt
 
 from nextmv.cli.configuration.config import (
     API_KEY_KEY,
@@ -23,7 +24,7 @@ app = typer.Typer()
 @app.command()
 def create(
     api_key: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--api-key",
             "-a",
@@ -32,7 +33,7 @@ def create(
             envvar="NEXTMV_API_KEY",
             metavar="NEXTMV_API_KEY",
         ),
-    ],
+    ] = None,
     endpoint: Annotated[  # Hidden because it is meant for internal use.
         str | None,
         typer.Option(
@@ -60,6 +61,9 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Default configuration.
+        $ [dim]nextmv configuration create[/dim]
+
+    - Default configuration without prompting for an API key.
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY[/dim]
 
     - Configure a profile named [magenta]hare[/magenta].
@@ -76,6 +80,13 @@ def create(
         endpoint = endpoint[len("http://") :]
 
     config = load_config()
+
+    if not api_key:
+        api_key = Prompt.ask(
+            "Please enter your Nextmv API key to create the configuration",
+            case_sensitive=True,
+            password=True,
+        )
 
     if profile is None:
         config[API_KEY_KEY] = api_key
