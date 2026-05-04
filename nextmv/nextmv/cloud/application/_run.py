@@ -435,8 +435,8 @@ class ApplicationRunMixin:
                     raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
             payload["options"] = options_dict
 
-        configuration_dict = self.__extract_run_config(input, configuration, input_dir_path)
-        payload["configuration"] = configuration_dict
+        resolved_run_config = self.__extract_run_config(input, configuration, input_dir_path)
+        payload["configuration"] = resolved_run_config.to_dict()
 
         if batch_experiment_id is not None:
             payload["batch_experiment_id"] = batch_experiment_id
@@ -447,8 +447,10 @@ class ApplicationRunMixin:
             payload["result"] = external_dict
 
         query_params = {}
-        if instance_id is not None or self.default_instance_id is not None:
-            query_params["instance_id"] = instance_id if instance_id is not None else self.default_instance_id
+        # Instance ID should be empty for ensemble runs.
+        effective_instance_id = instance_id or self.default_instance_id
+        if effective_instance_id and not resolved_run_config.is_ensemble():
+            query_params["instance_id"] = effective_instance_id
 
         response = self.client.request(
             method="POST",
@@ -1444,25 +1446,27 @@ class ApplicationRunMixin:
         input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
         configuration: RunConfiguration | dict[str, Any] | None = None,
         dir_path: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> RunConfiguration:
         """
         Auxiliary function to extract the run configuration that will be sent
         to the application for execution.
         """
 
         if configuration is not None:
-            configuration_dict = (
-                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
-            )
-            return configuration_dict
+            if isinstance(configuration, RunConfiguration):
+                return configuration
+            elif isinstance(configuration, dict):
+                return RunConfiguration.from_dict(configuration)
+            else:
+                raise ValueError("configuration must be either a `RunConfiguration` object or a `dict`")
 
         configuration = RunConfiguration()
         if isinstance(input, ManagedInput):
             configuration.format = input.format
-        configuration.resolve(input=input, dir_path=dir_path)
-        configuration_dict = configuration.to_dict()
 
-        return configuration_dict
+        configuration.resolve(input=input, dir_path=dir_path)
+
+        return configuration
 
     def __handle_tracked_run_input(self: "Application", tracked_run: TrackedRun) -> str:
         # Get the URL to upload the input to.

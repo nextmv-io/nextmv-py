@@ -1406,6 +1406,27 @@ class RunConfiguration(BaseModel):
 
         self.execution_class = integration_val
 
+    def is_ensemble(self) -> bool:
+        """
+        Checks if the run configuration is for an ensemble run.
+
+        Returns
+        -------
+        bool
+            True if the run type is an ensemble, False otherwise.
+        """
+
+        if self.run_type is None:
+            return False
+
+        if self.run_type.run_type is None:
+            return False
+
+        if not self.run_type.definition_id:
+            return False
+
+        return self.run_type.run_type == RunType.ENSEMBLE and self.run_type.definition_id != ""
+
     def resolve(
         self,
         input: Input | dict[str, Any] | BaseModel | str,
