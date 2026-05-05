@@ -77,7 +77,7 @@ def push(
             "--create-instance-id",
             "-c",
             help="Link the newly created version to a [yellow]new[/yellow] instance with this ID. "
-            "Skips prompt to provide an instance ID. Useful for non-interactive sessions.",
+            "Skips prompt to provide an instance ID. Useful for non-interactive sessions. Activates --version-yes.",
             metavar="CREATE_INSTANCE_ID",
             rich_help_panel="Instance control",
         ),
@@ -88,7 +88,7 @@ def push(
             "--update-instance-id",
             "-u",
             help="Link the newly created version to an [yellow]existing[/yellow] instance with this ID. "
-            "Skips prompt to provide an instance ID. Useful for non-interactive sessions.",
+            "Skips prompt to provide an instance ID. Useful for non-interactive sessions. Activates --version-yes.",
             metavar="UPDATE_INSTANCE_ID",
             rich_help_panel="Instance control",
         ),
@@ -109,9 +109,9 @@ def push(
     prompted to create a new version. If a new version is created, you will be
     prompted to link it to an instance. If the instance exists, you will be
     asked if you want to update it. If it doesn't, you will be asked to create
-    it. You can use the following flags to skip the prompts, useful in
+    it. You can use the following options to skip the prompts, useful in
     non-interactive sessions like in a CI/CD pipeline: --version-yes,
-    --version-id, --create-instance-id, and --update-instance-id.
+    --version-no, --version-id, --create-instance-id, and --update-instance-id.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -131,10 +131,10 @@ def push(
         $ [dim]nextmv cloud app push --app-id hare-app --version-id v1.0.0[/dim]
 
     - Push and create a new version, then link it to a new instance with a specific ID (no prompt).
-        $ [dim]nextmv cloud app push --app-id hare-app --version-yes --create-instance-id inst-1[/dim]
+        $ [dim]nextmv cloud app push --app-id hare-app --create-instance-id inst-1[/dim]
 
     - Push and create a new version, then link it to an existing instance (no prompt).
-        $ [dim]nextmv cloud app push --app-id hare-app --version-yes --update-instance-id inst-1[/dim]
+        $ [dim]nextmv cloud app push --app-id hare-app --update-instance-id inst-1[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
@@ -144,7 +144,8 @@ def push(
         exists = cloud_app.version_exists(version_id=version_id)
         if exists:
             error(
-                f"Version [magenta]{version_id}[/magenta] already exists for application [magenta]{app_id}[/magenta]."
+                f"Used option --version-id but version [magenta]{version_id}[/magenta] already exists "
+                f"for application [magenta]{app_id}[/magenta]."
             )
 
     # Cannot skip and auto-confirm version creation at the same time.
@@ -251,6 +252,8 @@ def handle_push(
         version_yes=version_yes,
         version_no=version_no,
         now=now,
+        update_defined=update_defined,
+        create_defined=create_defined,
     )
     if not should_continue:
         return ""
@@ -300,6 +303,8 @@ def _handle_version_creation(
     version_yes: bool,
     version_no: bool,
     now: datetime,
+    update_defined: bool,
+    create_defined: bool,
 ) -> tuple[str, bool]:
     """
     Handle the logic for version creation after pushing an application.
@@ -339,6 +344,14 @@ def _handle_version_creation(
     if version_id is not None and version_id != "":
         info(f"Version [magenta]{version_id}[/magenta] does not exist. A new version will be created.")
         version_yes = True  # Activate auto-confirm since user provided a version ID.
+
+    if create_defined:
+        info("Used option --create-instance-id, which requires a version. A new version will be created.")
+        version_yes = True  # Activate auto-confirm since user wants to create an instance.
+
+    if update_defined:
+        info("Used option --update-instance-id, which requires a version. A new version will be created.")
+        version_yes = True  # Activate auto-confirm since user wants to update an instance.
 
     # If we are not auto-confirming version creation, ask the user.
     if not version_yes:
