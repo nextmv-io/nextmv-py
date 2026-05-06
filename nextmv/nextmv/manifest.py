@@ -1809,6 +1809,45 @@ class Manifest(BaseModel):
             raise Exception(f"missing mandatory files: {', '.join(missing_files)}")
 
 
+def read_pyproject_dependencies(path: str) -> list[str]:
+    """
+    Read ``[project.dependencies]`` from a PEP 517-compatible pyproject.toml
+    file.
+
+    Parameters
+    ----------
+    path : str
+        Absolute or relative path to the ``pyproject.toml`` file.
+
+    Returns
+    -------
+    list[str]
+        The list of dependency specifiers found under ``[project.dependencies]``.
+
+    Raises
+    ------
+    ValueError
+        If ``[project.dependencies]`` is absent or is not a list.
+    """
+
+    if sys.version_info >= (3, 11):
+        import tomllib
+    else:
+        import tomli as tomllib  # type: ignore[no-redef]
+
+    with open(path, "rb") as f:
+        data = tomllib.load(f)
+
+    deps = data.get("project", {}).get("dependencies")
+    if deps is None:
+        raise ValueError(f"`[project.dependencies]` not found in `{path}`")
+
+    if not isinstance(deps, list):
+        raise ValueError(f"`[project.dependencies]` in `{path}` must be a list")
+
+    return deps
+
+
 def default_python_manifest() -> Manifest:
     """
     Creates a default Python manifest as a starting point for applications
