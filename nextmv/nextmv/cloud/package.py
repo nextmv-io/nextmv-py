@@ -81,9 +81,9 @@ def _package(  # noqa: C901 # complexity attributed to printing.
 
         if verbose:
             if rich_print:
-                rich.print(":dvd: Compressing application into tarball.", file=sys.stderr)
+                rich.print(":floppy_disk: Compressing application into tarball.", file=sys.stderr)
             else:
-                log("📀 Compressing application into tarball.")
+                log("💾 Compressing application into tarball.")
 
         output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
         tar_file, file_count = __compress_tar(temp_dir, output_dir)
@@ -319,17 +319,17 @@ def __resolve_and_install_deps(
         shutil.copytree(str(cache_dir), target_dir, dirs_exist_ok=True)
         if verbose:
             if rich_print:
-                rich.print(":zap: Loaded Python dependencies from cache.", file=sys.stderr)
+                rich.print("\t:fast_up_button: Loaded Python dependencies from cache.", file=sys.stderr)
             else:
-                log("⚡ Loaded Python dependencies from cache.")
+                log("   ⏫ Loaded Python dependencies from cache.")
 
         return
 
     if verbose:
         if rich_print:
-            rich.print(":rabbit2: Downloading Python dependencies from package index.", file=sys.stderr)
+            rich.print("\t:rabbit2: Downloading Python dependencies from package index.", file=sys.stderr)
         else:
-            log("🐇 Downloading Python dependencies from package index.")
+            log("   🐇 Downloading Python dependencies from package index.")
 
     __run_install(uv_bin, lockfile_content, python_version, uv_platform, app_dir, temp_dir, target_dir)
     store_deps(
