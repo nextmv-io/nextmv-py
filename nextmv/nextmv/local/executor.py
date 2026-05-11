@@ -1105,9 +1105,7 @@ def __determine_command(manifest: Manifest) -> list[str]:  # noqa: C901
 
         if manifest.python and manifest.python.pip_requirements:
             if isinstance(manifest.python.pip_requirements, list):
-                with_args = []
-                for dep in manifest.python.pip_requirements:
-                    with_args += ["--with", dep]
+                with_args = [item for dep in manifest.python.pip_requirements for item in ("--with", dep)]
                 return [*entry_point, *with_args]
             elif isinstance(manifest.python.pip_requirements, str):
                 if manifest.python.pip_requirements.endswith(".toml"):
