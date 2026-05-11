@@ -1,5 +1,6 @@
 """Module with the logic for pushing an app to Nextmv Cloud."""
 
+import json
 import os
 import platform
 import re
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from pathlib import Path
 
 import rich
 
@@ -44,8 +46,9 @@ def _package(  # noqa: C901 # complexity attributed to printing.
     """Package the app into a tarball."""
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
+        deps_tar: Path | None = None
         if manifest.type == ManifestType.PYTHON:
-            __handle_python(app_dir, temp_dir, manifest, model, model_configuration, verbose, rich_print)
+            deps_tar = __handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print)
 
         found, missing, files = find_files(app_dir, manifest.files)
         manifest.confirm_mandatory_files(found)
@@ -86,7 +89,11 @@ def _package(  # noqa: C901 # complexity attributed to printing.
                 log("💾 Compressing application into tarball.")
 
         output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
-        tar_file, file_count = __compress_tar(temp_dir, output_dir)
+        if deps_tar is not None:
+            tar_file, file_count = __build_from_deps_tar(deps_tar, temp_dir, output_dir, verbose, rich_print)
+        else:
+            tar_file, file_count = __compress_tar(temp_dir, output_dir, verbose, rich_print)
+
         file_count_msg = f"{file_count} file" if file_count == 1 else f"{file_count} files"
 
         if verbose:
@@ -144,8 +151,8 @@ def _run_build_command(
     except subprocess.CalledProcessError as e:
         raise Exception(f"error running build command: {e.stderr}") from e
 
-    if verbose:
-        log(result.stdout)
+    if verbose and result.stdout.strip():
+        log(result.stdout.rstrip("\n"))
 
 
 def _get_shell_command_elements(pre_push_command):
@@ -194,19 +201,18 @@ def _run_pre_push_command(
     except subprocess.CalledProcessError as e:
         raise Exception(f"error running pre-push command: {e.stderr}") from e
 
-    if verbose:
-        log(result.stdout)
+    if verbose and result.stdout.strip():
+        log(result.stdout.rstrip("\n"))
 
 
 def __handle_python(
     app_dir: str,
-    temp_dir: str,
     manifest: Manifest,
     model: Model | None = None,
     model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
     rich_print: bool = False,
-) -> None:
+) -> Path | None:
     """Handles the Python-specific packaging logic."""
 
     if model is not None and model_configuration is not None:
@@ -224,53 +230,68 @@ def __handle_python(
         else:
             log("🐍 Bundling Python dependencies.")
 
-    __install_dependencies(manifest, app_dir, temp_dir, verbose, rich_print)
+    return __install_dependencies(manifest, app_dir, verbose, rich_print)
 
 
 def __install_dependencies(  # noqa: C901 # complexity
     manifest: Manifest,
     app_dir: str,
-    temp_dir: str,
     verbose: bool = False,
     rich_print: bool = False,
-) -> None:
+) -> Path | None:
     """Install dependencies for the Python app."""
 
     if manifest.python is None:
-        return
+        return None
 
     pip_requirements = manifest.python.pip_requirements
 
     if pip_requirements is None or pip_requirements == "":
         # If no pip requirements are specified, we do not install any dependencies.
-        return
+        return None
 
     if isinstance(pip_requirements, list):
         # If pip_requirements is a list, we write it to a temporary file so that we can
         # pass it to pip.
-        pip_requirements_file = os.path.join(temp_dir, "requirements.txt")
-        with open(pip_requirements_file, "w") as f:
+        pip_requirements_file = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".txt",
+            prefix="nextmv-reqs-",
+            delete=False,
+        )
+        try:
             for requirement in pip_requirements:
-                f.write(requirement + "\n")
-        pip_requirements = pip_requirements_file
+                pip_requirements_file.write(requirement + "\n")
+
+            pip_requirements_file.flush()
+            pip_requirements = pip_requirements_file.name
+
+        finally:
+            pip_requirements_file.close()
     elif isinstance(pip_requirements, str):
         # If pip_requirements is a string, we expect it to be a file path to a
         # requirements file.
         pip_requirements = pip_requirements.strip()
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
+
         if pip_requirements.endswith(".toml"):
             # If the requirements file is a pyproject.toml, read [project.dependencies]
             # and write them to a temporary requirements.txt file for pip.
             deps = read_pyproject_dependencies(os.path.join(app_dir, pip_requirements))
-            pip_requirements_file = os.path.join(temp_dir, "requirements.txt")
-            with open(pip_requirements_file, "w") as f:
+            pip_requirements_file = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", prefix="nextmv-reqs-", delete=False
+            )
+            try:
                 for dep in deps:
-                    f.write(dep + "\n")
-            pip_requirements = pip_requirements_file
+                    pip_requirements_file.write(dep + "\n")
 
-    dep_dir = os.path.join(".nextmv", "python", "deps")
-    target_dir = os.path.join(temp_dir, dep_dir)
+                pip_requirements_file.flush()
+                pip_requirements = pip_requirements_file.name
+            finally:
+                pip_requirements_file.close()
+        else:
+            pip_requirements = os.path.abspath(os.path.join(app_dir, pip_requirements))
 
     python_version = "3.11"
     if manifest.python.version:
@@ -285,14 +306,12 @@ def __install_dependencies(  # noqa: C901 # complexity
         raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
     uv_bin = _find_uv_binary()
-    __resolve_and_install_deps(
+    return __resolve_and_install_deps(
         uv_bin,
         pip_requirements,
         python_version,
         uv_platform,
         app_dir,
-        temp_dir,
-        target_dir,
         verbose,
         rich_print,
     )
@@ -304,41 +323,44 @@ def __resolve_and_install_deps(
     python_version: str,
     uv_platform: str,
     app_dir: str,
-    temp_dir: str,
-    target_dir: str,
     verbose: bool = False,
     rich_print: bool = False,
-) -> None:
+) -> Path | None:
     """Orchestrate the compile -> cache-check -> install -> cache-store flow."""
     lockfile_content = __compile_lockfile(uv_bin, pip_requirements, python_version, uv_platform, app_dir)
     key = cache_key(lockfile_content, python_version, uv_platform)
 
-    cache_dir = get_cached_deps(key)
-    if cache_dir is not None:
-        os.makedirs(target_dir, exist_ok=True)
-        shutil.copytree(str(cache_dir), target_dir, dirs_exist_ok=True)
+    cached_tar = get_cached_deps(key)
+    if cached_tar is not None:
         if verbose:
             if rich_print:
-                rich.print("\t:fast_up_button: Loaded Python dependencies from cache.", file=sys.stderr)
+                rich.print("\t:fast_up_button: Loading compressed Python dependencies from cache.", file=sys.stderr)
             else:
-                log("   ⏫ Loaded Python dependencies from cache.")
+                log("   ⏫ Loading compressed Python dependencies from cache.")
 
-        return
+        return cached_tar
 
     if verbose:
         if rich_print:
-            rich.print("\t:rabbit2: Downloading Python dependencies from package index.", file=sys.stderr)
+            rich.print(
+                "\t:rabbit2: Downloading and compressing Python dependencies from package index.", file=sys.stderr
+            )
         else:
-            log("   🐇 Downloading Python dependencies from package index.")
+            log("   🐇 Downloading and compressing Python dependencies from package index.")
 
-    __run_install(uv_bin, lockfile_content, python_version, uv_platform, app_dir, temp_dir, target_dir)
-    store_deps(
-        key=key,
-        installed_deps_dir=target_dir,
-        python_version=python_version,
-        platform=uv_platform,
-        lockfile_content=lockfile_content,
-    )
+    with tempfile.TemporaryDirectory(prefix="nextmv-deps-install-") as install_tmp:
+        install_dir = os.path.join(install_tmp, "deps")
+        os.makedirs(install_dir)
+        __run_install(uv_bin, lockfile_content, python_version, uv_platform, app_dir, install_tmp, install_dir)
+        store_deps(
+            key=key,
+            installed_deps_dir=install_dir,
+            python_version=python_version,
+            platform=uv_platform,
+            lockfile_content=lockfile_content,
+        )
+
+    return get_cached_deps(key)
 
 
 def __compile_lockfile(
@@ -424,8 +446,68 @@ def __confirm_python_bundling_version(version: str) -> None:
     raise Exception(f"python version 3.10 or higher is required for bundling, got {version}")
 
 
-def __compress_tar(source: str, target: str) -> tuple[str, int]:
+def __build_from_deps_tar(
+    deps_tar: Path,
+    files_dir: str,
+    output_dir: str,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> tuple[str, int]:
+    """Build the final tarball by concatenating the cached deps.tar.gz with a
+    freshly-compressed tarball of the app files.
+
+    The gzip format (RFC 1952) explicitly supports concatenated streams, and
+    tar decompressors handle them correctly.  This avoids decompressing and
+    recompressing the (large) deps archive — only the small set of app files
+    needs to be compressed from scratch.
+    """
+
+    if verbose:
+        if rich_print:
+            rich.print("\t:hammer_and_wrench:  Appending application files.", file=sys.stderr)
+        else:
+            log("   🛠️  Appending application files.")
+
+    # Read the deps file count from cache_info.json stored next to deps.tar.gz.
+    num_deps_files = 0
+    info_path = deps_tar.parent / "cache_info.json"
+    try:
+        with open(info_path) as f:
+            num_deps_files = json.load(f).get("num_files", 0)
+    except Exception:
+        pass
+
+    # Compress only the app files (small) into a temporary gzip stream.
+    app_files_tar_gz = os.path.join(output_dir, "app-files.tar.gz")
+    num_app_files = 0
+    with tarfile.open(app_files_tar_gz, "w:gz") as tar:
+        for root, _, files in os.walk(files_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, start=files_dir)
+                tar.add(file_path, arcname=arcname)
+                num_app_files += 1
+
+    # Concatenate the two gzip streams — valid per RFC 1952.
+    output_file = os.path.join(output_dir, "app.tar.gz")
+    with open(output_file, "wb") as f_out:
+        with open(str(deps_tar), "rb") as f_deps:
+            shutil.copyfileobj(f_deps, f_out)
+        with open(app_files_tar_gz, "rb") as f_app:
+            shutil.copyfileobj(f_app, f_out)
+
+    os.remove(app_files_tar_gz)
+    return output_file, num_deps_files + num_app_files
+
+
+def __compress_tar(source: str, target: str, verbose: bool = False, rich_print: bool = False) -> tuple[str, int]:
     """Compress the source directory into a tar.gz file in the target"""
+
+    if verbose:
+        if rich_print:
+            rich.print("\t:hammer_and_wrench:  Compressing tarball from scratch.", file=sys.stderr)
+        else:
+            log("   🛠️  Compressing tarball from scratch.")
 
     return_file_name = "app.tar.gz"
     target = os.path.join(target, return_file_name)

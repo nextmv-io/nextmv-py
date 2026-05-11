@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import shutil
+import tarfile
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -96,10 +97,10 @@ def get_cached_deps(key: str) -> Path | None:
     """
 
     entry_dir = _DEPS_CACHE_DIR / key
-    deps_dir = entry_dir / "deps"
+    deps_tar = entry_dir / "deps.tar.gz"
     info_file = entry_dir / _CACHE_INFO_FILE
 
-    if not deps_dir.is_dir() or not info_file.is_file():
+    if not deps_tar.is_file() or not info_file.is_file():
         return None
 
     # Update last_used_at for true LRU tracking.
@@ -113,7 +114,7 @@ def get_cached_deps(key: str) -> Path | None:
         # A failure to update the timestamp is non-fatal; still serve the hit.
         pass
 
-    return deps_dir
+    return deps_tar
 
 
 def store_deps(
@@ -162,8 +163,13 @@ def store_deps(
     # the directory no longer exists when the context manager tries to clean up.
     with tempfile.TemporaryDirectory(dir=_DEPS_CACHE_DIR, prefix=f"{key}-tmp-", ignore_cleanup_errors=True) as _tmp:
         tmp_entry = Path(_tmp)
-        tmp_deps = tmp_entry / "deps"
-        shutil.copytree(str(installed_deps_dir), str(tmp_deps))
+        tmp_deps_tar = tmp_entry / "deps.tar.gz"
+        dep_arcname = os.path.join(".nextmv", "python", "deps")
+        num_files = 0
+        with tarfile.open(str(tmp_deps_tar), "w:gz") as tar:
+            tar.add(str(installed_deps_dir), arcname=dep_arcname)
+            num_files = len(tar.getmembers())
+
         now = _now_iso()
         info = {
             "created_at": now,
@@ -171,6 +177,7 @@ def store_deps(
             "python_version": python_version,
             "platform": platform,
             "lockfile": lockfile_content,
+            "num_files": num_files,
         }
         metadata_path = tmp_entry / _CACHE_INFO_FILE
         _write_json_atomic(path=metadata_path, data=info)
