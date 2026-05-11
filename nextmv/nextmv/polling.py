@@ -31,9 +31,9 @@ class PollingOptions:
 
     You can import the `PollingOptions` class directly from `nextmv`:
 
-    ``python
+    ```python
     from nextmv import PollingOptions
-    ``
+    ```
 
     The Cloud API will be polled for the result. The polling stops if:
 
@@ -46,9 +46,9 @@ class PollingOptions:
     After each poll, a sleep duration is calculated using the following
     strategy, based on exponential backoff with jitter:
 
-    ``
+    ```
     sleep_duration = min(`max_delay`, `delay` + `backoff` * 2 ** i + Uniform(0, `jitter`))
-    ``
+    ```
 
     Where:
     * i is the retry (poll) number.
@@ -167,9 +167,9 @@ def default_polling_options() -> PollingOptions:
 
     You can import the `default_polling_options` function directly from `nextmv`:
 
-    ``python
+    ```python
     from nextmv import default_polling_options
-    ``
+    ```
 
     Returns
     -------
@@ -190,9 +190,9 @@ def poll(  # noqa: C901
 
     You can import the `poll` function directly from `nextmv`:
 
-    ``python
+    ```python
     from nextmv import poll
-    ``
+    ```
 
     This function implements a flexible polling strategy with exponential backoff
     and jitter. It calls the provided polling function repeatedly until it indicates
