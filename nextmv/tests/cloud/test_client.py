@@ -356,7 +356,7 @@ class TestRequestUnreachableServer(unittest.TestCase):
     """Tests for Client.request when the server is unreachable."""
 
     def _make_client(self):
-        return Client(api_key="test-key", url="https://api.example.com")
+        return Client(api_key="test-key", url="https://api.does-not-exist.invalid")
 
     def test_connection_error_raises_friendly_message(self):
         """ConnectionError is re-raised with a helpful message about the endpoint."""
@@ -365,7 +365,7 @@ class TestRequestUnreachableServer(unittest.TestCase):
             with self.assertRaises(requests.exceptions.ConnectionError) as ctx:
                 client.request(method="GET", endpoint="/v1/test")
             msg = str(ctx.exception)
-            self.assertIn("https://api.example.com", msg)
+            self.assertIn("https://api.does-not-exist.invalid", msg)
             self.assertIn("unreachable", msg)
 
     def test_timeout_raises_friendly_message(self):
@@ -402,7 +402,7 @@ class TestUploadToPresignedUrlUnreachableServer(unittest.TestCase):
     """Tests for Client.upload_to_presigned_url when the server is unreachable."""
 
     def _make_client(self):
-        return Client(api_key="test-key", url="https://api.example.com")
+        return Client(api_key="test-key", url="https://api.does-not-exist.invalid")
 
     def test_connection_error_raises_friendly_message(self):
         """ConnectionError during upload is re-raised with a helpful message."""
