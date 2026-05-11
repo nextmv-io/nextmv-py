@@ -546,7 +546,8 @@ class Client:
         elif tar_file is not None and tar_file != "":
             if not os.path.exists(tar_file):
                 raise ValueError(f"tar_file {tar_file} does not exist")
-            kwargs["data"] = open(tar_file, "rb")
+            with open(tar_file, "rb") as f:
+                kwargs["data"] = f.read()
         else:
             raise ValueError("either data or tar_file must be provided")
 

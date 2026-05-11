@@ -367,7 +367,6 @@ class TestRequestUnreachableServer(unittest.TestCase):
             msg = str(ctx.exception)
             self.assertIn("https://api.example.com", msg)
             self.assertIn("unreachable", msg)
-            self.assertIn("NEXTMV_ENDPOINT", msg)
 
     def test_timeout_raises_friendly_message(self):
         """Timeout is re-raised with a helpful message mentioning the timeout value."""

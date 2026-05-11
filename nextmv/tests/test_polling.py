@@ -1,5 +1,6 @@
 import unittest
 from typing import Any
+from unittest.mock import patch
 
 from nextmv.polling import PollingOptions, poll
 
@@ -85,19 +86,14 @@ class TestPolling(unittest.TestCase):
 
     def test_default_max_duration_prevents_infinite_loop(self):
         """max_duration limit causes TimeoutError when polling never succeeds."""
-        elapsed = [0.0]
-
-        def fake_sleep(duration: float) -> None:
-            elapsed[0] += duration
-
-        call_count = [0]
 
         def polling_func() -> tuple[Any, bool]:
-            call_count[0] += 1
             return None, False  # never succeeds
 
-        with self.assertRaises((RuntimeError, TimeoutError)):
-            poll(PollingOptions(max_tries=10, max_duration=0.001), polling_func, fake_sleep)
+        # Patch time.time so elapsed always exceeds max_duration after the first poll.
+        with patch("nextmv.polling.time.time", side_effect=[0.0, 1.0]):
+            with self.assertRaises(TimeoutError):
+                poll(PollingOptions(max_tries=-1, max_duration=0.5), polling_func, no_sleep)
 
     def test_negative_max_tries_means_no_limit(self):
         """max_tries=-1 disables the tries cap; polling succeeds after many attempts."""
