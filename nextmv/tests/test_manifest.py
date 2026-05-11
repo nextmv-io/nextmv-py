@@ -1006,16 +1006,16 @@ class TestReadPyprojectDependencies(unittest.TestCase):
         path = self._write_toml("[build-system]\nrequires = []\n")
         with self.assertRaises(ValueError) as ctx:
             read_pyproject_dependencies(path)
-        self.assertIn("[project.dependencies]", str(ctx.exception))
+        self.assertIn("[project].dependencies", str(ctx.exception))
 
     def test_missing_dependencies_key_raises(self):
         path = self._write_toml("[project]\nname = 'myapp'\n")
         with self.assertRaises(ValueError) as ctx:
             read_pyproject_dependencies(path)
-        self.assertIn("[project.dependencies]", str(ctx.exception))
+        self.assertIn("[project].dependencies", str(ctx.exception))
 
     def test_dependencies_not_a_list_raises(self):
         path = self._write_toml('[project]\ndependencies = "requests"\n')
         with self.assertRaises(ValueError) as ctx:
             read_pyproject_dependencies(path)
-        self.assertIn("[project.dependencies]", str(ctx.exception))
+        self.assertIn("[project].dependencies", str(ctx.exception))
