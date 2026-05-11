@@ -43,9 +43,9 @@ class TestApplication(unittest.TestCase):
             app_yaml_path = os.path.join(app_dir, "app.yaml")
             self.assertTrue(os.path.exists(app_yaml_path))
 
-            # Verify requirements.txt was copied
-            requirements_path = os.path.join(app_dir, "requirements.txt")
-            self.assertTrue(os.path.exists(requirements_path))
+            # Verify pyproject.toml was copied
+            pyproj_path = os.path.join(app_dir, "pyproject.toml")
+            self.assertTrue(os.path.exists(pyproj_path))
 
             # Verify README.md was copied
             readme_path = os.path.join(app_dir, "README.md")

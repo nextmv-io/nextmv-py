@@ -1079,7 +1079,7 @@ def __determine_cwd(manifest: Manifest, default: str) -> str:
     return default
 
 
-def __determine_command(manifest: Manifest) -> list[str]:
+def __determine_command(manifest: Manifest) -> list[str]:  # noqa: C901
     """
     Returns the command to execute based on the application type.
 
@@ -1105,19 +1105,17 @@ def __determine_command(manifest: Manifest) -> list[str]:
 
         if manifest.python and manifest.python.pip_requirements:
             if isinstance(manifest.python.pip_requirements, list):
-                return [
-                    *entry_point,
-                    "--with",
-                    ",".join(manifest.python.pip_requirements),
-                ]
+                with_args = []
+                for dep in manifest.python.pip_requirements:
+                    with_args += ["--with", dep]
+                return [*entry_point, *with_args]
             elif isinstance(manifest.python.pip_requirements, str):
                 if manifest.python.pip_requirements.endswith(".toml"):
                     deps = read_pyproject_dependencies(manifest.python.pip_requirements)
-                    return [
-                        *entry_point,
-                        "--with",
-                        ",".join(deps),
-                    ]
+                    with_args = []
+                    for dep in deps:
+                        with_args += ["--with", dep]
+                    return [*entry_point, *with_args]
                 return [
                     *entry_point,
                     "--with-requirements",
