@@ -31,9 +31,9 @@ class PollingOptions:
 
     You can import the `PollingOptions` class directly from `nextmv`:
 
-    ```python
+    ``python
     from nextmv import PollingOptions
-    ```
+    ``
 
     The Cloud API will be polled for the result. The polling stops if:
 
@@ -46,9 +46,9 @@ class PollingOptions:
     After each poll, a sleep duration is calculated using the following
     strategy, based on exponential backoff with jitter:
 
-    ```
+    ``
     sleep_duration = min(`max_delay`, `delay` + `backoff` * 2 ** i + Uniform(0, `jitter`))
-    ```
+    ``
 
     Where:
     * i is the retry (poll) number.
@@ -67,9 +67,13 @@ class PollingOptions:
     max_delay : float, default=20.0
         Maximum delay to use between polls, in seconds.
     max_duration : float, default=300.0
-        Maximum duration of the polling strategy, in seconds.
+        Maximum duration of the polling strategy, in seconds. A negative value
+        means no limit. Defaults to `300` seconds (5 minutes) to prevent
+        indefinite hanging when the server is unreachable.
     max_tries : int, default=100
-        Maximum number of tries to use.
+        Maximum number of tries to use. A negative value means no limit.
+        Defaults to `100` to prevent indefinite hanging when the server is
+        unreachable.
     jitter : float, default=1.0
         Jitter to use for the polling strategy. A uniform distribution is sampled
         between 0 and this number. The resulting random number is added to the
@@ -106,12 +110,17 @@ class PollingOptions:
     """
     max_delay: float = 20
     """Maximum delay to use between polls, in seconds."""
-    max_duration: float = -1
+    max_duration: float = 300
     """
     Maximum duration of the polling strategy, in seconds. A negative value means no limit.
+    Defaults to `300` seconds (5 minutes) to prevent indefinite hanging when the server
+    is unreachable.
     """
-    max_tries: int = -1
-    """Maximum number of tries to use. A negative value means no limit."""
+    max_tries: int = 100
+    """
+    Maximum number of tries to use. A negative value means no limit.
+    Defaults to `100` to prevent indefinite hanging when the server is unreachable.
+    """
     jitter: float = 1
     """
     Jitter to use for the polling strategy. A uniform distribution is sampled
@@ -158,9 +167,9 @@ def default_polling_options() -> PollingOptions:
 
     You can import the `default_polling_options` function directly from `nextmv`:
 
-    ```python
+    ``python
     from nextmv import default_polling_options
-    ```
+    ``
 
     Returns
     -------
@@ -181,9 +190,9 @@ def poll(  # noqa: C901
 
     You can import the `poll` function directly from `nextmv`:
 
-    ```python
+    ``python
     from nextmv import poll
-    ```
+    ``
 
     This function implements a flexible polling strategy with exponential backoff
     and jitter. It calls the provided polling function repeatedly until it indicates
