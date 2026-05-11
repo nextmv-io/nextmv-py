@@ -69,6 +69,7 @@ def cache_key(lockfile_content: str, python_version: str, platform: str) -> str:
     str
         A 64-character lowercase hex SHA-256 digest.
     """
+
     raw = f"{lockfile_content}|{python_version}|{platform}"
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -93,6 +94,7 @@ def get_cached_deps(key: str) -> Path | None:
         Path to the `deps` directory for the cached entry, or `None` when
         no entry exists for the given key.
     """
+
     entry_dir = _DEPS_CACHE_DIR / key
     deps_dir = entry_dir / "deps"
     info_file = entry_dir / _CACHE_INFO_FILE
@@ -104,8 +106,9 @@ def get_cached_deps(key: str) -> Path | None:
     try:
         with open(info_file) as f:
             info = json.load(f)
+
         info["last_used_at"] = _now_iso()
-        _write_json_atomic(info_file, info)
+        _write_json_atomic(path=info_file, data=info)
     except Exception:
         # A failure to update the timestamp is non-fatal; still serve the hit.
         pass
@@ -150,16 +153,17 @@ def store_deps(
     max_bytes : int, optional
         Maximum total cache size in bytes.  Defaults to `DEFAULT_MAX_BYTES`.
     """
-    _create_cache()
 
+    _create_cache()
     entry_dir = _DEPS_CACHE_DIR / key
 
     # Write to a sibling temp directory first, then rename for atomicity.
-    tmp_entry = Path(tempfile.mkdtemp(dir=_DEPS_CACHE_DIR, prefix=f"{key}-tmp-"))
-    try:
+    # ignore_cleanup_errors=True handles the case where rename succeeded and
+    # the directory no longer exists when the context manager tries to clean up.
+    with tempfile.TemporaryDirectory(dir=_DEPS_CACHE_DIR, prefix=f"{key}-tmp-", ignore_cleanup_errors=True) as _tmp:
+        tmp_entry = Path(_tmp)
         tmp_deps = tmp_entry / "deps"
         shutil.copytree(str(installed_deps_dir), str(tmp_deps))
-
         now = _now_iso()
         info = {
             "created_at": now,
@@ -168,16 +172,12 @@ def store_deps(
             "platform": platform,
             "lockfile": lockfile_content,
         }
-        _write_json_atomic(tmp_entry / _CACHE_INFO_FILE, info)
+        metadata_path = tmp_entry / _CACHE_INFO_FILE
+        _write_json_atomic(path=metadata_path, data=info)
 
         # Rename into place; if the key already exists (race), keep existing.
         if not entry_dir.exists():
             tmp_entry.rename(entry_dir)
-        else:
-            shutil.rmtree(str(tmp_entry), ignore_errors=True)
-    except Exception:
-        shutil.rmtree(str(tmp_entry), ignore_errors=True)
-        raise
 
     _evict_lru(max_entries=max_entries, max_bytes=max_bytes)
 
@@ -186,7 +186,7 @@ def _create_cache() -> None:
     """
     Create the cache directories if they do not already exist.
     """
-    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
     _DEPS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -195,7 +195,7 @@ def _evict_lru(
     max_bytes: int = _DEFAULT_MAX_BYTES,
 ) -> int:
     """
-    Remove the least-recently-used cache entries until both caps are satisfied.
+    Remove the least-recently-used (LRU) cache entries until both caps are satisfied.
 
     Entries are sorted by `last_used_at` ascending (oldest first) and deleted
     one by one until the total entry count is at most `max_entries` AND the
@@ -215,31 +215,41 @@ def _evict_lru(
     int
         The number of entries that were removed.
     """
+
     if not _DEPS_CACHE_DIR.is_dir():
         return 0
 
-    entries: list[tuple[datetime, Path, int]] = []
+    entries = []
     for entry_dir in _DEPS_CACHE_DIR.iterdir():
         if not entry_dir.is_dir():
             continue
+
         info_file = entry_dir / _CACHE_INFO_FILE
         try:
             with open(info_file) as f:
                 info = json.load(f)
+
             last_used = datetime.fromisoformat(info["last_used_at"])
         except Exception:
             # Treat unreadable entries as very old so they are evicted first.
             last_used = datetime.min.replace(tzinfo=timezone.utc)
-        entries.append((last_used, entry_dir, _dir_size(entry_dir)))
 
-    entries.sort(key=lambda e: e[0])  # oldest last_used_at first
+        entry = {
+            "last_used": last_used,
+            "dir": entry_dir,
+            "size": _dir_size(entry_dir),
+        }
+        entries.append(entry)
 
-    total = sum(size for _, _, size in entries)
+    # Sort oldest to newest by last_used_at.
+    entries.sort(key=lambda e: e["last_used"])
+
+    total = sum(e["size"] for e in entries)
     evicted = 0
     while entries and (len(entries) > max_entries or total > max_bytes):
-        _, oldest, size = entries.pop(0)
-        shutil.rmtree(str(oldest), ignore_errors=True)
-        total -= size
+        oldest = entries.pop(0)
+        shutil.rmtree(str(oldest["dir"]), ignore_errors=True)
+        total -= oldest["size"]
         evicted += 1
 
     return evicted
@@ -271,12 +281,18 @@ def _write_json_atomic(path: Path, data: dict) -> None:
     """
     Write data as JSON to path atomically via a sibling temporary file.
     """
-    fd, tmp_str = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
-    tmp = Path(tmp_str)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        dir=path.parent,
+        prefix=".tmp-",
+        delete=False,
+    ) as f:
+        json.dump(data, f, indent=2)
+        tmp = Path(f.name)
+
     try:
-        with os.fdopen(fd, "w") as f:
-            json.dump(data, f, indent=2)
         tmp.rename(path)
-    except Exception:
+    except Exception as e:
         tmp.unlink(missing_ok=True)
-        raise
+        raise e

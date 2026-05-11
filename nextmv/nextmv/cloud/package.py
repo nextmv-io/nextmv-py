@@ -55,6 +55,15 @@ def _package(  # noqa: C901 # complexity attributed to printing.
 
         manifest.to_yaml(temp_dir)
 
+        if verbose:
+            if rich_print:
+                rich.print(
+                    f":clipboard: Copying files listed in [magenta]{MANIFEST_FILE_NAME}[/magenta] manifest.",
+                    file=sys.stderr,
+                )
+            else:
+                log(f'📋 Copying files listed in "{MANIFEST_FILE_NAME}" manifest.')
+
         for file in files:
             target_dir = os.path.dirname(os.path.join(temp_dir, file["interior_path"]))
             try:
@@ -67,21 +76,19 @@ def _package(  # noqa: C901 # complexity attributed to printing.
             except subprocess.CalledProcessError as e:
                 raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
 
-        if verbose:
-            if rich_print:
-                rich.print(
-                    f":clipboard: Copied files listed in [magenta]{MANIFEST_FILE_NAME}[/magenta] manifest.",
-                    file=sys.stderr,
-                )
-            else:
-                log(f'📋 Copied files listed in "{MANIFEST_FILE_NAME}" manifest.')
-
         if manifest.type == ManifestType.PYTHON:
             _cleanup_python_model(app_dir, model_configuration, verbose)
+
+        if verbose:
+            if rich_print:
+                rich.print(":dvd: Compressing application into tarball.", file=sys.stderr)
+            else:
+                log("📀 Compressing application into tarball.")
 
         output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
         tar_file, file_count = __compress_tar(temp_dir, output_dir)
         file_count_msg = f"{file_count} file" if file_count == 1 else f"{file_count} files"
+
         if verbose:
             try:
                 size = __human_friendly_file_size(tar_file)
@@ -217,13 +224,15 @@ def __handle_python(
         else:
             log("🐍 Bundling Python dependencies.")
 
-    __install_dependencies(manifest, app_dir, temp_dir)
+    __install_dependencies(manifest, app_dir, temp_dir, verbose, rich_print)
 
 
 def __install_dependencies(  # noqa: C901 # complexity
     manifest: Manifest,
     app_dir: str,
     temp_dir: str,
+    verbose: bool = False,
+    rich_print: bool = False,
 ) -> None:
     """Install dependencies for the Python app."""
 
@@ -276,7 +285,17 @@ def __install_dependencies(  # noqa: C901 # complexity
         raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
     uv_bin = _find_uv_binary()
-    __resolve_and_install_deps(uv_bin, pip_requirements, python_version, uv_platform, app_dir, temp_dir, target_dir)
+    __resolve_and_install_deps(
+        uv_bin,
+        pip_requirements,
+        python_version,
+        uv_platform,
+        app_dir,
+        temp_dir,
+        target_dir,
+        verbose,
+        rich_print,
+    )
 
 
 def __resolve_and_install_deps(
@@ -287,16 +306,30 @@ def __resolve_and_install_deps(
     app_dir: str,
     temp_dir: str,
     target_dir: str,
+    verbose: bool = False,
+    rich_print: bool = False,
 ) -> None:
-    """Orchestrate the compile → cache-check → install → cache-store flow."""
+    """Orchestrate the compile -> cache-check -> install -> cache-store flow."""
     lockfile_content = __compile_lockfile(uv_bin, pip_requirements, python_version, uv_platform, app_dir)
     key = cache_key(lockfile_content, python_version, uv_platform)
 
-    cached = get_cached_deps(key)
-    if cached is not None:
+    cache_dir = get_cached_deps(key)
+    if cache_dir is not None:
         os.makedirs(target_dir, exist_ok=True)
-        shutil.copytree(str(cached), target_dir, dirs_exist_ok=True)
+        shutil.copytree(str(cache_dir), target_dir, dirs_exist_ok=True)
+        if verbose:
+            if rich_print:
+                rich.print(":zap: Loaded Python dependencies from cache.", file=sys.stderr)
+            else:
+                log("⚡ Loaded Python dependencies from cache.")
+
         return
+
+    if verbose:
+        if rich_print:
+            rich.print(":rabbit2: Downloading Python dependencies from package index.", file=sys.stderr)
+        else:
+            log("🐇 Downloading Python dependencies from package index.")
 
     __run_install(uv_bin, lockfile_content, python_version, uv_platform, app_dir, temp_dir, target_dir)
     store_deps(
@@ -315,11 +348,13 @@ def __compile_lockfile(
     uv_platform: str,
     app_dir: str,
 ) -> str:
-    """Resolve requirements to a fully-pinned lockfile via ``uv pip compile``.
+    """
+    Resolve requirements to a fully-pinned lockfile via `uv pip compile`.
 
     Pinning makes the cache key deterministic: the same requirements always
     produce the same key regardless of when the build runs.
     """
+
     result = subprocess.run(
         [
             uv_bin,
@@ -334,8 +369,10 @@ def __compile_lockfile(
         capture_output=True,
         text=True,
     )
+
     if result.returncode != 0:
         raise Exception(f"error resolving dependencies: {os.linesep}{result.stderr}")
+
     return result.stdout
 
 
@@ -348,7 +385,7 @@ def __run_install(
     temp_dir: str,
     target_dir: str,
 ) -> None:
-    """Install packages from a pinned lockfile via ``uv pip install``."""
+    """Install packages from a pinned lockfile via `uv pip install`."""
     lockfile_file = os.path.join(temp_dir, "requirements.lock")
     with open(lockfile_file, "w") as f:
         f.write(lockfile_content)
