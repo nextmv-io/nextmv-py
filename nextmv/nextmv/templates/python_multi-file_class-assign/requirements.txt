@@ -1,3 +1,0 @@
-nextmv>=1.7.0
-pyomo>=6.7.0
-highspy>=1.7.0

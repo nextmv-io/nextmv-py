@@ -1830,6 +1830,8 @@ def read_pyproject_dependencies(path: str) -> list[str]:
         If ``[project.dependencies]`` is absent or is not a list.
     """
 
+    # tomllib comes standard with Python 3.11, for earlier versions we need to
+    # use a third-party library.
     if sys.version_info >= (3, 11):
         import tomllib
     else:

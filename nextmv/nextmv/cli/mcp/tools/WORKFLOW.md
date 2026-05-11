@@ -55,7 +55,7 @@ Input is a single JSON file via stdin; output is a single JSON object via stdout
 type: python
 runtime: ghcr.io/nextmv-io/runtime/python:3.11
 python:
-  pip-requirements: requirements.txt
+  pip-requirements: pyproject.toml # Can be a requirements.txt
 
 files:
   - main.py
@@ -93,7 +93,7 @@ Input and output are directories of files. Use when the solver writes its own ou
 type: python
 runtime: ghcr.io/nextmv-io/runtime/python:3.11
 python:
-  pip-requirements: requirements.txt
+  pip-requirements: pyproject.toml # Can be a requirements.txt
 
 files:
   - main.py
@@ -269,12 +269,14 @@ Include `input.json` (default) plus an `inputs/` directory with 3-5 files varyin
 ### Run locally
 
 **JSON format:**
+
 ```
 local_run(app_dir=".", input=<parsed input.json>)
 local_run(app_dir=".", input=<parsed inputs/large.json>, run_options={"solve.duration": "30s"})
 ```
 
 **Multi-file format:**
+
 ```
 local_run(app_dir=".", input_dir_path="input", content_format="multi-file")
 ```
