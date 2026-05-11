@@ -11,6 +11,7 @@ import tempfile
 
 import rich
 
+from nextmv.cache import cache_key, get_cached_deps, store_deps
 from nextmv.logger import log
 from nextmv.manifest import (
     MANIFEST_FILE_NAME,
@@ -275,25 +276,100 @@ def __install_dependencies(  # noqa: C901 # complexity
         raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
     uv_bin = _find_uv_binary()
-    command = [
-        uv_bin,
-        "pip",
-        "install",
-        "-r",
-        pip_requirements,
-        "--only-binary=:all:",
-        "--upgrade",
-        "--target",
-        target_dir,
-        "--quiet",
-        f"--python-platform={uv_platform}",
-        f"--python-version={python_version}",
-    ]
+    __resolve_and_install_deps(uv_bin, pip_requirements, python_version, uv_platform, app_dir, temp_dir, target_dir)
+
+
+def __resolve_and_install_deps(
+    uv_bin: str,
+    pip_requirements: str,
+    python_version: str,
+    uv_platform: str,
+    app_dir: str,
+    temp_dir: str,
+    target_dir: str,
+) -> None:
+    """Orchestrate the compile → cache-check → install → cache-store flow."""
+    lockfile_content = __compile_lockfile(uv_bin, pip_requirements, python_version, uv_platform, app_dir)
+    key = cache_key(lockfile_content, python_version, uv_platform)
+
+    cached = get_cached_deps(key)
+    if cached is not None:
+        os.makedirs(target_dir, exist_ok=True)
+        shutil.copytree(str(cached), target_dir, dirs_exist_ok=True)
+        return
+
+    __run_install(uv_bin, lockfile_content, python_version, uv_platform, app_dir, temp_dir, target_dir)
+    store_deps(
+        key=key,
+        installed_deps_dir=target_dir,
+        python_version=python_version,
+        platform=uv_platform,
+        lockfile_content=lockfile_content,
+    )
+
+
+def __compile_lockfile(
+    uv_bin: str,
+    pip_requirements: str,
+    python_version: str,
+    uv_platform: str,
+    app_dir: str,
+) -> str:
+    """Resolve requirements to a fully-pinned lockfile via ``uv pip compile``.
+
+    Pinning makes the cache key deterministic: the same requirements always
+    produce the same key regardless of when the build runs.
+    """
     result = subprocess.run(
-        command,
+        [
+            uv_bin,
+            "pip",
+            "compile",
+            pip_requirements,
+            "--quiet",
+            f"--python-platform={uv_platform}",
+            f"--python-version={python_version}",
+        ],
+        cwd=app_dir,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise Exception(f"error resolving dependencies: {os.linesep}{result.stderr}")
+    return result.stdout
+
+
+def __run_install(
+    uv_bin: str,
+    lockfile_content: str,
+    python_version: str,
+    uv_platform: str,
+    app_dir: str,
+    temp_dir: str,
+    target_dir: str,
+) -> None:
+    """Install packages from a pinned lockfile via ``uv pip install``."""
+    lockfile_file = os.path.join(temp_dir, "requirements.lock")
+    with open(lockfile_file, "w") as f:
+        f.write(lockfile_content)
+
+    result = subprocess.run(
+        [
+            uv_bin,
+            "pip",
+            "install",
+            "-r",
+            lockfile_file,
+            "--only-binary=:all:",
+            "--target",
+            target_dir,
+            "--quiet",
+            f"--python-platform={uv_platform}",
+            f"--python-version={python_version}",
+        ],
         cwd=app_dir,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,  # Merge stderr into stdout
+        stderr=subprocess.STDOUT,
         text=True,
     )
     if result.returncode != 0:
