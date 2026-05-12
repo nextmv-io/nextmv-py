@@ -49,7 +49,7 @@ from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
 from nextmv.local.local import DEFAULT_OUTPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, OUTPUT_KEY, calculate_files_size
 from nextmv.local.plotly_handler import handle_plotly_visual
-from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestType, find_files
+from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestType, find_files, read_pyproject_dependencies
 from nextmv.output import (
     ASSETS_KEY,
     METRICS_KEY,
@@ -1109,7 +1109,8 @@ def __determine_command(manifest: Manifest) -> list[str]:  # noqa: C901
                 return [*entry_point, *with_args]
             elif isinstance(manifest.python.pip_requirements, str):
                 if os.path.basename(manifest.python.pip_requirements) == "pyproject.toml":
-                    with_args = [item for dep in manifest.python.pip_requirements for item in ("--with", dep)]
+                    deps = read_pyproject_dependencies(manifest.python.pip_requirements)
+                    with_args = [item for dep in deps for item in ("--with", dep)]
                     return [*entry_point, *with_args]
 
                 return [
