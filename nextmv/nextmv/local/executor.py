@@ -1105,17 +1105,14 @@ def __determine_command(manifest: Manifest) -> list[str]:  # noqa: C901
 
         if manifest.python and manifest.python.pip_requirements:
             if isinstance(manifest.python.pip_requirements, list):
-                with_args = []
-                for dep in manifest.python.pip_requirements:
-                    with_args += ["--with", dep]
+                with_args = [item for dep in manifest.python.pip_requirements for item in ("--with", dep)]
                 return [*entry_point, *with_args]
             elif isinstance(manifest.python.pip_requirements, str):
-                if manifest.python.pip_requirements.endswith(".toml"):
+                if os.path.basename(manifest.python.pip_requirements) == "pyproject.toml":
                     deps = read_pyproject_dependencies(manifest.python.pip_requirements)
-                    with_args = []
-                    for dep in deps:
-                        with_args += ["--with", dep]
+                    with_args = [item for dep in deps for item in ("--with", dep)]
                     return [*entry_point, *with_args]
+
                 return [
                     *entry_point,
                     "--with-requirements",
