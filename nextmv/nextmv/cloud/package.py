@@ -275,7 +275,7 @@ def __install_dependencies(  # noqa: C901 # complexity
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
 
-        if pip_requirements.endswith(".toml"):
+        if os.path.basename(pip_requirements) == "pyproject.toml":
             # If the requirements file is a pyproject.toml, read [project.dependencies]
             # and write them to a temporary requirements.txt file for pip.
             deps = read_pyproject_dependencies(os.path.join(app_dir, pip_requirements))

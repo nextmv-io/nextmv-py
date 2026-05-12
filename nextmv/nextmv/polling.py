@@ -66,14 +66,11 @@ class PollingOptions:
         Initial delay to use before starting the polling strategy, in seconds.
     max_delay : float, default=20.0
         Maximum delay to use between polls, in seconds.
-    max_duration : float, default=300.0
+    max_duration : float, default=-1
         Maximum duration of the polling strategy, in seconds. A negative value
-        means no limit. Defaults to `300` seconds (5 minutes) to prevent
-        indefinite hanging when the server is unreachable.
-    max_tries : int, default=100
+        means no limit.
+    max_tries : int, default=-1
         Maximum number of tries to use. A negative value means no limit.
-        Defaults to `100` to prevent indefinite hanging when the server is
-        unreachable.
     jitter : float, default=1.0
         Jitter to use for the polling strategy. A uniform distribution is sampled
         between 0 and this number. The resulting random number is added to the
@@ -110,16 +107,13 @@ class PollingOptions:
     """
     max_delay: float = 20
     """Maximum delay to use between polls, in seconds."""
-    max_duration: float = 300
+    max_duration: float = -1
     """
     Maximum duration of the polling strategy, in seconds. A negative value means no limit.
-    Defaults to `300` seconds (5 minutes) to prevent indefinite hanging when the server
-    is unreachable.
     """
-    max_tries: int = 100
+    max_tries: int = -1
     """
     Maximum number of tries to use. A negative value means no limit.
-    Defaults to `100` to prevent indefinite hanging when the server is unreachable.
     """
     jitter: float = 1
     """
