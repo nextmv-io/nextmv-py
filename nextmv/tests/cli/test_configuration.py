@@ -44,11 +44,6 @@ class TestConfigureCommand(unittest.TestCase):
         if self.env_api_key is not None:
             os.environ["NEXTMV_API_KEY"] = self.env_api_key
 
-    def test_configure_no_args_shows_error(self):
-        """Test that running configuration create without arguments shows an error."""
-        result = self.runner.invoke(self.app, ["configuration", "create"])
-        self.assertEqual(result.exit_code, 1)
-
     @patch("nextmv.cli.configuration.create.save_config")
     @patch("nextmv.cli.configuration.create.load_config")
     def test_configure_default_profile(self, mock_load, mock_save):

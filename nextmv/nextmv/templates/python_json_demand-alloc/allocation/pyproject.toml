@@ -1,0 +1,10 @@
+[project]
+name = "allocation"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "highspy>=1.7.0",
+    "nextmv>=1.7.0",
+    "numpy>=2.2.0",
+    "pyomo>=6.7.0",
+]

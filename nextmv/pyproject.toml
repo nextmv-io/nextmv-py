@@ -26,6 +26,7 @@ dependencies = [
     "plotly>=6.0.1",
     "questionary>=2.1.1",
     "uv>=0.4.0",
+    "tomli>=2.4.1 ; python_full_version < '3.11'",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [

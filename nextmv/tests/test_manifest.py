@@ -20,6 +20,7 @@ from nextmv.manifest import (
     ManifestValidation,
     ModelConfiguration,
     initialize_manifest,
+    read_pyproject_dependencies,
 )
 from nextmv.options import Option, Options, OptionsEnforcement
 
@@ -974,3 +975,47 @@ class TestManifestValidationEnforce(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             ManifestValidation(enforce="strict")
         self.assertIn("strict", str(ctx.exception))
+
+
+class TestReadPyprojectDependencies(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        import shutil
+
+        shutil.rmtree(self.temp_dir)
+
+    def _write_toml(self, content: str) -> str:
+        path = os.path.join(self.temp_dir, "pyproject.toml")
+        with open(path, "w") as f:
+            f.write(content)
+        return path
+
+    def test_reads_dependencies(self):
+        path = self._write_toml('[project]\ndependencies = ["requests>=2.0", "pydantic>=2.0"]\n')
+        deps = read_pyproject_dependencies(path)
+        self.assertEqual(deps, ["requests>=2.0", "pydantic>=2.0"])
+
+    def test_empty_dependencies_list(self):
+        path = self._write_toml("[project]\ndependencies = []\n")
+        deps = read_pyproject_dependencies(path)
+        self.assertEqual(deps, [])
+
+    def test_missing_project_dependencies_raises(self):
+        path = self._write_toml("[build-system]\nrequires = []\n")
+        with self.assertRaises(ValueError) as ctx:
+            read_pyproject_dependencies(path)
+        self.assertIn("[project].dependencies", str(ctx.exception))
+
+    def test_missing_dependencies_key_raises(self):
+        path = self._write_toml("[project]\nname = 'myapp'\n")
+        with self.assertRaises(ValueError) as ctx:
+            read_pyproject_dependencies(path)
+        self.assertIn("[project].dependencies", str(ctx.exception))
+
+    def test_dependencies_not_a_list_raises(self):
+        path = self._write_toml('[project]\ndependencies = "requests"\n')
+        with self.assertRaises(ValueError) as ctx:
+            read_pyproject_dependencies(path)
+        self.assertIn("[project].dependencies", str(ctx.exception))

@@ -12,7 +12,15 @@ import tempfile
 import rich
 
 from nextmv.logger import log
-from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestBuild, ManifestType, ModelConfiguration, find_files
+from nextmv.manifest import (
+    MANIFEST_FILE_NAME,
+    Manifest,
+    ManifestBuild,
+    ManifestType,
+    ModelConfiguration,
+    find_files,
+    read_pyproject_dependencies,
+)
 from nextmv.model import Model, _cleanup_python_model
 from nextmv.uv_handler import _find_uv_binary
 
@@ -199,6 +207,7 @@ def __handle_python(
                 rich.print(":crystal_ball: Encoding Python model.", file=sys.stderr)
             else:
                 log("🔮 Encoding Python model.")
+
         model.save(app_dir, model_configuration)
 
     if verbose:
@@ -206,6 +215,7 @@ def __handle_python(
             rich.print(":snake: Bundling Python dependencies.", file=sys.stderr)
         else:
             log("🐍 Bundling Python dependencies.")
+
     __install_dependencies(manifest, app_dir, temp_dir)
 
 
@@ -232,6 +242,7 @@ def __install_dependencies(  # noqa: C901 # complexity
         with open(pip_requirements_file, "w") as f:
             for requirement in pip_requirements:
                 f.write(requirement + "\n")
+
         pip_requirements = pip_requirements_file
     elif isinstance(pip_requirements, str):
         # If pip_requirements is a string, we expect it to be a file path to a
@@ -239,6 +250,17 @@ def __install_dependencies(  # noqa: C901 # complexity
         pip_requirements = pip_requirements.strip()
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
+
+        if os.path.basename(pip_requirements) == "pyproject.toml":
+            # If the requirements file is a pyproject.toml, read [project.dependencies]
+            # and write them to a temporary requirements.txt file for pip.
+            deps = read_pyproject_dependencies(os.path.join(app_dir, pip_requirements))
+            pip_requirements_file = os.path.join(temp_dir, "requirements.txt")
+            with open(pip_requirements_file, "w") as f:
+                for dep in deps:
+                    f.write(dep + "\n")
+
+            pip_requirements = pip_requirements_file
 
     dep_dir = os.path.join(".nextmv", "python", "deps")
     target_dir = os.path.join(temp_dir, dep_dir)

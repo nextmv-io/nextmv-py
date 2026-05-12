@@ -1,0 +1,11 @@
+[project]
+name = "workflow"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "nextmv>=1.7.0",
+    "nextpipe>=0.6.1",
+    "numpy>=2.2.0",
+    "pandas>=2.2.3",
+    "scikit-learn>=1.6.1",
+]
