@@ -276,7 +276,7 @@ class Client:
                 reason="`Client.configuration_file` is deprecated, use `Client.profile` to work with another profile",
             )
 
-    def request(
+    def request(  # noqa: C901
         self,
         method: str,
         endpoint: str,
@@ -428,7 +428,19 @@ class Client:
         if query_params is not None:
             kwargs["params"] = query_params
 
-        response = session.request(method=method, **kwargs)
+        try:
+            response = session.request(method=method, **kwargs)
+        except requests.exceptions.ConnectionError as e:
+            raise requests.exceptions.ConnectionError(
+                f"could not connect to {self.url}: the server may be unreachable. "
+                "Check your network connectivity and verify the endpoint URL is correct."
+            ) from e
+        except requests.exceptions.Timeout as e:
+            raise requests.exceptions.Timeout(
+                f"request to {endpoint} timed out after {self.timeout}s waiting for {self.url}. "
+                "The server may be unreachable or under heavy load. "
+                "Consider increasing the `timeout` attribute on the Client."
+            ) from e
 
         try:
             response.raise_for_status()
@@ -534,11 +546,24 @@ class Client:
         elif tar_file is not None and tar_file != "":
             if not os.path.exists(tar_file):
                 raise ValueError(f"tar_file {tar_file} does not exist")
-            kwargs["data"] = open(tar_file, "rb")
+            with open(tar_file, "rb") as f:
+                kwargs["data"] = f.read()
         else:
             raise ValueError("either data or tar_file must be provided")
 
-        response = session.put(**kwargs)
+        try:
+            response = session.put(**kwargs)
+        except requests.exceptions.ConnectionError as e:
+            raise requests.exceptions.ConnectionError(
+                "could not connect to upload URL: the server may be unreachable. "
+                "Check your network connectivity and verify the URL is correct."
+            ) from e
+        except requests.exceptions.Timeout as e:
+            raise requests.exceptions.Timeout(
+                f"upload request timed out after {self.timeout}s. "
+                "The server may be unreachable or under heavy load. "
+                "Consider increasing the `timeout` attribute on the Client."
+            ) from e
 
         try:
             response.raise_for_status()

@@ -2,6 +2,7 @@ import os
 import unittest
 from unittest.mock import patch
 
+import requests
 from nextmv.cloud import Client
 
 
@@ -349,3 +350,93 @@ class TestSetHeadersApiKey(unittest.TestCase):
                 env.pop("NEXTMV_ENDPOINT", None)
                 client = Client(profile="my-profile")
                 self.assertEqual(client.headers["Authorization"], "Bearer profile-key")
+
+
+class TestRequestUnreachableServer(unittest.TestCase):
+    """Tests for Client.request when the server is unreachable."""
+
+    def _make_client(self):
+        return Client(api_key="test-key", url="https://api.does-not-exist.invalid")
+
+    def test_connection_error_raises_friendly_message(self):
+        """ConnectionError is re-raised with a helpful message about the endpoint."""
+        client = self._make_client()
+        with patch("requests.Session.request", side_effect=requests.exceptions.ConnectionError("raw")):
+            with self.assertRaises(requests.exceptions.ConnectionError) as ctx:
+                client.request(method="GET", endpoint="/v1/test")
+            msg = str(ctx.exception)
+            self.assertIn("https://api.does-not-exist.invalid", msg)
+            self.assertIn("unreachable", msg)
+
+    def test_timeout_raises_friendly_message(self):
+        """Timeout is re-raised with a helpful message mentioning the timeout value."""
+        client = self._make_client()
+        with patch("requests.Session.request", side_effect=requests.exceptions.Timeout("raw")):
+            with self.assertRaises(requests.exceptions.Timeout) as ctx:
+                client.request(method="GET", endpoint="/v1/test")
+            msg = str(ctx.exception)
+            self.assertIn("/v1/test", msg)
+            self.assertIn(str(client.timeout), msg)
+            self.assertIn("timeout", msg.lower())
+
+    def test_connection_error_preserves_original_cause(self):
+        """The original ConnectionError is chained as __cause__."""
+        client = self._make_client()
+        original = requests.exceptions.ConnectionError("original cause")
+        with patch("requests.Session.request", side_effect=original):
+            with self.assertRaises(requests.exceptions.ConnectionError) as ctx:
+                client.request(method="GET", endpoint="/v1/test")
+            self.assertIs(ctx.exception.__cause__, original)
+
+    def test_timeout_preserves_original_cause(self):
+        """The original Timeout is chained as __cause__."""
+        client = self._make_client()
+        original = requests.exceptions.Timeout("original cause")
+        with patch("requests.Session.request", side_effect=original):
+            with self.assertRaises(requests.exceptions.Timeout) as ctx:
+                client.request(method="GET", endpoint="/v1/test")
+            self.assertIs(ctx.exception.__cause__, original)
+
+
+class TestUploadToPresignedUrlUnreachableServer(unittest.TestCase):
+    """Tests for Client.upload_to_presigned_url when the server is unreachable."""
+
+    def _make_client(self):
+        return Client(api_key="test-key", url="https://api.does-not-exist.invalid")
+
+    def test_connection_error_raises_friendly_message(self):
+        """ConnectionError during upload is re-raised with a helpful message."""
+        client = self._make_client()
+        with patch("requests.Session.put", side_effect=requests.exceptions.ConnectionError("raw")):
+            with self.assertRaises(requests.exceptions.ConnectionError) as ctx:
+                client.upload_to_presigned_url(data={"key": "value"}, url="https://storage.example.com/presigned")
+            msg = str(ctx.exception)
+            self.assertIn("unreachable", msg)
+
+    def test_timeout_raises_friendly_message(self):
+        """Timeout during upload is re-raised with a helpful message."""
+        client = self._make_client()
+        with patch("requests.Session.put", side_effect=requests.exceptions.Timeout("raw")):
+            with self.assertRaises(requests.exceptions.Timeout) as ctx:
+                client.upload_to_presigned_url(data={"key": "value"}, url="https://storage.example.com/presigned")
+            msg = str(ctx.exception)
+            self.assertIn(str(client.timeout), msg)
+            self.assertIn("timeout", msg.lower())
+
+    def test_connection_error_preserves_original_cause(self):
+        """The original ConnectionError is chained as __cause__ during upload."""
+        client = self._make_client()
+        original = requests.exceptions.ConnectionError("original cause")
+        with patch("requests.Session.put", side_effect=original):
+            with self.assertRaises(requests.exceptions.ConnectionError) as ctx:
+                client.upload_to_presigned_url(data={"key": "value"}, url="https://storage.example.com/presigned")
+            self.assertIs(ctx.exception.__cause__, original)
+
+    def test_timeout_preserves_original_cause(self):
+        """The original Timeout is chained as __cause__ during upload."""
+        client = self._make_client()
+        original = requests.exceptions.Timeout("original cause")
+        with patch("requests.Session.put", side_effect=original):
+            with self.assertRaises(requests.exceptions.Timeout) as ctx:
+                client.upload_to_presigned_url(data={"key": "value"}, url="https://storage.example.com/presigned")
+            self.assertIs(ctx.exception.__cause__, original)
