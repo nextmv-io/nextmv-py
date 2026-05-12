@@ -242,6 +242,7 @@ def __install_dependencies(  # noqa: C901 # complexity
         with open(pip_requirements_file, "w") as f:
             for requirement in pip_requirements:
                 f.write(requirement + "\n")
+
         pip_requirements = pip_requirements_file
     elif isinstance(pip_requirements, str):
         # If pip_requirements is a string, we expect it to be a file path to a
@@ -249,7 +250,8 @@ def __install_dependencies(  # noqa: C901 # complexity
         pip_requirements = pip_requirements.strip()
         if not os.path.isfile(os.path.join(app_dir, pip_requirements)):
             raise FileNotFoundError(f"pip requirements file '{pip_requirements}' not found in '{app_dir}'")
-        if pip_requirements.endswith(".toml"):
+
+        if os.path.basename(pip_requirements) == "pyproject.toml":
             # If the requirements file is a pyproject.toml, read [project.dependencies]
             # and write them to a temporary requirements.txt file for pip.
             deps = read_pyproject_dependencies(os.path.join(app_dir, pip_requirements))
@@ -257,6 +259,7 @@ def __install_dependencies(  # noqa: C901 # complexity
             with open(pip_requirements_file, "w") as f:
                 for dep in deps:
                     f.write(dep + "\n")
+
             pip_requirements = pip_requirements_file
 
     dep_dir = os.path.join(".nextmv", "python", "deps")
