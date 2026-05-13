@@ -44,6 +44,7 @@ def package(
     model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
     rich_print: bool = False,
+    no_cache: bool = False,
 ) -> tuple[str, str]:
     """
     Package the app into a tarball.
@@ -62,6 +63,13 @@ def package(
         Whether to print verbose logs.
     rich_print : bool, optional
         Whether to use rich printing for verbose logs.
+    no_cache : bool, default=False
+        When working with Python, dependencies are cached to speed up
+        subsequent pushes. Setting no_cache to True will skip using the
+        cache and force a fresh build of all dependencies. This is useful
+        when you want to ensure that you are pushing the most up-to-date
+        versions of your dependencies, or if you are encountering issues
+        with the cache and want to rule it out as a potential cause.
 
     Returns
     -------
@@ -78,7 +86,7 @@ def package(
         success = False
         try:
             if manifest.type == ManifestType.PYTHON:
-                deps_tar = _handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print)
+                deps_tar = _handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print, no_cache)
 
             found, missing, files = find_files(app_dir, manifest.files)
             manifest.confirm_mandatory_files(present_files=found)
@@ -372,6 +380,7 @@ def _handle_python(
     model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
     rich_print: bool = False,
+    no_cache: bool = False,
 ) -> Path | None:
     """
     Handles the Python-specific packaging logic.
@@ -396,6 +405,12 @@ def _handle_python(
         Whether to print verbose logs.
     rich_print : bool, optional
         Whether to use rich printing for verbose logs.
+    no_cache : bool, default=False
+        Do not use or populate the dependency cache when resolving and
+        installing Python dependencies. This forces a fresh build of all
+        dependencies, which can be useful to ensure that the most up-to-date
+        versions of dependencies are included or to rule out cache-related
+        issues.
 
     Returns
     -------
@@ -415,11 +430,13 @@ def _handle_python(
 
     if verbose:
         if rich_print:
-            rich.print(":snake: Bundling Python dependencies.", file=sys.stderr)
+            suffix = " - caching [italic]disabled[/italic]" if no_cache else ""
+            rich.print(f":snake: Bundling Python dependencies{suffix}.", file=sys.stderr)
         else:
-            log("🐍 Bundling Python dependencies.")
+            suffix = " - caching disabled" if no_cache else ""
+            log(f"🐍 Bundling Python dependencies{suffix}.")
 
-    deps_tar = _install_dependencies(manifest, app_dir, verbose, rich_print)
+    deps_tar = _install_dependencies(manifest, app_dir, verbose, rich_print, no_cache)
 
     return deps_tar
 
@@ -429,6 +446,7 @@ def _install_dependencies(
     app_dir: str,
     verbose: bool = False,
     rich_print: bool = False,
+    no_cache: bool = False,
 ) -> Path | None:
     """
     Install dependencies for the Python app.
@@ -443,6 +461,12 @@ def _install_dependencies(
         Whether to print verbose logs.
     rich_print : bool, optional
         Whether to use rich printing for verbose logs.
+    no_cache : bool, default=False
+        Do not use or populate the dependency cache when resolving and
+        installing Python dependencies. This forces a fresh build of all
+        dependencies, which can be useful to ensure that the most up-to-date
+        versions of dependencies are included or to rule out cache-related
+        issues.
 
     Returns
     -------
@@ -483,6 +507,7 @@ def _install_dependencies(
             app_dir,
             verbose,
             rich_print,
+            no_cache,
         )
 
         return deps_tar
@@ -555,6 +580,7 @@ def _resolve_and_install_deps(
     app_dir: str,
     verbose: bool = False,
     rich_print: bool = False,
+    no_cache: bool = False,
 ) -> Path | None:
     """
     Compile the lockfile, fetch missing packages, and assemble deps.tar.gz.
@@ -585,6 +611,12 @@ def _resolve_and_install_deps(
         Whether to print verbose logs.
     rich_print : bool, optional
         Whether to use rich printing for verbose logs.
+    no_cache : bool, default=False
+        Do not use or populate the dependency cache when resolving and
+        installing Python dependencies. This forces a fresh build of all
+        dependencies, which can be useful to ensure that the most up-to-date
+        versions of dependencies are included or to rule out cache-related
+        issues.
 
     Returns
     -------
@@ -597,20 +629,26 @@ def _resolve_and_install_deps(
     packages = _parse_lockfile(lockfile_content)
 
     with tempfile.TemporaryDirectory(prefix="nextmv-pkg-tars-") as tars_tmp:
-        cached_tars, missing_packages = _collect_cached_package_tars(packages, python_version, uv_platform)
+        if no_cache:
+            cached_tars: list[Path] = []
+            missing_packages = packages
+        else:
+            cached_tars, missing_packages = _collect_cached_package_tars(packages, python_version, uv_platform)
+
         _log_pkg_cache_status(verbose, rich_print, len(cached_tars), len(packages), len(missing_packages))
 
         new_pkg_tars: list[dict[str, Path]] = []
         if missing_packages:
             new_pkg_tars = _fetch_missing_package_tars(
-                uv_bin,
-                missing_packages,
-                python_version,
-                uv_platform,
-                app_dir,
+                uv_bin=uv_bin,
+                missing_packages=missing_packages,
+                python_version=python_version,
+                uv_platform=uv_platform,
+                app_dir=app_dir,
                 out_dir=tars_tmp,
             )
-            _store_new_package_tars(pkg_tars=new_pkg_tars, python_version=python_version, uv_platform=uv_platform)
+            if not no_cache:
+                _store_new_package_tars(pkg_tars=new_pkg_tars, python_version=python_version, uv_platform=uv_platform)
 
         all_tars = cached_tars + [pkg["tar_path"] for pkg in new_pkg_tars]
         _, deps_tar = _concat_package_tars(tars=all_tars, out_dir=tars_tmp)
@@ -852,10 +890,13 @@ def _store_new_package_tars(
 
     for pkg in pkg_tars:
         pkg_key, tar_path = pkg["pkg_key"], pkg["tar_path"]
+        name, version = pkg["name"], pkg["version"]
         if get_cached_dep(pkg_key) is None:
             store_dep(
                 pkg_key=pkg_key,
                 tar_path=tar_path,
+                name=name,
+                version=version,
                 python_version=python_version,
                 platform=uv_platform,
             )

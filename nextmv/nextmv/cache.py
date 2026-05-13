@@ -3,14 +3,16 @@ Module with the cache interface and operations for working with dependencies.
 
 Functions
 ---------
+get_cache
+    Get general information about the cache, including number of dependencies and total size.
+clear_cache
+    Delete the entire cache directory and recreate it empty.
 dep_cache_key
     Return a SHA-256 hex digest that uniquely identifies a single package.
 get_cached_dep
     Return the path to the cached per-package `installed.tar.gz` on a hit.
 store_dep
     Store a per-package `installed.tar.gz` into the cache and run LRU eviction.
-clear_cache
-    Delete the entire cache directory and recreate it empty.
 format_bytes
     Return a human-friendly string representation of a byte count.
 """
@@ -23,6 +25,7 @@ import shutil
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 _CACHE_DIR = Path.home() / ".nextmv" / "cache"
 """Root directory for all Nextmv cache data."""
@@ -34,6 +37,53 @@ _MAX_DEPS = 2000
 """Maximum number of individual package tarballs to keep in the cache."""
 _MAX_DEP_BYTES = 5 * 1024**3
 """Maximum total cache size in bytes (5 GiB)."""
+
+
+def get_cache() -> dict[str, Any]:
+    """
+    Gets general information about the cache.
+
+    Returns
+    -------
+    dict[str, Any]
+        A dictionary containing information about the cache, such as the number of
+        dependencies cached and the total size of the cache in bytes.
+    """
+
+    num_deps, total_bytes = _cache_stats()
+
+    dependencies = []
+    if _DEPS_CACHE_DIR.is_dir():
+        for entry_dir in _DEPS_CACHE_DIR.iterdir():
+            if not entry_dir.is_dir():
+                continue
+
+            info_file = entry_dir / _CACHE_INFO_FILE
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+
+                dependencies.append(
+                    {
+                        "key": entry_dir.name,
+                        "name": info.get("name", ""),
+                        "version": info.get("version", ""),
+                        "last_used_at": info.get("last_used_at", ""),
+                        "python_version": info.get("python_version", ""),
+                        "platform": info.get("platform", ""),
+                    }
+                )
+            except Exception:
+                pass
+
+    if dependencies:
+        dependencies.sort(key=lambda d: (d["last_used_at"], d["name"], d["version"]))
+
+    return {
+        "num_dependencies": num_deps,
+        "total_size": format_bytes(total_bytes),
+        "dependencies": dependencies,
+    }
 
 
 def clear_cache() -> tuple[int, int]:
@@ -49,14 +99,7 @@ def clear_cache() -> tuple[int, int]:
     if not _CACHE_DIR.exists():
         return 0, 0
 
-    num_deps = 0
-    total_bytes = 0
-
-    if _DEPS_CACHE_DIR.is_dir():
-        for entry_dir in _DEPS_CACHE_DIR.iterdir():
-            if entry_dir.is_dir():
-                num_deps += 1
-                total_bytes += _dir_size(entry_dir)
+    num_deps, total_bytes = _cache_stats()
 
     if _CACHE_DIR.exists():
         shutil.rmtree(str(_CACHE_DIR))
@@ -131,6 +174,7 @@ def get_cached_dep(pkg_key: str) -> Path | None:
     try:
         with open(info_file) as f:
             info = json.load(f)
+
         info["last_used_at"] = _now_iso()
         _write_json_atomic(path=info_file, data=info)
     except Exception:
@@ -142,6 +186,8 @@ def get_cached_dep(pkg_key: str) -> Path | None:
 def store_dep(
     pkg_key: str,
     tar_path: Path,
+    name: str,
+    version: str,
     python_version: str,
     platform: str,
     max_entries: int = _MAX_DEPS,
@@ -160,6 +206,10 @@ def store_dep(
         The cache key returned by :func:`dep_cache_key`.
     tar_path : Path
         Path to the `installed.tar.gz` to cache.
+    name : str
+        The package name (e.g. `"pydantic-core"`).
+    version : str
+        The pinned version string (e.g. `"2.23.4"`).
     python_version : str
         The target Python version string (e.g. `"3.11"`).
     platform : str
@@ -180,6 +230,8 @@ def store_dep(
         info = {
             "created_at": now,
             "last_used_at": now,
+            "name": name,
+            "version": version,
             "python_version": python_version,
             "platform": platform,
         }
@@ -215,6 +267,30 @@ def format_bytes(size: int) -> str:
         return f"{size / (1024 * 1024):.2f} MiB"
     else:
         return f"{size / (1024 * 1024 * 1024):.2f} GiB"
+
+
+def _cache_stats() -> tuple[int, int]:
+    """
+    Return the number of cached dependency entries and their total size in bytes.
+
+    Returns
+    -------
+    tuple[int, int]
+        A tuple of (num_deps, total_bytes).
+    """
+
+    num_deps = 0
+    total_bytes = 0
+
+    if not _DEPS_CACHE_DIR.is_dir():
+        return num_deps, total_bytes
+
+    for entry_dir in _DEPS_CACHE_DIR.iterdir():
+        if entry_dir.is_dir():
+            num_deps += 1
+            total_bytes += _dir_size(entry_dir)
+
+    return num_deps, total_bytes
 
 
 def _create_cache() -> None:
@@ -256,6 +332,7 @@ def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) ->
         try:
             with open(info_file) as f:
                 info = json.load(f)
+
             last_used = datetime.fromisoformat(info["last_used_at"])
         except Exception:
             last_used = datetime.min.replace(tzinfo=timezone.utc)
