@@ -414,7 +414,7 @@ def _write_json_atomic(path: Path, data: dict) -> None:
         tmp = Path(f.name)
 
     try:
-        tmp.rename(path)
+        os.replace(tmp, path)
     except Exception as e:
         tmp.unlink(missing_ok=True)
         raise e
