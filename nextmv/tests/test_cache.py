@@ -27,7 +27,7 @@ class TestClearCache(unittest.TestCase):
         self._cache_root = Path(tempfile.mkdtemp())
         self._pkg_tars_dir = self._cache_root / "pkg_tars"
         self._patcher_cache = patch("nextmv.cache._CACHE_DIR", self._cache_root)
-        self._patcher_pkg = patch("nextmv.cache._PKG_TARS_CACHE_DIR", self._pkg_tars_dir)
+        self._patcher_pkg = patch("nextmv.cache._DEPS_CACHE_DIR", self._pkg_tars_dir)
         self._patcher_cache.start()
         self._patcher_pkg.start()
 
@@ -45,7 +45,7 @@ class TestClearCache(unittest.TestCase):
 
         with (
             patch.object(cache_mod, "_CACHE_DIR", self._cache_root),
-            patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir),
+            patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir),
         ):
             clear_cache()
 
@@ -58,7 +58,7 @@ class TestClearCache(unittest.TestCase):
 
         with (
             patch.object(cache_mod, "_CACHE_DIR", self._cache_root),
-            patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir),
+            patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir),
         ):
             clear_cache()
             clear_cache()  # second call should not raise
@@ -111,7 +111,7 @@ class TestPackageCacheKey(unittest.TestCase):
 class TestGetCachedPackageTar(unittest.TestCase):
     def setUp(self):
         self._tmpdir = Path(tempfile.mkdtemp())
-        self._patch = patch("nextmv.cache._PKG_TARS_CACHE_DIR", self._tmpdir)
+        self._patch = patch("nextmv.cache._DEPS_CACHE_DIR", self._tmpdir)
         self._patch.start()
 
     def tearDown(self):
@@ -138,7 +138,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
     def test_miss_returns_none(self):
         from nextmv import cache as cache_mod
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._tmpdir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
             result = get_cached_dep("nonexistent-key")
         self.assertIsNone(result)
 
@@ -148,7 +148,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
         key = "abc123"
         self._make_pkg_tar_entry(key)
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._tmpdir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
             result = get_cached_dep(key)
 
         self.assertIsNotNone(result)
@@ -167,7 +167,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
         with open(info_file, "w") as f:
             json.dump(info, f)
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._tmpdir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
             get_cached_dep(key)
 
         with open(info_file) as f:
@@ -185,7 +185,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
         with tarfile.open(str(entry_dir / "installed.tar.gz"), "w:gz"):
             pass  # no cache_info.json written
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._tmpdir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
             result = get_cached_dep(key)
 
         self.assertIsNone(result)
@@ -201,7 +201,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
             json.dump({"created_at": now, "last_used_at": now, "python_version": "3.11", "platform": "p"}, f)
         # No installed.tar.gz written.
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._tmpdir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
             result = get_cached_dep(key)
 
         self.assertIsNone(result)
@@ -213,7 +213,7 @@ class TestStorePackageTar(unittest.TestCase):
         self._cache_root = Path(tempfile.mkdtemp())
         self._pkg_tars_dir = self._cache_root / "pkg_tars"
         self._patcher_cache = patch("nextmv.cache._CACHE_DIR", self._cache_root)
-        self._patcher_pkg = patch("nextmv.cache._PKG_TARS_CACHE_DIR", self._pkg_tars_dir)
+        self._patcher_pkg = patch("nextmv.cache._DEPS_CACHE_DIR", self._pkg_tars_dir)
         self._patcher_cache.start()
         self._patcher_pkg.start()
 
@@ -237,11 +237,13 @@ class TestStorePackageTar(unittest.TestCase):
 
         with (
             patch.object(cache_mod, "_CACHE_DIR", self._cache_root),
-            patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir),
+            patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir),
         ):
             store_dep(
                 key,
                 tar,
+                "pkg",
+                "1.0.0",
                 "3.11",
                 "aarch64-unknown-linux-gnu",
                 max_entries=_MAX_DEPS,
@@ -260,11 +262,13 @@ class TestStorePackageTar(unittest.TestCase):
 
         with (
             patch.object(cache_mod, "_CACHE_DIR", self._cache_root),
-            patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir),
+            patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir),
         ):
             store_dep(
                 key,
                 tar,
+                "pkg",
+                "1.0.0",
                 "3.11",
                 "aarch64-unknown-linux-gnu",
                 max_entries=_MAX_DEPS,
@@ -289,11 +293,13 @@ class TestStorePackageTar(unittest.TestCase):
 
         with (
             patch.object(cache_mod, "_CACHE_DIR", self._cache_root),
-            patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir),
+            patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir),
         ):
             store_dep(
                 key,
                 tar,
+                "pkg",
+                "1.0.0",
                 "3.11",
                 "aarch64-unknown-linux-gnu",
                 max_entries=_MAX_DEPS,
@@ -302,6 +308,8 @@ class TestStorePackageTar(unittest.TestCase):
             store_dep(
                 key,
                 tar,
+                "pkg",
+                "1.0.0",
                 "3.11",
                 "aarch64-unknown-linux-gnu",
                 max_entries=_MAX_DEPS,
@@ -317,7 +325,7 @@ class TestEvictLruPackages(unittest.TestCase):
         self._cache_root = Path(tempfile.mkdtemp())
         self._pkg_tars_dir = self._cache_root / "pkg_tars"
         self._pkg_tars_dir.mkdir(parents=True)
-        self._patcher = patch("nextmv.cache._PKG_TARS_CACHE_DIR", self._pkg_tars_dir)
+        self._patcher = patch("nextmv.cache._DEPS_CACHE_DIR", self._pkg_tars_dir)
         self._patcher.start()
 
     def tearDown(self):
@@ -354,7 +362,7 @@ class TestEvictLruPackages(unittest.TestCase):
         self._add_entry("k1", "2026-01-01T00:00:00+00:00")
         self._add_entry("k2", "2026-01-02T00:00:00+00:00")
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir):
             evicted = _evict_lru(max_entries=10, max_bytes=_MAX_DEP_BYTES)
 
         self.assertEqual(evicted, 0)
@@ -368,7 +376,7 @@ class TestEvictLruPackages(unittest.TestCase):
         self._add_entry("middle", "2025-06-01T00:00:00+00:00")
         self._add_entry("newest", "2026-01-01T00:00:00+00:00")
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir):
             evicted = _evict_lru(max_entries=2, max_bytes=_MAX_DEP_BYTES)
 
         self.assertEqual(evicted, 1)
@@ -382,7 +390,7 @@ class TestEvictLruPackages(unittest.TestCase):
         self._add_entry("big_old", "2025-01-01T00:00:00+00:00", size_bytes=10 * 1024)
         self._add_entry("big_new", "2026-01-01T00:00:00+00:00", size_bytes=10 * 1024)
 
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", self._pkg_tars_dir):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._pkg_tars_dir):
             evicted = _evict_lru(max_entries=200, max_bytes=15 * 1024)
 
         self.assertEqual(evicted, 1)
@@ -393,7 +401,7 @@ class TestEvictLruPackages(unittest.TestCase):
         from nextmv import cache as cache_mod
 
         missing = self._cache_root / "nonexistent"
-        with patch.object(cache_mod, "_PKG_TARS_CACHE_DIR", missing):
+        with patch.object(cache_mod, "_DEPS_CACHE_DIR", missing):
             evicted = _evict_lru(max_entries=10, max_bytes=_MAX_DEP_BYTES)
 
         self.assertEqual(evicted, 0)
