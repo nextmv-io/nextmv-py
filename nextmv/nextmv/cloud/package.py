@@ -13,7 +13,7 @@ from pathlib import Path
 
 import rich
 
-from nextmv.cache import dep_cache_key, get_cached_dep, store_dep
+from nextmv.cache import dep_cache_key, format_bytes, get_cached_dep, store_dep
 from nextmv.logger import log
 from nextmv.manifest import (
     MANIFEST_FILE_NAME,
@@ -102,6 +102,118 @@ def package(
                 shutil.rmtree(str(deps_tar.parent), ignore_errors=True)
             if not success and output_dir is not None:
                 shutil.rmtree(output_dir, ignore_errors=True)
+
+
+def run_build_command(
+    app_dir: str,
+    manifest_build: ManifestBuild | None = None,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> None:
+    """
+    Run the build command specified in the manifest.
+
+    Parameters
+    ----------
+    app_dir : str
+        The directory of the application, used as the working directory when
+        running the build command.
+    manifest_build : ManifestBuild, optional
+        The build configuration from the manifest.  If ``None`` or if
+        ``manifest_build.command`` is empty, this function is a no-op.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Raises
+    ------
+    Exception
+        If the build command exits with a non-zero return code.
+    """
+
+    if manifest_build is None or manifest_build.command is None or manifest_build.command == "":
+        return
+
+    elements = manifest_build.command.split(" ")
+    command_str = " ".join(elements)
+
+    if verbose:
+        if rich_print:
+            rich.print(f":construction: Running build command: [magenta]{command_str}[/magenta]", file=sys.stderr)
+        else:
+            log(f'🚧 Running build command: "{command_str}"')
+    try:
+        result = subprocess.run(
+            elements,
+            env={**os.environ, **manifest_build.environment_to_dict()},
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=app_dir,
+        )
+
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"error running build command: {e.stderr}") from e
+
+    if verbose and result.stdout.strip():
+        log(result.stdout.rstrip("\n"))
+
+
+def run_pre_push_command(
+    app_dir: str,
+    pre_push_command: str | None = None,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> None:
+    """
+    Run the pre-push command specified in the manifest.
+
+    Parameters
+    ----------
+    app_dir : str
+        The directory of the application, used as the working directory when
+        running the pre-push command.
+    pre_push_command : str, optional
+        The shell command to execute before pushing.  If ``None`` or empty,
+        this function is a no-op.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Raises
+    ------
+    Exception
+        If the pre-push command exits with a non-zero return code.
+    """
+
+    if pre_push_command is None or pre_push_command == "":
+        return
+
+    elements = _get_shell_command_elements(pre_push_command)
+
+    command_str = " ".join(elements)
+    if verbose:
+        if rich_print:
+            rich.print(f":hammer: Running pre-push command: [magenta]{command_str}[/magenta]", file=sys.stderr)
+        else:
+            log(f'🔨 Running pre-push command: "{command_str}"')
+    try:
+        result = subprocess.run(
+            elements,
+            env=os.environ,
+            check=True,
+            text=True,
+            capture_output=True,
+            cwd=app_dir,
+        )
+
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"error running pre-push command: {e.stderr}") from e
+
+    if verbose and result.stdout.strip():
+        log(result.stdout.rstrip("\n"))
 
 
 def _copy_manifest_files(
@@ -220,118 +332,6 @@ def _compress_and_report(
                 log(f"📦 Packaged application ({file_count} {app_file_count_label}).")
 
     return tar_file, file_count
-
-
-def run_build_command(
-    app_dir: str,
-    manifest_build: ManifestBuild | None = None,
-    verbose: bool = False,
-    rich_print: bool = False,
-) -> None:
-    """
-    Run the build command specified in the manifest.
-
-    Parameters
-    ----------
-    app_dir : str
-        The directory of the application, used as the working directory when
-        running the build command.
-    manifest_build : ManifestBuild, optional
-        The build configuration from the manifest.  If ``None`` or if
-        ``manifest_build.command`` is empty, this function is a no-op.
-    verbose : bool, optional
-        Whether to print verbose logs.
-    rich_print : bool, optional
-        Whether to use rich printing for verbose logs.
-
-    Raises
-    ------
-    Exception
-        If the build command exits with a non-zero return code.
-    """
-
-    if manifest_build is None or manifest_build.command is None or manifest_build.command == "":
-        return
-
-    elements = manifest_build.command.split(" ")
-    command_str = " ".join(elements)
-
-    if verbose:
-        if rich_print:
-            rich.print(f":construction: Running build command: [magenta]{command_str}[/magenta]", file=sys.stderr)
-        else:
-            log(f'🚧 Running build command: "{command_str}"')
-    try:
-        result = subprocess.run(
-            elements,
-            env={**os.environ, **manifest_build.environment_to_dict()},
-            check=True,
-            text=True,
-            capture_output=True,
-            cwd=app_dir,
-        )
-
-    except subprocess.CalledProcessError as e:
-        raise Exception(f"error running build command: {e.stderr}") from e
-
-    if verbose and result.stdout.strip():
-        log(result.stdout.rstrip("\n"))
-
-
-def run_pre_push_command(
-    app_dir: str,
-    pre_push_command: str | None = None,
-    verbose: bool = False,
-    rich_print: bool = False,
-) -> None:
-    """
-    Run the pre-push command specified in the manifest.
-
-    Parameters
-    ----------
-    app_dir : str
-        The directory of the application, used as the working directory when
-        running the pre-push command.
-    pre_push_command : str, optional
-        The shell command to execute before pushing.  If ``None`` or empty,
-        this function is a no-op.
-    verbose : bool, optional
-        Whether to print verbose logs.
-    rich_print : bool, optional
-        Whether to use rich printing for verbose logs.
-
-    Raises
-    ------
-    Exception
-        If the pre-push command exits with a non-zero return code.
-    """
-
-    if pre_push_command is None or pre_push_command == "":
-        return
-
-    elements = _get_shell_command_elements(pre_push_command)
-
-    command_str = " ".join(elements)
-    if verbose:
-        if rich_print:
-            rich.print(f":hammer: Running pre-push command: [magenta]{command_str}[/magenta]", file=sys.stderr)
-        else:
-            log(f'🔨 Running pre-push command: "{command_str}"')
-    try:
-        result = subprocess.run(
-            elements,
-            env=os.environ,
-            check=True,
-            text=True,
-            capture_output=True,
-            cwd=app_dir,
-        )
-
-    except subprocess.CalledProcessError as e:
-        raise Exception(f"error running pre-push command: {e.stderr}") from e
-
-    if verbose and result.stdout.strip():
-        log(result.stdout.rstrip("\n"))
 
 
 def _get_shell_command_elements(pre_push_command):
@@ -1201,11 +1201,5 @@ def _human_friendly_file_size(path: str) -> str:
     except OSError as e:
         raise Exception(f"error getting file size: {e}") from e
 
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024 * 1024:
-        return f"{size / 1024:.2f} KiB"
-    elif size < 1024 * 1024 * 1024:
-        return f"{size / (1024 * 1024):.2f} MiB"
-    else:
-        return f"{size / (1024 * 1024 * 1024):.2f} GiB"
+    pretty_size = format_bytes(size)
+    return pretty_size

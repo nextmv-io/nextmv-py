@@ -23,6 +23,7 @@ import rich
 import typer
 from typer import rich_utils
 
+from nextmv.cli.cache import app as cache_app
 from nextmv.cli.cloud import app as cloud_app
 from nextmv.cli.community import app as community_app
 from nextmv.cli.configuration import app as configuration_app
@@ -52,6 +53,7 @@ app = typer.Typer(
 
 # Register subcommands. The `name` parameter is required when the subcommand
 # module has a callback function defined.
+app.add_typer(cache_app, name="cache")
 app.add_typer(cloud_app, name="cloud")
 app.add_typer(community_app, name="community")
 app.add_typer(configuration_app, name="configuration")

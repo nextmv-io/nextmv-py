@@ -11,6 +11,8 @@ store_dep
     Store a per-package `installed.tar.gz` into the cache and run LRU eviction.
 clear_cache
     Delete the entire cache directory and recreate it empty.
+format_bytes
+    Return a human-friendly string representation of a byte count.
 """
 
 import hashlib
@@ -34,15 +36,34 @@ _MAX_DEP_BYTES = 5 * 1024**3
 """Maximum total cache size in bytes (5 GiB)."""
 
 
-def clear_cache() -> None:
+def clear_cache() -> tuple[int, int]:
     """
     Delete the entire cache directory and recreate it empty.
+
+    Returns
+    -------
+    tuple[int, int]
+        A tuple of (num_deps_deleted, total_bytes_deleted).
     """
+
+    if not _CACHE_DIR.exists():
+        return 0, 0
+
+    num_deps = 0
+    total_bytes = 0
+
+    if _DEPS_CACHE_DIR.is_dir():
+        for entry_dir in _DEPS_CACHE_DIR.iterdir():
+            if entry_dir.is_dir():
+                num_deps += 1
+                total_bytes += _dir_size(entry_dir)
 
     if _CACHE_DIR.exists():
         shutil.rmtree(str(_CACHE_DIR))
 
     _create_cache()
+
+    return num_deps, total_bytes
 
 
 def dep_cache_key(name: str, version: str, python_version: str, platform: str) -> str:
@@ -169,6 +190,31 @@ def store_dep(
             tmp_entry.rename(entry_dir)
 
     _evict_lru(max_entries=max_entries, max_bytes=max_bytes)
+
+
+def format_bytes(size: int) -> str:
+    """
+    Return a human-friendly string representation of a byte count.
+
+    Parameters
+    ----------
+    size : int
+        The size in bytes to format.
+
+    Returns
+    -------
+    str
+        A human-friendly string using B, KiB, MiB, or GiB units.
+    """
+
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024 * 1024:
+        return f"{size / 1024:.2f} KiB"
+    elif size < 1024 * 1024 * 1024:
+        return f"{size / (1024 * 1024):.2f} MiB"
+    else:
+        return f"{size / (1024 * 1024 * 1024):.2f} GiB"
 
 
 def _create_cache() -> None:
