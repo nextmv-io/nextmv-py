@@ -550,9 +550,9 @@ class Application(
         if (model is None and model_configuration is not None) or (model is not None and model_configuration is None):
             raise ValueError("model and model_configuration must be provided together")
 
-        package._run_build_command(app_dir, manifest.build, verbose, rich_print)
-        package._run_pre_push_command(app_dir, manifest.pre_push, verbose, rich_print)
-        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose, rich_print)
+        package.run_build_command(app_dir, manifest.build, verbose, rich_print)
+        package.run_pre_push_command(app_dir, manifest.pre_push, verbose, rich_print)
+        tar_file, output_dir = package.package(app_dir, manifest, model, model_configuration, verbose, rich_print)
         self.__update_app_binary(tar_file, manifest, verbose, rich_print)
 
         try:
