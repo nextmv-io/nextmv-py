@@ -1,6 +1,6 @@
-"""Module with the logic for pushing an app to Nextmv Cloud."""
+"""Module with the logic for packaging an app to Nextmv Cloud."""
 
-import json
+import gzip
 import os
 import platform
 import re
@@ -27,8 +27,17 @@ from nextmv.manifest import (
 from nextmv.model import Model, _cleanup_python_model
 from nextmv.uv_handler import _find_uv_binary
 
+_IO_CHUNK_SIZE = 65536
+"""
+Buffer size in bytes for streaming I/O operations (64 KiB).
 
-def package(  # noqa: C901 # complexity attributed to printing.
+Matches the default used by :func:`shutil.copyfileobj` and is a common OS
+page-aligned I/O buffer size that balances syscall overhead against memory
+pressure for sequential reads and writes.
+"""
+
+
+def package(
     app_dir: str,
     manifest: Manifest,
     model: Model | None = None,
@@ -36,80 +45,181 @@ def package(  # noqa: C901 # complexity attributed to printing.
     verbose: bool = False,
     rich_print: bool = False,
 ) -> tuple[str, str]:
-    """Package the app into a tarball."""
+    """
+    Package the app into a tarball.
+
+    Parameters
+    ----------
+    app_dir : str
+        The directory of the application to package.
+    manifest : Manifest
+        The app manifest describing the application type, files, and dependencies.
+    model : Model, optional
+        The Python model to encode and include in the package.
+    model_configuration : ModelConfiguration, optional
+        The configuration for encoding the Python model.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Returns
+    -------
+    tuple of (str, str)
+        A tuple containing the path to the resulting ``app.tar.gz`` file and
+        the path to the output directory that holds it.  The caller is
+        responsible for cleaning up the output directory when it is no longer
+        needed.
+    """
 
     with tempfile.TemporaryDirectory(prefix="nextmv-temp-") as temp_dir:
         deps_tar: Path | None = None
-        if manifest.type == ManifestType.PYTHON:
-            deps_tar = _handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print)
+        output_dir: str | None = None
+        success = False
+        try:
+            if manifest.type == ManifestType.PYTHON:
+                deps_tar = _handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print)
 
-        found, missing, files = find_files(app_dir, manifest.files)
-        manifest.confirm_mandatory_files(present_files=found)
+            found, missing, files = find_files(app_dir, manifest.files)
+            manifest.confirm_mandatory_files(present_files=found)
 
-        if len(missing) > 0:
-            raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
+            if len(missing) > 0:
+                raise Exception(f"could not find files listed in manifest: {', '.join(missing)}")
 
-        manifest.to_yaml(temp_dir)
+            manifest.to_yaml(temp_dir)
+            _copy_manifest_files(files, temp_dir, verbose, rich_print)
 
-        if verbose:
+            if manifest.type == ManifestType.PYTHON:
+                _cleanup_python_model(app_dir, model_configuration, verbose)
+
+            output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
+            tar_file, _ = _compress_and_report(deps_tar, temp_dir, output_dir, verbose, rich_print)
+
+            success = True
+            return tar_file, output_dir
+        finally:
+            if deps_tar is not None:
+                shutil.rmtree(str(deps_tar.parent), ignore_errors=True)
+            if not success and output_dir is not None:
+                shutil.rmtree(output_dir, ignore_errors=True)
+
+
+def _copy_manifest_files(
+    files: list[dict],
+    temp_dir: str,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> None:
+    """
+    Copy files listed in the manifest into the temp directory.
+
+    Parameters
+    ----------
+    files : list of dict
+        A list of file descriptors as returned by :func:`find_files`, each
+        containing an ``absolute_path`` and an ``interior_path`` key.
+    temp_dir : str
+        The temporary directory into which files are copied, preserving the
+        relative layout given by ``interior_path``.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Raises
+    ------
+    Exception
+        If a destination directory cannot be created or a file cannot be
+        copied.
+    """
+
+    if verbose:
+        if rich_print:
+            rich.print(
+                f":clipboard: Copying files listed in [magenta]{MANIFEST_FILE_NAME}[/magenta] manifest.",
+                file=sys.stderr,
+            )
+        else:
+            log(f'📋 Copying files listed in "{MANIFEST_FILE_NAME}" manifest.')
+
+    for file in files:
+        target_dir = os.path.dirname(os.path.join(temp_dir, file["interior_path"]))
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except OSError as e:
+            raise Exception(f"error creating directory for asset file {file['interior_path']}: {e}") from e
+
+        try:
+            shutil.copy2(file["absolute_path"], os.path.join(temp_dir, target_dir))
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
+
+
+def _compress_and_report(
+    deps_tar: Path | None,
+    temp_dir: str,
+    output_dir: str,
+    verbose: bool = False,
+    rich_print: bool = False,
+) -> tuple[str, int]:
+    """
+    Compress the app into a tarball and log the result.
+
+    Parameters
+    ----------
+    deps_tar : Path or None
+        Path to a pre-built ``deps.tar.gz`` containing installed Python
+        dependencies, or ``None`` when no dependencies need to be bundled.
+    temp_dir : str
+        Directory containing the app files that have been staged for packaging.
+    output_dir : str
+        Directory where the resulting ``app.tar.gz`` will be written.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Returns
+    -------
+    tuple of (str, int)
+        A tuple containing the path to the resulting ``app.tar.gz`` file and
+        the number of application files included in the archive.
+    """
+
+    if verbose:
+        if rich_print:
+            rich.print(":floppy_disk: Compressing application into tarball.", file=sys.stderr)
+        else:
+            log("💾 Compressing application into tarball.")
+
+    if deps_tar is not None:
+        tar_file, file_count = _build_from_deps_tar(deps_tar, temp_dir, output_dir, verbose, rich_print)
+    else:
+        tar_file, file_count = _compress_tar(temp_dir, output_dir, verbose, rich_print)
+
+    if verbose:
+        app_file_count_label = "app file" if file_count == 1 else "app files"
+        size_label = "with dependencies" if deps_tar is not None else "total"
+        try:
+            size = _human_friendly_file_size(tar_file)
             if rich_print:
                 rich.print(
-                    f":clipboard: Copying files listed in [magenta]{MANIFEST_FILE_NAME}[/magenta] manifest.",
+                    f":package: Packaged application ([magenta]{file_count}[/magenta] {app_file_count_label}, "
+                    f"[magenta]{size}[/magenta] {size_label}).",
                     file=sys.stderr,
                 )
             else:
-                log(f'📋 Copying files listed in "{MANIFEST_FILE_NAME}" manifest.')
-
-        for file in files:
-            target_dir = os.path.dirname(os.path.join(temp_dir, file["interior_path"]))
-            try:
-                os.makedirs(target_dir, exist_ok=True)
-            except OSError as e:
-                raise Exception(f"error creating directory for asset file {file['interior_path']}: {e}") from e
-
-            try:
-                shutil.copy2(file["absolute_path"], os.path.join(temp_dir, target_dir))
-            except subprocess.CalledProcessError as e:
-                raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
-
-        if manifest.type == ManifestType.PYTHON:
-            _cleanup_python_model(app_dir, model_configuration, verbose)
-
-        if verbose:
+                log(f"📦 Packaged application ({file_count} {app_file_count_label}, {size} {size_label}).")
+        except Exception:
             if rich_print:
-                rich.print(":floppy_disk: Compressing application into tarball.", file=sys.stderr)
+                rich.print(
+                    f":package: Packaged application ([magenta]{file_count}[/magenta] {app_file_count_label}).",
+                    file=sys.stderr,
+                )
             else:
-                log("💾 Compressing application into tarball.")
+                log(f"📦 Packaged application ({file_count} {app_file_count_label}).")
 
-        output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
-        if deps_tar is not None:
-            tar_file, file_count = _build_from_deps_tar(deps_tar, temp_dir, output_dir, verbose, rich_print)
-        else:
-            tar_file, file_count = _compress_tar(temp_dir, output_dir, verbose, rich_print)
-
-        file_count_msg = f"{file_count} file" if file_count == 1 else f"{file_count} files"
-
-        if verbose:
-            try:
-                size = _human_friendly_file_size(tar_file)
-                if rich_print:
-                    rich.print(
-                        ":package: Packaged application "
-                        f"([magenta]{file_count_msg}[/magenta], [magenta]{size}[/magenta]).",
-                        file=sys.stderr,
-                    )
-                else:
-                    log(f"📦 Packaged application ({file_count_msg}, {size}).")
-            except Exception:
-                if rich_print:
-                    rich.print(
-                        f":package: Packaged application ([magenta]{file_count_msg}[/magenta]).",
-                        file=sys.stderr,
-                    )
-                else:
-                    log(f"📦 Packaged application ({file_count_msg}).")
-
-        return tar_file, output_dir
+    return tar_file, file_count
 
 
 def run_build_command(
@@ -118,7 +228,27 @@ def run_build_command(
     verbose: bool = False,
     rich_print: bool = False,
 ) -> None:
-    """Run the build command specified in the manifest."""
+    """
+    Run the build command specified in the manifest.
+
+    Parameters
+    ----------
+    app_dir : str
+        The directory of the application, used as the working directory when
+        running the build command.
+    manifest_build : ManifestBuild, optional
+        The build configuration from the manifest.  If ``None`` or if
+        ``manifest_build.command`` is empty, this function is a no-op.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Raises
+    ------
+    Exception
+        If the build command exits with a non-zero return code.
+    """
 
     if manifest_build is None or manifest_build.command is None or manifest_build.command == "":
         return
@@ -154,7 +284,27 @@ def run_pre_push_command(
     verbose: bool = False,
     rich_print: bool = False,
 ) -> None:
-    """Run the pre-push command specified in the manifest."""
+    """
+    Run the pre-push command specified in the manifest.
+
+    Parameters
+    ----------
+    app_dir : str
+        The directory of the application, used as the working directory when
+        running the pre-push command.
+    pre_push_command : str, optional
+        The shell command to execute before pushing.  If ``None`` or empty,
+        this function is a no-op.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Raises
+    ------
+    Exception
+        If the pre-push command exits with a non-zero return code.
+    """
 
     if pre_push_command is None or pre_push_command == "":
         return
@@ -185,7 +335,24 @@ def run_pre_push_command(
 
 
 def _get_shell_command_elements(pre_push_command):
-    """Get the shell command elements based on the operating system."""
+    """
+    Get the shell command elements based on the operating system.
+
+    Wraps *pre_push_command* in the appropriate shell invocation for the
+    current platform so that shell features (pipes, redirects, etc.) work
+    correctly.
+
+    Parameters
+    ----------
+    pre_push_command : str
+        The raw shell command string to execute.
+
+    Returns
+    -------
+    list of str
+        A list of arguments suitable for passing directly to
+        :func:`subprocess.run`, e.g. ``["bash", "-c", command]``.
+    """
     # Check if we're in a Unix-like shell (including MINGW on Windows)
     bash = shutil.which("bash")
     if "SHELL" in os.environ and bash:
@@ -449,8 +616,13 @@ def _resolve_and_install_deps(
         _, deps_tar = _concat_package_tars(tars=all_tars, out_dir=tars_tmp)
 
         # Move the assembled tar out of the temp dir before it is cleaned up.
-        final_tar = Path(tempfile.mkdtemp(prefix="nextmv-deps-out-")) / "deps.tar.gz"
-        shutil.move(str(deps_tar), str(final_tar))
+        deps_out_dir = tempfile.mkdtemp(prefix="nextmv-deps-out-")
+        try:
+            final_tar = Path(deps_out_dir) / "deps.tar.gz"
+            shutil.move(str(deps_tar), str(final_tar))
+        except Exception:
+            shutil.rmtree(deps_out_dir, ignore_errors=True)
+            raise
 
     return final_tar
 
@@ -461,8 +633,8 @@ def _collect_cached_package_tars(
     uv_platform: str,
 ) -> tuple[list[Path], list[dict[str, str]]]:
     """
-    Check L2 for each package and return `(cached_tar_paths,
-    missing_packages)`.
+    Check the cache for each package and collect paths to cached tars,
+    returning any missing packages.
 
     Parameters
     ----------
@@ -538,17 +710,6 @@ def _fetch_missing_package_tars(
         a missing package that was fetched, installed, and compressed.
     """
 
-    wheel_dir = os.path.join(out_dir, "wheels")
-    os.makedirs(wheel_dir)
-    _batch_download_packages(
-        uv_bin=uv_bin,
-        packages=missing_packages,
-        python_version=python_version,
-        uv_platform=uv_platform,
-        app_dir=app_dir,
-        wheel_dir=wheel_dir,
-    )
-
     results: list[dict[str, Path]] = []
     for package in missing_packages:
         name, version = package["name"], package["version"]
@@ -560,55 +721,18 @@ def _fetch_missing_package_tars(
             python_version=python_version,
             uv_platform=uv_platform,
             app_dir=app_dir,
-            wheel_dir=wheel_dir,
             out_dir=out_dir,
         )
-        results.append({"pkg_key": pkg_key, "tar_path": tar_path})
+        results.append(
+            {
+                "pkg_key": pkg_key,
+                "tar_path": tar_path,
+                "name": name,
+                "version": version,
+            }
+        )
 
     return results
-
-
-def _batch_download_packages(
-    uv_bin: str,
-    packages: list[dict[str, str]],
-    python_version: str,
-    uv_platform: str,
-    app_dir: str,
-    wheel_dir: str,
-) -> None:
-    """Download all *packages* as wheels into *wheel_dir* in one `uv pip download` call."""
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", prefix="nextmv-missing-", delete=False) as f:
-        for package in packages:
-            name, version = package["name"], package["version"]
-            f.write(f"{name}=={version}\n")
-
-        reqs_file = f.name
-
-    try:
-        result = subprocess.run(
-            [
-                uv_bin,
-                "pip",
-                "download",
-                "-r",
-                reqs_file,
-                "--no-deps",
-                "--only-binary=:all:",
-                f"--python-platform={uv_platform}",
-                f"--python-version={python_version}",
-                "-d",
-                wheel_dir,
-                "--quiet",
-            ],
-            cwd=app_dir,
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            raise Exception(f"error downloading dependencies: {os.linesep}{result.stderr}")
-    finally:
-        os.unlink(reqs_file)
 
 
 def _install_and_compress_package(
@@ -618,15 +742,36 @@ def _install_and_compress_package(
     python_version: str,
     uv_platform: str,
     app_dir: str,
-    wheel_dir: str,
     out_dir: str,
 ) -> Path:
-    """Install a single package from *wheel_dir* and compress its installed tree.
+    """Install a single package from the package index and compress its installed tree.
 
     Uses `--no-deps` because the lockfile already encodes the complete
     dependency graph — each package is handled independently.
 
-    Returns the path to `<name>-<version>.tar.gz` written inside *out_dir*.
+    Parameters
+    ----------
+    uv_bin : str
+        Path to the `uv` binary.
+    name : str
+        The package name as it appears in the lockfile or wheel filename.
+    version : str
+        The pinned version string (e.g. `"2.23.4"`).
+    python_version : str
+        The target Python version string (e.g. `"3.11"`).
+    uv_platform : str
+        The target platform string (e.g. `"aarch64-unknown-linux-gnu"`).
+    app_dir : str
+        The application directory to use as the working directory for `uv pip`
+        commands.
+    out_dir : str
+        The directory to write the per-package `installed.tar.gz` files to.
+        This should be a temporary directory that is cleaned up by the caller.
+
+    Returns
+    -------
+    Path
+        The path to the `installed.tar.gz` file for the installed package.
     """
 
     with tempfile.TemporaryDirectory(prefix="nextmv-pkg-install-") as install_tmp:
@@ -641,9 +786,6 @@ def _install_and_compress_package(
                 f"{name}=={version}",
                 "--no-deps",
                 "--only-binary=:all:",
-                "--find-links",
-                wheel_dir,
-                "--no-index",
                 "--target",
                 install_dir,
                 "--quiet",
@@ -661,8 +803,30 @@ def _install_and_compress_package(
         safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", f"{name}-{version}")
         tar_path = Path(out_dir) / f"{safe_name}.tar.gz"
         dep_arcname = os.path.join(".nextmv", "python", "deps")
-        with tarfile.open(str(tar_path), "w:gz") as tar:
-            tar.add(install_dir, arcname=dep_arcname)
+
+        # Write tar entries to a temp .tar file, capture the byte offset
+        # where tarfile will write the EOF marker, then gzip-compress only
+        # the entries (no EOF block).  Omitting the EOF block lets these
+        # per-package gzip streams be raw-concatenated without causing tar
+        # to stop at the first end-of-archive marker.
+        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False, dir=install_tmp) as _tmp_f:
+            tmp_tar_path = _tmp_f.name
+
+        tar_obj = tarfile.open(tmp_tar_path, mode="w")
+        tar_obj.add(install_dir, arcname=dep_arcname)
+        entry_end = tar_obj.offset  # byte offset where EOF marker begins
+        tar_obj.close()
+
+        with open(tmp_tar_path, "rb") as raw_f:
+            with gzip.open(str(tar_path), "wb") as gz:
+                remaining = entry_end
+                while remaining > 0:
+                    chunk = raw_f.read(min(_IO_CHUNK_SIZE, remaining))
+                    if not chunk:
+                        break
+
+                    gz.write(chunk)
+                    remaining -= len(chunk)
 
     return tar_path
 
@@ -689,7 +853,12 @@ def _store_new_package_tars(
     for pkg in pkg_tars:
         pkg_key, tar_path = pkg["pkg_key"], pkg["tar_path"]
         if get_cached_dep(pkg_key) is None:
-            store_dep(pkg_key, tar_path, python_version, uv_platform)
+            store_dep(
+                pkg_key=pkg_key,
+                tar_path=tar_path,
+                python_version=python_version,
+                platform=uv_platform,
+            )
 
 
 def _concat_package_tars(tars: list[Path], out_dir: str) -> tuple[int, Path]:
@@ -717,20 +886,17 @@ def _concat_package_tars(tars: list[Path], out_dir: str) -> tuple[int, Path]:
     """
 
     out_path = Path(out_dir) / "deps.tar.gz"
-    num_files = 0
 
-    with open(str(out_path), "wb") as f_out:
+    # Each per-package .tar.gz is a gzip stream of tar entries with no
+    # end-of-archive block.  Concatenate raw bytes — zero decompression needed.
+    # The tar EOF block is written later by _build_from_deps_tar as part of
+    # the final app.tar.gz gzip member.
+    with open(str(out_path), "wb") as out_f:
         for tar_path in tars:
-            try:
-                with tarfile.open(str(tar_path), "r:gz") as tar:
-                    num_files += len(tar.getmembers())
-            except Exception:
-                pass
+            with open(str(tar_path), "rb") as in_f:
+                shutil.copyfileobj(in_f, out_f)
 
-            with open(str(tar_path), "rb") as f_in:
-                shutil.copyfileobj(f_in, f_out)
-
-    return num_files, out_path
+    return 0, out_path
 
 
 def _log_pkg_cache_status(
@@ -761,23 +927,26 @@ def _log_pkg_cache_status(
     if not verbose:
         return
 
-    if missing_count == 0 and total > 0:
+    if cached_count > 0:
+        total_word = "dependency" if total == 1 else "dependencies"
         if rich_print:
             rich.print(
-                f"\t:fast_up_button: All [magenta]{total}[/magenta] package(s) found in cache.",
+                f"\t:fast_up_button: [magenta]{cached_count}/{total}[/magenta] compressed {total_word} found in cache.",
                 file=sys.stderr,
             )
         else:
-            log(f"   ⏫ All {total} package(s) found in cache.")
-    elif missing_count > 0:
+            log(f"   ⏫ {cached_count}/{total} compressed {total_word} found in cache.")
+
+    if missing_count > 0:
+        missing_word = "dependency" if missing_count == 1 else "dependencies"
         if rich_print:
             rich.print(
-                f"\t:rabbit2: {cached_count}/{total} packages cached; "
-                f"downloading [magenta]{missing_count}[/magenta] from package index.",
+                f"\t:rabbit2: Downloading and compressing [magenta]{missing_count}[/magenta] {missing_word} "
+                "from package index.",
                 file=sys.stderr,
             )
         else:
-            log(f"   🐇 {cached_count}/{total} packages cached; downloading {missing_count} from package index.")
+            log(f"   🐇 Downloading and compressing {missing_count} {missing_word} from package index.")
 
 
 def _parse_lockfile(lockfile_content: str) -> list[dict[str, str]]:
@@ -907,13 +1076,28 @@ def _build_from_deps_tar(
     verbose: bool = False,
     rich_print: bool = False,
 ) -> tuple[str, int]:
-    """Build the final tarball by concatenating the cached deps.tar.gz with a
+    """
+    Build the final tarball by concatenating the cached deps.tar.gz with a
     freshly-compressed tarball of the app files.
 
     The gzip format (RFC 1952) explicitly supports concatenated streams, and
     tar decompressors handle them correctly.  This avoids decompressing and
     recompressing the (large) deps archive — only the small set of app files
     needs to be compressed from scratch.
+
+    Parameters
+    ----------
+    deps_tar : Path
+        The path to the `deps.tar.gz` file containing the installed dependencies.
+    files_dir : str
+        The directory containing the app files to be included in the final tarball.
+    output_dir : str
+        The directory to write the final `app.tar.gz` file to.  This should be
+        a temporary directory that is cleaned up by the caller.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
     """
 
     if verbose:
@@ -922,40 +1106,55 @@ def _build_from_deps_tar(
         else:
             log("   🛠️  Appending application files.")
 
-    # Read the deps file count from cache_info.json stored next to deps.tar.gz.
-    num_deps_files = 0
-    info_path = deps_tar.parent / "cache_info.json"
-    try:
-        with open(info_path) as f:
-            num_deps_files = json.load(f).get("num_files", 0)
-    except Exception:
-        pass
-
-    # Compress only the app files (small) into a temporary gzip stream.
-    app_files_tar_gz = os.path.join(output_dir, "app-files.tar.gz")
-    num_app_files = 0
-    with tarfile.open(app_files_tar_gz, "w:gz") as tar:
-        for root, _, files in os.walk(files_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, start=files_dir)
-                tar.add(file_path, arcname=arcname)
-                num_app_files += 1
-
-    # Concatenate the two gzip streams — valid per RFC 1952.
     output_file = os.path.join(output_dir, "app.tar.gz")
-    with open(output_file, "wb") as f_out:
-        with open(str(deps_tar), "rb") as f_deps:
-            shutil.copyfileobj(f_deps, f_out)
-        with open(app_files_tar_gz, "rb") as f_app:
-            shutil.copyfileobj(f_app, f_out)
+    num_files = 0
 
-    os.remove(app_files_tar_gz)
-    return output_file, num_deps_files + num_app_files
+    # Raw-copy all per-package gzip streams (no decompression).
+    with open(output_file, "wb") as out_f:
+        with open(str(deps_tar), "rb") as df:
+            shutil.copyfileobj(df, out_f)
+
+    # Append app files + tar EOF as the final gzip member.  gzip.open in
+    # append-binary mode starts a new gzip member in the same file, so the
+    # complete app.tar.gz is a valid multi-member gzip that any modern tar
+    # decompressor handles correctly.
+    with gzip.open(output_file, "ab") as gz_out:
+        with tarfile.open(fileobj=gz_out, mode="w|") as app_tar:
+            for root, _, files in os.walk(files_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, start=files_dir)
+                    app_tar.add(file_path, arcname=arcname)
+                    num_files += 1
+
+    return output_file, num_files
 
 
 def _compress_tar(source: str, target: str, verbose: bool = False, rich_print: bool = False) -> tuple[str, int]:
-    """Compress the source directory into a tar.gz file in the target"""
+    """
+    Compress the source directory into a tar.gz file in the target.
+
+    This is used when there are no dependencies to bundle and we can simply
+    compress the app files directly without needing to concatenate with a deps
+    tarball.
+
+    Parameters
+    ----------
+    source : str
+        The directory containing the files to be compressed into the tarball.
+    target : str
+        The directory where the resulting tar.gz file should be saved.
+    verbose : bool, optional
+        Whether to print verbose logs.
+    rich_print : bool, optional
+        Whether to use rich printing for verbose logs.
+
+    Returns
+    -------
+    tuple of (str, int)
+        A tuple containing the path to the resulting tar.gz file and the number
+        of files included in the tarball.
+    """
 
     if verbose:
         if rich_print:
@@ -981,7 +1180,21 @@ def _compress_tar(source: str, target: str, verbose: bool = False, rich_print: b
 
 
 def _human_friendly_file_size(path: str) -> str:
-    """Return a human-friendly string representation of the file size."""
+    """
+    Return a human-friendly string representation of the file size.
+
+    Parameters
+    ----------
+    path : str
+        The path to the file whose size is to be determined.
+
+    Returns
+    -------
+    str
+        A human-friendly string representation of the file size, using
+        appropriate units (B, KiB, MiB, GiB) and rounded to two decimal places
+        for larger units.
+    """
 
     try:
         size = os.path.getsize(path)

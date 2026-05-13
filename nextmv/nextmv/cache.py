@@ -28,10 +28,10 @@ _DEPS_CACHE_DIR = _CACHE_DIR / "deps"
 """Directory storing per-package dependency tarballs."""
 _CACHE_INFO_FILE = "cache_info.json"
 """Name of the metadata file stored alongside each cached entry."""
-_MAX_DEPS = 500
+_MAX_DEPS = 2000
 """Maximum number of individual package tarballs to keep in the cache."""
-_MAX_DEP_BYTES = 1 * 1024**3
-"""Maximum total cache size in bytes (1 GiB)."""
+_MAX_DEP_BYTES = 5 * 1024**3
+"""Maximum total cache size in bytes (5 GiB)."""
 
 
 def clear_cache() -> None:
@@ -181,15 +181,15 @@ def _create_cache() -> None:
 
 def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) -> int:
     """
-    Remove the least-recently-used L2 (per-package tarball) cache entries until
-    both caps are satisfied.
+    Remove the least-recently-used per-package tarball cache entries until both
+    caps are satisfied.
 
     Parameters
     ----------
     max_entries : int, optional
         Maximum number of package tarball entries to retain.
     max_bytes : int, optional
-        Maximum total L2 cache size in bytes.
+        Maximum total cache size in bytes.
 
     Returns
     -------
