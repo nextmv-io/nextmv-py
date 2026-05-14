@@ -972,22 +972,23 @@ def _log_pkg_cache_status(
         total_word = "dependency" if total == 1 else "dependencies"
         if rich_print:
             rich.print(
-                f"  :fast_up_button: [magenta]{cached_count}/{total}[/magenta] compressed {total_word} found in cache.",
+                f"    :fast_up_button: [magenta]{cached_count}/{total}[/magenta] compressed {total_word} "
+                "found in cache.",
                 file=sys.stderr,
             )
         else:
-            log(f"  ⏫ {cached_count}/{total} compressed {total_word} found in cache.")
+            log(f"    ⏫ {cached_count}/{total} compressed {total_word} found in cache.")
 
     if missing_count > 0:
         missing_word = "dependency" if missing_count == 1 else "dependencies"
         if rich_print:
             rich.print(
-                f"  :rabbit2: Downloading and compressing [magenta]{missing_count}[/magenta] {missing_word} "
+                f"    :rabbit2: Downloading and compressing [magenta]{missing_count}[/magenta] {missing_word} "
                 "from package index.",
                 file=sys.stderr,
             )
         else:
-            log(f"  🐇 Downloading and compressing {missing_count} {missing_word} from package index.")
+            log(f"    🐇 Downloading and compressing {missing_count} {missing_word} from package index.")
 
 
 def _parse_lockfile(lockfile_content: str) -> list[dict[str, str]]:
@@ -1143,9 +1144,9 @@ def _build_from_deps_tar(
 
     if verbose:
         if rich_print:
-            rich.print("  :hammer_and_wrench:  Appending application files.", file=sys.stderr)
+            rich.print("    :hammer_and_wrench:  Appending application files.", file=sys.stderr)
         else:
-            log("  🛠️  Appending application files.")
+            log("    🛠️  Appending application files.")
 
     output_file = os.path.join(output_dir, "app.tar.gz")
     num_files = 0
@@ -1199,9 +1200,9 @@ def _compress_tar(source: str, target: str, verbose: bool = False, rich_print: b
 
     if verbose:
         if rich_print:
-            rich.print("  :hammer_and_wrench:  Compressing tarball from scratch.", file=sys.stderr)
+            rich.print("    :hammer_and_wrench:  Compressing tarball from scratch.", file=sys.stderr)
         else:
-            log("  🛠️  Compressing tarball from scratch.")
+            log("    🛠️  Compressing tarball from scratch.")
 
     return_file_name = "app.tar.gz"
     target = os.path.join(target, return_file_name)
