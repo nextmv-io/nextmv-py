@@ -346,6 +346,9 @@ guidelines:
     ] = None,
   ```
 
+- When indenting, prefer to use two spaces as opposed to a tab (`\t`) or 4
+  spaces.
+
 #### CLI - User prompts
 
 The `message.py` file provides three interactive prompt functions: `confirmation`,

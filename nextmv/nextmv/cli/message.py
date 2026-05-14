@@ -60,7 +60,7 @@ def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
         msg = f"{emoji} {msg}"
 
     if indents > 0:
-        msg = "\t" * indents + msg
+        msg = "  " * indents + msg
 
     console = Console(file=sys.stderr, highlight=False)
     console.print(msg)
