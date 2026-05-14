@@ -33,6 +33,8 @@ _DEPS_CACHE_DIR = _CACHE_DIR / "deps"
 """Directory storing per-package dependency tarballs."""
 _CACHE_INFO_FILE = "cache_info.json"
 """Name of the metadata file stored alongside each cached entry."""
+_DEP_TARBALL_NAME = "installed.tar.gz"
+"""Name of the per-package tarball containing installed files for a single package."""
 _MAX_DEPS = 2000
 """Maximum number of individual package tarballs to keep in the cache."""
 _MAX_DEP_BYTES = 5 * 1024**3
@@ -63,6 +65,12 @@ def get_cache() -> dict[str, Any]:
                 with open(info_file) as f:
                     info = json.load(f)
 
+                tarball = entry_dir / _DEP_TARBALL_NAME
+                try:
+                    tarball_size = format_bytes(tarball.stat().st_size)
+                except OSError:
+                    tarball_size = ""
+
                 dependencies.append(
                     {
                         "key": entry_dir.name,
@@ -71,13 +79,14 @@ def get_cache() -> dict[str, Any]:
                         "last_used_at": info.get("last_used_at", ""),
                         "python_version": info.get("python_version", ""),
                         "platform": info.get("platform", ""),
+                        "size": tarball_size,
                     }
                 )
             except Exception:
                 pass
 
     if dependencies:
-        dependencies.sort(key=lambda d: (d["last_used_at"], d["name"], d["version"]))
+        dependencies.sort(key=lambda d: (d["last_used_at"], d["name"], d["version"]), reverse=True)
 
     return {
         "num_dependencies": num_deps,
@@ -100,10 +109,7 @@ def clear_cache() -> tuple[int, int]:
         return 0, 0
 
     num_deps, total_bytes = _cache_stats()
-
-    if _CACHE_DIR.exists():
-        shutil.rmtree(str(_CACHE_DIR))
-
+    shutil.rmtree(str(_CACHE_DIR))
     _create_cache()
 
     return num_deps, total_bytes
@@ -165,7 +171,7 @@ def get_cached_dep(pkg_key: str) -> Path | None:
 
     entry_dir = _DEPS_CACHE_DIR / pkg_key
     info_file = entry_dir / _CACHE_INFO_FILE
-    installed_tar = entry_dir / "installed.tar.gz"
+    installed_tar = entry_dir / _DEP_TARBALL_NAME
 
     if not installed_tar.is_file() or not info_file.is_file():
         return None
@@ -225,7 +231,7 @@ def store_dep(
 
     with tempfile.TemporaryDirectory(dir=_DEPS_CACHE_DIR, prefix=f"{pkg_key}-tmp-", ignore_cleanup_errors=True) as _tmp:
         tmp_entry = Path(_tmp)
-        shutil.copy2(str(tar_path), tmp_entry / "installed.tar.gz")
+        shutil.copy2(str(tar_path), tmp_entry / _DEP_TARBALL_NAME)
         now = _now_iso()
         info = {
             "created_at": now,
@@ -300,6 +306,11 @@ def _create_cache() -> None:
 
     _DEPS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Remove leftover staging dirs from previous crashed/killed runs.
+    for entry in _DEPS_CACHE_DIR.iterdir():
+        if entry.is_dir() and "-tmp-" in entry.name:
+            shutil.rmtree(str(entry), ignore_errors=True)
+
 
 def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) -> int:
     """
@@ -324,7 +335,7 @@ def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) ->
 
     entries = []
     for entry_dir in _DEPS_CACHE_DIR.iterdir():
-        if not entry_dir.is_dir():
+        if not entry_dir.is_dir() or "-tmp-" in entry_dir.name:
             continue
 
         info_file = entry_dir / _CACHE_INFO_FILE

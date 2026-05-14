@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from nextmv.cache import (
     _CACHE_INFO_FILE,
+    _DEP_TARBALL_NAME,
     _MAX_DEP_BYTES,
     _MAX_DEPS,
     _evict_lru,
@@ -121,7 +122,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
     def _make_pkg_tar_entry(self, key: str) -> Path:
         entry_dir = self._tmpdir / key
         entry_dir.mkdir(parents=True, exist_ok=True)
-        installed_tar = entry_dir / "installed.tar.gz"
+        installed_tar = entry_dir / _DEP_TARBALL_NAME
         with tarfile.open(str(installed_tar), "w:gz"):
             pass  # empty tar
         now = datetime.now(tz=timezone.utc).isoformat()
@@ -152,7 +153,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
             result = get_cached_dep(key)
 
         self.assertIsNotNone(result)
-        self.assertTrue(str(result).endswith("installed.tar.gz"))
+        self.assertTrue(str(result).endswith(_DEP_TARBALL_NAME))
 
     def test_hit_updates_last_used_at(self):
         from nextmv import cache as cache_mod
@@ -182,7 +183,7 @@ class TestGetCachedPackageTar(unittest.TestCase):
         key = "noinfo"
         entry_dir = self._tmpdir / key
         entry_dir.mkdir(parents=True)
-        with tarfile.open(str(entry_dir / "installed.tar.gz"), "w:gz"):
+        with tarfile.open(str(entry_dir / _DEP_TARBALL_NAME), "w:gz"):
             pass  # no cache_info.json written
 
         with patch.object(cache_mod, "_DEPS_CACHE_DIR", self._tmpdir):
@@ -252,7 +253,7 @@ class TestStorePackageTar(unittest.TestCase):
 
         entry_dir = self._pkg_tars_dir / key
         self.assertTrue(entry_dir.is_dir())
-        self.assertTrue((entry_dir / "installed.tar.gz").is_file())
+        self.assertTrue((entry_dir / _DEP_TARBALL_NAME).is_file())
 
     def test_info_file_has_required_fields(self):
         from nextmv import cache as cache_mod
@@ -335,7 +336,7 @@ class TestEvictLruPackages(unittest.TestCase):
     def _add_entry(self, key: str, last_used: str, size_bytes: int = 0):
         entry_dir = self._pkg_tars_dir / key
         entry_dir.mkdir(parents=True, exist_ok=True)
-        installed_tar = entry_dir / "installed.tar.gz"
+        installed_tar = entry_dir / _DEP_TARBALL_NAME
         if size_bytes > 0:
             data = os.urandom(size_bytes)
             with tarfile.open(str(installed_tar), "w:gz") as tar:

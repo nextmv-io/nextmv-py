@@ -271,7 +271,7 @@ def _copy_manifest_files(
 
         try:
             shutil.copy2(file["absolute_path"], os.path.join(temp_dir, target_dir))
-        except subprocess.CalledProcessError as e:
+        except OSError as e:
             raise Exception(f"error copying asset files {file['absolute_path']}: {e}") from e
 
 
@@ -847,13 +847,13 @@ def _install_and_compress_package(
         # the entries (no EOF block).  Omitting the EOF block lets these
         # per-package gzip streams be raw-concatenated without causing tar
         # to stop at the first end-of-archive marker.
-        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False, dir=install_tmp) as _tmp_f:
-            tmp_tar_path = _tmp_f.name
+        tmp_tar_path = os.path.join(install_tmp, "pkg.tar")
 
-        tar_obj = tarfile.open(tmp_tar_path, mode="w")
-        tar_obj.add(install_dir, arcname=dep_arcname)
-        entry_end = tar_obj.offset  # byte offset where EOF marker begins
-        tar_obj.close()
+        with tarfile.open(tmp_tar_path, mode="w") as tar_obj:
+            tar_obj.add(install_dir, arcname=dep_arcname)
+            # Byte offset where EOF marker begins; captured before close()
+            # appends EOF blocks.
+            entry_end = tar_obj.offset
 
         with open(tmp_tar_path, "rb") as raw_f:
             with gzip.open(str(tar_path), "wb") as gz:
