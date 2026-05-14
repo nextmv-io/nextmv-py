@@ -31,8 +31,6 @@ _CACHE_DIR = Path.home() / ".nextmv" / "cache"
 """Root directory for all Nextmv cache data."""
 _DEPS_CACHE_DIR = _CACHE_DIR / "deps"
 """Directory storing per-package dependency tarballs."""
-_CACHE_TMP_DIR = _CACHE_DIR / "tmp"
-"""Staging area for atomic write operations."""
 _CACHE_INFO_FILE = "cache_info.json"
 """Name of the metadata file stored alongside each cached entry."""
 _DEP_TARBALL_NAME = "installed.tar.gz"
@@ -231,7 +229,7 @@ def store_dep(
     _create_cache()
     entry_dir = _DEPS_CACHE_DIR / pkg_key
 
-    with tempfile.TemporaryDirectory(dir=_CACHE_TMP_DIR, prefix=f"{pkg_key}-tmp-", ignore_cleanup_errors=True) as _tmp:
+    with tempfile.TemporaryDirectory(dir=_DEPS_CACHE_DIR, prefix=f"{pkg_key}-tmp-", ignore_cleanup_errors=True) as _tmp:
         tmp_entry = Path(_tmp)
         shutil.copy2(str(tar_path), tmp_entry / _DEP_TARBALL_NAME)
         now = _now_iso()
@@ -307,10 +305,11 @@ def _create_cache() -> None:
     """
 
     _DEPS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    _CACHE_TMP_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Remove leftover staging dirs/files from previous crashed/killed runs.
-    shutil.rmtree(str(_CACHE_TMP_DIR), ignore_errors=True)
+    # Remove leftover staging dirs from previous crashed/killed runs.
+    for entry in _DEPS_CACHE_DIR.iterdir():
+        if entry.is_dir() and "-tmp-" in entry.name:
+            shutil.rmtree(str(entry), ignore_errors=True)
 
 
 def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) -> int:
@@ -336,7 +335,7 @@ def _evict_lru(max_entries: int = _MAX_DEPS, max_bytes: int = _MAX_DEP_BYTES) ->
 
     entries = []
     for entry_dir in _DEPS_CACHE_DIR.iterdir():
-        if not entry_dir.is_dir():
+        if not entry_dir.is_dir() or "-tmp-" in entry_dir.name:
             continue
 
         info_file = entry_dir / _CACHE_INFO_FILE
@@ -411,7 +410,7 @@ def _dir_size(path: Path) -> int:
 
 def _write_json_atomic(path: Path, data: dict) -> None:
     """
-    Write data as JSON to path atomically via a temporary file in the cache tmp dir.
+    Write data as JSON to path atomically via a sibling temporary file.
 
     Parameters
     ----------
@@ -421,8 +420,7 @@ def _write_json_atomic(path: Path, data: dict) -> None:
         The data to write as JSON.
     """
 
-    _CACHE_TMP_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(mode="w", dir=_CACHE_TMP_DIR, prefix=".tmp-", delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, prefix=".tmp-", delete=False) as f:
         json.dump(data, f, indent=2)
         tmp = Path(f.name)
 
