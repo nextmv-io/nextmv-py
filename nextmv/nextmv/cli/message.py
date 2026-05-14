@@ -51,8 +51,8 @@ def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
         https://rich.readthedocs.io/en/latest/markup.html#emoji. For example:
         `:hourglass_flowing_sand:`.
     indents : int
-        The number of indents to prefix the message with. Each indent is a tab
-        character. Default is 0.
+        The number of indents to prefix the message with. Each indent is 4
+        spaces. Default is 0.
     """
 
     msg = _format(msg)
@@ -60,7 +60,7 @@ def message(msg: str, emoji: str | None = None, indents: int = 0) -> None:
         msg = f"{emoji} {msg}"
 
     if indents > 0:
-        msg = "\t" * indents + msg
+        msg = "    " * indents + msg
 
     console = Console(file=sys.stderr, highlight=False)
     console.print(msg)

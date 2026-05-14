@@ -40,6 +40,13 @@ def push(
             metavar="MANIFEST_PATH",
         ),
     ] = None,
+    no_cache: Annotated[
+        bool,
+        typer.Option(
+            "--no-cache",
+            help="Do not read from or write to the Nextmv dependency cache for [magenta]Python[/magenta] applications.",
+        ),
+    ] = False,
     # Options for version control.
     version_id: Annotated[
         str | None,
@@ -184,6 +191,7 @@ def push(
         update_instance_id=update_instance_id,
         create_defined=create_defined,
         create_instance_id=create_instance_id,
+        no_cache=no_cache,
     )
 
 
@@ -199,6 +207,7 @@ def handle_push(
     update_instance_id: str | None,
     create_defined: bool,
     create_instance_id: str | None,
+    no_cache: bool = False,
 ) -> str:
     """
     Handle the core push flow: push the application, create a version, and link it to an instance.
@@ -227,6 +236,9 @@ def handle_push(
         Whether --create-instance-id was provided.
     create_instance_id : str | None
         The instance ID to create.
+    no_cache : bool
+        Whether to disable the dependency cache when packaging Python
+        applications.
 
     Returns
     -------
@@ -242,6 +254,7 @@ def handle_push(
         app_dir=app_dir,
         verbose=True,
         rich_print=True,
+        no_cache=no_cache,
     )
 
     now = datetime.now(timezone.utc)

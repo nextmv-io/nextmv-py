@@ -1761,12 +1761,12 @@ class Application(BaseModel):
             if verbose:
                 if rich_print:
                     rich.print(
-                        f"\t:fast_forward: Skipping local run [magenta]{run_id}[/magenta], already synced with "
+                        f"    :fast_forward: Skipping local run [magenta]{run_id}[/magenta], already synced with "
                         f"[magenta]{synced_run.to_dict()}[/magenta].",
                         file=sys.stderr,
                     )
                 else:
-                    log(f"   ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
+                    log(f"    ⏭️  Skipping local run `{run_id}`, already synced with {synced_run.to_dict()}.")
 
             return False
 
@@ -1775,11 +1775,11 @@ class Application(BaseModel):
             if verbose:
                 if rich_print:
                     rich.print(
-                        f"\t:x: Skipping local run [magenta]{run_id}[/magenta], invalid run (missing inputs).",
+                        f"    :x: Skipping local run [magenta]{run_id}[/magenta], invalid run (missing inputs).",
                         file=sys.stderr,
                     )
                 else:
-                    log(f"   ❌  Skipping local run `{run_id}`, invalid run (missing inputs).")
+                    log(f"    ❌  Skipping local run `{run_id}`, invalid run (missing inputs).")
 
             return False
 
@@ -1866,12 +1866,12 @@ class Application(BaseModel):
         if verbose:
             if rich_print:
                 rich.print(
-                    f"\t:white_check_mark: Synced local run [magenta]{run_id}[/magenta] as remote run "
+                    f"    :white_check_mark: Synced local run [magenta]{run_id}[/magenta] as remote run "
                     f"[magenta]{synced_run.to_dict()}[/magenta].",
                     file=sys.stderr,
                 )
             else:
-                log(f"✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
+                log(f"    ✅ Synced local run `{run_id}` as remote run `{synced_run.to_dict()}`.")
 
         return True
 

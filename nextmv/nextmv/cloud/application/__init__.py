@@ -414,7 +414,7 @@ class Application(
             # Re-throw the exception if it is not the expected 404 error.
             raise e from None
 
-    def push(  # noqa: C901
+    def push(
         self,
         manifest: Manifest | None = None,
         app_dir: str | None = None,
@@ -422,6 +422,7 @@ class Application(
         model: Model | None = None,
         model_configuration: ModelConfiguration | None = None,
         rich_print: bool = False,
+        no_cache: bool = False,
     ) -> None:
         """
         Push an app to Nextmv Cloud.
@@ -457,6 +458,13 @@ class Application(
             with `model`.
         rich_print : bool, default=False
             Whether to use rich printing when verbose output is enabled.
+        no_cache : bool, default=False
+            When working with Python, dependencies are cached to speed up
+            subsequent pushes. Setting no_cache to True will skip using the
+            cache and force a fresh build of all dependencies. This is useful
+            when you want to ensure that you are pushing the most up-to-date
+            versions of your dependencies, or if you are encountering issues
+            with the cache and want to rule it out as a potential cause.
 
         Raises
         ------
@@ -550,9 +558,17 @@ class Application(
         if (model is None and model_configuration is not None) or (model is not None and model_configuration is None):
             raise ValueError("model and model_configuration must be provided together")
 
-        package._run_build_command(app_dir, manifest.build, verbose, rich_print)
-        package._run_pre_push_command(app_dir, manifest.pre_push, verbose, rich_print)
-        tar_file, output_dir = package._package(app_dir, manifest, model, model_configuration, verbose, rich_print)
+        package.run_build_command(app_dir, manifest.build, verbose, rich_print)
+        package.run_pre_push_command(app_dir, manifest.pre_push, verbose, rich_print)
+        tar_file, output_dir = package.package(
+            app_dir,
+            manifest,
+            model,
+            model_configuration,
+            verbose,
+            rich_print,
+            no_cache,
+        )
         self.__update_app_binary(tar_file, manifest, verbose, rich_print)
 
         try:
