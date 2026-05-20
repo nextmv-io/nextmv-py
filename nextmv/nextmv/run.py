@@ -791,6 +791,62 @@ class RunTrackingMetadata(BaseModel):
     """ID of the managed input used to make the run."""
 
 
+class OptionSummary(BaseModel):
+    """
+    The summary of an option that was used in a run.
+
+    You can import the `OptionSummary` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OptionSummary
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the option.
+    source : str
+        The source of the option: likely version, instance, or run.
+    value : Any
+        The actual value that the option had at runtime.
+    """
+
+    name: str
+    """Name of the option."""
+    source: str
+    """The source of the option: likely version, instance, or run."""
+    value: str
+    """The actual value that the option had at runtime."""
+
+
+class RunOptions(BaseModel):
+    """
+    Options used during the execution of a run.
+
+    You can import the `RunOptions` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunOptions
+    ```
+
+    Parameters
+    ----------
+    active_options : dict[str, Any], optional
+        Active options for the run.
+    options_summary : list[OptionSummary], optional
+        Summary of options used in the run.
+    request_options : dict[str, Any], optional
+        Request options associated with the run.
+    """
+
+    active_options: dict[str, Any] | None = None
+    """Active options for the run."""
+    options_summary: list[OptionSummary] | None = None
+    """Summary of options used in the run."""
+    request_options: dict[str, Any] | None = None
+    """Request options associated with the run."""
+
+
 class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
@@ -844,22 +900,38 @@ class Metadata(BaseModel):
     """Duration of the run in milliseconds."""
     error: str
     """Error message if the run failed."""
-    input_size: float
-    """Size of the input in bytes."""
-    output_size: float
-    """Size of the output in bytes."""
-    format: Format
-    """Format of the input and output of the run."""
-    status_v2: StatusV2
-    """Status of the run."""
-    statistics: dict[str, Any] | None = None
-    """Deprecated: User defined statistics of the run."""
-    metrics: dict[str, Any] | None = None
-    """User defined metrics of the run."""
+    execution_class: str
+    """Execution class for the run."""
+    execution_duration: float | None = None
+    """Duration of the actual run execution in milliseconds."""
     experiment_id: str | None = None
     """ID of the experiment containing the run."""
     experiment_type: str | None = None
     """Type of the experiment containing the run."""
+    format: Format
+    """Format of the input and output of the run."""
+    initiated_at: datetime | None = None
+    """Date and time when the run was started."""
+    input_size: float
+    """Size of the input in bytes."""
+    options: RunOptions | None = None
+    """Options used during the run, which can come from various sources."""
+    metrics: dict[str, Any] | None = None
+    """User defined metrics of the run."""
+    output_size: float
+    """Size of the output in bytes."""
+    queuing_disabled: bool
+    """Whether the run was disabled from queuing."""
+    queuing_priority: int
+    """Priority of the run in the queue."""
+    run_type: RunTypeConfiguration
+    """Configuration for the type of the run."""
+    runtime: str
+    """Runtime environment for the run."""
+    status_v2: StatusV2
+    """Status of the run."""
+    statistics: dict[str, Any] | None = None
+    """Deprecated: User defined statistics of the run."""
     tracking: RunTrackingMetadata | None = None
     """
     Metadata for tracking elements of the run that
@@ -882,6 +954,21 @@ class Metadata(BaseModel):
             StatusV2.failed,
             StatusV2.canceled,
         }
+
+    @property
+    def content_format(self) -> ContentFormat:
+        """
+        Get the content format of the run based on its metadata.
+
+        Returns
+        -------
+        ContentFormat
+            The content format of the run, determined by the output format
+            specified in the run's metadata. If no output format is specified,
+            defaults to `ContentFormat.JSON`.
+        """
+
+        return self.format.format_output.output_type
 
 
 class SyncedRun(BaseModel):

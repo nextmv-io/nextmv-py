@@ -101,6 +101,88 @@ class ApplicationRunMixin:
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
         )
 
+    def clone_run(
+        self: "Application",
+        cloned_run_id: str,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        managed_input_id: str | None = None,
+    ) -> str:
+        """"""
+
+        # Get the basic information of the run.
+        run_info = self.run_metadata(run_id=cloned_run_id)
+        content_format = run_info.metadata.content_format
+
+        # Resolve the new run's input.
+        if content_format == ContentFormat.JSON and input:
+            new_input = input
+            new_input_dir_path = None
+        elif content_format == ContentFormat.JSON and not input:
+            new_input = self.run_input(run_id=cloned_run_id)
+            new_input_dir_path = None
+        elif content_format == ContentFormat.MULTI_FILE and input_dir_path:
+            new_input = None
+            new_input_dir_path = input_dir_path
+        elif content_format == ContentFormat.MULTI_FILE and not input_dir_path:
+            with tempfile.TemporaryDirectory(delete=False) as tmpdirname:
+                self.run_input(run_id=cloned_run_id, output_dir_path=tmpdirname)
+                new_input = None
+                new_input_dir_path = tmpdirname
+        else:
+            new_input = None
+            new_input_dir_path = None
+
+        # Resolve the new run's instance.
+        if instance_id:
+            new_instance_id = instance_id
+        else:
+            new_instance_id = run_info.metadata.application_instance_id
+
+        # Resolve the new run's name.
+        if name and len(name) <= 128:
+            new_name = name
+        elif name and len(name) > 128:
+            new_name = name[:128]
+        else:
+            suffix = " clone"
+            new_name = run_info.name[: 128 - len(suffix)] + suffix
+
+        # Resolve the new run's description.
+        if description and len(description) <= 256:
+            new_description = description
+        elif description and len(description) > 256:
+            new_description = description[:256]
+        else:
+            prefix = "Clone of "
+            new_description = prefix + run_info.description[: 256 - len(prefix)]
+
+        # Resolve the run's options.
+        if options:
+            new_options = options
+        elif run_info.metadata.options:
+            opts = run_info.metadata.options
+            summ = opts.options_summary
+            if summ:
+                new_options = {opt.name: opt.value for opt in summ}
+            else:
+                new_options = None
+        else:
+            new_options = None
+
+        # Resolve the run's configuration.
+        # resolved_run_config = self.__extract_run_config(
+        #     input=new_input,
+        #     configuration=configuration,
+        #     dir_path=new_input_dir_path,
+        # )
+
     def download_asset_content(
         self: "Application",
         asset: RunAsset,

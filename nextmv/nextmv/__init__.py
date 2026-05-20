@@ -66,12 +66,14 @@ from .run import FormatOutput as FormatOutput
 from .run import Metadata as Metadata
 from .run import MetricsIndicator as MetricsIndicator
 from .run import OptionsSummaryItem as OptionsSummaryItem
+from .run import OptionSummary as OptionSummary
 from .run import Run as Run
 from .run import RunConfiguration as RunConfiguration
 from .run import RunInfoMetrics as RunInfoMetrics
 from .run import RunInformation as RunInformation
 from .run import RunInfoStatistics as RunInfoStatistics
 from .run import RunLog as RunLog
+from .run import RunOptions as RunOptions
 from .run import RunQueuing as RunQueuing
 from .run import RunResult as RunResult
 from .run import RunTrackingMetadata as RunTrackingMetadata
