@@ -26,6 +26,8 @@ from requests.adapters import HTTPAdapter, Retry
 
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
+from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
+from nextmv.config import PROFILE_TYPE_AUTH_FLOW, get_profile_type
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -247,9 +249,10 @@ class Client:
         """
         Initializes the client after dataclass construction.
 
-        This method handles the logic for API key retrieval and header
-        setup. It checks for the API key in the constructor, environment
-        variables, and the configuration file, in that order.
+        This method handles the logic for API key / token retrieval and header setup.
+        For ``api_key`` profiles it resolves the API key from the constructor, environment
+        variables, or the configuration file.  For ``auth_flow`` profiles it loads the
+        stored OAuth2 access token (and silently refreshes it when expired).
 
         Raises
         ------
@@ -267,7 +270,16 @@ class Client:
 
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
-        self.api_key = self.__resolve_api_key(profile)
+
+        # Determine whether this is an auth_flow profile.
+        bearer_token = self.__resolve_bearer_token_for_auth_flow(profile)
+        if bearer_token is not None:
+            # auth_flow profile: use the stored / refreshed access token.
+            self.api_key = bearer_token
+        else:
+            # api_key profile (default): legacy resolution.
+            self.api_key = self.__resolve_api_key(profile)
+
         self.__set_headers_api_key(self.api_key)
 
         if self.configuration_file is not None and self.configuration_file != "":
@@ -572,6 +584,82 @@ class Client:
                 f"upload to presigned URL {url} failed with "
                 f"status code {response.status_code} and message: {response.text}"
             ) from e
+
+    def __resolve_bearer_token_for_auth_flow(self, profile: str | None) -> str | None:
+        """
+        If the resolved profile is an ``auth_flow`` profile, load the stored
+        access token and silently refresh it when it is expired.
+
+        Returns ``None`` when the profile is an ``api_key`` profile (the
+        default), so the caller can fall back to the standard API-key
+        resolution path.
+
+        Parameters
+        ----------
+        profile : str | None
+            The resolved profile name (``None`` means the default profile).
+
+        Returns
+        -------
+        str | None
+            The access token string, or ``None`` if not an auth_flow profile.
+
+        Raises
+        ------
+        ValueError
+            If the profile is ``auth_flow`` but no tokens are stored yet, or
+            if the refresh attempt fails (directing the user to run
+            ``nextmv login``).
+        """
+
+        config = _load_config()
+        if not config:
+            return None
+
+        ptype = get_profile_type(config, profile)
+        if ptype != PROFILE_TYPE_AUTH_FLOW:
+            return None
+
+        # Auth-flow profile detected.
+        tokens = load_tokens(profile)
+        display = profile if profile is not None else "default"
+
+        if tokens is None:
+            raise ValueError(
+                f"No tokens found for auth_flow profile [magenta]{display}[/magenta]. "
+                f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] first."
+            )
+
+        if is_token_expired(tokens):
+            refresh_token = tokens.get("refresh_token")
+            if not refresh_token:
+                raise ValueError(
+                    f"Access token for profile [magenta]{display}[/magenta] has expired and no refresh token "
+                    "is available. "
+                    f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
+                    "to re-authenticate."
+                )
+            try:
+                tokens = refresh_tokens(refresh_token)
+                save_tokens(profile, tokens)
+            except Exception as exc:
+                raise ValueError(
+                    f"Failed to refresh access token for profile [magenta]{display}[/magenta]: {exc}. "
+                    f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
+                    "to re-authenticate."
+                ) from exc
+
+        # Prefer the id_token when present — API Gateway Cognito authorizers
+        # validate the id_token (which carries the `aud` claim).  Fall back to
+        # access_token for authorizers that accept either.
+        token = tokens.get("id_token") or tokens.get("access_token")
+        if not token:
+            raise ValueError(
+                f"Stored tokens for profile [magenta]{display}[/magenta] do not contain an access token. "
+                f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
+                "to re-authenticate."
+            )
+        return token
 
     def __resolve_profile(self) -> str | None:
         """

@@ -27,14 +27,16 @@ from nextmv.cli.cache import app as cache_app
 from nextmv.cli.cloud import app as cloud_app
 from nextmv.cli.community import app as community_app
 from nextmv.cli.configuration import app as configuration_app
-from nextmv.cli.configuration.config import CONFIG_DIR, GO_CLI_PATH, load_config
+from nextmv.cli.configuration.config import GO_CLI_PATH
 from nextmv.cli.init import app as init_app
 from nextmv.cli.local import app as local_app
+from nextmv.cli.login import app as login_app
 from nextmv.cli.manifest import app as manifest_app
 from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
 from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
+from nextmv.config import CONFIG_DIR, load_config
 from nextmv.uv_handler import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
@@ -59,6 +61,7 @@ app.add_typer(community_app, name="community")
 app.add_typer(configuration_app, name="configuration")
 app.add_typer(init_app)
 app.add_typer(local_app, name="local")
+app.add_typer(login_app, name="login")
 app.add_typer(manifest_app, name="manifest")
 app.add_typer(version_app)
 
@@ -94,7 +97,7 @@ def callback(
         return
 
     # Skip checks for certain commands entirely.
-    ignored_commands = {"configuration", "mcp", "manifest", "version"}
+    ignored_commands = {"configuration", "login", "mcp", "manifest", "version"}
     if ctx.invoked_subcommand in ignored_commands:
         return
 

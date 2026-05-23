@@ -1,0 +1,506 @@
+"""
+PKCE OAuth2 flow and token storage utilities for Nextmv auth_flow profiles.
+
+This module contains the core (non-CLI) authentication helpers:
+
+- PKCE authorization-code flow (:func:`run_pkce_flow`, :func:`refresh_tokens`)
+- Token persistence (:func:`load_tokens`, :func:`save_tokens`, :func:`is_token_expired`,
+  :func:`token_dir`)
+
+PKCE flow overview
+------------------
+1. Fetch the OIDC discovery document to resolve ``authorization_endpoint`` and
+   ``token_endpoint`` (with a hard-coded fallback for the known user pool).
+2. Generate a ``code_verifier`` / ``code_challenge`` pair using stdlib ``secrets`` and
+   ``hashlib``.
+3. Start a temporary local HTTP server on a fixed port to receive the OAuth2 callback.
+4. Open the system browser at the authorization URL.
+5. Wait for the redirect, extract the authorization ``code``.
+6. Exchange the ``code`` + ``code_verifier`` for tokens via a POST to the token endpoint.
+7. Return a token dict ready for :func:`save_tokens`.
+
+Token file schema
+-----------------
+Tokens are stored as JSON under::
+
+    ~/.nextmv/auth/<profile_name>/tokens.json
+
+.. code-block:: json
+
+    {
+        "access_token": "...",
+        "refresh_token": "...",
+        "token_type": "Bearer",
+        "expires_at": "2026-01-01T00:00:00+00:00"
+    }
+
+Constants
+---------
+OIDC_DISCOVERY_URL
+    The OIDC discovery document URL for the Nextmv Cognito user pool.
+CLIENT_ID
+    The OAuth2 client ID registered in the Cognito user pool.
+SCOPES
+    Space-separated OAuth2 scopes requested during the flow.
+"""
+
+import base64
+import hashlib
+import http.server
+import json
+import secrets
+import threading
+import urllib.parse
+import webbrowser
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+import requests
+
+AUTH_DIR = Path.home() / ".nextmv" / "auth"
+
+# >>> Provider constants
+
+# TODO: change before merging.
+
+OIDC_DISCOVERY_URL = "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_xtlIYs4fU/.well-known/openid-configuration"
+
+# Cognito hosted UI domain for this user pool.
+_COGNITO_DOMAIN = "https://marius-local-nextmv-us-west-2.auth.us-west-2.amazoncognito.com"
+
+# Hard-coded fallback endpoints derived from the discovery document so that
+# the flow works even when the discovery URL is temporarily unreachable.
+_FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
+_FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
+
+CLIENT_ID = "dpps8t04d41ns0ua5c59uge0q"
+SCOPES = "email openid profile"
+CALLBACK_PORT = 56734
+
+# Timeout (seconds) to wait for the user to complete the browser auth step.
+_BROWSER_TIMEOUT = 300
+
+# Sentinel name used for the default (unnamed) profile on disk.
+_DEFAULT_DIR_NAME = "default"
+
+
+# >>> Token storage
+
+
+def token_dir(profile: str | None) -> Path:
+    """
+    Returns the directory that holds token files for *profile*.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name.  ``None`` (or the string ``"default"``) maps to the ``default``
+        sub-directory under ``AUTH_DIR``.
+
+    Returns
+    -------
+    Path
+        The directory path ``~/.nextmv/auth/<name>/``.
+    """
+    name = _DEFAULT_DIR_NAME if (profile is None or profile.strip().lower() == "default") else profile.strip()
+    return AUTH_DIR / name
+
+
+def _token_path(profile: str | None) -> Path:
+    return token_dir(profile) / "tokens.json"
+
+
+def load_tokens(profile: str | None) -> dict[str, Any] | None:
+    """
+    Load stored tokens for *profile* from disk.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        The token dict, or ``None`` if no token file exists.
+    """
+    path = _token_path(profile)
+    if not path.exists():
+        return None
+    with path.open() as fh:
+        return json.load(fh)
+
+
+def save_tokens(profile: str | None, tokens: dict[str, Any]) -> None:
+    """
+    Persist *tokens* for *profile* to disk.
+
+    Creates any missing parent directories with mode 0o700.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name.
+    tokens : dict[str, Any]
+        The token dict to persist.  Must contain at least ``access_token``.
+    """
+    path = _token_path(profile)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with path.open("w") as fh:
+        json.dump(tokens, fh, indent=2)
+    # Restrict read access to the owner only.
+    path.chmod(0o600)
+
+
+def is_token_expired(tokens: dict[str, Any]) -> bool:
+    """
+    Return ``True`` when the stored access token is expired (or will expire within the
+    next 30 seconds), ``False`` otherwise.
+
+    If ``expires_at`` is absent the token is treated as *not* expired so that tokens
+    without an explicit expiry still work.
+
+    Parameters
+    ----------
+    tokens : dict[str, Any]
+        The token dict loaded from disk.
+
+    Returns
+    -------
+    bool
+    """
+    expires_at_str: str | None = tokens.get("expires_at")
+    if not expires_at_str:
+        return False
+    try:
+        expires_at = datetime.fromisoformat(expires_at_str)
+        # Ensure timezone-aware comparison.
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        now = datetime.now(tz=timezone.utc)
+        # Consider expired if within 30-second buffer.
+        return (expires_at - now).total_seconds() < 30
+    except ValueError:
+        # Unparseable expiry — treat as not expired.
+        return False
+
+
+# >>> PKCE flow — internal helpers
+
+
+def _discover_endpoints() -> tuple[str, str]:
+    """
+    Fetch the OIDC discovery document and return
+    ``(authorization_endpoint, token_endpoint)``.
+
+    Falls back to the hard-coded endpoints if the discovery URL is unreachable or returns
+    an unexpected response.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(authorization_endpoint, token_endpoint)``
+    """
+    try:
+        resp = requests.get(OIDC_DISCOVERY_URL, timeout=10)
+        resp.raise_for_status()
+        doc = resp.json()
+        auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
+        token_ep = doc.get("token_endpoint", _FALLBACK_TOKEN_ENDPOINT)
+        return auth_ep, token_ep
+    except Exception:
+        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT
+
+
+def _generate_pkce_pair() -> tuple[str, str]:
+    """
+    Generate a PKCE ``code_verifier`` and its ``code_challenge``.
+
+    The verifier is a cryptographically random URL-safe string (43-128 chars as per
+    RFC 7636). The challenge is the base64url-encoded SHA-256 hash of the verifier.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(code_verifier, code_challenge)``
+    """
+    code_verifier = secrets.token_urlsafe(64)
+    digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
+    code_challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+    return code_verifier, code_challenge
+
+
+class _CallbackHandler(http.server.BaseHTTPRequestHandler):
+    """
+    Minimal HTTP handler that captures the OAuth2 callback query parameters.
+
+    The captured parameters are stored in ``self.server.callback_params``.
+    """
+
+    def do_GET(self) -> None:  # noqa: N802
+        parsed = urllib.parse.urlparse(self.path)
+        params = dict(urllib.parse.parse_qsl(parsed.query))
+        # Store on the server instance so the main thread can read them.
+        self.server.callback_params = params  # type: ignore[attr-defined]
+
+        if "error" in params:
+            body = (
+                "<html><body>"
+                "<h2>Authentication failed.</h2>"
+                f"<p>{params.get('error_description', params['error'])}</p>"
+                "<p>You may close this tab.</p>"
+                "</body></html>"
+            ).encode()
+        else:
+            body = (
+                b"<html><body>"
+                b"<h2>Authentication successful!</h2>"
+                b"<p>You may close this tab and return to your terminal.</p>"
+                b"</body></html>"
+            )
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args: Any) -> None:  # noqa: D102
+        # Silence the default access log so it doesn't pollute the terminal.
+        pass
+
+
+def _wait_for_callback(port: int) -> dict[str, str]:
+    """
+    Start a one-shot local HTTP server and block until the OAuth2 provider redirects the
+    browser to ``http://127.0.0.1:<port>/callback``.
+
+    Parameters
+    ----------
+    port : int
+        The port to listen on.
+
+    Returns
+    -------
+    dict[str, str]
+        The query parameters extracted from the callback URL.
+
+    Raises
+    ------
+    TimeoutError
+        If no callback is received within ``_BROWSER_TIMEOUT`` seconds.
+    RuntimeError
+        If the provider returns an error parameter.
+    """
+    server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+    server.callback_params = {}  # type: ignore[attr-defined]
+    server.timeout = _BROWSER_TIMEOUT
+
+    # Handle exactly one request.
+    server.handle_request()
+    server.server_close()
+
+    params: dict[str, str] = server.callback_params  # type: ignore[attr-defined]
+    if not params:
+        raise TimeoutError(
+            f"No callback received within {_BROWSER_TIMEOUT} seconds. "
+            "Please try running [code]nextmv login[/code] again."
+        )
+    if "error" in params:
+        raise RuntimeError(f"Authorization error: {params.get('error_description', params['error'])}")
+    return params
+
+
+def _exchange_code_for_tokens(
+    token_endpoint: str,
+    code: str,
+    code_verifier: str,
+    redirect_uri: str,
+) -> dict[str, Any]:
+    """
+    Exchange an authorization ``code`` for tokens.
+
+    Parameters
+    ----------
+    token_endpoint : str
+        The token endpoint URL.
+    code : str
+        The authorization code received from the provider.
+    code_verifier : str
+        The PKCE code verifier generated at the start of the flow.
+    redirect_uri : str
+        The redirect URI used in the authorization request (must match exactly).
+
+    Returns
+    -------
+    dict[str, Any]
+        The raw token response body augmented with an ``expires_at`` field
+        (ISO-8601 UTC string).
+
+    Raises
+    ------
+    requests.HTTPError
+        If the token endpoint returns a non-2xx response.
+    """
+    payload = {
+        "grant_type": "authorization_code",
+        "client_id": CLIENT_ID,
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "code_verifier": code_verifier,
+    }
+    resp = requests.post(
+        token_endpoint,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=30,
+    )
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        raise requests.HTTPError(f"Token exchange failed ({resp.status_code}): {resp.text}") from exc
+
+    tokens: dict[str, Any] = resp.json()
+    # Compute and store an absolute expiry timestamp.
+    expires_in: int = tokens.get("expires_in", 3600)
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=expires_in)
+    tokens["expires_at"] = expires_at.isoformat()
+    return tokens
+
+
+# >>> PKCE flow — public API
+
+
+def refresh_tokens(
+    refresh_token: str,
+    token_endpoint: str | None = None,
+) -> dict[str, Any]:
+    """
+    Use a refresh token to obtain a new access token.
+
+    Parameters
+    ----------
+    refresh_token : str
+        A valid refresh token previously obtained via :func:`run_pkce_flow`.
+    token_endpoint : str | None
+        The token endpoint URL.  If ``None``, the OIDC discovery document is fetched to
+        resolve it.
+
+    Returns
+    -------
+    dict[str, Any]
+        The refreshed token response body augmented with an ``expires_at`` field
+        (ISO-8601 UTC string).
+
+    Raises
+    ------
+    requests.HTTPError
+        If the token endpoint returns a non-2xx response.
+    """
+    if token_endpoint is None:
+        _, token_endpoint = _discover_endpoints()
+
+    payload = {
+        "grant_type": "refresh_token",
+        "client_id": CLIENT_ID,
+        "refresh_token": refresh_token,
+    }
+    resp = requests.post(
+        token_endpoint,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=30,
+    )
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        raise requests.HTTPError(f"Token refresh failed ({resp.status_code}): {resp.text}") from exc
+
+    tokens: dict[str, Any] = resp.json()
+    expires_in: int = tokens.get("expires_in", 3600)
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=expires_in)
+    tokens["expires_at"] = expires_at.isoformat()
+    # The Cognito refresh response does not include a new refresh_token;
+    # preserve the existing one.
+    if "refresh_token" not in tokens:
+        tokens["refresh_token"] = refresh_token
+    return tokens
+
+
+def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
+    """
+    Execute the full PKCE authorization-code flow for the given profile.
+
+    This function:
+
+    1. Resolves the OIDC endpoints.
+    2. Generates a PKCE pair.
+    3. Picks a free local port for the redirect callback.
+    4. Opens the system browser at the authorization URL.
+    5. Waits for the redirect callback (up to ``_BROWSER_TIMEOUT`` seconds).
+    6. Exchanges the authorization code for tokens.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name (used only for display purposes; does not affect the
+        flow itself).
+
+    Returns
+    -------
+    dict[str, Any]
+        A token dict containing at minimum ``access_token``, ``token_type``,
+        and ``expires_at``.  Also contains ``refresh_token`` and ``id_token``
+        when the provider issues them.
+
+    Raises
+    ------
+    TimeoutError
+        If the user does not complete the browser flow within the timeout.
+    RuntimeError
+        If the provider returns an error.
+    requests.HTTPError
+        If the token exchange request fails.
+    """
+    auth_endpoint, token_endpoint = _discover_endpoints()
+    code_verifier, code_challenge = _generate_pkce_pair()
+    redirect_uri = "http://127.0.0.1:56734/callback"
+
+    params = {
+        "response_type": "code",
+        "client_id": CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "scope": SCOPES,
+        "code_challenge_method": "S256",
+        "code_challenge": code_challenge,
+    }
+    authorization_url = auth_endpoint + "?" + urllib.parse.urlencode(params)
+
+    # Start the callback listener in a background thread so we can open the
+    # browser on the main thread without blocking.
+    callback_result: dict[str, str] = {}
+    exc_holder: list[Exception] = []
+
+    def _listen() -> None:
+        try:
+            result = _wait_for_callback(CALLBACK_PORT)
+            callback_result.update(result)
+        except Exception as exc:
+            exc_holder.append(exc)
+
+    listener = threading.Thread(target=_listen, daemon=True)
+    listener.start()
+
+    webbrowser.open(authorization_url)
+
+    listener.join(timeout=_BROWSER_TIMEOUT + 5)
+
+    if exc_holder:
+        raise exc_holder[0]
+
+    code = callback_result.get("code")
+    if not code:
+        raise RuntimeError("No authorization code received. Please try running [code]nextmv login[/code] again.")
+
+    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri)

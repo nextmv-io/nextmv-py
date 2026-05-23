@@ -6,8 +6,9 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from nextmv.cli.configuration.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys, obscure_api_key
+from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import error
+from nextmv.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys
 
 # Set up subcommand application.
 app = typer.Typer()
