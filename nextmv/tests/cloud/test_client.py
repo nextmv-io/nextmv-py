@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import requests
@@ -440,3 +441,112 @@ class TestUploadToPresignedUrlUnreachableServer(unittest.TestCase):
             with self.assertRaises(requests.exceptions.Timeout) as ctx:
                 client.upload_to_presigned_url(data={"key": "value"}, url="https://storage.example.com/presigned")
             self.assertIs(ctx.exception.__cause__, original)
+
+
+# Shared config / env helpers for auth-flow tests.
+_AUTH_FLOW_CONFIG = {
+    "my-auth-profile": {
+        "profile_type": "auth_flow",
+        "endpoint": "api.example.io",
+    }
+}
+
+
+def _clean_env(env):
+    """Remove all auth/profile env vars so tests are fully config-driven."""
+    for key in ("NEXTMV_API_KEY", "NEXTMV_PROFILE", "NEXTMV_ENDPOINT"):
+        env.pop(key, None)
+
+
+class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
+    """Tests for Client.__resolve_bearer_token_for_auth_flow (via __post_init__)."""
+
+    def test_auth_flow_profile_uses_stored_token(self):
+        """A valid, non-expired token is used directly as the bearer token."""
+        tokens = {"access_token": "stored-access", "expires_at": _future()}
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=False):
+                    with patch.dict(os.environ) as env:
+                        _clean_env(env)
+                        client = Client(profile="my-auth-profile")
+                        self.assertEqual(client.api_key, "stored-access")
+
+    def test_auth_flow_profile_prefers_id_token(self):
+        """When both id_token and access_token are present, id_token is preferred."""
+        tokens = {"access_token": "access", "id_token": "id-tok", "expires_at": _future()}
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=False):
+                    with patch.dict(os.environ) as env:
+                        _clean_env(env)
+                        client = Client(profile="my-auth-profile")
+                        self.assertEqual(client.api_key, "id-tok")
+
+    def test_expired_token_triggers_refresh_and_save(self):
+        """An expired token is refreshed, saved, and the new access token is used."""
+        old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
+        new_tokens = {"access_token": "new", "expires_at": _future()}
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=True):
+                    with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
+                        with patch("nextmv.cloud.client.save_tokens") as mock_save:
+                            with patch.dict(os.environ) as env:
+                                _clean_env(env)
+                                client = Client(profile="my-auth-profile")
+                                self.assertEqual(client.api_key, "new")
+                                mock_refresh.assert_called_once_with("rt")
+                                mock_save.assert_called_once_with("my-auth-profile", new_tokens)
+
+    def test_expired_token_without_refresh_token_raises(self):
+        """Expired token with no refresh_token raises ValueError."""
+        tokens = {"access_token": "old", "expires_at": _past()}  # no refresh_token
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=True):
+                    with patch.dict(os.environ) as env:
+                        _clean_env(env)
+                        with self.assertRaises(ValueError) as ctx:
+                            Client(profile="my-auth-profile")
+                        self.assertIn("no refresh token", str(ctx.exception))
+
+    def test_missing_tokens_raises(self):
+        """No stored tokens raises ValueError directing the user to nextmv login."""
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=None):
+                with patch.dict(os.environ) as env:
+                    _clean_env(env)
+                    with self.assertRaises(ValueError) as ctx:
+                        Client(profile="my-auth-profile")
+                    self.assertIn("nextmv login", str(ctx.exception))
+
+    def test_refresh_failure_raises(self):
+        """A failed token refresh raises ValueError with a helpful message."""
+        tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
+        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+            with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=True):
+                    with patch("nextmv.cloud.client.refresh_tokens", side_effect=RuntimeError("network error")):
+                        with patch.dict(os.environ) as env:
+                            _clean_env(env)
+                            with self.assertRaises(ValueError) as ctx:
+                                Client(profile="my-auth-profile")
+                            self.assertIn("network error", str(ctx.exception))
+
+    def test_api_key_profile_uses_api_key_path(self):
+        """A standard api_key profile is unaffected and still resolves the API key."""
+        config = {"my-api-profile": {"apikey": "sk-123", "endpoint": "api.example.io"}}
+        with patch("nextmv.cloud.client._load_config", return_value=config):
+            with patch.dict(os.environ) as env:
+                _clean_env(env)
+                client = Client(profile="my-api-profile")
+                self.assertEqual(client.api_key, "sk-123")
+
+
+def _future() -> str:
+    return (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat()
+
+
+def _past() -> str:
+    return (datetime.now(tz=timezone.utc) - timedelta(hours=1)).isoformat()
