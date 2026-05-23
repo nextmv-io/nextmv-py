@@ -9,17 +9,19 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 
 from nextmv.cli.configuration.config import (
-    API_KEY_KEY,
     CONFIG_DIR,
+    GO_CLI_PATH,
+    obscure_api_key,
+)
+from nextmv.cli.main import _go_cli_exists, _remove_go_cli, app
+from nextmv.config import (
+    API_KEY_KEY,
     CONFIG_FILE,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
-    GO_CLI_PATH,
     load_config,
-    obscure_api_key,
     save_config,
 )
-from nextmv.cli.main import _go_cli_exists, _remove_go_cli, app
 from typer.testing import CliRunner
 
 
