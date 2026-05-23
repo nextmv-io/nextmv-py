@@ -30,6 +30,14 @@ class TestTokenDir(unittest.TestCase):
         path = token_dir("  prod  ")
         self.assertTrue(path.name == "prod")
 
+    def test_traversal_rejected(self):
+        with self.assertRaises(ValueError):
+            token_dir("../evil")
+
+    def test_absolute_path_rejected(self):
+        with self.assertRaises(ValueError):
+            token_dir("/etc/passwd")
+
 
 class TestSaveLoadTokens(unittest.TestCase):
     """Tests for save_tokens / load_tokens round-trip."""

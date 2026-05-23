@@ -623,30 +623,25 @@ class Client:
         # Auth-flow profile detected.
         tokens = load_tokens(profile)
         display = profile if profile is not None else "default"
+        login_cmd = f"nextmv login{' --profile ' + display if profile else ''}"
 
         if tokens is None:
-            raise ValueError(
-                f"No tokens found for auth_flow profile [magenta]{display}[/magenta]. "
-                f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] first."
-            )
+            raise ValueError(f"No tokens found for auth_flow profile '{display}'. Please run '{login_cmd}' first.")
 
         if is_token_expired(tokens):
             refresh_token = tokens.get("refresh_token")
             if not refresh_token:
                 raise ValueError(
-                    f"Access token for profile [magenta]{display}[/magenta] has expired and no refresh token "
-                    "is available. "
-                    f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
-                    "to re-authenticate."
+                    f"Access token for profile '{display}' has expired and no refresh token is available. "
+                    f"Please run '{login_cmd}' to re-authenticate."
                 )
             try:
                 tokens = refresh_tokens(refresh_token)
                 save_tokens(profile, tokens)
             except Exception as exc:
                 raise ValueError(
-                    f"Failed to refresh access token for profile [magenta]{display}[/magenta]: {exc}. "
-                    f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
-                    "to re-authenticate."
+                    f"Failed to refresh access token for profile '{display}': {exc}. "
+                    f"Please run '{login_cmd}' to re-authenticate."
                 ) from exc
 
         # Prefer the id_token when present — API Gateway Cognito authorizers
@@ -655,9 +650,8 @@ class Client:
         token = tokens.get("id_token") or tokens.get("access_token")
         if not token:
             raise ValueError(
-                f"Stored tokens for profile [magenta]{display}[/magenta] do not contain an access token. "
-                f"Please run [code]nextmv login{'  --profile ' + display if profile else ''}[/code] "
-                "to re-authenticate."
+                f"Stored tokens for profile '{display}' do not contain an access token. "
+                f"Please run '{login_cmd}' to re-authenticate."
             )
         return token
 

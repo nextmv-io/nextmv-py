@@ -104,7 +104,10 @@ def token_dir(profile: str | None) -> Path:
         The directory path ``~/.nextmv/auth/<name>/``.
     """
     name = _DEFAULT_DIR_NAME if (profile is None or profile.strip().lower() == "default") else profile.strip()
-    return AUTH_DIR / name
+    path = (AUTH_DIR / name).resolve()
+    if not path.is_relative_to(AUTH_DIR.resolve()):
+        raise ValueError(f"Invalid profile name {name!r}: must not escape the auth directory.")
+    return path
 
 
 def _token_path(profile: str | None) -> Path:
@@ -149,8 +152,12 @@ def save_tokens(profile: str | None, tokens: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with path.open("w") as fh:
         json.dump(tokens, fh, indent=2)
-    # Restrict read access to the owner only.
-    path.chmod(0o600)
+    # Restrict read access to the owner only.  Best-effort: silently ignored on
+    # filesystems or platforms that don't support POSIX permissions (e.g. Windows).
+    try:
+        path.chmod(0o600)
+    except (OSError, PermissionError):
+        pass
 
 
 def is_token_expired(tokens: dict[str, Any]) -> bool:
@@ -436,7 +443,7 @@ def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
 
     1. Resolves the OIDC endpoints.
     2. Generates a PKCE pair.
-    3. Picks a free local port for the redirect callback.
+    3. Listens for the redirect callback on the fixed port ``CALLBACK_PORT`` (``56734``).
     4. Opens the system browser at the authorization URL.
     5. Waits for the redirect callback (up to ``_BROWSER_TIMEOUT`` seconds).
     6. Exchanges the authorization code for tokens.

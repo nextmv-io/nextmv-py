@@ -1,10 +1,5 @@
 """
 This module contains configuration utilities for the Nextmv CLI.
-
-Shared configuration constants and pure helpers (profile type resolution,
-load/save, etc.) live in ``nextmv.config``.  This module re-exports the
-symbols that CLI sub-commands commonly need, and adds CLI-specific helpers
-(``build_*``, ``obscure_api_key``) that depend on typer and cloud objects.
 """
 
 import platform
