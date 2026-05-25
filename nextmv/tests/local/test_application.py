@@ -499,7 +499,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         self.assertEqual(result.metadata.error, "Test error message")
 
     # Tests for run_result
-    @patch.object(Application, "run_metadata")
+    @patch.object(Application, "run_information")
     @patch.object(Application, "_Application__run_result")
     def test_run_result_success(self, mock_run_result, mock_run_metadata):
         """Test successful run_result call."""
@@ -521,7 +521,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         )
         self.assertEqual(result, mock_result)
 
-    @patch.object(Application, "run_metadata")
+    @patch.object(Application, "run_information")
     @patch.object(Application, "_Application__run_result")
     def test_run_result_default_output_dir(self, mock_run_result, mock_run_metadata):
         """Test run_result with default output directory."""
@@ -542,7 +542,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         self.assertEqual(result, mock_result)
 
     # Tests for run_result_with_polling
-    @patch.object(Application, "run_metadata")
+    @patch.object(Application, "run_information")
     @patch.object(Application, "_Application__run_result")
     @patch("nextmv.local.application.poll")
     def test_run_result_with_polling_success(self, mock_poll, mock_run_result, mock_run_metadata):
@@ -572,7 +572,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
 
         self.assertEqual(result, mock_result)
 
-    @patch.object(Application, "run_metadata")
+    @patch.object(Application, "run_information")
     @patch.object(Application, "_Application__run_result")
     @patch("nextmv.local.application.poll")
     def test_run_result_with_polling_custom_options(self, mock_poll, mock_run_result, mock_run_metadata):
@@ -603,7 +603,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
             run_id=self.test_run_id, run_information=mock_run_info, output_dir_path="/custom/path"
         )
 
-    @patch.object(Application, "run_metadata")
+    @patch.object(Application, "run_information")
     def test_run_result_with_polling_status_check(self, mock_run_metadata):
         """Test that polling function correctly checks for terminal statuses."""
 

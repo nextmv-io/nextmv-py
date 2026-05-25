@@ -232,7 +232,7 @@ def new_run(
                 input_type=run_config["format"]["input"]["type"],
             ),
             format_output=FormatOutput(
-                output_type=run_config["format"]["output"]["type"],
+                output_type=run_config["format"]["input"]["type"],
             ),
         ),
         initiated_at=created_at,
