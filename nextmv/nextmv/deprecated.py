@@ -13,6 +13,10 @@ functionality is removed completely.
 import warnings
 
 
+class NextmvDeprecationWarning(DeprecationWarning):
+    """Deprecation warning emitted by the Nextmv SDK."""
+
+
 def deprecated(name: str, reason: str) -> None:
     """
     Mark functionality as deprecated with a warning message.
@@ -28,11 +32,6 @@ def deprecated(name: str, reason: str) -> None:
         The reason why the functionality is being deprecated, possibly
         with suggestions for alternative approaches.
 
-    Notes
-    -----
-    This function temporarily changes the warning filter to ensure the
-    deprecation warning is shown, then resets it afterward.
-
     Examples
     --------
     >>> def some_function():
@@ -40,10 +39,8 @@ def deprecated(name: str, reason: str) -> None:
     ...     # function implementation
     """
 
-    warnings.simplefilter("always", DeprecationWarning)
     warnings.warn(
         f"{name}: {reason}. This functionality will be removed in the next major release.",
-        category=DeprecationWarning,
-        stacklevel=2,
+        category=NextmvDeprecationWarning,
+        stacklevel=3,
     )
-    warnings.simplefilter("default", DeprecationWarning)

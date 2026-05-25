@@ -453,7 +453,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
 
         self._create_run_info_file(status="succeeded")
 
-        result = self.app.run_metadata(self.test_run_id)
+        result = self.app.run_information(self.test_run_id)
 
         self.assertIsInstance(result, RunInformation)
         self.assertEqual(result.id, self.test_run_id)
@@ -465,14 +465,14 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         shutil.rmtree(self.runs_dir)
 
         with self.assertRaises(ValueError) as context:
-            self.app.run_metadata(self.test_run_id)
+            self.app.run_information(self.test_run_id)
 
         self.assertIn("`.nextmv/runs` dir does not exist", str(context.exception))
 
     def test_run_metadata_no_run_dir(self):
         """Test run_metadata when specific run directory doesn't exist."""
         with self.assertRaises(ValueError) as context:
-            self.app.run_metadata("non-existent-run")
+            self.app.run_information("non-existent-run")
 
         self.assertIn("run dir does not exist", str(context.exception))
 
@@ -483,7 +483,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
         os.makedirs(os.path.join(self.runs_dir, non_existent_run_id))
 
         with self.assertRaises(ValueError) as context:
-            self.app.run_metadata(non_existent_run_id)
+            self.app.run_information(non_existent_run_id)
 
         self.assertIn("file does not exist", str(context.exception))
 
@@ -492,7 +492,7 @@ class TestApplicationLocalRunMethods(unittest.TestCase):
 
         self._create_run_info_file(status="failed", error="Test error message")
 
-        result = self.app.run_metadata(self.test_run_id)
+        result = self.app.run_information(self.test_run_id)
 
         self.assertIsInstance(result, RunInformation)
         self.assertEqual(result.metadata.status_v2, "failed")

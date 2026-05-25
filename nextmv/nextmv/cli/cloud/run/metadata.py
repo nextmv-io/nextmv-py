@@ -8,14 +8,14 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json, success, warning
 from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
 
 
-@app.command()
+@app.command(deprecated=True)
 def metadata(
     app_id: AppIDOption,
     run_id: RunIDOption,
@@ -31,6 +31,8 @@ def metadata(
     profile: ProfileOption = None,
 ) -> None:
     """
+    This command is deprecated, use [code]nextmv cloud run information[/code] instead.
+
     Get the metadata of a Nextmv Cloud application run.
 
     By default, the metadata is fetched and printed to [magenta]stdout[/magenta].
@@ -50,6 +52,12 @@ def metadata(
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
         $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
+
+    warning(
+        "The [code]nextmv cloud run metadata[/code] command is deprecated and "
+        "will be removed in the next major release. "
+        "Please use the [code]nextmv cloud run information[/code] command instead."
+    )
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Getting run metadata...")

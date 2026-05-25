@@ -252,7 +252,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             logs = app.run_logs(run_id=run.id)
             assert logs.log is not None and logs.log != ""
 
-            info = app.run_metadata(run_id=run.id)
+            info = app.run_information(run_id=run.id)
             assert info.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
 
             if info.metadata.status_v2 == nextmv.StatusV2.succeeded:

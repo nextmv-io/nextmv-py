@@ -30,7 +30,19 @@ from nextmv.local.local import (
     calculate_files_size,
 )
 from nextmv.manifest import Manifest
-from nextmv.run import Format, FormatInput, Metadata, RunInformation, StatusV2
+from nextmv.run import (
+    Format,
+    FormatInput,
+    FormatOutput,
+    Metadata,
+    OptionSummary,
+    RunInformation,
+    RunOptions,
+    RunTrackingMetadata,
+    RunType,
+    RunTypeConfiguration,
+    StatusV2,
+)
 from nextmv.safe import safe_id
 
 
@@ -92,6 +104,7 @@ def run(
         run_config=run_config,
         name=name,
         description=description,
+        options=options,
     )
     record_input(
         run_dir=run_dir,
@@ -157,6 +170,7 @@ def new_run(
     run_config: dict[str, Any],
     name: str | None = None,
     description: str | None = None,
+    options: dict[str, Any] | None = None,
 ) -> str:
     """
     Initializes a new run.
@@ -177,6 +191,8 @@ def new_run(
         The name for the run, by default None.
     description : Optional[str], optional
         The description for the run, by default None.
+    options : Optional[dict[str, Any]], optional
+        Additional options for the run, by default None.
 
     Returns
     -------
@@ -199,6 +215,7 @@ def new_run(
 
     # Create the run information file.
     created_at = datetime.now(timezone.utc)
+    req_opt = options if options is not None else {}
     metadata = Metadata(
         application_id=app_id,
         application_instance_id="",
@@ -206,14 +223,42 @@ def new_run(
         created_at=created_at,
         duration=0.0,
         error="",
-        input_size=0.0,
-        output_size=0.0,
+        execution_class="local",
+        execution_duration=0.0,
+        experiment_id="",
+        experiment_type="",
         format=Format(
             format_input=FormatInput(
                 input_type=run_config["format"]["input"]["type"],
             ),
+            format_output=FormatOutput(
+                output_type=run_config["format"]["output"]["type"],
+            ),
         ),
+        initiated_at=created_at,
+        input_size=0.0,
+        integration=None,
+        metrics=None,
+        options=RunOptions(
+            active_options=req_opt,
+            options_summary=[OptionSummary(name=k, source="run", value=v) for k, v in req_opt.items()],
+            request_options=req_opt,
+        ),
+        output_size=0.0,
+        queuing_disabled=True,
+        queuing_priority=0,
+        run_type=RunTypeConfiguration(
+            definition_id="",
+            reference_id="",
+            run_type=RunType.STANDARD,
+        ),
+        runtime="local",
+        secrets_collection_id="",
         status_v2=StatusV2.queued,
+        tracking=RunTrackingMetadata(
+            cloned_run_id="",
+            input_id="",
+        ),
     )
 
     if description is None:

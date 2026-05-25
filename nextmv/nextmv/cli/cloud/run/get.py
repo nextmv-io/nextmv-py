@@ -152,7 +152,7 @@ def handle_outputs(
         return
 
     # Get the run metadata to determine how to operate with the output.
-    run_info = cloud_app.run_metadata(run_id=run_id)
+    run_info = cloud_app.run_information(run_id=run_id)
     content_format = run_info.metadata.format.format_output.output_type
 
     # Build kwargs for the result retrieval.

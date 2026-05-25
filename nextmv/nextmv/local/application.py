@@ -23,7 +23,7 @@ from typing import Any
 import rich
 from pydantic import Field
 
-from nextmv import cloud
+from nextmv import cloud, deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
@@ -458,7 +458,7 @@ class Application(BaseModel):
         runs = []
         for run_id in run_ids:
             try:
-                info = self.run_metadata(run_id=run_id)
+                info = self.run_information(run_id=run_id)
             except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as e:
                 # Skip runs with expected errors (missing/corrupted files)
                 log(f"Warning: Skipping run '{run_id}' due to error: {e}")
@@ -737,6 +737,67 @@ class Application(BaseModel):
         self.app_id = entry.app_id
         self.src = entry.src
 
+    def run_information(self, run_id: str) -> RunInformation:
+        """
+        Get the information of a local run, including its metadata.
+
+        This method is the local equivalent to
+        `cloud.Application.run_information`, which retrieves the information of
+        a remote run in Nextmv Cloud. This method is used to get the
+        information of a run that was executed locally using the `new_run` or
+        `new_run_with_result` method.
+
+        Retrieves information about a run without including the run output.
+        This is useful when you only need the run's status, metadata, and other
+        non-output attributes.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve information for.
+
+        Returns
+        -------
+        RunInformation
+            Information of the run, including metadata.
+
+        Raises
+        ------
+        ValueError
+            If the `.nextmv/runs` directory does not exist at the application
+            source, or if the specified run ID does not exist.
+
+        Examples
+        --------
+        >>> info = app.run_information("run-789")
+        >>> print(info.metadata.status_v2)
+        StatusV2.succeeded
+        """
+
+        runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
+        if not os.path.exists(runs_dir):
+            raise ValueError(f"`.nextmv/runs` dir does not exist at app source: {self.src}")
+
+        run_dir = os.path.join(runs_dir, run_id)
+        if not os.path.exists(run_dir):
+            raise ValueError(f"`{run_id}` run dir does not exist at: {runs_dir}")
+
+        info_file = os.path.join(run_dir, f"{run_id}.json")
+        if not os.path.exists(info_file):
+            raise ValueError(f"`{info_file}` file does not exist at: {run_dir}")
+
+        with open(info_file) as f:
+            info_dict = json.load(f)
+
+        info = RunInformation.from_dict(info_dict)
+
+        # Attach metrics if they are available.
+        metrics = self.__run_metrics(run_id)
+        if metrics is not None:
+            info.metadata.metrics = metrics
+
+        return info
+
     def run_input(self, run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | str | None:
         """
         Get the input of a local run.
@@ -775,7 +836,7 @@ class Application(BaseModel):
 
         # See whether we can attach the output directly or need to save to the given
         # directory
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
         input_type = run_information.metadata.format.format_input.input_type
         if input_type != ContentFormat.JSON and (not output_dir_path or output_dir_path == ""):
             raise ValueError(
@@ -929,7 +990,7 @@ class Application(BaseModel):
 
             # Check if the run has finalized. If so, all logs are guaranteed
             # to have been flushed to the file before this check returned.
-            run_information = self.run_metadata(run_id=run_id)
+            run_information = self.run_information(run_id=run_id)
             is_done = run_information.metadata.run_is_finalized()
 
             # Read the current log file contents and emit only new lines.
@@ -954,6 +1015,9 @@ class Application(BaseModel):
 
     def run_metadata(self, run_id: str) -> RunInformation:
         """
+        !!! warning
+            `run_metadata` is deprecated, use `run_information` instead.
+
         Get the metadata of a local run.
 
         This method is the local equivalent to
@@ -987,6 +1051,11 @@ class Application(BaseModel):
         >>> print(metadata.metadata.status_v2)
         StatusV2.succeeded
         """
+
+        deprecated(
+            name="Application.run_metadata",
+            reason="`Application.run_metadata` is deprecated, use `Application.run_information` instead",
+        )
 
         runs_dir = os.path.join(self.src, NEXTMV_DIR, RUNS_KEY)
         if not os.path.exists(runs_dir):
@@ -1050,7 +1119,7 @@ class Application(BaseModel):
         'succeeded'
         """
 
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
 
         return self.__run_result(
             run_id=run_id,
@@ -1116,7 +1185,7 @@ class Application(BaseModel):
         """
 
         def polling_func() -> tuple[Any, bool]:
-            run_information = self.run_metadata(run_id=run_id)
+            run_information = self.run_information(run_id=run_id)
             if run_information.metadata.run_is_finalized():
                 return run_information, True
 

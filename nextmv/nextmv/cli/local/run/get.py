@@ -153,7 +153,7 @@ def handle_outputs(
     if not wait and (output is None or output == "") and not skip_wait_check:
         return
 
-    run_info = local_app.run_metadata(run_id=run_id)
+    run_info = local_app.run_information(run_id=run_id)
     status = run_info.metadata.status_v2
     if status in {StatusV2.failed, StatusV2.canceled}:
         warning(

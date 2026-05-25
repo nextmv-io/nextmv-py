@@ -939,7 +939,7 @@ class Metadata(BaseModel):
     """Duration of the run in milliseconds."""
     error: str
     """Error message if the run failed."""
-    execution_class: str
+    execution_class: str | None = None
     """Execution class for the run."""
     execution_duration: float | None = None
     """Duration of the actual run execution in milliseconds."""
@@ -961,13 +961,13 @@ class Metadata(BaseModel):
     """Options used during the run, which can come from various sources."""
     output_size: float
     """Size of the output in bytes."""
-    queuing_disabled: bool
+    queuing_disabled: bool | None = None
     """Whether the run was disabled from queuing."""
-    queuing_priority: int
+    queuing_priority: int | None = None
     """Priority of the run in the queue."""
-    run_type: RunTypeConfiguration
+    run_type: RunTypeConfiguration | None = None
     """Configuration for the type of the run."""
-    runtime: str
+    runtime: str | None = None
     """Runtime environment for the run."""
     secrets_collection_id: str | None = None
     """The secrets collection ID associated with the run, if any."""

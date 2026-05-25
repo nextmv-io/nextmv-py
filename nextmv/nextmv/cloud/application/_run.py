@@ -906,7 +906,8 @@ class ApplicationRunMixin:
         Get the information of a run, including metadata.
 
         Retrieves information about a run without including the run output.
-        This is useful when you only need the run's status and metadata.
+        This is useful when you only need the run's status, metadata and other
+        non-output attributes.
 
         Parameters
         ----------
@@ -976,7 +977,7 @@ class ApplicationRunMixin:
         >>> print(input_data)
         {'locations': [...], 'vehicles': [...]}
         """
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
 
         query_params = None
         large = False
@@ -1254,7 +1255,7 @@ class ApplicationRunMixin:
         """
 
         # Get the run information to check how we need to handle the output.
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
         output_format = run_information.metadata.format.format_output.output_type
         is_json = output_format == ContentFormat.JSON
 
@@ -1340,7 +1341,7 @@ class ApplicationRunMixin:
         'succeeded'
         """
 
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
 
         return self.__run_result(
             run_id=run_id,
@@ -1400,7 +1401,7 @@ class ApplicationRunMixin:
         """
 
         def polling_func() -> tuple[Any, bool]:
-            run_information = self.run_metadata(run_id=run_id)
+            run_information = self.run_information(run_id=run_id)
             if run_information.metadata.run_is_finalized():
                 return run_information, True
 

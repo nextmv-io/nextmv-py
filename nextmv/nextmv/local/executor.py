@@ -507,6 +507,7 @@ def _process_run_information(run_id: str, run_dir: str, result: subprocess.Compl
 
     # Update the run info file.
     info["metadata"]["duration"] = duration
+    info["metadata"]["execution_duration"] = duration
     info["metadata"]["status_v2"] = status
     info["metadata"]["error"] = error
 
