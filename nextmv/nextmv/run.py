@@ -3,40 +3,62 @@ This module contains definitions for an app run.
 
 Classes
 -------
-Metadata
-    Metadata of a run, whether it was successful or not.
-RunInformation
-    Information of a run.
 ErrorLog
     Error log of a run, when it was not successful.
-RunResult
-    Result of a run, whether it was successful or not.
-RunLog
-    Log of a run.
+ExternalRunResult
+    Result of a run used to configure a new application run as an
+    external one.
+Format
+    Format for a run configuration.
 FormatInput
     Input format for a run configuration.
 FormatOutput
     Output format for a run configuration.
-Format
-    Format for a run configuration.
+Metadata
+    Metadata of a run, whether it was successful or not.
+MetricsIndicator
+    Metrics indicator of a run.
+OptionSummary
+    The summary of an option that was used in a run.
+OptionsSummaryItem
+    Summary item for options used in a run.
+Run
+    Information about a run in the Nextmv platform.
+RunConfiguration
+    Configuration for an app run.
+RunInfoMetrics
+    Metrics information for a run.
+RunInfoStatistics
+    Statistics information for a run (deprecated).
+RunInformation
+    Information of a run.
+RunIntegration
+    Integration metadata associated with a run.
+RunLog
+    Log of a run.
+RunOptions
+    Options used during the execution of a run.
+RunQueuing
+    RunQueuing configuration for a run.
+RunResult
+    Result of a run, whether it was successful or not.
+RunTrackingMetadata
+    Metadata elements for tracking elements of the run.
 RunType
     The actual type of the run.
 RunTypeConfiguration
     Defines the configuration for the type of the run that is being executed
     on an application.
-RunQueuing
-    RunQueuing configuration for a run.
-RunConfiguration
-    Configuration for an app run.
-ExternalRunResult
-    Result of a run used to configure a new application run as an
-    external one.
-TrackedRunStatus
-    The status of a tracked run.
+StatisticsIndicator
+    Statistics indicator of a run (deprecated).
+SyncedRun
+    Information about a run that has been synced to a remote application.
+TimestampedRunLog
+    Timestamped log entry of a run.
 TrackedRun
     An external run that is tracked in the Nextmv platform.
-RunIntegration
-    Integration metadata associated with a run.
+TrackedRunStatus
+    The status of a tracked run.
 
 Functions
 ---------
