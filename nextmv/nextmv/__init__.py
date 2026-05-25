@@ -72,6 +72,7 @@ from .run import RunConfiguration as RunConfiguration
 from .run import RunInfoMetrics as RunInfoMetrics
 from .run import RunInformation as RunInformation
 from .run import RunInfoStatistics as RunInfoStatistics
+from .run import RunIntegration as RunIntegration
 from .run import RunLog as RunLog
 from .run import RunOptions as RunOptions
 from .run import RunQueuing as RunQueuing

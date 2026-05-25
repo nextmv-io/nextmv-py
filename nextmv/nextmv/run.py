@@ -35,6 +35,8 @@ TrackedRunStatus
     The status of a tracked run.
 TrackedRun
     An external run that is tracked in the Nextmv platform.
+RunIntegration
+    Integration metadata associated with a run.
 
 Functions
 ---------
@@ -847,6 +849,43 @@ class RunOptions(BaseModel):
     """Request options associated with the run."""
 
 
+class RunIntegration(BaseModel):
+    """
+    Integration metadata associated with a run.
+
+    You can import the `RunIntegration` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunIntegration
+    ```
+
+    Parameters
+    ----------
+    integration_id : str
+        The ID of the integration used for the run.
+    provider : str
+        The provider of the integration used for the run.
+    run_id : str
+        The ID of the run in the external system associated with the
+        integration.
+    details : Any, optional
+        Additional details about the integration run, if available.
+    """
+
+    integration_id: str = Field(
+        serialization_alias="id",
+        validation_alias=AliasChoices("id", "integration_id"),
+    )
+    """The ID of the integration used for the run."""
+    provider: str
+    """The provider of the integration used for the run."""
+    run_id: str
+    """The ID of the run in the external system associated with the
+    integration."""
+    details: Any | None = None
+    """Additional details about the integration run, if available."""
+
+
 class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
@@ -914,10 +953,12 @@ class Metadata(BaseModel):
     """Date and time when the run was started."""
     input_size: float
     """Size of the input in bytes."""
-    options: RunOptions | None = None
-    """Options used during the run, which can come from various sources."""
+    integration: RunIntegration | None = None
+    """Integration metadata associated with the run, if any."""
     metrics: dict[str, Any] | None = None
     """User defined metrics of the run."""
+    options: RunOptions | None = None
+    """Options used during the run, which can come from various sources."""
     output_size: float
     """Size of the output in bytes."""
     queuing_disabled: bool
@@ -928,6 +969,8 @@ class Metadata(BaseModel):
     """Configuration for the type of the run."""
     runtime: str
     """Runtime environment for the run."""
+    secrets_collection_id: str | None = None
+    """The secrets collection ID associated with the run, if any."""
     status_v2: StatusV2
     """Status of the run."""
     statistics: dict[str, Any] | None = None
