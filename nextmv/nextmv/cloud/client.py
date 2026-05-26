@@ -27,7 +27,7 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
-from nextmv.config import PROFILE_TYPE_AUTH_FLOW, get_profile_type
+from nextmv.config import PROFILE_TYPE_PKCE, get_profile_type
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -251,7 +251,7 @@ class Client:
 
         This method handles the logic for API key / token retrieval and header setup.
         For ``api_key`` profiles it resolves the API key from the constructor, environment
-        variables, or the configuration file.  For ``auth_flow`` profiles it loads the
+        variables, or the configuration file.  For ``pkce`` profiles it loads the
         stored OAuth2 access token (and silently refreshes it when expired).
 
         Raises
@@ -271,10 +271,10 @@ class Client:
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
 
-        # Determine whether this is an auth_flow profile.
-        bearer_token = self.__resolve_bearer_token_for_auth_flow(profile)
+        # Determine whether this is a pkce profile.
+        bearer_token = self.__resolve_bearer_token_for_pkce(profile)
         if bearer_token is not None:
-            # auth_flow profile: use the stored / refreshed access token.
+            # pkce profile: use the stored / refreshed access token.
             self.api_key = bearer_token
         else:
             # api_key profile (default): legacy resolution.
@@ -585,9 +585,9 @@ class Client:
                 f"status code {response.status_code} and message: {response.text}"
             ) from e
 
-    def __resolve_bearer_token_for_auth_flow(self, profile: str | None) -> str | None:
+    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> str | None:
         """
-        If the resolved profile is an ``auth_flow`` profile, load the stored
+        If the resolved profile is a ``pkce`` profile, load the stored
         access token and silently refresh it when it is expired.
 
         Returns ``None`` when the profile is an ``api_key`` profile (the
@@ -602,12 +602,12 @@ class Client:
         Returns
         -------
         str | None
-            The access token string, or ``None`` if not an auth_flow profile.
+            The access token string, or ``None`` if not a pkce profile.
 
         Raises
         ------
         ValueError
-            If the profile is ``auth_flow`` but no tokens are stored yet, or
+            If the profile is ``pkce`` but no tokens are stored yet, or
             if the refresh attempt fails (directing the user to run
             ``nextmv login``).
         """
@@ -617,16 +617,16 @@ class Client:
             return None
 
         ptype = get_profile_type(config, profile)
-        if ptype != PROFILE_TYPE_AUTH_FLOW:
+        if ptype != PROFILE_TYPE_PKCE:
             return None
 
-        # Auth-flow profile detected.
+        # Auth-flow (pkce) profile detected.
         tokens = load_tokens(profile)
         display = profile if profile is not None else "default"
         login_cmd = f"nextmv login{' --profile ' + display if profile else ''}"
 
         if tokens is None:
-            raise ValueError(f"No tokens found for auth_flow profile '{display}'. Please run '{login_cmd}' first.")
+            raise ValueError(f"No tokens found for pkce profile '{display}'. Please run '{login_cmd}' first.")
 
         if is_token_expired(tokens):
             refresh_token = tokens.get("refresh_token")

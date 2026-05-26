@@ -14,8 +14,8 @@ from nextmv.config import (
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     PROFILE_TYPE_API_KEY,
-    PROFILE_TYPE_AUTH_FLOW,
     PROFILE_TYPE_KEY,
+    PROFILE_TYPE_PKCE,
     load_config,
     save_config,
 )
@@ -65,7 +65,7 @@ def create(  # noqa: C901
             "-t",
             help=(
                 "The type of profile to create: [magenta]api_key[/magenta] (default) or "
-                "[magenta]auth_flow[/magenta] (browser-based PKCE login via [code]nextmv login[/code]). "
+                "[magenta]pkce[/magenta] (browser-based PKCE login via [code]nextmv login[/code]). "
                 "Ignored when [magenta]--api-key[/magenta] is provided."
             ),
             metavar="PROFILE_TYPE",
@@ -86,8 +86,8 @@ def create(  # noqa: C901
     - Configure a named [magenta]api_key[/magenta] profile.
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/dim]
 
-    - Configure a named [magenta]auth_flow[/magenta] profile (login separately via [code]nextmv login[/code]).
-        $ [dim]nextmv configuration create --profile hare --profile-type auth_flow[/dim]
+    - Configure a named [magenta]pkce[/magenta] profile (login separately via [code]nextmv login[/code]).
+        $ [dim]nextmv configuration create --profile hare --profile-type pkce[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -107,10 +107,10 @@ def create(  # noqa: C901
         resolved_type = PROFILE_TYPE_API_KEY
     elif profile_type is not None:
         profile_type = profile_type.strip().lower()
-        if profile_type not in (PROFILE_TYPE_API_KEY, PROFILE_TYPE_AUTH_FLOW):
+        if profile_type not in (PROFILE_TYPE_API_KEY, PROFILE_TYPE_PKCE):
             error(
                 f"Invalid profile type [magenta]{profile_type}[/magenta]. "
-                f"Must be [magenta]{PROFILE_TYPE_API_KEY}[/magenta] or [magenta]{PROFILE_TYPE_AUTH_FLOW}[/magenta]."
+                f"Must be [magenta]{PROFILE_TYPE_API_KEY}[/magenta] or [magenta]{PROFILE_TYPE_PKCE}[/magenta]."
             )
         resolved_type = profile_type
     else:
@@ -119,7 +119,7 @@ def create(  # noqa: C901
             msg="Select configuration type",
             choices=[
                 PROFILE_TYPE_API_KEY,
-                PROFILE_TYPE_AUTH_FLOW,
+                PROFILE_TYPE_PKCE,
             ],
             default=PROFILE_TYPE_API_KEY,
         )
@@ -146,7 +146,7 @@ def create(  # noqa: C901
             config[API_KEY_KEY] = api_key
             config[ENDPOINT_KEY] = endpoint
             # Remove profile_type key from default profile if previously set as
-            # auth_flow, since we are now explicitly creating an api_key profile.
+            # pkce, since we are now explicitly creating an api_key profile.
             config.pop(PROFILE_TYPE_KEY, None)
         else:
             if profile not in config:
@@ -164,18 +164,18 @@ def create(  # noqa: C901
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
 
-    # >>> For auth_flow profiles: just store the metadata; no API key needed.
+    # >>> For pkce profiles: just store the metadata; no API key needed.
 
     else:
         if profile is None:
-            config[PROFILE_TYPE_KEY] = PROFILE_TYPE_AUTH_FLOW
+            config[PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[ENDPOINT_KEY] = endpoint
             # Remove any previously stored api_key from the default profile.
             config.pop(API_KEY_KEY, None)
         else:
             if profile not in config:
                 config[profile] = {}
-            config[profile][PROFILE_TYPE_KEY] = PROFILE_TYPE_AUTH_FLOW
+            config[profile][PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[profile][ENDPOINT_KEY] = endpoint
             config[profile].pop(API_KEY_KEY, None)
 
@@ -183,7 +183,7 @@ def create(  # noqa: C901
 
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_AUTH_FLOW}[/magenta]", indents=1)
+        message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_PKCE}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
         message(

@@ -18,8 +18,8 @@ PROFILE_TYPE_KEY
     The YAML key used to store the profile type (``"profile_type"``).
 PROFILE_TYPE_API_KEY
     Profile type value for API-key-based authentication (``"api_key"``).
-PROFILE_TYPE_AUTH_FLOW
-    Profile type value for PKCE/OAuth2-based authentication (``"auth_flow"``).
+PROFILE_TYPE_PKCE
+    Profile type value for PKCE/OAuth2-based authentication (``"pkce"``).
 DEFAULT_ENDPOINT
     The default API endpoint (``"api.cloud.nextmv.io"``).
 """
@@ -40,7 +40,7 @@ PROFILE_TYPE_KEY = "profile_type"
 
 # Profile type values
 PROFILE_TYPE_API_KEY = "api_key"
-PROFILE_TYPE_AUTH_FLOW = "auth_flow"
+PROFILE_TYPE_PKCE = "pkce"
 
 # Defaults
 DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
@@ -109,7 +109,7 @@ def get_profile_type(config: dict, profile: str | None) -> str:
     Returns
     -------
     str
-        Either ``PROFILE_TYPE_API_KEY`` or ``PROFILE_TYPE_AUTH_FLOW``.
+        Either ``PROFILE_TYPE_API_KEY`` or ``PROFILE_TYPE_PKCE`` (``"pkce"``).
     """
     if profile is None:
         return config.get(PROFILE_TYPE_KEY, PROFILE_TYPE_API_KEY)
@@ -119,10 +119,10 @@ def get_profile_type(config: dict, profile: str | None) -> str:
     return profile_data.get(PROFILE_TYPE_KEY, PROFILE_TYPE_API_KEY)
 
 
-def list_auth_flow_profiles(config: dict) -> list[str | None]:
+def list_pkce_profiles(config: dict) -> list[str | None]:
     """
     Returns a list of profile names (or ``None`` for the default profile)
-    whose profile type is ``auth_flow``.
+    whose profile type is ``pkce``.
 
     Parameters
     ----------
@@ -136,12 +136,12 @@ def list_auth_flow_profiles(config: dict) -> list[str | None]:
         (representing the default profile).
     """
     result: list[str | None] = []
-    if config.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_AUTH_FLOW:
+    if config.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_PKCE:
         result.append(None)
     skip = non_profile_keys()
     for key, value in config.items():
         if key in skip:
             continue
-        if isinstance(value, dict) and value.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_AUTH_FLOW:
+        if isinstance(value, dict) and value.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_PKCE:
             result.append(key)
     return result

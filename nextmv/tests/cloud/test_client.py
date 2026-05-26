@@ -443,10 +443,10 @@ class TestUploadToPresignedUrlUnreachableServer(unittest.TestCase):
             self.assertIs(ctx.exception.__cause__, original)
 
 
-# Shared config / env helpers for auth-flow tests.
-_AUTH_FLOW_CONFIG = {
+# Shared config / env helpers for pkce tests.
+_PKCE_CONFIG = {
     "my-auth-profile": {
-        "profile_type": "auth_flow",
+        "profile_type": "pkce",
         "endpoint": "api.example.io",
     }
 }
@@ -458,13 +458,13 @@ def _clean_env(env):
         env.pop(key, None)
 
 
-class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
-    """Tests for Client.__resolve_bearer_token_for_auth_flow (via __post_init__)."""
+class TestResolveBearerTokenForPkce(unittest.TestCase):
+    """Tests for Client.__resolve_bearer_token_for_pkce (via __post_init__)."""
 
-    def test_auth_flow_profile_uses_stored_token(self):
+    def test_pkce_profile_uses_stored_token(self):
         """A valid, non-expired token is used directly as the bearer token."""
         tokens = {"access_token": "stored-access", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
                     with patch.dict(os.environ) as env:
@@ -472,10 +472,10 @@ class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
                         client = Client(profile="my-auth-profile")
                         self.assertEqual(client.api_key, "stored-access")
 
-    def test_auth_flow_profile_prefers_id_token(self):
+    def test_pkce_profile_prefers_id_token(self):
         """When both id_token and access_token are present, id_token is preferred."""
         tokens = {"access_token": "access", "id_token": "id-tok", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
                     with patch.dict(os.environ) as env:
@@ -487,7 +487,7 @@ class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
         """An expired token is refreshed, saved, and the new access token is used."""
         old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
         new_tokens = {"access_token": "new", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
@@ -502,7 +502,7 @@ class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
     def test_expired_token_without_refresh_token_raises(self):
         """Expired token with no refresh_token raises ValueError."""
         tokens = {"access_token": "old", "expires_at": _past()}  # no refresh_token
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch.dict(os.environ) as env:
@@ -513,7 +513,7 @@ class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
 
     def test_missing_tokens_raises(self):
         """No stored tokens raises ValueError directing the user to nextmv login."""
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=None):
                 with patch.dict(os.environ) as env:
                     _clean_env(env)
@@ -524,7 +524,7 @@ class TestResolveBearerTokenForAuthFlow(unittest.TestCase):
     def test_refresh_failure_raises(self):
         """A failed token refresh raises ValueError with a helpful message."""
         tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
-        with patch("nextmv.cloud.client._load_config", return_value=_AUTH_FLOW_CONFIG):
+        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", side_effect=RuntimeError("network error")):

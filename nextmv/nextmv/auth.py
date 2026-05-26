@@ -1,5 +1,5 @@
 """
-PKCE OAuth2 flow and token storage utilities for Nextmv auth_flow profiles.
+PKCE OAuth2 flow and token storage utilities for Nextmv pkce profiles.
 
 This module contains the core (non-CLI) authentication helpers:
 

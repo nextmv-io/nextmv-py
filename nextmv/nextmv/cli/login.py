@@ -2,7 +2,7 @@
 This module defines the ``nextmv login`` command for the Nextmv CLI.
 
 Running ``nextmv login`` executes the PKCE authorization-code flow for every
-``auth_flow`` profile configured in ``~/.nextmv/config.yaml``, or for a
+``pkce`` profile configured in ``~/.nextmv/config.yaml``, or for a
 specific profile when ``--profile`` is given.  Tokens are stored under
 ``~/.nextmv/auth/<profile>/tokens.json``.
 """
@@ -13,7 +13,7 @@ import typer
 
 from nextmv.auth import run_pkce_flow, save_tokens
 from nextmv.cli.message import error, info, message, success, warning
-from nextmv.config import PROFILE_TYPE_AUTH_FLOW, get_profile_type, list_auth_flow_profiles, load_config
+from nextmv.config import PROFILE_TYPE_PKCE, get_profile_type, list_pkce_profiles, load_config
 
 # Set up subcommand application.
 app = typer.Typer(invoke_without_command=True)
@@ -26,7 +26,7 @@ def login(
         typer.Option(
             "--profile",
             "-p",
-            help="Profile to log in to. If omitted, all [magenta]auth_flow[/magenta] profiles are logged in.",
+            help="Profile to log in to. If omitted, all [magenta]pkce[/magenta] profiles are logged in.",
             envvar="NEXTMV_PROFILE",
             metavar="PROFILE_NAME",
         ),
@@ -39,8 +39,8 @@ def login(
     resulting tokens under [magenta]~/.nextmv/auth/[/magenta].
 
     If [magenta]--profile[/magenta] is given, only that profile is logged in
-    (it must be configured with [code]profile_type: auth_flow[/code]).  If no
-    profile is given, all [magenta]auth_flow[/magenta] profiles found in
+    (it must be configured with [code]profile_type: pkce[/code]).  If no
+    profile is given, all [magenta]pkce[/magenta] profiles found in
     [magenta]~/.nextmv/config.yaml[/magenta] are logged in sequentially.
 
     [bold][underline]Examples[/underline][/bold]
@@ -61,7 +61,7 @@ def login(
     config = load_config()
 
     if profile is not None:
-        # Validate that the requested profile exists and is an auth_flow profile.
+        # Validate that the requested profile exists and is a pkce profile.
         profile = profile.strip()
         if profile not in config:
             error(
@@ -69,21 +69,21 @@ def login(
                 "Use [code]nextmv configuration create[/code] to create it."
             )
         ptype = get_profile_type(config, profile)
-        if ptype != PROFILE_TYPE_AUTH_FLOW:
+        if ptype != PROFILE_TYPE_PKCE:
             error(
-                f"Profile [magenta]{profile}[/magenta] is not an [magenta]auth_flow[/magenta] profile "
+                f"Profile [magenta]{profile}[/magenta] is not a [magenta]pkce[/magenta] profile "
                 f"(it is [magenta]{ptype}[/magenta]). "
-                "Only [magenta]auth_flow[/magenta] profiles require [code]nextmv login[/code]."
+                "Only [magenta]pkce[/magenta] profiles require [code]nextmv login[/code]."
             )
         profiles_to_login: list[str | None] = [profile]
     else:
-        profiles_to_login = list_auth_flow_profiles(config)
+        profiles_to_login = list_pkce_profiles(config)
 
     if not profiles_to_login:
         info(
-            "No [magenta]auth_flow[/magenta] profiles found. "
+            "No [magenta]pkce[/magenta] profiles found. "
             "Use [code]nextmv configuration create[/code] to create one, "
-            "or set [magenta]profile_type: auth_flow[/magenta] in "
+            "or set [magenta]profile_type: pkce[/magenta] in "
             "[magenta]~/.nextmv/config.yaml[/magenta]."
         )
         return
