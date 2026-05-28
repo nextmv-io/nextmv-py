@@ -4,7 +4,9 @@ This module defines the ``nextmv login`` command for the Nextmv CLI.
 Running ``nextmv login`` executes the PKCE authorization-code flow for every
 ``pkce`` profile configured in ``~/.nextmv/config.yaml``, or for a
 specific profile when ``--profile`` is given.  Tokens are stored under
-``~/.nextmv/auth/<profile>/tokens.json``.
+``~/.nextmv/auth/<session>/tokens.json``, where ``<session>`` is the
+``auth_session`` value configured on the profile (or ``default`` when
+``auth_session`` is not set).
 """
 
 from typing import Annotated
@@ -13,7 +15,18 @@ import typer
 
 from nextmv.auth import run_pkce_flow, save_tokens
 from nextmv.cli.message import error, info, message, success, warning
-from nextmv.config import PROFILE_TYPE_PKCE, get_profile_type, list_pkce_profiles, load_config
+from nextmv.config import (
+    CLIENT_ID_KEY,
+    OIDC_DISCOVERY_URL_KEY,
+    PROFILE_TYPE_PKCE,
+    get_auth_session,
+    get_endpoint_oidc_config,
+    get_profile_endpoint,
+    get_profile_type,
+    list_pkce_profiles,
+    load_config,
+    load_sessions,
+)
 
 # Set up subcommand application.
 app = typer.Typer(invoke_without_command=True)
@@ -59,6 +72,7 @@ def login(
         )
 
     config = load_config()
+    sessions = load_sessions()
 
     if profile is not None:
         # Validate that the requested profile exists and is a pkce profile.
@@ -92,13 +106,19 @@ def login(
 
     for prof in profiles_to_login:
         display_name = prof if prof is not None else "default"
+        session = get_auth_session(config, prof)
+        endpoint = get_profile_endpoint(config, prof)
+        oidc_cfg = get_endpoint_oidc_config(endpoint, sessions)
+        oidc_discovery_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
+        oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
         message(
-            f"Logging in to profile [magenta]{display_name}[/magenta]. "
+            f"Logging in to profile [magenta]{display_name}[/magenta] "
+            f"(session [magenta]{session}[/magenta]). "
             "Your browser will open — please complete the sign-in flow there."
         )
         try:
-            tokens = run_pkce_flow(profile=prof)
-            save_tokens(prof, tokens)
+            tokens = run_pkce_flow(profile=prof, oidc_discovery_url=oidc_discovery_url, client_id=oidc_client_id)
+            save_tokens(session, tokens)
             success(f"Logged in to profile [magenta]{display_name}[/magenta] successfully.")
         except Exception as exc:
             warning(f"Login failed for profile [magenta]{display_name}[/magenta]: {exc}")

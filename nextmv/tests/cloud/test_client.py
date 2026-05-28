@@ -497,7 +497,61 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                                 client = Client(profile="my-auth-profile")
                                 self.assertEqual(client.api_key, "new")
                                 mock_refresh.assert_called_once_with("rt")
-                                mock_save.assert_called_once_with("my-auth-profile", new_tokens)
+                                # Tokens are saved against the resolved session name
+                                # ("default" because _PKCE_CONFIG has no auth_session).
+                                mock_save.assert_called_once_with("default", new_tokens)
+
+    def test_expired_token_triggers_refresh_and_save_named_session(self):
+        """Tokens are saved against the named session, not the profile name."""
+        config = {
+            "my-auth-profile": {
+                "profile_type": "pkce",
+                "endpoint": "api.example.io",
+                "auth_session": "my-session",
+            }
+        }
+        old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
+        new_tokens = {"access_token": "new", "expires_at": _future()}
+        with patch("nextmv.cloud.client._load_config", return_value=config):
+            with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=True):
+                    with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens):
+                        with patch("nextmv.cloud.client.save_tokens") as mock_save:
+                            with patch.dict(os.environ) as env:
+                                _clean_env(env)
+                                Client(profile="my-auth-profile")
+                                mock_save.assert_called_once_with("my-session", new_tokens)
+
+    def test_shared_session_two_profiles_load_same_session(self):
+        """Two profiles sharing an auth_session both resolve to the same session name."""
+        config = {
+            "profile-a": {
+                "profile_type": "pkce",
+                "endpoint": "api.example.io",
+                "auth_session": "shared",
+            },
+            "profile-b": {
+                "profile_type": "pkce",
+                "endpoint": "staging.example.io",
+                "auth_session": "shared",
+            },
+        }
+        tokens = {"access_token": "tok", "expires_at": _future()}
+        load_calls: list[str] = []
+
+        def _load_tokens(session: str):
+            load_calls.append(session)
+            return tokens
+
+        with patch("nextmv.cloud.client._load_config", return_value=config):
+            with patch("nextmv.cloud.client.load_tokens", side_effect=_load_tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=False):
+                    with patch.dict(os.environ) as env:
+                        _clean_env(env)
+                        Client(profile="profile-a")
+                        Client(profile="profile-b")
+        # Both profiles must have loaded from the same "shared" session.
+        self.assertEqual(load_calls, ["shared", "shared"])
 
     def test_expired_token_without_refresh_token_raises(self):
         """Expired token with no refresh_token raises ValueError."""

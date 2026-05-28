@@ -21,9 +21,14 @@ PKCE flow overview
 
 Token file schema
 -----------------
-Tokens are stored as JSON under::
+Tokens are stored as JSON keyed by **auth session name** under::
 
-    ~/.nextmv/auth/<profile_name>/tokens.json
+    ~/.nextmv/auth/<session_name>/tokens.json
+
+The session name is resolved from the ``auth_session`` field in the profile
+configuration (see :func:`nextmv.config.get_auth_session`).  When that field
+is absent the reserved ``"default"`` session is used, so all profiles without
+an explicit session share a single token file.
 
 .. code-block:: json
 
@@ -74,81 +79,93 @@ _COGNITO_DOMAIN = "https://marius-local-nextmv-us-west-2.auth.us-west-2.amazonco
 _FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
 _FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
 
-CLIENT_ID = "dpps8t04d41ns0ua5c59uge0q"
+CLIENT_ID = "lvd4h82aip4mk27b65ecg3vde"
 SCOPES = "email openid profile"
 CALLBACK_PORT = 56734
 
 # Timeout (seconds) to wait for the user to complete the browser auth step.
 _BROWSER_TIMEOUT = 300
 
-# Sentinel name used for the default (unnamed) profile on disk.
-_DEFAULT_DIR_NAME = "default"
+# Reserved session name used when auth_session is not set on a profile.
+_DEFAULT_SESSION_NAME = "default"
 
 
 # >>> Token storage
 
 
-def token_dir(profile: str | None) -> Path:
+def token_dir(session: str) -> Path:
     """
-    Returns the directory that holds token files for *profile*.
+    Returns the directory that holds token files for *session*.
 
     Parameters
     ----------
-    profile : str | None
-        The profile name.  ``None`` (or the string ``"default"``) maps to the ``default``
-        sub-directory under ``AUTH_DIR``.
+    session : str
+        The auth session name.  The reserved value ``"default"`` (case-
+        insensitive) maps to ``~/.nextmv/auth/default/``.  Obtain the correct
+        session name for a profile via
+        :func:`nextmv.config.get_auth_session`.
 
     Returns
     -------
     Path
-        The directory path ``~/.nextmv/auth/<name>/``.
+        The directory path ``~/.nextmv/auth/<session>/``.
+
+    Raises
+    ------
+    ValueError
+        If *session* is empty or would escape the auth directory (e.g. path
+        traversal).
     """
-    name = _DEFAULT_DIR_NAME if (profile is None or profile.strip().lower() == "default") else profile.strip()
+    name = session.strip() if session else _DEFAULT_SESSION_NAME
+    if not name:
+        name = _DEFAULT_SESSION_NAME
     path = (AUTH_DIR / name).resolve()
     if not path.is_relative_to(AUTH_DIR.resolve()):
-        raise ValueError(f"Invalid profile name {name!r}: must not escape the auth directory.")
+        raise ValueError(f"Invalid session name {name!r}: must not escape the auth directory.")
     return path
 
 
-def _token_path(profile: str | None) -> Path:
-    return token_dir(profile) / "tokens.json"
+def _token_path(session: str) -> Path:
+    return token_dir(session) / "tokens.json"
 
 
-def load_tokens(profile: str | None) -> dict[str, Any] | None:
+def load_tokens(session: str) -> dict[str, Any] | None:
     """
-    Load stored tokens for *profile* from disk.
+    Load stored tokens for *session* from disk.
 
     Parameters
     ----------
-    profile : str | None
-        The profile name.
+    session : str
+        The auth session name.  Resolve this from a profile via
+        :func:`nextmv.config.get_auth_session`.
 
     Returns
     -------
     dict[str, Any] | None
         The token dict, or ``None`` if no token file exists.
     """
-    path = _token_path(profile)
+    path = _token_path(session)
     if not path.exists():
         return None
     with path.open() as fh:
         return json.load(fh)
 
 
-def save_tokens(profile: str | None, tokens: dict[str, Any]) -> None:
+def save_tokens(session: str, tokens: dict[str, Any]) -> None:
     """
-    Persist *tokens* for *profile* to disk.
+    Persist *tokens* for *session* to disk.
 
     Creates any missing parent directories with mode 0o700.
 
     Parameters
     ----------
-    profile : str | None
-        The profile name.
+    session : str
+        The auth session name.  Resolve this from a profile via
+        :func:`nextmv.config.get_auth_session`.
     tokens : dict[str, Any]
         The token dict to persist.  Must contain at least ``access_token``.
     """
-    path = _token_path(profile)
+    path = _token_path(session)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with path.open("w") as fh:
         json.dump(tokens, fh, indent=2)
@@ -196,7 +213,7 @@ def is_token_expired(tokens: dict[str, Any]) -> bool:
 # >>> PKCE flow — internal helpers
 
 
-def _discover_endpoints() -> tuple[str, str]:
+def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str]:
     """
     Fetch the OIDC discovery document and return
     ``(authorization_endpoint, token_endpoint)``.
@@ -204,13 +221,21 @@ def _discover_endpoints() -> tuple[str, str]:
     Falls back to the hard-coded endpoints if the discovery URL is unreachable or returns
     an unexpected response.
 
+    Parameters
+    ----------
+    oidc_discovery_url : str | None
+        The OIDC discovery document URL to use.  When ``None`` the module-level
+        constant :data:`OIDC_DISCOVERY_URL` is used (which covers the production
+        endpoint).
+
     Returns
     -------
     tuple[str, str]
         ``(authorization_endpoint, token_endpoint)``
     """
+    discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
-        resp = requests.get(OIDC_DISCOVERY_URL, timeout=10)
+        resp = requests.get(discovery_url, timeout=10)
         resp.raise_for_status()
         doc = resp.json()
         auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
@@ -281,7 +306,7 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
 def _wait_for_callback(port: int) -> dict[str, str]:
     """
     Start a one-shot local HTTP server and block until the OAuth2 provider redirects the
-    browser to ``http://127.0.0.1:<port>/callback``.
+    browser to ``http://127.0.0.1:<port>``.
 
     Parameters
     ----------
@@ -324,6 +349,7 @@ def _exchange_code_for_tokens(
     code: str,
     code_verifier: str,
     redirect_uri: str,
+    client_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Exchange an authorization ``code`` for tokens.
@@ -338,6 +364,9 @@ def _exchange_code_for_tokens(
         The PKCE code verifier generated at the start of the flow.
     redirect_uri : str
         The redirect URI used in the authorization request (must match exactly).
+    client_id : str | None
+        The OAuth2 client ID.  When ``None`` the module-level :data:`CLIENT_ID`
+        constant is used.
 
     Returns
     -------
@@ -350,9 +379,10 @@ def _exchange_code_for_tokens(
     requests.HTTPError
         If the token endpoint returns a non-2xx response.
     """
+    cid = client_id or CLIENT_ID
     payload = {
         "grant_type": "authorization_code",
-        "client_id": CLIENT_ID,
+        "client_id": cid,
         "code": code,
         "redirect_uri": redirect_uri,
         "code_verifier": code_verifier,
@@ -382,6 +412,8 @@ def _exchange_code_for_tokens(
 def refresh_tokens(
     refresh_token: str,
     token_endpoint: str | None = None,
+    client_id: str | None = None,
+    oidc_discovery_url: str | None = None,
 ) -> dict[str, Any]:
     """
     Use a refresh token to obtain a new access token.
@@ -393,6 +425,13 @@ def refresh_tokens(
     token_endpoint : str | None
         The token endpoint URL.  If ``None``, the OIDC discovery document is fetched to
         resolve it.
+    client_id : str | None
+        The OAuth2 client ID.  When ``None`` the module-level :data:`CLIENT_ID`
+        constant is used.
+    oidc_discovery_url : str | None
+        The OIDC discovery document URL.  Used only when *token_endpoint* is
+        ``None``.  When ``None`` the module-level :data:`OIDC_DISCOVERY_URL` is
+        used.
 
     Returns
     -------
@@ -406,11 +445,12 @@ def refresh_tokens(
         If the token endpoint returns a non-2xx response.
     """
     if token_endpoint is None:
-        _, token_endpoint = _discover_endpoints()
+        _, token_endpoint = _discover_endpoints(oidc_discovery_url)
 
+    cid = client_id or CLIENT_ID
     payload = {
         "grant_type": "refresh_token",
-        "client_id": CLIENT_ID,
+        "client_id": cid,
         "refresh_token": refresh_token,
     }
     resp = requests.post(
@@ -435,7 +475,11 @@ def refresh_tokens(
     return tokens
 
 
-def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
+def run_pkce_flow(
+    profile: str | None = None,
+    oidc_discovery_url: str | None = None,
+    client_id: str | None = None,
+) -> dict[str, Any]:
     """
     Execute the full PKCE authorization-code flow for the given profile.
 
@@ -453,6 +497,13 @@ def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
     profile : str | None
         The profile name (used only for display purposes; does not affect the
         flow itself).
+    oidc_discovery_url : str | None
+        The OIDC discovery document URL for the identity provider backing this
+        profile's endpoint.  When ``None`` the module-level
+        :data:`OIDC_DISCOVERY_URL` constant is used (production endpoint).
+    client_id : str | None
+        The OAuth2 client ID for the identity provider.  When ``None`` the
+        module-level :data:`CLIENT_ID` constant is used.
 
     Returns
     -------
@@ -470,13 +521,14 @@ def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
     requests.HTTPError
         If the token exchange request fails.
     """
-    auth_endpoint, token_endpoint = _discover_endpoints()
+    auth_endpoint, token_endpoint = _discover_endpoints(oidc_discovery_url)
+    cid = client_id or CLIENT_ID
     code_verifier, code_challenge = _generate_pkce_pair()
-    redirect_uri = "http://127.0.0.1:56734/callback"
+    redirect_uri = f"http://127.0.0.1:{CALLBACK_PORT}"
 
     params = {
         "response_type": "code",
-        "client_id": CLIENT_ID,
+        "client_id": cid,
         "redirect_uri": redirect_uri,
         "scope": SCOPES,
         "code_challenge_method": "S256",
@@ -510,4 +562,4 @@ def run_pkce_flow(profile: str | None = None) -> dict[str, Any]:
     if not code:
         raise RuntimeError("No authorization code received. Please try running [code]nextmv login[/code] again.")
 
-    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri)
+    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid)

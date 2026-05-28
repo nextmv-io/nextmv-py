@@ -27,7 +27,7 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
-from nextmv.config import PROFILE_TYPE_PKCE, get_profile_type
+from nextmv.config import PROFILE_TYPE_PKCE, get_auth_session, get_profile_type
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -621,7 +621,8 @@ class Client:
             return None
 
         # Auth-flow (pkce) profile detected.
-        tokens = load_tokens(profile)
+        session = get_auth_session(config, profile)
+        tokens = load_tokens(session)
         display = profile if profile is not None else "default"
         login_cmd = f"nextmv login{' --profile ' + display if profile else ''}"
 
@@ -637,7 +638,7 @@ class Client:
                 )
             try:
                 tokens = refresh_tokens(refresh_token)
-                save_tokens(profile, tokens)
+                save_tokens(session, tokens)
             except Exception as exc:
                 raise ValueError(
                     f"Failed to refresh access token for profile '{display}': {exc}. "

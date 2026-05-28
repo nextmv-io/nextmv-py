@@ -11,13 +11,20 @@ from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import choice, error, message, success, warning
 from nextmv.config import (
     API_KEY_KEY,
+    AUTH_SESSION_KEY,
+    CLIENT_ID_KEY,
+    DEFAULT_AUTH_SESSION,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
+    OIDC_DISCOVERY_URL_KEY,
     PROFILE_TYPE_API_KEY,
     PROFILE_TYPE_KEY,
     PROFILE_TYPE_PKCE,
+    get_endpoint_oidc_config,
     load_config,
+    load_sessions,
     save_config,
+    save_sessions,
 )
 
 # Set up subcommand application.
@@ -71,6 +78,48 @@ def create(  # noqa: C901
             metavar="PROFILE_TYPE",
         ),
     ] = None,
+    auth_session: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-session",
+            "-s",
+            help=(
+                "Named auth session to share tokens across profiles. "
+                "Only applies to [magenta]pkce[/magenta] profiles. "
+                "Multiple profiles that reference the same session name share a single "
+                "browser login. "
+                f"Defaults to the reserved [magenta]{DEFAULT_AUTH_SESSION}[/magenta] session "
+                "when omitted."
+            ),
+            metavar="SESSION_NAME",
+        ),
+    ] = None,
+    oidc_discovery_url: Annotated[
+        str | None,
+        typer.Option(
+            "--oidc-discovery-url",
+            hidden=True,
+            help=(
+                "OIDC discovery document URL for the identity provider behind the endpoint. "
+                "Only needed for non-production endpoints not already in sessions.yaml. "
+                "Only applies to [magenta]pkce[/magenta] profiles."
+            ),
+            metavar="OIDC_DISCOVERY_URL",
+        ),
+    ] = None,
+    oidc_client_id: Annotated[
+        str | None,
+        typer.Option(
+            "--oidc-client-id",
+            hidden=True,
+            help=(
+                "OAuth2 client ID for the identity provider behind the endpoint. "
+                "Only needed for non-production endpoints not already in sessions.yaml. "
+                "Only applies to [magenta]pkce[/magenta] profiles."
+            ),
+            metavar="OIDC_CLIENT_ID",
+        ),
+    ] = None,
 ) -> None:
     """
     Create a new configuration or update an existing one.
@@ -88,10 +137,23 @@ def create(  # noqa: C901
 
     - Configure a named [magenta]pkce[/magenta] profile (login separately via [code]nextmv login[/code]).
         $ [dim]nextmv configuration create --profile hare --profile-type pkce[/dim]
+
+    - Configure two [magenta]pkce[/magenta] profiles that share a single login session.
+        $ [dim]nextmv configuration create --profile dev --profile-type pkce --auth-session my-work[/dim]
+        $ [dim]nextmv configuration create --profile staging --profile-type pkce --auth-session my-work[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
         error("[magenta]default[/magenta] is a reserved profile name.")
+
+    # Validate and normalise auth_session.
+    if auth_session is not None:
+        auth_session = auth_session.strip()
+        if auth_session.lower() == DEFAULT_AUTH_SESSION:
+            # Storing the literal "default" is redundant — treat as if omitted.
+            auth_session = None
+        elif not auth_session:
+            auth_session = None
 
     endpoint = str(endpoint)
     if endpoint.startswith("https://"):
@@ -164,26 +226,75 @@ def create(  # noqa: C901
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
 
-    # >>> For pkce profiles: just store the metadata; no API key needed.
+    # >>> For pkce profiles: store metadata and ensure OIDC config is known.
 
     else:
+        # Check whether we already have OIDC config for this endpoint.
+        sessions = load_sessions()
+        existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
+
+        if existing_oidc is None:
+            # Endpoint is unknown — collect OIDC config from flags or interactively.
+            if oidc_discovery_url and oidc_client_id:
+                resolved_discovery_url = oidc_discovery_url.strip()
+                resolved_client_id = oidc_client_id.strip()
+            else:
+                if not oidc_discovery_url:
+                    while True:
+                        resolved_discovery_url = Prompt.ask(
+                            f"Enter the OIDC discovery URL for endpoint [magenta]{endpoint}[/magenta]"
+                        ).strip()
+                        if resolved_discovery_url:
+                            break
+                        warning("OIDC discovery URL cannot be empty. Please try again.")
+                else:
+                    resolved_discovery_url = oidc_discovery_url.strip()
+
+                if not oidc_client_id:
+                    while True:
+                        resolved_client_id = Prompt.ask(
+                            f"Enter the OAuth2 client ID for endpoint [magenta]{endpoint}[/magenta]"
+                        ).strip()
+                        if resolved_client_id:
+                            break
+                        warning("Client ID cannot be empty. Please try again.")
+                else:
+                    resolved_client_id = oidc_client_id.strip()
+
+            # Persist OIDC config for this endpoint.
+            sessions[endpoint] = {
+                OIDC_DISCOVERY_URL_KEY: resolved_discovery_url,
+                CLIENT_ID_KEY: resolved_client_id,
+            }
+            save_sessions(sessions)
+
         if profile is None:
             config[PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[ENDPOINT_KEY] = endpoint
             # Remove any previously stored api_key from the default profile.
             config.pop(API_KEY_KEY, None)
+            if auth_session:
+                config[AUTH_SESSION_KEY] = auth_session
+            else:
+                config.pop(AUTH_SESSION_KEY, None)
         else:
             if profile not in config:
                 config[profile] = {}
             config[profile][PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[profile][ENDPOINT_KEY] = endpoint
             config[profile].pop(API_KEY_KEY, None)
+            if auth_session:
+                config[profile][AUTH_SESSION_KEY] = auth_session
+            else:
+                config[profile].pop(AUTH_SESSION_KEY, None)
 
         save_config(config)
 
+        effective_session = auth_session or DEFAULT_AUTH_SESSION
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
         message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_PKCE}[/magenta]", indents=1)
+        message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
         message(
