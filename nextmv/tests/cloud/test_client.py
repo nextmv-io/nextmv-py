@@ -13,7 +13,7 @@ class TestResolveProfile(unittest.TestCase):
     def test_env_var_used_as_profile(self):
         """NEXTMV_PROFILE env var is used as the active profile."""
         config = {"my-profile": {"apikey": "k", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ, {"NEXTMV_PROFILE": "my-profile"}) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_ENDPOINT", None)
@@ -26,7 +26,7 @@ class TestResolveProfile(unittest.TestCase):
             "env-profile": {"apikey": "env-key", "endpoint": "api.env.io"},
             "attr-profile": {"apikey": "attr-key", "endpoint": "api.attr.io"},
         }
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ, {"NEXTMV_PROFILE": "env-profile"}) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_ENDPOINT", None)
@@ -36,7 +36,7 @@ class TestResolveProfile(unittest.TestCase):
     def test_profile_attribute_used_when_env_var_absent(self):
         """profile attribute is used when NEXTMV_PROFILE is not set."""
         config = {"my-profile": {"apikey": "k", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -47,7 +47,7 @@ class TestResolveProfile(unittest.TestCase):
     def test_empty_env_var_falls_back_to_profile_attribute(self):
         """Empty NEXTMV_PROFILE falls back to the profile attribute."""
         config = {"my-profile": {"apikey": "k", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ, {"NEXTMV_PROFILE": ""}) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_ENDPOINT", None)
@@ -57,7 +57,7 @@ class TestResolveProfile(unittest.TestCase):
     def test_no_profile_uses_default_config(self):
         """When neither profile source is set, the default config entry is used."""
         config = {"apikey": "default-key"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -68,7 +68,7 @@ class TestResolveProfile(unittest.TestCase):
     def test_nonexistent_profile_raises_value_error(self):
         """A profile that is not present in the config file raises ValueError."""
         config = {"other-profile": {"apikey": "k", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ, {"NEXTMV_PROFILE": "missing-profile"}) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_ENDPOINT", None)
@@ -112,7 +112,7 @@ class TestResolveEndpoint(unittest.TestCase):
     def test_env_var_takes_precedence_over_config(self):
         """NEXTMV_ENDPOINT takes precedence over the endpoint stored in config."""
         config = {"apikey": "k", "endpoint": "api.config.io"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(
                 os.environ,
                 {"NEXTMV_API_KEY": "k", "NEXTMV_ENDPOINT": "https://env.example.com"},
@@ -124,7 +124,7 @@ class TestResolveEndpoint(unittest.TestCase):
     def test_profile_endpoint_from_config(self):
         """When a profile is active, its endpoint is resolved from the config."""
         config = {"my-profile": {"apikey": "k", "endpoint": "api.profile.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -135,7 +135,7 @@ class TestResolveEndpoint(unittest.TestCase):
     def test_default_endpoint_from_config(self):
         """When no profile is active, the default endpoint is read from config."""
         config = {"apikey": "k", "endpoint": "api.default.io"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -145,7 +145,7 @@ class TestResolveEndpoint(unittest.TestCase):
 
     def test_fallback_to_hardcoded_default_when_no_config(self):
         """Falls back to the hardcoded default URL when the config file is absent."""
-        with patch("nextmv.cloud.client._load_config", return_value={}):
+        with patch("nextmv.cloud.client.load_config", return_value={}):
             with patch.dict(os.environ, {"NEXTMV_API_KEY": "k"}) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_ENDPOINT", None)
@@ -155,7 +155,7 @@ class TestResolveEndpoint(unittest.TestCase):
     def test_missing_endpoint_for_profile_raises_value_error(self):
         """A profile with no endpoint key raises ValueError."""
         config = {"my-profile": {"apikey": "k"}}  # no endpoint
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -166,7 +166,7 @@ class TestResolveEndpoint(unittest.TestCase):
     def test_empty_endpoint_for_profile_raises_value_error(self):
         """A profile with an empty endpoint raises ValueError."""
         config = {"my-profile": {"apikey": "k", "endpoint": ""}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -181,7 +181,7 @@ class TestResolveEndpoint(unittest.TestCase):
             "apikey": "default-k",
             "my-profile": {"apikey": "profile-k", "endpoint": "api.profile.io"},
         }
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 env.pop("NEXTMV_API_KEY", None)
@@ -217,7 +217,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_env_var_takes_precedence_over_config(self):
         """NEXTMV_API_KEY takes precedence over the key stored in config."""
         config = {"apikey": "config-key"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ, {"NEXTMV_API_KEY": "env-key"}) as env:
                 env.pop("NEXTMV_PROFILE", None)
                 client = Client()
@@ -226,7 +226,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_profile_api_key_from_config(self):
         """When a profile is active, its api_key is resolved from the config."""
         config = {"my-profile": {"apikey": "profile-key", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -237,7 +237,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_default_api_key_from_config(self):
         """When no profile is active, the default api_key is read from config."""
         config = {"apikey": "default-key"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -251,7 +251,7 @@ class TestResolveApiKey(unittest.TestCase):
             "apikey": "default-key",
             "my-profile": {"apikey": "profile-key", "endpoint": "api.profile.io"},
         }
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -261,7 +261,7 @@ class TestResolveApiKey(unittest.TestCase):
 
     def test_all_sources_absent_raises_value_error(self):
         """Raises ValueError with a helpful message when no API key is found."""
-        with patch("nextmv.cloud.client._load_config", return_value={}):
+        with patch("nextmv.cloud.client.load_config", return_value={}):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -272,7 +272,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_missing_api_key_for_profile_raises_value_error(self):
         """A profile with no apikey raises ValueError."""
         config = {"my-profile": {"endpoint": "api.example.io"}}  # no apikey
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -283,7 +283,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_empty_api_key_for_profile_raises_value_error(self):
         """A profile with an empty apikey raises ValueError."""
         config = {"my-profile": {"apikey": "", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -294,7 +294,7 @@ class TestResolveApiKey(unittest.TestCase):
     def test_missing_default_api_key_in_config_raises_value_error(self):
         """Config file without a top-level apikey raises ValueError."""
         config = {"endpoint": "api.default.io"}  # no apikey
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -333,7 +333,7 @@ class TestSetHeadersApiKey(unittest.TestCase):
     def test_headers_reflect_api_key_from_config(self):
         """Authorization header uses the API key resolved from the config file."""
         config = {"apikey": "config-key"}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -344,7 +344,7 @@ class TestSetHeadersApiKey(unittest.TestCase):
     def test_headers_reflect_api_key_from_profile_config(self):
         """Authorization header uses the API key resolved from a named profile."""
         config = {"my-profile": {"apikey": "profile-key", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 env.pop("NEXTMV_API_KEY", None)
                 env.pop("NEXTMV_PROFILE", None)
@@ -464,7 +464,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
     def test_pkce_profile_uses_stored_token(self):
         """A valid, non-expired token is used directly as the bearer token."""
         tokens = {"access_token": "stored-access", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
                     with patch.dict(os.environ) as env:
@@ -475,7 +475,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
     def test_pkce_profile_prefers_id_token(self):
         """When both id_token and access_token are present, id_token is preferred."""
         tokens = {"access_token": "access", "id_token": "id-tok", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
                     with patch.dict(os.environ) as env:
@@ -487,7 +487,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         """An expired token is refreshed, saved, and the new access token is used."""
         old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
         new_tokens = {"access_token": "new", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
@@ -512,7 +512,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         }
         old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
         new_tokens = {"access_token": "new", "expires_at": _future()}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens):
@@ -543,7 +543,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
             load_calls.append(session)
             return tokens
 
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch("nextmv.cloud.client.load_tokens", side_effect=_load_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
                     with patch.dict(os.environ) as env:
@@ -556,7 +556,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
     def test_expired_token_without_refresh_token_raises(self):
         """Expired token with no refresh_token raises ValueError."""
         tokens = {"access_token": "old", "expires_at": _past()}  # no refresh_token
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch.dict(os.environ) as env:
@@ -567,7 +567,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
 
     def test_missing_tokens_raises(self):
         """No stored tokens raises ValueError directing the user to nextmv login."""
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=None):
                 with patch.dict(os.environ) as env:
                     _clean_env(env)
@@ -578,7 +578,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
     def test_refresh_failure_raises(self):
         """A failed token refresh raises ValueError with a helpful message."""
         tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
-        with patch("nextmv.cloud.client._load_config", return_value=_PKCE_CONFIG):
+        with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", side_effect=RuntimeError("network error")):
@@ -591,7 +591,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
     def test_api_key_profile_uses_api_key_path(self):
         """A standard api_key profile is unaffected and still resolves the API key."""
         config = {"my-api-profile": {"apikey": "sk-123", "endpoint": "api.example.io"}}
-        with patch("nextmv.cloud.client._load_config", return_value=config):
+        with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch.dict(os.environ) as env:
                 _clean_env(env)
                 client = Client(profile="my-api-profile")

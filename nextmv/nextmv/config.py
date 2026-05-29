@@ -90,6 +90,16 @@ _BUILTIN_OIDC: dict[str, dict[str, str]] = {
 }
 
 
+def _strip_scheme(url: str) -> str:
+    """Strip a leading ``https://`` or ``http://`` scheme and trailing slash."""
+    s = url.strip()
+    for prefix in ("https://", "http://"):
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+            break
+    return s.rstrip("/")
+
+
 def load_config() -> dict[str, Any]:
     """
     Load the current configuration from the config file. Returns an empty
@@ -192,11 +202,7 @@ def get_endpoint_oidc_config(endpoint: str, sessions: dict[str, Any] | None = No
         if the endpoint is not known.
     """
     # Normalise the endpoint to a bare hostname.
-    ep = endpoint.strip()
-    for prefix in ("https://", "http://"):
-        if ep.startswith(prefix):
-            ep = ep[len(prefix) :]
-    ep = ep.rstrip("/")
+    ep = _strip_scheme(endpoint)
 
     if sessions:
         entry = sessions.get(ep)
@@ -218,7 +224,7 @@ def non_profile_keys() -> set[str]:
     set[str]
         The set of non-profile keys.
     """
-    return {API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, AUTH_SESSION_KEY}
+    return {API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, AUTH_SESSION_KEY, DEFAULT_AUTH_SESSION}
 
 
 def get_profile_type(config: dict, profile: str | None) -> str:
@@ -304,11 +310,8 @@ def get_profile_endpoint(config: dict, profile: str | None) -> str:
         profile_data = config.get(profile, {})
         ep = profile_data.get(ENDPOINT_KEY, DEFAULT_ENDPOINT) if isinstance(profile_data, dict) else DEFAULT_ENDPOINT
 
-    ep = str(ep).strip()
-    for prefix in ("https://", "http://"):
-        if ep.startswith(prefix):
-            ep = ep[len(prefix) :]
-    return ep.rstrip("/") or DEFAULT_ENDPOINT
+    ep = str(ep)
+    return _strip_scheme(ep) or DEFAULT_ENDPOINT
 
 
 def list_pkce_profiles(config: dict) -> list[str | None]:

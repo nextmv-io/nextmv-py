@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import nextmv.auth as auth_module
 from nextmv.auth import _discover_endpoints, _generate_pkce_pair, is_token_expired, load_tokens, save_tokens, token_dir
 
 
@@ -172,8 +173,6 @@ class TestDiscoverEndpoints(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.json.return_value = mock_doc
         mock_response.raise_for_status.return_value = None
-
-        import nextmv.auth as auth_module
 
         with patch("nextmv.auth.requests.get", return_value=mock_response) as mock_get:
             _discover_endpoints(None)

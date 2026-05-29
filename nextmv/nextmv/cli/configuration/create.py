@@ -20,6 +20,7 @@ from nextmv.config import (
     PROFILE_TYPE_API_KEY,
     PROFILE_TYPE_KEY,
     PROFILE_TYPE_PKCE,
+    _strip_scheme,
     get_endpoint_oidc_config,
     load_config,
     load_sessions,
@@ -110,7 +111,7 @@ def create(  # noqa: C901
     oidc_client_id: Annotated[
         str | None,
         typer.Option(
-            "--oidc-client-id",
+            "--client-id",
             hidden=True,
             help=(
                 "OAuth2 client ID for the identity provider behind the endpoint. "
@@ -155,11 +156,7 @@ def create(  # noqa: C901
         elif not auth_session:
             auth_session = None
 
-    endpoint = str(endpoint)
-    if endpoint.startswith("https://"):
-        endpoint = endpoint[len("https://") :]
-    elif endpoint.startswith("http://"):
-        endpoint = endpoint[len("http://") :]
+    endpoint = _strip_scheme(str(endpoint))
 
     # >>> Determine profile type
 

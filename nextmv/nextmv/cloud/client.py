@@ -16,18 +16,16 @@ get_size(obj)
 
 import os
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import IO, Any
 from urllib.parse import urljoin
 
 import requests
-import yaml
 from requests.adapters import HTTPAdapter, Retry
 
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
-from nextmv.config import PROFILE_TYPE_PKCE, get_auth_session, get_profile_type
+from nextmv.config import CONFIG_FILE, PROFILE_TYPE_PKCE, get_auth_session, get_profile_type, load_config
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -38,8 +36,6 @@ to 500 MiB.
 """
 
 # Some useful constants.
-_CONFIG_DIR = Path.home() / ".nextmv"
-_CONFIG_FILE = _CONFIG_DIR / "config.yaml"
 _API_KEY_KEY = "apikey"
 _ENDPOINT_KEY = "endpoint"
 
@@ -612,7 +608,7 @@ class Client:
             ``nextmv login``).
         """
 
-        config = _load_config()
+        config = load_config()
         if not config:
             return None
 
@@ -869,28 +865,6 @@ def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[st
         raise TypeError("Unsupported type. Only dictionaries, file objects (IO[bytes]), and strings are supported.")
 
 
-def _load_config() -> dict[str, Any]:
-    """
-    Load the current configuration from the config file. Returns an empty
-    dictionary if no configuration file exists.
-
-    Returns
-    -------
-    dict[str, Any]
-        The current configuration as a dictionary.
-    """
-
-    if not _CONFIG_FILE.exists():
-        return {}
-
-    with _CONFIG_FILE.open() as file:
-        config = yaml.safe_load(file)
-
-    if config is None:
-        return {}
-    return config
-
-
 def retrieve_key_from_config(profile: str | None = None) -> str:
     """
     Retrieves the API key for the given profile. If no profile is given, the
@@ -917,9 +891,9 @@ def retrieve_key_from_config(profile: str | None = None) -> str:
         empty.
     """
 
-    config = _load_config()
+    config = load_config()
     if config == {}:
-        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+        raise RuntimeError(f"No configuration file at {CONFIG_FILE} found.")
 
     if profile is not None:
         if profile not in config:
@@ -962,9 +936,9 @@ def retrieve_endpoint_from_config(profile: str | None = None) -> str:
         empty.
     """
 
-    config = _load_config()
+    config = load_config()
     if config == {}:
-        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+        raise RuntimeError(f"No configuration file at {CONFIG_FILE} found.")
 
     if profile is not None:
         if profile not in config:
