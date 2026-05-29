@@ -326,7 +326,7 @@ def resolve_input_kwarg(stdin: str | None, input: str | None) -> dict[str, Any]:
         The keyword argument with the resolved input.
     """
 
-    if stdin is not None:
+    if stdin:
         # Handle the case where stdin is provided as JSON for a JSON app.
         try:
             input_data = json.loads(stdin)

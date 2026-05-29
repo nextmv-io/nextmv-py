@@ -110,6 +110,7 @@ class ApplicationRunMixin:
         instance_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
+        upload_id: str | None = None,
         options: Options | dict[str, str] | None = None,
         configuration: RunConfiguration | dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
@@ -167,6 +168,10 @@ class ApplicationRunMixin:
             Name of the run.
         description: Optional[str]
             Description of the run.
+        upload_id: Optional[str]
+            ID to use when running a large input. If the `input` exceeds the
+            maximum allowed size, then it is uploaded and the corresponding
+            `upload_id` is used.
         options: Optional[Union[Options, dict[str, str]]]
             Options to use for the run. This can be a `nextmv.Options` object
             or a dict. If a dict is used, the keys must be strings and the
@@ -244,7 +249,8 @@ class ApplicationRunMixin:
             new_name = name[:128]
         else:
             suffix = " clone"
-            new_name = run_info.name[: 128 - len(suffix)] + suffix
+            base = run_info.name if run_info.name else cloned_run_id
+            new_name = base[: 128 - len(suffix)] + suffix
 
         # Resolve the new run's description.
         if description and len(description) <= 256:
@@ -253,7 +259,8 @@ class ApplicationRunMixin:
             new_description = description[:256]
         else:
             prefix = "Clone of "
-            new_description = prefix + run_info.description[: 256 - len(prefix)]
+            base = run_info.description if run_info.description else cloned_run_id
+            new_description = prefix + base[: 256 - len(prefix)]
 
         # Resolve the run's options.
         if options:
@@ -269,36 +276,60 @@ class ApplicationRunMixin:
             new_options = None
 
         # Resolve the run's configuration.
-        new_run_config = self.__extract_run_config(
-            input=new_input,
-            configuration=configuration,
-            dir_path=new_input_dir_path,
-        )
-        if metadata.execution_class:
+        new_run_config = RunConfiguration()
+        parsed_config = self.__extract_run_config(input=input, configuration=configuration, dir_path=new_input_dir_path)
+        if parsed_config.execution_class:
+            new_run_config.execution_class = parsed_config.execution_class
+        else:
             new_run_config.execution_class = metadata.execution_class
-        if metadata.format:
+
+        if parsed_config.format is not None:
+            new_run_config.format = parsed_config.format
+        else:
             new_run_config.format = metadata.format
-        if metadata.run_type:
+
+        if parsed_config.run_type is not None:
+            new_run_config.run_type = parsed_config.run_type
+        else:
             new_run_config.run_type = metadata.run_type
-        if metadata.secrets_collection_id:
+
+        if parsed_config.secrets_collection_id:
+            new_run_config.secrets_collection_id = parsed_config.secrets_collection_id
+        else:
             new_run_config.secrets_collection_id = metadata.secrets_collection_id
 
-        queuing_disabled = metadata.queuing_disabled
-        if queuing_disabled is not None:
+        queuing = parsed_config.queuing
+        if queuing is not None and queuing.disabled is not None:
             if new_run_config.queuing is None:
-                new_run_config.queuing = RunQueuing(disabled=queuing_disabled)
+                new_run_config.queuing = RunQueuing(disabled=queuing.disabled)
             else:
-                new_run_config.queuing.disabled = queuing_disabled
-
-        queuing_priority = metadata.queuing_priority
-        if queuing_priority is not None:
+                new_run_config.queuing.disabled = queuing.disabled
+        else:
             if new_run_config.queuing is None:
-                new_run_config.queuing = RunQueuing(priority=queuing_priority)
+                new_run_config.queuing = RunQueuing(disabled=metadata.queuing_disabled)
             else:
-                new_run_config.queuing.priority = queuing_priority
+                new_run_config.queuing.disabled = metadata.queuing_disabled
 
-        if metadata.integration:
-            new_run_config.integration_id = metadata.integration.integration_id
+        if queuing is not None and queuing.priority is not None:
+            if new_run_config.queuing is None:
+                new_run_config.queuing = RunQueuing(priority=queuing.priority)
+            else:
+                new_run_config.queuing.priority = queuing.priority
+        else:
+            queuing_priority = metadata.queuing_priority
+            if queuing_priority is not None:
+                if new_run_config.queuing is None:
+                    new_run_config.queuing = RunQueuing(priority=queuing_priority)
+                else:
+                    new_run_config.queuing.priority = queuing_priority
+
+        if parsed_config.integration_id:
+            new_run_config.integration_id = parsed_config.integration_id
+        else:
+            if metadata.integration:
+                new_run_config.integration_id = metadata.integration.integration_id
+
+        new_run_config.resolve(input=new_input, dir_path=new_input_dir_path)
 
         # Resolve the managed input.
         if managed_input_id:
@@ -313,7 +344,7 @@ class ApplicationRunMixin:
             instance_id=new_instance_id,
             name=new_name,
             description=new_description,
-            upload_id=None,
+            upload_id=upload_id,
             options=new_options,
             configuration=new_run_config,
             batch_experiment_id=None,

@@ -728,6 +728,7 @@ class LocalInputLoader(InputLoader):
         """
 
         manifest = resolve_manifest(manifest)
+        options = self.__resolve_options(options, manifest)
         content_format = self.__resolve_content_format(input_format, manifest)
         path = self.__resolve_path(content_format=content_format, path=path, manifest=manifest)
 
@@ -757,8 +758,6 @@ class LocalInputLoader(InputLoader):
             )
         elif type(content_format) is InputFormat and content_format == InputFormat.CSV_ARCHIVE:
             data = self.__load_archive(path=path, csv_configurations=csv_configurations)
-
-        options = self.__resolve_options(options, manifest)
 
         return Input(data=data, input_format=content_format, options=options)
 
