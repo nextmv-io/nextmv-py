@@ -516,7 +516,7 @@ def resolve_input_kwarg(
     if stdin is None and input is None and managed_input_id is None:
         return {}
 
-    if stdin is not None:
+    if stdin:
         # Handle the case where stdin is provided as JSON for a JSON app.
         try:
             input_data = json.loads(stdin)

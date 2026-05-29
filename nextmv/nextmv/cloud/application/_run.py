@@ -29,12 +29,15 @@ from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
+    Metadata,
     Run,
     RunConfiguration,
     RunInformation,
     RunLog,
+    RunOptions,
     RunQueuing,
     RunResult,
+    RunTrackingMetadata,
     TimestampedRunLog,
     TrackedRun,
 )
@@ -103,7 +106,7 @@ class ApplicationRunMixin:
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
         )
 
-    def clone_run(  # noqa: C901 # Lots of Ifs, but not hard to read.
+    def clone_run(
         self: "Application",
         cloned_run_id: str,
         input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
@@ -201,7 +204,8 @@ class ApplicationRunMixin:
         Returns
         ----------
         str
-            ID (`run_id`) of the run that was submitted.
+            ID (`run_id`) of the new run that was submitted (cloned from the
+            original).
 
         Raises
         ----------
@@ -217,143 +221,47 @@ class ApplicationRunMixin:
         metadata = run_info.metadata
         content_format = metadata.content_format
 
-        # Resolve the new run's input.
-        if content_format == ContentFormat.JSON and input:
-            new_input = input
-            new_input_dir_path = None
-        elif content_format == ContentFormat.JSON and not input:
-            new_input = self.run_input(run_id=cloned_run_id)
-            new_input_dir_path = None
-        elif content_format == ContentFormat.MULTI_FILE and input_dir_path:
-            new_input = None
-            new_input_dir_path = input_dir_path
-        elif content_format == ContentFormat.MULTI_FILE and not input_dir_path:
-            with tempfile.TemporaryDirectory(delete=False) as tmpdirname:
-                self.run_input(run_id=cloned_run_id, output_dir_path=tmpdirname)
-                new_input = None
-                new_input_dir_path = tmpdirname
-        else:
-            new_input = None
-            new_input_dir_path = None
-
-        # Resolve the new run's instance.
-        if instance_id:
-            new_instance_id = instance_id
-        else:
-            new_instance_id = metadata.application_instance_id
-
-        # Resolve the new run's name.
-        if name and len(name) <= 128:
-            new_name = name
-        elif name and len(name) > 128:
-            new_name = name[:128]
-        else:
-            suffix = " clone"
-            base = run_info.name if run_info.name else cloned_run_id
-            new_name = base[: 128 - len(suffix)] + suffix
-
-        # Resolve the new run's description.
-        if description and len(description) <= 256:
-            new_description = description
-        elif description and len(description) > 256:
-            new_description = description[:256]
-        else:
-            prefix = "Clone of "
-            base = run_info.description if run_info.description else cloned_run_id
-            new_description = prefix + base[: 256 - len(prefix)]
-
-        # Resolve the run's options.
-        if options:
-            new_options = options
-        elif metadata.options:
-            opts = metadata.options
-            summ = opts.options_summary
-            if summ:
-                new_options = {opt.name: opt.value for opt in summ}
-            else:
-                new_options = None
-        else:
-            new_options = None
-
-        # Resolve the run's configuration.
-        new_run_config = RunConfiguration()
-        parsed_config = self.__extract_run_config(input=input, configuration=configuration, dir_path=new_input_dir_path)
-        if parsed_config.execution_class:
-            new_run_config.execution_class = parsed_config.execution_class
-        else:
-            new_run_config.execution_class = metadata.execution_class
-
-        if parsed_config.format is not None:
-            new_run_config.format = parsed_config.format
-        else:
-            new_run_config.format = metadata.format
-
-        if parsed_config.run_type is not None:
-            new_run_config.run_type = parsed_config.run_type
-        else:
-            new_run_config.run_type = metadata.run_type
-
-        if parsed_config.secrets_collection_id:
-            new_run_config.secrets_collection_id = parsed_config.secrets_collection_id
-        else:
-            new_run_config.secrets_collection_id = metadata.secrets_collection_id
-
-        queuing = parsed_config.queuing
-        if queuing is not None and queuing.disabled is not None:
-            if new_run_config.queuing is None:
-                new_run_config.queuing = RunQueuing(disabled=queuing.disabled)
-            else:
-                new_run_config.queuing.disabled = queuing.disabled
-        else:
-            if new_run_config.queuing is None:
-                new_run_config.queuing = RunQueuing(disabled=metadata.queuing_disabled)
-            else:
-                new_run_config.queuing.disabled = metadata.queuing_disabled
-
-        if queuing is not None and queuing.priority is not None:
-            if new_run_config.queuing is None:
-                new_run_config.queuing = RunQueuing(priority=queuing.priority)
-            else:
-                new_run_config.queuing.priority = queuing.priority
-        else:
-            queuing_priority = metadata.queuing_priority
-            if queuing_priority is not None:
-                if new_run_config.queuing is None:
-                    new_run_config.queuing = RunQueuing(priority=queuing_priority)
-                else:
-                    new_run_config.queuing.priority = queuing_priority
-
-        if parsed_config.integration_id:
-            new_run_config.integration_id = parsed_config.integration_id
-        else:
-            if metadata.integration:
-                new_run_config.integration_id = metadata.integration.integration_id
-
-        new_run_config.resolve(input=new_input, dir_path=new_input_dir_path)
-
-        # Resolve the managed input.
-        if managed_input_id:
-            new_managed_input_id = managed_input_id
-        elif metadata.tracking is not None and metadata.tracking.input_id:
-            new_managed_input_id = metadata.tracking.input_id
-        else:
-            new_managed_input_id = None
-
-        run_id = self.__new_run(
-            input=new_input,
-            instance_id=new_instance_id,
-            name=new_name,
-            description=new_description,
-            upload_id=upload_id,
-            options=new_options,
-            configuration=new_run_config,
-            batch_experiment_id=None,
-            external_result=None,
-            json_configurations=json_configurations,
-            input_dir_path=new_input_dir_path,
-            managed_input_id=new_managed_input_id,
-            cloned_run_id=cloned_run_id,
-        )
+        # We wrap the entire operation in a try/finally to clean up the
+        # possible dir temp created under `__resolve_clone_input`.
+        new_input, new_input_dir_path = None, None
+        try:
+            new_input, new_input_dir_path = self.__resolve_clone_input(
+                content_format=content_format,
+                input=input,
+                input_dir_path=input_dir_path,
+                cloned_run_id=cloned_run_id,
+            )
+            new_instance_id = instance_id if instance_id else metadata.application_instance_id
+            new_name = self.__resolve_clone_name(name, run_info.name, cloned_run_id)
+            new_description = self.__resolve_clone_description(description, run_info.description, cloned_run_id)
+            new_options = self.__resolve_clone_options(options, metadata.options)
+            parsed_config = self.__extract_run_config(
+                input=input,
+                configuration=configuration,
+                dir_path=new_input_dir_path,
+            )
+            new_run_config = self.__resolve_clone_run_config(parsed_config, metadata, new_input, new_input_dir_path)
+            new_managed_input_id = self.__resolve_clone_managed_input_id(managed_input_id, metadata.tracking)
+            run_id = self.__new_run(
+                input=new_input,
+                instance_id=new_instance_id,
+                name=new_name,
+                description=new_description,
+                upload_id=upload_id,
+                options=new_options,
+                configuration=new_run_config,
+                batch_experiment_id=None,
+                external_result=None,
+                json_configurations=json_configurations,
+                input_dir_path=new_input_dir_path,
+                managed_input_id=new_managed_input_id,
+                cloned_run_id=cloned_run_id,
+            )
+        finally:
+            # Clean up the auto-created temp dir (only when we created it, not
+            # when the caller supplied their own input_dir_path).
+            if new_input_dir_path and not input_dir_path:
+                shutil.rmtree(new_input_dir_path, ignore_errors=True)
 
         return run_id
 
@@ -2080,3 +1988,278 @@ class ApplicationRunMixin:
         self.upload_data(data=assets_dict, upload_url=url_assets)
 
         return url_assets.upload_id
+
+    def __resolve_clone_input(
+        self: "Application",
+        content_format: ContentFormat,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str | None,
+        input_dir_path: str | None,
+        cloned_run_id: str,
+    ) -> tuple[Any, str | None]:
+        """
+        Resolve the input and input directory path for a cloned run.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format of the original run, used to decide how to fetch
+            or forward the input.
+        input : Union[Input, dict, ManagedInput, BaseModel, str, None]
+            Caller-supplied input override. When provided for a JSON run, it is
+            used directly; otherwise the original run's input is fetched.
+        input_dir_path : Optional[str]
+            Caller-supplied directory path for multi-file input. When provided
+            for a MULTI_FILE run, it is used directly; otherwise the original
+            run's input files are downloaded to a temporary directory.
+        cloned_run_id : str
+            ID of the run being cloned, used to fetch the original input when
+            no override is supplied.
+
+        Returns
+        -------
+        tuple[Any, str | None]
+            A ``(new_input, new_input_dir_path)`` pair ready to be forwarded to
+            the new run. Exactly one of the two elements is non-``None`` (or
+            both are ``None`` for unrecognised format combinations).
+        """
+        if content_format == ContentFormat.JSON and input:
+            return input, None
+
+        if content_format == ContentFormat.JSON and not input:
+            return self.run_input(run_id=cloned_run_id), None
+
+        if content_format == ContentFormat.MULTI_FILE and input_dir_path:
+            return None, input_dir_path
+
+        if content_format == ContentFormat.MULTI_FILE and not input_dir_path:
+            tmpdirname = tempfile.mkdtemp()
+            self.run_input(run_id=cloned_run_id, output_dir_path=tmpdirname)
+
+            return None, tmpdirname
+
+        return None, None
+
+    def __resolve_clone_name(
+        self: "Application",
+        name: str | None,
+        run_name: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the name for a cloned run.
+
+        The name is truncated to 128 characters if it exceeds that limit. When
+        no name is supplied, a default of ``"<original_name> clone"`` (or
+        ``"<cloned_run_id> clone"`` when the original has no name) is used.
+
+        Parameters
+        ----------
+        name : Optional[str]
+            Caller-supplied name override.
+        run_name : str
+            Name of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_name`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved name, at most 128 characters long.
+        """
+        if name and len(name) <= 128:
+            return name
+
+        if name and len(name) > 128:
+            return name[:128]
+
+        suffix = " clone"
+        base = run_name if run_name else cloned_run_id
+
+        return base[: 128 - len(suffix)] + suffix
+
+    def __resolve_clone_description(
+        self: "Application",
+        description: str | None,
+        run_description: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the description for a cloned run.
+
+        The description is truncated to 256 characters if it exceeds that
+        limit. When no description is supplied, a default of
+        ``"Clone of <original_description>"`` (or
+        ``"Clone of <cloned_run_id>"`` when the original has no description)
+        is used.
+
+        Parameters
+        ----------
+        description : Optional[str]
+            Caller-supplied description override.
+        run_description : str
+            Description of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_description`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved description, at most 256 characters long.
+        """
+        if description and len(description) <= 256:
+            return description
+
+        if description and len(description) > 256:
+            return description[:256]
+
+        prefix = "Clone of "
+        base = run_description if run_description else cloned_run_id
+
+        return prefix + base[: 256 - len(prefix)]
+
+    def __resolve_clone_options(
+        self: "Application",
+        options: Options | dict[str, str] | None,
+        metadata_options: RunOptions | None,
+    ) -> Options | dict[str, str] | None:
+        """
+        Resolve the options for a cloned run.
+
+        When a caller-supplied override is present it takes precedence.
+        Otherwise the options are reconstructed from the original run's
+        ``options_summary``. Returns ``None`` when neither source is available.
+
+        Parameters
+        ----------
+        options : Optional[Union[Options, dict[str, str]]]
+            Caller-supplied options override.
+        metadata_options : Optional[RunOptions]
+            Options metadata from the original run.
+
+        Returns
+        -------
+        Options | dict[str, str] | None
+            Resolved options, or ``None`` if no options are available.
+        """
+        if options:
+            return options
+
+        if metadata_options:
+            summ = metadata_options.options_summary
+            if summ:
+                return {opt.name: opt.value for opt in summ}
+
+        return None
+
+    def __resolve_clone_run_config(
+        self: "Application",
+        parsed_config: RunConfiguration,
+        metadata: Metadata,
+        new_input: Any,
+        new_input_dir_path: str | None,
+    ) -> RunConfiguration:
+        """
+        Build a :class:`RunConfiguration` for a cloned run.
+
+        Fields present in ``parsed_config`` (derived from the caller's
+        overrides) take precedence over those stored in ``metadata`` (the
+        original run's values). Queuing settings (``disabled`` and
+        ``priority``) are handled independently so that only the field being
+        overridden is changed.
+
+        Parameters
+        ----------
+        parsed_config : RunConfiguration
+            Configuration extracted from the caller's arguments via
+            ``__extract_run_config``.
+        metadata : Metadata
+            Metadata of the original run, providing fallback values for each
+            configuration field.
+        new_input : Any
+            Resolved input for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+        new_input_dir_path : Optional[str]
+            Resolved input directory path for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+
+        Returns
+        -------
+        RunConfiguration
+            Fully resolved configuration ready to be passed to
+            ``__new_run``.
+        """
+        new_run_config = RunConfiguration()
+
+        new_run_config.execution_class = parsed_config.execution_class or metadata.execution_class
+        new_run_config.format = parsed_config.format if parsed_config.format is not None else metadata.format
+        new_run_config.run_type = parsed_config.run_type if parsed_config.run_type is not None else metadata.run_type
+        new_run_config.secrets_collection_id = parsed_config.secrets_collection_id or metadata.secrets_collection_id
+
+        # Resolve queuing.disabled: prefer the caller's value, fall back to metadata.
+        queuing = parsed_config.queuing
+        if queuing is not None and queuing.disabled is not None:
+            disabled = queuing.disabled
+        else:
+            disabled = metadata.queuing_disabled
+
+        if disabled is not None:
+            if new_run_config.queuing is None:
+                new_run_config.queuing = RunQueuing(disabled=disabled)
+            else:
+                new_run_config.queuing.disabled = disabled
+
+        # Resolve queuing.priority: prefer the caller's value, fall back to metadata.
+        if queuing is not None and queuing.priority is not None:
+            priority = queuing.priority
+        else:
+            priority = metadata.queuing_priority
+
+        if priority is not None:
+            if new_run_config.queuing is None:
+                new_run_config.queuing = RunQueuing(priority=priority)
+            else:
+                new_run_config.queuing.priority = priority
+
+        # Resolve integration_id: prefer the caller's value, fall back to metadata.
+        if parsed_config.integration_id:
+            new_run_config.integration_id = parsed_config.integration_id
+        elif metadata.integration:
+            new_run_config.integration_id = metadata.integration.integration_id
+
+        new_run_config.resolve(input=new_input, dir_path=new_input_dir_path)
+
+        return new_run_config
+
+    def __resolve_clone_managed_input_id(
+        self: "Application",
+        managed_input_id: str | None,
+        tracking: RunTrackingMetadata | None,
+    ) -> str | None:
+        """
+        Resolve the managed input ID for a cloned run.
+
+        Returns the caller-supplied override when present; otherwise falls back
+        to the ``input_id`` recorded in the original run's tracking metadata.
+        Returns ``None`` when neither source is available.
+
+        Parameters
+        ----------
+        managed_input_id : Optional[str]
+            Caller-supplied managed input ID override.
+        tracking : Optional[RunTrackingMetadata]
+            Tracking metadata of the original run.
+
+        Returns
+        -------
+        str | None
+            Resolved managed input ID, or ``None`` if not applicable.
+        """
+        if managed_input_id:
+            return managed_input_id
+
+        if tracking is not None and tracking.input_id:
+            return tracking.input_id
+
+        return None
