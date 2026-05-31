@@ -232,16 +232,28 @@ class ApplicationRunMixin:
                 cloned_run_id=cloned_run_id,
             )
             new_instance_id = instance_id if instance_id else metadata.application_instance_id
-            new_name = self.__resolve_clone_name(name, run_info.name, cloned_run_id)
-            new_description = self.__resolve_clone_description(description, run_info.description, cloned_run_id)
-            new_options = self.__resolve_clone_options(options, metadata.options)
+            new_name = self.__resolve_clone_name(name=name, run_name=run_info.name, cloned_run_id=cloned_run_id)
+            new_description = self.__resolve_clone_description(
+                description=description,
+                run_description=run_info.description,
+                cloned_run_id=cloned_run_id,
+            )
+            new_options = self.__resolve_clone_options(options=options, metadata_options=metadata.options)
             parsed_config = self.__extract_run_config(
                 input=input,
                 configuration=configuration,
                 dir_path=new_input_dir_path,
             )
-            new_run_config = self.__resolve_clone_run_config(parsed_config, metadata, new_input, new_input_dir_path)
-            new_managed_input_id = self.__resolve_clone_managed_input_id(managed_input_id, metadata.tracking)
+            new_run_config = self.__resolve_clone_run_config(
+                parsed_config=parsed_config,
+                metadata=metadata,
+                new_input=new_input,
+                new_input_dir_path=new_input_dir_path,
+            )
+            new_managed_input_id = self.__resolve_clone_managed_input_id(
+                managed_input_id=managed_input_id,
+                tracking=metadata.tracking,
+            )
             run_id = self.__new_run(
                 input=new_input,
                 instance_id=new_instance_id,

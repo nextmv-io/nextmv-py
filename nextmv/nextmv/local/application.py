@@ -48,9 +48,11 @@ from nextmv.run import (
     ErrorLog,
     Format,
     FormatInput,
+    Metadata,
     Run,
     RunConfiguration,
     RunInformation,
+    RunOptions,
     RunResult,
     SyncedRun,
     TrackedRun,
@@ -411,6 +413,268 @@ class Application(BaseModel):
 
         return local_app
 
+    def clone_run(
+        self,
+        cloned_run_id: str,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        name: str | None = None,
+        description: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+    ) -> str:
+        """
+        Clone a run, allowing overrides on various parameters.
+
+        This method fetches all the elements of the run identified with
+        `cloned_run_id` and creates a new run with the same characteristics.
+        Specifying different arguments such as `input`, `options`, and
+        more, allows you to override specific attributes of the original
+        (cloned) run.
+
+        Returns the `run_id` of the new (submitted) run.
+
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            `dict`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
+
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them. If both the `input_dir_path` and `input` arguments are
+            provided, the `input` is ignored.
+
+            When `input_dir_path` is specified, the `configuration` argument
+            must also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.ContentFormat.MULTI_FILE`
+
+            When working with JSON data, use the `input` argument directly.
+        name: Optional[str]
+            Name of the local run.
+        description: Optional[str]
+            Description of the local run.
+        options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        input_dir_path: Optional[str]
+            Path to a directory containing input files. This is useful for
+            input formats like `nextmv.ContentFormat.MULTI_FILE`. If both
+            `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
+
+        Returns
+        ----------
+        str
+            ID (`run_id`) of the new run that was submitted (cloned from the
+            original).
+
+        Raises
+        ------
+        ValueError
+            If the `src` property for the `Application` is not specified.
+            If `input_dir_path` is specified but `configuration` is not provided.
+        FileNotFoundError
+            If the app.yaml file cannot be found in the specified `src` directory.
+
+        Examples
+        --------
+        >>> from nextmv.local import Application
+        >>> app = Application(id="my-app", src="/path/to/app")
+        >>> run_id = app.clone_run(cloned_run_id="run-456")
+        >>> print(f"Local run started with ID: {run_id}")
+        """
+
+        run_info = self.run_information(run_id=cloned_run_id)
+        metadata = run_info.metadata
+        content_format = metadata.content_format
+
+        new_input, new_input_dir_path = None, None
+        try:
+            new_input, new_input_dir_path = self.__resolve_clone_input(
+                content_format=content_format,
+                input=input,
+                input_dir_path=input_dir_path,
+                cloned_run_id=cloned_run_id,
+            )
+            new_name = self.__resolve_clone_name(name=name, run_name=run_info.name, cloned_run_id=cloned_run_id)
+            new_description = self.__resolve_clone_description(
+                description=description,
+                run_description=run_info.description,
+                cloned_run_id=cloned_run_id,
+            )
+            new_options = self.__resolve_clone_options(options=options, metadata_options=metadata.options)
+            parsed_config = self.__extract_run_config(
+                input=input,
+                configuration=configuration,
+                dir_path=new_input_dir_path,
+            )
+            new_run_config = self.__resolve_clone_run_config(
+                parsed_config=parsed_config,
+                metadata=metadata,
+                new_input=new_input,
+                new_input_dir_path=new_input_dir_path,
+            )
+            run_id = self.new_run(
+                input=new_input,
+                name=new_name,
+                description=new_description,
+                options=new_options,
+                configuration=new_run_config,
+                json_configurations=json_configurations,
+                input_dir_path=new_input_dir_path,
+            )
+        finally:
+            if new_input_dir_path and not input_dir_path:
+                shutil.rmtree(new_input_dir_path, ignore_errors=True)
+
+        return run_id
+
+    def clone_run_with_result(
+        self,
+        cloned_run_id: str,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        name: str | None = None,
+        description: str | None = None,
+        run_options: Options | dict[str, str] | None = None,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        output_dir_path: str | None = ".",
+    ) -> RunResult:
+        """
+        Clone a run and poll for the result. This is a convenience method that
+        combines the `clone_run` and `run_result_with_polling` methods,
+        applying polling logic to check when the run succeeded.
+
+        This method is the local equivalent to
+        `cloud.Application.clone_run_with_result`, which submits the input to
+        Nextmv Cloud. This method runs the application locally using the `src`
+        of the app.
+
+        Make sure that the `src` attribute is set on the `Application` class
+        before running locally, as it is required by the method.
+
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            `dict`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
+
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them. If both the `input_dir_path` and `input` arguments are
+            provided, the `input` is ignored.
+
+            When `input_dir_path` is specified, the `configuration` argument
+            must also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.ContentFormat.MULTI_FILE`
+
+            When working with JSON data, use the `input` argument directly.
+        name: Optional[str]
+            Name of the local run.
+        description: Optional[str]
+            Description of the local run.
+        options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        input_dir_path: Optional[str]
+            Path to a directory containing input files. This is useful for
+            input formats like `nextmv.ContentFormat.MULTI_FILE`. If both
+            `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This
+            is required if the output is non-JSON. If the directory does not
+            exist, it will be created. Uses the current directory by default.
+
+        Returns
+        ----------
+        str
+            ID (`run_id`) of the new run that was submitted (cloned from the
+            original).
+
+        Raises
+        ------
+        ValueError
+            If the `src` property for the `Application` is not specified.
+            If `input_dir_path` is specified but `configuration` is not provided.
+        FileNotFoundError
+            If the app.yaml file cannot be found in the specified `src` directory.
+
+        Examples
+        --------
+        >>> from nextmv.local import Application
+        >>> app = Application(id="my-app", src="/path/to/app")
+        >>> run_result = app.clone_run_with_result(cloned_run_id="run-456")
+        >>> print(f"Local run completed with result: {run_result}")
+        """
+
+        run_id = self.clone_run(
+            cloned_run_id=cloned_run_id,
+            input=input,
+            name=name,
+            description=description,
+            options=run_options,
+            configuration=configuration,
+            json_configurations=json_configurations,
+            input_dir_path=input_dir_path,
+        )
+
+        return self.run_result_with_polling(
+            run_id=run_id,
+            polling_options=polling_options,
+            output_dir_path=output_dir_path,
+        )
+
     def is_registered(self) -> bool:
         """
         Check if the local application is registered in the local registry.
@@ -566,7 +830,7 @@ class Application(BaseModel):
         ...     input={"vehicles": [{"id": "v1"}]},
         ...     options={"duration": "10s"}
         ... )
-        >>> print(f"Local run completed with ID: {run_id}")
+        >>> print(f"Local run started with ID: {run_id}")
         """
 
         configuration = self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
@@ -1995,3 +2259,209 @@ class Application(BaseModel):
 
         # For CSV_ARCHIVE and MULTI_FILE, inputs_path should be a directory
         return os.path.isdir(inputs_path)
+
+    def __resolve_clone_input(
+        self: "Application",
+        content_format: ContentFormat,
+        input: Input | dict[str, Any] | BaseModel | str | None,
+        input_dir_path: str | None,
+        cloned_run_id: str,
+    ) -> tuple[Any, str | None]:
+        """
+        Resolve the input and input directory path for a cloned run.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format of the original run, used to decide how to fetch
+            or forward the input.
+        input : Union[Input, dict, ManagedInput, BaseModel, str, None]
+            Caller-supplied input override. When provided for a JSON run, it is
+            used directly; otherwise the original run's input is fetched.
+        input_dir_path : Optional[str]
+            Caller-supplied directory path for multi-file input. When provided
+            for a MULTI_FILE run, it is used directly; otherwise the original
+            run's input files are downloaded to a temporary directory.
+        cloned_run_id : str
+            ID of the run being cloned, used to fetch the original input when
+            no override is supplied.
+
+        Returns
+        -------
+        tuple[Any, str | None]
+            A ``(new_input, new_input_dir_path)`` pair ready to be forwarded to
+            the new run. Exactly one of the two elements is non-``None`` (or
+            both are ``None`` for unrecognised format combinations).
+        """
+        if content_format == ContentFormat.JSON and input:
+            return input, None
+
+        if content_format == ContentFormat.JSON and not input:
+            return self.run_input(run_id=cloned_run_id), None
+
+        if content_format == ContentFormat.MULTI_FILE and input_dir_path:
+            return None, input_dir_path
+
+        if content_format == ContentFormat.MULTI_FILE and not input_dir_path:
+            tmpdirname = tempfile.mkdtemp()
+            self.run_input(run_id=cloned_run_id, output_dir_path=tmpdirname)
+
+            return None, tmpdirname
+
+        return None, None
+
+    def __resolve_clone_name(
+        self: "Application",
+        name: str | None,
+        run_name: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the name for a cloned run.
+
+        The name is truncated to 128 characters if it exceeds that limit. When
+        no name is supplied, a default of ``"<original_name> clone"`` (or
+        ``"<cloned_run_id> clone"`` when the original has no name) is used.
+
+        Parameters
+        ----------
+        name : Optional[str]
+            Caller-supplied name override.
+        run_name : str
+            Name of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_name`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved name, at most 128 characters long.
+        """
+        if name and len(name) <= 128:
+            return name
+
+        if name and len(name) > 128:
+            return name[:128]
+
+        suffix = " clone"
+        base = run_name if run_name else cloned_run_id
+
+        return base[: 128 - len(suffix)] + suffix
+
+    def __resolve_clone_description(
+        self: "Application",
+        description: str | None,
+        run_description: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the description for a cloned run.
+
+        The description is truncated to 256 characters if it exceeds that
+        limit. When no description is supplied, a default of
+        ``"Clone of <original_description>"`` (or
+        ``"Clone of <cloned_run_id>"`` when the original has no description)
+        is used.
+
+        Parameters
+        ----------
+        description : Optional[str]
+            Caller-supplied description override.
+        run_description : str
+            Description of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_description`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved description, at most 256 characters long.
+        """
+        if description and len(description) <= 256:
+            return description
+
+        if description and len(description) > 256:
+            return description[:256]
+
+        prefix = "Clone of "
+        base = run_description if run_description else cloned_run_id
+
+        return prefix + base[: 256 - len(prefix)]
+
+    def __resolve_clone_options(
+        self: "Application",
+        options: Options | dict[str, str] | None,
+        metadata_options: RunOptions | None,
+    ) -> Options | dict[str, str] | None:
+        """
+        Resolve the options for a cloned run.
+
+        When a caller-supplied override is present it takes precedence.
+        Otherwise the options are reconstructed from the original run's
+        ``options_summary``. Returns ``None`` when neither source is available.
+
+        Parameters
+        ----------
+        options : Optional[Union[Options, dict[str, str]]]
+            Caller-supplied options override.
+        metadata_options : Optional[RunOptions]
+            Options metadata from the original run.
+
+        Returns
+        -------
+        Options | dict[str, str] | None
+            Resolved options, or ``None`` if no options are available.
+        """
+        if options:
+            return options
+
+        if metadata_options:
+            summ = metadata_options.options_summary
+            if summ:
+                return {opt.name: opt.value for opt in summ}
+
+        return None
+
+    def __resolve_clone_run_config(
+        self: "Application",
+        parsed_config: RunConfiguration,
+        metadata: Metadata,
+        new_input: Any,
+        new_input_dir_path: str | None,
+    ) -> RunConfiguration:
+        """
+        Build a :class:`RunConfiguration` for a cloned run.
+
+        Fields present in ``parsed_config`` (derived from the caller's
+        overrides) take precedence over those stored in ``metadata`` (the
+        original run's values).
+
+        Parameters
+        ----------
+        parsed_config : RunConfiguration
+            Configuration extracted from the caller's arguments via
+            ``__extract_run_config``.
+        metadata : Metadata
+            Metadata of the original run, providing fallback values for each
+            configuration field.
+        new_input : Any
+            Resolved input for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+        new_input_dir_path : Optional[str]
+            Resolved input directory path for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+
+        Returns
+        -------
+        RunConfiguration
+            Fully resolved configuration ready to be passed to
+            ``__new_run``.
+        """
+        new_run_config = RunConfiguration()
+
+        new_run_config.format = parsed_config.format if parsed_config.format is not None else metadata.format
+        new_run_config.resolve(input=new_input, dir_path=new_input_dir_path)
+
+        return new_run_config
