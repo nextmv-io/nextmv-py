@@ -158,6 +158,14 @@ def create(  # noqa: C901
 
     endpoint = _strip_scheme(str(endpoint))
 
+    # Providing custom OIDC config only makes sense for non-default endpoints.
+    if (oidc_discovery_url or oidc_client_id) and endpoint == DEFAULT_ENDPOINT:
+        error(
+            "Custom [magenta]--oidc-discovery-url[/magenta] / [magenta]--client-id[/magenta] "
+            "flags are only valid for non-default endpoints. "
+            f"The default endpoint [magenta]{DEFAULT_ENDPOINT}[/magenta] already has built-in OIDC configuration."
+        )
+
     # >>> Determine profile type
 
     # If --api-key is supplied, we always use the api_key profile type regardless
@@ -298,6 +306,6 @@ def create(  # noqa: C901
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
         message(
-            "Run [code]nextmv login[/code]" + (f" --profile {profile}" if profile else "") + " to authenticate.",
+            "Run [code]nextmv login" + (f" --profile {profile}" if profile else "") + "[/code] to authenticate.",
             indents=1,
         )
