@@ -190,7 +190,7 @@ def handle_outputs(
         if output is None or output == "":
             # To avoid overflowing the terminal with a huge output, we trim the assets.
             res_output = run_result.output
-            if isinstance(res_output, dict) and "assets" in res_output.keys():
+            if isinstance(res_output, dict) and "assets" in res_output.keys() and res_output["assets"]:
                 info(
                     "Removed [magenta]assets[/magenta] from output for cleaner display, "
                     "use --output to save the full output."

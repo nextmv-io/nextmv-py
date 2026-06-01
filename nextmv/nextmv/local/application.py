@@ -23,10 +23,11 @@ from typing import Any
 import rich
 from pydantic import Field
 
-from nextmv import cloud, deprecated
+from nextmv import cloud
 from nextmv._serialization import deflated_serialize_json
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat
+from nextmv.deprecated import deprecated
 from nextmv.input import INPUTS_KEY, Input, InputFormat
 from nextmv.local.local import (
     DEFAULT_INPUT_JSON_FILE,
@@ -843,7 +844,7 @@ class Application(BaseModel):
 
         input_data = None if input_dir_path else self.__extract_input_data(input)
         options_dict = self.__extract_options_dict(options, json_configurations)
-        run_config_dict = self.__extract_run_config(input, configuration, input_dir_path)
+        run_config_dict = self.__extract_run_config(input, configuration, input_dir_path).to_dict()
         run_id = run(
             app_id=self.app_id if self.app_id is not None else "",
             src=self.src,
@@ -2041,23 +2042,21 @@ class Application(BaseModel):
         input: Input | dict[str, Any] | BaseModel | str = None,
         configuration: RunConfiguration | dict[str, Any] | None = None,
         dir_path: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> RunConfiguration:
         """
         Auxiliary function to extract the run configuration that will be sent
         to the application for execution.
         """
 
         if configuration is not None:
-            configuration_dict = (
-                configuration.to_dict() if isinstance(configuration, RunConfiguration) else configuration
-            )
-            return configuration_dict
+            if isinstance(configuration, RunConfiguration):
+                return configuration
+            return RunConfiguration.from_dict(configuration)
 
         configuration = RunConfiguration()
         configuration.resolve(input=input, dir_path=dir_path)
-        configuration_dict = configuration.to_dict()
 
-        return configuration_dict
+        return configuration
 
     def __sync_run(  # noqa: C901
         self,

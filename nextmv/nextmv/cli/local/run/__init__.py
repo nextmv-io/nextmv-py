@@ -4,6 +4,7 @@ This module defines the local run command tree for the Nextmv CLI.
 
 import typer
 
+from nextmv.cli.local.run.clone import app as clone_app
 from nextmv.cli.local.run.create import app as create_app
 from nextmv.cli.local.run.get import app as get_app
 from nextmv.cli.local.run.information import app as information_app
@@ -15,6 +16,7 @@ from nextmv.cli.local.run.visuals import app as visuals_app
 
 # Set up subcommand application.
 app = typer.Typer()
+app.add_typer(clone_app)
 app.add_typer(create_app)
 app.add_typer(get_app)
 app.add_typer(information_app)
