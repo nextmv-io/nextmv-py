@@ -67,21 +67,16 @@ AUTH_DIR = Path.home() / ".nextmv" / "auth"
 
 # >>> Provider constants
 
-# TODO: change before merging.
-
-OIDC_DISCOVERY_URL = "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_xtlIYs4fU/.well-known/openid-configuration"
-
-# Cognito hosted UI domain for this user pool.
-_COGNITO_DOMAIN = "https://marius-local-nextmv-us-west-2.auth.us-west-2.amazoncognito.com"
+OIDC_DISCOVERY_URL = "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_1jHS2b9HU/.well-known/openid-configuration"
+CLIENT_ID = "4k91vdlr1m52v9v45h9vc7a25e"
+SCOPES = "email openid profile"
+CALLBACK_PORT = 56734
 
 # Hard-coded fallback endpoints derived from the discovery document so that
 # the flow works even when the discovery URL is temporarily unreachable.
+_COGNITO_DOMAIN = "https://auth.cloud.nextmv.io"
 _FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
 _FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
-
-CLIENT_ID = "lvd4h82aip4mk27b65ecg3vde"
-SCOPES = "email openid profile"
-CALLBACK_PORT = 56734
 
 # Timeout (seconds) to wait for the user to complete the browser auth step.
 _BROWSER_TIMEOUT = 300

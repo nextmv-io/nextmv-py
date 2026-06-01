@@ -8,7 +8,7 @@ from rich.table import Table
 
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import error
-from nextmv.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys
+from nextmv.config import API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, load_config, non_profile_keys
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -33,6 +33,7 @@ def list() -> None:
     default = {
         "api_key": config.get(API_KEY_KEY),
         "endpoint": config.get(ENDPOINT_KEY),
+        "profile_type": config.get(PROFILE_TYPE_KEY, "api_key"),
         "name": "Default",
     }
     profiles = [default]
@@ -46,15 +47,17 @@ def list() -> None:
             "name": k,
             "api_key": v.get(API_KEY_KEY),
             "endpoint": v.get(ENDPOINT_KEY),
+            "profile_type": v.get(PROFILE_TYPE_KEY, "api_key"),
         }
         profiles.append(profile)
 
-    table = Table("Profile name", "API Key", "Endpoint")
+    table = Table("Profile name", "Type", "API Key", "Endpoint")
     not_set = "[italic]Not set[/italic]"
     for profile in profiles:
         if profile["name"] != "Default":
             table.add_row(
                 profile["name"],
+                profile["profile_type"],
                 obscure_api_key(profile["api_key"]) if profile.get("api_key") is not None else not_set,
                 profile["endpoint"] if profile.get("endpoint") is not None else not_set,
             )
@@ -70,6 +73,7 @@ def list() -> None:
 
         table.add_row(
             f"[bold yellow]{profile['name']}[/bold yellow]",
+            f"[bold yellow]{profile['profile_type']}[/bold yellow]",
             f"[bold yellow]{api_key}[/bold yellow]",
             f"[bold yellow]{endpoint}[/bold yellow]",
         )
