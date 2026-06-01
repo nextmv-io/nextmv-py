@@ -56,6 +56,7 @@ def run(
     input_data: dict[str, Any] | str | None = None,
     inputs_dir_path: str | None = None,
     options: dict[str, Any] | None = None,
+    cloned_run_id: str | None = None,
 ) -> str:
     """
     Execute a local run.
@@ -88,6 +89,8 @@ def run(
         provided, this parameter takes precedence over `input_data`.
     options : Optional[dict[str, Any]], optional
         Additional options for the run, by default None.
+    cloned_run_id : Optional[str], optional
+        The ID of the run that is being cloned, if applicable, by default None.
 
     Returns
     -------
@@ -105,6 +108,7 @@ def run(
         name=name,
         description=description,
         options=options,
+        cloned_run_id=cloned_run_id,
     )
     record_input(
         run_dir=run_dir,
@@ -171,6 +175,7 @@ def new_run(
     name: str | None = None,
     description: str | None = None,
     options: dict[str, Any] | None = None,
+    cloned_run_id: str | None = None,
 ) -> str:
     """
     Initializes a new run.
@@ -193,6 +198,8 @@ def new_run(
         The description for the run, by default None.
     options : Optional[dict[str, Any]], optional
         Additional options for the run, by default None.
+    cloned_run_id : Optional[str], optional
+        The ID of the run that is being cloned, if applicable, by default None.
 
     Returns
     -------
@@ -256,7 +263,7 @@ def new_run(
         secrets_collection_id="",
         status_v2=StatusV2.queued,
         tracking=RunTrackingMetadata(
-            cloned_run_id="",
+            cloned_run_id=cloned_run_id if cloned_run_id else "",
             input_id="",
         ),
     )
