@@ -111,7 +111,7 @@ def create(
         typer.Option(
             "--definition-id",
             "-d",
-            help="The definition ID to use for the run. Required for certain run types like ensemble runs.",
+            help="The definition ID to use for the run. Setting it converts the run into an ensemble run.",
             metavar="DEFINITION_ID",
             rich_help_panel="Run configuration",
         ),
@@ -335,6 +335,7 @@ def create(
         definition_id=definition_id,
     )
     run_options = build_run_options(options)
+    config = _resolve_ensemble_content_format(config=config, stdin=stdin, input=input)
 
     # Start the run before deciding if we should poll or not.
     input_kwarg = resolve_input_kwarg(
@@ -422,6 +423,12 @@ def build_run_config(
         The built run configuration.
     """
 
+    if run_type == RunType.ENSEMBLE and not definition_id:
+        error(
+            f"--run-type set to [magenta]{RunType.ENSEMBLE.value}[/magenta] and --definition-id not set. "
+            "A definition ID must be provided for ensemble runs.",
+        )
+
     config = RunConfiguration(
         run_type=RunTypeConfiguration(
             run_type=RunType(run_type),
@@ -445,6 +452,7 @@ def build_run_config(
         config.integration_id = integration_id
     if definition_id is not None:
         config.run_type.definition_id = definition_id
+        config.run_type.run_type = RunType.ENSEMBLE
 
     return config
 
@@ -549,3 +557,68 @@ def resolve_input_kwarg(
         return {"input_dir_path": input}
 
     error(f"Input path [magenta]{input}[/magenta] does not exist.")
+
+
+def _resolve_ensemble_content_format(
+    config: RunConfiguration,
+    stdin: str | None,
+    input: str | None,
+) -> RunConfiguration:
+    """
+    Sets the run type to ensemble in the run configuration if the content
+    format is not explicitly set and the run type is ensemble. This is needed
+    to trigger the auto-detection of the content format for ensemble runs,
+    which is based on the input provided. If the content format is explicitly
+    set, we assume the user knows what they are doing and we do not override
+    it.
+
+    Parameters
+    ----------
+    config : RunConfiguration
+        The run configuration to update.
+    stdin : str | None
+        The stdin input data, if provided.
+    input : str | None
+        The input path, if provided.
+
+    Returns
+    -------
+    RunConfiguration
+        The updated run configuration with the inferred content format.
+    """
+
+    # If we are not dealing with an ensemble run or the content format is
+    # explicitly set, we do not need to do anything.
+    if config.run_type.run_type != RunType.ENSEMBLE or (
+        config.format is not None and config.format.format_input is not None
+    ):
+        return config
+
+    # When cloning a run, there is no input to infer the content format from.
+    # In that case, we do not modify the config.
+    if stdin is None and input is None:
+        return config
+
+    # Infer the appropriate content format based on the input provided.
+    content_format = ContentFormat.JSON
+    if stdin is not None:
+        try:
+            json.loads(stdin)
+        except json.JSONDecodeError:
+            content_format = InputFormat.TEXT
+
+    if input is not None:
+        input_path = Path(input)
+        if input_path.is_dir() or (input_path.is_file() and tarfile.is_tarfile(input_path)):
+            content_format = ContentFormat.MULTI_FILE
+        elif not input_path.is_file():
+            error(f"Input path [magenta]{input}[/magenta] does not exist.")
+
+    # Set the appropriate content format in the config to trigger the correct
+    # handling of the input for ensemble runs.
+    if config.format is None:
+        config.format = Format(format_input=FormatInput(input_type=content_format))
+    else:
+        config.format.format_input = FormatInput(input_type=content_format)
+
+    return config
