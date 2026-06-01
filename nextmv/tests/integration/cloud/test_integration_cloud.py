@@ -838,6 +838,8 @@ class CloudIntegrationWorkflow(FlowSpec):
             ),
         )
         assert result.metadata.status_v2 == nextmv.StatusV2.succeeded
+        assert result.metadata.run_type.run_type == nextmv.RunType.ENSEMBLE
+        assert result.metadata.run_type.definition_id == definition.id
 
         # We can delete an ensemble definition.
         app.delete_ensemble_definition(ensemble_definition_id=definition.id)
