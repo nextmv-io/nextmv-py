@@ -100,6 +100,22 @@ def _strip_scheme(url: str) -> str:
     return s.rstrip("/")
 
 
+_OIDC_DISCOVERY_SUFFIX = "/.well-known/openid-configuration"
+
+
+def _normalize_oidc_discovery_url(url: str) -> str:
+    """Append the OIDC discovery suffix if not already present.
+
+    Allows users to store the shorter base URL in ``sessions.yaml`` (e.g.
+    ``https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc123``) and
+    have the full discovery URL resolved automatically.
+    """
+    stripped = url.strip().rstrip("/")
+    if stripped.endswith(_OIDC_DISCOVERY_SUFFIX):
+        return stripped
+    return stripped + _OIDC_DISCOVERY_SUFFIX
+
+
 def load_config() -> dict[str, Any]:
     """
     Load the current configuration from the config file. Returns an empty
@@ -210,7 +226,7 @@ def get_endpoint_oidc_config(endpoint: str, sessions: dict[str, Any] | None = No
             url = entry.get(OIDC_DISCOVERY_URL_KEY)
             cid = entry.get(CLIENT_ID_KEY)
             if url and cid:
-                return {OIDC_DISCOVERY_URL_KEY: url, CLIENT_ID_KEY: cid}
+                return {OIDC_DISCOVERY_URL_KEY: _normalize_oidc_discovery_url(url), CLIENT_ID_KEY: cid}
 
     return _BUILTIN_OIDC.get(ep)
 
