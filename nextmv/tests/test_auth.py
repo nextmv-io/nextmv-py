@@ -9,7 +9,15 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import nextmv.auth as auth_module
-from nextmv.auth import _discover_endpoints, _generate_pkce_pair, is_token_expired, load_tokens, save_tokens, token_dir
+from nextmv.auth import (
+    _discover_endpoints,
+    _generate_pkce_pair,
+    fetch_organizations,
+    is_token_expired,
+    load_tokens,
+    save_tokens,
+    token_dir,
+)
 
 
 class TestTokenDir(unittest.TestCase):
@@ -185,6 +193,55 @@ class TestDiscoverEndpoints(unittest.TestCase):
         # Should return the module-level fallbacks without raising.
         self.assertTrue(auth_ep.startswith("http"))
         self.assertTrue(token_ep.startswith("http"))
+
+
+class TestFetchOrganizations(unittest.TestCase):
+    """Tests for fetch_organizations helper."""
+
+    _SAMPLE_ORGS = [
+        {"id": "uuid-1", "name": "Acme Corp", "pending_invite": False, "role": "admin"},
+        {"id": "uuid-2", "name": "Nextmv", "pending_invite": False, "role": "developer"},
+    ]
+
+    def _mock_response(self, payload):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = payload
+        mock_resp.raise_for_status.return_value = None
+        return mock_resp
+
+    def test_returns_org_list(self):
+        with patch("nextmv.auth.requests.get", return_value=self._mock_response(self._SAMPLE_ORGS)) as mock_get:
+            result = fetch_organizations("tok-abc", "api.cloud.nextmv.io")
+        self.assertEqual(result, self._SAMPLE_ORGS)
+        called_url = mock_get.call_args[0][0]
+        self.assertIn("/v1/internal/me/organization", called_url)
+
+    def test_bearer_token_sent(self):
+        with patch("nextmv.auth.requests.get", return_value=self._mock_response([])) as mock_get:
+            fetch_organizations("my-token", "api.cloud.nextmv.io")
+        headers = mock_get.call_args[1]["headers"]
+        self.assertEqual(headers["Authorization"], "Bearer my-token")
+
+    def test_endpoint_without_scheme_gets_https(self):
+        with patch("nextmv.auth.requests.get", return_value=self._mock_response([])) as mock_get:
+            fetch_organizations("tok", "api.cloud.nextmv.io")
+        called_url = mock_get.call_args[0][0]
+        self.assertTrue(called_url.startswith("https://"))
+
+    def test_endpoint_with_scheme_preserved(self):
+        with patch("nextmv.auth.requests.get", return_value=self._mock_response([])) as mock_get:
+            fetch_organizations("tok", "https://api.cloud.nextmv.io")
+        called_url = mock_get.call_args[0][0]
+        self.assertTrue(called_url.startswith("https://"))
+
+    def test_http_error_propagates(self):
+        import requests as req_lib
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = req_lib.HTTPError("403 Forbidden")
+        with patch("nextmv.auth.requests.get", return_value=mock_resp):
+            with self.assertRaises(req_lib.HTTPError):
+                fetch_organizations("bad-token", "api.cloud.nextmv.io")
 
 
 if __name__ == "__main__":

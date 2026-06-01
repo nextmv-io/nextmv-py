@@ -18,6 +18,7 @@ from nextmv.config import (
     get_endpoint_oidc_config,
     get_profile_endpoint,
     get_profile_type,
+    get_team_id,
     list_pkce_profiles,
     load_sessions,
     save_sessions,
@@ -291,6 +292,38 @@ class TestLoadSaveSessions(unittest.TestCase):
             with patch("nextmv.config.SESSIONS_FILE", sessions_path):
                 result = load_sessions()
         self.assertEqual(result, {})
+
+
+class TestGetTeamId(unittest.TestCase):
+    """Tests for get_team_id helper."""
+
+    def test_default_profile_with_team_id(self):
+        config = {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io", "team_id": "abc-123"}
+        self.assertEqual(get_team_id(config, None), "abc-123")
+
+    def test_default_profile_without_team_id(self):
+        config = {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
+        self.assertIsNone(get_team_id(config, None))
+
+    def test_named_profile_with_team_id(self):
+        config = {"work": {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io", "team_id": "team-uuid"}}
+        self.assertEqual(get_team_id(config, "work"), "team-uuid")
+
+    def test_named_profile_without_team_id(self):
+        config = {"work": {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io"}}
+        self.assertIsNone(get_team_id(config, "work"))
+
+    def test_whitespace_stripped(self):
+        config = {"team_id": "  uuid-with-spaces  "}
+        self.assertEqual(get_team_id(config, None), "uuid-with-spaces")
+
+    def test_empty_string_returns_none(self):
+        config = {"team_id": ""}
+        self.assertIsNone(get_team_id(config, None))
+
+    def test_named_profile_not_in_config_returns_none(self):
+        config = {}
+        self.assertIsNone(get_team_id(config, "nonexistent"))
 
 
 if __name__ == "__main__":

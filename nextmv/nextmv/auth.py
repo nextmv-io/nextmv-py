@@ -558,3 +558,47 @@ def run_pkce_flow(
         raise RuntimeError("No authorization code received. Please try running [code]nextmv login[/code] again.")
 
     return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid)
+
+
+def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]]:
+    """
+    Fetch the list of organizations (teams) the authenticated user belongs to.
+
+    Calls ``GET https://<endpoint>/v1/internal/me/organization`` and returns
+    the response body as a list of organization dicts.
+
+    Each dict contains at minimum:
+
+    - ``id`` (str) — the team UUID; use this for the ``nextmv-account`` header.
+    - ``name`` (str) — the human-readable team name; show this to the user.
+    - ``role`` (str) — the user's role in the team.
+    - ``pending_invite`` (bool) — whether the user has a pending invite.
+
+    Parameters
+    ----------
+    access_token : str
+        A valid access token (or id_token) for the authenticated user.
+    endpoint : str
+        The API endpoint hostname, e.g. ``"api.cloud.nextmv.io"``.  Leading
+        ``https://`` / ``http://`` schemes are accepted and preserved.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        The list of organization objects returned by the API.
+
+    Raises
+    ------
+    requests.HTTPError
+        If the API returns a non-2xx response.
+    """
+    # Ensure the endpoint has a scheme.
+    base = endpoint if endpoint.startswith(("https://", "http://")) else f"https://{endpoint}"
+    url = f"{base.rstrip('/')}/v1/internal/me/organization"
+    resp = requests.get(
+        url,
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()

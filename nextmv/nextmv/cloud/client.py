@@ -25,7 +25,7 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
-from nextmv.config import CONFIG_FILE, PROFILE_TYPE_PKCE, get_auth_session, get_profile_type, load_config
+from nextmv.config import CONFIG_FILE, PROFILE_TYPE_PKCE, get_auth_session, get_profile_type, get_team_id, load_config
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -272,11 +272,15 @@ class Client:
         if bearer_token is not None:
             # pkce profile: use the stored / refreshed access token.
             self.api_key = bearer_token
+            # Resolve the team ID stored in the profile config and pass it as
+            # the nextmv-account header so the API can scope requests correctly.
+            cfg = load_config()
+            team_id = get_team_id(cfg, profile)
+            self.__set_headers_api_key(self.api_key, team_id=team_id)
         else:
             # api_key profile (default): legacy resolution.
             self.api_key = self.__resolve_api_key(profile)
-
-        self.__set_headers_api_key(self.api_key)
+            self.__set_headers_api_key(self.api_key)
 
         if self.configuration_file is not None and self.configuration_file != "":
             deprecated(
@@ -782,7 +786,7 @@ class Client:
 
         return api_key
 
-    def __set_headers_api_key(self, api_key: str) -> None:
+    def __set_headers_api_key(self, api_key: str, team_id: str | None = None) -> None:
         """
         Sets the Authorization and Content-Type headers.
 
@@ -793,12 +797,18 @@ class Client:
         ----------
         api_key : str
             The API key to be included in the Authorization header.
+        team_id : str | None
+            Optional team UUID. When provided (pkce profiles only), the
+            ``nextmv-account`` header is added to scope requests to the
+            correct team.
         """
 
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+        if team_id:
+            self.headers["nextmv-account"] = team_id
 
 
 def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[str, Any] | None = None) -> int:

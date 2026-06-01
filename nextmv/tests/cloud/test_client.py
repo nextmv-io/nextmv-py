@@ -353,6 +353,52 @@ class TestSetHeadersApiKey(unittest.TestCase):
                 self.assertEqual(client.headers["Authorization"], "Bearer profile-key")
 
 
+class TestSetHeadersPkce(unittest.TestCase):
+    """Tests for nextmv-account header on pkce profiles."""
+
+    def _pkce_config(self, team_id=None, profile_name="work"):
+        entry = {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
+        if team_id:
+            entry["team_id"] = team_id
+        return {profile_name: entry}
+
+    def _make_pkce_client(self, config, profile="work", token="tok-abc"):
+        from datetime import datetime, timezone
+
+        tokens = {
+            "id_token": token,
+            "access_token": token,
+            "refresh_token": "refresh-xyz",
+            "expires_at": (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat(),
+        }
+        with patch("nextmv.cloud.client.load_config", return_value=config):
+            with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
+                with patch("nextmv.cloud.client.is_token_expired", return_value=False):
+                    with patch.dict(os.environ) as env:
+                        env.pop("NEXTMV_API_KEY", None)
+                        env.pop("NEXTMV_PROFILE", None)
+                        env.pop("NEXTMV_ENDPOINT", None)
+                        return Client(profile=profile)
+
+    def test_nextmv_account_header_set_when_team_id_present(self):
+        """nextmv-account header is set to the team UUID for pkce profiles."""
+        config = self._pkce_config(team_id="team-uuid-123")
+        client = self._make_pkce_client(config)
+        self.assertEqual(client.headers.get("nextmv-account"), "team-uuid-123")
+
+    def test_nextmv_account_header_absent_when_no_team_id(self):
+        """nextmv-account header is not set when team_id is absent."""
+        config = self._pkce_config(team_id=None)
+        client = self._make_pkce_client(config)
+        self.assertNotIn("nextmv-account", client.headers)
+
+    def test_authorization_header_uses_id_token(self):
+        """Authorization header uses the id_token for pkce profiles."""
+        config = self._pkce_config(team_id="tid")
+        client = self._make_pkce_client(config, token="id-tok-xyz")
+        self.assertEqual(client.headers["Authorization"], "Bearer id-tok-xyz")
+
+
 class TestRequestUnreachableServer(unittest.TestCase):
     """Tests for Client.request when the server is unreachable."""
 

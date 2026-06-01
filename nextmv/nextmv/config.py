@@ -29,6 +29,10 @@ AUTH_SESSION_KEY
     shared with all other profiles that reference the same session name,
     allowing a single browser login to cover multiple profiles.  When absent,
     the ``"default"`` session is used.
+TEAM_ID_KEY
+    The YAML key used to store the team (organization) UUID in a ``pkce``
+    profile (``"team_id"``).  The value is sent as the ``nextmv-account``
+    request header so the API can scope requests to the correct team.
 OIDC_DISCOVERY_URL_KEY
     The YAML key used in ``sessions.yaml`` to store the OIDC discovery URL for
     an endpoint (``"oidc_discovery_url"``).
@@ -64,6 +68,7 @@ API_KEY_KEY = "apikey"
 ENDPOINT_KEY = "endpoint"
 PROFILE_TYPE_KEY = "profile_type"
 AUTH_SESSION_KEY = "auth_session"
+TEAM_ID_KEY = "team_id"
 
 # Sessions keys
 OIDC_DISCOVERY_URL_KEY = "oidc_discovery_url"
@@ -240,7 +245,7 @@ def non_profile_keys() -> set[str]:
     set[str]
         The set of non-profile keys.
     """
-    return {API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, AUTH_SESSION_KEY, DEFAULT_AUTH_SESSION}
+    return {API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, AUTH_SESSION_KEY, TEAM_ID_KEY, DEFAULT_AUTH_SESSION}
 
 
 def get_profile_type(config: dict, profile: str | None) -> str:
@@ -300,6 +305,36 @@ def get_auth_session(config: dict, profile: str | None) -> str:
     if raw and isinstance(raw, str) and raw.strip():
         return raw.strip()
     return DEFAULT_AUTH_SESSION
+
+
+def get_team_id(config: dict, profile: str | None) -> str | None:
+    """
+    Returns the team (organization) UUID stored in *profile*, or ``None`` if
+    not set.
+
+    Parameters
+    ----------
+    config : dict
+        The full configuration dictionary loaded from config.yaml.
+    profile : str | None
+        The profile name.  If ``None``, the default (top-level) profile is
+        used.
+
+    Returns
+    -------
+    str | None
+        The team UUID, or ``None`` when the key is absent or the profile is
+        not a ``pkce`` profile.
+    """
+    if profile is None:
+        raw = config.get(TEAM_ID_KEY)
+    else:
+        profile_data = config.get(profile, {})
+        raw = profile_data.get(TEAM_ID_KEY) if isinstance(profile_data, dict) else None
+
+    if raw and isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
 
 
 def get_profile_endpoint(config: dict, profile: str | None) -> str:

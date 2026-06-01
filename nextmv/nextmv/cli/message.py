@@ -221,7 +221,7 @@ def confirmation(msg: str, default: bool = False) -> bool:
     return result == "Yes"
 
 
-def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) -> str:
+def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str | None = None) -> str:
     """
     Prompt the user to select one option from a list of choices.
 
@@ -232,8 +232,9 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
     choices : Sequence[str | questionary.Choice]
         The available options the user can choose from. Use questionary.Choice
         for more control.
-    default : str, optional
-        The option that is pre-selected when the prompt appears. Default is the first option.
+    default : str | None, optional
+        The option that is pre-selected when the prompt appears. Defaults to
+        the first option when omitted or ``None``.
 
     Returns
     -------
@@ -247,17 +248,20 @@ def choice(msg: str, choices: Sequence[str | questionary.Choice], default: str) 
         selection is made.
     """
 
+    # Resolve default to the first choice when not explicitly provided.
+    resolved_default: str = default if default is not None else (str(choices[0]) if choices else "")
+
     # If this is not an interactive terminal, do not ask for confirmation, to
     # avoid hanging indefinitely waiting for a user response.
     if not sys.stdin.isatty():
-        return default
+        return resolved_default
 
     try:
         kbi_msg = str(rich.markup.render(":x:")) + " Operation cancelled by user."
         selection = questionary.select(
             msg,
             choices=choices,
-            default=default,
+            default=resolved_default,
             qmark=str(rich.markup.render(":bulb:")),
             style=_QUESTIONARY_STYLE,
         ).ask(

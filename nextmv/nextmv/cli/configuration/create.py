@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 from rich.prompt import Prompt
 
+from nextmv.auth import fetch_organizations, is_token_expired, load_tokens, refresh_tokens, run_pkce_flow, save_tokens
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import choice, error, message, success, warning
 from nextmv.config import (
@@ -20,6 +21,7 @@ from nextmv.config import (
     PROFILE_TYPE_API_KEY,
     PROFILE_TYPE_KEY,
     PROFILE_TYPE_PKCE,
+    TEAM_ID_KEY,
     _strip_scheme,
     get_endpoint_oidc_config,
     load_config,
@@ -93,6 +95,19 @@ def create(  # noqa: C901
                 "when omitted."
             ),
             metavar="SESSION_NAME",
+        ),
+    ] = None,
+    team: Annotated[
+        str | None,
+        typer.Option(
+            "--team",
+            help=(
+                "Team name to associate with this [magenta]pkce[/magenta] profile. "
+                "When omitted, available teams are fetched from the API and you will be "
+                "prompted to select one. "
+                "Only applies to [magenta]pkce[/magenta] profiles."
+            ),
+            metavar="TEAM_NAME",
         ),
     ] = None,
     oidc_discovery_url: Annotated[
@@ -276,9 +291,33 @@ def create(  # noqa: C901
             }
             save_sessions(sessions)
 
+        # >>> Resolve team ID: ensure we have a valid token, then look up orgs.
+
+        effective_session = auth_session or DEFAULT_AUTH_SESSION
+        oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
+        resolved_oidc_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
+        resolved_oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
+
+        access_token = _ensure_token(
+            session=effective_session,
+            profile=profile,
+            endpoint=endpoint,
+            oidc_discovery_url=resolved_oidc_url,
+            client_id=resolved_oidc_client_id,
+        )
+
+        team_id = _resolve_team_id(
+            access_token=access_token,
+            endpoint=endpoint,
+            team_name=team,
+        )
+
+        # >>> Write profile to config.yaml.
+
         if profile is None:
             config[PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[ENDPOINT_KEY] = endpoint
+            config[TEAM_ID_KEY] = team_id
             # Remove any previously stored api_key from the default profile.
             config.pop(API_KEY_KEY, None)
             if auth_session:
@@ -290,6 +329,7 @@ def create(  # noqa: C901
                 config[profile] = {}
             config[profile][PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
             config[profile][ENDPOINT_KEY] = endpoint
+            config[profile][TEAM_ID_KEY] = team_id
             config[profile].pop(API_KEY_KEY, None)
             if auth_session:
                 config[profile][AUTH_SESSION_KEY] = auth_session
@@ -298,14 +338,142 @@ def create(  # noqa: C901
 
         save_config(config)
 
-        effective_session = auth_session or DEFAULT_AUTH_SESSION
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
         message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_PKCE}[/magenta]", indents=1)
         message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
+        message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
-        message(
-            "Run [code]nextmv login" + (f" --profile {profile}" if profile else "") + "[/code] to authenticate.",
-            indents=1,
-        )
+
+
+def _ensure_token(
+    session: str,
+    profile: str | None,
+    endpoint: str,
+    oidc_discovery_url: str | None,
+    client_id: str | None,
+) -> str:
+    """
+    Return a valid access token for *session*, running the PKCE browser flow
+    only when necessary.
+
+    Token resolution order:
+    1. Load existing tokens from disk for *session*.
+    2. If expired but a refresh token is present, refresh silently.
+    3. If no tokens exist (or refresh fails), run the full browser PKCE flow.
+
+    Parameters
+    ----------
+    session : str
+        The auth session name.
+    profile : str | None
+        Profile name used only for display in the browser flow.
+    endpoint : str
+        Endpoint hostname, used for display messages.
+    oidc_discovery_url : str | None
+        OIDC discovery URL; passed through to the PKCE flow.
+    client_id : str | None
+        OAuth2 client ID; passed through to the PKCE flow.
+
+    Returns
+    -------
+    str
+        A valid access token (id_token preferred, access_token as fallback).
+    """
+    tokens = load_tokens(session)
+
+    if tokens is not None and not is_token_expired(tokens):
+        # Happy path: existing, valid token.
+        token = tokens.get("id_token") or tokens.get("access_token")
+        if token:
+            return token
+
+    if tokens is not None and is_token_expired(tokens):
+        refresh_token = tokens.get("refresh_token")
+        if refresh_token:
+            try:
+                tokens = refresh_tokens(
+                    refresh_token,
+                    client_id=client_id,
+                    oidc_discovery_url=oidc_discovery_url,
+                )
+                save_tokens(session, tokens)
+                token = tokens.get("id_token") or tokens.get("access_token")
+                if token:
+                    return token
+            except Exception:
+                pass  # Fall through to full browser flow.
+
+    # No usable token — open the browser.
+    message(
+        f"Opening browser to authenticate session [magenta]{session}[/magenta] "
+        f"against [magenta]{endpoint}[/magenta]...",
+    )
+    tokens = run_pkce_flow(
+        profile=profile,
+        oidc_discovery_url=oidc_discovery_url,
+        client_id=client_id,
+    )
+    save_tokens(session, tokens)
+    token = tokens.get("id_token") or tokens.get("access_token")
+    if not token:
+        error("Authentication succeeded but no access token was returned. Please try again.")
+    return token  # type: ignore[return-value]  # error() raises
+
+
+def _resolve_team_id(
+    access_token: str,
+    endpoint: str,
+    team_name: str | None,
+) -> str:
+    """
+    Resolve the team UUID the user wants to associate with this profile.
+
+    If *team_name* is provided, look it up in the org list and return its ID.
+    Otherwise fetch the org list and prompt the user to choose.
+
+    Parameters
+    ----------
+    access_token : str
+        A valid access token for the authenticated user.
+    endpoint : str
+        The API endpoint hostname.
+    team_name : str | None
+        The team name provided via ``--team``, or ``None`` to prompt.
+
+    Returns
+    -------
+    str
+        The team UUID.
+    """
+    try:
+        orgs = fetch_organizations(access_token, endpoint)
+    except Exception as exc:
+        error(f"Failed to fetch teams from [magenta]{endpoint}[/magenta]: {exc}")
+
+    if not orgs:
+        error(f"No teams found for your account on [magenta]{endpoint}[/magenta].")
+
+    # Build name → id mapping (case-insensitive lookup for --team flag).
+    name_to_id: dict[str, str] = {o["name"]: o["id"] for o in orgs}
+    name_to_id_lower: dict[str, str] = {k.lower(): v for k, v in name_to_id.items()}
+
+    if team_name is not None:
+        team_id = name_to_id_lower.get(team_name.strip().lower())
+        if team_id is None:
+            available = ", ".join(f"[magenta]{n}[/magenta]" for n in name_to_id)
+            error(
+                f"Team [magenta]{team_name}[/magenta] not found. "
+                f"Available teams: {available}"
+            )
+        return team_id  # type: ignore[return-value]  # error() raises
+
+    # Interactive selection — show team names sorted alphabetically.
+    sorted_names = sorted(name_to_id)
+    selected_name = choice(
+        msg="Select the team to associate with this profile",
+        choices=sorted_names,
+    )
+    return name_to_id[selected_name]
+
