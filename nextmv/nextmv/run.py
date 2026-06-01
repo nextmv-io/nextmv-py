@@ -3,38 +3,62 @@ This module contains definitions for an app run.
 
 Classes
 -------
-Metadata
-    Metadata of a run, whether it was successful or not.
-RunInformation
-    Information of a run.
 ErrorLog
     Error log of a run, when it was not successful.
-RunResult
-    Result of a run, whether it was successful or not.
-RunLog
-    Log of a run.
+ExternalRunResult
+    Result of a run used to configure a new application run as an
+    external one.
+Format
+    Format for a run configuration.
 FormatInput
     Input format for a run configuration.
 FormatOutput
     Output format for a run configuration.
-Format
-    Format for a run configuration.
+Metadata
+    Metadata of a run, whether it was successful or not.
+MetricsIndicator
+    Metrics indicator of a run.
+OptionSummary
+    The summary of an option that was used in a run.
+OptionsSummaryItem
+    Summary item for options used in a run.
+Run
+    Information about a run in the Nextmv platform.
+RunConfiguration
+    Configuration for an app run.
+RunInfoMetrics
+    Metrics information for a run.
+RunInfoStatistics
+    Statistics information for a run (deprecated).
+RunInformation
+    Information of a run.
+RunIntegration
+    Integration metadata associated with a run.
+RunLog
+    Log of a run.
+RunOptions
+    Options used during the execution of a run.
+RunQueuing
+    RunQueuing configuration for a run.
+RunResult
+    Result of a run, whether it was successful or not.
+RunTrackingMetadata
+    Metadata elements for tracking elements of the run.
 RunType
     The actual type of the run.
 RunTypeConfiguration
     Defines the configuration for the type of the run that is being executed
     on an application.
-RunQueuing
-    RunQueuing configuration for a run.
-RunConfiguration
-    Configuration for an app run.
-ExternalRunResult
-    Result of a run used to configure a new application run as an
-    external one.
-TrackedRunStatus
-    The status of a tracked run.
+StatisticsIndicator
+    Statistics indicator of a run (deprecated).
+SyncedRun
+    Information about a run that has been synced to a remote application.
+TimestampedRunLog
+    Timestamped log entry of a run.
 TrackedRun
     An external run that is tracked in the Nextmv platform.
+TrackedRunStatus
+    The status of a tracked run.
 
 Functions
 ---------
@@ -791,6 +815,99 @@ class RunTrackingMetadata(BaseModel):
     """ID of the managed input used to make the run."""
 
 
+class OptionSummary(BaseModel):
+    """
+    The summary of an option that was used in a run.
+
+    You can import the `OptionSummary` class directly from `nextmv`:
+
+    ```python
+    from nextmv import OptionSummary
+    ```
+
+    Parameters
+    ----------
+    name : str
+        Name of the option.
+    source : str
+        The source of the option: likely version, instance, or run.
+    value : str
+        The actual value that the option had at runtime.
+    """
+
+    name: str
+    """Name of the option."""
+    source: str
+    """The source of the option: likely version, instance, or run."""
+    value: str
+    """The actual value that the option had at runtime."""
+
+
+class RunOptions(BaseModel):
+    """
+    Options used during the execution of a run.
+
+    You can import the `RunOptions` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunOptions
+    ```
+
+    Parameters
+    ----------
+    active_options : dict[str, Any], optional
+        Active options for the run.
+    options_summary : list[OptionSummary], optional
+        Summary of options used in the run.
+    request_options : dict[str, Any], optional
+        Request options associated with the run.
+    """
+
+    active_options: dict[str, Any] | None = None
+    """Active options for the run."""
+    options_summary: list[OptionSummary] | None = None
+    """Summary of options used in the run."""
+    request_options: dict[str, Any] | None = None
+    """Request options associated with the run."""
+
+
+class RunIntegration(BaseModel):
+    """
+    Integration metadata associated with a run.
+
+    You can import the `RunIntegration` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunIntegration
+    ```
+
+    Parameters
+    ----------
+    integration_id : str
+        The ID of the integration used for the run.
+    provider : str
+        The provider of the integration used for the run.
+    run_id : str
+        The ID of the run in the external system associated with the
+        integration.
+    details : Any, optional
+        Additional details about the integration run, if available.
+    """
+
+    integration_id: str = Field(
+        serialization_alias="id",
+        validation_alias=AliasChoices("id", "integration_id"),
+    )
+    """The ID of the integration used for the run."""
+    provider: str
+    """The provider of the integration used for the run."""
+    run_id: str
+    """The ID of the run in the external system associated with the
+    integration."""
+    details: Any | None = None
+    """Additional details about the integration run, if available."""
+
+
 class Metadata(BaseModel):
     """
     Metadata of a run, whether it was successful or not.
@@ -844,22 +961,42 @@ class Metadata(BaseModel):
     """Duration of the run in milliseconds."""
     error: str
     """Error message if the run failed."""
-    input_size: float
-    """Size of the input in bytes."""
-    output_size: float
-    """Size of the output in bytes."""
-    format: Format
-    """Format of the input and output of the run."""
-    status_v2: StatusV2
-    """Status of the run."""
-    statistics: dict[str, Any] | None = None
-    """Deprecated: User defined statistics of the run."""
-    metrics: dict[str, Any] | None = None
-    """User defined metrics of the run."""
+    execution_class: str | None = None
+    """Execution class for the run."""
+    execution_duration: float | None = None
+    """Duration of the actual run execution in milliseconds."""
     experiment_id: str | None = None
     """ID of the experiment containing the run."""
     experiment_type: str | None = None
     """Type of the experiment containing the run."""
+    format: Format
+    """Format of the input and output of the run."""
+    initiated_at: datetime | None = None
+    """Date and time when the run was started."""
+    input_size: float
+    """Size of the input in bytes."""
+    integration: RunIntegration | None = None
+    """Integration metadata associated with the run, if any."""
+    metrics: dict[str, Any] | None = None
+    """User defined metrics of the run."""
+    options: RunOptions | None = None
+    """Options used during the run, which can come from various sources."""
+    output_size: float
+    """Size of the output in bytes."""
+    queuing_disabled: bool | None = None
+    """Whether the run was disabled from queuing."""
+    queuing_priority: int | None = None
+    """Priority of the run in the queue."""
+    run_type: RunTypeConfiguration | None = None
+    """Configuration for the type of the run."""
+    runtime: str | None = None
+    """Runtime environment for the run."""
+    secrets_collection_id: str | None = None
+    """The secrets collection ID associated with the run, if any."""
+    status_v2: StatusV2
+    """Status of the run."""
+    statistics: dict[str, Any] | None = None
+    """Deprecated: User defined statistics of the run."""
     tracking: RunTrackingMetadata | None = None
     """
     Metadata for tracking elements of the run that
@@ -882,6 +1019,21 @@ class Metadata(BaseModel):
             StatusV2.failed,
             StatusV2.canceled,
         }
+
+    @property
+    def content_format(self) -> ContentFormat:
+        """
+        Get the content format of the run based on its metadata.
+
+        Returns
+        -------
+        ContentFormat
+            The content format of the run, determined by the output format
+            specified in the run's metadata. If no output format is specified,
+            defaults to `ContentFormat.JSON`.
+        """
+
+        return self.format.format_input.input_type
 
 
 class SyncedRun(BaseModel):

@@ -17,6 +17,7 @@ import io
 import os
 import runpy
 import sys
+import warnings
 from typing import Annotated
 
 import rich
@@ -35,6 +36,7 @@ from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
 from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
+from nextmv.deprecated import NextmvDeprecationWarning
 from nextmv.uv_handler import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
@@ -309,6 +311,9 @@ def main() -> None:
     # Improve compatibility with Windows terminals.
     setup_encoding()
 
+    # Suppress SDK-level DeprecationWarnings so only CLI warnings are shown.
+    warnings.filterwarnings("ignore", category=NextmvDeprecationWarning)
+
     # Handle --run-script and --run-uv for running scripts with the bundled Python
     # interpreter or via uv. These are used internally in case of frozen PyInstaller
     # distributions.
@@ -328,6 +333,9 @@ def main() -> None:
         uv_args = [uv_bin, "run"] + sys.argv[2:]
         os.execv(uv_bin, uv_args)
 
+    # This is where we actually launch the CLI (the Typer app defined above).
+    # We wrap it in a try-except block to catch any exceptions and print a
+    # clean error message.
     try:
         app()
     except (typer.Exit, typer.Abort, SystemExit):

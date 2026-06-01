@@ -74,10 +74,7 @@ def _local_run_impl(
     )
     run_dir = _local_run_dir(app_dir, run_id)
     result_path = os.path.join(run_dir, f"{run_id}.json")
-    return (
-        f"Run completed. Result saved to {result_path} "
-        "— use file-reading tools to inspect the contents."
-    )
+    return f"Run completed. Result saved to {result_path} — use file-reading tools to inspect the contents."
 
 
 def _local_run_submit_impl(
@@ -251,8 +248,8 @@ def _register_run_tools(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        metadata = app.run_metadata(run_id=run_id)
-        return metadata.to_dict()
+        info = app.run_information(run_id=run_id)
+        return info.to_dict()
 
     @mcp.tool()
     def local_run_result(
@@ -272,9 +269,9 @@ def _register_run_tools(mcp: FastMCP) -> None:
             app_id: Optional application ID for registry lookup.
         """
 
-        # Validate the run exists by calling run_metadata.
+        # Validate the run exists by calling run_information.
         app = _helpers._get_local_app(app_dir=app_dir, app_id=app_id)
-        app.run_metadata(run_id=run_id)
+        app.run_information(run_id=run_id)
         result_path = os.path.join(_local_run_dir(app_dir, run_id), f"{run_id}.json")
         return f"Data saved to {result_path} — use file-reading tools to inspect the contents."
 

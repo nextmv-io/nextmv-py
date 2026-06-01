@@ -1,18 +1,17 @@
 """
-This module defines the local run create command for the Nextmv CLI.
+This module defines the local run clone command for the Nextmv CLI.
 """
 
-import json
 import sys
-from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
 from nextmv.cli.configuration.config import build_local_app
+from nextmv.cli.local.run.create import build_run_options, resolve_input_kwarg
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
-from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
+from nextmv.cli.message import enum_values, parse_content_format, print_json, success
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
@@ -24,7 +23,17 @@ app = typer.Typer()
 
 
 @app.command()
-def create(
+def clone(
+    cloned_run_id: Annotated[
+        str,
+        typer.Option(
+            "--cloned-run-id",
+            "-r",
+            help="The original Nextmv run ID that you want to clone.",
+            envvar="NEXTMV_CLONED_RUN_ID",
+            metavar="CLONED_RUN_ID",
+        ),
+    ],
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = ".",
     # Options for controlling input.
@@ -133,89 +142,73 @@ def create(
     ] = -1,
 ) -> None:
     """
-    Create a new local application run.
+    Clone an existing local application run.
 
-    You may identify the app by using --app-src, or --app-id if it has been
-    registered. If the app is not already registered, this command will
-    register it. Input for the run should be given through
-    [magenta]stdin[/magenta] or the --input flag. When using the --input flag,
-    the value can be one of the following:
-
-    - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
-      the input data. Use with the [magenta]json[/magenta] content format.
-    - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
-      containing the input data files. Use with the
-      [magenta]multi-file[/magenta] content format.
-
-    The CLI determines how to send the input to the application based on the
-    value.
-
-    Use the --wait flag to wait for the run to complete, polling for results.
-    Using the --output flag will also activate waiting, and allows you to
-    specify a destination (file or dir) for the output, depending on the
-    content type.
-
-    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
-    run completes. Using the --logs flag will also activate waiting, and allows
-    you to specify a file to write the logs to.
+    All information of the original (cloned) run will be reused. You may
+    override any information you wish, such as the input, content format, or
+    options, for example. All the options for creating the new run work the
+    same way as in the [code]nextmv local run create[/code] command. You may
+    inspect the documentation of that command for more details on what each
+    option does.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
-      and create a run for an app at the current directory.
-        $ [dim]cat input.json | nextmv local run create[/dim]
+    - Clone run [magenta]run-123[/magenta] from an app in the current directory.
+        $ [dim]nextmv local run clone --cloned-run-id run-123[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+    - Clone a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
+      and create a run for an app in the current directory.
+        $ [dim]cat input.json | nextmv local run clone --cloned-run-id run-123[/dim]
+
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
-        $ [dim]nextmv local run create --app-id hare-app --input input.json[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app at path [magenta]./my-app[/magenta].
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
-        $ [dim]nextmv local run create --app-src ./my-app --input input.json --wait[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --wait[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app at path [magenta]./my-app[/magenta].
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
-        $ [dim]nextmv local run create --app-src ./my-app --input input.json --tail[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --tail[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --output output.json[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json \\
+            --output output.json[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
-        $ [dim]nextmv local run create --app-id hare-app --input input.json --logs logs.log[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json --logs logs.log[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and create a run for an app at
+    - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and create a run for an app at
       path [magenta]./my-app[/magenta]. Wait for the run to complete. Tail the run's logs, streaming to
       [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file. Write the result to an
       [magenta]output.json[/magenta] file.
-        $ [dim]nextmv local run create --app-src ./my-app --input input.json --tail --logs logs.log \\
-            --output output.json[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --tail \\
+            --logs logs.log --output output.json[/dim]
 
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
+    - Clone a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       create a run for an app at path [magenta]./my-app[/magenta].
-        $ [dim]nextmv local run create --app-src ./my-app --input inputs --content-format multi-file[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input inputs \\
+            --content-format multi-file[/dim]
 
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
+    - Clone a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and save the result files to an [magenta]outputs[/magenta] directory.
-        $ [dim]nextmv local run create --app-id hare-app --input inputs --output outputs[/dim]
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input inputs --output outputs[/dim]
 
-    - Create a run with custom options for an app at path [magenta]./my-app[/magenta].
-        $ [dim]nextmv local run create --app-src ./my-app --input input.json \\
+    - Clone a run with custom options for an app at path [magenta]./my-app[/magenta].
+        $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json \\
             --options duration=10s --options verbose=true[/dim]
     """
 
     content_format = parse_content_format(content_format)
-
-    # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
-    if stdin is None and (input is None or input == ""):
-        error("Input data must be provided via the --input flag or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     local_app = build_local_app(app_src, app_id)
@@ -231,8 +224,9 @@ def create(
 
     # Start the run before deciding if we should poll or not.
     input_kwarg = resolve_input_kwarg(stdin=stdin, input=input)
-    run_id = local_app.new_run(
+    run_id = local_app.clone_run(
         **input_kwarg,
+        cloned_run_id=cloned_run_id,
         name=name,
         description=description,
         options=run_options,
@@ -245,7 +239,7 @@ def create(
 
         return
 
-    success(f"Run [magenta]{run_id}[/magenta] created.")
+    success(f"Run [magenta]{run_id}[/magenta] cloned from original run [magenta]{cloned_run_id}[/magenta].")
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -269,90 +263,3 @@ def create(
         polling_options=polling_options,
         skip_wait_check=False,
     )
-
-
-def build_run_options(options: list[str] | None) -> dict[str, str]:
-    """
-    Builds the run options for the new run. One can pass options by either
-    using the flag multiple times or by separating with commas in the same
-    flag. A combination of both is also possible.
-
-    Parameters
-    ----------
-    options : list[str] | None
-        The list of run options as strings.
-
-    Returns
-    -------
-    dict[str, str]
-        The built run options.
-    """
-
-    if options is None:
-        return None
-
-    run_options = {}
-    for opt in options:
-        # It is possible to pass multiple options separated by commas. The
-        # default way though is to use the flag multiple times to specify
-        # different options.
-        sub_opts = opt.split(",")
-        for sub_opt in sub_opts:
-            key_value = sub_opt.split("=", 1)
-            if len(key_value) != 2:
-                error(f"Invalid option format: {sub_opt}. Expected format is [magenta]key=value[/magenta].")
-
-            key, value = key_value
-            run_options[key] = value
-
-    return run_options
-
-
-def resolve_input_kwarg(stdin: str | None, input: str | None) -> dict[str, Any]:
-    """
-    Gets the keyword argument related to the input that is needed for the run
-    creation. It handles stdin, file, and directory inputs.
-
-    Parameters
-    ----------
-    stdin : str | None
-        The stdin input data, if provided.
-    input : str | None
-        The input path, if provided.
-
-    Returns
-    -------
-    dict[str, Any]
-        The keyword argument with the resolved input.
-    """
-
-    # It is possible to not provide any input when we are cloning a run.
-    if stdin is None and input is None:
-        return {}
-
-    if stdin:
-        # Handle the case where stdin is provided as JSON for a JSON app.
-        try:
-            input_data = json.loads(stdin)
-        except json.JSONDecodeError:
-            input_data = stdin
-
-        return {"input": input_data}
-
-    input_path = Path(input)
-
-    # If the input is a file, we read the content and pass it directly.
-    if input_path.is_file():
-        try:
-            data = json.loads(input_path.read_text())
-            return {"input": data}
-        except json.JSONDecodeError:
-            data = input_path.read_text()
-            return {"input": data}
-
-    # If the input is a directory, we give the path directly to the run method.
-    # Internally, the files will be handled.
-    if input_path.is_dir():
-        return {"input_dir_path": input}
-
-    error(f"Input path [magenta]{input}[/magenta] does not exist.")

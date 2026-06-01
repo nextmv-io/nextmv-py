@@ -152,7 +152,7 @@ def handle_outputs(
         return
 
     # Get the run metadata to determine how to operate with the output.
-    run_info = cloud_app.run_metadata(run_id=run_id)
+    run_info = cloud_app.run_information(run_id=run_id)
     content_format = run_info.metadata.format.format_output.output_type
 
     # Build kwargs for the result retrieval.
@@ -178,7 +178,7 @@ def handle_outputs(
         if output is None or output == "":
             # To avoid overflowing the terminal with a huge output, we trim the assets.
             res_output = run_result.output
-            if isinstance(res_output, dict) and "assets" in res_output.keys():
+            if isinstance(res_output, dict) and "assets" in res_output.keys() and res_output["assets"]:
                 info(
                     "Removed [magenta]assets[/magenta] from output for cleaner display, "
                     "use --output to save the full output."

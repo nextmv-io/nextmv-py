@@ -112,7 +112,7 @@ def create(
         int,
         typer.Option(
             help="The priority of the runs in the instance. "
-            "Priority is between 1 and 10, with 1 being the highest priority.",
+            "Priority is between 1 and 9, with 1 being the highest priority.",
             metavar="PRIORITY",
             rich_help_panel="Instance configuration",
         ),

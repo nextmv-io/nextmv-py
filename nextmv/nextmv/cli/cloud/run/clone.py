@@ -1,21 +1,18 @@
 """
-This module defines the cloud run create command for the Nextmv CLI.
+This module defines the cloud run clone command for the Nextmv CLI.
 """
 
-import json
 import sys
-import tarfile
-from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
+from nextmv.cli.cloud.run.create import build_run_options, resolve_input_kwarg
 from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
-from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
+from nextmv.cli.message import enum_values, parse_content_format, print_json, success
 from nextmv.cli.options import AppIDOption, ProfileOption
-from nextmv.cloud.application import Application
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
@@ -26,8 +23,18 @@ app = typer.Typer()
 
 
 @app.command()
-def create(
+def clone(
     app_id: AppIDOption,
+    cloned_run_id: Annotated[
+        str,
+        typer.Option(
+            "--cloned-run-id",
+            "-r",
+            help="The original Nextmv run ID that you want to clone.",
+            envvar="NEXTMV_CLONED_RUN_ID",
+            metavar="CLONED_RUN_ID",
+        ),
+    ],
     # Options for controlling input.
     input: Annotated[
         str | None,
@@ -181,23 +188,22 @@ def create(
         ),
     ] = None,
     priority: Annotated[
-        int,
+        int | None,
         typer.Option(
             help="The priority of the run. Priority is between 1 and 9, with 1 being the highest priority.",
             metavar="PRIORITY",
             rich_help_panel="Run configuration",
         ),
-    ] = 6,
+    ] = None,
     run_type: Annotated[
-        RunType,
+        RunType | None,
         typer.Option(
             "--run-type",
-            "-r",
             help=f"The type of run to create. Allowed values are: {enum_values(RunType)}.",
             metavar="RUN_TYPE",
             rich_help_panel="Run configuration",
         ),
-    ] = RunType.STANDARD,
+    ] = None,
     secret_collection_id: Annotated[
         str | None,
         typer.Option(
@@ -219,115 +225,78 @@ def create(
     profile: ProfileOption = None,
 ) -> None:
     """
-    Create a new Nextmv Cloud application run.
+    Clone an existing Nextmv Cloud application run.
 
-    Input for the run should be given through [magenta]stdin[/magenta], the --input flag,
-    or a Nextmv managed input by passing its ID into the --managed-input-id flag.
-    When using the --input flag, the value can be one of the following:
-
-    - [yellow]<FILE_PATH>[/yellow]: path to a [magenta]file[/magenta] containing
-      the input data. Use with the [magenta]json[/magenta] content format.
-    - [yellow]<DIR_PATH>[/yellow]: path to a [magenta]directory[/magenta]
-      containing the input data files. Use with the
-      [magenta]multi-file[/magenta] content format.
-    - [yellow]<.tar.gz PATH>[/yellow]: path to a [magenta].tar.gz[/magenta] file
-      containing tarred input data files. Use with the
-      [magenta]multi-file[/magenta] content format.
-
-    The CLI determines how to send the input to the application based on the
-    value.
-
-    Use the --wait flag to wait for the run to complete, polling for results.
-    Using the --output flag will also activate waiting, and allows you to
-    specify a destination (file or dir) for the output, depending on the
-    content type.
-
-    Use the --tail flag to stream logs to [magenta]stderr[/magenta] until the
-    run completes. Using the --logs flag will also activate waiting, and allows
-    you to specify a file to write the logs to.
-
-    An application run executes against a specific instance. An instance
-    represents the combination of executable code and configuration. You can
-    specify the instance with the --instance-id flag. These are the possible
-    values for this flag:
-
-    - [yellow]unspecified[/yellow]: Run against the default instance of the
-      application. When an application is created, the default instance is [magenta]latest[/magenta].
-    - [yellow]latest[/yellow]: uses the special [magenta]latest[/magenta]
-      instance of the application. This corresponds to the latest pushed
-      executable.
-    - [yellow]<INSTANCE_ID>[/yellow]: uses the instance with the given ID.
+    All information of the original (cloned) run will be reused. You may
+    override any information you wish, such as the input, content format, or
+    instance, for example. All the options for creating the new run work the
+    same way as in the [code]nextmv cloud run create[/code] command. You may
+    inspect the documentation of that command for more details on what each
+    option does.
 
     [bold][underline]Examples[/underline][/bold]
 
-    - Read a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
-      and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]cat input.json | nextmv cloud run create --app-id hare-app[/dim]
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
+      reusing the original run's input.
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json[/dim]
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
+      overriding the input with a [magenta]json[/magenta] file via [magenta]stdin[/magenta].
+        $ [dim]cat input.json | nextmv cloud run clone --app-id hare-app --cloned-run-id run-123[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
+      overriding the input with an [magenta]input.json[/magenta] file.
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input input.json[/dim]
+
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --wait[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --wait[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --tail[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --output output.json[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --logs logs.log[/dim]
 
-    - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and submit a run to an app with
-      ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance. Wait for the run to complete. Tail
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta]. Wait for the run to complete. Tail
       the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
       Write the result to an [magenta]output.json[/magenta] file.
-        $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --tail --logs logs.log \\
             --output output.json [/dim]
 
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/dim]
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
+      [magenta]multi-file[/magenta] directory, using the [magenta]default[/magenta] instance.
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input inputs \\
+            --instance-id default[/dim]
 
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
-      Wait for the run to complete, and save the results to the default location (a directory named after the run ID).
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
-
-    - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
-      submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
+      [magenta]multi-file[/magenta] directory, using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
-        $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input inputs --instance-id burrow \\
+            --output outputs[/dim]
 
-    - Set the run to use a [magenta]Nextmv managed[/magenta] input with ID [magenta]carrot-input[/magenta],
-      and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+    - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
+      [magenta]Nextmv managed[/magenta] input with ID [magenta]carrot-input[/magenta].
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
-        $ [dim]nextmv cloud run create --app-id hare-app --managed-input-id carrot-input --output outputs[/dim]
+        $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --managed-input-id carrot-input \\
+            --output outputs[/dim]
     """
 
     content_format = parse_content_format(content_format)
-
-    # Validate that input is provided.
     stdin = sys.stdin.read().strip() if sys.stdin.isatty() is False else None
-    if stdin is None and (input is None or input == "") and (managed_input_id is None or managed_input_id == ""):
-        error("Input data must be provided via the --input or --managed-input-id flags, or [magenta]stdin[/magenta].")
 
     # Instantiate the basic requirements to start a new run.
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
-    config = build_run_config(
+    config = _build_run_config(
+        no_queuing=no_queuing,
         run_type=run_type,
         priority=priority,
-        no_queuing=no_queuing,
         execution_class=execution_class,
         content_format=content_format,
         secret_collection_id=secret_collection_id,
@@ -343,8 +312,9 @@ def create(
         managed_input_id=managed_input_id,
         cloud_app=cloud_app,
     )
-    run_id = cloud_app.new_run(
+    run_id = cloud_app.clone_run(
         **input_kwarg,
+        cloned_run_id=cloned_run_id,
         instance_id=instance_id,
         name=name,
         description=description,
@@ -358,7 +328,7 @@ def create(
 
         return
 
-    success(f"Run [magenta]{run_id}[/magenta] created.")
+    success(f"Run [magenta]{run_id}[/magenta] cloned from original run [magenta]{cloned_run_id}[/magenta].")
 
     # Build the polling options.
     polling_options = default_polling_options()
@@ -384,10 +354,10 @@ def create(
     )
 
 
-def build_run_config(
-    run_type: RunType,
-    priority: int,
+def _build_run_config(
     no_queuing: bool,
+    run_type: RunType | None = None,
+    priority: int | None = None,
     execution_class: str | None = None,
     content_format: ContentFormat | None = None,
     secret_collection_id: str | None = None,
@@ -399,12 +369,12 @@ def build_run_config(
 
     Parameters
     ----------
-    run_type : RunType
-        The type of run to create.
-    priority : int
-        The priority of the run.
     no_queuing : bool
         Whether to disable queuing for the run.
+    run_type : RunType | None
+        The type of run to create.
+    priority : int | None
+        The priority of the run.
     execution_class : str | None
         The execution class to use for the run, if applicable.
     content_format : ContentFormat | None
@@ -423,14 +393,15 @@ def build_run_config(
     """
 
     config = RunConfiguration(
-        run_type=RunTypeConfiguration(
-            run_type=RunType(run_type),
-        ),
         queuing=RunQueuing(
-            priority=priority,
             disabled=no_queuing,
         ),
     )
+
+    if run_type is not None:
+        config.run_type = RunTypeConfiguration(run_type=RunType(run_type))
+    if priority is not None:
+        config.queuing.priority = priority
     if execution_class is not None:
         config.execution_class = execution_class
     if content_format is not None:
@@ -447,105 +418,3 @@ def build_run_config(
         config.run_type.definition_id = definition_id
 
     return config
-
-
-def build_run_options(options: list[str] | None) -> dict[str, str]:
-    """
-    Builds the run options for the new run. One can pass options by either
-    using the flag multiple times or by separating with commas in the same
-    flag. A combination of both is also possible.
-
-    Parameters
-    ----------
-    options : list[str] | None
-        The list of run options as strings.
-
-    Returns
-    -------
-    dict[str, str]
-        The built run options.
-    """
-
-    if options is None:
-        return None
-
-    run_options = {}
-    for opt in options:
-        # It is possible to pass multiple options separated by commas. The
-        # default way though is to use the flag multiple times to specify
-        # different options.
-        sub_opts = opt.split(",")
-        for sub_opt in sub_opts:
-            key_value = sub_opt.split("=", 1)
-            if len(key_value) != 2:
-                error(f"Invalid option format: {sub_opt}. Expected format is [magenta]key=value[/magenta].")
-
-            key, value = key_value
-            run_options[key] = value
-
-    return run_options
-
-
-def resolve_input_kwarg(
-    stdin: str | None,
-    input: str | None,
-    managed_input_id: str | None,
-    cloud_app: Application,
-) -> dict[str, Any]:
-    """
-    Gets the keyword argument related to the input that is needed for the run
-    creation. It handles stdin, file, and directory inputs. It uploads the
-    input to the cloud application if needed.
-
-    Parameters
-    ----------
-    stdin : str | None
-        The stdin input data, if provided.
-    input : str | None
-        The input path, if provided.
-    cloud_app : Application
-        The cloud application instance.
-
-    Returns
-    -------
-    dict[str, Any]
-        The keyword argument with the resolved input.
-    """
-
-    # It is possible to not provide any input when we are cloning a run.
-    if stdin is None and input is None and managed_input_id is None:
-        return {}
-
-    if stdin:
-        # Handle the case where stdin is provided as JSON for a JSON app.
-        try:
-            input_data = json.loads(stdin)
-        except json.JSONDecodeError:
-            input_data = stdin
-
-        return {"input": input_data}
-
-    if managed_input_id is not None and managed_input_id != "":
-        return {"managed_input_id": managed_input_id}
-
-    input_path = Path(input)
-
-    # If the input is a file, we need to determine if it is a tar file or
-    # a regular file and upload it accordingly. If it is a regular file, we
-    # need to read its content.
-    if input_path.is_file():
-        upload_url = cloud_app.upload_url()
-        if tarfile.is_tarfile(input_path):
-            cloud_app.upload_data(data=None, upload_url=upload_url, tar_file=input_path)
-        else:
-            input_data = input_path.read_text()
-            cloud_app.upload_data(data=input_data, upload_url=upload_url)
-
-        return {"upload_id": upload_url.upload_id}
-
-    # If the input is a directory, we give the path directly to the run method.
-    # Internally, the files will be tarred and uploaded.
-    if input_path.is_dir():
-        return {"input_dir_path": input}
-
-    error(f"Input path [magenta]{input}[/magenta] does not exist.")
