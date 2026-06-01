@@ -540,7 +540,7 @@ class Application(BaseModel):
                 new_input=new_input,
                 new_input_dir_path=new_input_dir_path,
             )
-            run_id = self.new_run(
+            run_id = self.__new_run(
                 input=new_input,
                 name=new_name,
                 description=new_description,
@@ -548,6 +548,7 @@ class Application(BaseModel):
                 configuration=new_run_config,
                 json_configurations=json_configurations,
                 input_dir_path=new_input_dir_path,
+                cloned_run_id=cloned_run_id,
             )
         finally:
             if new_input_dir_path and not input_dir_path:
@@ -638,10 +639,9 @@ class Application(BaseModel):
             exist, it will be created. Uses the current directory by default.
 
         Returns
-        ----------
-        str
-            ID (`run_id`) of the new run that was submitted (cloned from the
-            original).
+        -------
+        RunResult
+            Result of the run, including output.
 
         Raises
         ------
@@ -834,27 +834,15 @@ class Application(BaseModel):
         >>> print(f"Local run started with ID: {run_id}")
         """
 
-        configuration = self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
-
-        if self.src is None:
-            raise ValueError("`src` property for the `Application` must be specified to run the application locally")
-
-        if input is None and input_dir_path is None:
-            raise ValueError("Either `input` or `input_directory` must be specified")
-
-        input_data = None if input_dir_path else self.__extract_input_data(input)
-        options_dict = self.__extract_options_dict(options, json_configurations)
-        run_config_dict = self.__extract_run_config(input, configuration, input_dir_path).to_dict()
-        run_id = run(
-            app_id=self.app_id if self.app_id is not None else "",
-            src=self.src,
-            manifest=self.manifest,
-            run_config=run_config_dict,
+        run_id = self.__new_run(
+            input=input,
             name=name,
             description=description,
-            input_data=input_data,
-            inputs_dir_path=input_dir_path,
-            options=options_dict,
+            options=options,
+            configuration=configuration,
+            json_configurations=json_configurations,
+            input_dir_path=input_dir_path,
+            cloned_run_id=None,
         )
 
         return run_id
@@ -1699,6 +1687,47 @@ class Application(BaseModel):
             self.description = description
         if content_format is not None:
             self.content_format = content_format
+
+    def __new_run(
+        self,
+        input: Input | dict[str, Any] | BaseModel | str = None,
+        name: str | None = None,
+        description: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        cloned_run_id: str | None = None,
+    ) -> str:
+        """
+        Auxiliary function to create a new local run and return its run ID.
+        """
+
+        configuration = self.__validate_input_dir_path_and_configuration(input_dir_path, configuration)
+
+        if self.src is None:
+            raise ValueError("`src` property for the `Application` must be specified to run the application locally")
+
+        if input is None and input_dir_path is None:
+            raise ValueError("Either `input` or `input_directory` must be specified")
+
+        input_data = None if input_dir_path else self.__extract_input_data(input)
+        options_dict = self.__extract_options_dict(options, json_configurations)
+        run_config_dict = self.__extract_run_config(input, configuration, input_dir_path).to_dict()
+        run_id = run(
+            app_id=self.app_id if self.app_id is not None else "",
+            src=self.src,
+            manifest=self.manifest,
+            run_config=run_config_dict,
+            name=name,
+            description=description,
+            input_data=input_data,
+            inputs_dir_path=input_dir_path,
+            options=options_dict,
+            cloned_run_id=cloned_run_id,
+        )
+
+        return run_id
 
     def __run_result(
         self,
