@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: build and zip binary
         uses: ./.github/actions/build-binary
@@ -56,6 +56,7 @@ jobs:
           $BINARY community clone -a python-highs-knapsack
           cd python-highs-knapsack
           # Use Python to run command with timeout since timeout is not available on macOS.
-          python -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=30)"
+          # (Use a longer timeout due to Windows being slow to start the binary.)
+          python -c "import subprocess; import os; subprocess.run(['.' + os.environ['BINARY'], 'local', 'run', 'create', '-i', 'input.json', '--wait'], timeout=60)"
         shell: bash
         working-directory: nextmv/dist/nextmv
