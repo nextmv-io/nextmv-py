@@ -536,16 +536,21 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
-                    with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
-                        with patch("nextmv.cloud.client.save_tokens") as mock_save:
-                            with patch.dict(os.environ) as env:
-                                _clean_env(env)
-                                client = Client(profile="my-auth-profile")
-                                self.assertEqual(client.api_key, "new")
-                                mock_refresh.assert_called_once_with("rt")
-                                # Tokens are saved against the resolved session name
-                                # ("default" because _PKCE_CONFIG has no auth_session).
-                                mock_save.assert_called_once_with("default", new_tokens)
+                    with patch("nextmv.cloud.client.load_sessions", return_value={}):
+                        with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
+                            with patch("nextmv.cloud.client.save_tokens") as mock_save:
+                                with patch.dict(os.environ) as env:
+                                    _clean_env(env)
+                                    client = Client(profile="my-auth-profile")
+                                    self.assertEqual(client.api_key, "new")
+                                    mock_refresh.assert_called_once_with(
+                                        "rt",
+                                        oidc_discovery_url=None,
+                                        client_id=None,
+                                    )
+                                    # Tokens are saved against the resolved session name
+                                    # ("default" because _PKCE_CONFIG has no auth_session).
+                                    mock_save.assert_called_once_with("default", new_tokens)
 
     def test_expired_token_triggers_refresh_and_save_named_session(self):
         """Tokens are saved against the named session, not the profile name."""

@@ -25,7 +25,19 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
-from nextmv.config import CONFIG_FILE, PROFILE_TYPE_PKCE, get_auth_session, get_profile_type, get_team_id, load_config
+from nextmv.config import (
+    CLIENT_ID_KEY,
+    CONFIG_FILE,
+    OIDC_DISCOVERY_URL_KEY,
+    PROFILE_TYPE_PKCE,
+    get_auth_session,
+    get_endpoint_oidc_config,
+    get_profile_endpoint,
+    get_profile_type,
+    get_team_id,
+    load_config,
+    load_sessions,
+)
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -637,7 +649,16 @@ class Client:
                     f"Please run '{login_cmd}' to re-authenticate."
                 )
             try:
-                tokens = refresh_tokens(refresh_token)
+                # Resolve endpoint-specific OIDC config so that non-production endpoints
+                # use the correct token endpoint and client ID rather than falling back to
+                # the production defaults.
+                endpoint = get_profile_endpoint(config, profile)
+                oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
+                tokens = refresh_tokens(
+                    refresh_token,
+                    oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
+                    client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
+                )
                 save_tokens(session, tokens)
             except Exception as exc:
                 raise ValueError(
