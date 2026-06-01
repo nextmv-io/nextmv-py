@@ -530,7 +530,7 @@ class Application(BaseModel):
             )
             new_options = self.__resolve_clone_options(options=options, metadata_options=metadata.options)
             parsed_config = self.__extract_run_config(
-                input=input,
+                input=new_input,
                 configuration=configuration,
                 dir_path=new_input_dir_path,
             )

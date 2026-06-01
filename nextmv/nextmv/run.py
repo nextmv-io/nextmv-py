@@ -831,7 +831,7 @@ class OptionSummary(BaseModel):
         Name of the option.
     source : str
         The source of the option: likely version, instance, or run.
-    value : Any
+    value : str
         The actual value that the option had at runtime.
     """
 
@@ -1033,7 +1033,7 @@ class Metadata(BaseModel):
             defaults to `ContentFormat.JSON`.
         """
 
-        return self.format.format_output.output_type
+        return self.format.format_input.input_type
 
 
 class SyncedRun(BaseModel):

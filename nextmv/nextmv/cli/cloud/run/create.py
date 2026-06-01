@@ -183,7 +183,7 @@ def create(
     priority: Annotated[
         int,
         typer.Option(
-            help="The priority of the run. Priority is between 1 and 10, with 1 being the highest priority.",
+            help="The priority of the run. Priority is between 1 and 9, with 1 being the highest priority.",
             metavar="PRIORITY",
             rich_help_panel="Run configuration",
         ),
