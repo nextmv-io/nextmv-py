@@ -276,6 +276,88 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         return runs
 
+    @needs(predecessors=[init_app, runs])
+    @step
+    def clone_runs(app: cloud.Application, runs: list[nextmv.RunResult]) -> None:
+        """
+        Performs clone run operations.
+
+        Parameters
+        ----------
+        app : cloud.Application
+            The application to perform clone run operations on.
+        runs : list[nextmv.RunResult]
+            The runs to clone from.
+        """
+
+        # Use the first succeeded run as the source for cloning.
+        original_run = next(r for r in runs if r.metadata.status_v2 == nextmv.StatusV2.succeeded)
+        original_input = app.run_input(run_id=original_run.id)
+
+        # We can clone a run and get back the new run ID.
+        cloned_run_id = app.clone_run(cloned_run_id=original_run.id)
+        assert cloned_run_id is not None
+        assert isinstance(cloned_run_id, str)
+        assert cloned_run_id != original_run.id
+
+        # The cloned run should be discoverable.
+        info = app.run_information(run_id=cloned_run_id)
+        assert info is not None
+
+        # Wait for the cloned run to finish and verify the input was preserved.
+        cloned_result = app.run_result_with_polling(run_id=cloned_run_id)
+        assert cloned_result.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
+        cloned_input = app.run_input(run_id=cloned_run_id)
+        assert cloned_input == original_input
+
+        # We can clone a run with an overridden input and get the result directly.
+        new_input = {"name": "cloned", "radius": 1000, "distance": 50.0}
+        result_with_new_input = app.clone_run_with_result(
+            cloned_run_id=original_run.id,
+            input=new_input,
+        )
+        assert result_with_new_input is not None
+        assert result_with_new_input.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
+        cloned_input_new = app.run_input(run_id=result_with_new_input.id)
+        assert cloned_input_new == new_input
+
+        # We can clone a run with overridden options.
+        override_options = {"details": "false"}
+        result_with_options = app.clone_run_with_result(
+            cloned_run_id=original_run.id,
+            run_options=override_options,
+        )
+        assert result_with_options is not None
+        assert result_with_options.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
+        options_info = app.run_information(run_id=result_with_options.id)
+        assert options_info.metadata.options is not None
+        assert options_info.metadata.options.request_options is not None
+        assert options_info.metadata.options.request_options.get("details") == "false"
+
+        # We can clone a run with queuing disabled.
+        result_queuing_disabled = app.clone_run_with_result(
+            cloned_run_id=original_run.id,
+            configuration=nextmv.RunConfiguration(
+                queuing=nextmv.RunQueuing(disabled=True),
+            ),
+        )
+        assert result_queuing_disabled is not None
+        assert result_queuing_disabled.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
+        disabled_info = app.run_information(run_id=result_queuing_disabled.id)
+        assert disabled_info.metadata.queuing_disabled is True
+
+        # We can clone a run with a queuing priority override.
+        result_queuing_priority = app.clone_run_with_result(
+            cloned_run_id=original_run.id,
+            configuration=nextmv.RunConfiguration(
+                queuing=nextmv.RunQueuing(priority=4),
+            ),
+        )
+        assert result_queuing_priority is not None
+        assert result_queuing_priority.metadata.status_v2 in {nextmv.StatusV2.succeeded, nextmv.StatusV2.canceled}
+        priority_info = app.run_information(run_id=result_queuing_priority.id)
+        assert priority_info.metadata.queuing_priority == 4
+
     @needs(predecessors=[init_app, instances, runs])
     @step
     def input_sets(
@@ -768,6 +850,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             versions,
             instances,
             runs,
+            clone_runs,
             input_sets,
             scenario_tests,
             shadow_tests,
@@ -783,13 +866,14 @@ class CloudIntegrationWorkflow(FlowSpec):
         version: cloud.Version,
         instances: tuple[cloud.Instance, cloud.Instance],
         __unused,  # Unused placeholders for predecessors whose return values we don't need.
-        input_set: cloud.InputSet,
         __unused2,
+        input_set: cloud.InputSet,
         __unused3,
         __unused4,
         __unused5,
         __unused6,
         __unused7,
+        __unused8,
     ) -> None:
         """Performs cleanup operations."""
 
