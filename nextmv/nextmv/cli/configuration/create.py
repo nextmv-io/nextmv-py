@@ -172,6 +172,9 @@ def create(  # noqa: C901
                 f"Must be [magenta]{PROFILE_TYPE_API_KEY}[/magenta] or [magenta]{PROFILE_TYPE_PKCE}[/magenta]."
             )
         resolved_type = profile_type
+    elif oidc_discovery_url or oidc_client_id:
+        # OIDC flags imply a pkce profile — no need to prompt.
+        resolved_type = PROFILE_TYPE_PKCE
     else:
         # Interactive prompt — ask the user which style they want.
         resolved_type = choice(
