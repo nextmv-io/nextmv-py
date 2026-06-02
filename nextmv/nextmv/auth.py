@@ -77,7 +77,6 @@ CALLBACK_PORT = 56734
 _COGNITO_DOMAIN = "https://auth.cloud.nextmv.io"
 _FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
 _FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
-_FALLBACK_LOGOUT_ENDPOINT = f"{_COGNITO_DOMAIN}/logout"
 
 # Timeout (seconds) to wait for the user to complete the browser auth step.
 _BROWSER_TIMEOUT = 300
@@ -209,10 +208,10 @@ def is_token_expired(tokens: dict[str, Any]) -> bool:
 # >>> PKCE flow — internal helpers
 
 
-def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
+def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str]:
     """
     Fetch the OIDC discovery document and return
-    ``(authorization_endpoint, token_endpoint, logout_endpoint)``.
+    ``(authorization_endpoint, token_endpoint)``.
 
     Falls back to the hard-coded endpoints if the discovery URL is unreachable or returns
     an unexpected response.
@@ -226,8 +225,8 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
 
     Returns
     -------
-    tuple[str, str, str]
-        ``(authorization_endpoint, token_endpoint, logout_endpoint)``
+    tuple[str, str]
+        ``(authorization_endpoint, token_endpoint)``
     """
     discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
@@ -236,10 +235,9 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
         doc = resp.json()
         auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
         token_ep = doc.get("token_endpoint", _FALLBACK_TOKEN_ENDPOINT)
-        logout_ep = doc.get("end_session_endpoint", _FALLBACK_LOGOUT_ENDPOINT)
-        return auth_ep, token_ep, logout_ep
+        return auth_ep, token_ep
     except Exception:
-        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT, _FALLBACK_LOGOUT_ENDPOINT
+        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT
 
 
 def _generate_pkce_pair() -> tuple[str, str]:
@@ -333,8 +331,7 @@ def _wait_for_callback(port: int) -> dict[str, str]:
     params: dict[str, str] = server.callback_params  # type: ignore[attr-defined]
     if not params:
         raise TimeoutError(
-            f"No callback received within {_BROWSER_TIMEOUT} seconds. "
-            "Please try running `nextmv login` again."
+            f"No callback received within {_BROWSER_TIMEOUT} seconds. Please try running `nextmv login` again."
         )
     if "error" in params:
         raise RuntimeError(f"Authorization error: {params.get('error_description', params['error'])}")
