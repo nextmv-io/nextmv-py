@@ -104,16 +104,18 @@ def login(
 
     failed: list[str] = []
 
+    # Deduplicate: one browser flow per unique (session, endpoint) pair.
+    # Multiple profiles can share the same auth session — logging in once is enough
+    # because tokens are stored per session, not per profile.
+    seen_sessions: dict[tuple[str, str], list[str]] = {}  # (session, endpoint) -> [display_name, ...]
+    session_oidc: dict[tuple[str, str], tuple[str | None, str | None]] = {}
+
     for prof in profiles_to_login:
         display_name = prof if prof is not None else "default"
         session = get_auth_session(config, prof)
         endpoint = get_profile_endpoint(config, prof)
         oidc_cfg = get_endpoint_oidc_config(endpoint, sessions)
         if oidc_cfg is None:
-            # Should only happen for custom endpoints that were never registered
-            # via `nextmv configuration create`. Proceeding would silently fall
-            # back to the production OIDC constants and authenticate against the
-            # wrong IdP, so fail fast instead.
             warning(
                 f"Skipping profile [magenta]{display_name}[/magenta]: "
                 f"no OIDC configuration found for endpoint [magenta]{endpoint}[/magenta]. "
@@ -121,20 +123,25 @@ def login(
             )
             failed.append(display_name)
             continue
-        oidc_discovery_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY)
-        oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY)
+        key = (session, endpoint)
+        seen_sessions.setdefault(key, []).append(display_name)
+        session_oidc[key] = (oidc_cfg.get(OIDC_DISCOVERY_URL_KEY), oidc_cfg.get(CLIENT_ID_KEY))
+
+    for (session, endpoint), profile_names in seen_sessions.items():
+        oidc_discovery_url, oidc_client_id = session_oidc[(session, endpoint)]
+        profiles_display = ", ".join(f"[magenta]{n}[/magenta]" for n in profile_names)
         message(
-            f"Logging in to profile [magenta]{display_name}[/magenta] "
-            f"(session [magenta]{session}[/magenta]). "
+            f"Logging in to session [magenta]{session}[/magenta] "
+            f"(used by profile(s): {profiles_display}). "
             "Your browser will open — please complete the sign-in flow there."
         )
         try:
-            tokens = run_pkce_flow(profile=prof, oidc_discovery_url=oidc_discovery_url, client_id=oidc_client_id)
+            tokens = run_pkce_flow(profile=None, oidc_discovery_url=oidc_discovery_url, client_id=oidc_client_id)
             save_tokens(session, tokens)
-            success(f"Logged in to profile [magenta]{display_name}[/magenta] successfully.")
+            success(f"Logged in to session [magenta]{session}[/magenta] successfully.")
         except Exception as exc:
-            warning(f"Login failed for profile [magenta]{display_name}[/magenta]: {exc}")
-            failed.append(display_name)
+            warning(f"Login failed for session [magenta]{session}[/magenta]: {exc}")
+            failed.extend(profile_names)
 
     if failed:
         names = ", ".join(f"[magenta]{n}[/magenta]" for n in failed)
