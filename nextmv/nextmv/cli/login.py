@@ -116,8 +116,13 @@ def login(
         )
         return
 
-    failed: list[str] = []
+    # Run the login flow for the selected profiles.
+    _run_login(profiles_to_login, config, sessions, force)
 
+
+def _run_login(profiles_to_login: list[str], config: dict, sessions: dict, force: bool) -> None:
+    """Run the login flow for the given list of profiles."""
+    failed: list[str] = []
     # Deduplicate: one browser flow per unique (session, endpoint) pair.
     # Multiple profiles can share the same auth session — logging in once is enough
     # because tokens are stored per session, not per profile.
