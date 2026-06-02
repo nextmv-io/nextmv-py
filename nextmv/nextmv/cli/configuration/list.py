@@ -8,7 +8,15 @@ from rich.table import Table
 
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import error
-from nextmv.config import API_KEY_KEY, AUTH_TYPE_KEY, ENDPOINT_KEY, load_config, non_profile_keys
+from nextmv.config import (
+    API_KEY_KEY,
+    AUTH_TYPE_KEY,
+    AUTH_TYPE_PKCE,
+    ENDPOINT_KEY,
+    get_auth_session,
+    load_config,
+    non_profile_keys,
+)
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -34,6 +42,7 @@ def list() -> None:
         "api_key": config.get(API_KEY_KEY),
         "endpoint": config.get(ENDPOINT_KEY),
         "auth_type": config.get(AUTH_TYPE_KEY, "api_key"),
+        "auth_session": get_auth_session(config, None) if config.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE else None,
         "name": "Default",
     }
     profiles = [default]
@@ -52,16 +61,20 @@ def list() -> None:
             "api_key": v.get(API_KEY_KEY),
             "endpoint": v.get(ENDPOINT_KEY),
             "auth_type": v.get(AUTH_TYPE_KEY, "api_key"),
+            "auth_session": get_auth_session(config, k) if v.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE else None,
         }
         profiles.append(profile)
 
-    table = Table("Profile name", "Type", "API Key", "Endpoint")
+    table = Table("Profile name", "Type", "Session", "API Key", "Endpoint")
     not_set = "[italic]Not set[/italic]"
+    n_a = "[italic dim]—[/italic dim]"
     for profile in profiles:
+        session_display = profile["auth_session"] if profile.get("auth_session") is not None else n_a
         if profile["name"] != "Default":
             table.add_row(
                 profile["name"],
                 profile["auth_type"],
+                session_display,
                 obscure_api_key(profile["api_key"]) if profile.get("api_key") is not None else not_set,
                 profile["endpoint"] if profile.get("endpoint") is not None else not_set,
             )
@@ -78,6 +91,7 @@ def list() -> None:
         table.add_row(
             f"[bold yellow]{profile['name']}[/bold yellow]",
             f"[bold yellow]{profile['auth_type']}[/bold yellow]",
+            f"[bold yellow]{session_display}[/bold yellow]",
             f"[bold yellow]{api_key}[/bold yellow]",
             f"[bold yellow]{endpoint}[/bold yellow]",
         )
