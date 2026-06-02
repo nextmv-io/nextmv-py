@@ -279,15 +279,10 @@ class Client:
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
 
-        # Determine whether this is a pkce profile.
-        bearer_token = self.__resolve_bearer_token_for_pkce(profile)
+        bearer_token, team_id = self.__resolve_bearer_token_for_pkce(profile)
         if bearer_token is not None:
             # pkce profile: use the stored / refreshed access token.
             self.api_key = bearer_token
-            # Resolve the team ID stored in the profile config and pass it as
-            # the nextmv-account header so the API can scope requests correctly.
-            cfg = load_config()
-            team_id = get_team_id(cfg, profile)
             self.__set_headers_api_key(self.api_key, team_id=team_id)
         else:
             # api_key profile (default): legacy resolution.
@@ -597,14 +592,18 @@ class Client:
                 f"status code {response.status_code} and message: {response.text}"
             ) from e
 
-    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> str | None:
+    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> tuple[str, str | None] | tuple[None, None]:
         """
         If the resolved profile is a ``pkce`` profile, load the stored
         access token and silently refresh it when it is expired.
 
-        Returns ``None`` when the profile is an ``api_key`` profile (the
-        default), so the caller can fall back to the standard API-key
-        resolution path.
+        Returns ``(None, None)`` when:
+        - an explicit ``api_key`` or ``NEXTMV_API_KEY`` env var is present
+          (explicit credential takes precedence), or
+        - the profile is an ``api_key`` profile (the default).
+
+        This allows the caller to fall back to the standard API-key resolution
+        path with a simple ``if bearer_token is not None`` check.
 
         Parameters
         ----------
@@ -613,8 +612,9 @@ class Client:
 
         Returns
         -------
-        str | None
-            The access token string, or ``None`` if not a pkce profile.
+        tuple[str, str | None] | tuple[None, None]
+            ``(access_token, team_id)`` for pkce profiles, or ``(None, None)``
+            to signal that the api_key path should be used.
 
         Raises
         ------
@@ -624,13 +624,17 @@ class Client:
             ``nextmv login``).
         """
 
+        # Explicit credential takes precedence over PKCE — skip entirely.
+        if (self.api_key and self.api_key.strip()) or os.environ.get("NEXTMV_API_KEY", "").strip():
+            return None, None
+
         config = load_config()
         if not config:
-            return None
+            return None, None
 
         ptype = get_profile_type(config, profile)
         if ptype != PROFILE_TYPE_PKCE:
-            return None
+            return None, None
 
         # Auth-flow (pkce) profile detected.
         session = get_auth_session(config, profile)
@@ -675,7 +679,11 @@ class Client:
                 f"Stored tokens for profile '{display}' do not contain an access token. "
                 f"Please run '{login_cmd}' to re-authenticate."
             )
-        return token
+
+        # Resolve the team ID stored in the profile config; sent as the
+        # nextmv-account header to scope requests to the correct team.
+        team_id = get_team_id(config, profile)
+        return token, team_id
 
     def __resolve_profile(self) -> str | None:
         """

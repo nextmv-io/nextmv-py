@@ -109,8 +109,20 @@ def login(
         session = get_auth_session(config, prof)
         endpoint = get_profile_endpoint(config, prof)
         oidc_cfg = get_endpoint_oidc_config(endpoint, sessions)
-        oidc_discovery_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
-        oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
+        if oidc_cfg is None:
+            # Should only happen for custom endpoints that were never registered
+            # via `nextmv configuration create`. Proceeding would silently fall
+            # back to the production OIDC constants and authenticate against the
+            # wrong IdP, so fail fast instead.
+            warning(
+                f"Skipping profile [magenta]{display_name}[/magenta]: "
+                f"no OIDC configuration found for endpoint [magenta]{endpoint}[/magenta]. "
+                "Run [code]nextmv configuration create[/code] for this endpoint first."
+            )
+            failed.append(display_name)
+            continue
+        oidc_discovery_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY)
+        oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY)
         message(
             f"Logging in to profile [magenta]{display_name}[/magenta] "
             f"(session [magenta]{session}[/magenta]). "
