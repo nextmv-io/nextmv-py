@@ -332,7 +332,7 @@ def _wait_for_callback(port: int) -> dict[str, str]:
     if not params:
         raise TimeoutError(
             f"No callback received within {_BROWSER_TIMEOUT} seconds. "
-            "Please try running [code]nextmv login[/code] again."
+            "Please try running `nextmv login` again."
         )
     if "error" in params:
         raise RuntimeError(f"Authorization error: {params.get('error_description', params['error'])}")
@@ -564,12 +564,12 @@ def run_pkce_flow(
     if returned_state != state:
         raise RuntimeError(
             "OAuth2 state mismatch: the callback state does not match the expected value. "
-            "This may indicate a login CSRF attempt. Please try running [code]nextmv login[/code] again."
+            "This may indicate a login CSRF attempt. Please try running `nextmv login` again."
         )
 
     code = callback_result.get("code")
     if not code:
-        raise RuntimeError("No authorization code received. Please try running [code]nextmv login[/code] again.")
+        raise RuntimeError("No authorization code received. Please try running `nextmv login` again.")
 
     return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid)
 

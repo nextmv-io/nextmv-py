@@ -42,6 +42,10 @@ def list() -> None:
         # Skip default configuration.
         if k in non_profile_keys():
             continue
+        # Skip unexpected scalar entries (e.g. from manual edits or future keys
+        # not yet listed in non_profile_keys) to avoid AttributeError on .get().
+        if not isinstance(v, dict):
+            continue
 
         profile = {
             "name": k,
