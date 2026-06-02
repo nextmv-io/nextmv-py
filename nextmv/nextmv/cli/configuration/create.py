@@ -13,14 +13,14 @@ from nextmv.cli.message import choice, error, message, success, warning
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_SESSION_KEY,
+    AUTH_TYPE_API_KEY,
+    AUTH_TYPE_KEY,
+    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     DEFAULT_AUTH_SESSION,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     OIDC_DISCOVERY_URL_KEY,
-    PROFILE_TYPE_API_KEY,
-    PROFILE_TYPE_KEY,
-    PROFILE_TYPE_PKCE,
     TEAM_ID_KEY,
     _strip_scheme,
     get_endpoint_oidc_config,
@@ -68,17 +68,17 @@ def create(  # noqa: C901
             metavar="PROFILE_NAME",
         ),
     ] = None,
-    profile_type: Annotated[
+    auth_type: Annotated[
         str | None,
         typer.Option(
-            "--profile-type",
+            "--auth-type",
             "-t",
             help=(
-                "The type of profile to create: [magenta]api_key[/magenta] (default) or "
+                "The authentication type for this profile: [magenta]api_key[/magenta] (default) or "
                 "[magenta]pkce[/magenta] (browser-based PKCE login via [code]nextmv login[/code]). "
                 "Ignored when [magenta]--api-key[/magenta] is provided."
             ),
-            metavar="PROFILE_TYPE",
+            metavar="AUTH_TYPE",
         ),
     ] = None,
     auth_session: Annotated[
@@ -152,11 +152,11 @@ def create(  # noqa: C901
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/dim]
 
     - Configure a named [magenta]pkce[/magenta] profile (login separately via [code]nextmv login[/code]).
-        $ [dim]nextmv configuration create --profile hare --profile-type pkce[/dim]
+        $ [dim]nextmv configuration create --profile hare --auth-type pkce[/dim]
 
     - Configure two [magenta]pkce[/magenta] profiles that share a single login session.
-        $ [dim]nextmv configuration create --profile dev --profile-type pkce --auth-session my-work[/dim]
-        $ [dim]nextmv configuration create --profile staging --profile-type pkce --auth-session my-work[/dim]
+        $ [dim]nextmv configuration create --profile dev --auth-type pkce --auth-session my-work[/dim]
+        $ [dim]nextmv configuration create --profile staging --auth-type pkce --auth-session my-work[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -183,37 +183,37 @@ def create(  # noqa: C901
 
     # >>> Determine profile type
 
-    # If --api-key is supplied, we always use the api_key profile type regardless
-    # of --profile-type, since there's an explicit credential.
+    # If --api-key is supplied, we always use the api_key auth type regardless
+    # of --auth-type, since there's an explicit credential.
     if api_key is not None and api_key.strip():
-        resolved_type = PROFILE_TYPE_API_KEY
-    elif profile_type is not None:
-        profile_type = profile_type.strip().lower()
-        if profile_type not in (PROFILE_TYPE_API_KEY, PROFILE_TYPE_PKCE):
+        resolved_type = AUTH_TYPE_API_KEY
+    elif auth_type is not None:
+        auth_type = auth_type.strip().lower()
+        if auth_type not in (AUTH_TYPE_API_KEY, AUTH_TYPE_PKCE):
             error(
-                f"Invalid profile type [magenta]{profile_type}[/magenta]. "
-                f"Must be [magenta]{PROFILE_TYPE_API_KEY}[/magenta] or [magenta]{PROFILE_TYPE_PKCE}[/magenta]."
+                f"Invalid auth type [magenta]{auth_type}[/magenta]. "
+                f"Must be [magenta]{AUTH_TYPE_API_KEY}[/magenta] or [magenta]{AUTH_TYPE_PKCE}[/magenta]."
             )
-        resolved_type = profile_type
+        resolved_type = auth_type
     elif oidc_discovery_url or oidc_client_id:
-        # OIDC flags imply a pkce profile — no need to prompt.
-        resolved_type = PROFILE_TYPE_PKCE
+        # OIDC flags imply a pkce auth type — no need to prompt.
+        resolved_type = AUTH_TYPE_PKCE
     else:
         # Interactive prompt — ask the user which style they want.
         resolved_type = choice(
-            msg="Select configuration type",
+            msg="Select authentication type",
             choices=[
-                PROFILE_TYPE_API_KEY,
-                PROFILE_TYPE_PKCE,
+                AUTH_TYPE_API_KEY,
+                AUTH_TYPE_PKCE,
             ],
-            default=PROFILE_TYPE_API_KEY,
+            default=AUTH_TYPE_API_KEY,
         )
 
     config = load_config()
 
     # >>> For api_key profiles: collect the API key interactively if not provided.
 
-    if resolved_type == PROFILE_TYPE_API_KEY:
+    if resolved_type == AUTH_TYPE_API_KEY:
         if api_key is None or not api_key.strip():
             while True:
                 api_key_prompt = Prompt.ask(
@@ -230,21 +230,21 @@ def create(  # noqa: C901
         if profile is None:
             config[API_KEY_KEY] = api_key
             config[ENDPOINT_KEY] = endpoint
-            # Remove profile_type key from default profile if previously set as
+            # Remove auth_type key from default profile if previously set as
             # pkce, since we are now explicitly creating an api_key profile.
-            config.pop(PROFILE_TYPE_KEY, None)
+            config.pop(AUTH_TYPE_KEY, None)
         else:
             if profile not in config:
                 config[profile] = {}
             config[profile][API_KEY_KEY] = api_key
             config[profile][ENDPOINT_KEY] = endpoint
-            config[profile].pop(PROFILE_TYPE_KEY, None)
+            config[profile].pop(AUTH_TYPE_KEY, None)
 
         save_config(config)
 
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_API_KEY}[/magenta]", indents=1)
+        message(f"[bold]Type[/bold]: [magenta]{AUTH_TYPE_API_KEY}[/magenta]", indents=1)
         message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
@@ -315,7 +315,7 @@ def create(  # noqa: C901
         # >>> Write profile to config.yaml.
 
         if profile is None:
-            config[PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
+            config[AUTH_TYPE_KEY] = AUTH_TYPE_PKCE
             config[ENDPOINT_KEY] = endpoint
             config[TEAM_ID_KEY] = team_id
             # Remove any previously stored api_key from the default profile.
@@ -327,7 +327,7 @@ def create(  # noqa: C901
         else:
             if profile not in config:
                 config[profile] = {}
-            config[profile][PROFILE_TYPE_KEY] = PROFILE_TYPE_PKCE
+            config[profile][AUTH_TYPE_KEY] = AUTH_TYPE_PKCE
             config[profile][ENDPOINT_KEY] = endpoint
             config[profile][TEAM_ID_KEY] = team_id
             config[profile].pop(API_KEY_KEY, None)
@@ -340,7 +340,7 @@ def create(  # noqa: C901
 
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{PROFILE_TYPE_PKCE}[/magenta]", indents=1)
+        message(f"[bold]Type[/bold]: [magenta]{AUTH_TYPE_PKCE}[/magenta]", indents=1)
         message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
         message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
@@ -463,10 +463,7 @@ def _resolve_team_id(
         team_id = name_to_id_lower.get(team_name.strip().lower())
         if team_id is None:
             available = ", ".join(f"[magenta]{n}[/magenta]" for n in name_to_id)
-            error(
-                f"Team [magenta]{team_name}[/magenta] not found. "
-                f"Available teams: {available}"
-            )
+            error(f"Team [magenta]{team_name}[/magenta] not found. Available teams: {available}")
         return team_id  # type: ignore[return-value]  # error() raises
 
     # Interactive selection — show team names sorted alphabetically.
@@ -476,4 +473,3 @@ def _resolve_team_id(
         choices=sorted_names,
     )
     return name_to_id[selected_name]
-

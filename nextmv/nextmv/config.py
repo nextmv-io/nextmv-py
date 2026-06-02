@@ -21,8 +21,9 @@ API_KEY_KEY
     The YAML key used to store the API key in a profile (``"apikey"``).
 ENDPOINT_KEY
     The YAML key used to store the endpoint in a profile (``"endpoint"``).
-PROFILE_TYPE_KEY
-    The YAML key used to store the profile type (``"profile_type"``).
+AUTH_TYPE_KEY
+    The YAML key used to store the authentication type in a profile
+    (``"auth_type"``).
 AUTH_SESSION_KEY
     The YAML key used to store the auth session name in a profile
     (``"auth_session"``).  When present on a ``pkce`` profile, tokens are
@@ -39,10 +40,10 @@ OIDC_DISCOVERY_URL_KEY
 CLIENT_ID_KEY
     The YAML key used in ``sessions.yaml`` to store the OAuth2 client ID for
     an endpoint (``"client_id"``).
-PROFILE_TYPE_API_KEY
-    Profile type value for API-key-based authentication (``"api_key"``).
-PROFILE_TYPE_PKCE
-    Profile type value for PKCE/OAuth2-based authentication (``"pkce"``).
+AUTH_TYPE_API_KEY
+    Auth type value for API-key-based authentication (``"api_key"``).
+AUTH_TYPE_PKCE
+    Auth type value for PKCE/OAuth2-based authentication (``"pkce"``).
 DEFAULT_AUTH_SESSION
     The reserved session name used when ``auth_session`` is not specified
     (``"default"``).  This name cannot be used as a profile name.
@@ -66,7 +67,7 @@ SESSIONS_FILE = CONFIG_DIR / "sessions.yaml"
 # Config keys
 API_KEY_KEY = "apikey"
 ENDPOINT_KEY = "endpoint"
-PROFILE_TYPE_KEY = "profile_type"
+AUTH_TYPE_KEY = "auth_type"
 AUTH_SESSION_KEY = "auth_session"
 TEAM_ID_KEY = "team_id"
 
@@ -74,9 +75,9 @@ TEAM_ID_KEY = "team_id"
 OIDC_DISCOVERY_URL_KEY = "oidc_discovery_url"
 CLIENT_ID_KEY = "client_id"
 
-# Profile type values
-PROFILE_TYPE_API_KEY = "api_key"
-PROFILE_TYPE_PKCE = "pkce"
+# Auth type values
+AUTH_TYPE_API_KEY = "api_key"
+AUTH_TYPE_PKCE = "pkce"
 
 # Defaults
 DEFAULT_AUTH_SESSION = "default"
@@ -243,13 +244,13 @@ def non_profile_keys() -> set[str]:
     set[str]
         The set of non-profile keys.
     """
-    return {API_KEY_KEY, ENDPOINT_KEY, PROFILE_TYPE_KEY, AUTH_SESSION_KEY, TEAM_ID_KEY, DEFAULT_AUTH_SESSION}
+    return {API_KEY_KEY, ENDPOINT_KEY, AUTH_TYPE_KEY, AUTH_SESSION_KEY, TEAM_ID_KEY, DEFAULT_AUTH_SESSION}
 
 
-def get_profile_type(config: dict, profile: str | None) -> str:
+def get_auth_type(config: dict, profile: str | None) -> str:
     """
-    Returns the profile type for the given profile. Defaults to
-    ``PROFILE_TYPE_API_KEY`` if the key is absent (backwards compatible).
+    Returns the auth type for the given profile. Defaults to
+    ``AUTH_TYPE_API_KEY`` if the key is absent (backwards compatible).
 
     Parameters
     ----------
@@ -261,14 +262,14 @@ def get_profile_type(config: dict, profile: str | None) -> str:
     Returns
     -------
     str
-        Either ``PROFILE_TYPE_API_KEY`` or ``PROFILE_TYPE_PKCE`` (``"pkce"``).
+        Either ``AUTH_TYPE_API_KEY`` or ``AUTH_TYPE_PKCE`` (``"pkce"``).
     """
     if profile is None:
-        return config.get(PROFILE_TYPE_KEY, PROFILE_TYPE_API_KEY)
+        return config.get(AUTH_TYPE_KEY, AUTH_TYPE_API_KEY)
     profile_data = config.get(profile, {})
     if not isinstance(profile_data, dict):
-        return PROFILE_TYPE_API_KEY
-    return profile_data.get(PROFILE_TYPE_KEY, PROFILE_TYPE_API_KEY)
+        return AUTH_TYPE_API_KEY
+    return profile_data.get(AUTH_TYPE_KEY, AUTH_TYPE_API_KEY)
 
 
 def get_auth_session(config: dict, profile: str | None) -> str:
@@ -381,12 +382,12 @@ def list_pkce_profiles(config: dict) -> list[str | None]:
         (representing the default profile).
     """
     result: list[str | None] = []
-    if config.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_PKCE:
+    if config.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE:
         result.append(None)
     skip = non_profile_keys()
     for key, value in config.items():
         if key in skip:
             continue
-        if isinstance(value, dict) and value.get(PROFILE_TYPE_KEY) == PROFILE_TYPE_PKCE:
+        if isinstance(value, dict) and value.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE:
             result.append(key)
     return result

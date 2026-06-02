@@ -16,13 +16,13 @@ import typer
 from nextmv.auth import run_pkce_flow, save_tokens
 from nextmv.cli.message import error, info, message, success, warning
 from nextmv.config import (
+    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     OIDC_DISCOVERY_URL_KEY,
-    PROFILE_TYPE_PKCE,
     get_auth_session,
+    get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
-    get_profile_type,
     list_pkce_profiles,
     load_config,
     load_sessions,
@@ -52,7 +52,7 @@ def login(
     resulting tokens under [magenta]~/.nextmv/auth/[/magenta].
 
     If [magenta]--profile[/magenta] is given, only that profile is logged in
-    (it must be configured with [code]profile_type: pkce[/code]).  If no
+    (it must be configured with [code]auth_type: pkce[/code]).  If no
     profile is given, all [magenta]pkce[/magenta] profiles found in
     [magenta]~/.nextmv/config.yaml[/magenta] are logged in sequentially.
 
@@ -82,8 +82,8 @@ def login(
                 f"Profile [magenta]{profile}[/magenta] does not exist. "
                 "Use [code]nextmv configuration create[/code] to create it."
             )
-        ptype = get_profile_type(config, profile)
-        if ptype != PROFILE_TYPE_PKCE:
+        ptype = get_auth_type(config, profile)
+        if ptype != AUTH_TYPE_PKCE:
             error(
                 f"Profile [magenta]{profile}[/magenta] is not a [magenta]pkce[/magenta] profile "
                 f"(it is [magenta]{ptype}[/magenta]). "
@@ -97,7 +97,7 @@ def login(
         info(
             "No [magenta]pkce[/magenta] profiles found. "
             "Use [code]nextmv configuration create[/code] to create one, "
-            "or set [magenta]profile_type: pkce[/magenta] in "
+            "or set [magenta]auth_type: pkce[/magenta] in "
             "[magenta]~/.nextmv/config.yaml[/magenta]."
         )
         return

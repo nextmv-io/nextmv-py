@@ -357,7 +357,7 @@ class TestSetHeadersPkce(unittest.TestCase):
     """Tests for nextmv-account header on pkce profiles."""
 
     def _pkce_config(self, team_id=None, profile_name="work"):
-        entry = {"profile_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
+        entry = {"auth_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
         if team_id:
             entry["team_id"] = team_id
         return {profile_name: entry}
@@ -492,7 +492,7 @@ class TestUploadToPresignedUrlUnreachableServer(unittest.TestCase):
 # Shared config / env helpers for pkce tests.
 _PKCE_CONFIG = {
     "my-auth-profile": {
-        "profile_type": "pkce",
+        "auth_type": "pkce",
         "endpoint": "api.example.io",
     }
 }
@@ -556,7 +556,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         """Tokens are saved against the named session, not the profile name."""
         config = {
             "my-auth-profile": {
-                "profile_type": "pkce",
+                "auth_type": "pkce",
                 "endpoint": "api.example.io",
                 "auth_session": "my-session",
             }
@@ -577,12 +577,12 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         """Two profiles sharing an auth_session both resolve to the same session name."""
         config = {
             "profile-a": {
-                "profile_type": "pkce",
+                "auth_type": "pkce",
                 "endpoint": "api.example.io",
                 "auth_session": "shared",
             },
             "profile-b": {
-                "profile_type": "pkce",
+                "auth_type": "pkce",
                 "endpoint": "staging.example.io",
                 "auth_session": "shared",
             },

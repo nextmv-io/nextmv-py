@@ -26,14 +26,14 @@ from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
 from nextmv.config import (
+    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     CONFIG_FILE,
     OIDC_DISCOVERY_URL_KEY,
-    PROFILE_TYPE_PKCE,
     get_auth_session,
+    get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
-    get_profile_type,
     get_team_id,
     load_config,
     load_sessions,
@@ -632,8 +632,8 @@ class Client:
         if not config:
             return None, None
 
-        ptype = get_profile_type(config, profile)
-        if ptype != PROFILE_TYPE_PKCE:
+        ptype = get_auth_type(config, profile)
+        if ptype != AUTH_TYPE_PKCE:
             return None, None
 
         # Auth-flow (pkce) profile detected.
