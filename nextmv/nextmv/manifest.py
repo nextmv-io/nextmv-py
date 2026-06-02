@@ -67,19 +67,36 @@ MANIFEST_FILE_NAME
 
 import glob
 import os
+import re
 import shutil
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
 import yaml
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, BeforeValidator, Field
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
 from nextmv.content_format import ContentFormat, InputFormat
 from nextmv.options import Option, Options, OptionsEnforcement
+
+
+def _normalize_yaml_str(v: str | None) -> str | None:
+    """
+    Replace newline sequences (from YAML block scalars) with a single space.
+    """
+
+    if v:
+        return re.sub(r"\s*\n\s*", " ", v).strip()
+
+    return v
+
+
+_YAMLStr = Annotated[str | None, BeforeValidator(_normalize_yaml_str)]
+"""String type that normalizes YAML block scalar newlines at parse time."""
+
 
 MANIFEST_FILE_NAME = "app.yaml"
 """Name of the app manifest file.
@@ -276,8 +293,9 @@ class ManifestBuild(BaseModel):
     'make build'
     """
 
-    command: str | None = None
-    """The command to run to build the app.
+    command: _YAMLStr = None
+    """
+    The command to run to build the app.
 
     This command will be executed without a shell, i.e., directly. The command
     must exit with a status of 0 to continue the push process of the app to
@@ -602,7 +620,7 @@ class ManifestOptionUI(BaseModel):
     """The type of control to use for the option in the Nextmv Cloud UI."""
     hidden_from: list[AccountMemberRole] | None = None
     """A list of team roles for which this option will be hidden in the UI."""
-    display_name: str | None = None
+    display_name: _YAMLStr = None
     """An optional display name for the option. This is useful for making
     the option more user-friendly in the UI.
     """
@@ -670,7 +688,7 @@ class ManifestOption(BaseModel):
 
     default: Any | None = None
     """The default value of the option"""
-    description: str | None = ""
+    description: _YAMLStr = ""
     """The description of the option"""
     required: bool = False
     """Whether the option is required or not"""
@@ -1437,9 +1455,7 @@ class Manifest(BaseModel):
     Python-specific attributes. Only for Python apps. Contains further
     Python-specific attributes.
     """
-    files: list[str] = Field(
-        min_length=1,
-    )
+    files: list[str] = Field(min_length=1)
     """The files to include (or exclude) in the app. This is mandatory."""
     configuration: ManifestConfiguration | None = None
     """
@@ -1457,7 +1473,7 @@ class Manifest(BaseModel):
     set environment variables when running the build command given as key-value
     pairs.
     """
-    pre_push: str | None = Field(
+    pre_push: _YAMLStr = Field(
         serialization_alias="pre-push",
         validation_alias=AliasChoices("pre-push", "pre_push"),
         default=None,
