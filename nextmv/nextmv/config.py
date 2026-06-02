@@ -137,9 +137,7 @@ def load_config() -> dict[str, Any]:
     with CONFIG_FILE.open() as file:
         config = yaml.safe_load(file)
 
-    if config is None:
-        return {}
-    return config
+    return config if isinstance(config, dict) else {}
 
 
 def save_config(config: dict[str, Any]) -> None:
