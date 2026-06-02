@@ -520,6 +520,10 @@ def run_pkce_flow(
     cid = client_id or CLIENT_ID
     code_verifier, code_challenge = _generate_pkce_pair()
     redirect_uri = f"http://127.0.0.1:{CALLBACK_PORT}"
+    # Generate a random state value to prevent login CSRF / authorization-code injection.
+    # The callback is validated against this value before the code is exchanged for
+    # tokens.
+    state = secrets.token_urlsafe(16)
 
     params = {
         "response_type": "code",
@@ -528,6 +532,7 @@ def run_pkce_flow(
         "scope": SCOPES,
         "code_challenge_method": "S256",
         "code_challenge": code_challenge,
+        "state": state,
     }
     authorization_url = auth_endpoint + "?" + urllib.parse.urlencode(params)
 
@@ -552,6 +557,15 @@ def run_pkce_flow(
 
     if exc_holder:
         raise exc_holder[0]
+
+    # Verify the state before trusting the code — protects against login CSRF where a
+    # malicious local page hits our callback with an attacker-supplied code.
+    returned_state = callback_result.get("state")
+    if returned_state != state:
+        raise RuntimeError(
+            "OAuth2 state mismatch: the callback state does not match the expected value. "
+            "This may indicate a login CSRF attempt. Please try running [code]nextmv login[/code] again."
+        )
 
     code = callback_result.get("code")
     if not code:
