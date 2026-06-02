@@ -145,5 +145,39 @@ class TestLoginDeduplication(unittest.TestCase):
         self.assertIn("staging", result.output)
 
 
+class TestLoginForceFlag(unittest.TestCase):
+    """Tests that --force is forwarded to run_pkce_flow."""
+
+    def setUp(self):
+        self.runner = CliRunner()
+
+    def _invoke(self, extra_args=None):
+        config = {"auth_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
+        args = ["login"] + (extra_args or [])
+        with (
+            patch("nextmv.cli.login.load_config", return_value=config),
+            patch("nextmv.cli.login.load_sessions", return_value={}),
+            patch("nextmv.cli.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
+            patch("nextmv.cli.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
+            patch("nextmv.cli.login.save_tokens"),
+        ):
+            result = self.runner.invoke(app, args)
+            return result, mock_flow
+
+    def test_no_force_flag_passes_false(self):
+        """Without --force, run_pkce_flow receives force=False."""
+        result, mock_flow = self._invoke()
+        self.assertEqual(result.exit_code, 0, result.output)
+        _, kwargs = mock_flow.call_args
+        self.assertFalse(kwargs.get("force", False))
+
+    def test_force_flag_passes_true(self):
+        """With --force, run_pkce_flow receives force=True."""
+        result, mock_flow = self._invoke(["--force"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        _, kwargs = mock_flow.call_args
+        self.assertTrue(kwargs.get("force", False))
+
+
 if __name__ == "__main__":
     unittest.main()

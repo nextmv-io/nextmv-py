@@ -44,6 +44,17 @@ def login(
             metavar="PROFILE_NAME",
         ),
     ] = None,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help=(
+                "Force re-authentication even if an active browser session exists. "
+                "Passes [code]prompt=login[/code] to the identity provider."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """
     Log in to Nextmv using the browser-based PKCE auth flow.
@@ -63,6 +74,9 @@ def login(
 
     - Log in with a specific named profile.
         $ [dim]nextmv login --profile my-auth-profile[/dim]
+
+    - Force re-authentication, bypassing any active browser session.
+        $ [dim]nextmv login --force[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -136,7 +150,11 @@ def login(
             "Your browser will open — please complete the sign-in flow there."
         )
         try:
-            tokens = run_pkce_flow(profile=None, oidc_discovery_url=oidc_discovery_url, client_id=oidc_client_id)
+            tokens = run_pkce_flow(
+                oidc_discovery_url=oidc_discovery_url,
+                client_id=oidc_client_id,
+                force=force,
+            )
             save_tokens(session, tokens)
             success(f"Logged in to session [magenta]{session}[/magenta] successfully.")
         except Exception as exc:

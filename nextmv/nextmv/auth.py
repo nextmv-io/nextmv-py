@@ -77,6 +77,7 @@ CALLBACK_PORT = 56734
 _COGNITO_DOMAIN = "https://auth.cloud.nextmv.io"
 _FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
 _FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
+_FALLBACK_LOGOUT_ENDPOINT = f"{_COGNITO_DOMAIN}/logout"
 
 # Timeout (seconds) to wait for the user to complete the browser auth step.
 _BROWSER_TIMEOUT = 300
@@ -208,10 +209,10 @@ def is_token_expired(tokens: dict[str, Any]) -> bool:
 # >>> PKCE flow — internal helpers
 
 
-def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str]:
+def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
     """
     Fetch the OIDC discovery document and return
-    ``(authorization_endpoint, token_endpoint)``.
+    ``(authorization_endpoint, token_endpoint, logout_endpoint)``.
 
     Falls back to the hard-coded endpoints if the discovery URL is unreachable or returns
     an unexpected response.
@@ -225,8 +226,8 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
 
     Returns
     -------
-    tuple[str, str]
-        ``(authorization_endpoint, token_endpoint)``
+    tuple[str, str, str]
+        ``(authorization_endpoint, token_endpoint, logout_endpoint)``
     """
     discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
@@ -235,9 +236,10 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
         doc = resp.json()
         auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
         token_ep = doc.get("token_endpoint", _FALLBACK_TOKEN_ENDPOINT)
-        return auth_ep, token_ep
+        logout_ep = doc.get("end_session_endpoint", _FALLBACK_LOGOUT_ENDPOINT)
+        return auth_ep, token_ep, logout_ep
     except Exception:
-        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT
+        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT, _FALLBACK_LOGOUT_ENDPOINT
 
 
 def _generate_pkce_pair() -> tuple[str, str]:
@@ -471,27 +473,25 @@ def refresh_tokens(
 
 
 def run_pkce_flow(
-    profile: str | None = None,
     oidc_discovery_url: str | None = None,
     client_id: str | None = None,
+    force: bool = False,
 ) -> dict[str, Any]:
     """
-    Execute the full PKCE authorization-code flow for the given profile.
+    Execute the full PKCE authorization-code flow.
 
     This function:
 
     1. Resolves the OIDC endpoints.
     2. Generates a PKCE pair.
     3. Listens for the redirect callback on the fixed port ``CALLBACK_PORT`` (``56734``).
-    4. Opens the system browser at the authorization URL.
+    4. Opens the system browser at the authorization URL (or the logout URL when
+       ``force=True``, which clears the Cognito session and chains into a fresh login).
     5. Waits for the redirect callback (up to ``_BROWSER_TIMEOUT`` seconds).
     6. Exchanges the authorization code for tokens.
 
     Parameters
     ----------
-    profile : str | None
-        The profile name (used only for display purposes; does not affect the
-        flow itself).
     oidc_discovery_url : str | None
         The OIDC discovery document URL for the identity provider backing this
         profile's endpoint.  When ``None`` the module-level
@@ -499,6 +499,12 @@ def run_pkce_flow(
     client_id : str | None
         The OAuth2 client ID for the identity provider.  When ``None`` the
         module-level :data:`CLIENT_ID` constant is used.
+    force : bool
+        When ``True``, opens the Cognito logout endpoint first (``/logout``),
+        which clears any active browser session, and chains all authorization
+        parameters onto it so that Cognito immediately presents the login page.
+        This is more reliable than ``prompt=login``, which Cognito's classic
+        hosted UI silently ignores.  Defaults to ``False``.
 
     Returns
     -------
@@ -516,7 +522,7 @@ def run_pkce_flow(
     requests.HTTPError
         If the token exchange request fails.
     """
-    auth_endpoint, token_endpoint = _discover_endpoints(oidc_discovery_url)
+    auth_endpoint, token_endpoint, logout_endpoint = _discover_endpoints(oidc_discovery_url)
     cid = client_id or CLIENT_ID
     code_verifier, code_challenge = _generate_pkce_pair()
     redirect_uri = f"http://127.0.0.1:{CALLBACK_PORT}"
@@ -525,7 +531,7 @@ def run_pkce_flow(
     # tokens.
     state = secrets.token_urlsafe(16)
 
-    params = {
+    auth_params = {
         "response_type": "code",
         "client_id": cid,
         "redirect_uri": redirect_uri,
@@ -534,7 +540,21 @@ def run_pkce_flow(
         "code_challenge": code_challenge,
         "state": state,
     }
-    authorization_url = auth_endpoint + "?" + urllib.parse.urlencode(params)
+
+    if force:
+        # Use the logout endpoint to clear the Cognito session, then chain the
+        # full authorization request onto it.  Cognito will log the user out
+        # and immediately redirect to the login page with all auth params intact.
+        # The redirect_uri must be registered as an Allowed Callback URL (same
+        # requirement as the normal authorization flow — no additional sign-out
+        # URL registration is needed).
+        logout_params = {
+            "client_id": cid,
+            **auth_params,
+        }
+        open_url = logout_endpoint + "?" + urllib.parse.urlencode(logout_params)
+    else:
+        open_url = auth_endpoint + "?" + urllib.parse.urlencode(auth_params)
 
     # Start the callback listener in a background thread so we can open the
     # browser on the main thread without blocking.
@@ -551,7 +571,7 @@ def run_pkce_flow(
     listener = threading.Thread(target=_listen, daemon=True)
     listener.start()
 
-    webbrowser.open(authorization_url)
+    webbrowser.open(open_url)
 
     listener.join(timeout=_BROWSER_TIMEOUT + 5)
 

@@ -4,6 +4,7 @@ Unit tests for the PKCE auth helpers in nextmv.auth.
 
 import tempfile
 import unittest
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -161,17 +162,34 @@ class TestDiscoverEndpoints(unittest.TestCase):
         mock_doc = {
             "authorization_endpoint": "https://idp.example.com/authorize",
             "token_endpoint": "https://idp.example.com/token",
+            "end_session_endpoint": "https://idp.example.com/logout",
         }
         mock_response = MagicMock()
         mock_response.json.return_value = mock_doc
         mock_response.raise_for_status.return_value = None
 
         with patch("nextmv.auth.requests.get", return_value=mock_response) as mock_get:
-            auth_ep, token_ep = _discover_endpoints(custom_url)
+            auth_ep, token_ep, logout_ep = _discover_endpoints(custom_url)
 
         mock_get.assert_called_once_with(custom_url, timeout=10)
         self.assertEqual(auth_ep, "https://idp.example.com/authorize")
         self.assertEqual(token_ep, "https://idp.example.com/token")
+        self.assertEqual(logout_ep, "https://idp.example.com/logout")
+
+    def test_custom_url_logout_fallback_when_absent(self):
+        """end_session_endpoint absent from discovery doc -> falls back to hardcoded value."""
+        mock_doc = {
+            "authorization_endpoint": "https://idp.example.com/authorize",
+            "token_endpoint": "https://idp.example.com/token",
+        }
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_doc
+        mock_response.raise_for_status.return_value = None
+
+        with patch("nextmv.auth.requests.get", return_value=mock_response):
+            _, _, logout_ep = _discover_endpoints("https://idp.example.com/.well-known/openid-configuration")
+
+        self.assertEqual(logout_ep, auth_module._FALLBACK_LOGOUT_ENDPOINT)
 
     def test_none_uses_module_level_constant(self):
         mock_doc = {
@@ -189,10 +207,11 @@ class TestDiscoverEndpoints(unittest.TestCase):
 
     def test_fallback_on_request_failure(self):
         with patch("nextmv.auth.requests.get", side_effect=Exception("network error")):
-            auth_ep, token_ep = _discover_endpoints("https://broken.example.com/discovery")
+            auth_ep, token_ep, logout_ep = _discover_endpoints("https://broken.example.com/discovery")
         # Should return the module-level fallbacks without raising.
         self.assertTrue(auth_ep.startswith("http"))
         self.assertTrue(token_ep.startswith("http"))
+        self.assertTrue(logout_ep.startswith("http"))
 
 
 class TestFetchOrganizations(unittest.TestCase):
@@ -242,6 +261,71 @@ class TestFetchOrganizations(unittest.TestCase):
         with patch("nextmv.auth.requests.get", return_value=mock_resp):
             with self.assertRaises(req_lib.HTTPError):
                 fetch_organizations("bad-token", "api.cloud.nextmv.io")
+
+
+class TestRunPkceFlowForceParam(unittest.TestCase):
+    """Tests that run_pkce_flow uses the logout-chain URL when force=True."""
+
+    _AUTH_EP = "https://auth.example.com/oauth2/authorize"
+    _TOKEN_EP = "https://auth.example.com/oauth2/token"
+    _LOGOUT_EP = "https://auth.example.com/logout"
+
+    def _run(self, force: bool) -> str:
+        """Run the flow and return the URL that was opened in the browser."""
+        import threading
+
+        opened_urls: list[str] = []
+        state_holder: list[str] = []
+        ready = threading.Event()
+
+        def fake_open(url: str) -> None:
+            opened_urls.append(url)
+            qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
+            state_holder.append(qs.get("state", ""))
+            ready.set()
+
+        def fake_wait_for_callback(port):
+            ready.wait(timeout=5)
+            return {"code": "authcode123", "state": state_holder[0] if state_holder else ""}
+
+        mock_token_resp = MagicMock()
+        mock_token_resp.raise_for_status.return_value = None
+        mock_token_resp.json.return_value = {
+            "access_token": "acc",
+            "refresh_token": "ref",
+            "id_token": "id",
+            "expires_in": 3600,
+        }
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=(self._AUTH_EP, self._TOKEN_EP, self._LOGOUT_EP)),
+            patch("nextmv.auth.webbrowser.open", side_effect=fake_open),
+            patch("nextmv.auth._wait_for_callback", side_effect=fake_wait_for_callback),
+            patch("nextmv.auth.requests.post", return_value=mock_token_resp),
+        ):
+            from nextmv.auth import run_pkce_flow
+            run_pkce_flow(force=force)
+
+        return opened_urls[0]
+
+    def test_force_false_opens_auth_endpoint(self):
+        """Without force=True, the authorization endpoint is opened directly."""
+        url = self._run(force=False)
+        self.assertTrue(url.startswith(self._AUTH_EP), url)
+        qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
+        self.assertNotIn("prompt", qs)
+
+    def test_force_true_opens_logout_endpoint(self):
+        """With force=True, the logout endpoint is opened (logout-chain approach)."""
+        url = self._run(force=True)
+        self.assertTrue(url.startswith(self._LOGOUT_EP), url)
+
+    def test_force_true_logout_url_contains_auth_params(self):
+        """The logout-chain URL carries all required PKCE/auth params."""
+        url = self._run(force=True)
+        qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
+        for key in ("client_id", "redirect_uri", "response_type", "scope", "code_challenge", "state"):
+            self.assertIn(key, qs, f"Missing param: {key}")
 
 
 if __name__ == "__main__":

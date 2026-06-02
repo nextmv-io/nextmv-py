@@ -411,7 +411,6 @@ def _ensure_token(
         f"against [magenta]{endpoint}[/magenta]...",
     )
     tokens = run_pkce_flow(
-        profile=profile,
         oidc_discovery_url=oidc_discovery_url,
         client_id=client_id,
     )
