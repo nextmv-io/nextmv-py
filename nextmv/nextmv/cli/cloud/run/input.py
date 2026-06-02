@@ -57,7 +57,7 @@ def input(
 
     # First get the content type to check what we should do with the input,
     # based on its format.
-    run_info = cloud_app.run_metadata(run_id)
+    run_info = cloud_app.run_information(run_id)
 
     # If the input is multi-file, we need to provide an `output_dir_path` to
     # save the files to.

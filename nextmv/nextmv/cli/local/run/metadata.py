@@ -8,14 +8,14 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.configuration.config import build_local_app
-from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.message import in_progress, print_json, success, warning
 from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
 
 
-@app.command()
+@app.command(deprecated=True)
 def metadata(
     run_id: RunIDOption,
     app_id: LocalAppIDOption = None,
@@ -31,6 +31,8 @@ def metadata(
     ] = None,
 ) -> None:
     """
+    This command is deprecated, use [code]nextmv local run information[/code] instead.
+
     Get the metadata of a Nextmv local application run.
 
     You may identify the app by using --app-src, or --app-id if it has been
@@ -53,6 +55,12 @@ def metadata(
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
         $ [dim]nextmv local run metadata --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
+
+    warning(
+        "The [code]nextmv local run metadata[/code] command is deprecated and "
+        "will be removed in the next major release. "
+        "Please use the [code]nextmv local run information[/code] command instead."
+    )
 
     local_app = build_local_app(app_src, app_id)
     in_progress(msg="Getting run metadata...")

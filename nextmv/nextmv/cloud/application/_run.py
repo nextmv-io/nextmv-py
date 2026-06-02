@@ -21,6 +21,7 @@ from nextmv.cloud.client import get_size
 from nextmv.cloud.input_set import ManagedInput
 from nextmv.cloud.url import DownloadURL
 from nextmv.content_format import ContentFormat
+from nextmv.deprecated import deprecated
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
@@ -28,11 +29,15 @@ from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ExternalRunResult,
+    Metadata,
     Run,
     RunConfiguration,
     RunInformation,
     RunLog,
+    RunOptions,
+    RunQueuing,
     RunResult,
+    RunTrackingMetadata,
     TimestampedRunLog,
     TrackedRun,
 )
@@ -99,6 +104,311 @@ class ApplicationRunMixin:
         _ = self.client.request(
             method="PATCH",
             endpoint=f"{self.endpoint}/runs/{run_id}/cancel",
+        )
+
+    def clone_run(
+        self: "Application",
+        cloned_run_id: str,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        upload_id: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        managed_input_id: str | None = None,
+    ) -> str:
+        """
+        Clone a run, allowing overrides on various parameters.
+
+        This method fetches all the elements of the run identified with
+        `cloned_run_id` and creates a new run with the same characteristics.
+        Specifying different arguments such as `input`, `instance_id`, and
+        more, allows you to override specific attributes of the original
+        (cloned) run.
+
+        Returns the `run_id` of the new (submitted) run.
+
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
+
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
+
+            When `input_dir_path` is specified, the `configuration` argument must
+            also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.ContentFormat.MULTI_FILE`
+
+            When working with JSON or text data, use the `input` argument
+            directly.
+
+            In general, if an input is too large, it will be uploaded with the
+            `upload_data` method.
+        instance_id: Optional[str]
+            ID of the instance to use for the run. If not provided, the default
+            instance ID associated to the Class (`default_instance_id`) is
+            used.
+        name: Optional[str]
+            Name of the run.
+        description: Optional[str]
+            Description of the run.
+        upload_id: Optional[str]
+            ID to use when running a large input. If the `input` exceeds the
+            maximum allowed size, then it is uploaded and the corresponding
+            `upload_id` is used.
+        options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        input_dir_path: Optional[str]
+            Path to a directory containing input files. If specified, the
+            function will package the files in the directory into a tar file
+            and upload it as a large input. This is useful for input formats
+            like `nextmv.ContentFormat.MULTI_FILE`.
+            If both `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
+        managed_input_id: Optional[str]
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
+            to use as the run's input.
+
+        Returns
+        ----------
+        str
+            ID (`run_id`) of the new run that was submitted (cloned from the
+            original).
+
+        Raises
+        ----------
+        requests.HTTPError
+            If the response status code is not 2xx.
+        ValueError
+            If the `input` is of type `nextmv.Input` and the `.input_format` is
+            not `JSON`. If the final `options` are not of type `dict[str,str]`.
+        """
+
+        # Get the basic information of the run.
+        run_info = self.run_information(run_id=cloned_run_id)
+        metadata = run_info.metadata
+        content_format = metadata.content_format
+
+        # We wrap the entire operation in a try/finally to clean up the
+        # possible dir temp created under `__resolve_clone_input`.
+        new_input, new_input_dir_path = None, None
+        try:
+            new_input, new_input_dir_path = self.__resolve_clone_input(
+                content_format=content_format,
+                input=input,
+                input_dir_path=input_dir_path,
+                cloned_run_id=cloned_run_id,
+            )
+            new_instance_id = instance_id if instance_id else metadata.application_instance_id
+            new_name = self.__resolve_clone_name(name=name, run_name=run_info.name, cloned_run_id=cloned_run_id)
+            new_description = self.__resolve_clone_description(
+                description=description,
+                run_description=run_info.description,
+                cloned_run_id=cloned_run_id,
+            )
+            new_options = self.__resolve_clone_options(options=options, metadata_options=metadata.options)
+            parsed_config = self.__extract_run_config(
+                input=new_input,
+                configuration=configuration,
+                dir_path=new_input_dir_path,
+            )
+            new_run_config = self.__resolve_clone_run_config(
+                parsed_config=parsed_config,
+                metadata=metadata,
+                new_input=new_input,
+                new_input_dir_path=new_input_dir_path,
+            )
+            new_managed_input_id = self.__resolve_clone_managed_input_id(
+                managed_input_id=managed_input_id,
+                tracking=metadata.tracking,
+            )
+            run_id = self.__new_run(
+                input=new_input,
+                instance_id=new_instance_id,
+                name=new_name,
+                description=new_description,
+                upload_id=upload_id,
+                options=new_options,
+                configuration=new_run_config,
+                batch_experiment_id=None,
+                external_result=None,
+                json_configurations=json_configurations,
+                input_dir_path=new_input_dir_path,
+                managed_input_id=new_managed_input_id,
+                cloned_run_id=cloned_run_id,
+            )
+        finally:
+            # Clean up the auto-created temp dir (only when we created it, not
+            # when the caller supplied their own input_dir_path).
+            if new_input_dir_path and not input_dir_path:
+                shutil.rmtree(new_input_dir_path, ignore_errors=True)
+
+        return run_id
+
+    def clone_run_with_result(
+        self: "Application",
+        cloned_run_id: str,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        run_options: Options | dict[str, str] | None = None,
+        polling_options: PollingOptions = DEFAULT_POLLING_OPTIONS,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        output_dir_path: str | None = ".",
+        managed_input_id: str | None = None,
+    ) -> RunResult:
+        """
+        Clone a run and poll for the result. This is a convenience method that
+        combines the `clone_run` and `run_result_with_polling` methods,
+        applying polling logic to check when the run succeeded.
+
+        Parameters
+        ----------
+        input: Union[Input, dict[str, Any], ManagedInput, BaseModel, str]
+            Input to use for the run. This can be a `nextmv.Input` object,
+            `dict`, `ManagedInput`, `BaseModel` or `str`.
+
+            If `nextmv.Input` is used, and the `input_format` is
+            `nextmv.ContentFormat.JSON`, then the input data is extracted from
+            the `.data` property.
+
+            If you want to work with `nextmv.ContentFormat.MULTI_FILE`, you
+            should use the `input_dir_path` argument instead. This argument
+            takes precedence over the `input`. If `input_dir_path` is
+            specified, this function looks for files in that directory and tars
+            them, to later be uploaded using the `upload_data` method. If both
+            the `input_dir_path` and `input` arguments are provided, the
+            `input` is ignored.
+
+            When `input_dir_path` is specified, the `configuration` argument must
+            also be provided. More specifically, the
+            `RunConfiguration.format.format_input.input_type` parameter
+            dictates what kind of input is being submitted to the Nextmv Cloud.
+            Make sure that this parameter is specified when working with the
+            following input formats:
+
+            - `nextmv.ContentFormat.MULTI_FILE`
+
+            When working with JSON or text data, use the `input` argument
+            directly.
+
+            In general, if an input is too large, it will be uploaded with the
+            `upload_data` method.
+        instance_id: Optional[str]
+            ID of the instance to use for the run. If not provided, the default
+            instance ID associated to the Class (`default_instance_id`) is
+            used.
+        name: Optional[str]
+            Name of the run.
+        description: Optional[str]
+            Description of the run.
+        run_options: Optional[Union[Options, dict[str, str]]]
+            Options to use for the run. This can be a `nextmv.Options` object
+            or a dict. If a dict is used, the keys must be strings and the
+            values must be strings as well. If a `nextmv.Options` object is
+            used, the options are extracted from the `.to_cloud_dict()` method.
+            Note that specifying `options` overrides the `input.options` (if
+            the `input` is of type `nextmv.Input`).
+        polling_options: PollingOptions
+            Options to use when polling for the run result. This is a
+            convenience method that combines the `new_run` and
+            `run_result_with_polling` methods, applying polling logic to check
+            when the run succeeded.
+        configuration: Optional[Union[RunConfiguration, dict[str, Any]]]
+            Configuration to use for the run. This can be a
+            `cloud.RunConfiguration` object or a dict. If the object is used,
+            then the `.to_dict()` method is applied to extract the
+            configuration.
+        json_configurations: Optional[dict[str, Any]]
+            Optional configurations for JSON serialization. This is used to
+            customize the serialization before data is sent.
+        input_dir_path: Optional[str]
+            Path to a directory containing input files. If specified, the
+            function will package the files in the directory into a tar file
+            and upload it as a large input. This is useful for input formats
+            like `nextmv.ContentFormat.MULTI_FILE`.
+            If both `input` and `input_dir_path` are specified, the `input` is
+            ignored, and the files in the directory are used instead.
+        output_dir_path : Optional[str], default="."
+            Path to a directory where non-JSON output files will be saved. This is
+            required if the output is non-JSON. If the directory does not exist, it
+            will be created. Uses the current directory by default.
+        managed_input_id: Optional[str]
+            The ID of an existing managed input (`nextmv.cloud.ManagedInput`)
+            to use as the run's input.
+
+        Returns
+        ----------
+        RunResult
+            Result of the run.
+
+        Raises
+        ----------
+        ValueError
+            If the `input` is of type `nextmv.Input` and the `.input_format` is
+            not `JSON`. If the final `options` are not of type `dict[str,str]`.
+        requests.HTTPError
+            If the response status code is not 2xx.
+        TimeoutError
+            If the run does not succeed after the polling strategy is exhausted
+            based on time duration.
+        RuntimeError
+            If the run does not succeed after the polling strategy is exhausted
+            based on number of tries.
+        """
+
+        run_id = self.clone_run(
+            cloned_run_id=cloned_run_id,
+            input=input,
+            instance_id=instance_id,
+            name=name,
+            description=description,
+            options=run_options,
+            configuration=configuration,
+            json_configurations=json_configurations,
+            input_dir_path=input_dir_path,
+            managed_input_id=managed_input_id,
+        )
+
+        return self.run_result_with_polling(
+            run_id=run_id,
+            polling_options=polling_options,
+            output_dir_path=output_dir_path,
         )
 
     def download_asset_content(
@@ -369,98 +679,25 @@ class ApplicationRunMixin:
             not `JSON`. If the final `options` are not of type `dict[str,str]`.
         """
 
-        tar_file = ""
-        if input_dir_path is not None and input_dir_path != "":
-            if not os.path.exists(input_dir_path):
-                raise ValueError(f"Directory {input_dir_path} does not exist.")
-
-            if not os.path.isdir(input_dir_path):
-                raise ValueError(f"Path {input_dir_path} is not a directory.")
-
-            tar_file = self._package_inputs(input_dir_path)
-
-        input_data = self.__extract_input_data(input)
-
-        managed_input_used, managed_input = self.__prepare_managed_input(
-            managed_input=input,
-            managed_input_id=managed_input_id,
-        )
-        if managed_input_used:
-            input = managed_input
-            if input_dir_path is not None and input_dir_path != "":
-                raise ValueError("Cannot specify both a managed input and an input directory path.")
-
-        input_size = 0
-        if input_data is not None:
-            input_size = get_size(input_data)
-
-        upload_id_used = upload_id is not None and upload_id != ""
-        if self.__upload_url_required(
-            uploaded_input_used=upload_id_used or managed_input_used,
-            input_size=input_size,
-            tar_file=tar_file,
+        # We delegate logic to an auxiliary function to reuse it in the
+        # `clone_run` method.
+        run_id = self.__new_run(
             input=input,
-        ):
-            upload_url = self.upload_url()
-            self.upload_data(data=input_data, upload_url=upload_url, tar_file=tar_file)
-            upload_id = upload_url.upload_id
-            upload_id_used = True
-
-        options_dict = self.__extract_options_dict(options, json_configurations)
-
-        # Builds the payload progressively based on the different arguments
-        # that must be provided.
-        payload = {}
-
-        # Request payload parameters `input_id`, `upload_id`, and `input`
-        # are mutually exclusive. The request will fail if more than one is defined.
-        # We prioritize the use of a managed input via `input_id` if defined,
-        # use `upload_id` if no managed input is defined but `upload_id` is or
-        # the input used necessitated the input be uploaded, and use `input`
-        # for all remaining cases.
-        if managed_input_used:
-            payload["input_id"] = managed_input.id
-        elif upload_id_used:
-            payload["upload_id"] = upload_id
-        else:
-            payload["input"] = input_data
-
-        if name is not None:
-            payload["name"] = name
-        if description is not None:
-            payload["description"] = description
-        if len(options_dict) > 0:
-            for k, v in options_dict.items():
-                if not isinstance(v, str):
-                    raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
-            payload["options"] = options_dict
-
-        resolved_run_config = self.__extract_run_config(input, configuration, input_dir_path)
-        payload["configuration"] = resolved_run_config.to_dict()
-
-        if batch_experiment_id is not None:
-            payload["batch_experiment_id"] = batch_experiment_id
-        if external_result is not None:
-            external_dict = (
-                external_result.to_dict() if isinstance(external_result, ExternalRunResult) else external_result
-            )
-            payload["result"] = external_dict
-
-        query_params = {}
-        # Instance ID should be empty for ensemble runs.
-        effective_instance_id = instance_id or self.default_instance_id
-        if effective_instance_id and not resolved_run_config.is_ensemble():
-            query_params["instance_id"] = effective_instance_id
-
-        response = self.client.request(
-            method="POST",
-            endpoint=f"{self.endpoint}/runs",
-            payload=payload,
-            query_params=query_params,
+            instance_id=instance_id,
+            name=name,
+            description=description,
+            upload_id=upload_id,
+            options=options,
+            configuration=configuration,
+            batch_experiment_id=batch_experiment_id,
+            external_result=external_result,
             json_configurations=json_configurations,
+            input_dir_path=input_dir_path,
+            managed_input_id=managed_input_id,
+            cloned_run_id=None,
         )
 
-        return response.json()["run_id"]
+        return run_id
 
     def new_run_with_result(
         self: "Application",
@@ -615,6 +852,45 @@ class ApplicationRunMixin:
             output_dir_path=output_dir_path,
         )
 
+    def run_information(self: "Application", run_id: str) -> RunInformation:
+        """
+        Get the information of a run, including metadata.
+
+        Retrieves information about a run without including the run output.
+        This is useful when you only need the run's status, metadata and other
+        non-output attributes.
+
+        Parameters
+        ----------
+        run_id : str
+            ID of the run to retrieve information for.
+
+        Returns
+        -------
+        RunInformation
+            Information of the run, including metadata.
+
+        Raises
+        ------
+        requests.HTTPError
+            If the response status code is not 2xx.
+
+        Examples
+        --------
+        >>> info = app.run_information("run-123")
+        >>> print(info.metadata.status_v2)
+        StatusV2.succeeded
+        """
+
+        response = self.client.request(
+            method="GET",
+            endpoint=f"{self.endpoint}/runs/{run_id}/metadata",
+        )
+        info = RunInformation.from_dict(response.json())
+        info.console_url = self.__console_url(info.id)
+
+        return info
+
     def run_input(self: "Application", run_id: str, output_dir_path: str | None = ".") -> dict[str, Any] | None:
         """
         Get the input of a run.
@@ -652,7 +928,7 @@ class ApplicationRunMixin:
         >>> print(input_data)
         {'locations': [...], 'vehicles': [...]}
         """
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
 
         query_params = None
         large = False
@@ -703,6 +979,9 @@ class ApplicationRunMixin:
 
     def run_metadata(self: "Application", run_id: str) -> RunInformation:
         """
+        !!! warning
+            `run_metadata` is deprecated, use `run_information` instead.
+
         Get the metadata of a run.
 
         Retrieves information about a run without including the run output.
@@ -730,11 +1009,15 @@ class ApplicationRunMixin:
         StatusV2.succeeded
         """
 
+        deprecated(
+            name="Application.run_metadata",
+            reason="`Application.run_metadata` is deprecated, use `Application.run_information` instead",
+        )
+
         response = self.client.request(
             method="GET",
             endpoint=f"{self.endpoint}/runs/{run_id}/metadata",
         )
-
         info = RunInformation.from_dict(response.json())
         info.console_url = self.__console_url(info.id)
 
@@ -923,7 +1206,7 @@ class ApplicationRunMixin:
         """
 
         # Get the run information to check how we need to handle the output.
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
         output_format = run_information.metadata.format.format_output.output_type
         is_json = output_format == ContentFormat.JSON
 
@@ -1009,7 +1292,7 @@ class ApplicationRunMixin:
         'succeeded'
         """
 
-        run_information = self.run_metadata(run_id=run_id)
+        run_information = self.run_information(run_id=run_id)
 
         return self.__run_result(
             run_id=run_id,
@@ -1069,7 +1352,7 @@ class ApplicationRunMixin:
         """
 
         def polling_func() -> tuple[Any, bool]:
-            run_information = self.run_metadata(run_id=run_id)
+            run_information = self.run_information(run_id=run_id)
             if run_information.metadata.run_is_finalized():
                 return run_information, True
 
@@ -1277,6 +1560,124 @@ class ApplicationRunMixin:
                     tar.add(file_path, arcname=arcname)
 
         return tar_file_path
+
+    def __new_run(  # noqa: C901
+        self: "Application",
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str = None,
+        instance_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        upload_id: str | None = None,
+        options: Options | dict[str, str] | None = None,
+        configuration: RunConfiguration | dict[str, Any] | None = None,
+        batch_experiment_id: str | None = None,
+        external_result: ExternalRunResult | dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        input_dir_path: str | None = None,
+        managed_input_id: str | None = None,
+        cloned_run_id: str | None = None,
+    ) -> str:
+        """
+        Auxiliary method to start a new run.
+        """
+
+        tar_file = ""
+        if input_dir_path is not None and input_dir_path != "":
+            if not os.path.exists(input_dir_path):
+                raise ValueError(f"Directory {input_dir_path} does not exist.")
+
+            if not os.path.isdir(input_dir_path):
+                raise ValueError(f"Path {input_dir_path} is not a directory.")
+
+            tar_file = self._package_inputs(input_dir_path)
+
+        input_data = self.__extract_input_data(input)
+
+        managed_input_used, managed_input = self.__prepare_managed_input(
+            managed_input=input,
+            managed_input_id=managed_input_id,
+        )
+        if managed_input_used:
+            input = managed_input
+            if input_dir_path is not None and input_dir_path != "":
+                raise ValueError("Cannot specify both a managed input and an input directory path.")
+
+        input_size = 0
+        if input_data is not None:
+            input_size = get_size(input_data)
+
+        upload_id_used = upload_id is not None and upload_id != ""
+        if self.__upload_url_required(
+            uploaded_input_used=upload_id_used or managed_input_used,
+            input_size=input_size,
+            tar_file=tar_file,
+            input=input,
+        ):
+            upload_url = self.upload_url()
+            self.upload_data(data=input_data, upload_url=upload_url, tar_file=tar_file)
+            upload_id = upload_url.upload_id
+            upload_id_used = True
+
+        options_dict = self.__extract_options_dict(options, json_configurations)
+
+        # Builds the payload progressively based on the different arguments
+        # that must be provided.
+        payload = {}
+
+        # Request payload parameters `input_id`, `upload_id`, and `input`
+        # are mutually exclusive. The request will fail if more than one is defined.
+        # We prioritize the use of a managed input via `input_id` if defined,
+        # use `upload_id` if no managed input is defined but `upload_id` is or
+        # the input used necessitated the input be uploaded, and use `input`
+        # for all remaining cases.
+        if managed_input_used:
+            payload["input_id"] = managed_input.id
+        elif upload_id_used:
+            payload["upload_id"] = upload_id
+        else:
+            payload["input"] = input_data
+
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if len(options_dict) > 0:
+            for k, v in options_dict.items():
+                if not isinstance(v, str):
+                    raise ValueError(f"options must be dict[str,str], option {k} has type {type(v)} instead.")
+            payload["options"] = options_dict
+
+        resolved_run_config = self.__extract_run_config(input, configuration, input_dir_path)
+        payload["configuration"] = resolved_run_config.to_dict()
+
+        if batch_experiment_id is not None:
+            payload["batch_experiment_id"] = batch_experiment_id
+        if external_result is not None:
+            external_dict = (
+                external_result.to_dict() if isinstance(external_result, ExternalRunResult) else external_result
+            )
+            payload["result"] = external_dict
+
+        if cloned_run_id:
+            payload["tracking"] = {
+                "cloned_run_id": cloned_run_id,
+            }
+
+        query_params = {}
+        # Instance ID should be empty for ensemble runs.
+        effective_instance_id = instance_id or self.default_instance_id
+        if effective_instance_id and not resolved_run_config.is_ensemble():
+            query_params["instance_id"] = effective_instance_id
+
+        response = self.client.request(
+            method="POST",
+            endpoint=f"{self.endpoint}/runs",
+            payload=payload,
+            query_params=query_params,
+            json_configurations=json_configurations,
+        )
+
+        return response.json()["run_id"]
 
     def __run_result(
         self: "Application",
@@ -1599,3 +2000,278 @@ class ApplicationRunMixin:
         self.upload_data(data=assets_dict, upload_url=url_assets)
 
         return url_assets.upload_id
+
+    def __resolve_clone_input(
+        self: "Application",
+        content_format: ContentFormat,
+        input: Input | dict[str, Any] | ManagedInput | BaseModel | str | None,
+        input_dir_path: str | None,
+        cloned_run_id: str,
+    ) -> tuple[Any, str | None]:
+        """
+        Resolve the input and input directory path for a cloned run.
+
+        Parameters
+        ----------
+        content_format : ContentFormat
+            The content format of the original run, used to decide how to fetch
+            or forward the input.
+        input : Union[Input, dict, ManagedInput, BaseModel, str, None]
+            Caller-supplied input override. When provided for a JSON run, it is
+            used directly; otherwise the original run's input is fetched.
+        input_dir_path : Optional[str]
+            Caller-supplied directory path for multi-file input. When provided
+            for a MULTI_FILE run, it is used directly; otherwise the original
+            run's input files are downloaded to a temporary directory.
+        cloned_run_id : str
+            ID of the run being cloned, used to fetch the original input when
+            no override is supplied.
+
+        Returns
+        -------
+        tuple[Any, str | None]
+            A ``(new_input, new_input_dir_path)`` pair ready to be forwarded to
+            the new run. Exactly one of the two elements is non-``None`` (or
+            both are ``None`` for unrecognised format combinations).
+        """
+        if content_format == ContentFormat.JSON and input:
+            return input, None
+
+        if content_format == ContentFormat.JSON and not input:
+            return self.run_input(run_id=cloned_run_id), None
+
+        if content_format == ContentFormat.MULTI_FILE and input_dir_path:
+            return None, input_dir_path
+
+        if content_format == ContentFormat.MULTI_FILE and not input_dir_path:
+            tmpdirname = tempfile.mkdtemp()
+            self.run_input(run_id=cloned_run_id, output_dir_path=tmpdirname)
+
+            return None, tmpdirname
+
+        return None, None
+
+    def __resolve_clone_name(
+        self: "Application",
+        name: str | None,
+        run_name: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the name for a cloned run.
+
+        The name is truncated to 128 characters if it exceeds that limit. When
+        no name is supplied, a default of ``"<original_name> clone"`` (or
+        ``"<cloned_run_id> clone"`` when the original has no name) is used.
+
+        Parameters
+        ----------
+        name : Optional[str]
+            Caller-supplied name override.
+        run_name : str
+            Name of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_name`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved name, at most 128 characters long.
+        """
+        if name and len(name) <= 128:
+            return name
+
+        if name and len(name) > 128:
+            return name[:128]
+
+        suffix = " clone"
+        base = run_name if run_name else cloned_run_id
+
+        return base[: 128 - len(suffix)] + suffix
+
+    def __resolve_clone_description(
+        self: "Application",
+        description: str | None,
+        run_description: str,
+        cloned_run_id: str,
+    ) -> str:
+        """
+        Resolve the description for a cloned run.
+
+        The description is truncated to 256 characters if it exceeds that
+        limit. When no description is supplied, a default of
+        ``"Clone of <original_description>"`` (or
+        ``"Clone of <cloned_run_id>"`` when the original has no description)
+        is used.
+
+        Parameters
+        ----------
+        description : Optional[str]
+            Caller-supplied description override.
+        run_description : str
+            Description of the original run.
+        cloned_run_id : str
+            ID of the run being cloned, used as a fallback base when
+            ``run_description`` is empty.
+
+        Returns
+        -------
+        str
+            Resolved description, at most 256 characters long.
+        """
+        if description and len(description) <= 256:
+            return description
+
+        if description and len(description) > 256:
+            return description[:256]
+
+        prefix = "Clone of "
+        base = run_description if run_description else cloned_run_id
+
+        return prefix + base[: 256 - len(prefix)]
+
+    def __resolve_clone_options(
+        self: "Application",
+        options: Options | dict[str, str] | None,
+        metadata_options: RunOptions | None,
+    ) -> Options | dict[str, str] | None:
+        """
+        Resolve the options for a cloned run.
+
+        When a caller-supplied override is present it takes precedence.
+        Otherwise the options are reconstructed from the original run's
+        ``options_summary``. Returns ``None`` when neither source is available.
+
+        Parameters
+        ----------
+        options : Optional[Union[Options, dict[str, str]]]
+            Caller-supplied options override.
+        metadata_options : Optional[RunOptions]
+            Options metadata from the original run.
+
+        Returns
+        -------
+        Options | dict[str, str] | None
+            Resolved options, or ``None`` if no options are available.
+        """
+        if options:
+            return options
+
+        if metadata_options:
+            summ = metadata_options.options_summary
+            if summ:
+                return {opt.name: opt.value for opt in summ}
+
+        return None
+
+    def __resolve_clone_run_config(
+        self: "Application",
+        parsed_config: RunConfiguration,
+        metadata: Metadata,
+        new_input: Any,
+        new_input_dir_path: str | None,
+    ) -> RunConfiguration:
+        """
+        Build a :class:`RunConfiguration` for a cloned run.
+
+        Fields present in ``parsed_config`` (derived from the caller's
+        overrides) take precedence over those stored in ``metadata`` (the
+        original run's values). Queuing settings (``disabled`` and
+        ``priority``) are handled independently so that only the field being
+        overridden is changed.
+
+        Parameters
+        ----------
+        parsed_config : RunConfiguration
+            Configuration extracted from the caller's arguments via
+            ``__extract_run_config``.
+        metadata : Metadata
+            Metadata of the original run, providing fallback values for each
+            configuration field.
+        new_input : Any
+            Resolved input for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+        new_input_dir_path : Optional[str]
+            Resolved input directory path for the new run, forwarded to
+            ``RunConfiguration.resolve``.
+
+        Returns
+        -------
+        RunConfiguration
+            Fully resolved configuration ready to be passed to
+            ``__new_run``.
+        """
+        new_run_config = RunConfiguration()
+
+        new_run_config.execution_class = parsed_config.execution_class or metadata.execution_class
+        new_run_config.format = parsed_config.format if parsed_config.format is not None else metadata.format
+        new_run_config.run_type = parsed_config.run_type if parsed_config.run_type is not None else metadata.run_type
+        new_run_config.secrets_collection_id = parsed_config.secrets_collection_id or metadata.secrets_collection_id
+
+        # Resolve queuing.disabled: prefer the caller's value, fall back to metadata.
+        queuing = parsed_config.queuing
+        if queuing is not None and queuing.disabled is not None:
+            disabled = queuing.disabled
+        else:
+            disabled = metadata.queuing_disabled
+
+        if disabled is not None:
+            if new_run_config.queuing is None:
+                new_run_config.queuing = RunQueuing(disabled=disabled)
+            else:
+                new_run_config.queuing.disabled = disabled
+
+        # Resolve queuing.priority: prefer the caller's value, fall back to metadata.
+        if queuing is not None and queuing.priority is not None:
+            priority = queuing.priority
+        else:
+            priority = metadata.queuing_priority
+
+        if priority is not None:
+            if new_run_config.queuing is None:
+                new_run_config.queuing = RunQueuing(priority=priority)
+            else:
+                new_run_config.queuing.priority = priority
+
+        # Resolve integration_id: prefer the caller's value, fall back to metadata.
+        if parsed_config.integration_id:
+            new_run_config.integration_id = parsed_config.integration_id
+        elif metadata.integration:
+            new_run_config.integration_id = metadata.integration.integration_id
+
+        new_run_config.resolve(input=new_input, dir_path=new_input_dir_path)
+
+        return new_run_config
+
+    def __resolve_clone_managed_input_id(
+        self: "Application",
+        managed_input_id: str | None,
+        tracking: RunTrackingMetadata | None,
+    ) -> str | None:
+        """
+        Resolve the managed input ID for a cloned run.
+
+        Returns the caller-supplied override when present; otherwise falls back
+        to the ``input_id`` recorded in the original run's tracking metadata.
+        Returns ``None`` when neither source is available.
+
+        Parameters
+        ----------
+        managed_input_id : Optional[str]
+            Caller-supplied managed input ID override.
+        tracking : Optional[RunTrackingMetadata]
+            Tracking metadata of the original run.
+
+        Returns
+        -------
+        str | None
+            Resolved managed input ID, or ``None`` if not applicable.
+        """
+        if managed_input_id:
+            return managed_input_id
+
+        if tracking is not None and tracking.input_id:
+            return tracking.input_id
+
+        return None

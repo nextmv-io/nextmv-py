@@ -104,9 +104,7 @@ def _cloud_run_impl(
         os.rename(output_dir_path, final_output)
 
     result_dict = result.to_dict()
-    path = _helpers._save_cloud_run_file(
-        result_dict, endpoint, run_id, f"{run_id}.json"
-    )
+    path = _helpers._save_cloud_run_file(result_dict, endpoint, run_id, f"{run_id}.json")
     _helpers._extract_cloud_run_outputs(result_dict, endpoint, run_id)
     return f"Downloaded: {path}"
 
@@ -128,9 +126,7 @@ def _cloud_run_result_impl(app_id: str, run_id: str) -> str:
     result = app.run_result(run_id=run_id, output_dir_path=output_subdir)
 
     result_dict = result.to_dict()
-    path = _helpers._save_cloud_run_file(
-        result_dict, endpoint, run_id, f"{run_id}.json"
-    )
+    path = _helpers._save_cloud_run_file(result_dict, endpoint, run_id, f"{run_id}.json")
     _helpers._extract_cloud_run_outputs(result_dict, endpoint, run_id)
     return f"Downloaded: {path}"
 
@@ -173,7 +169,9 @@ def _cloud_run_logs_impl(app_id: str, run_id: str) -> str:
 
     logs = app.run_logs(run_id=run_id)
     path = _helpers._save_cloud_run_logs(
-        logs.to_dict(), endpoint, run_id,
+        logs.to_dict(),
+        endpoint,
+        run_id,
     )
     return f"Downloaded: {path}"
 
@@ -301,7 +299,7 @@ def register(mcp: FastMCP) -> None:
         """
 
         app = _helpers._get_app(app_id)
-        metadata = app.run_metadata(run_id=run_id)
+        metadata = app.run_information(run_id=run_id)
         return metadata.to_dict()
 
     @mcp.tool()
