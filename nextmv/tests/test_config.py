@@ -205,6 +205,14 @@ class TestGetProfileEndpoint(unittest.TestCase):
         config = {}
         self.assertEqual(get_profile_endpoint(config, "nonexistent"), DEFAULT_ENDPOINT)
 
+    def test_null_endpoint_falls_back_to_default(self):
+        config = {"endpoint": None}
+        self.assertEqual(get_profile_endpoint(config, None), DEFAULT_ENDPOINT)
+
+    def test_null_endpoint_named_profile_falls_back_to_default(self):
+        config = {"dev": {"endpoint": None}}
+        self.assertEqual(get_profile_endpoint(config, "dev"), DEFAULT_ENDPOINT)
+
 
 class TestGetEndpointOidcConfig(unittest.TestCase):
     """Tests for get_endpoint_oidc_config helper."""

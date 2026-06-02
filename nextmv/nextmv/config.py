@@ -361,8 +361,9 @@ def get_profile_endpoint(config: dict, profile: str | None) -> str:
         profile_data = config.get(profile, {})
         ep = profile_data.get(ENDPOINT_KEY, DEFAULT_ENDPOINT) if isinstance(profile_data, dict) else DEFAULT_ENDPOINT
 
-    ep = str(ep)
-    return _strip_scheme(ep) or DEFAULT_ENDPOINT
+    if ep is None:
+        return DEFAULT_ENDPOINT
+    return _strip_scheme(str(ep)) or DEFAULT_ENDPOINT
 
 
 def list_pkce_profiles(config: dict) -> list[str | None]:
