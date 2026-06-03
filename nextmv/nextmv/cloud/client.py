@@ -445,9 +445,12 @@ class Client:
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
-            raise requests.HTTPError(
+            err = requests.HTTPError(
                 f"request to {endpoint} failed with status code {response.status_code} and message: {response.text}"
-            ) from e
+            )
+            err.response = response
+
+            raise err from e
 
         return response
 
@@ -568,10 +571,12 @@ class Client:
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
-            raise requests.HTTPError(
+            err = requests.HTTPError(
                 f"upload to presigned URL {url} failed with "
                 f"status code {response.status_code} and message: {response.text}"
-            ) from e
+            )
+            err.response = response
+            raise err from e
 
     def __resolve_profile(self) -> str | None:
         """

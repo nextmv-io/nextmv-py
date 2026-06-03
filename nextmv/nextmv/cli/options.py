@@ -316,3 +316,14 @@ YesOption = Annotated[
         help="Agree to deletion confirmation prompt. Useful for non-interactive sessions.",
     ),
 ]
+
+# debug option - can be used in any command to enable debug mode.
+# Define it as follows in commands or callbacks, as necessary:
+# _: DebugOption = False,
+DebugOption = Annotated[
+    bool,
+    typer.Option(
+        "--debug",
+        help="Enable debug mode, which will print out the full traceback in case of errors.",
+    ),
+]
