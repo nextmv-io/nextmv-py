@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import AppIDOption, ProfileOption, SwitchbackTestIDOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption, SwitchbackTestIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -16,6 +16,7 @@ app = typer.Typer()
 def start(
     app_id: AppIDOption,
     switchback_test_id: SwitchbackTestIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

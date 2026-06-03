@@ -12,7 +12,7 @@ from nextmv.cli.local.run.create import build_run_options, resolve_input_kwarg
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
 from nextmv.cli.message import enum_values, parse_content_format, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
@@ -140,6 +140,7 @@ def clone(
             rich_help_panel="Run configuration",
         ),
     ] = -1,
+    _: DebugOption = False,
 ) -> None:
     """
     Clone an existing local application run.

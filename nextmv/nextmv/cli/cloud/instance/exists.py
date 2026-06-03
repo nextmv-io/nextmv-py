@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json
-from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, InstanceIDOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -16,6 +16,7 @@ app = typer.Typer()
 def exists(
     app_id: AppIDOption,
     instance_id: InstanceIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

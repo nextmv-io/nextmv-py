@@ -16,6 +16,7 @@ from nextmv.cli.configuration.config import (
     save_config,
 )
 from nextmv.cli.message import error, message, success, warning
+from nextmv.cli.options import DebugOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -54,6 +55,7 @@ def create(
             metavar="PROFILE_NAME",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Create a new configuration or update an existing one.

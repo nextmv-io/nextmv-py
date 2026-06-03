@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 from nextmv.cloud.client import Client
 from nextmv.cloud.sso import SSOConfiguration
 
@@ -53,6 +53,7 @@ def create(
             metavar="METADATA_DOCUMENT",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

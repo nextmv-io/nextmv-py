@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 from nextmv.cloud.application import list_applications
 from nextmv.cloud.client import Client
 
@@ -27,6 +27,7 @@ def list(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

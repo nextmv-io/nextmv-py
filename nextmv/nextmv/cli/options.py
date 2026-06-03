@@ -20,6 +20,7 @@ ProfileOption = Annotated[
         help="Profile to use for this action. Use [code]nextmv configuration[/code] to manage profiles.",
         envvar="NEXTMV_PROFILE",
         metavar="PROFILE_NAME",
+        rich_help_panel="General",
     ),
 ]
 
@@ -325,5 +326,6 @@ DebugOption = Annotated[
     typer.Option(
         "--debug",
         help="Enable debug mode, which will print out the full traceback in case of errors.",
+        rich_help_panel="General",
     ),
 ]

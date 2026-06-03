@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, print_json
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.cloud.ensemble import EvaluationRule, RuleObjective, RuleTolerance, RuleToleranceType, RunGroup
 
 # Set up subcommand application.
@@ -217,6 +217,7 @@ def create(
             metavar="ENSEMBLE_DEFINITION_ID",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)

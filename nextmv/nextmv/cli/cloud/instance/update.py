@@ -10,7 +10,7 @@ import typer
 from nextmv.cli.cloud.instance.create import build_config, build_options
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json, success
-from nextmv.cli.options import AppIDOption, InstanceIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, InstanceIDOption, ProfileOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 
@@ -132,6 +132,7 @@ def update(
             rich_help_panel="Instance configuration",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

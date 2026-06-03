@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app, build_local_app
 from nextmv.cli.message import in_progress
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, ProfileOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -47,6 +47,7 @@ def sync(
             metavar="RUN_IDS",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

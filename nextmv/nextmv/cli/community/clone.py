@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import error
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 from nextmv.cloud.client import Client
 from nextmv.cloud.community import clone_community_app
 
@@ -42,6 +42,7 @@ def clone(
             metavar="VERSION",
         ),
     ] = LATEST_VERSION,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

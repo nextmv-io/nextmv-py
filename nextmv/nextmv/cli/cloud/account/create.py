@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import in_progress, print_json
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 from nextmv.cloud.account import Account
 from nextmv.cloud.client import Client
 
@@ -36,6 +36,7 @@ def create(
             metavar="NAME",
         ),
     ],
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

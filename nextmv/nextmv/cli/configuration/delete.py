@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import load_config, save_config
 from nextmv.cli.message import confirmation, error, info, success
-from nextmv.cli.options import YesOption
+from nextmv.cli.options import DebugOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -27,6 +27,7 @@ def delete(
         ),
     ],
     yes: YesOption = False,
+    _: DebugOption = False,
 ) -> None:
     """
     Delete a profile from the configuration.

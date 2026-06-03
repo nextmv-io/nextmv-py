@@ -10,7 +10,7 @@ import typer
 from nextmv import local
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, info, print_json, success, warning
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 from nextmv.content_format import ContentFormat
 from nextmv.polling import PollingOptions, default_polling_options
 from nextmv.status import StatusV2
@@ -51,6 +51,7 @@ def get(
             "Specify output location with --output.",
         ),
     ] = False,
+    _: DebugOption = False,
 ) -> None:
     """
     Get the result (output) of a Nextmv local application run.

@@ -10,7 +10,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.cloud.shadow import StartEvents, TerminationEvents
 
 # Set up subcommand application.
@@ -92,6 +92,7 @@ def create(
             metavar="TERMINATION_TIME",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

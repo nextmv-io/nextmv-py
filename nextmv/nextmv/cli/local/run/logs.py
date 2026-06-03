@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 from nextmv.local.application import Application
 from nextmv.polling import PollingOptions, default_polling_options
 
@@ -49,6 +49,7 @@ def logs(
             metavar="TIMEOUT_SECONDS",
         ),
     ] = -1,
+    _: DebugOption = False,
 ) -> None:
     """
     Get the logs of a local application run.

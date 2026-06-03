@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import error, in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.cloud.batch_experiment import BatchExperimentRun
 from nextmv.polling import default_polling_options
 
@@ -113,6 +113,7 @@ def create(
             rich_help_panel="Output control",
         ),
     ] = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import error, success
+from nextmv.cli.options import DebugOption
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest
 
 # Set up subcommand application.
@@ -24,6 +25,7 @@ def validate(
             metavar="DIRPATH",
         ),
     ] = ".",
+    _: DebugOption = False,
 ) -> None:
     """
     Validate an [magenta]app.yaml[/magenta] (app manifest) file.

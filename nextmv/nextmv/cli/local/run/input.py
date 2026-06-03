@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, ProfileOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 from nextmv.content_format import ContentFormat
 
 # Set up subcommand application.
@@ -30,7 +30,7 @@ def input(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
-    profile: ProfileOption = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Get the input of a local application run.

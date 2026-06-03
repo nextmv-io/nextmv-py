@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, EnsembleDefinitionIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, EnsembleDefinitionIDOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -28,6 +28,7 @@ def get(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

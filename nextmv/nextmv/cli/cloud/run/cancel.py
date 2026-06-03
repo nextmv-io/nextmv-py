@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -16,6 +16,7 @@ app = typer.Typer()
 def cancel(
     app_id: AppIDOption,
     run_id: RunIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.run import Format, FormatInput
@@ -77,6 +77,7 @@ def create(
             metavar="UPLOAD_ID",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """
