@@ -169,11 +169,27 @@ class TestDiscoverEndpoints(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
 
         with patch("nextmv.auth.requests.get", return_value=mock_response) as mock_get:
-            auth_ep, token_ep = _discover_endpoints(custom_url)
+            auth_ep, token_ep, logout_ep = _discover_endpoints(custom_url)
 
         mock_get.assert_called_once_with(custom_url, timeout=10)
         self.assertEqual(auth_ep, "https://idp.example.com/authorize")
         self.assertEqual(token_ep, "https://idp.example.com/token")
+        self.assertEqual(logout_ep, "https://idp.example.com/logout")
+
+    def test_custom_url_logout_fallback_when_absent(self):
+        """end_session_endpoint absent from discovery doc -> falls back to hardcoded value."""
+        mock_doc = {
+            "authorization_endpoint": "https://idp.example.com/authorize",
+            "token_endpoint": "https://idp.example.com/token",
+        }
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_doc
+        mock_response.raise_for_status.return_value = None
+
+        with patch("nextmv.auth.requests.get", return_value=mock_response):
+            _, _, logout_ep = _discover_endpoints("https://idp.example.com/.well-known/openid-configuration")
+
+        self.assertEqual(logout_ep, auth_module._FALLBACK_LOGOUT_ENDPOINT)
 
     def test_none_uses_module_level_constant(self):
         mock_doc = {
@@ -191,10 +207,11 @@ class TestDiscoverEndpoints(unittest.TestCase):
 
     def test_fallback_on_request_failure(self):
         with patch("nextmv.auth.requests.get", side_effect=Exception("network error")):
-            auth_ep, token_ep = _discover_endpoints("https://broken.example.com/discovery")
+            auth_ep, token_ep, logout_ep = _discover_endpoints("https://broken.example.com/discovery")
         # Should return the module-level fallbacks without raising.
         self.assertTrue(auth_ep.startswith("http"))
         self.assertTrue(token_ep.startswith("http"))
+        self.assertTrue(logout_ep.startswith("http"))
 
 
 class TestFetchOrganizations(unittest.TestCase):
@@ -287,7 +304,6 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
             patch("nextmv.auth.requests.post", return_value=mock_token_resp),
         ):
             from nextmv.auth import run_pkce_flow
-
             run_pkce_flow(force=force)
 
         return opened_urls[0]
