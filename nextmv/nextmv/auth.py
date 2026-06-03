@@ -333,8 +333,7 @@ def _wait_for_callback(port: int) -> dict[str, str]:
     params: dict[str, str] = server.callback_params  # type: ignore[attr-defined]
     if not params:
         raise TimeoutError(
-            f"No callback received within {_BROWSER_TIMEOUT} seconds. "
-            "Please try running `nextmv login` again."
+            f"No callback received within {_BROWSER_TIMEOUT} seconds. Please try running `nextmv login` again."
         )
     if "error" in params:
         raise RuntimeError(f"Authorization error: {params.get('error_description', params['error'])}")
@@ -442,7 +441,7 @@ def refresh_tokens(
         If the token endpoint returns a non-2xx response.
     """
     if token_endpoint is None:
-        _, token_endpoint = _discover_endpoints(oidc_discovery_url)
+        _, _, token_endpoint = _discover_endpoints(oidc_discovery_url)
 
     cid = client_id or CLIENT_ID
     payload = {
