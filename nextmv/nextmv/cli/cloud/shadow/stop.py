@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, in_progress, success
-from nextmv.cli.options import AppIDOption, ProfileOption, ShadowTestIDOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption, ShadowTestIDOption
 from nextmv.cloud.shadow import StopIntent
 
 # Set up subcommand application.
@@ -28,6 +28,7 @@ def stop(
         ),
     ],
     shadow_test_id: ShadowTestIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

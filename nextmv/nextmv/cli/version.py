@@ -5,13 +5,14 @@ This module defines the version command for the Nextmv CLI.
 import typer
 
 from nextmv.__about__ import __version__
+from nextmv.cli.options import DebugOption
 
 # Set up subcommand application.
 app = typer.Typer()
 
 
 @app.command()
-def version() -> None:
+def version(_: DebugOption = False) -> None:
     """
     Show the current version of the Nextmv CLI.
 

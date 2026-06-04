@@ -122,27 +122,30 @@ def warning(msg: str) -> None:
     console.print(f":construction: [yellow] Warning:[/yellow] {msg}")
 
 
-def error(msg: str) -> None:
+def error(msg: str, should_exit: bool = True) -> None:
     """
-    Pretty-print an error message and exit with code 1. Your message should end
+    Pretty-print an error message and optionally exit with code 1. Your message should end
     with a period.
 
     Parameters
     ----------
     msg : str
         The error message to display.
+    should_exit : bool, optional
+        Whether to exit the program with code 1. Default is True.
 
     Raises
     ------
     typer.Exit
-        Exits the program with code 1.
+        Exits the program with code 1 if `should_exit` is True.
     """
 
     msg = _format(msg)
     console = Console(file=sys.stderr, highlight=False)
     console.print(f":x: [red]Error:[/red] {msg}")
 
-    raise typer.Exit(code=1)
+    if should_exit:
+        raise typer.Exit(code=1)
 
 
 def print_json(data: dict[str, Any] | list[dict[str, Any]]) -> None:

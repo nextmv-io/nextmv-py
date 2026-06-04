@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption
 from nextmv.status import StatusV2
 
 # Set up subcommand application.
@@ -38,6 +38,7 @@ def list(
             metavar="STATUS",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Get the list of runs for a Nextmv local application.

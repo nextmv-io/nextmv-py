@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -15,6 +15,7 @@ app = typer.Typer()
 @app.command()
 def create(
     app_id: AppIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

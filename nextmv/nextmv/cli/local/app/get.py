@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import in_progress, print_json, success, warning
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.application import Application
 from nextmv.local.registry import Registry
 
@@ -30,6 +30,7 @@ def get(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Get a registered local Nextmv application.

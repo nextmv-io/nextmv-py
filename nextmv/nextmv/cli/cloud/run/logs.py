@@ -11,7 +11,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import AppIDOption, ProfileOption, RunIDOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption, RunIDOption
 from nextmv.cloud.application import Application
 from nextmv.polling import PollingOptions, default_polling_options
 
@@ -48,6 +48,7 @@ def logs(
             metavar="TIMEOUT_SECONDS",
         ),
     ] = -1,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

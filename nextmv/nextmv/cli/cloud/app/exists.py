@@ -5,7 +5,7 @@ This module defines the cloud app exists command for the Nextmv CLI.
 import typer
 
 from nextmv.cli.message import in_progress, print_json
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.cloud.client import Client
 
@@ -16,6 +16,7 @@ app = typer.Typer()
 @app.command()
 def exists(
     app_id: AppIDOption,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

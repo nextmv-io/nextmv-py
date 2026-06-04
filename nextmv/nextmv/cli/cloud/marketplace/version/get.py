@@ -10,6 +10,7 @@ import typer
 from nextmv.cli.configuration.config import build_marketplace_app
 from nextmv.cli.message import in_progress, print_json, success
 from nextmv.cli.options import (
+    DebugOption,
     MarketplaceAppIDOption,
     MarketplacePartnerIDOption,
     MarketplaceVersionIDOption,
@@ -34,6 +35,7 @@ def get(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

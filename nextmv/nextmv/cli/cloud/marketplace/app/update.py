@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_marketplace_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
-from nextmv.cli.options import MarketplaceAppIDOption, MarketplacePartnerIDOption, ProfileOption
+from nextmv.cli.options import DebugOption, MarketplaceAppIDOption, MarketplacePartnerIDOption, ProfileOption
 from nextmv.cloud.marketplace import MarketplaceState
 
 # Set up subcommand application.
@@ -74,6 +74,7 @@ def update(
             metavar="TITLE",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

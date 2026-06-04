@@ -8,6 +8,7 @@ import questionary
 import typer
 
 from nextmv.cli.message import choice, confirmation, directory_path, enum_values, error, parse_content_format, success
+from nextmv.cli.options import DebugOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.manifest import ManifestType, initialize_manifest
@@ -63,6 +64,7 @@ def init(
             help="Do not add options (parameters) to the manifest. Useful for non-interactive sessions.",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Initialize an [magenta]app.yaml[/magenta] (app manifest) file.

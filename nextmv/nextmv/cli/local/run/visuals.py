@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,6 +17,7 @@ def visuals(
     run_id: RunIDOption,
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = ".",
+    _: DebugOption = False,
 ) -> None:
     """
     Get the visuals of a Nextmv local application run.

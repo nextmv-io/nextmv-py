@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.status import StatusV2
 
 # Set up subcommand application.
@@ -37,6 +37,7 @@ def list(
             metavar="STATUS",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

@@ -8,6 +8,7 @@ from rich.table import Table
 
 from nextmv.cli.configuration.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys, obscure_api_key
 from nextmv.cli.message import error
+from nextmv.cli.options import DebugOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -15,7 +16,7 @@ console = Console()
 
 
 @app.command()
-def list() -> None:
+def list(_: DebugOption = False) -> None:
     """
     List the current configuration and all profiles.
 

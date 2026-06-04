@@ -12,7 +12,7 @@ import typer
 from nextmv.cli.cloud.run.create import build_run_config
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, error, in_progress, parse_content_format, print_json, warning
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.run import RunType, TrackedRun, TrackedRunStatus
@@ -148,6 +148,7 @@ def track(
             rich_help_panel="Run configuration",
         ),
     ] = "latest",
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """
