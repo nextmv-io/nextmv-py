@@ -275,7 +275,9 @@ def _create_pkce_profile(
 
     if existing_oidc is None:
         resolved_discovery_url, resolved_client_id = _resolve_oidc_config(
-            endpoint, oidc_discovery_url, oidc_client_id,
+            endpoint,
+            oidc_discovery_url,
+            oidc_client_id,
         )
         sessions[endpoint] = {
             OIDC_DISCOVERY_URL_KEY: resolved_discovery_url,
@@ -290,7 +292,6 @@ def _create_pkce_profile(
 
     access_token = _ensure_token(
         session=effective_session,
-        profile=profile,
         endpoint=endpoint,
         oidc_discovery_url=resolved_oidc_url,
         client_id=resolved_oidc_client_id,
@@ -370,7 +371,6 @@ def _resolve_oidc_config(
 
 def _ensure_token(
     session: str,
-    profile: str | None,
     endpoint: str,
     oidc_discovery_url: str | None,
     client_id: str | None,
@@ -388,8 +388,6 @@ def _ensure_token(
     ----------
     session : str
         The auth session name.
-    profile : str | None
-        Profile name used only for display in the browser flow.
     endpoint : str
         Endpoint hostname, used for display messages.
     oidc_discovery_url : str | None
