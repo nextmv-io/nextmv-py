@@ -34,7 +34,7 @@ app = typer.Typer()
 
 
 @app.command()
-def create(  # noqa: C901
+def create(
     api_key: Annotated[
         str | None,
         typer.Option(
@@ -64,7 +64,6 @@ def create(  # noqa: C901
             "--auth-type",
             "-t",
             help="The authentication type for this profile: [magenta]api_key[/magenta] or [magenta]pkce[/magenta]. Ignored when --api-key is provided.",
-            show_default="api_key",
             metavar="AUTH_TYPE",
         ),
     ] = "api_key",
@@ -157,7 +156,6 @@ def create(  # noqa: C901
     if auth_session is not None:
         auth_session = auth_session.strip()
         if auth_session.lower() == DEFAULT_AUTH_SESSION:
-            # Storing the literal "default" is redundant — treat as if omitted.
             auth_session = None
         elif not auth_session:
             auth_session = None
@@ -172,170 +170,202 @@ def create(  # noqa: C901
             f"The default endpoint [magenta]{DEFAULT_ENDPOINT}[/magenta] already has built-in OIDC configuration."
         )
 
-    # >>> Determine profile type
+    resolved_type = _resolve_auth_type(api_key, auth_type, oidc_discovery_url, oidc_client_id)
+    config = load_config()
 
-    # If --api-key is supplied, we always use the api_key auth type regardless
-    # of --auth-type, since there's an explicit credential.
+    if resolved_type == AuthType.API_KEY:
+        _create_api_key_profile(config, profile, endpoint, api_key)
+    else:
+        _create_pkce_profile(
+            config=config,
+            profile=profile,
+            endpoint=endpoint,
+            auth_session=auth_session,
+            oidc_discovery_url=oidc_discovery_url,
+            oidc_client_id=oidc_client_id,
+            team=team,
+        )
+
+
+def _resolve_auth_type(
+    api_key: str | None,
+    auth_type: str | None,
+    oidc_discovery_url: str | None,
+    oidc_client_id: str | None,
+) -> AuthType:
+    """Determine the authentication type from flags or interactive prompt."""
+    # Explicit API key always wins.
     if api_key is not None and api_key.strip():
-        resolved_type = AuthType.API_KEY
-    elif auth_type is not None:
+        return AuthType.API_KEY
+
+    # Explicit --auth-type flag (validate it).
+    if auth_type is not None:
         auth_type = auth_type.strip().lower()
         if auth_type not in (AuthType.API_KEY, AuthType.PKCE):
             error(
                 f"Invalid auth type [magenta]{auth_type}[/magenta]. "
                 f"Must be [magenta]{AuthType.API_KEY}[/magenta] or [magenta]{AuthType.PKCE}[/magenta]."
             )
-        resolved_type = auth_type
-    elif oidc_discovery_url or oidc_client_id:
-        # OIDC flags imply a pkce auth type — no need to prompt.
-        resolved_type = AuthType.PKCE
+        return auth_type  # type: ignore[return-value]  # validated above
+
+    # OIDC flags imply pkce — no need to prompt.
+    if oidc_discovery_url or oidc_client_id:
+        return AuthType.PKCE
+
+    # Interactive prompt.
+    return choice(
+        msg="Select authentication type",
+        choices=[AuthType.API_KEY, AuthType.PKCE],
+        default=AuthType.API_KEY,
+    )
+
+
+def _create_api_key_profile(
+    config: dict,
+    profile: str | None,
+    endpoint: str,
+    api_key: str | None,
+) -> None:
+    """Collect an API key (interactively if needed) and save the profile."""
+    if api_key is None or not api_key.strip():
+        while True:
+            api_key_prompt = Prompt.ask(
+                "Please enter your Nextmv API key to create the configuration",
+                case_sensitive=True,
+                password=True,
+            )
+            api_key = api_key_prompt.strip()
+            if api_key:
+                break
+            warning("API key cannot be empty. Please try again.")
+
+    if profile is None:
+        config[API_KEY_KEY] = api_key
+        config[ENDPOINT_KEY] = endpoint
+        config.pop(AUTH_TYPE_KEY, None)
     else:
-        # Interactive prompt — ask the user which style they want.
-        resolved_type = choice(
-            msg="Select authentication type",
-            choices=[
-                AuthType.API_KEY,
-                AuthType.PKCE,
-            ],
-            default=AuthType.API_KEY,
+        if profile not in config:
+            config[profile] = {}
+        config[profile][API_KEY_KEY] = api_key
+        config[profile][ENDPOINT_KEY] = endpoint
+        config[profile].pop(AUTH_TYPE_KEY, None)
+
+    save_config(config)
+
+    success("Configuration saved successfully.")
+    message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
+    message(f"[bold]Type[/bold]: [magenta]{AuthType.API_KEY}[/magenta]", indents=1)
+    message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
+    if endpoint != DEFAULT_ENDPOINT:
+        message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
+
+
+def _create_pkce_profile(
+    config: dict,
+    profile: str | None,
+    endpoint: str,
+    auth_session: str | None,
+    oidc_discovery_url: str | None,
+    oidc_client_id: str | None,
+    team: str | None,
+) -> None:
+    """Ensure OIDC config, resolve team, and save a pkce profile."""
+    sessions = load_sessions()
+    existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
+
+    if existing_oidc is None:
+        resolved_discovery_url, resolved_client_id = _resolve_oidc_config(
+            endpoint, oidc_discovery_url, oidc_client_id,
         )
+        sessions[endpoint] = {
+            OIDC_DISCOVERY_URL_KEY: resolved_discovery_url,
+            CLIENT_ID_KEY: resolved_client_id,
+        }
+        save_sessions(sessions)
 
-    config = load_config()
+    effective_session = auth_session or DEFAULT_AUTH_SESSION
+    oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
+    resolved_oidc_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
+    resolved_oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
 
-    # >>> For api_key profiles: collect the API key interactively if not provided.
+    access_token = _ensure_token(
+        session=effective_session,
+        profile=profile,
+        endpoint=endpoint,
+        oidc_discovery_url=resolved_oidc_url,
+        client_id=resolved_oidc_client_id,
+    )
 
-    if resolved_type == AuthType.API_KEY:
-        if api_key is None or not api_key.strip():
-            while True:
-                api_key_prompt = Prompt.ask(
-                    "Please enter your Nextmv API key to create the configuration",
-                    case_sensitive=True,
-                    password=True,
-                )
-                api_key = api_key_prompt.strip()
-                if api_key:
-                    break
+    team_id = _resolve_team_id(
+        access_token=access_token,
+        endpoint=endpoint,
+        team_name=team,
+    )
 
-                warning("API key cannot be empty. Please try again.")
-
-        if profile is None:
-            config[API_KEY_KEY] = api_key
-            config[ENDPOINT_KEY] = endpoint
-            # Remove auth_type key from default profile if previously set as
-            # pkce, since we are now explicitly creating an api_key profile.
-            config.pop(AUTH_TYPE_KEY, None)
+    if profile is None:
+        config[AUTH_TYPE_KEY] = AuthType.PKCE
+        config[ENDPOINT_KEY] = endpoint
+        config[TEAM_ID_KEY] = team_id
+        config.pop(API_KEY_KEY, None)
+        if auth_session:
+            config[AUTH_SESSION_KEY] = auth_session
         else:
-            if profile not in config:
-                config[profile] = {}
-            config[profile][API_KEY_KEY] = api_key
-            config[profile][ENDPOINT_KEY] = endpoint
-            config[profile].pop(AUTH_TYPE_KEY, None)
-
-        save_config(config)
-
-        success("Configuration saved successfully.")
-        message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{AuthType.API_KEY}[/magenta]", indents=1)
-        message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
-        if endpoint != DEFAULT_ENDPOINT:
-            message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
-
-    # >>> For pkce profiles: store metadata and ensure OIDC config is known.
-
+            config.pop(AUTH_SESSION_KEY, None)
     else:
-        # Check whether we already have OIDC config for this endpoint.
-        sessions = load_sessions()
-        existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
-
-        if existing_oidc is None:
-            # Endpoint is unknown — collect OIDC config from flags or interactively.
-            if oidc_discovery_url and oidc_client_id:
-                resolved_discovery_url = oidc_discovery_url.strip()
-                resolved_client_id = oidc_client_id.strip()
-            else:
-                if not oidc_discovery_url:
-                    while True:
-                        resolved_discovery_url = Prompt.ask(
-                            f"Enter the OIDC discovery URL for endpoint [magenta]{endpoint}[/magenta]"
-                        ).strip()
-                        if resolved_discovery_url:
-                            break
-                        warning("OIDC discovery URL cannot be empty. Please try again.")
-                else:
-                    resolved_discovery_url = oidc_discovery_url.strip()
-
-                if not oidc_client_id:
-                    while True:
-                        resolved_client_id = Prompt.ask(
-                            f"Enter the OAuth2 client ID for endpoint [magenta]{endpoint}[/magenta]"
-                        ).strip()
-                        if resolved_client_id:
-                            break
-                        warning("Client ID cannot be empty. Please try again.")
-                else:
-                    resolved_client_id = oidc_client_id.strip()
-
-            # Persist OIDC config for this endpoint.
-            sessions[endpoint] = {
-                OIDC_DISCOVERY_URL_KEY: resolved_discovery_url,
-                CLIENT_ID_KEY: resolved_client_id,
-            }
-            save_sessions(sessions)
-
-        # >>> Resolve team ID: ensure we have a valid token, then look up orgs.
-
-        effective_session = auth_session or DEFAULT_AUTH_SESSION
-        oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
-        resolved_oidc_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
-        resolved_oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
-
-        access_token = _ensure_token(
-            session=effective_session,
-            profile=profile,
-            endpoint=endpoint,
-            oidc_discovery_url=resolved_oidc_url,
-            client_id=resolved_oidc_client_id,
-        )
-
-        team_id = _resolve_team_id(
-            access_token=access_token,
-            endpoint=endpoint,
-            team_name=team,
-        )
-
-        # >>> Write profile to config.yaml.
-
-        if profile is None:
-            config[AUTH_TYPE_KEY] = AuthType.PKCE
-            config[ENDPOINT_KEY] = endpoint
-            config[TEAM_ID_KEY] = team_id
-            # Remove any previously stored api_key from the default profile.
-            config.pop(API_KEY_KEY, None)
-            if auth_session:
-                config[AUTH_SESSION_KEY] = auth_session
-            else:
-                config.pop(AUTH_SESSION_KEY, None)
+        if profile not in config:
+            config[profile] = {}
+        config[profile][AUTH_TYPE_KEY] = AuthType.PKCE
+        config[profile][ENDPOINT_KEY] = endpoint
+        config[profile][TEAM_ID_KEY] = team_id
+        config[profile].pop(API_KEY_KEY, None)
+        if auth_session:
+            config[profile][AUTH_SESSION_KEY] = auth_session
         else:
-            if profile not in config:
-                config[profile] = {}
-            config[profile][AUTH_TYPE_KEY] = AuthType.PKCE
-            config[profile][ENDPOINT_KEY] = endpoint
-            config[profile][TEAM_ID_KEY] = team_id
-            config[profile].pop(API_KEY_KEY, None)
-            if auth_session:
-                config[profile][AUTH_SESSION_KEY] = auth_session
-            else:
-                config[profile].pop(AUTH_SESSION_KEY, None)
+            config[profile].pop(AUTH_SESSION_KEY, None)
 
-        save_config(config)
+    save_config(config)
 
-        success("Configuration saved successfully.")
-        message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE}[/magenta]", indents=1)
-        message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
-        message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
-        if endpoint != DEFAULT_ENDPOINT:
-            message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
+    success("Configuration saved successfully.")
+    message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
+    message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE}[/magenta]", indents=1)
+    message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
+    message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
+    if endpoint != DEFAULT_ENDPOINT:
+        message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
+
+
+def _resolve_oidc_config(
+    endpoint: str,
+    oidc_discovery_url: str | None,
+    oidc_client_id: str | None,
+) -> tuple[str, str]:
+    """Collect OIDC discovery URL and client ID from flags or interactively."""
+    if oidc_discovery_url and oidc_client_id:
+        return oidc_discovery_url.strip(), oidc_client_id.strip()
+
+    if not oidc_discovery_url:
+        while True:
+            resolved_discovery_url = Prompt.ask(
+                f"Enter the OIDC discovery URL for endpoint [magenta]{endpoint}[/magenta]"
+            ).strip()
+            if resolved_discovery_url:
+                break
+            warning("OIDC discovery URL cannot be empty. Please try again.")
+    else:
+        resolved_discovery_url = oidc_discovery_url.strip()
+
+    if not oidc_client_id:
+        while True:
+            resolved_client_id = Prompt.ask(
+                f"Enter the OAuth2 client ID for endpoint [magenta]{endpoint}[/magenta]"
+            ).strip()
+            if resolved_client_id:
+                break
+            warning("Client ID cannot be empty. Please try again.")
+    else:
+        resolved_client_id = oidc_client_id.strip()
+
+    return resolved_discovery_url, resolved_client_id
 
 
 def _ensure_token(
