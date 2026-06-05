@@ -40,12 +40,6 @@ OIDC_DISCOVERY_URL_KEY
 CLIENT_ID_KEY
     The YAML key used in ``sessions.yaml`` to store the OAuth2 client ID for
     an endpoint (``"client_id"``).
-AUTH_TYPE_API_KEY
-    Auth type value for API-key-based authentication (``"api_key"``).
-    Prefer using :class:`AuthType.API_KEY` instead.
-AUTH_TYPE_PKCE
-    Auth type value for PKCE/OAuth2-based authentication (``"pkce"``).
-    Prefer using :class:`AuthType.PKCE` instead.
 AuthType
     Enumeration of supported authentication types (``API_KEY``, ``PKCE``).
 DEFAULT_AUTH_SESSION
@@ -80,11 +74,6 @@ TEAM_ID_KEY = "team_id"
 # Sessions keys
 OIDC_DISCOVERY_URL_KEY = "oidc_discovery_url"
 CLIENT_ID_KEY = "client_id"
-
-# Auth type values
-AUTH_TYPE_API_KEY = "api_key"
-AUTH_TYPE_PKCE = "pkce"
-
 
 class AuthType(str, Enum):
     """Enumeration of supported authentication types."""
