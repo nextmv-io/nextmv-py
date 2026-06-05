@@ -207,11 +207,12 @@ def is_token_expired(tokens: dict[str, Any]) -> bool:
         # Consider expired if within 30-second buffer.
         return (expires_at - now).total_seconds() < 30
     except ValueError:
-        # Unparseable expiry — treat as not expired.
-        return False
+        # Unparseable expiry - treat as expired so the token gets refreshed
+        # rather than sending a potentially corrupt token to the API.
+        return True
 
 
-# >>> PKCE flow — internal helpers
+# >>> PKCE flow - internal helpers
 
 
 def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
@@ -420,7 +421,7 @@ def _exchange_code_for_tokens(
     return tokens
 
 
-# >>> PKCE flow — public API
+# >>> PKCE flow - public API
 
 
 def refresh_tokens(
@@ -563,7 +564,7 @@ def run_pkce_flow(
         # full authorization request onto it.  Cognito will log the user out
         # and immediately redirect to the login page with all auth params intact.
         # The redirect_uri must be registered as an Allowed Callback URL (same
-        # requirement as the normal authorization flow — no additional sign-out
+        # requirement as the normal authorization flow - no additional sign-out
         # URL registration is needed).
         logout_params = {
             "client_id": cid,
@@ -595,7 +596,7 @@ def run_pkce_flow(
     if exc_holder:
         raise exc_holder[0]
 
-    # Verify the state before trusting the code — protects against login CSRF where a
+    # Verify the state before trusting the code - protects against login CSRF where a
     # malicious local page hits our callback with an attacker-supplied code.
     returned_state = callback_result.get("state")
     if returned_state != state:
@@ -620,10 +621,10 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
 
     Each dict contains at minimum:
 
-    - ``id`` (str) — the team UUID; use this for the ``nextmv-account`` header.
-    - ``name`` (str) — the human-readable team name; show this to the user.
-    - ``role`` (str) — the user's role in the team.
-    - ``pending_invite`` (bool) — whether the user has a pending invite.
+    - ``id`` (str) - the team UUID; use this for the ``nextmv-account`` header.
+    - ``name`` (str) - the human-readable team name; show this to the user.
+    - ``role`` (str) - the user's role in the team.
+    - ``pending_invite`` (bool) - whether the user has a pending invite.
 
     Parameters
     ----------
@@ -648,8 +649,7 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
     """
     if endpoint.startswith("http://"):
         raise ValueError(
-            f"Refusing to send tokens over plain HTTP for endpoint {endpoint!r}. "
-            "Use https:// or a bare hostname."
+            f"Refusing to send tokens over plain HTTP for endpoint {endpoint!r}. Use https:// or a bare hostname."
         )
     # Strip https:// if present so we always build a consistent URL.
     bare = endpoint.removeprefix("https://").removeprefix("http://")

@@ -121,8 +121,8 @@ class TestIsTokenExpired(unittest.TestCase):
     def test_missing_expires_at_not_expired(self):
         self.assertFalse(is_token_expired({"access_token": "x"}))
 
-    def test_invalid_expires_at_not_expired(self):
-        self.assertFalse(is_token_expired({"access_token": "x", "expires_at": "not-a-date"}))
+    def test_invalid_expires_at_treated_as_expired(self):
+        self.assertTrue(is_token_expired({"access_token": "x", "expires_at": "not-a-date"}))
 
 
 class TestPKCEGeneration(unittest.TestCase):
