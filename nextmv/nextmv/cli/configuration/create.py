@@ -9,7 +9,7 @@ from rich.prompt import Prompt
 
 from nextmv.auth import fetch_organizations, is_token_expired, load_tokens, refresh_tokens, run_pkce_flow, save_tokens
 from nextmv.cli.configuration.config import obscure_api_key
-from nextmv.cli.message import choice, error, message, success, warning
+from nextmv.cli.message import choice, enum_values, error, message, success, warning
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_SESSION_KEY,
@@ -59,14 +59,18 @@ def create(
         ),
     ] = DEFAULT_AUTH_SESSION,
     auth_type: Annotated[
-        str | None,
+        AuthType | None,
         typer.Option(
             "--auth-type",
             "-t",
-            help="The authentication type for this profile: [magenta]api_key[/magenta] or [magenta]pkce[/magenta]. Ignored when --api-key is provided.",
+            help=(
+                f"The authentication type for this profile. Allowed values are: {enum_values(AuthType)}. "
+                "Ignored when --api-key is provided."
+            ),
+            show_default="api_key",
             metavar="AUTH_TYPE",
         ),
-    ] = "api_key",
+    ] = None,
     endpoint: Annotated[  # Hidden because it is meant for internal use.
         str | None,
         typer.Option(
@@ -189,7 +193,7 @@ def create(
 
 def _resolve_auth_type(
     api_key: str | None,
-    auth_type: str | None,
+    auth_type: AuthType | None,
     oidc_discovery_url: str | None,
     oidc_client_id: str | None,
 ) -> AuthType:
@@ -198,15 +202,9 @@ def _resolve_auth_type(
     if api_key is not None and api_key.strip():
         return AuthType.API_KEY
 
-    # Explicit --auth-type flag (validate it).
+    # Explicit --auth-type flag (already validated by Typer).
     if auth_type is not None:
-        auth_type = auth_type.strip().lower()
-        if auth_type not in (AuthType.API_KEY, AuthType.PKCE):
-            error(
-                f"Invalid auth type [magenta]{auth_type}[/magenta]. "
-                f"Must be [magenta]{AuthType.API_KEY}[/magenta] or [magenta]{AuthType.PKCE}[/magenta]."
-            )
-        return auth_type  # type: ignore[return-value]  # validated above
+        return auth_type
 
     # OIDC flags imply pkce — no need to prompt.
     if oidc_discovery_url or oidc_client_id:
