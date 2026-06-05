@@ -11,8 +11,8 @@ from nextmv.cli.message import error
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_TYPE_KEY,
-    AUTH_TYPE_PKCE,
     ENDPOINT_KEY,
+    AuthType,
     get_auth_session,
     load_config,
     non_profile_keys,
@@ -42,7 +42,7 @@ def list() -> None:
         "api_key": config.get(API_KEY_KEY),
         "endpoint": config.get(ENDPOINT_KEY),
         "auth_type": config.get(AUTH_TYPE_KEY, "api_key"),
-        "auth_session": get_auth_session(config, None) if config.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE else None,
+        "auth_session": get_auth_session(config, None) if config.get(AUTH_TYPE_KEY) == AuthType.PKCE else None,
         "name": "Default",
     }
     profiles = [default]
@@ -61,7 +61,7 @@ def list() -> None:
             "api_key": v.get(API_KEY_KEY),
             "endpoint": v.get(ENDPOINT_KEY),
             "auth_type": v.get(AUTH_TYPE_KEY, "api_key"),
-            "auth_session": get_auth_session(config, k) if v.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE else None,
+            "auth_session": get_auth_session(config, k) if v.get(AUTH_TYPE_KEY) == AuthType.PKCE else None,
         }
         profiles.append(profile)
 

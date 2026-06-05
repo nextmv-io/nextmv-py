@@ -42,8 +42,12 @@ CLIENT_ID_KEY
     an endpoint (``"client_id"``).
 AUTH_TYPE_API_KEY
     Auth type value for API-key-based authentication (``"api_key"``).
+    Prefer using :class:`AuthType.API_KEY` instead.
 AUTH_TYPE_PKCE
     Auth type value for PKCE/OAuth2-based authentication (``"pkce"``).
+    Prefer using :class:`AuthType.PKCE` instead.
+AuthType
+    Enumeration of supported authentication types (``API_KEY``, ``PKCE``).
 DEFAULT_AUTH_SESSION
     The reserved session name used when ``auth_session`` is not specified
     (``"default"``).  This name cannot be used as a profile name.
@@ -52,6 +56,7 @@ DEFAULT_ENDPOINT
 """
 
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +84,13 @@ CLIENT_ID_KEY = "client_id"
 # Auth type values
 AUTH_TYPE_API_KEY = "api_key"
 AUTH_TYPE_PKCE = "pkce"
+
+
+class AuthType(str, Enum):
+    """Enumeration of supported authentication types."""
+
+    API_KEY = "api_key"
+    PKCE = "pkce"
 
 # Defaults
 DEFAULT_AUTH_SESSION = "default"
@@ -260,10 +272,10 @@ def non_profile_keys() -> set[str]:
     return {API_KEY_KEY, ENDPOINT_KEY, AUTH_TYPE_KEY, AUTH_SESSION_KEY, TEAM_ID_KEY, DEFAULT_AUTH_SESSION}
 
 
-def get_auth_type(config: dict, profile: str | None) -> str:
+def get_auth_type(config: dict, profile: str | None) -> AuthType:
     """
     Returns the auth type for the given profile. Defaults to
-    ``AUTH_TYPE_API_KEY`` if the key is absent (backwards compatible).
+    ``AuthType.API_KEY`` if the key is absent (backwards compatible).
 
     Parameters
     ----------
@@ -274,15 +286,20 @@ def get_auth_type(config: dict, profile: str | None) -> str:
 
     Returns
     -------
-    str
-        Either ``AUTH_TYPE_API_KEY`` or ``AUTH_TYPE_PKCE`` (``"pkce"``).
+    AuthType
+        Either ``AuthType.API_KEY`` or ``AuthType.PKCE``.
     """
     if profile is None:
-        return config.get(AUTH_TYPE_KEY, AUTH_TYPE_API_KEY)
-    profile_data = config.get(profile, {})
-    if not isinstance(profile_data, dict):
-        return AUTH_TYPE_API_KEY
-    return profile_data.get(AUTH_TYPE_KEY, AUTH_TYPE_API_KEY)
+        raw = config.get(AUTH_TYPE_KEY, AuthType.API_KEY)
+    else:
+        profile_data = config.get(profile, {})
+        if not isinstance(profile_data, dict):
+            return AuthType.API_KEY
+        raw = profile_data.get(AUTH_TYPE_KEY, AuthType.API_KEY)
+    try:
+        return AuthType(raw)
+    except ValueError:
+        return AuthType.API_KEY
 
 
 def get_auth_session(config: dict, profile: str | None) -> str:
@@ -395,12 +412,12 @@ def list_pkce_profiles(config: dict) -> list[str | None]:
         (representing the default profile).
     """
     result: list[str | None] = []
-    if config.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE:
+    if config.get(AUTH_TYPE_KEY) == AuthType.PKCE:
         result.append(None)
     skip = non_profile_keys()
     for key, value in config.items():
         if key in skip:
             continue
-        if isinstance(value, dict) and value.get(AUTH_TYPE_KEY) == AUTH_TYPE_PKCE:
+        if isinstance(value, dict) and value.get(AUTH_TYPE_KEY) == AuthType.PKCE:
             result.append(key)
     return result

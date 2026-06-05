@@ -8,12 +8,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from nextmv.config import (
-    AUTH_TYPE_API_KEY,
-    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     DEFAULT_AUTH_SESSION,
     DEFAULT_ENDPOINT,
     OIDC_DISCOVERY_URL_KEY,
+    AuthType,
     get_auth_session,
     get_auth_type,
     get_endpoint_oidc_config,
@@ -30,46 +29,46 @@ class TestGetProfileType(unittest.TestCase):
 
     def test_default_profile_no_key_returns_api_key(self):
         config = {"apikey": "sk-xxx", "endpoint": "api.cloud.nextmv.io"}
-        self.assertEqual(get_auth_type(config, None), AUTH_TYPE_API_KEY)
+        self.assertEqual(get_auth_type(config, None), AuthType.API_KEY)
 
     def test_default_profile_pkce(self):
-        config = {"auth_type": AUTH_TYPE_PKCE, "endpoint": "api.cloud.nextmv.io"}
-        self.assertEqual(get_auth_type(config, None), AUTH_TYPE_PKCE)
+        config = {"auth_type": AuthType.PKCE, "endpoint": "api.cloud.nextmv.io"}
+        self.assertEqual(get_auth_type(config, None), AuthType.PKCE)
 
     def test_named_profile_api_key(self):
         config = {
             "staging": {
                 "apikey": "sk-yyy",
                 "endpoint": "api.cloud.nextmv.io",
-                "auth_type": AUTH_TYPE_API_KEY,
+                "auth_type": AuthType.API_KEY,
             }
         }
-        self.assertEqual(get_auth_type(config, "staging"), AUTH_TYPE_API_KEY)
+        self.assertEqual(get_auth_type(config, "staging"), AuthType.API_KEY)
 
     def test_named_profile_pkce(self):
         config = {
             "auth-profile": {
                 "endpoint": "api.cloud.nextmv.io",
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
             }
         }
-        self.assertEqual(get_auth_type(config, "auth-profile"), AUTH_TYPE_PKCE)
+        self.assertEqual(get_auth_type(config, "auth-profile"), AuthType.PKCE)
 
     def test_named_profile_missing_type_defaults_to_api_key(self):
         config = {"legacy": {"apikey": "sk-zzz", "endpoint": "api.cloud.nextmv.io"}}
-        self.assertEqual(get_auth_type(config, "legacy"), AUTH_TYPE_API_KEY)
+        self.assertEqual(get_auth_type(config, "legacy"), AuthType.API_KEY)
 
 
 class TestGetAuthSession(unittest.TestCase):
     """Tests for get_auth_session helper."""
 
     def test_default_profile_no_auth_session_returns_default(self):
-        config = {"auth_type": AUTH_TYPE_PKCE, "endpoint": "api.cloud.nextmv.io"}
+        config = {"auth_type": AuthType.PKCE, "endpoint": "api.cloud.nextmv.io"}
         self.assertEqual(get_auth_session(config, None), DEFAULT_AUTH_SESSION)
 
     def test_default_profile_explicit_auth_session(self):
         config = {
-            "auth_type": AUTH_TYPE_PKCE,
+            "auth_type": AuthType.PKCE,
             "endpoint": "api.cloud.nextmv.io",
             "auth_session": "my-work",
         }
@@ -78,7 +77,7 @@ class TestGetAuthSession(unittest.TestCase):
     def test_named_profile_no_auth_session_returns_default(self):
         config = {
             "dev": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
             }
         }
@@ -87,7 +86,7 @@ class TestGetAuthSession(unittest.TestCase):
     def test_named_profile_explicit_auth_session(self):
         config = {
             "dev": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
                 "auth_session": "my-work",
             }
@@ -97,12 +96,12 @@ class TestGetAuthSession(unittest.TestCase):
     def test_two_profiles_sharing_same_session(self):
         config = {
             "dev": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
                 "auth_session": "shared",
             },
             "staging": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "staging.cloud.nextmv.io",
                 "auth_session": "shared",
             },
@@ -112,8 +111,8 @@ class TestGetAuthSession(unittest.TestCase):
 
     def test_profiles_without_session_share_default(self):
         config = {
-            "dev": {"auth_type": AUTH_TYPE_PKCE, "endpoint": "api.cloud.nextmv.io"},
-            "staging": {"auth_type": AUTH_TYPE_PKCE, "endpoint": "staging.cloud.nextmv.io"},
+            "dev": {"auth_type": AuthType.PKCE, "endpoint": "api.cloud.nextmv.io"},
+            "staging": {"auth_type": AuthType.PKCE, "endpoint": "staging.cloud.nextmv.io"},
         }
         self.assertEqual(get_auth_session(config, "dev"), DEFAULT_AUTH_SESSION)
         self.assertEqual(get_auth_session(config, "staging"), DEFAULT_AUTH_SESSION)
@@ -121,7 +120,7 @@ class TestGetAuthSession(unittest.TestCase):
     def test_whitespace_only_auth_session_returns_default(self):
         config = {
             "dev": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
                 "auth_session": "   ",
             }
@@ -131,7 +130,7 @@ class TestGetAuthSession(unittest.TestCase):
     def test_auth_session_value_is_stripped(self):
         config = {
             "dev": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
                 "auth_session": "  my-session  ",
             }
@@ -147,13 +146,13 @@ class TestListPkceProfiles(unittest.TestCase):
         self.assertEqual(list_pkce_profiles(config), [])
 
     def test_default_pkce_profile(self):
-        config = {"auth_type": AUTH_TYPE_PKCE, "endpoint": "api.cloud.nextmv.io"}
+        config = {"auth_type": AuthType.PKCE, "endpoint": "api.cloud.nextmv.io"}
         self.assertIn(None, list_pkce_profiles(config))
 
     def test_named_pkce_profile(self):
         config = {
             "myauth": {
-                "auth_type": AUTH_TYPE_PKCE,
+                "auth_type": AuthType.PKCE,
                 "endpoint": "api.cloud.nextmv.io",
             },
             "apionly": {
@@ -167,9 +166,9 @@ class TestListPkceProfiles(unittest.TestCase):
 
     def test_mixed_profiles(self):
         config = {
-            "auth_type": AUTH_TYPE_PKCE,
+            "auth_type": AuthType.PKCE,
             "endpoint": "api.cloud.nextmv.io",
-            "named-auth": {"auth_type": AUTH_TYPE_PKCE, "endpoint": "api.cloud.nextmv.io"},
+            "named-auth": {"auth_type": AuthType.PKCE, "endpoint": "api.cloud.nextmv.io"},
             "named-api": {"apikey": "sk", "endpoint": "api.cloud.nextmv.io"},
         }
         result = list_pkce_profiles(config)

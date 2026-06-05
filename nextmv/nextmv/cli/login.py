@@ -16,9 +16,9 @@ import typer
 from nextmv.auth import run_pkce_flow, save_tokens
 from nextmv.cli.message import error, in_progress, info, success, warning
 from nextmv.config import (
-    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     OIDC_DISCOVERY_URL_KEY,
+    AuthType,
     get_auth_session,
     get_auth_type,
     get_endpoint_oidc_config,
@@ -98,7 +98,7 @@ def login(
                 "Use [code]nextmv configuration create[/code] to create it."
             )
         ptype = get_auth_type(config, profile)
-        if ptype != AUTH_TYPE_PKCE:
+        if ptype != AuthType.PKCE:
             error(
                 f"Profile [magenta]{profile}[/magenta] is not a [magenta]pkce[/magenta] profile "
                 f"(it is [magenta]{ptype}[/magenta]). "

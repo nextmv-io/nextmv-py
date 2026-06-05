@@ -13,15 +13,14 @@ from nextmv.cli.message import choice, error, message, success, warning
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_SESSION_KEY,
-    AUTH_TYPE_API_KEY,
     AUTH_TYPE_KEY,
-    AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
     DEFAULT_AUTH_SESSION,
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     OIDC_DISCOVERY_URL_KEY,
     TEAM_ID_KEY,
+    AuthType,
     _strip_scheme,
     get_endpoint_oidc_config,
     load_config,
@@ -178,34 +177,34 @@ def create(  # noqa: C901
     # If --api-key is supplied, we always use the api_key auth type regardless
     # of --auth-type, since there's an explicit credential.
     if api_key is not None and api_key.strip():
-        resolved_type = AUTH_TYPE_API_KEY
+        resolved_type = AuthType.API_KEY
     elif auth_type is not None:
         auth_type = auth_type.strip().lower()
-        if auth_type not in (AUTH_TYPE_API_KEY, AUTH_TYPE_PKCE):
+        if auth_type not in (AuthType.API_KEY, AuthType.PKCE):
             error(
                 f"Invalid auth type [magenta]{auth_type}[/magenta]. "
-                f"Must be [magenta]{AUTH_TYPE_API_KEY}[/magenta] or [magenta]{AUTH_TYPE_PKCE}[/magenta]."
+                f"Must be [magenta]{AuthType.API_KEY}[/magenta] or [magenta]{AuthType.PKCE}[/magenta]."
             )
         resolved_type = auth_type
     elif oidc_discovery_url or oidc_client_id:
         # OIDC flags imply a pkce auth type — no need to prompt.
-        resolved_type = AUTH_TYPE_PKCE
+        resolved_type = AuthType.PKCE
     else:
         # Interactive prompt — ask the user which style they want.
         resolved_type = choice(
             msg="Select authentication type",
             choices=[
-                AUTH_TYPE_API_KEY,
-                AUTH_TYPE_PKCE,
+                AuthType.API_KEY,
+                AuthType.PKCE,
             ],
-            default=AUTH_TYPE_API_KEY,
+            default=AuthType.API_KEY,
         )
 
     config = load_config()
 
     # >>> For api_key profiles: collect the API key interactively if not provided.
 
-    if resolved_type == AUTH_TYPE_API_KEY:
+    if resolved_type == AuthType.API_KEY:
         if api_key is None or not api_key.strip():
             while True:
                 api_key_prompt = Prompt.ask(
@@ -236,7 +235,7 @@ def create(  # noqa: C901
 
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{AUTH_TYPE_API_KEY}[/magenta]", indents=1)
+        message(f"[bold]Type[/bold]: [magenta]{AuthType.API_KEY}[/magenta]", indents=1)
         message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
             message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
@@ -307,7 +306,7 @@ def create(  # noqa: C901
         # >>> Write profile to config.yaml.
 
         if profile is None:
-            config[AUTH_TYPE_KEY] = AUTH_TYPE_PKCE
+            config[AUTH_TYPE_KEY] = AuthType.PKCE
             config[ENDPOINT_KEY] = endpoint
             config[TEAM_ID_KEY] = team_id
             # Remove any previously stored api_key from the default profile.
@@ -319,7 +318,7 @@ def create(  # noqa: C901
         else:
             if profile not in config:
                 config[profile] = {}
-            config[profile][AUTH_TYPE_KEY] = AUTH_TYPE_PKCE
+            config[profile][AUTH_TYPE_KEY] = AuthType.PKCE
             config[profile][ENDPOINT_KEY] = endpoint
             config[profile][TEAM_ID_KEY] = team_id
             config[profile].pop(API_KEY_KEY, None)
@@ -332,7 +331,7 @@ def create(  # noqa: C901
 
         success("Configuration saved successfully.")
         message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-        message(f"[bold]Type[/bold]: [magenta]{AUTH_TYPE_PKCE}[/magenta]", indents=1)
+        message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE}[/magenta]", indents=1)
         message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
         message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
         if endpoint != DEFAULT_ENDPOINT:
