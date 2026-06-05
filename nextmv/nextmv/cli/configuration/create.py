@@ -67,7 +67,7 @@ def create(  # noqa: C901
             show_default="api_key",
             metavar="AUTH_TYPE",
         ),
-    ] = None,
+    ] = "api_key",
     endpoint: Annotated[  # Hidden because it is meant for internal use.
         str | None,
         typer.Option(
