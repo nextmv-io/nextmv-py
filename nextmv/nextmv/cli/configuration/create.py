@@ -43,9 +43,30 @@ def create(  # noqa: C901
             "-a",
             help="A valid Nextmv Cloud API key. "
             + "Get one from [link=https://cloud.nextmv.io][bold]https://cloud.nextmv.io[/bold][/link]. "
-            + "Setting this flag automatically selects the [magenta]api_key[/magenta] profile type.",
+            + "Setting this flag automatically selects the api_key auth type.",
             envvar="NEXTMV_API_KEY",
             metavar="NEXTMV_API_KEY",
+        ),
+    ] = None,
+    auth_session: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-session",
+            "-s",
+            help=(
+                "Named auth session to share tokens across profiles. Only applies to [magenta]pkce[/magenta] profiles."
+            ),
+            metavar="SESSION_NAME",
+        ),
+    ] = DEFAULT_AUTH_SESSION,
+    auth_type: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-type",
+            "-t",
+            help="The authentication type for this profile: [magenta]api_key[/magenta] or [magenta]pkce[/magenta]. Ignored when --api-key is provided.",
+            show_default="api_key",
+            metavar="AUTH_TYPE",
         ),
     ] = None,
     endpoint: Annotated[  # Hidden because it is meant for internal use.
@@ -58,6 +79,30 @@ def create(  # noqa: C901
             metavar="NEXTMV_ENDPOINT",
         ),
     ] = DEFAULT_ENDPOINT,
+    oidc_client_id: Annotated[
+        str | None,
+        typer.Option(
+            "--client-id",
+            hidden=True,
+            help=(
+                "OAuth2 client ID for the identity provider behind the endpoint. "
+                "Only needed for non-production endpoints not already in sessions.yaml."
+            ),
+            metavar="OIDC_CLIENT_ID",
+        ),
+    ] = None,
+    oidc_discovery_url: Annotated[
+        str | None,
+        typer.Option(
+            "--oidc-discovery-url",
+            hidden=True,
+            help=(
+                "OIDC discovery document URL for the identity provider behind the endpoint. "
+                "Only needed for non-production endpoints not already in sessions.yaml."
+            ),
+            metavar="OIDC_DISCOVERY_URL",
+        ),
+    ] = None,
     profile: Annotated[  # Similar to nextmv.cli.options.ProfileOption but with different help text.
         str | None,
         typer.Option(
@@ -68,77 +113,24 @@ def create(  # noqa: C901
             metavar="PROFILE_NAME",
         ),
     ] = None,
-    auth_type: Annotated[
-        str | None,
-        typer.Option(
-            "--auth-type",
-            "-t",
-            help=(
-                "The authentication type for this profile: [magenta]api_key[/magenta] (default) or "
-                "[magenta]pkce[/magenta] (browser-based PKCE login via [code]nextmv login[/code]). "
-                "Ignored when [magenta]--api-key[/magenta] is provided."
-            ),
-            metavar="AUTH_TYPE",
-        ),
-    ] = None,
-    auth_session: Annotated[
-        str | None,
-        typer.Option(
-            "--auth-session",
-            "-s",
-            help=(
-                "Named auth session to share tokens across profiles. "
-                "Only applies to [magenta]pkce[/magenta] profiles. "
-                "Multiple profiles that reference the same session name share a single "
-                "browser login. "
-                f"Defaults to the reserved [magenta]{DEFAULT_AUTH_SESSION}[/magenta] session "
-                "when omitted."
-            ),
-            metavar="SESSION_NAME",
-        ),
-    ] = None,
     team: Annotated[
         str | None,
         typer.Option(
             "--team",
-            help=(
-                "Team name to associate with this [magenta]pkce[/magenta] profile. "
-                "When omitted, available teams are fetched from the API and you will be "
-                "prompted to select one. "
-                "Only applies to [magenta]pkce[/magenta] profiles."
-            ),
+            help="Team name to associate with this [magenta]pkce[/magenta] profile.",
             metavar="TEAM_NAME",
-        ),
-    ] = None,
-    oidc_discovery_url: Annotated[
-        str | None,
-        typer.Option(
-            "--oidc-discovery-url",
-            hidden=True,
-            help=(
-                "OIDC discovery document URL for the identity provider behind the endpoint. "
-                "Only needed for non-production endpoints not already in sessions.yaml. "
-                "Only applies to [magenta]pkce[/magenta] profiles."
-            ),
-            metavar="OIDC_DISCOVERY_URL",
-        ),
-    ] = None,
-    oidc_client_id: Annotated[
-        str | None,
-        typer.Option(
-            "--client-id",
-            hidden=True,
-            help=(
-                "OAuth2 client ID for the identity provider behind the endpoint. "
-                "Only needed for non-production endpoints not already in sessions.yaml. "
-                "Only applies to [magenta]pkce[/magenta] profiles."
-            ),
-            metavar="OIDC_CLIENT_ID",
         ),
     ] = None,
 ) -> None:
     """
     Create a new configuration or update an existing one.
+
+    [magenta]pkce[/magenta] profiles require a separate login step via
+    [code]nextmv login[/code] before they can be used.
+
+    Multiple [magenta]pkce[/magenta] profiles can share a single browser login
+    by referencing the same [magenta]--auth-session[/magenta] name, automatically
+    done by default auth-session 'default' if not specified.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -148,10 +140,10 @@ def create(  # noqa: C901
     - Default API key configuration without prompting.
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY[/dim]
 
-    - Configure a named [magenta]api_key[/magenta] profile.
+    - Configure an [magenta]api_key[/magenta] profile named [magenta]hare[/magenta].
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/dim]
 
-    - Configure a named [magenta]pkce[/magenta] profile (login separately via [code]nextmv login[/code]).
+    - Configure a named [magenta]pkce[/magenta] profile.
         $ [dim]nextmv configuration create --profile hare --auth-type pkce[/dim]
 
     - Configure two [magenta]pkce[/magenta] profiles that share a single login session.

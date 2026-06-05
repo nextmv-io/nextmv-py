@@ -67,9 +67,9 @@ def list() -> None:
 
     table = Table("Profile name", "Type", "Session", "API Key", "Endpoint")
     not_set = "[italic]Not set[/italic]"
-    n_a = "[italic dim]—[/italic dim]"
+    na = "[italic dim]—[/italic dim]"
     for profile in profiles:
-        session_display = profile["auth_session"] if profile.get("auth_session") is not None else n_a
+        session_display = profile["auth_session"] if profile.get("auth_session") is not None else na
         if profile["name"] != "Default":
             table.add_row(
                 profile["name"],

@@ -205,13 +205,20 @@ class TestDiscoverEndpoints(unittest.TestCase):
 
         mock_get.assert_called_once_with(auth_module.OIDC_DISCOVERY_URL, timeout=10)
 
-    def test_fallback_on_request_failure(self):
+    def test_fallback_on_default_url_failure(self):
+        """Default URL failure falls back to hardcoded endpoints."""
         with patch("nextmv.auth.requests.get", side_effect=Exception("network error")):
-            auth_ep, token_ep, logout_ep = _discover_endpoints("https://broken.example.com/discovery")
-        # Should return the module-level fallbacks without raising.
+            auth_ep, token_ep, logout_ep = _discover_endpoints(None)
         self.assertTrue(auth_ep.startswith("http"))
         self.assertTrue(token_ep.startswith("http"))
         self.assertTrue(logout_ep.startswith("http"))
+
+    def test_custom_url_failure_raises(self):
+        """Explicit URL failure raises instead of falling back silently."""
+        with patch("nextmv.auth.requests.get", side_effect=Exception("network error")):
+            with self.assertRaises(RuntimeError) as ctx:
+                _discover_endpoints("https://broken.example.com/discovery")
+        self.assertIn("Failed to fetch", str(ctx.exception))
 
 
 class TestFetchOrganizations(unittest.TestCase):
@@ -247,11 +254,17 @@ class TestFetchOrganizations(unittest.TestCase):
         called_url = mock_get.call_args[0][0]
         self.assertTrue(called_url.startswith("https://"))
 
-    def test_endpoint_with_scheme_preserved(self):
+    def test_endpoint_with_https_scheme_stripped(self):
         with patch("nextmv.auth.requests.get", return_value=self._mock_response([])) as mock_get:
             fetch_organizations("tok", "https://api.cloud.nextmv.io")
         called_url = mock_get.call_args[0][0]
         self.assertTrue(called_url.startswith("https://"))
+        self.assertNotIn("https://https://", called_url)
+
+    def test_http_endpoint_rejected(self):
+        with self.assertRaises(ValueError) as ctx:
+            fetch_organizations("tok", "http://api.cloud.nextmv.io")
+        self.assertIn("Refusing", str(ctx.exception))
 
     def test_http_error_propagates(self):
         import requests as req_lib

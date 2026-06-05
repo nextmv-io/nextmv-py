@@ -51,6 +51,7 @@ DEFAULT_ENDPOINT
     The default API endpoint (``"api.cloud.nextmv.io"``).
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -101,7 +102,7 @@ def _strip_scheme(url: str) -> str:
     s = url.strip()
     for prefix in ("https://", "http://"):
         if s.startswith(prefix):
-            s = s[len(prefix):]
+            s = s[len(prefix) :]
             break
     return s.rstrip("/")
 
@@ -155,6 +156,13 @@ def save_config(config: dict[str, Any]) -> None:
     with CONFIG_FILE.open("w") as file:
         yaml.safe_dump(config, file)
 
+    # Restrict read/write access to the owner.  Best-effort: silently ignored
+    # on filesystems or platforms that don't support POSIX permissions.
+    try:
+        os.chmod(CONFIG_FILE, 0o600)
+    except (OSError, PermissionError):
+        pass
+
 
 def load_sessions() -> dict[str, Any]:
     """
@@ -191,6 +199,11 @@ def save_sessions(sessions: dict[str, Any]) -> None:
 
     with SESSIONS_FILE.open("w") as fh:
         yaml.safe_dump(sessions, fh)
+
+    try:
+        os.chmod(SESSIONS_FILE, 0o600)
+    except (OSError, PermissionError):
+        pass
 
 
 def get_endpoint_oidc_config(endpoint: str, sessions: dict[str, Any] | None = None) -> dict[str, str] | None:

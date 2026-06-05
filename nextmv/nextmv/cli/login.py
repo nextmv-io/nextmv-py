@@ -14,7 +14,7 @@ from typing import Annotated
 import typer
 
 from nextmv.auth import run_pkce_flow, save_tokens
-from nextmv.cli.message import error, info, message, success, warning
+from nextmv.cli.message import error, in_progress, info, success, warning
 from nextmv.config import (
     AUTH_TYPE_PKCE,
     CLIENT_ID_KEY,
@@ -34,16 +34,6 @@ app = typer.Typer(invoke_without_command=True)
 
 @app.callback()
 def login(
-    profile: Annotated[
-        str | None,
-        typer.Option(
-            "--profile",
-            "-p",
-            help="Profile to log in to. If omitted, all [magenta]pkce[/magenta] profiles are logged in.",
-            envvar="NEXTMV_PROFILE",
-            metavar="PROFILE_NAME",
-        ),
-    ] = None,
     force: Annotated[
         bool,
         typer.Option(
@@ -51,10 +41,21 @@ def login(
             "-f",
             help=(
                 "Force re-authentication even if an active browser session exists. "
-                "Passes [code]prompt=login[/code] to the identity provider."
+                "Opens the identity provider's logout endpoint first to clear any "
+                "existing session before starting the login flow."
             ),
         ),
     ] = False,
+    profile: Annotated[
+        str | None,
+        typer.Option(
+            "--profile",
+            "-p",
+            help="Profile to log in to. If omitted, all pkce profiles are logged in.",
+            envvar="NEXTMV_PROFILE",
+            metavar="PROFILE_NAME",
+        ),
+    ] = None,
 ) -> None:
     """
     Log in to Nextmv using the browser-based PKCE auth flow.
@@ -62,9 +63,9 @@ def login(
     Opens your browser, completes the OAuth2 PKCE flow, and stores the
     resulting tokens under [magenta]~/.nextmv/auth/[/magenta].
 
-    If [magenta]--profile[/magenta] is given, only that profile is logged in
-    (it must be configured with [code]auth_type: pkce[/code]).  If no
-    profile is given, all [magenta]pkce[/magenta] profiles found in
+    If --profile is given, only that profile is logged in (it must be configured
+    with [code]--auth-type pkce[/code] via [code]nextmv configuration create[/code]).
+    If no profile is given, all [magenta]pkce[/magenta] profiles found in
     [magenta]~/.nextmv/config.yaml[/magenta] are logged in sequentially.
 
     [bold][underline]Examples[/underline][/bold]
@@ -110,9 +111,7 @@ def login(
     if not profiles_to_login:
         info(
             "No [magenta]pkce[/magenta] profiles found. "
-            "Use [code]nextmv configuration create[/code] to create one, "
-            "or set [magenta]auth_type: pkce[/magenta] in "
-            "[magenta]~/.nextmv/config.yaml[/magenta]."
+            "Use [code]nextmv configuration create --auth-type pkce[/code] to create one."
         )
         return
 
@@ -120,7 +119,7 @@ def login(
     _run_login(profiles_to_login, config, sessions, force)
 
 
-def _run_login(profiles_to_login: list[str], config: dict, sessions: dict, force: bool) -> None:
+def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:
     """Run the login flow for the given list of profiles."""
     failed: list[str] = []
     # Deduplicate: one browser flow per unique (session, endpoint) pair.
@@ -149,7 +148,7 @@ def _run_login(profiles_to_login: list[str], config: dict, sessions: dict, force
     for (session, endpoint), profile_names in seen_sessions.items():
         oidc_discovery_url, oidc_client_id = session_oidc[(session, endpoint)]
         profiles_display = ", ".join(f"[magenta]{n}[/magenta]" for n in profile_names)
-        message(
+        in_progress(
             f"Logging in to session [magenta]{session}[/magenta] "
             f"(used by profile(s): {profiles_display}). "
             "Your browser will open — please complete the sign-in flow there."

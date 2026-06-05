@@ -53,6 +53,7 @@ import base64
 import hashlib
 import http.server
 import json
+import os
 import secrets
 import threading
 import urllib.parse
@@ -163,14 +164,18 @@ def save_tokens(session: str, tokens: dict[str, Any]) -> None:
     """
     path = _token_path(session)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with path.open("w") as fh:
-        json.dump(tokens, fh, indent=2)
-    # Restrict read access to the owner only.  Best-effort: silently ignored on
+    # Restrict read/write access to the owner only.  Use os.open to set the
+    # mode atomically when the file is created, avoiding a window where the
+    # file exists with broader permissions.  Best-effort: silently ignored on
     # filesystems or platforms that don't support POSIX permissions (e.g. Windows).
     try:
-        path.chmod(0o600)
+        fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as fh:
+            json.dump(tokens, fh, indent=2)
     except (OSError, PermissionError):
-        pass
+        # Fallback: write without restrictive mode.
+        with path.open("w") as fh:
+            json.dump(tokens, fh, indent=2)
 
 
 def is_token_expired(tokens: dict[str, Any]) -> bool:
@@ -214,8 +219,10 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
     Fetch the OIDC discovery document and return
     ``(authorization_endpoint, token_endpoint, logout_endpoint)``.
 
-    Falls back to the hard-coded endpoints if the discovery URL is unreachable or returns
-    an unexpected response.
+    Falls back to the hard-coded endpoints if the default discovery URL is
+    unreachable or returns an unexpected response.  Raises on failure when an
+    explicit discovery URL is provided, since silently falling back would
+    authenticate against the wrong identity provider.
 
     Parameters
     ----------
@@ -228,7 +235,13 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
     -------
     tuple[str, str, str]
         ``(authorization_endpoint, token_endpoint, logout_endpoint)``
+
+    Raises
+    ------
+    RuntimeError
+        If an explicit *oidc_discovery_url* is provided and the request fails.
     """
+    is_custom = oidc_discovery_url is not None
     discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
         resp = requests.get(discovery_url, timeout=10)
@@ -238,7 +251,12 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
         token_ep = doc.get("token_endpoint", _FALLBACK_TOKEN_ENDPOINT)
         logout_ep = doc.get("end_session_endpoint", _FALLBACK_LOGOUT_ENDPOINT)
         return auth_ep, token_ep, logout_ep
-    except Exception:
+    except Exception as exc:
+        if is_custom:
+            raise RuntimeError(
+                f"Failed to fetch OIDC discovery document from {discovery_url!r}: {exc}. "
+                "Check the URL or register the endpoint via `nextmv configuration create`."
+            ) from exc
         return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT, _FALLBACK_LOGOUT_ENDPOINT
 
 
@@ -485,7 +503,8 @@ def run_pkce_flow(
     2. Generates a PKCE pair.
     3. Listens for the redirect callback on the fixed port ``CALLBACK_PORT`` (``56734``).
     4. Opens the system browser at the authorization URL (or the logout URL when
-       ``force=True``, which clears the Cognito session and chains into a fresh login).
+       ``force=True``, which clears the identity provider session and chains
+       into a fresh login).
     5. Waits for the redirect callback (up to ``_BROWSER_TIMEOUT`` seconds).
     6. Exchanges the authorization code for tokens.
 
@@ -499,11 +518,10 @@ def run_pkce_flow(
         The OAuth2 client ID for the identity provider.  When ``None`` the
         module-level :data:`CLIENT_ID` constant is used.
     force : bool
-        When ``True``, opens the Cognito logout endpoint first (``/logout``),
+        When ``True``, opens the identity provider's logout endpoint first,
         which clears any active browser session, and chains all authorization
-        parameters onto it so that Cognito immediately presents the login page.
-        This is more reliable than ``prompt=login``, which Cognito's classic
-        hosted UI silently ignores.  Defaults to ``False``.
+        parameters onto it so that the provider immediately presents the login
+        page.  Defaults to ``False``.
 
     Returns
     -------
@@ -612,8 +630,9 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
     access_token : str
         A valid access token (or id_token) for the authenticated user.
     endpoint : str
-        The API endpoint hostname, e.g. ``"api.cloud.nextmv.io"``.  Leading
-        ``https://`` / ``http://`` schemes are accepted and preserved.
+        The API endpoint hostname, e.g. ``"api.cloud.nextmv.io"``.  A leading
+        ``https://`` scheme is accepted and stripped.  Plain ``http://`` is
+        rejected to prevent sending tokens over an unencrypted connection.
 
     Returns
     -------
@@ -622,12 +641,19 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
 
     Raises
     ------
+    ValueError
+        If *endpoint* uses ``http://``.
     requests.HTTPError
         If the API returns a non-2xx response.
     """
-    # Ensure the endpoint has a scheme.
-    base = endpoint if endpoint.startswith(("https://", "http://")) else f"https://{endpoint}"
-    url = f"{base.rstrip('/')}/v1/internal/me/organization"
+    if endpoint.startswith("http://"):
+        raise ValueError(
+            f"Refusing to send tokens over plain HTTP for endpoint {endpoint!r}. "
+            "Use https:// or a bare hostname."
+        )
+    # Strip https:// if present so we always build a consistent URL.
+    bare = endpoint.removeprefix("https://").removeprefix("http://")
+    url = f"https://{bare.rstrip('/')}/v1/internal/me/organization"
     resp = requests.get(
         url,
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
