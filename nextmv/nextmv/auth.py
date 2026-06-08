@@ -215,6 +215,40 @@ def is_token_expired(tokens: dict[str, Any]) -> bool:
 # >>> PKCE flow - internal helpers
 
 
+def _validate_token_response(tokens: dict[str, Any]) -> None:
+    """
+    Validate a token response from the identity provider.
+
+    Checks the required fields per `RFC 6749 §5.1`_:
+
+    - ``access_token`` must be present.
+    - ``token_type`` must be present and equal to ``"bearer"`` (case-insensitive,
+      per `RFC 6749 §7.1`_).
+
+    Parameters
+    ----------
+    tokens : dict[str, Any]
+        The parsed JSON token response from the IdP.
+
+    Raises
+    ------
+    ValueError
+        If a required field is missing or ``token_type`` is unsupported.
+
+    .. _RFC 6749 §5.1: https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+    .. _RFC 6749 §7.1: https://datatracker.ietf.org/doc/html/rfc6749#section-7.1
+    """
+    if "access_token" not in tokens:
+        raise ValueError("Token response missing required field 'access_token'.")
+    token_type = tokens.get("token_type")
+    if token_type is None:
+        raise ValueError("Token response missing required field 'token_type'.")
+    if str(token_type).lower() != "bearer":
+        raise ValueError(
+            f"Unsupported token_type {token_type!r}; only 'bearer' is supported."
+        )
+
+
 def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
     """
     Fetch the OIDC discovery document and return
@@ -417,6 +451,7 @@ def _exchange_code_for_tokens(
         raise requests.HTTPError(f"Token exchange failed ({resp.status_code}): {resp.text}") from exc
 
     tokens: dict[str, Any] = resp.json()
+    _validate_token_response(tokens)
     # Compute and store an absolute expiry timestamp.
     expires_in: int = tokens.get("expires_in", 3600)
     expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=expires_in)
@@ -483,6 +518,7 @@ def refresh_tokens(
         raise requests.HTTPError(f"Token refresh failed ({resp.status_code}): {resp.text}") from exc
 
     tokens: dict[str, Any] = resp.json()
+    _validate_token_response(tokens)
     expires_in: int = tokens.get("expires_in", 3600)
     expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=expires_in)
     tokens["expires_at"] = expires_at.isoformat()

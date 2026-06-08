@@ -154,6 +154,38 @@ class TestPKCEGeneration(unittest.TestCase):
         self.assertEqual(challenge, expected)
 
 
+class TestValidateTokenResponse(unittest.TestCase):
+    """Tests for _validate_token_response."""
+
+    def test_valid_bearer_response(self):
+        from nextmv.auth import _validate_token_response
+        # Should not raise.
+        _validate_token_response({"access_token": "tok", "token_type": "Bearer"})
+
+    def test_valid_bearer_case_insensitive(self):
+        from nextmv.auth import _validate_token_response
+        _validate_token_response({"access_token": "tok", "token_type": "bearer"})
+        _validate_token_response({"access_token": "tok", "token_type": "BEARER"})
+
+    def test_missing_access_token(self):
+        from nextmv.auth import _validate_token_response
+        with self.assertRaises(ValueError) as ctx:
+            _validate_token_response({"token_type": "Bearer"})
+        self.assertIn("access_token", str(ctx.exception))
+
+    def test_missing_token_type(self):
+        from nextmv.auth import _validate_token_response
+        with self.assertRaises(ValueError) as ctx:
+            _validate_token_response({"access_token": "tok"})
+        self.assertIn("token_type", str(ctx.exception))
+
+    def test_unsupported_token_type(self):
+        from nextmv.auth import _validate_token_response
+        with self.assertRaises(ValueError) as ctx:
+            _validate_token_response({"access_token": "tok", "token_type": "mac"})
+        self.assertIn("mac", str(ctx.exception))
+
+
 class TestDiscoverEndpoints(unittest.TestCase):
     """Tests for _discover_endpoints with custom oidc_discovery_url."""
 
@@ -307,6 +339,7 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
             "access_token": "acc",
             "refresh_token": "ref",
             "id_token": "id",
+            "token_type": "Bearer",
             "expires_in": 3600,
         }
 
