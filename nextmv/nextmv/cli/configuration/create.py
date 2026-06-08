@@ -338,7 +338,7 @@ def _create_pkce_profile(
     )
 
     if profile is None:
-        config[AUTH_TYPE_KEY] = AuthType.PKCE
+        config[AUTH_TYPE_KEY] = AuthType.PKCE.value
         config[ENDPOINT_KEY] = endpoint
         config[TEAM_ID_KEY] = team_id
         config.pop(API_KEY_KEY, None)
@@ -353,7 +353,7 @@ def _create_pkce_profile(
     else:
         if profile not in config:
             config[profile] = {}
-        config[profile][AUTH_TYPE_KEY] = AuthType.PKCE
+        config[profile][AUTH_TYPE_KEY] = AuthType.PKCE.value
         config[profile][ENDPOINT_KEY] = endpoint
         config[profile][TEAM_ID_KEY] = team_id
         config[profile].pop(API_KEY_KEY, None)
