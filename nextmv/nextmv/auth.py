@@ -64,7 +64,6 @@ from pathlib import Path
 from typing import Any
 
 import requests
-import truststore
 
 AUTH_DIR = Path.home() / ".nextmv" / "auth"
 
@@ -106,7 +105,14 @@ def apply_system_certs() -> None:
 
     This is a global, process-wide side effect.  Calling it multiple times is
     harmless (it is idempotent).
+
+    Raises
+    ------
+    ImportError
+        If the ``truststore`` package is not installed.
     """
+    import truststore
+
     truststore.inject_into_ssl()
 
 

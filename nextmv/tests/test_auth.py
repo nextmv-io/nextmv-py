@@ -158,14 +158,16 @@ class TestApplySystemCerts(unittest.TestCase):
     """Tests for apply_system_certs helper."""
 
     def test_calls_inject_into_ssl(self):
+        import truststore  # noqa: F401
         from nextmv.auth import apply_system_certs
-        with patch("nextmv.auth.truststore.inject_into_ssl") as mock_inject:
+        with patch("truststore.inject_into_ssl") as mock_inject:
             apply_system_certs()
             mock_inject.assert_called_once()
 
     def test_idempotent(self):
+        import truststore  # noqa: F401
         from nextmv.auth import apply_system_certs
-        with patch("nextmv.auth.truststore.inject_into_ssl") as mock_inject:
+        with patch("truststore.inject_into_ssl") as mock_inject:
             apply_system_certs()
             apply_system_certs()
             self.assertEqual(mock_inject.call_count, 2)
