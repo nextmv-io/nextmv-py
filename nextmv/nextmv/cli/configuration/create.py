@@ -7,7 +7,16 @@ from typing import Annotated
 import typer
 from rich.prompt import Prompt
 
-from nextmv.auth import fetch_organizations, is_token_expired, load_tokens, refresh_tokens, run_pkce_flow, save_tokens
+from nextmv.auth import (
+    delete_tokens,
+    fetch_organizations,
+    is_invalid_grant_error,
+    is_token_expired,
+    load_tokens,
+    refresh_tokens,
+    run_pkce_flow,
+    save_tokens,
+)
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import choice, enum_values, error, message, success, warning
 from nextmv.config import (
@@ -419,8 +428,13 @@ def _ensure_token(
                 token = tokens.get("id_token") or tokens.get("access_token")
                 if token:
                     return token
-            except Exception:
-                pass  # Fall through to full browser flow.
+            except Exception as exc:
+                # If the refresh token was revoked or expired (invalid_grant),
+                # delete the stored tokens so they can't be reused.
+                if is_invalid_grant_error(exc):
+                    delete_tokens(session)
+                    warning("Stored tokens were revoked or expired and have been deleted.")
+                # Fall through to full browser flow.
 
     # No usable token — open the browser.
     message(

@@ -179,6 +179,45 @@ def save_tokens(session: str, tokens: dict[str, Any]) -> None:
             json.dump(tokens, fh, indent=2)
 
 
+def delete_tokens(session: str) -> None:
+    """
+    Delete stored tokens for *session* from disk.
+
+    Silently does nothing if no token file exists.
+
+    Parameters
+    ----------
+    session : str
+        The auth session name.  Resolve this from a profile via
+        :func:`nextmv.config.get_auth_session`.
+    """
+    path = _token_path(session)
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def is_invalid_grant_error(exc: Exception) -> bool:
+    """
+    Return ``True`` if *exc* represents an OAuth2 ``invalid_grant`` error.
+
+    Checks for an HTTP 400 response with ``{"error": "invalid_grant"}`` in the
+    body, per `RFC 6749 §5.2`_.
+
+    .. _RFC 6749 §5.2: https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
+    """
+    if not isinstance(exc, requests.HTTPError) or exc.response is None:
+        return False
+    if exc.response.status_code != 400:
+        return False
+    try:
+        body = exc.response.json()
+        return body.get("error") == "invalid_grant"
+    except Exception:
+        return False
+
+
 def is_token_expired(tokens: dict[str, Any]) -> bool:
     """
     Return ``True`` when the stored access token is expired (or will expire within the

@@ -24,7 +24,14 @@ from requests.adapters import HTTPAdapter, Retry
 
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
-from nextmv.auth import is_token_expired, load_tokens, refresh_tokens, save_tokens
+from nextmv.auth import (
+    delete_tokens,
+    is_invalid_grant_error,
+    is_token_expired,
+    load_tokens,
+    refresh_tokens,
+    save_tokens,
+)
 from nextmv.config import (
     CLIENT_ID_KEY,
     CONFIG_FILE,
@@ -665,6 +672,10 @@ class Client:
                 )
                 save_tokens(session, tokens)
             except Exception as exc:
+                # If the refresh token was revoked or expired (invalid_grant),
+                # delete the stored tokens so they can't be reused.
+                if is_invalid_grant_error(exc):
+                    delete_tokens(session)
                 raise ValueError(
                     f"Failed to refresh access token for profile '{display}': {exc}. "
                     f"Please run '{login_cmd}' to re-authenticate."
