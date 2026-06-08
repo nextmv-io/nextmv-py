@@ -13,7 +13,7 @@ from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
 from nextmv.cli.message import enum_values, error, parse_content_format, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
@@ -131,6 +131,7 @@ def create(
             rich_help_panel="Run configuration",
         ),
     ] = -1,
+    _: DebugOption = False,
 ) -> None:
     """
     Create a new local application run.

@@ -20,6 +20,7 @@ from nextmv.auth import (
 )
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import choice, enum_values, error, message, success, warning
+from nextmv.cli.options import DebugOption
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_SESSION_KEY,
@@ -141,6 +142,7 @@ def create(
             metavar="TEAM_NAME",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Create a new configuration or update an existing one.

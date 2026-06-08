@@ -7,7 +7,7 @@ import os
 import typer
 
 from nextmv.cli.message import in_progress, print_json
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption
 from nextmv.local.registry import Registry
 
 # Set up subcommand application.
@@ -18,6 +18,7 @@ app = typer.Typer()
 def registered(
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Check if a Nextmv application is registered locally.

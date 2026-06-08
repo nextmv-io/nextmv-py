@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption, YesOption
+from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, DebugOption, ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,6 +17,7 @@ def delete(
     app_id: AppIDOption,
     batch_experiment_id: BatchExperimentIDOption,
     yes: YesOption = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

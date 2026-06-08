@@ -20,7 +20,7 @@ import sys
 import warnings
 from typing import Annotated
 
-import rich
+import requests
 import typer
 from typer import rich_utils
 
@@ -271,7 +271,7 @@ def _remove_go_cli() -> None:
         success(f"Deleted [italic red]deprecated[/italic red] [magenta]{GO_CLI_PATH}[/magenta].")
 
 
-def setup_encoding() -> None:
+def _setup_encoding() -> None:
     """
     Configure UTF-8 encoding for Windows platforms to make sure emojis and rich text do
     not cause encoding errors.
@@ -303,6 +303,47 @@ def setup_encoding() -> None:
             pass
 
 
+def _handle_http_exception(e: requests.HTTPError) -> None:
+    """
+    Handle HTTP exceptions by showing user-friendly error messages based on the
+    status code.
+
+    Parameters
+    ----------
+    e : requests.HTTPError
+        The HTTP error to handle.
+    """
+    if e.response.status_code == 401:
+        # This means that you are authenticated and your role gives you
+        # permission to access, but you fail an additional check like a
+        # paid account check.
+        error(
+            msg="You are not authorized to perform this action. "
+            "Please contact [link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link].",
+            should_exit=False,
+        )
+    elif e.response.status_code == 403:
+        # Can mean one of two things: either you are not authenticated, or
+        # your role does not permit you to perform the action.
+        error(msg="You are not authorized or do not have permission to perform this action.", should_exit=False)
+    elif e.response.status_code == 400:
+        # This means that the request was malformed. The error message from
+        # the server should give more details on what was wrong with the
+        # request.
+        error(msg=f"You made a bad request: {e.response.text}", should_exit=False)
+    elif e.response.status_code == 404:
+        error(msg="The requested resource was not found. It may have been deleted.", should_exit=False)
+    elif e.response.status_code == 429:
+        error(msg="You have hit a rate limit. Please wait a moment before trying again.", should_exit=False)
+    elif e.response.status_code >= 500:
+        error(msg="There was an unexpected error in Nextmv Cloud. Please try again later.", should_exit=False)
+    else:
+        error(msg=str(e).rstrip("\n"), should_exit=False)
+
+    # Exit here to avoid printing more of the traceback.
+    sys.exit(1)
+
+
 def main() -> None:
     """
     Entry point for the CLI with global exception handling.
@@ -312,7 +353,7 @@ def main() -> None:
     """
 
     # Improve compatibility with Windows terminals.
-    setup_encoding()
+    _setup_encoding()
 
     # Suppress SDK-level DeprecationWarnings so only CLI warnings are shown.
     warnings.filterwarnings("ignore", category=NextmvDeprecationWarning)
@@ -322,35 +363,41 @@ def main() -> None:
     # distributions.
     if len(sys.argv) > 1 and sys.argv[1] == "--run-script":
         if len(sys.argv) < 3:
-            rich.print("[red]Error:[/red] --run-script requires a script path.", file=sys.stderr)
+            error("--run-script requires a script path.", should_exit=False)
             sys.exit(1)
+
         script_path = sys.argv[2]
         sys.argv = sys.argv[2:]  # script becomes argv[0]; its own args follow
         runpy.run_path(script_path, run_name="__main__")
         sys.exit(0)
     elif len(sys.argv) > 1 and sys.argv[1] == "--run-uv":
         if len(sys.argv) < 3:
-            rich.print("[red]Error:[/red] --run-uv requires arguments for 'uv run'.", file=sys.stderr)
+            error("--run-uv requires arguments for 'uv run'.", should_exit=False)
             sys.exit(1)
+
         uv_bin = _find_uv_binary()
         uv_args = [uv_bin, "run"] + sys.argv[2:]
         os.execv(uv_bin, uv_args)
 
     # This is where we actually launch the CLI (the Typer app defined above).
-    # We wrap it in a try-except block to catch any exceptions and print a
-    # clean error message.
+    # If debug mode is active, we want to print the raw Python traceback for
+    # easier debugging. Otherwise, we catch exceptions and process them to
+    # print out nice error messages.
+    should_debug = "--debug" in sys.argv
+    if should_debug:
+        app()
+        return
+
     try:
         app()
+    # Capture "special" HTTP errors to enrich them.
+    except requests.HTTPError as e:
+        _handle_http_exception(e)
     except (typer.Exit, typer.Abort, SystemExit):
         raise
     except Exception as e:
-        # We do not use the messages.error function here because doing so would
-        # raise a Typer exception, which would print a traceback.
-        msg = str(e).rstrip("\n")
-        if not msg.endswith("."):
-            msg += "."
-
-        rich.print(f"[red]Error:[/red] {msg}", file=sys.stderr)
+        # We do not exit to avoid a Typer exception, which would print a traceback.
+        error(msg=str(e).rstrip("\n"), should_exit=False)
         sys.exit(1)
 
 

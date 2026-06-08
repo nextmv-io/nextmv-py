@@ -8,6 +8,7 @@ from rich.table import Table
 
 from nextmv.cli.configuration.config import obscure_api_key
 from nextmv.cli.message import error
+from nextmv.cli.options import DebugOption
 from nextmv.config import (
     API_KEY_KEY,
     AUTH_TYPE_KEY,
@@ -24,7 +25,7 @@ console = Console()
 
 
 @app.command()
-def list() -> None:
+def list(_: DebugOption = False) -> None:
     """
     List the current configuration and all profiles.
 

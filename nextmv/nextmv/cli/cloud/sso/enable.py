@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_sso_config
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -24,6 +24,7 @@ def enable(
             help="Agree to enable confirmation prompt. Useful for non-interactive sessions.",
         ),
     ] = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

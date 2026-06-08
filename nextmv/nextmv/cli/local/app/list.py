@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from nextmv.cli.message import in_progress, print_json, success
+from nextmv.cli.options import DebugOption
 from nextmv.local.registry import Registry
 
 # Set up subcommand application.
@@ -25,6 +26,7 @@ def list(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     List all local registered Nextmv applications.

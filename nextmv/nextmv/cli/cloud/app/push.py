@@ -11,7 +11,7 @@ from rich.prompt import Prompt
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import confirmation, error, in_progress, info, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.cloud.application import Application
 from nextmv.manifest import Manifest
 
@@ -100,6 +100,7 @@ def push(
             rich_help_panel="Instance control",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

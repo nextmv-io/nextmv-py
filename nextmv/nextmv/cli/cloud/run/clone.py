@@ -12,7 +12,7 @@ from nextmv.cli.cloud.run.get import handle_outputs
 from nextmv.cli.cloud.run.logs import handle_logs
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, parse_content_format, print_json, success
-from nextmv.cli.options import AppIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
 from nextmv.content_format import ContentFormat
 from nextmv.input import InputFormat
 from nextmv.polling import default_polling_options
@@ -222,6 +222,7 @@ def clone(
             rich_help_panel="Run configuration",
         ),
     ] = -1,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

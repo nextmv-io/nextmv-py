@@ -6,6 +6,7 @@ import typer
 
 from nextmv.cli.mcp.server import create_server
 from nextmv.cli.message import error
+from nextmv.cli.options import DebugOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -26,11 +27,11 @@ def serve(
         typer.Option(
             "--transport",
             "-t",
-            help="Transport protocol. "
-            "Allowed values: [magenta]stdio[/magenta], [magenta]streamable-http[/magenta].",
+            help="Transport protocol. Allowed values: [magenta]stdio[/magenta], [magenta]streamable-http[/magenta].",
             metavar="TRANSPORT",
         ),
     ] = "stdio",
+    _: DebugOption = False,
 ) -> None:
     """
     Start the Nextmv MCP server.

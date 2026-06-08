@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_marketplace_subscription
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import MarketplaceSubscriptionIDOption, ProfileOption
+from nextmv.cli.options import DebugOption, MarketplaceSubscriptionIDOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -27,6 +27,7 @@ def get(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

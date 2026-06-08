@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_marketplace_subscription
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import MarketplaceSubscriptionIDOption, ProfileOption, YesOption
+from nextmv.cli.options import DebugOption, MarketplaceSubscriptionIDOption, ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -17,6 +17,7 @@ def delete(
     subscription_id: MarketplaceSubscriptionIDOption,
     yes: YesOption = False,
     profile: ProfileOption = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Delete a marketplace subscription.

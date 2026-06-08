@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, ProfileOption
+from nextmv.cli.options import AppIDOption, BatchExperimentIDOption, DebugOption, ProfileOption
 from nextmv.polling import default_polling_options
 
 # Set up subcommand application.
@@ -45,6 +45,7 @@ def get(
             "Specify output location with --output.",
         ),
     ] = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

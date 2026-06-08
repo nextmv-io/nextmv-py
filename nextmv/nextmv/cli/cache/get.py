@@ -6,13 +6,14 @@ import typer
 
 from nextmv.cache import get_cache
 from nextmv.cli.message import print_json, success
+from nextmv.cli.options import DebugOption
 
 # Set up subcommand application.
 app = typer.Typer()
 
 
 @app.command()
-def get() -> None:
+def get(_: DebugOption = False) -> None:
     """
     Gets general information about the Nextmv cache.
 

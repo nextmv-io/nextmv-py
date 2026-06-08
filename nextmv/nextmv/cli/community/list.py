@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from nextmv.cli.message import error
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 from nextmv.cloud.client import Client
 from nextmv.cloud.community import CommunityApp, list_community_apps
 
@@ -31,6 +31,7 @@ def list(
         ),
     ] = None,
     flat: Annotated[bool, typer.Option("--flat", "-f", help="Flatten the list output.")] = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

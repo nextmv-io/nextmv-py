@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success, warning
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -29,6 +29,7 @@ def metadata(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     This command is deprecated, use [code]nextmv local run information[/code] instead.

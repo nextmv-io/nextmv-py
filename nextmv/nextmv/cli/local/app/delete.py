@@ -7,7 +7,7 @@ import os
 import typer
 
 from nextmv.cli.message import confirmation, info, success, warning
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, YesOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, YesOption
 from nextmv.local.registry import Registry
 
 # Set up subcommand application.
@@ -19,6 +19,7 @@ def delete(
     app_id: LocalAppIDOption = None,
     app_src: LocalAppSrcOption = None,
     yes: YesOption = False,
+    _: DebugOption = False,
 ) -> None:
     """
     Deletes a Nextmv application from the local registry.

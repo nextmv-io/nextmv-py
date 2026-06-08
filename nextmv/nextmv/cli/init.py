@@ -19,6 +19,7 @@ from nextmv import cloud, local
 from nextmv.cli.cloud.app.push import handle_push
 from nextmv.cli.configuration.config import build_cloud_app, obscure_api_key
 from nextmv.cli.message import choice, confirmation, directory_path, error, in_progress, info, message, rule, success
+from nextmv.cli.options import DebugOption
 from nextmv.cloud.community import _get_valid_path
 from nextmv.config import load_config
 from nextmv.content_format import ContentFormat
@@ -53,7 +54,7 @@ class ExecutedCommand:
 
 
 @app.command()
-def init() -> None:
+def init(_: DebugOption = False) -> None:
     """
     Get started with the Nextmv CLI.
 

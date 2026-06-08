@@ -6,7 +6,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_account
 from nextmv.cli.message import confirmation, info, success
-from nextmv.cli.options import AccountIDOption, ProfileOption, YesOption
+from nextmv.cli.options import AccountIDOption, DebugOption, ProfileOption, YesOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -16,6 +16,7 @@ app = typer.Typer()
 def delete(
     account_id: AccountIDOption,
     yes: YesOption = False,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """

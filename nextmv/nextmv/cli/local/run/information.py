@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import LocalAppIDOption, LocalAppSrcOption, RunIDOption
+from nextmv.cli.options import DebugOption, LocalAppIDOption, LocalAppSrcOption, RunIDOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -29,6 +29,7 @@ def information(
             metavar="OUTPUT_PATH",
         ),
     ] = None,
+    _: DebugOption = False,
 ) -> None:
     """
     Get the information of a Nextmv local application run.

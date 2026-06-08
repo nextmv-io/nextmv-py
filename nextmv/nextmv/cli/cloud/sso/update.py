@@ -8,7 +8,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_sso_config
 from nextmv.cli.message import in_progress, success
-from nextmv.cli.options import ProfileOption
+from nextmv.cli.options import DebugOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -34,6 +34,7 @@ def update(
             metavar="METADATA_DOCUMENT",
         ),
     ] = None,
+    _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:
     """
