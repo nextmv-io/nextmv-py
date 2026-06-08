@@ -547,6 +547,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                                         "rt",
                                         oidc_discovery_url=None,
                                         client_id=None,
+                                        verify=None,
                                     )
                                     # Tokens are saved against the resolved session name
                                     # ("default" because _PKCE_CONFIG has no auth_session).
@@ -647,6 +648,56 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                 _clean_env(env)
                 client = Client(profile="my-api-profile")
                 self.assertEqual(client.api_key, "sk-123")
+
+
+class TestSystemCerts(unittest.TestCase):
+    """Tests for system_certs resolution via env var and config."""
+
+    def test_env_var_enables_system_certs(self):
+        """NEXTMV_SYSTEM_CERTS=true enables system certs."""
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "true"}):
+                client = Client()
+                self.assertTrue(client.system_certs)
+                self.assertIsNotNone(client._verify)
+
+    def test_env_var_one_enables_system_certs(self):
+        """NEXTMV_SYSTEM_CERTS=1 enables system certs."""
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "1"}):
+                client = Client()
+                self.assertTrue(client.system_certs)
+
+    def test_env_var_yes_enables_system_certs(self):
+        """NEXTMV_SYSTEM_CERTS=yes enables system certs."""
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "yes"}):
+                client = Client()
+                self.assertTrue(client.system_certs)
+
+    def test_env_var_false_does_not_enable(self):
+        """NEXTMV_SYSTEM_CERTS=false does not enable system certs."""
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "false"}):
+                client = Client()
+                self.assertFalse(client.system_certs)
+                self.assertIsNone(client._verify)
+
+    def test_explicit_constructor_overrides_env(self):
+        """system_certs=True on constructor takes precedence over env var."""
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "false"}):
+                client = Client(system_certs=True)
+                self.assertTrue(client.system_certs)
+
+    def test_config_fallback_when_no_env(self):
+        """Falls back to config when env var is not set."""
+        config = {"apikey": "k", "system_certs": True}
+        with patch("nextmv.cloud.client.load_config", return_value=config):
+            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k"}, clear=False):
+                os.environ.pop("NEXTMV_SYSTEM_CERTS", None)
+                client = Client()
+                self.assertTrue(client.system_certs)
 
 
 def _future() -> str:

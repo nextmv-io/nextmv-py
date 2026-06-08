@@ -2,6 +2,7 @@
 This module defines the configuration create command for the Nextmv CLI.
 """
 
+import ssl
 from typing import Annotated
 
 import typer
@@ -10,6 +11,7 @@ from rich.prompt import Prompt
 from nextmv.auth import (
     delete_tokens,
     fetch_organizations,
+    get_verify,
     is_invalid_grant_error,
     is_token_expired,
     load_tokens,
@@ -28,6 +30,7 @@ from nextmv.config import (
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     OIDC_DISCOVERY_URL_KEY,
+    SYSTEM_CERTS_KEY,
     TEAM_ID_KEY,
     AuthType,
     _strip_scheme,
@@ -124,6 +127,13 @@ def create(
             metavar="PROFILE_NAME",
         ),
     ] = None,
+    system_certs: Annotated[
+        bool,
+        typer.Option(
+            "--system-certs",
+            help="Use the operating system certificate store for TLS connections.",
+        ),
+    ] = False,
     team: Annotated[
         str | None,
         typer.Option(
@@ -187,7 +197,7 @@ def create(
     config = load_config()
 
     if resolved_type == AuthType.API_KEY:
-        _create_api_key_profile(config, profile, endpoint, api_key)
+        _create_api_key_profile(config, profile, endpoint, api_key, system_certs)
     else:
         _create_pkce_profile(
             config=config,
@@ -197,6 +207,7 @@ def create(
             oidc_discovery_url=oidc_discovery_url,
             oidc_client_id=oidc_client_id,
             team=team,
+            system_certs=system_certs,
         )
 
 
@@ -232,6 +243,7 @@ def _create_api_key_profile(
     profile: str | None,
     endpoint: str,
     api_key: str | None,
+    system_certs: bool,
 ) -> None:
     """Collect an API key (interactively if needed) and save the profile."""
     if api_key is None or not api_key.strip():
@@ -250,12 +262,20 @@ def _create_api_key_profile(
         config[API_KEY_KEY] = api_key
         config[ENDPOINT_KEY] = endpoint
         config.pop(AUTH_TYPE_KEY, None)
+        if system_certs:
+            config[SYSTEM_CERTS_KEY] = True
+        else:
+            config.pop(SYSTEM_CERTS_KEY, None)
     else:
         if profile not in config:
             config[profile] = {}
         config[profile][API_KEY_KEY] = api_key
         config[profile][ENDPOINT_KEY] = endpoint
         config[profile].pop(AUTH_TYPE_KEY, None)
+        if system_certs:
+            config[profile][SYSTEM_CERTS_KEY] = True
+        else:
+            config[profile].pop(SYSTEM_CERTS_KEY, None)
 
     save_config(config)
 
@@ -275,8 +295,11 @@ def _create_pkce_profile(
     oidc_discovery_url: str | None,
     oidc_client_id: str | None,
     team: str | None,
+    system_certs: bool,
 ) -> None:
     """Ensure OIDC config, resolve team, and save a pkce profile."""
+    verify = get_verify(system_certs)
+
     sessions = load_sessions()
     existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
 
@@ -302,12 +325,14 @@ def _create_pkce_profile(
         endpoint=endpoint,
         oidc_discovery_url=resolved_oidc_url,
         client_id=resolved_oidc_client_id,
+        verify=verify,
     )
 
     team_id = _resolve_team_id(
         access_token=access_token,
         endpoint=endpoint,
         team_name=team,
+        verify=verify,
     )
 
     if profile is None:
@@ -319,6 +344,10 @@ def _create_pkce_profile(
             config[AUTH_SESSION_KEY] = auth_session
         else:
             config.pop(AUTH_SESSION_KEY, None)
+        if system_certs:
+            config[SYSTEM_CERTS_KEY] = True
+        else:
+            config.pop(SYSTEM_CERTS_KEY, None)
     else:
         if profile not in config:
             config[profile] = {}
@@ -330,6 +359,10 @@ def _create_pkce_profile(
             config[profile][AUTH_SESSION_KEY] = auth_session
         else:
             config[profile].pop(AUTH_SESSION_KEY, None)
+        if system_certs:
+            config[profile][SYSTEM_CERTS_KEY] = True
+        else:
+            config[profile].pop(SYSTEM_CERTS_KEY, None)
 
     save_config(config)
 
@@ -381,6 +414,7 @@ def _ensure_token(
     endpoint: str,
     oidc_discovery_url: str | None,
     client_id: str | None,
+    verify: ssl.SSLContext | None = None,
 ) -> str:
     """
     Return a valid access token for *session*, running the PKCE browser flow
@@ -401,6 +435,8 @@ def _ensure_token(
         OIDC discovery URL; passed through to the PKCE flow.
     client_id : str | None
         OAuth2 client ID; passed through to the PKCE flow.
+    verify : ssl.SSLContext | None
+        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -423,6 +459,7 @@ def _ensure_token(
                     refresh_token,
                     client_id=client_id,
                     oidc_discovery_url=oidc_discovery_url,
+                    verify=verify,
                 )
                 save_tokens(session, tokens)
                 token = tokens.get("id_token") or tokens.get("access_token")
@@ -444,6 +481,7 @@ def _ensure_token(
     tokens = run_pkce_flow(
         oidc_discovery_url=oidc_discovery_url,
         client_id=client_id,
+        verify=verify,
     )
     save_tokens(session, tokens)
     token = tokens.get("id_token") or tokens.get("access_token")
@@ -456,6 +494,7 @@ def _resolve_team_id(
     access_token: str,
     endpoint: str,
     team_name: str | None,
+    verify: ssl.SSLContext | None = None,
 ) -> str:
     """
     Resolve the team UUID the user wants to associate with this profile.
@@ -471,6 +510,8 @@ def _resolve_team_id(
         The API endpoint hostname.
     team_name : str | None
         The team name provided via ``--team``, or ``None`` to prompt.
+    verify : ssl.SSLContext | None
+        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -478,7 +519,7 @@ def _resolve_team_id(
         The team UUID.
     """
     try:
-        orgs = fetch_organizations(access_token, endpoint)
+        orgs = fetch_organizations(access_token, endpoint, verify=verify)
     except Exception as exc:
         error(f"Failed to fetch teams from [magenta]{endpoint}[/magenta]: {exc}")
 

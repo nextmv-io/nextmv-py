@@ -333,5 +333,38 @@ class TestGetTeamId(unittest.TestCase):
         self.assertIsNone(get_team_id(config, "nonexistent"))
 
 
+class TestGetSystemCerts(unittest.TestCase):
+    """Tests for get_system_certs helper."""
+
+    def test_default_profile_no_key_returns_false(self):
+        from nextmv.config import get_system_certs
+        config = {"apikey": "sk-xxx", "endpoint": "api.cloud.nextmv.io"}
+        self.assertFalse(get_system_certs(config, None))
+
+    def test_default_profile_system_certs_true(self):
+        from nextmv.config import get_system_certs
+        config = {"system_certs": True, "endpoint": "api.cloud.nextmv.io"}
+        self.assertTrue(get_system_certs(config, None))
+
+    def test_named_profile_system_certs_true(self):
+        from nextmv.config import get_system_certs
+        config = {
+            "work": {"system_certs": True, "endpoint": "api.cloud.nextmv.io"},
+        }
+        self.assertTrue(get_system_certs(config, "work"))
+
+    def test_named_profile_no_key_returns_false(self):
+        from nextmv.config import get_system_certs
+        config = {
+            "work": {"endpoint": "api.cloud.nextmv.io"},
+        }
+        self.assertFalse(get_system_certs(config, "work"))
+
+    def test_missing_profile_returns_false(self):
+        from nextmv.config import get_system_certs
+        config = {}
+        self.assertFalse(get_system_certs(config, "nonexistent"))
+
+
 if __name__ == "__main__":
     unittest.main()

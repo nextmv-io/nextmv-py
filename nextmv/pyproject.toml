@@ -25,6 +25,7 @@ dependencies = [
     "folium>=0.20.0",
     "plotly>=6.0.1",
     "questionary>=2.1.1",
+    "truststore>=0.10.0",
     "uv>=0.4.0",
     "tomli>=2.4.1 ; python_full_version < '3.11'",
 ]

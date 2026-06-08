@@ -154,6 +154,22 @@ class TestPKCEGeneration(unittest.TestCase):
         self.assertEqual(challenge, expected)
 
 
+class TestGetVerify(unittest.TestCase):
+    """Tests for get_verify helper."""
+
+    def test_returns_none_when_disabled(self):
+        from nextmv.auth import get_verify
+        result = get_verify(False)
+        self.assertIsNone(result)
+
+    def test_returns_ssl_context_when_enabled(self):
+        import ssl
+
+        from nextmv.auth import get_verify
+        result = get_verify(True)
+        self.assertIsInstance(result, ssl.SSLContext)
+
+
 class TestValidateTokenResponse(unittest.TestCase):
     """Tests for _validate_token_response."""
 

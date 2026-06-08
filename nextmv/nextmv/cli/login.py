@@ -13,7 +13,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.auth import run_pkce_flow, save_tokens
+from nextmv.auth import get_verify, run_pkce_flow, save_tokens
 from nextmv.cli.message import error, in_progress, info, success, warning
 from nextmv.config import (
     CLIENT_ID_KEY,
@@ -23,6 +23,7 @@ from nextmv.config import (
     get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
+    get_system_certs,
     list_pkce_profiles,
     load_config,
     load_sessions,
@@ -127,6 +128,7 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
     # because tokens are stored per session, not per profile.
     seen_sessions: dict[tuple[str, str], list[str]] = {}  # (session, endpoint) -> [display_name, ...]
     session_oidc: dict[tuple[str, str], tuple[str | None, str | None]] = {}
+    session_system_certs: dict[tuple[str, str], bool] = {}
 
     for prof in profiles_to_login:
         display_name = prof if prof is not None else "default"
@@ -144,9 +146,12 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
         key = (session, endpoint)
         seen_sessions.setdefault(key, []).append(display_name)
         session_oidc[key] = (oidc_cfg.get(OIDC_DISCOVERY_URL_KEY), oidc_cfg.get(CLIENT_ID_KEY))
+        if get_system_certs(config, prof):
+            session_system_certs[key] = True
 
     for (session, endpoint), profile_names in seen_sessions.items():
         oidc_discovery_url, oidc_client_id = session_oidc[(session, endpoint)]
+        verify = get_verify(session_system_certs.get((session, endpoint), False))
         profiles_display = ", ".join(f"[magenta]{n}[/magenta]" for n in profile_names)
         in_progress(
             f"Logging in to session [magenta]{session}[/magenta] "
@@ -158,6 +163,7 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
                 oidc_discovery_url=oidc_discovery_url,
                 client_id=oidc_client_id,
                 force=force,
+                verify=verify,
             )
             save_tokens(session, tokens)
             success(f"Logged in to session [magenta]{session}[/magenta] successfully.")

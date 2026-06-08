@@ -71,16 +71,19 @@ ENDPOINT_KEY = "endpoint"
 AUTH_TYPE_KEY = "auth_type"
 AUTH_SESSION_KEY = "auth_session"
 TEAM_ID_KEY = "team_id"
+SYSTEM_CERTS_KEY = "system_certs"
 
 # Sessions keys
 OIDC_DISCOVERY_URL_KEY = "oidc_discovery_url"
 CLIENT_ID_KEY = "client_id"
+
 
 class AuthType(str, Enum):
     """Enumeration of supported authentication types."""
 
     API_KEY = "api_key"
     PKCE = "pkce"
+
 
 # Defaults
 DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
@@ -258,7 +261,15 @@ def non_profile_keys() -> set[str]:
     set[str]
         The set of non-profile keys.
     """
-    return {API_KEY_KEY, ENDPOINT_KEY, AUTH_TYPE_KEY, AUTH_SESSION_KEY, TEAM_ID_KEY, DEFAULT_AUTH_SESSION}
+    return {
+        API_KEY_KEY,
+        ENDPOINT_KEY,
+        AUTH_TYPE_KEY,
+        AUTH_SESSION_KEY,
+        TEAM_ID_KEY,
+        SYSTEM_CERTS_KEY,
+        DEFAULT_AUTH_SESSION,
+    }
 
 
 def get_auth_type(config: dict, profile: str | None) -> AuthType:
@@ -353,6 +364,33 @@ def get_team_id(config: dict, profile: str | None) -> str | None:
     if raw and isinstance(raw, str) and raw.strip():
         return raw.strip()
     return None
+
+
+def get_system_certs(config: dict, profile: str | None) -> bool:
+    """
+    Returns ``True`` if *profile* is configured to use the system certificate
+    store for TLS connections (via the ``truststore`` package).
+
+    Parameters
+    ----------
+    config : dict
+        The full configuration dictionary loaded from config.yaml.
+    profile : str | None
+        The profile name.  If ``None``, the default (top-level) profile is
+        used.
+
+    Returns
+    -------
+    bool
+        ``True`` when ``system_certs`` is set to a truthy value, ``False``
+        otherwise.
+    """
+    if profile is None:
+        raw = config.get(SYSTEM_CERTS_KEY, False)
+    else:
+        profile_data = config.get(profile, {})
+        raw = profile_data.get(SYSTEM_CERTS_KEY, False) if isinstance(profile_data, dict) else False
+    return bool(raw)
 
 
 def get_profile_endpoint(config: dict, profile: str | None) -> str:

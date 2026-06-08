@@ -26,6 +26,7 @@ from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import (
     delete_tokens,
+    get_verify,
     is_invalid_grant_error,
     is_token_expired,
     load_tokens,
@@ -41,6 +42,7 @@ from nextmv.config import (
     get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
+    get_system_certs,
     get_team_id,
     load_config,
     load_sessions,
@@ -259,6 +261,13 @@ class Client:
     1. The `NEXTMV_PROFILE` environment variable.
     2. This `profile` attribute set on the client.
     """
+    system_certs: bool = False
+    """
+    When ``True``, use the operating system's certificate store for TLS
+    connections (via the ``truststore`` package).  Useful on enterprise
+    machines behind proxies that use custom CA certificates.  Defaults to
+    ``False``.
+    """
 
     def __post_init__(self):
         """
@@ -285,6 +294,16 @@ class Client:
 
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
+
+        # Resolve system_certs: explicit constructor arg > env var > config file.
+        if not self.system_certs:
+            env_val = os.environ.get("NEXTMV_SYSTEM_CERTS", "").strip().lower()
+            if env_val in ("1", "true", "yes"):
+                self.system_certs = True
+            else:
+                config = load_config()
+                self.system_certs = get_system_certs(config, profile)
+        self._verify = get_verify(self.system_certs)
 
         bearer_token, team_id = self.__resolve_bearer_token_for_pkce(profile)
         if bearer_token is not None:
@@ -437,6 +456,8 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
+        if self._verify is not None:
+            session.verify = self._verify
 
         kwargs: dict[str, Any] = {
             "url": urljoin(self.url, endpoint),
@@ -561,6 +582,8 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
+        if self._verify is not None:
+            session.verify = self._verify
 
         kwargs: dict[str, Any] = {
             "url": url,
@@ -669,6 +692,7 @@ class Client:
                     refresh_token,
                     oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
                     client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
+                    verify=self._verify,
                 )
                 save_tokens(session, tokens)
             except Exception as exc:
