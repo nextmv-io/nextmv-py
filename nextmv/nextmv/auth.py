@@ -85,7 +85,7 @@ _FALLBACK_LOGOUT_ENDPOINT = f"{_COGNITO_DOMAIN}/logout"
 _BROWSER_TIMEOUT = 300
 
 # Reserved session name used when auth_session is not set on a profile.
-_DEFAULT_SESSION_NAME = "default"
+DEFAULT_AUTH_SESSION = "default"
 
 
 # >>> Token storage
@@ -114,9 +114,9 @@ def token_dir(session: str) -> Path:
         If *session* is empty or would escape the auth directory (e.g. path
         traversal).
     """
-    name = session.strip() if session else _DEFAULT_SESSION_NAME
+    name = session.strip() if session else DEFAULT_AUTH_SESSION
     if not name:
-        name = _DEFAULT_SESSION_NAME
+        name = DEFAULT_AUTH_SESSION
     path = (AUTH_DIR / name).resolve()
     if not path.is_relative_to(AUTH_DIR.resolve()):
         raise ValueError(f"Invalid session name {name!r}: must not escape the auth directory.")

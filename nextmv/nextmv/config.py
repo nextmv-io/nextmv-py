@@ -57,6 +57,7 @@ from typing import Any
 import yaml
 
 from nextmv.auth import CLIENT_ID as _AUTH_CLIENT_ID
+from nextmv.auth import DEFAULT_AUTH_SESSION
 from nextmv.auth import OIDC_DISCOVERY_URL as _AUTH_OIDC_DISCOVERY_URL
 
 # Paths
@@ -82,7 +83,6 @@ class AuthType(str, Enum):
     PKCE = "pkce"
 
 # Defaults
-DEFAULT_AUTH_SESSION = "default"
 DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
 
 # Built-in OIDC config for known endpoints.  These are used as a fallback when
