@@ -2,16 +2,15 @@
 This module defines the configuration create command for the Nextmv CLI.
 """
 
-import ssl
 from typing import Annotated
 
 import typer
 from rich.prompt import Prompt
 
 from nextmv.auth import (
+    apply_system_certs,
     delete_tokens,
     fetch_organizations,
-    get_verify,
     is_invalid_grant_error,
     is_token_expired,
     load_tokens,
@@ -231,10 +230,12 @@ def _resolve_auth_type(
         return AuthType.PKCE
 
     # Interactive prompt.
-    return choice(
-        msg="Select authentication type",
-        choices=[AuthType.API_KEY, AuthType.PKCE],
-        default=AuthType.API_KEY,
+    return AuthType(
+        choice(
+            msg="Select authentication type",
+            choices=[AuthType.API_KEY.value, AuthType.PKCE.value],
+            default=AuthType.API_KEY.value,
+        )
     )
 
 
@@ -298,7 +299,8 @@ def _create_pkce_profile(
     system_certs: bool,
 ) -> None:
     """Ensure OIDC config, resolve team, and save a pkce profile."""
-    verify = get_verify(system_certs)
+    if system_certs:
+        apply_system_certs()
 
     sessions = load_sessions()
     existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
@@ -325,14 +327,12 @@ def _create_pkce_profile(
         endpoint=endpoint,
         oidc_discovery_url=resolved_oidc_url,
         client_id=resolved_oidc_client_id,
-        verify=verify,
     )
 
     team_id = _resolve_team_id(
         access_token=access_token,
         endpoint=endpoint,
         team_name=team,
-        verify=verify,
     )
 
     if profile is None:
@@ -414,7 +414,6 @@ def _ensure_token(
     endpoint: str,
     oidc_discovery_url: str | None,
     client_id: str | None,
-    verify: ssl.SSLContext | None = None,
 ) -> str:
     """
     Return a valid access token for *session*, running the PKCE browser flow
@@ -435,8 +434,6 @@ def _ensure_token(
         OIDC discovery URL; passed through to the PKCE flow.
     client_id : str | None
         OAuth2 client ID; passed through to the PKCE flow.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -459,7 +456,6 @@ def _ensure_token(
                     refresh_token,
                     client_id=client_id,
                     oidc_discovery_url=oidc_discovery_url,
-                    verify=verify,
                 )
                 save_tokens(session, tokens)
                 token = tokens.get("id_token") or tokens.get("access_token")
@@ -481,7 +477,6 @@ def _ensure_token(
     tokens = run_pkce_flow(
         oidc_discovery_url=oidc_discovery_url,
         client_id=client_id,
-        verify=verify,
     )
     save_tokens(session, tokens)
     token = tokens.get("id_token") or tokens.get("access_token")
@@ -494,7 +489,6 @@ def _resolve_team_id(
     access_token: str,
     endpoint: str,
     team_name: str | None,
-    verify: ssl.SSLContext | None = None,
 ) -> str:
     """
     Resolve the team UUID the user wants to associate with this profile.
@@ -510,8 +504,6 @@ def _resolve_team_id(
         The API endpoint hostname.
     team_name : str | None
         The team name provided via ``--team``, or ``None`` to prompt.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -519,7 +511,7 @@ def _resolve_team_id(
         The team UUID.
     """
     try:
-        orgs = fetch_organizations(access_token, endpoint, verify=verify)
+        orgs = fetch_organizations(access_token, endpoint)
     except Exception as exc:
         error(f"Failed to fetch teams from [magenta]{endpoint}[/magenta]: {exc}")
 

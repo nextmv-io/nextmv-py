@@ -56,7 +56,6 @@ import http.server
 import json
 import os
 import secrets
-import ssl
 import threading
 import urllib.parse
 import webbrowser
@@ -96,36 +95,19 @@ DEFAULT_AUTH_SESSION = "default"
 # >>> TLS helpers
 
 
-def _verify_kw(verify: ssl.SSLContext | None) -> dict[str, Any]:
-    """Return a ``verify=...`` keyword argument dict, empty when *verify* is ``None``."""
-    if verify is not None:
-        return {"verify": verify}
-    return {}
-
-
-def get_verify(system_certs: bool) -> ssl.SSLContext | None:
+def apply_system_certs() -> None:
     """
-    Return a TLS verification parameter for ``requests`` calls.
+    Patch the Python SSL module to use the operating system's certificate store.
 
-    When *system_certs* is ``True``, returns a :class:`truststore.SSLContext`
-    that uses the operating system's certificate store instead of the default
-    ``certifi`` bundle.  Otherwise returns ``None``, meaning ``requests`` will
-    use its default CA bundle (``certifi``).
+    Calls :func:`truststore.inject_into_ssl`, which replaces the default
+    ``ssl.create_default_context`` factory so that all subsequent TLS
+    connections (including those made by ``requests``) trust the OS certificate
+    store instead of the bundled ``certifi`` CA bundle.
 
-    Parameters
-    ----------
-    system_certs : bool
-        Whether to use the system certificate store.
-
-    Returns
-    -------
-    ssl.SSLContext | None
-        A ``truststore.SSLContext`` when *system_certs* is ``True``,
-        ``None`` otherwise.
+    This is a global, process-wide side effect.  Calling it multiple times is
+    harmless (it is idempotent).
     """
-    if system_certs:
-        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    return None
+    truststore.inject_into_ssl()
 
 
 # >>> Token storage
@@ -327,10 +309,7 @@ def _validate_token_response(tokens: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported token_type {token_type!r}; only 'bearer' is supported.")
 
 
-def _discover_endpoints(
-    oidc_discovery_url: str | None = None,
-    verify: ssl.SSLContext | None = None,
-) -> tuple[str, str, str]:
+def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
     """
     Fetch the OIDC discovery document and return
     ``(authorization_endpoint, token_endpoint, logout_endpoint)``.
@@ -346,9 +325,6 @@ def _discover_endpoints(
         The OIDC discovery document URL to use.  When ``None`` the module-level
         constant :data:`OIDC_DISCOVERY_URL` is used (which covers the production
         endpoint).
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.  Pass a
-        :func:`truststore.SSLContext` to use the system certificate store.
 
     Returns
     -------
@@ -363,7 +339,7 @@ def _discover_endpoints(
     is_custom = oidc_discovery_url is not None
     discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
-        resp = requests.get(discovery_url, timeout=10, **_verify_kw(verify))
+        resp = requests.get(discovery_url, timeout=10)
         resp.raise_for_status()
         doc = resp.json()
         auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
@@ -557,7 +533,6 @@ def _exchange_code_for_tokens(
     code_verifier: str,
     redirect_uri: str,
     client_id: str | None = None,
-    verify: ssl.SSLContext | None = None,
 ) -> dict[str, Any]:
     """
     Exchange an authorization ``code`` for tokens.
@@ -575,8 +550,6 @@ def _exchange_code_for_tokens(
     client_id : str | None
         The OAuth2 client ID.  When ``None`` the module-level :data:`CLIENT_ID`
         constant is used.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -602,7 +575,6 @@ def _exchange_code_for_tokens(
         data=payload,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=30,
-        **_verify_kw(verify),
     )
     try:
         resp.raise_for_status()
@@ -626,7 +598,6 @@ def refresh_tokens(
     token_endpoint: str | None = None,
     client_id: str | None = None,
     oidc_discovery_url: str | None = None,
-    verify: ssl.SSLContext | None = None,
 ) -> dict[str, Any]:
     """
     Use a refresh token to obtain a new access token.
@@ -645,8 +616,6 @@ def refresh_tokens(
         The OIDC discovery document URL.  Used only when *token_endpoint* is
         ``None``.  When ``None`` the module-level :data:`OIDC_DISCOVERY_URL` is
         used.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -660,7 +629,7 @@ def refresh_tokens(
         If the token endpoint returns a non-2xx response.
     """
     if token_endpoint is None:
-        _, _, token_endpoint = _discover_endpoints(oidc_discovery_url, verify=verify)
+        _, _, token_endpoint = _discover_endpoints(oidc_discovery_url)
 
     cid = client_id or CLIENT_ID
     payload = {
@@ -673,7 +642,6 @@ def refresh_tokens(
         data=payload,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=30,
-        **_verify_kw(verify),
     )
     try:
         resp.raise_for_status()
@@ -696,7 +664,6 @@ def run_pkce_flow(
     oidc_discovery_url: str | None = None,
     client_id: str | None = None,
     force: bool = False,
-    verify: ssl.SSLContext | None = None,
 ) -> dict[str, Any]:
     """
     Execute the full PKCE authorization-code flow.
@@ -726,8 +693,6 @@ def run_pkce_flow(
         which clears any active browser session, and chains all authorization
         parameters onto it so that the provider immediately presents the login
         page.  Defaults to ``False``.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -745,7 +710,7 @@ def run_pkce_flow(
     requests.HTTPError
         If the token exchange request fails.
     """
-    auth_endpoint, token_endpoint, logout_endpoint = _discover_endpoints(oidc_discovery_url, verify=verify)
+    auth_endpoint, token_endpoint, logout_endpoint = _discover_endpoints(oidc_discovery_url)
     cid = client_id or CLIENT_ID
     code_verifier, code_challenge = _generate_pkce_pair()
     redirect_uri = f"http://127.0.0.1:{CALLBACK_PORT}"
@@ -814,14 +779,10 @@ def run_pkce_flow(
     if not code:
         raise RuntimeError("No authorization code received. Please try running `nextmv login` again.")
 
-    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid, verify=verify)
+    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid)
 
 
-def fetch_organizations(
-    access_token: str,
-    endpoint: str,
-    verify: ssl.SSLContext | None = None,
-) -> list[dict[str, Any]]:
+def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]]:
     """
     Fetch the list of organizations (teams) the authenticated user belongs to.
 
@@ -843,8 +804,6 @@ def fetch_organizations(
         The API endpoint hostname, e.g. ``"api.cloud.nextmv.io"``.  A leading
         ``https://`` scheme is accepted and stripped.  Plain ``http://`` is
         rejected to prevent sending tokens over an unencrypted connection.
-    verify : ssl.SSLContext | None
-        TLS verification parameter passed to ``requests``.
 
     Returns
     -------
@@ -869,7 +828,6 @@ def fetch_organizations(
         url,
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
         timeout=15,
-        **_verify_kw(verify),
     )
     resp.raise_for_status()
     return resp.json()

@@ -154,20 +154,21 @@ class TestPKCEGeneration(unittest.TestCase):
         self.assertEqual(challenge, expected)
 
 
-class TestGetVerify(unittest.TestCase):
-    """Tests for get_verify helper."""
+class TestApplySystemCerts(unittest.TestCase):
+    """Tests for apply_system_certs helper."""
 
-    def test_returns_none_when_disabled(self):
-        from nextmv.auth import get_verify
-        result = get_verify(False)
-        self.assertIsNone(result)
+    def test_calls_inject_into_ssl(self):
+        from nextmv.auth import apply_system_certs
+        with patch("nextmv.auth.truststore.inject_into_ssl") as mock_inject:
+            apply_system_certs()
+            mock_inject.assert_called_once()
 
-    def test_returns_ssl_context_when_enabled(self):
-        import ssl
-
-        from nextmv.auth import get_verify
-        result = get_verify(True)
-        self.assertIsInstance(result, ssl.SSLContext)
+    def test_idempotent(self):
+        from nextmv.auth import apply_system_certs
+        with patch("nextmv.auth.truststore.inject_into_ssl") as mock_inject:
+            apply_system_certs()
+            apply_system_certs()
+            self.assertEqual(mock_inject.call_count, 2)
 
 
 class TestValidateTokenResponse(unittest.TestCase):

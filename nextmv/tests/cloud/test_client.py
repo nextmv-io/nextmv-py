@@ -547,7 +547,6 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                                         "rt",
                                         oidc_discovery_url=None,
                                         client_id=None,
-                                        verify=None,
                                     )
                                     # Tokens are saved against the resolved session name
                                     # ("default" because _PKCE_CONFIG has no auth_session).
@@ -656,10 +655,11 @@ class TestSystemCerts(unittest.TestCase):
     def test_env_var_enables_system_certs(self):
         """NEXTMV_SYSTEM_CERTS=true enables system certs."""
         with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
-            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "true"}):
-                client = Client()
-                self.assertTrue(client.system_certs)
-                self.assertIsNotNone(client._verify)
+            with patch("nextmv.cloud.client.apply_system_certs") as mock_apply:
+                with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "true"}):
+                    client = Client()
+                    self.assertTrue(client.system_certs)
+                    mock_apply.assert_called_once()
 
     def test_env_var_one_enables_system_certs(self):
         """NEXTMV_SYSTEM_CERTS=1 enables system certs."""
@@ -678,10 +678,11 @@ class TestSystemCerts(unittest.TestCase):
     def test_env_var_false_does_not_enable(self):
         """NEXTMV_SYSTEM_CERTS=false does not enable system certs."""
         with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
-            with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "false"}):
-                client = Client()
-                self.assertFalse(client.system_certs)
-                self.assertIsNone(client._verify)
+            with patch("nextmv.cloud.client.apply_system_certs") as mock_apply:
+                with patch.dict(os.environ, {"NEXTMV_API_KEY": "k", "NEXTMV_SYSTEM_CERTS": "false"}):
+                    client = Client()
+                    self.assertFalse(client.system_certs)
+                    mock_apply.assert_not_called()
 
     def test_explicit_constructor_overrides_env(self):
         """system_certs=True on constructor takes precedence over env var."""

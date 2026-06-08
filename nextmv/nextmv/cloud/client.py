@@ -25,8 +25,8 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import (
+    apply_system_certs,
     delete_tokens,
-    get_verify,
     is_invalid_grant_error,
     is_token_expired,
     load_tokens,
@@ -303,7 +303,8 @@ class Client:
             else:
                 config = load_config()
                 self.system_certs = get_system_certs(config, profile)
-        self._verify = get_verify(self.system_certs)
+        if self.system_certs:
+            apply_system_certs()
 
         bearer_token, team_id = self.__resolve_bearer_token_for_pkce(profile)
         if bearer_token is not None:
@@ -456,8 +457,6 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
-        if self._verify is not None:
-            session.verify = self._verify
 
         kwargs: dict[str, Any] = {
             "url": urljoin(self.url, endpoint),
@@ -582,8 +581,6 @@ class Client:
         )
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", adapter)
-        if self._verify is not None:
-            session.verify = self._verify
 
         kwargs: dict[str, Any] = {
             "url": url,
@@ -692,7 +689,6 @@ class Client:
                     refresh_token,
                     oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
                     client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
-                    verify=self._verify,
                 )
                 save_tokens(session, tokens)
             except Exception as exc:

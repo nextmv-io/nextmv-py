@@ -13,7 +13,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.auth import get_verify, run_pkce_flow, save_tokens
+from nextmv.auth import apply_system_certs, run_pkce_flow, save_tokens
 from nextmv.cli.message import error, in_progress, info, success, warning
 from nextmv.config import (
     CLIENT_ID_KEY,
@@ -151,7 +151,8 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
 
     for (session, endpoint), profile_names in seen_sessions.items():
         oidc_discovery_url, oidc_client_id = session_oidc[(session, endpoint)]
-        verify = get_verify(session_system_certs.get((session, endpoint), False))
+        if session_system_certs.get((session, endpoint), False):
+            apply_system_certs()
         profiles_display = ", ".join(f"[magenta]{n}[/magenta]" for n in profile_names)
         in_progress(
             f"Logging in to session [magenta]{session}[/magenta] "
@@ -163,7 +164,6 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
                 oidc_discovery_url=oidc_discovery_url,
                 client_id=oidc_client_id,
                 force=force,
-                verify=verify,
             )
             save_tokens(session, tokens)
             success(f"Logged in to session [magenta]{session}[/magenta] successfully.")
