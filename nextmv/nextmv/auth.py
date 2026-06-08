@@ -51,6 +51,7 @@ SCOPES
 
 import base64
 import hashlib
+import html
 import http.server
 import json
 import os
@@ -244,9 +245,7 @@ def _validate_token_response(tokens: dict[str, Any]) -> None:
     if token_type is None:
         raise ValueError("Token response missing required field 'token_type'.")
     if str(token_type).lower() != "bearer":
-        raise ValueError(
-            f"Unsupported token_type {token_type!r}; only 'bearer' is supported."
-        )
+        raise ValueError(f"Unsupported token_type {token_type!r}; only 'bearer' is supported.")
 
 
 def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
@@ -321,31 +320,94 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
     Minimal HTTP handler that captures the OAuth2 callback query parameters.
 
     The captured parameters are stored in ``self.server.callback_params``.
+    Only the root path (``/``) is accepted; any other path returns a 404.
     """
+
+    # Simple Nextmv logo as an inline SVG.
+    _LOGO_SVG = (
+        '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">'  # noqa: E501
+        '<path d="M14.7642 17.7171C14.3087 14.9415 13.2695 11.9682 13.2695 11.9682C13.2695 11.9682 14.123 9.43872 15.4541 7.0242C16.7852 4.60968 18.2136 3 18.2136 3C18.2136 3 21.318 9.5537 20.973 15.9924C20.7155 20.7993 18.7918 26.0548 17.8333 28.4099H15.1526C15.1526 28.4099 15.3387 21.2174 14.7642 17.7171Z" fill="#008393"/>'  # noqa: E501
+        '<path fill-rule="evenodd" clip-rule="evenodd" d="M5.45131 3C5.45131 3 10.5103 7.48411 12.5799 15.3026C14.0207 20.7457 13.7297 29.6747 13.7297 29.6747H10.5103C10.5103 29.6747 5.33899 22.5047 4.30156 17.1422C3.20512 11.4747 5.45131 3 5.45131 3ZM8.38998 9.96094C8.38998 9.96094 6.32617 11.8218 7.46745 17.1737C8.60874 22.5257 12.456 28.5733 12.456 28.5733C12.456 28.5733 12.2661 24.8898 11.5771 19.1028C10.8882 13.3157 8.38998 9.96094 8.38998 9.96094Z" fill="#005B6B"/>'  # noqa: E501
+        "</svg>"
+    )
+
+    # Simple HTML template for the callback response page.
+    _PAGE_TEMPLATE = (
+        "<!DOCTYPE html>"
+        '<html lang="en"><head>'
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "<title>{title}</title>"
+        "<style>"
+        "body{{font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;"
+        "justify-content:center;min-height:100vh;margin:0;background:#013641;color:#111827}}"
+        ".card{{text-align:center;padding:2.5rem 3rem;border-radius:1rem;"
+        "box-shadow:0 4px 12px rgba(0,0,0,.25);background:#fff;max-width:420px}}"
+        "h2{{margin:.75rem 0 .25rem;font-size:1.25rem}}"
+        "p{{margin:.25rem 0;color:#6b7280;font-size:.95rem}}"
+        ".ok h2{{color:#018494}}"
+        ".err h2{{color:#fc6262}}"
+        "</style></head><body>"
+        '<div class="card {cls}">'
+        "{logo}"
+        "<h2>{heading}</h2>"
+        "<p>{message}</p>"
+        "</div></body></html>"
+    )
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
+
+        # Only accept the root path — anything else is a 404.
+        if parsed.path != "/":
+            self._send_page(
+                404,
+                "Not Found",
+                "This page does not exist.",
+                "err",
+            )
+            return
+
         params = dict(urllib.parse.parse_qsl(parsed.query))
         # Store on the server instance so the main thread can read them.
         self.server.callback_params = params  # type: ignore[attr-defined]
 
+        logo = self._LOGO_SVG
+
         if "error" in params:
-            body = (
-                "<html><body>"
-                "<h2>Authentication failed.</h2>"
-                f"<p>{params.get('error_description', params['error'])}</p>"
-                "<p>You may close this tab.</p>"
-                "</body></html>"
-            ).encode()
+            escaped = html.escape(params.get("error_description", params["error"]))
+            self._send_page(
+                200,
+                "Authentication failed",
+                escaped,
+                "err",
+                logo,
+            )
         else:
-            body = (
-                b"<html><body>"
-                b"<h2>Authentication successful!</h2>"
-                b"<p>You may close this tab and return to your terminal.</p>"
-                b"</body></html>"
+            self._send_page(
+                200,
+                "Authentication successful!",
+                "You may close this tab and return to your terminal.",
+                "ok",
+                logo,
             )
 
-        self.send_response(200)
+    def _send_page(
+        self,
+        status: int,
+        title: str,
+        message: str,
+        cls: str,
+        logo: str = "",
+    ) -> None:
+        body = self._PAGE_TEMPLATE.format(
+            title=html.escape(title),
+            heading=html.escape(title),
+            message=message,
+            cls=cls,
+            logo=logo,
+        ).encode("utf-8")
+        self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -376,15 +438,23 @@ def _wait_for_callback(port: int) -> dict[str, str]:
     TimeoutError
         If no callback is received within ``_BROWSER_TIMEOUT`` seconds.
     RuntimeError
-        If the provider returns an error parameter.
+        If the provider returns an error parameter or the port cannot be bound.
     """
-    server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+    try:
+        server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Cannot start local auth server on port {port}: {exc}. Is another process already using this port?"
+        ) from exc
+
     server.callback_params = {}  # type: ignore[attr-defined]
     server.timeout = _BROWSER_TIMEOUT
 
-    # Handle exactly one request.
-    server.handle_request()
-    server.server_close()
+    try:
+        # Handle exactly one request.
+        server.handle_request()
+    finally:
+        server.server_close()
 
     params: dict[str, str] = server.callback_params  # type: ignore[attr-defined]
     if not params:
