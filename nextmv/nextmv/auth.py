@@ -268,6 +268,8 @@ def _generate_pkce_pair() -> tuple[str, str]:
     The verifier is a cryptographically random URL-safe string (43-128 chars as per
     RFC 7636). The challenge is the base64url-encoded SHA-256 hash of the verifier.
 
+    See https://datatracker.ietf.org/doc/html/rfc7636#section-4.2 for details.
+
     Returns
     -------
     tuple[str, str]
