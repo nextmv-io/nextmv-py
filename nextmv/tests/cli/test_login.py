@@ -1,5 +1,5 @@
 """
-Unit tests for the ``nextmv login`` command.
+Unit tests for the ``nextmv auth login`` command.
 """
 
 import unittest
@@ -27,13 +27,13 @@ class TestLoginDeduplication(unittest.TestCase):
         if sessions is None:
             sessions = {}
         with (
-            patch("nextmv.cli.login.load_config", return_value=config),
-            patch("nextmv.cli.login.load_sessions", return_value=sessions),
-            patch("nextmv.cli.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
-            patch("nextmv.cli.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
-            patch("nextmv.cli.login.save_tokens") as mock_save,
+            patch("nextmv.cli.auth.login.load_config", return_value=config),
+            patch("nextmv.cli.auth.login.load_sessions", return_value=sessions),
+            patch("nextmv.cli.auth.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
+            patch("nextmv.cli.auth.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
+            patch("nextmv.cli.auth.login.save_tokens") as mock_save,
         ):
-            result = self.runner.invoke(app, ["login"])
+            result = self.runner.invoke(app, ["auth", "login"])
             return result, mock_flow, mock_save
 
     def test_single_profile_one_flow(self):
@@ -87,13 +87,13 @@ class TestLoginDeduplication(unittest.TestCase):
             return prod_oidc
 
         with (
-            patch("nextmv.cli.login.load_config", return_value=config),
-            patch("nextmv.cli.login.load_sessions", return_value={}),
-            patch("nextmv.cli.login.get_endpoint_oidc_config", side_effect=oidc_side_effect),
-            patch("nextmv.cli.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
-            patch("nextmv.cli.login.save_tokens") as mock_save,
+            patch("nextmv.cli.auth.login.load_config", return_value=config),
+            patch("nextmv.cli.auth.login.load_sessions", return_value={}),
+            patch("nextmv.cli.auth.login.get_endpoint_oidc_config", side_effect=oidc_side_effect),
+            patch("nextmv.cli.auth.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
+            patch("nextmv.cli.auth.login.save_tokens") as mock_save,
         ):
-            result = self.runner.invoke(app, ["login"])
+            result = self.runner.invoke(app, ["auth", "login"])
 
         self.assertEqual(result.exit_code, 0, result.output)
         self.assertEqual(mock_flow.call_count, 2)
@@ -112,13 +112,13 @@ class TestLoginDeduplication(unittest.TestCase):
         """Profile with no OIDC config is skipped and exits non-zero."""
         config = {"auth_type": "pkce", "endpoint": "unknown.example.com"}
         with (
-            patch("nextmv.cli.login.load_config", return_value=config),
-            patch("nextmv.cli.login.load_sessions", return_value={}),
-            patch("nextmv.cli.login.get_endpoint_oidc_config", return_value=None),
-            patch("nextmv.cli.login.run_pkce_flow") as mock_flow,
-            patch("nextmv.cli.login.save_tokens") as mock_save,
+            patch("nextmv.cli.auth.login.load_config", return_value=config),
+            patch("nextmv.cli.auth.login.load_sessions", return_value={}),
+            patch("nextmv.cli.auth.login.get_endpoint_oidc_config", return_value=None),
+            patch("nextmv.cli.auth.login.run_pkce_flow") as mock_flow,
+            patch("nextmv.cli.auth.login.save_tokens") as mock_save,
         ):
-            result = self.runner.invoke(app, ["login"])
+            result = self.runner.invoke(app, ["auth", "login"])
 
         self.assertNotEqual(result.exit_code, 0)
         mock_flow.assert_not_called()
@@ -131,13 +131,13 @@ class TestLoginDeduplication(unittest.TestCase):
             "staging": {"auth_type": "pkce", "endpoint": "api.cloud.nextmv.io", "auth_session": "work"},
         }
         with (
-            patch("nextmv.cli.login.load_config", return_value=config),
-            patch("nextmv.cli.login.load_sessions", return_value={}),
-            patch("nextmv.cli.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
-            patch("nextmv.cli.login.run_pkce_flow", side_effect=RuntimeError("browser closed")),
-            patch("nextmv.cli.login.save_tokens") as mock_save,
+            patch("nextmv.cli.auth.login.load_config", return_value=config),
+            patch("nextmv.cli.auth.login.load_sessions", return_value={}),
+            patch("nextmv.cli.auth.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
+            patch("nextmv.cli.auth.login.run_pkce_flow", side_effect=RuntimeError("browser closed")),
+            patch("nextmv.cli.auth.login.save_tokens") as mock_save,
         ):
-            result = self.runner.invoke(app, ["login"])
+            result = self.runner.invoke(app, ["auth", "login"])
 
         self.assertNotEqual(result.exit_code, 0)
         mock_save.assert_not_called()
@@ -153,13 +153,13 @@ class TestLoginForceFlag(unittest.TestCase):
 
     def _invoke(self, extra_args=None):
         config = {"auth_type": "pkce", "endpoint": "api.cloud.nextmv.io"}
-        args = ["login"] + (extra_args or [])
+        args = ["auth", "login"] + (extra_args or [])
         with (
-            patch("nextmv.cli.login.load_config", return_value=config),
-            patch("nextmv.cli.login.load_sessions", return_value={}),
-            patch("nextmv.cli.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
-            patch("nextmv.cli.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
-            patch("nextmv.cli.login.save_tokens"),
+            patch("nextmv.cli.auth.login.load_config", return_value=config),
+            patch("nextmv.cli.auth.login.load_sessions", return_value={}),
+            patch("nextmv.cli.auth.login.get_endpoint_oidc_config", return_value=_BUILTIN_OIDC_CFG),
+            patch("nextmv.cli.auth.login.run_pkce_flow", return_value=_FAKE_TOKENS) as mock_flow,
+            patch("nextmv.cli.auth.login.save_tokens"),
         ):
             result = self.runner.invoke(app, args)
             return result, mock_flow

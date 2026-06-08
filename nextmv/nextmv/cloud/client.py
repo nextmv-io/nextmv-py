@@ -648,7 +648,7 @@ class Client:
         ValueError
             If the profile is ``pkce`` but no tokens are stored yet, or
             if the refresh attempt fails (directing the user to run
-            ``nextmv login``).
+            ``nextmv auth login``).
         """
 
         # Explicit credential takes precedence over PKCE — skip entirely.
@@ -667,7 +667,7 @@ class Client:
         session = get_auth_session(config, profile)
         tokens = load_tokens(session)
         display = profile if profile is not None else "default"
-        login_cmd = f"nextmv login{' --profile ' + display if profile else ''}"
+        login_cmd = f"nextmv auth login{' --profile ' + display if profile else ''}"
 
         if tokens is None:
             raise ValueError(f"No tokens found for pkce profile '{display}'. Please run '{login_cmd}' first.")

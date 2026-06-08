@@ -1,8 +1,8 @@
 """
-This module defines the ``nextmv login`` command for the Nextmv CLI.
+This module defines the ``nextmv auth login`` command for the Nextmv CLI.
 
-Running ``nextmv login`` executes the PKCE authorization-code flow for every
-``pkce`` profile configured in ``~/.nextmv/config.yaml``, or for a
+Running ``nextmv auth login`` executes the PKCE authorization-code flow for
+every ``pkce`` profile configured in ``~/.nextmv/config.yaml``, or for a
 specific profile when ``--profile`` is given.  Tokens are stored under
 ``~/.nextmv/auth/<session>/tokens.json``, where ``<session>`` is the
 ``auth_session`` value configured on the profile (or ``default`` when
@@ -30,10 +30,10 @@ from nextmv.config import (
 )
 
 # Set up subcommand application.
-app = typer.Typer(invoke_without_command=True)
+app = typer.Typer()
 
 
-@app.callback()
+@app.command()
 def login(
     force: Annotated[
         bool,
@@ -72,19 +72,19 @@ def login(
     [bold][underline]Examples[/underline][/bold]
 
     - Log in with the default auth profile.
-        $ [dim]nextmv login[/dim]
+        $ [dim]nextmv auth login[/dim]
 
     - Log in with a specific named profile.
-        $ [dim]nextmv login --profile my-auth-profile[/dim]
+        $ [dim]nextmv auth login --profile my-auth-profile[/dim]
 
     - Force re-authentication, bypassing any active browser session.
-        $ [dim]nextmv login --force[/dim]
+        $ [dim]nextmv auth login --force[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
         error(
             "[magenta]default[/magenta] is a reserved profile name. "
-            "Use [code]nextmv login[/code] without a profile to log in to the default profile."
+            "Use [code]nextmv auth login[/code] without a profile to log in to the default profile."
         )
 
     config = load_config()
@@ -103,7 +103,7 @@ def login(
             error(
                 f"Profile [magenta]{profile}[/magenta] is not a [magenta]pkce[/magenta] profile "
                 f"(it is [magenta]{ptype}[/magenta]). "
-                "Only [magenta]pkce[/magenta] profiles require [code]nextmv login[/code]."
+                "Only [magenta]pkce[/magenta] profiles require [code]nextmv auth login[/code]."
             )
         profiles_to_login: list[str | None] = [profile]
     else:

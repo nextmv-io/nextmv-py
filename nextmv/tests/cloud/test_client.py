@@ -617,14 +617,14 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                         self.assertIn("no refresh token", str(ctx.exception))
 
     def test_missing_tokens_raises(self):
-        """No stored tokens raises ValueError directing the user to nextmv login."""
+        """No stored tokens raises ValueError directing the user to nextmv auth login."""
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=None):
                 with patch.dict(os.environ) as env:
                     _clean_env(env)
                     with self.assertRaises(ValueError) as ctx:
                         Client(profile="my-auth-profile")
-                    self.assertIn("nextmv login", str(ctx.exception))
+                    self.assertIn("nextmv auth login", str(ctx.exception))
 
     def test_refresh_failure_raises(self):
         """A failed token refresh raises ValueError with a helpful message."""

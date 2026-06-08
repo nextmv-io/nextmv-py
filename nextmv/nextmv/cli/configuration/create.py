@@ -146,7 +146,7 @@ def create(
     Create a new configuration or update an existing one.
 
     [magenta]pkce[/magenta] profiles require a separate login step via
-    [code]nextmv login[/code] before they can be used.
+    [code]nextmv auth login[/code] before they can be used.
 
     Multiple [magenta]pkce[/magenta] profiles can share a single browser login
     by referencing the same [magenta]--auth-session[/magenta] name, automatically
