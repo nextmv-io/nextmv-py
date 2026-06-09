@@ -74,9 +74,18 @@ class ApplicationEnsembleMixin:
 
         return EnsembleDefinition.from_dict(response.json())
 
-    def list_ensemble_definitions(self: "Application") -> list[EnsembleDefinition]:
+    def list_ensemble_definitions(self: "Application", no_pagination: bool = False) -> list[EnsembleDefinition]:
         """
         List all ensemble_definitions.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -97,12 +106,14 @@ class ApplicationEnsembleMixin:
         'Production Ensemble Definition'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.ensembles_endpoint}",
         )
+        response_defs = response.json().get("items", []) if no_pagination else response
 
-        return [EnsembleDefinition.from_dict(ensemble_definition) for ensemble_definition in response.json()["items"]]
+        return [EnsembleDefinition.from_dict(ensemble_definition) for ensemble_definition in response_defs or []]
 
     def new_ensemble_defintion(
         self: "Application",
