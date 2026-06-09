@@ -464,7 +464,8 @@ class Client:
         payload: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
-        max_pages: int = 1000,
+        max_pages: int | None = 1000,
+        items_key: str | None = "items",
     ) -> list[dict[str, Any]]:
         """
         Makes paginated requests to the Nextmv Cloud API and returns all items.
@@ -500,6 +501,9 @@ class Client:
         max_pages : int, optional
             Maximum number of pages to fetch. Defaults to 1000. This prevents
             infinite loops if the API returns malformed pagination tokens.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
 
         Returns
         -------
@@ -558,6 +562,7 @@ class Client:
                 query_params=query_params,
                 json_configurations=json_configurations,
                 max_pages=max_pages,
+                items_key=items_key,
             )
         )
 
@@ -571,6 +576,7 @@ class Client:
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
         max_pages: int = 1000,
+        items_key: str | None = "items",
     ) -> Generator[dict[str, Any], None, None]:
         """
         Generator that yields items from paginated API responses one at a time.
@@ -608,6 +614,9 @@ class Client:
         max_pages : int, optional
             Maximum number of pages to fetch. Defaults to 1000. This prevents
             infinite loops if the API returns malformed pagination tokens.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
 
         Yields
         ------
@@ -670,6 +679,7 @@ class Client:
             query_params=query_params,
             json_configurations=json_configurations,
             max_pages=max_pages,
+            items_key=items_key,
         )
 
     def upload_to_presigned_url(
@@ -953,7 +963,8 @@ class Client:
         payload: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
-        max_pages: int = 1000,
+        max_pages: int | None = 1000,
+        items_key: str | None = "items",
     ) -> Generator[dict[str, Any], None, None]:
         """
         Internal generator that handles pagination logic.
@@ -980,6 +991,9 @@ class Client:
             Additional configurations for JSON serialization.
         max_pages : int, optional
             Maximum number of pages to fetch. Defaults to 1000.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
 
         Yields
         ------
@@ -1034,11 +1048,11 @@ class Client:
             page_count += 1
 
             # Yield items from the current page one at a time
-            page_items = resp_json.get("items")
+            page_items = resp_json.get(items_key)
             if page_items is not None:
                 if not isinstance(page_items, list):
                     raise ValueError(
-                        f"API response 'items' field from {endpoint} is not a list. "
+                        f"API response '{items_key}' field from {endpoint} is not a list. "
                         f"Got {type(page_items).__name__} instead."
                     )
                 yield from page_items
