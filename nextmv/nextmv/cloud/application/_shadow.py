@@ -121,9 +121,18 @@ class ApplicationShadowMixin:
             endpoint=f"{self.experiments_endpoint}/shadow/{shadow_test_id}",
         )
 
-    def list_shadow_tests(self: "Application") -> list[ShadowTest]:
+    def list_shadow_tests(self: "Application", no_pagination: bool = False) -> list[ShadowTest]:
         """
         List all shadow tests.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -136,12 +145,14 @@ class ApplicationShadowMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/shadow",
         )
+        response_tests = response.json() if no_pagination else response
 
-        return [ShadowTest.from_dict(shadow_test) for shadow_test in response.json()]
+        return [ShadowTest.from_dict(shadow_test) for shadow_test in response_tests or []]
 
     def new_shadow_test(
         self: "Application",
