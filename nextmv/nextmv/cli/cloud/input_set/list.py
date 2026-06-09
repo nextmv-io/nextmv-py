@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -34,7 +35,9 @@ def list(
     List all input sets of a Nextmv Cloud application.
 
     This command retrieves all input sets that exist for a given Nextmv Cloud
-    application.
+    application. By default this command paginates the list of input sets,
+    which means multiple API calls may be made to retrieve all input sets. You
+    may use the --no-pagination option to disable pagination.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -46,11 +49,14 @@ def list(
 
     - List all input sets and save the information to a [magenta]input-sets.json[/magenta] file.
         $ [dim]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/dim]
+
+    - List all input sets without pagination.
+        $ [dim]nextmv cloud input-set list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing input sets...")
-    input_sets = cloud_app.list_input_sets()
+    input_sets = cloud_app.list_input_sets(no_pagination)
     input_sets_dicts = [input_set.to_dict() for input_set in input_sets]
 
     if output is not None and output != "":
