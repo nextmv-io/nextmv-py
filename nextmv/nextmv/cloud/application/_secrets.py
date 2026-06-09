@@ -40,9 +40,18 @@ class ApplicationSecretsMixin:
             endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
         )
 
-    def list_secrets_collections(self: "Application") -> list[SecretsCollectionSummary]:
+    def list_secrets_collections(self: "Application", no_pagination: bool = False) -> list[SecretsCollectionSummary]:
         """
         List all secrets collections.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -63,12 +72,14 @@ class ApplicationSecretsMixin:
         'Database Credentials'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.endpoint}/secrets",
         )
+        response_secrets = response.json().get("items", []) if no_pagination else response
 
-        return [SecretsCollectionSummary.from_dict(secrets) for secrets in response.json()["items"]]
+        return [SecretsCollectionSummary.from_dict(secrets) for secrets in response_secrets]
 
     def new_secrets_collection(
         self: "Application",
