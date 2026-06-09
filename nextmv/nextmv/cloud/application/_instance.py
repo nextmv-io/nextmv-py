@@ -106,9 +106,18 @@ class ApplicationInstanceMixin:
                 return False
             raise e
 
-    def list_instances(self: "Application") -> list[Instance]:
+    def list_instances(self: "Application", no_pagination: bool = False) -> list[Instance]:
         """
         List all instances.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -129,12 +138,14 @@ class ApplicationInstanceMixin:
         'Production Instance'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.endpoint}/instances",
         )
+        response_instances = response.json() if no_pagination else response
 
-        return [Instance.from_dict(instance) for instance in response.json()]
+        return [Instance.from_dict(instance) for instance in response_instances or []]
 
     def new_instance(
         self: "Application",
