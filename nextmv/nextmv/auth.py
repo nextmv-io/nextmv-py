@@ -315,6 +315,52 @@ def _validate_token_response(tokens: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported token_type {token_type!r}; only 'bearer' is supported.")
 
 
+def _validate_id_token(id_token: str, client_id: str) -> None:
+    """
+    Validate the JWT *id_token* claims.
+
+    Checks that:
+
+    - The ``aud`` (audience) claim matches *client_id*.
+    - The ``exp`` (expires) claim is a future timestamp.
+
+    The token is decoded without signature verification; the TLS-protected
+    token exchange response is the trust anchor, not the JWT signature.
+
+    Parameters
+    ----------
+    id_token : str
+        The raw JWT id_token string.
+    client_id : str
+        The expected audience (OAuth2 client ID).
+
+    Raises
+    ------
+    ValueError
+        If the token cannot be decoded, ``aud`` does not match, or the token
+        has expired.
+    """
+    try:
+        payload_b64 = id_token.split(".")[1]
+        # Restore base64url padding.
+        payload_b64 += "=" * (4 - len(payload_b64) % 4)
+        payload_bytes = base64.urlsafe_b64decode(payload_b64)
+        claims = json.loads(payload_bytes)
+    except Exception as exc:
+        raise ValueError(f"Failed to decode id_token: {exc}") from exc
+
+    aud = claims.get("aud")
+    if aud != client_id:
+        raise ValueError(f"id_token aud claim {aud!r} does not match client_id {client_id!r}.")
+
+    exp = claims.get("exp")
+    if not isinstance(exp, (int, float)):
+        raise ValueError("id_token is missing an 'exp' claim.")
+    now = datetime.now(tz=timezone.utc).timestamp()
+    if exp < now:
+        raise ValueError("id_token has expired.")
+
+
 def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
     """
     Fetch the OIDC discovery document and return

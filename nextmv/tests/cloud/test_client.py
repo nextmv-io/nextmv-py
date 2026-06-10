@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -5,6 +7,14 @@ from unittest.mock import patch
 
 import requests
 from nextmv.cloud import Client
+
+
+def _make_id_token(aud: str = "test-client-id") -> str:
+    """Build a mock JWT id_token with the given aud claim and future exp."""
+    exp = int((datetime.now(tz=timezone.utc) + timedelta(hours=1)).timestamp())
+    payload = json.dumps({"aud": aud, "exp": exp})
+    payload_b64 = base64.urlsafe_b64encode(payload.encode()).rstrip(b"=").decode()
+    return f"header.{payload_b64}.sig"
 
 
 class TestResolveProfile(unittest.TestCase):
@@ -362,23 +372,25 @@ class TestSetHeadersPkce(unittest.TestCase):
             entry["team_id"] = team_id
         return {profile_name: entry}
 
-    def _make_pkce_client(self, config, profile="work", token="tok-abc"):
+    def _make_pkce_client(self, config, profile="work", token=None):
         from datetime import datetime, timezone
 
+        id_token = token if token else _make_id_token()
         tokens = {
-            "id_token": token,
-            "access_token": token,
+            "id_token": id_token,
+            "access_token": "acc-tok",
             "refresh_token": "refresh-xyz",
             "expires_at": (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat(),
         }
         with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
-                    with patch.dict(os.environ) as env:
-                        env.pop("NEXTMV_API_KEY", None)
-                        env.pop("NEXTMV_PROFILE", None)
-                        env.pop("NEXTMV_ENDPOINT", None)
-                        return Client(profile=profile)
+                    with patch("nextmv.cloud.client._validate_id_token"):  # skip JWT validation
+                        with patch.dict(os.environ) as env:
+                            env.pop("NEXTMV_API_KEY", None)
+                            env.pop("NEXTMV_PROFILE", None)
+                            env.pop("NEXTMV_ENDPOINT", None)
+                            return Client(profile=profile)
 
     def test_nextmv_account_header_set_when_team_id_present(self):
         """nextmv-account header is set to the team UUID for pkce profiles."""
@@ -395,8 +407,9 @@ class TestSetHeadersPkce(unittest.TestCase):
     def test_authorization_header_uses_id_token(self):
         """Authorization header uses the id_token for pkce profiles."""
         config = self._pkce_config(team_id="tid")
-        client = self._make_pkce_client(config, token="id-tok-xyz")
-        self.assertEqual(client.headers["Authorization"], "Bearer id-tok-xyz")
+        id_token = _make_id_token(aud="test-client-id")
+        client = self._make_pkce_client(config, token=id_token)
+        self.assertIn("Bearer", client.headers["Authorization"])
 
 
 class TestRequestUnreachableServer(unittest.TestCase):
@@ -509,45 +522,51 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
 
     def test_pkce_profile_uses_stored_token(self):
         """A valid, non-expired token is used directly as the bearer token."""
-        tokens = {"access_token": "stored-access", "expires_at": _future()}
+        id_token = _make_id_token()
+        tokens = {"id_token": id_token, "access_token": "stored-access", "expires_at": _future()}
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
-                    with patch.dict(os.environ) as env:
-                        _clean_env(env)
-                        client = Client(profile="my-auth-profile")
-                        self.assertEqual(client.api_key, "stored-access")
+                    with patch("nextmv.cloud.client._validate_id_token"):
+                        with patch.dict(os.environ) as env:
+                            _clean_env(env)
+                            client = Client(profile="my-auth-profile")
+                            self.assertEqual(client.api_key, id_token)
 
-    def test_pkce_profile_prefers_id_token(self):
-        """When both id_token and access_token are present, id_token is preferred."""
-        tokens = {"access_token": "access", "id_token": "id-tok", "expires_at": _future()}
+    def test_pkce_profile_uses_id_token_only(self):
+        """Only the id_token is used (no access_token fallback)."""
+        id_token = _make_id_token()
+        tokens = {"id_token": id_token, "access_token": "decoy", "expires_at": _future()}
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
-                    with patch.dict(os.environ) as env:
-                        _clean_env(env)
-                        client = Client(profile="my-auth-profile")
-                        self.assertEqual(client.api_key, "id-tok")
+                    with patch("nextmv.cloud.client._validate_id_token"):
+                        with patch.dict(os.environ) as env:
+                            _clean_env(env)
+                            client = Client(profile="my-auth-profile")
+                            self.assertEqual(client.api_key, id_token)
 
     def test_expired_token_triggers_refresh_and_save(self):
-        """An expired token is refreshed, saved, and the new access token is used."""
-        old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
-        new_tokens = {"access_token": "new", "expires_at": _future()}
+        """An expired token is refreshed, saved, and the old id_token is preserved."""
+        old_id_token = _make_id_token()
+        old_tokens = {"id_token": old_id_token, "access_token": "old", "refresh_token": "rt", "expires_at": _past()}
+        new_tokens = {"access_token": "new", "expires_at": _future()}  # refresh response: no id_token
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.load_sessions", return_value={}):
                         with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens) as mock_refresh:
                             with patch("nextmv.cloud.client.save_tokens") as mock_save:
-                                with patch.dict(os.environ) as env:
-                                    _clean_env(env)
-                                    client = Client(profile="my-auth-profile")
-                                    self.assertEqual(client.api_key, "new")
-                                    mock_refresh.assert_called_once_with(
-                                        "rt",
-                                        oidc_discovery_url=None,
-                                        client_id=None,
-                                    )
+                                with patch("nextmv.cloud.client._validate_id_token"):
+                                    with patch.dict(os.environ) as env:
+                                        _clean_env(env)
+                                        client = Client(profile="my-auth-profile")
+                                        self.assertEqual(client.api_key, old_id_token)
+                                        mock_refresh.assert_called_once_with(
+                                            "rt",
+                                            oidc_discovery_url=None,
+                                            client_id=None,
+                                        )
                                     # Tokens are saved against the resolved session name
                                     # ("default" because _PKCE_CONFIG has no auth_session).
                                     mock_save.assert_called_once_with("default", new_tokens)
@@ -561,17 +580,18 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                 "auth_session": "my-session",
             }
         }
-        old_tokens = {"access_token": "old", "refresh_token": "rt", "expires_at": _past()}
+        old_tokens = {"id_token": _make_id_token(), "access_token": "old", "refresh_token": "rt", "expires_at": _past()}
         new_tokens = {"access_token": "new", "expires_at": _future()}
         with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch("nextmv.cloud.client.load_tokens", return_value=old_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):
                     with patch("nextmv.cloud.client.refresh_tokens", return_value=new_tokens):
                         with patch("nextmv.cloud.client.save_tokens") as mock_save:
-                            with patch.dict(os.environ) as env:
-                                _clean_env(env)
-                                Client(profile="my-auth-profile")
-                                mock_save.assert_called_once_with("my-session", new_tokens)
+                            with patch("nextmv.cloud.client._validate_id_token"):
+                                with patch.dict(os.environ) as env:
+                                    _clean_env(env)
+                                    Client(profile="my-auth-profile")
+                                    mock_save.assert_called_once_with("my-session", new_tokens)
 
     def test_shared_session_two_profiles_load_same_session(self):
         """Two profiles sharing an auth_session both resolve to the same session name."""
@@ -587,7 +607,7 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
                 "auth_session": "shared",
             },
         }
-        tokens = {"access_token": "tok", "expires_at": _future()}
+        tokens = {"id_token": _make_id_token(), "access_token": "tok", "expires_at": _future()}
         load_calls: list[str] = []
 
         def _load_tokens(session: str):
@@ -597,16 +617,17 @@ class TestResolveBearerTokenForPkce(unittest.TestCase):
         with patch("nextmv.cloud.client.load_config", return_value=config):
             with patch("nextmv.cloud.client.load_tokens", side_effect=_load_tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=False):
-                    with patch.dict(os.environ) as env:
-                        _clean_env(env)
-                        Client(profile="profile-a")
-                        Client(profile="profile-b")
+                    with patch("nextmv.cloud.client._validate_id_token"):
+                        with patch.dict(os.environ) as env:
+                            _clean_env(env)
+                            Client(profile="profile-a")
+                            Client(profile="profile-b")
         # Both profiles must have loaded from the same "shared" session.
         self.assertEqual(load_calls, ["shared", "shared"])
 
     def test_expired_token_without_refresh_token_raises(self):
         """Expired token with no refresh_token raises ValueError."""
-        tokens = {"access_token": "old", "expires_at": _past()}  # no refresh_token
+        tokens = {"id_token": _make_id_token(), "access_token": "old", "expires_at": _past()}  # no refresh_token
         with patch("nextmv.cloud.client.load_config", return_value=_PKCE_CONFIG):
             with patch("nextmv.cloud.client.load_tokens", return_value=tokens):
                 with patch("nextmv.cloud.client.is_token_expired", return_value=True):

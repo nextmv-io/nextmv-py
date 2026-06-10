@@ -25,6 +25,8 @@ from requests.adapters import HTTPAdapter, Retry
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
 from nextmv.auth import (
+    CLIENT_ID,
+    _validate_id_token,
     apply_system_certs,
     delete_tokens,
     is_invalid_grant_error,
@@ -673,6 +675,9 @@ class Client:
         tokens = load_tokens(session)
         display = profile if profile is not None else "default"
         login_cmd = f"nextmv auth login{' --profile ' + display if profile else ''}"
+        endpoint = get_profile_endpoint(config, profile)
+        oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
+        expected_aud = (oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None) or CLIENT_ID
 
         if tokens is None:
             raise ValueError(f"No tokens found for pkce profile '{display}'. Please run '{login_cmd}' first.")
@@ -684,17 +689,16 @@ class Client:
                     f"Access token for profile '{display}' has expired and no refresh token is available. "
                     f"Please run '{login_cmd}' to re-authenticate."
                 )
+            old_id_token = tokens.get("id_token")
             try:
-                # Resolve endpoint-specific OIDC config so that non-production endpoints
-                # use the correct token endpoint and client ID rather than falling back to
-                # the production defaults.
-                endpoint = get_profile_endpoint(config, profile)
-                oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
                 tokens = refresh_tokens(
                     refresh_token,
                     oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
                     client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
                 )
+                # Cognito refresh does not include a new id_token; preserve the old one.
+                if "id_token" not in tokens and old_id_token:
+                    tokens["id_token"] = old_id_token
                 save_tokens(session, tokens)
             except Exception as exc:
                 # If the refresh token was revoked or expired (invalid_grant),
@@ -706,15 +710,15 @@ class Client:
                     f"Please run '{login_cmd}' to re-authenticate."
                 ) from exc
 
-        # Prefer the id_token when present — API Gateway Cognito authorizers
-        # validate the id_token (which carries the `aud` claim).  Fall back to
-        # access_token for authorizers that accept either.
-        token = tokens.get("id_token") or tokens.get("access_token")
+        token = tokens.get("id_token")
         if not token:
             raise ValueError(
-                f"Stored tokens for profile '{display}' do not contain an access token. "
+                f"Stored tokens for profile '{display}' do not contain an id_token. "
                 f"Please run '{login_cmd}' to re-authenticate."
             )
+
+        # Validate the id_token's aud and exp claims before accepting it.
+        _validate_id_token(token, expected_aud)
 
         # Resolve the team ID stored in the profile config; sent as the
         # nextmv-account header to scope requests to the correct team.

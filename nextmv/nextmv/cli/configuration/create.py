@@ -8,6 +8,8 @@ import typer
 from rich.prompt import Prompt
 
 from nextmv.auth import (
+    CLIENT_ID,
+    _validate_id_token,
     apply_system_certs,
     delete_tokens,
     fetch_organizations,
@@ -418,13 +420,16 @@ def _ensure_token(
     client_id: str | None,
 ) -> str:
     """
-    Return a valid access token for *session*, running the PKCE browser flow
+    Return a valid id_token for *session*, running the PKCE browser flow
     only when necessary.
 
     Token resolution order:
     1. Load existing tokens from disk for *session*.
     2. If expired but a refresh token is present, refresh silently.
     3. If no tokens exist (or refresh fails), run the full browser PKCE flow.
+
+    The id_token's ``aud`` and ``exp`` claims are validated before it is
+    accepted.
 
     Parameters
     ----------
@@ -435,33 +440,40 @@ def _ensure_token(
     oidc_discovery_url : str | None
         OIDC discovery URL; passed through to the PKCE flow.
     client_id : str | None
-        OAuth2 client ID; passed through to the PKCE flow.
+        OAuth2 client ID; passed through to the PKCE flow and used for id_token
+        validation.
 
     Returns
     -------
     str
-        A valid access token (id_token preferred, access_token as fallback).
+        A valid id_token.
     """
+    expected_aud = client_id or CLIENT_ID
     tokens = load_tokens(session)
 
     if tokens is not None and not is_token_expired(tokens):
-        # Happy path: existing, valid token.
-        token = tokens.get("id_token") or tokens.get("access_token")
+        token = tokens.get("id_token")
         if token:
+            _validate_id_token(token, expected_aud)
             return token
 
     if tokens is not None and is_token_expired(tokens):
         refresh_token = tokens.get("refresh_token")
         if refresh_token:
             try:
+                old_id_token = tokens.get("id_token")
                 tokens = refresh_tokens(
                     refresh_token,
                     client_id=client_id,
                     oidc_discovery_url=oidc_discovery_url,
                 )
+                # Cognito refresh does not include a new id_token; preserve the old one.
+                if "id_token" not in tokens and old_id_token:
+                    tokens["id_token"] = old_id_token
                 save_tokens(session, tokens)
-                token = tokens.get("id_token") or tokens.get("access_token")
+                token = tokens.get("id_token")
                 if token:
+                    _validate_id_token(token, expected_aud)
                     return token
             except Exception as exc:
                 # If the refresh token was revoked or expired (invalid_grant),
@@ -481,9 +493,10 @@ def _ensure_token(
         client_id=client_id,
     )
     save_tokens(session, tokens)
-    token = tokens.get("id_token") or tokens.get("access_token")
+    token = tokens.get("id_token")
     if not token:
-        error("Authentication succeeded but no access token was returned. Please try again.")
+        error("Authentication succeeded but no id_token was returned. Please try again.")
+    _validate_id_token(token, expected_aud)
     return token  # type: ignore[return-value]  # error() raises
 
 

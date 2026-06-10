@@ -160,6 +160,7 @@ class TestApplySystemCerts(unittest.TestCase):
     def test_calls_inject_into_ssl(self):
         import truststore  # noqa: F401
         from nextmv.auth import apply_system_certs
+
         with patch("truststore.inject_into_ssl") as mock_inject:
             apply_system_certs()
             mock_inject.assert_called_once()
@@ -167,6 +168,7 @@ class TestApplySystemCerts(unittest.TestCase):
     def test_idempotent(self):
         import truststore  # noqa: F401
         from nextmv.auth import apply_system_certs
+
         with patch("truststore.inject_into_ssl") as mock_inject:
             apply_system_certs()
             apply_system_certs()
@@ -178,31 +180,92 @@ class TestValidateTokenResponse(unittest.TestCase):
 
     def test_valid_bearer_response(self):
         from nextmv.auth import _validate_token_response
+
         # Should not raise.
         _validate_token_response({"access_token": "tok", "token_type": "Bearer"})
 
     def test_valid_bearer_case_insensitive(self):
         from nextmv.auth import _validate_token_response
+
         _validate_token_response({"access_token": "tok", "token_type": "bearer"})
         _validate_token_response({"access_token": "tok", "token_type": "BEARER"})
 
     def test_missing_access_token(self):
         from nextmv.auth import _validate_token_response
+
         with self.assertRaises(ValueError) as ctx:
             _validate_token_response({"token_type": "Bearer"})
         self.assertIn("access_token", str(ctx.exception))
 
     def test_missing_token_type(self):
         from nextmv.auth import _validate_token_response
+
         with self.assertRaises(ValueError) as ctx:
             _validate_token_response({"access_token": "tok"})
         self.assertIn("token_type", str(ctx.exception))
 
     def test_unsupported_token_type(self):
         from nextmv.auth import _validate_token_response
+
         with self.assertRaises(ValueError) as ctx:
             _validate_token_response({"access_token": "tok", "token_type": "mac"})
         self.assertIn("mac", str(ctx.exception))
+
+
+class TestValidateIdToken(unittest.TestCase):
+    """Tests for _validate_id_token JWT validation."""
+
+    @staticmethod
+    def _make_jwt(payload: dict) -> str:
+        import base64
+        import json
+
+        payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
+        return f"header.{payload_b64}.sig"
+
+    def test_valid_token_passes(self):
+        import time
+
+        from nextmv.auth import CLIENT_ID as cid
+        from nextmv.auth import _validate_id_token
+
+        jwt = self._make_jwt({"aud": cid, "exp": int(time.time()) + 3600})
+        _validate_id_token(jwt, cid)  # should not raise
+
+    def test_aud_mismatch_raises(self):
+        import time
+
+        from nextmv.auth import _validate_id_token
+
+        jwt = self._make_jwt({"aud": "wrong", "exp": int(time.time()) + 3600})
+        with self.assertRaises(ValueError) as ctx:
+            _validate_id_token(jwt, "expected")
+        self.assertIn("aud", str(ctx.exception))
+
+    def test_expired_token_raises(self):
+        import time
+
+        from nextmv.auth import CLIENT_ID as cid
+        from nextmv.auth import _validate_id_token
+
+        jwt = self._make_jwt({"aud": cid, "exp": int(time.time()) - 1})
+        with self.assertRaises(ValueError) as ctx:
+            _validate_id_token(jwt, cid)
+        self.assertIn("expired", str(ctx.exception).lower())
+
+    def test_missing_exp_raises(self):
+        from nextmv.auth import _validate_id_token
+
+        jwt = self._make_jwt({"aud": "x"})
+        with self.assertRaises(ValueError) as ctx:
+            _validate_id_token(jwt, "x")
+        self.assertIn("exp", str(ctx.exception))
+
+    def test_broken_jwt_raises(self):
+        from nextmv.auth import _validate_id_token
+
+        with self.assertRaises(ValueError):
+            _validate_id_token("not.a.jwt", "x")
 
 
 class TestDiscoverEndpoints(unittest.TestCase):
@@ -369,6 +432,7 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
             patch("nextmv.auth.requests.post", return_value=mock_token_resp),
         ):
             from nextmv.auth import run_pkce_flow
+
             run_pkce_flow(force=force)
 
         return opened_urls[0]
