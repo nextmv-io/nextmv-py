@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -33,6 +34,10 @@ def list(
     """
     List all managed inputs of a Nextmv Cloud application.
 
+    By default this command paginates the list of inputs, which means multiple
+    API calls may be made to retrieve all inputs. You may use the
+    --no-pagination option to disable pagination.
+
     [bold][underline]Examples[/underline][/bold]
 
     - List all managed inputs of application [magenta]hare-app[/magenta].
@@ -43,11 +48,14 @@ def list(
 
     - List all managed inputs and save the information to a [magenta]managed_inputs.json[/magenta] file.
         $ [dim]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/dim]
+
+    - List all managed inputs without pagination.
+        $ [dim]nextmv cloud managed-input list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing managed inputs...")
-    managed_inputs = cloud_app.list_managed_inputs()
+    managed_inputs = cloud_app.list_managed_inputs(no_pagination)
     managed_inputs_dicts = [managed_input.to_dict() for managed_input in managed_inputs]
 
     if output is not None and output != "":
