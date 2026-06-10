@@ -34,8 +34,8 @@ def list(
     """
     List all versions of a Nextmv Cloud application.
 
-    By default this command paginates the list of tests, which
-    means multiple API calls may be made to retrieve all tests. You may use the
+    By default this command paginates the list of versions, which means
+    multiple API calls may be made to retrieve all versions. You may use the
     --no-pagination option to disable pagination.
 
     [bold][underline]Examples[/underline][/bold]

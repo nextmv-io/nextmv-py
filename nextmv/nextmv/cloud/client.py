@@ -464,7 +464,7 @@ class Client:
         payload: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
-        max_pages: int | None = 1000,
+        max_pages: int | None = 500,
         items_key: str | None = "items",
     ) -> list[dict[str, Any]]:
         """
@@ -499,7 +499,7 @@ class Client:
             specifying `indent` for pretty printing or `default` for custom
             serialization functions.
         max_pages : int, optional
-            Maximum number of pages to fetch. Defaults to 1000. This prevents
+            Maximum number of pages to fetch. Defaults to 500. This prevents
             infinite loops if the API returns malformed pagination tokens.
         items_key : str, optional
             The key in the API response JSON that contains the list of items.
@@ -575,7 +575,7 @@ class Client:
         payload: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
-        max_pages: int = 1000,
+        max_pages: int = 500,
         items_key: str | None = "items",
     ) -> Generator[dict[str, Any], None, None]:
         """
@@ -612,7 +612,7 @@ class Client:
             specifying `indent` for pretty printing or `default` for custom
             serialization functions.
         max_pages : int, optional
-            Maximum number of pages to fetch. Defaults to 1000. This prevents
+            Maximum number of pages to fetch. Defaults to 500. This prevents
             infinite loops if the API returns malformed pagination tokens.
         items_key : str, optional
             The key in the API response JSON that contains the list of items.
@@ -963,8 +963,8 @@ class Client:
         payload: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         json_configurations: dict[str, Any] | None = None,
-        max_pages: int | None = 1000,
-        items_key: str | None = "items",
+        max_pages: int = 500,
+        items_key: str = "items",
     ) -> Generator[dict[str, Any], None, None]:
         """
         Internal generator that handles pagination logic.
@@ -990,7 +990,7 @@ class Client:
         json_configurations : dict[str, Any], optional
             Additional configurations for JSON serialization.
         max_pages : int, optional
-            Maximum number of pages to fetch. Defaults to 1000.
+            Maximum number of pages to fetch. Defaults to 500.
         items_key : str, optional
             The key in the API response JSON that contains the list of items.
             Defaults to "items".

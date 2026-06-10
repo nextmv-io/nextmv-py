@@ -131,6 +131,11 @@ class ApplicationSwitchbackMixin:
         `no_pagination` argument. With pagination enabled, this function will make
         multiple API calls if necessary to retrieve all entities.
 
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
+
         Returns
         -------
         list[SwitchbackTest]
