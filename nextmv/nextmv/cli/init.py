@@ -610,6 +610,19 @@ def _handle_app_sync() -> tuple[cloud.Application, list[ExecutedCommand]]:
         Exits the program if the user declines to sync or if the command fails.
     """
 
+    # Ask the user if they have an active Nextmv Plan, which is required to sync
+    # an app to Nextmv Cloud. If they don't, provide guidance and exit.
+    has_premium = confirmation(
+        "For the next step, you need an active Nextmv Plan. Do you have an active plan with Nextmv?",
+        default=True,
+    )
+    if not has_premium:
+        info(
+            "You can activate your Nextmv Plan by contacting "
+            "[link=https://www.nextmv.io/contact][bold]Nextmv support[/bold][/link]."
+        )
+        raise typer.Exit()
+
     # Ask the user if they want to sync their local application with Nextmv
     # Cloud or exit immediately.
     should_sync = confirmation(
@@ -697,19 +710,6 @@ def _handle_app_push(cloud_app: cloud.Application) -> tuple[str, ExecutedCommand
     typer.Exit
         Exits the program if the user declines to push the app.
     """
-
-    # Ask the user if they have an active Nextmv Plan, which is required to push
-    # an app to Nextmv Cloud. If they don't, provide guidance and exit.
-    has_premium = confirmation(
-        "For the next step, you need an active Nextmv Plan. Do you have an active plan with Nextmv?",
-        default=True,
-    )
-    if not has_premium:
-        info(
-            "You can activate your Nextmv Plan from the [magenta]Team Settings[/magenta] page in "
-            "the [link=https://cloud.nextmv.io]Nextmv Cloud Console[/link]."
-        )
-        raise typer.Exit()
 
     # If we got here, the user has an active Nextmv Plan. Ask if they want to
     # push their app to Nextmv Cloud or exit immediately.
