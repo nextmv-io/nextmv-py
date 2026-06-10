@@ -929,7 +929,6 @@ def list_applications(client: Client, no_pagination: bool = False) -> list[Appli
         If the response status code is not 2xx.
     """
 
-    applications = []
     func = client.request if no_pagination else client.request_with_pagination
     response = func(
         method="GET",
@@ -937,8 +936,4 @@ def list_applications(client: Client, no_pagination: bool = False) -> list[Appli
     )
     response_apps = response.json() if no_pagination else response
 
-    for app_data in response_apps or []:
-        app = Application.from_dict({"client": client} | app_data)
-        applications.append(app)
-
-    return applications
+    return [Application.from_dict({"client": client} | app_data) for app_data in response_apps or []]
