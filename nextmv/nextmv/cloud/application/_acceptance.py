@@ -130,9 +130,18 @@ class ApplicationAcceptanceMixin:
             endpoint=f"{self.experiments_endpoint}/acceptance/{acceptance_test_id}",
         )
 
-    def list_acceptance_tests(self: "Application") -> list[AcceptanceTest]:
+    def list_acceptance_tests(self: "Application", no_pagination: bool = False) -> list[AcceptanceTest]:
         """
         List all acceptance tests.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -153,12 +162,14 @@ class ApplicationAcceptanceMixin:
         'Test 2'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/acceptance",
         )
+        response_tests = response.json() if no_pagination else response
 
-        return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response.json()]
+        return [AcceptanceTest.from_dict(acceptance_test) for acceptance_test in response_tests or []]
 
     def new_acceptance_test(  # noqa: C901
         self: "Application",
