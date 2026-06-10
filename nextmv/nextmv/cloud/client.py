@@ -626,7 +626,7 @@ class Client:
             err.response = response
             raise err from e
 
-    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> tuple[str, str | None] | tuple[None, None]:
+    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> tuple[str, str | None] | tuple[None, None]:  # noqa: C901
         """
         If the resolved profile is a ``pkce`` profile, load the stored
         access token and silently refresh it when it is expired.
