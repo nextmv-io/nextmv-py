@@ -4,9 +4,6 @@ This module contains configuration utilities for the Nextmv CLI.
 
 import platform
 from pathlib import Path
-from typing import Any
-
-import yaml
 
 from nextmv import cloud, local
 from nextmv.cli.message import confirmation, error, info, success, warning
@@ -14,66 +11,14 @@ from nextmv.cloud.account import Account
 from nextmv.cloud.client import Client
 from nextmv.cloud.marketplace import MarketplaceApplication, MarketplaceSubscription
 from nextmv.cloud.sso import SSOConfiguration
+from nextmv.config import (
+    CONFIG_DIR,
+)
 
-# Some useful constants.
-CONFIG_DIR = Path.home() / ".nextmv"
-CONFIG_FILE = CONFIG_DIR / "config.yaml"
-API_KEY_KEY = "apikey"
-ENDPOINT_KEY = "endpoint"
-DEFAULT_ENDPOINT = "api.cloud.nextmv.io"
+# Path to the obsolete Go CLI binary.
 GO_CLI_PATH = CONFIG_DIR / "nextmv"
 if platform.system() == "Windows":
-    GO_CLI_PATH = CONFIG_DIR / "nextmv.exe"
-
-
-def load_config() -> dict[str, Any]:
-    """
-    Load the current configuration from the config file. Returns an empty
-    dictionary if no configuration file exists.
-
-    Returns
-    -------
-    dict[str, Any]
-        The current configuration as a dictionary.
-    """
-
-    if not CONFIG_FILE.exists():
-        return {}
-
-    with CONFIG_FILE.open() as file:
-        config = yaml.safe_load(file)
-
-    if config is None:
-        return {}
-    return config
-
-
-def save_config(config: dict[str, Any]) -> None:
-    """
-    Save the given configuration to the config file.
-
-    Parameters
-    ----------
-    config : dict[str, Any]
-        The configuration to save.
-    """
-
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    with CONFIG_FILE.open("w") as file:
-        yaml.safe_dump(config, file)
-
-
-def non_profile_keys() -> set[str]:
-    """
-    Returns the set of keys that are not profile names in the configuration.
-
-    Returns
-    -------
-    set[str]
-        The set of non-profile keys.
-    """
-    return {API_KEY_KEY, ENDPOINT_KEY}
+    GO_CLI_PATH = Path(str(GO_CLI_PATH) + ".exe")
 
 
 def build_cloud_app(app_id: str, profile: str | None = None) -> tuple[cloud.Application, bool]:

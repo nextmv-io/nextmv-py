@@ -2,13 +2,8 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from nextmv.cli.configuration.config import (
-    API_KEY_KEY,
-    ENDPOINT_KEY,
-    load_config,
-    non_profile_keys,
-)
 from nextmv.cli.mcp.tools import _helpers
+from nextmv.config import API_KEY_KEY, ENDPOINT_KEY, load_config, non_profile_keys
 
 
 def register(mcp: FastMCP) -> None:
@@ -77,7 +72,7 @@ def register(mcp: FastMCP) -> None:
                 return f"Error: profile '{profile}' not found. Available profiles: {available}"
 
         _helpers.session.profile = None if profile == "default" else profile
-        return f"Active profile set to \"{profile}\"."
+        return f'Active profile set to "{profile}".'
 
     @mcp.tool()
     def cloud_get_profile() -> str:

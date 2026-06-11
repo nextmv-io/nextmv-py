@@ -17,16 +17,39 @@ get_size(obj)
 import os
 from collections.abc import Generator
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import IO, Any
 from urllib.parse import urljoin
 
 import requests
-import yaml
 from requests.adapters import HTTPAdapter, Retry
 
 from nextmv import deprecated
 from nextmv._serialization import deflated_serialize_json
+from nextmv.auth import (
+    CLIENT_ID,
+    _validate_id_token,
+    apply_system_certs,
+    delete_tokens,
+    is_invalid_grant_error,
+    is_token_expired,
+    load_tokens,
+    refresh_tokens,
+    save_tokens,
+)
+from nextmv.config import (
+    CLIENT_ID_KEY,
+    CONFIG_FILE,
+    OIDC_DISCOVERY_URL_KEY,
+    AuthType,
+    get_auth_session,
+    get_auth_type,
+    get_endpoint_oidc_config,
+    get_profile_endpoint,
+    get_system_certs,
+    get_team_id,
+    load_config,
+    load_sessions,
+)
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -37,8 +60,6 @@ to 500 MiB.
 """
 
 # Some useful constants.
-_CONFIG_DIR = Path.home() / ".nextmv"
-_CONFIG_FILE = _CONFIG_DIR / "config.yaml"
 _API_KEY_KEY = "apikey"
 _ENDPOINT_KEY = "endpoint"
 
@@ -243,14 +264,22 @@ class Client:
     1. The `NEXTMV_PROFILE` environment variable.
     2. This `profile` attribute set on the client.
     """
+    system_certs: bool = False
+    """
+    When ``True``, use the operating system's certificate store for TLS
+    connections (via the ``truststore`` package).  Useful on enterprise
+    machines behind proxies that use custom CA certificates.  Defaults to
+    ``False``.
+    """
 
     def __post_init__(self):
         """
         Initializes the client after dataclass construction.
 
-        This method handles the logic for API key retrieval and header
-        setup. It checks for the API key in the constructor, environment
-        variables, and the configuration file, in that order.
+        This method handles the logic for API key / token retrieval and header setup.
+        For ``api_key`` profiles it resolves the API key from the constructor, environment
+        variables, or the configuration file.  For ``pkce`` profiles it loads the
+        stored OAuth2 access token (and silently refreshes it when expired).
 
         Raises
         ------
@@ -268,8 +297,27 @@ class Client:
 
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
-        self.api_key = self.__resolve_api_key(profile)
-        self.__set_headers_api_key(self.api_key)
+
+        # Resolve system_certs: explicit constructor arg > env var > config file.
+        if not self.system_certs:
+            env_val = os.environ.get("NEXTMV_SYSTEM_CERTS", "").strip().lower()
+            if env_val in ("1", "true", "yes"):
+                self.system_certs = True
+            else:
+                config = load_config()
+                self.system_certs = get_system_certs(config, profile)
+        if self.system_certs:
+            apply_system_certs()
+
+        bearer_token, team_id = self.__resolve_bearer_token_for_pkce(profile)
+        if bearer_token is not None:
+            # pkce profile: use the stored / refreshed access token.
+            self.api_key = bearer_token
+            self.__set_headers_api_key(self.api_key, team_id=team_id)
+        else:
+            # api_key profile (default): legacy resolution.
+            self.api_key = self.__resolve_api_key(profile)
+            self.__set_headers_api_key(self.api_key)
 
         if self.configuration_file is not None and self.configuration_file != "":
             deprecated(
@@ -806,6 +854,105 @@ class Client:
             err.response = response
             raise err from e
 
+    def __resolve_bearer_token_for_pkce(self, profile: str | None) -> tuple[str, str | None] | tuple[None, None]:  # noqa: C901
+        """
+        If the resolved profile is a ``pkce`` profile, load the stored
+        access token and silently refresh it when it is expired.
+
+        Returns ``(None, None)`` when:
+        - an explicit ``api_key`` or ``NEXTMV_API_KEY`` env var is present
+          (explicit credential takes precedence), or
+        - the profile is an ``api_key`` profile (the default).
+
+        This allows the caller to fall back to the standard API-key resolution
+        path with a simple ``if bearer_token is not None`` check.
+
+        Parameters
+        ----------
+        profile : str | None
+            The resolved profile name (``None`` means the default profile).
+
+        Returns
+        -------
+        tuple[str, str | None] | tuple[None, None]
+            ``(access_token, team_id)`` for pkce profiles, or ``(None, None)``
+            to signal that the api_key path should be used.
+
+        Raises
+        ------
+        ValueError
+            If the profile is ``pkce`` but no tokens are stored yet, or
+            if the refresh attempt fails (directing the user to run
+            ``nextmv auth login``).
+        """
+
+        # Explicit credential takes precedence over PKCE — skip entirely.
+        if (self.api_key and self.api_key.strip()) or os.environ.get("NEXTMV_API_KEY", "").strip():
+            return None, None
+
+        config = load_config()
+        if not config:
+            return None, None
+
+        ptype = get_auth_type(config, profile)
+        if ptype != AuthType.PKCE:
+            return None, None
+
+        # Auth-flow (pkce) profile detected.
+        session = get_auth_session(config, profile)
+        tokens = load_tokens(session)
+        display = profile if profile is not None else "default"
+        login_cmd = f"nextmv auth login{' --profile ' + display if profile else ''}"
+        endpoint = get_profile_endpoint(config, profile)
+        oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
+        expected_aud = (oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None) or CLIENT_ID
+
+        if tokens is None:
+            raise ValueError(f"No tokens found for pkce profile '{display}'. Please run '{login_cmd}' first.")
+
+        if is_token_expired(tokens):
+            refresh_token = tokens.get("refresh_token")
+            if not refresh_token:
+                raise ValueError(
+                    f"Access token for profile '{display}' has expired and no refresh token is available. "
+                    f"Please run '{login_cmd}' to re-authenticate."
+                )
+            old_id_token = tokens.get("id_token")
+            try:
+                tokens = refresh_tokens(
+                    refresh_token,
+                    oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
+                    client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
+                )
+                # Cognito refresh does not include a new id_token; preserve the old one.
+                if "id_token" not in tokens and old_id_token:
+                    tokens["id_token"] = old_id_token
+                save_tokens(session, tokens)
+            except Exception as exc:
+                # If the refresh token was revoked or expired (invalid_grant),
+                # delete the stored tokens so they can't be reused.
+                if is_invalid_grant_error(exc):
+                    delete_tokens(session)
+                raise ValueError(
+                    f"Failed to refresh access token for profile '{display}': {exc}. "
+                    f"Please run '{login_cmd}' to re-authenticate."
+                ) from exc
+
+        token = tokens.get("id_token")
+        if not token:
+            raise ValueError(
+                f"Stored tokens for profile '{display}' do not contain an id_token. "
+                f"Please run '{login_cmd}' to re-authenticate."
+            )
+
+        # Validate the id_token's aud and exp claims before accepting it.
+        _validate_id_token(token, expected_aud)
+
+        # Resolve the team ID stored in the profile config; sent as the
+        # nextmv-account header to scope requests to the correct team.
+        team_id = get_team_id(config, profile)
+        return token, team_id
+
     def __resolve_profile(self) -> str | None:
         """
         Resolves the active profile name.
@@ -936,7 +1083,7 @@ class Client:
 
         return api_key
 
-    def __set_headers_api_key(self, api_key: str) -> None:
+    def __set_headers_api_key(self, api_key: str, team_id: str | None = None) -> None:
         """
         Sets the Authorization and Content-Type headers.
 
@@ -947,12 +1094,18 @@ class Client:
         ----------
         api_key : str
             The API key to be included in the Authorization header.
+        team_id : str | None
+            Optional team UUID. When provided (pkce profiles only), the
+            ``nextmv-account`` header is added to scope requests to the
+            correct team.
         """
 
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+        if team_id:
+            self.headers["nextmv-account"] = team_id
 
     def _paginate(
         self,
@@ -1134,28 +1287,6 @@ def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[st
         raise TypeError("Unsupported type. Only dictionaries, file objects (IO[bytes]), and strings are supported.")
 
 
-def _load_config() -> dict[str, Any]:
-    """
-    Load the current configuration from the config file. Returns an empty
-    dictionary if no configuration file exists.
-
-    Returns
-    -------
-    dict[str, Any]
-        The current configuration as a dictionary.
-    """
-
-    if not _CONFIG_FILE.exists():
-        return {}
-
-    with _CONFIG_FILE.open() as file:
-        config = yaml.safe_load(file)
-
-    if config is None:
-        return {}
-    return config
-
-
 def retrieve_key_from_config(profile: str | None = None) -> str:
     """
     Retrieves the API key for the given profile. If no profile is given, the
@@ -1182,9 +1313,9 @@ def retrieve_key_from_config(profile: str | None = None) -> str:
         empty.
     """
 
-    config = _load_config()
+    config = load_config()
     if config == {}:
-        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+        raise RuntimeError(f"No configuration file at {CONFIG_FILE} found.")
 
     if profile is not None:
         if profile not in config:
@@ -1227,9 +1358,9 @@ def retrieve_endpoint_from_config(profile: str | None = None) -> str:
         empty.
     """
 
-    config = _load_config()
+    config = load_config()
     if config == {}:
-        raise RuntimeError(f"No configuration file at {_CONFIG_FILE} found.")
+        raise RuntimeError(f"No configuration file at {CONFIG_FILE} found.")
 
     if profile is not None:
         if profile not in config:

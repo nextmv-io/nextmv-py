@@ -6,9 +6,9 @@ from typing import Annotated
 
 import typer
 
-from nextmv.cli.configuration.config import load_config, save_config
 from nextmv.cli.message import confirmation, error, info, success
 from nextmv.cli.options import DebugOption, YesOption
+from nextmv.config import load_config, save_config
 
 # Set up subcommand application.
 app = typer.Typer()
