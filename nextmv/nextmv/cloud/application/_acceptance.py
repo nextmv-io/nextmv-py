@@ -141,7 +141,7 @@ class ApplicationAcceptanceMixin:
         Parameters
         ----------
         no_pagination : bool, default=False
-            Whether to disable pagination when listing entities.
+            Whether to disable pagination when listing acceptance tests.
 
         Returns
         -------
