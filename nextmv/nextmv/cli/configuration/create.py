@@ -35,6 +35,7 @@ from nextmv.config import (
     SYSTEM_CERTS_KEY,
     TEAM_ID_KEY,
     AuthType,
+    _normalize_oidc_discovery_url,
     _strip_scheme,
     get_endpoint_oidc_config,
     load_config,
@@ -307,24 +308,28 @@ def _create_pkce_profile(
         apply_system_certs()
 
     sessions = load_sessions()
-    existing_oidc = get_endpoint_oidc_config(endpoint, sessions)
+    oidc_cfg = get_endpoint_oidc_config(endpoint, sessions)
 
-    if existing_oidc is None:
-        resolved_discovery_url, resolved_client_id = _resolve_oidc_config(
+    if oidc_cfg is None:
+        discovery_url, client_id = _resolve_oidc_config(
             endpoint,
             oidc_discovery_url,
             oidc_client_id,
         )
         sessions[endpoint] = {
-            OIDC_DISCOVERY_URL_KEY: resolved_discovery_url,
-            CLIENT_ID_KEY: resolved_client_id,
+            OIDC_DISCOVERY_URL_KEY: discovery_url,
+            CLIENT_ID_KEY: client_id,
         }
         save_sessions(sessions)
+        # Build the normalized config directly — no need to reload from disk.
+        oidc_cfg = {
+            OIDC_DISCOVERY_URL_KEY: _normalize_oidc_discovery_url(discovery_url),
+            CLIENT_ID_KEY: client_id,
+        }
 
+    resolved_oidc_url = oidc_cfg[OIDC_DISCOVERY_URL_KEY]
+    resolved_oidc_client_id = oidc_cfg[CLIENT_ID_KEY]
     effective_session = auth_session or DEFAULT_AUTH_SESSION
-    oidc_cfg = get_endpoint_oidc_config(endpoint, load_sessions())
-    resolved_oidc_url = oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None
-    resolved_oidc_client_id = oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None
 
     access_token = _ensure_token(
         session=effective_session,
