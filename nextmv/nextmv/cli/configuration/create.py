@@ -293,7 +293,7 @@ def _create_api_key_profile(
         message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
 
 
-def _create_pkce_profile(
+def _create_pkce_profile(  # noqa: C901
     config: dict,
     profile: str | None,
     endpoint: str,
@@ -321,11 +321,27 @@ def _create_pkce_profile(
             CLIENT_ID_KEY: client_id,
         }
         save_sessions(sessions)
-        # Build the normalized config directly — no need to reload from disk.
         oidc_cfg = {
             OIDC_DISCOVERY_URL_KEY: _normalize_oidc_discovery_url(discovery_url),
             CLIENT_ID_KEY: client_id,
         }
+    elif oidc_discovery_url or oidc_client_id:
+        # Endpoint already configured — user-provided flags override stored values.
+        existing_url = oidc_cfg[OIDC_DISCOVERY_URL_KEY]
+        existing_cid = oidc_cfg[CLIENT_ID_KEY]
+        new_url = oidc_discovery_url.strip() if oidc_discovery_url else existing_url
+        new_cid = oidc_client_id.strip() if oidc_client_id else existing_cid
+        if new_url != existing_url or new_cid != existing_cid:
+            warning(f"Overriding existing OIDC configuration for endpoint [magenta]{endpoint}[/magenta].")
+            sessions[endpoint] = {
+                OIDC_DISCOVERY_URL_KEY: new_url,
+                CLIENT_ID_KEY: new_cid,
+            }
+            save_sessions(sessions)
+            oidc_cfg = {
+                OIDC_DISCOVERY_URL_KEY: _normalize_oidc_discovery_url(new_url),
+                CLIENT_ID_KEY: new_cid,
+            }
 
     resolved_oidc_url = oidc_cfg[OIDC_DISCOVERY_URL_KEY]
     resolved_oidc_client_id = oidc_cfg[CLIENT_ID_KEY]
