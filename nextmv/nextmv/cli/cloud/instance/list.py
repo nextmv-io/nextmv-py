@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -33,6 +34,10 @@ def list(
     """
     List all instances of a Nextmv Cloud application.
 
+    By default this command paginates the list of instances, which means multiple
+    API calls may be made to retrieve all instances. You may use the
+    --no-pagination option to disable pagination.
+
     [bold][underline]Examples[/underline][/bold]
 
     - List all instances of application [magenta]hare-app[/magenta].
@@ -43,11 +48,14 @@ def list(
 
     - List all instances and save the information to a [magenta]instances.json[/magenta] file.
         $ [dim]nextmv cloud instance list --app-id hare-app --output instances.json[/dim]
+
+    - List all instances without pagination.
+        $ [dim]nextmv cloud instance list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing instances...")
-    instances = cloud_app.list_instances()
+    instances = cloud_app.list_instances(no_pagination)
     instances_dicts = [instance.to_dict() for instance in instances]
 
     if output is not None and output != "":

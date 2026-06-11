@@ -123,9 +123,18 @@ class ApplicationSwitchbackMixin:
             endpoint=f"{self.experiments_endpoint}/switchback/{switchback_test_id}",
         )
 
-    def list_switchback_tests(self: "Application") -> list[SwitchbackTest]:
+    def list_switchback_tests(self: "Application", no_pagination: bool = False) -> list[SwitchbackTest]:
         """
         List all switchback tests.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -138,12 +147,14 @@ class ApplicationSwitchbackMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/switchback",
         )
+        response_tests = response.json().get("items", []) if no_pagination else response
 
-        return [SwitchbackTest.from_dict(switchback_test) for switchback_test in response.json().get("items", [])]
+        return [SwitchbackTest.from_dict(switchback_test) for switchback_test in response_tests]
 
     def new_switchback_test(
         self: "Application",

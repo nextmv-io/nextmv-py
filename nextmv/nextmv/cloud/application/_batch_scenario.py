@@ -205,9 +205,18 @@ class ApplicationBatchMixin:
 
         self.delete_batch_experiment(batch_id=scenario_test_id)
 
-    def list_batch_experiments(self: "Application") -> list[BatchExperimentMetadata]:
+    def list_batch_experiments(self: "Application", no_pagination: bool = False) -> list[BatchExperimentMetadata]:
         """
         List all batch experiments.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -220,19 +229,30 @@ class ApplicationBatchMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/batch",
             query_params={"type": "batch"},
         )
+        response_exp = response.json() if no_pagination else response
 
-        return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
+        return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response_exp or []]
 
-    def list_scenario_tests(self: "Application") -> list[BatchExperimentMetadata]:
+    def list_scenario_tests(self: "Application", no_pagination: bool = False) -> list[BatchExperimentMetadata]:
         """
         List all batch scenario tests. Scenario tests are based on the batch
         experiments API, so this function returns the same information as
         `list_batch_experiments`, albeit using a different query parameter.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -245,13 +265,15 @@ class ApplicationBatchMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/batch",
             query_params={"type": "scenario"},
         )
+        response_tests = response.json() if no_pagination else response
 
-        return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response.json()]
+        return [BatchExperimentMetadata.from_dict(batch_experiment) for batch_experiment in response_tests or []]
 
     def new_batch_experiment(  # noqa: C901
         self: "Application",

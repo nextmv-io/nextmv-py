@@ -76,9 +76,18 @@ class ApplicationInputSetMixin:
 
         return InputSet.from_dict(response.json())
 
-    def list_input_sets(self: "Application") -> list[InputSet]:
+    def list_input_sets(self: "Application", no_pagination: bool = False) -> list[InputSet]:
         """
         List all input sets.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -99,12 +108,14 @@ class ApplicationInputSetMixin:
         'Input Set 2'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.experiments_endpoint}/inputsets",
         )
+        response_sets = response.json() if no_pagination else response
 
-        return [InputSet.from_dict(input_set) for input_set in response.json()]
+        return [InputSet.from_dict(input_set) for input_set in response_sets or []]
 
     def new_input_set(
         self: "Application",

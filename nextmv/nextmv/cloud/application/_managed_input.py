@@ -44,9 +44,18 @@ class ApplicationManagedInputMixin:
             endpoint=f"{self.endpoint}/inputs/{managed_input_id}",
         )
 
-    def list_managed_inputs(self: "Application") -> list[ManagedInput]:
+    def list_managed_inputs(self: "Application", no_pagination: bool = False) -> list[ManagedInput]:
         """
         List all managed inputs.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -59,12 +68,14 @@ class ApplicationManagedInputMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.endpoint}/inputs",
         )
+        response_inputs = response.json() if no_pagination else response
 
-        return [ManagedInput.from_dict(managed_input) for managed_input in response.json()]
+        return [ManagedInput.from_dict(managed_input) for managed_input in response_inputs or []]
 
     def managed_input(self: "Application", managed_input_id: str) -> ManagedInput:
         """

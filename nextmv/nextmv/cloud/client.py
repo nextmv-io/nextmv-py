@@ -15,6 +15,7 @@ get_size(obj)
 """
 
 import os
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO, Any
@@ -454,6 +455,233 @@ class Client:
 
         return response
 
+    def request_with_pagination(
+        self,
+        method: str,
+        endpoint: str,
+        data: Any | None = None,
+        headers: dict[str, str] | None = None,
+        payload: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        max_pages: int | None = 500,
+        items_key: str | None = "items",
+    ) -> list[dict[str, Any]]:
+        """
+        Makes paginated requests to the Nextmv Cloud API and returns all items.
+
+        This method automatically handles pagination by following the
+        `next_page_token` provided in API responses. It collects all items
+        across pages and returns them as a single list.
+
+        Parameters
+        ----------
+        method : str
+            HTTP method to use (e.g., "GET", "POST").
+        endpoint : str
+            API endpoint to send the request to (e.g., "/v1/applications").
+        data : Any, optional
+            Data to send in the request body. Typically used for form data.
+            Cannot be used if `payload` is also provided.
+        headers : dict[str, str], optional
+            Additional headers to send with the request. These will override
+            the default client headers if keys conflict.
+        payload : dict[str, Any], optional
+            JSON payload to send with the request. Prefer using this over
+            `data` for JSON requests. Cannot be used if `data` is also
+            provided.
+        query_params : dict[str, Any], optional
+            Query parameters to append to the request URL. The `pagereturn`
+            parameter is automatically added to enable pagination.
+        json_configurations : dict[str, Any], optional
+            Additional configurations for JSON serialization. This allows
+            customization of the Python `json.dumps` function, such as
+            specifying `indent` for pretty printing or `default` for custom
+            serialization functions.
+        max_pages : int, optional
+            Maximum number of pages to fetch. Defaults to 500. This prevents
+            infinite loops if the API returns malformed pagination tokens.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            A list containing all items from all pages. If the API response
+            does not contain an "items" field, an empty list is returned.
+
+        Raises
+        ------
+        requests.HTTPError
+            If any request fails with a non-2xx status code.
+        ValueError
+            If both `data` and `payload` are provided.
+            If the `payload` or `data` size exceeds `_MAX_LAMBDA_PAYLOAD_SIZE`.
+            If the maximum number of pages is exceeded.
+
+        Examples
+        --------
+        Fetch all applications across multiple pages:
+
+        >>> client = Client(api_key="YOUR_API_KEY")
+        >>> apps = client.request_with_pagination(
+        ...     method="GET",
+        ...     endpoint="/v1/applications",
+        ... )
+        >>> print(len(apps))
+        150
+        >>> print([a["id"] for a in apps[:3]])
+        ['app-1', 'app-2', 'app-3']
+
+        Fetch all runs for a specific application with query filters:
+
+        >>> runs = client.request_with_pagination(
+        ...     method="GET",
+        ...     endpoint="/v1/runs",
+        ...     query_params={"applicationId": "my-app", "status": "completed"},
+        ... )
+        >>> print(len(runs))
+        500
+
+        Limit the number of pages to prevent excessive API calls:
+
+        >>> items = client.request_with_pagination(
+        ...     method="GET",
+        ...     endpoint="/v1/applications",
+        ...     max_pages=10,
+        ... )
+        """
+        return list(
+            self._paginate(
+                method=method,
+                endpoint=endpoint,
+                data=data,
+                headers=headers,
+                payload=payload,
+                query_params=query_params,
+                json_configurations=json_configurations,
+                max_pages=max_pages,
+                items_key=items_key,
+            )
+        )
+
+    def iter_with_pagination(
+        self,
+        method: str,
+        endpoint: str,
+        data: Any | None = None,
+        headers: dict[str, str] | None = None,
+        payload: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        max_pages: int = 500,
+        items_key: str | None = "items",
+    ) -> Generator[dict[str, Any], None, None]:
+        """
+        Generator that yields items from paginated API responses one at a time.
+
+        This method is a memory-efficient alternative to
+        :meth:`request_with_pagination`. Instead of collecting all items in
+        memory before returning, it yields items as they are fetched, making
+        it suitable for processing very large result sets that might not fit
+        in memory.
+
+        Parameters
+        ----------
+        method : str
+            HTTP method to use (e.g., "GET", "POST").
+        endpoint : str
+            API endpoint to send the request to (e.g., "/v1/applications").
+        data : Any, optional
+            Data to send in the request body. Typically used for form data.
+            Cannot be used if `payload` is also provided.
+        headers : dict[str, str], optional
+            Additional headers to send with the request. These will override
+            the default client headers if keys conflict.
+        payload : dict[str, Any], optional
+            JSON payload to send with the request. Prefer using this over
+            `data` for JSON requests. Cannot be used if `data` is also
+            provided.
+        query_params : dict[str, Any], optional
+            Query parameters to append to the request URL. The `pagereturn`
+            parameter is automatically added to enable pagination.
+        json_configurations : dict[str, Any], optional
+            Additional configurations for JSON serialization. This allows
+            customization of the Python `json.dumps` function, such as
+            specifying `indent` for pretty printing or `default` for custom
+            serialization functions.
+        max_pages : int, optional
+            Maximum number of pages to fetch. Defaults to 500. This prevents
+            infinite loops if the API returns malformed pagination tokens.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
+
+        Yields
+        ------
+        dict[str, Any]
+            Individual items from the API response, one at a time.
+
+        Raises
+        ------
+        requests.HTTPError
+            If any request fails with a non-2xx status code.
+        ValueError
+            If both `data` and `payload` are provided.
+            If the `payload` or `data` size exceeds `_MAX_LAMBDA_PAYLOAD_SIZE`.
+            If the maximum number of pages is exceeded.
+            If the API response structure is invalid or unexpected.
+
+        Examples
+        --------
+        Process applications one at a time without loading all into memory:
+
+        >>> client = Client(api_key="YOUR_API_KEY")
+        >>> for app in client.iter_with_pagination(
+        ...     method="GET",
+        ...     endpoint="/v1/applications",
+        ... ):
+        ...     print(f"Processing {app['id']}")
+        ...     # Process each app individually
+        Processing app-1
+        Processing app-2
+        ...
+
+        Use with filtering and early termination:
+
+        >>> for run in client.iter_with_pagination(
+        ...     method="GET",
+        ...     endpoint="/v1/runs",
+        ...     query_params={"applicationId": "my-app"},
+        ... ):
+        ...     if run["status"] == "failed":
+        ...         print(f"Found failed run: {run['id']}")
+        ...         break  # Stop iteration early
+
+        Collect results with list comprehension or generator expression:
+
+        >>> app_ids = [
+        ...     app["id"]
+        ...     for app in client.iter_with_pagination(
+        ...         method="GET",
+        ...         endpoint="/v1/applications",
+        ...         max_pages=5,
+        ...     )
+        ... ]
+        """
+        yield from self._paginate(
+            method=method,
+            endpoint=endpoint,
+            data=data,
+            headers=headers,
+            payload=payload,
+            query_params=query_params,
+            json_configurations=json_configurations,
+            max_pages=max_pages,
+            items_key=items_key,
+        )
+
     def upload_to_presigned_url(
         self,
         data: dict[str, Any] | str | None,
@@ -725,6 +953,121 @@ class Client:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+
+    def _paginate(
+        self,
+        method: str,
+        endpoint: str,
+        data: Any | None = None,
+        headers: dict[str, str] | None = None,
+        payload: dict[str, Any] | None = None,
+        query_params: dict[str, Any] | None = None,
+        json_configurations: dict[str, Any] | None = None,
+        max_pages: int = 500,
+        items_key: str = "items",
+    ) -> Generator[dict[str, Any], None, None]:
+        """
+        Internal generator that handles pagination logic.
+
+        This is a private method used by both `request_with_pagination` and
+        `iter_with_pagination` to avoid code duplication. It yields individual
+        items from paginated API responses.
+
+        Parameters
+        ----------
+        method : str
+            HTTP method to use (e.g., "GET", "POST").
+        endpoint : str
+            API endpoint to send the request to.
+        data : Any, optional
+            Data to send in the request body.
+        headers : dict[str, str], optional
+            Additional headers to send with the request.
+        payload : dict[str, Any], optional
+            JSON payload to send with the request.
+        query_params : dict[str, Any], optional
+            Query parameters to append to the request URL.
+        json_configurations : dict[str, Any], optional
+            Additional configurations for JSON serialization.
+        max_pages : int, optional
+            Maximum number of pages to fetch. Defaults to 500.
+        items_key : str, optional
+            The key in the API response JSON that contains the list of items.
+            Defaults to "items".
+
+        Yields
+        ------
+        dict[str, Any]
+            Individual items from the API response.
+
+        Raises
+        ------
+        requests.HTTPError
+            If any request fails with a non-2xx status code.
+        ValueError
+            If both `data` and `payload` are provided.
+            If the `payload` or `data` size exceeds `_MAX_LAMBDA_PAYLOAD_SIZE`.
+            If the maximum number of pages is exceeded.
+            If the API response structure is invalid or unexpected.
+        """
+        query_params = (query_params or {}) | {"pagereturn": "true"}
+        page_count = 0
+
+        while True:
+            if page_count >= max_pages:
+                raise ValueError(
+                    f"exceeded maximum number of pages ({max_pages}). "
+                    "Increase max_pages parameter if you expect more pages, "
+                    "or check for potential pagination loop issues."
+                )
+
+            resp = self.request(
+                method=method,
+                endpoint=endpoint,
+                data=data,
+                headers=headers,
+                payload=payload,
+                query_params=query_params,
+                json_configurations=json_configurations,
+            )
+
+            # Validate response structure
+            try:
+                resp_json = resp.json()
+            except requests.exceptions.JSONDecodeError as e:
+                raise ValueError(
+                    f"API response from {endpoint} is not valid JSON. "
+                    f"Response status: {resp.status_code}, body: {resp.text[:200]}"
+                ) from e
+
+            if not isinstance(resp_json, dict):
+                raise ValueError(
+                    f"API response from {endpoint} is not a dictionary. Got {type(resp_json).__name__} instead."
+                )
+
+            page_count += 1
+
+            # Yield items from the current page one at a time
+            page_items = resp_json.get(items_key)
+            if page_items is not None:
+                if not isinstance(page_items, list):
+                    raise ValueError(
+                        f"API response '{items_key}' field from {endpoint} is not a list. "
+                        f"Got {type(page_items).__name__} instead."
+                    )
+                yield from page_items
+
+            # Check for next page token
+            next_token = resp_json.get("next_page_token")
+            if next_token:
+                if not isinstance(next_token, str):
+                    raise ValueError(
+                        f"API response 'next_page_token' from {endpoint} is not a string. "
+                        f"Got {type(next_token).__name__} instead."
+                    )
+                query_params["pagetoken"] = next_token
+            else:
+                break
 
 
 def get_size(obj: dict[str, Any] | IO[bytes] | str, json_configurations: dict[str, Any] | None = None) -> int:

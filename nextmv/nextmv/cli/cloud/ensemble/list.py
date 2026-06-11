@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -33,8 +34,10 @@ def list(
     """
     List all Nextmv Cloud ensemble definitions for an application.
 
-    This command retrieves all ensemble definitions associated with the specified
-    application.
+    This command retrieves all ensemble definitions associated with the
+    specified application. By default this command paginates the list of
+    definitions, which means multiple API calls may be made to retrieve all
+    definitions. You may use the --no-pagination option to disable pagination.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -46,11 +49,14 @@ def list(
 
     - List all ensemble definitions using a specific profile.
         $ [dim]nextmv cloud ensemble list --app-id hare-app --profile prod[/dim]
+
+    - List all ensemble definitions without pagination.
+        $ [dim]nextmv cloud ensemble list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing ensemble definitions...")
-    ensembles = cloud_app.list_ensemble_definitions()
+    ensembles = cloud_app.list_ensemble_definitions(no_pagination)
     ensembles_dict = [ensemble.to_dict() for ensemble in ensembles]
 
     if output is not None and output != "":

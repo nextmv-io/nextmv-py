@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import enum_values, in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 from nextmv.status import StatusV2
 
 # Set up subcommand application.
@@ -19,6 +19,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -46,7 +47,9 @@ def list(
     By default, the list of runs is fetched and printed to
     [magenta]stdout[/magenta]. Use the --output flag to save the list to a
     file. You can use the optional --status flag to filter runs by their
-    status.
+    status. This command paginates the list of runs, which means multiple API
+    calls may be made to retrieve all runs. You may use the --no-pagination
+    option to disable pagination.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -63,11 +66,14 @@ def list(
 
     - Get the list of [magenta]queued[/magenta] runs for an app with ID [magenta]hare-app[/magenta].
         $ [dim]nextmv cloud run list --app-id hare-app --status queued[/dim]
+
+    - Get the list of runs for an app with ID [magenta]hare-app[/magenta] without pagination.
+        $ [dim]nextmv cloud run list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
-    runs = cloud_app.list_runs(status=status)
+    runs = cloud_app.list_runs(status, no_pagination)
     runs_dicts = [run.to_dict() for run in runs]
 
     if output is not None and output != "":

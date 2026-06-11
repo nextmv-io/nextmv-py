@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -34,7 +35,9 @@ def list(
     List all Nextmv Cloud scenario tests for an application.
 
     This command retrieves all scenario tests associated with the specified
-    application.
+    application. By default this command paginates the list of tests, which
+    means multiple API calls may be made to retrieve all tests. You may use the
+    --no-pagination option to disable pagination.
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -45,12 +48,16 @@ def list(
         $ [dim]nextmv cloud scenario list --app-id hare-app --output scenario_tests.json[/dim]
 
     - List all scenario tests using a specific profile.
-        $ [dim]nextmv cloud scenario list --app-id hare-app --profile prod[/dim]
+        $ [dim]nextmv cloud scenario list --app-id hare-app --profile
+        prod[/dim]
+
+    - List all scenario tests without pagination.
+        $ [dim]nextmv cloud scenario list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing scenario tests...")
-    scenario_tests = cloud_app.list_scenario_tests()
+    scenario_tests = cloud_app.list_scenario_tests(no_pagination)
     scenario_tests_dict = [exp.to_dict() for exp in scenario_tests]
 
     if output is not None and output != "":
