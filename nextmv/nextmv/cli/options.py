@@ -329,3 +329,14 @@ DebugOption = Annotated[
         rich_help_panel="General",
     ),
 ]
+
+# no-pagination option - can be used in any command to disable pagination.
+# Define it as follows in commands or callbacks, as necessary:
+# no_pagination: NoPaginationOption = False,
+NoPaginationOption = Annotated[
+    bool | None,
+    typer.Option(
+        "--no-pagination",
+        help="Whether to disable pagination when listing this type of entity.",
+    ),
+]

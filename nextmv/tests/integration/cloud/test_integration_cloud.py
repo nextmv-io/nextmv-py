@@ -53,6 +53,11 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert len(apps) > 0
         assert app.id in {a.id for a in apps}
 
+        # We can list apps without pagination.
+        apps = cloud.list_applications(client, no_pagination=True)
+        assert len(apps) > 0
+        assert app.id in {a.id for a in apps}
+
         return app
 
     @needs(predecessors=[init_app])
@@ -122,6 +127,13 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert v1.id in version_ids
         assert v2.id in version_ids
 
+        # We can list versions without pagination.
+        versions = app.list_versions(no_pagination=True)
+        assert len(versions) >= 2
+        version_ids = {v.id for v in versions}
+        assert v1.id in version_ids
+        assert v2.id in version_ids
+
         # We can get a version and it exists.
         v1 = app.version(version_id=v1.id)
         assert v1 is not None
@@ -164,6 +176,14 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list instances.
         instances = app.list_instances()
+        assert len(instances) >= 3
+        instance_ids = {i.id for i in instances}
+        assert inst1.id in instance_ids
+        assert inst2.id in instance_ids
+        assert inst3.id in instance_ids
+
+        # We can list instances without pagination.
+        instances = app.list_instances(no_pagination=True)
         assert len(instances) >= 3
         instance_ids = {i.id for i in instances}
         assert inst1.id in instance_ids
@@ -267,6 +287,17 @@ class CloudIntegrationWorkflow(FlowSpec):
         for run in runs:
             assert run.id in run_ids
 
+        # We can list runs without pagination.
+        run_list = app.list_runs(no_pagination=True)
+        assert len(run_list) >= 7
+        run_ids = {r.id for r in run_list}
+        for run in runs:
+            assert run.id in run_ids
+
+        # We can list runs with a particular status.
+        run_list = app.list_runs(status=nextmv.StatusV2.succeeded)
+        assert len(run_list) >= 1
+
         # Start and cancel a run.
         # NOTE: Community app `python-hello-world` runs for a very short time; to cancel here is currently unreliable.
         # TODO: Add a simple community app to support all integration test requirements (including delay to test
@@ -358,6 +389,54 @@ class CloudIntegrationWorkflow(FlowSpec):
         priority_info = app.run_information(run_id=result_queuing_priority.id)
         assert priority_info.metadata.queuing_priority == 4
 
+    @needs(predecessors=[init_app, runs])
+    @step
+    def managed_inputs(app: cloud.Application, runs: list[nextmv.RunResult]) -> None:
+        """
+        Performs managed input operations.
+
+        Parameters
+        ----------
+        app : cloud.Application
+            The application to perform managed input operations on.
+        runs : list[nextmv.RunResult]
+            The runs to use for creating managed inputs.
+        """
+
+        # We can create a managed inputs from runs.
+        original_runs = [r for r in runs if r.metadata.status_v2 == nextmv.StatusV2.succeeded]
+        managed_inputs = [app.new_managed_input(run_id=run.id) for run in original_runs]
+
+        # We can list managed inputs.
+        managed_input_list = app.list_managed_inputs()
+        assert len(managed_input_list) >= 2
+        managed_input_ids = {m.id for m in managed_input_list}
+        for m in managed_inputs:
+            assert m.id in managed_input_ids
+
+        # We can list managed inputs without pagination.
+        managed_input_list = app.list_managed_inputs(no_pagination=True)
+        assert len(managed_input_list) >= 2
+        managed_input_ids = {m.id for m in managed_input_list}
+        for m in managed_inputs:
+            assert m.id in managed_input_ids
+
+        # We can get a managed input.
+        m1 = app.managed_input(managed_input_id=managed_inputs[0].id)
+        assert m1 is not None
+
+        # We can update a managed input.
+        name = "A soft and tender input"
+        description = "Input fit for a bunny's delicate palate"
+        m1 = app.update_managed_input(managed_input_id=m1.id, name=name, description=description)
+        assert m1.name == name
+        assert m1.description == description
+
+        # We can delete managed inputs.
+        managed_inputs = app.list_managed_inputs()
+        for m in managed_inputs:
+            app.delete_managed_input(managed_input_id=m.id)
+
     @needs(predecessors=[init_app, instances, runs])
     @step
     def input_sets(
@@ -403,6 +482,13 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list input sets.
         input_sets = app.list_input_sets()
+        assert len(input_sets) >= 2
+        input_set_ids = {s.id for s in input_sets}
+        assert set1.id in input_set_ids
+        assert set2.id in input_set_ids
+
+        # We can list input sets without pagination.
+        input_sets = app.list_input_sets(no_pagination=True)
         assert len(input_sets) >= 2
         input_set_ids = {s.id for s in input_sets}
         assert set1.id in input_set_ids
@@ -454,8 +540,14 @@ class CloudIntegrationWorkflow(FlowSpec):
             repetitions=0,
         )
 
-        # We can get a scenario test.
+        # We can list scenario tests.
         scenario_list = app.list_scenario_tests()
+        assert len(scenario_list) >= 1
+        scenario_ids = {s.id for s in scenario_list}
+        assert test1_id in scenario_ids
+
+        # We can list scenario tests without pagination.
+        scenario_list = app.list_scenario_tests(no_pagination=True)
         assert len(scenario_list) >= 1
         scenario_ids = {s.id for s in scenario_list}
         assert test1_id in scenario_ids
@@ -517,6 +609,12 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list shadow tests.
         shadow_tests = app.list_shadow_tests()
+        assert len(shadow_tests) >= 1
+        shadow_test_ids = {s.shadow_test_id for s in shadow_tests}
+        assert shadow_test.shadow_test_id in shadow_test_ids
+
+        # We can list shadow tests without pagination.
+        shadow_tests = app.list_shadow_tests(no_pagination=True)
         assert len(shadow_tests) >= 1
         shadow_test_ids = {s.shadow_test_id for s in shadow_tests}
         assert shadow_test.shadow_test_id in shadow_test_ids
@@ -593,6 +691,12 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list switchback tests.
         switchback_tests = app.list_switchback_tests()
+        assert len(switchback_tests) >= 1
+        switchback_test_ids = {s.switchback_test_id for s in switchback_tests}
+        assert switchback_test.switchback_test_id in switchback_test_ids
+
+        # We can list switchback tests without pagination.
+        switchback_tests = app.list_switchback_tests(no_pagination=True)
         assert len(switchback_tests) >= 1
         switchback_test_ids = {s.switchback_test_id for s in switchback_tests}
         assert switchback_test.switchback_test_id in switchback_test_ids
@@ -687,6 +791,12 @@ class CloudIntegrationWorkflow(FlowSpec):
         acceptance_test_ids = {a.id for a in acceptance_tests}
         assert acceptance.id in acceptance_test_ids
 
+        # We can list acceptance tests without pagination.
+        acceptance_tests = app.list_acceptance_tests(no_pagination=True)
+        assert len(acceptance_tests) >= 1
+        acceptance_test_ids = {a.id for a in acceptance_tests}
+        assert acceptance.id in acceptance_test_ids
+
         # We can get an acceptance test.
         acceptance = app.acceptance_test(acceptance_test_id=acceptance.id)
         assert acceptance is not None
@@ -738,6 +848,12 @@ class CloudIntegrationWorkflow(FlowSpec):
 
         # We can list secret collections.
         collections = app.list_secrets_collections()
+        assert len(collections) >= 1
+        collection_ids = {c.collection_id for c in collections}
+        assert summary.collection_id in collection_ids
+
+        # We can list secret collections without pagination.
+        collections = app.list_secrets_collections(no_pagination=True)
         assert len(collections) >= 1
         collection_ids = {c.collection_id for c in collections}
         assert summary.collection_id in collection_ids
@@ -815,6 +931,12 @@ class CloudIntegrationWorkflow(FlowSpec):
         definition_ids = {d.id for d in definitions}
         assert definition.id in definition_ids
 
+        # We can list ensemble definitions without pagination.
+        definitions = app.list_ensemble_definitions(no_pagination=True)
+        assert len(definitions) >= 1
+        definition_ids = {d.id for d in definitions}
+        assert definition.id in definition_ids
+
         # We can update an ensemble definition.
         name = "Bunny Ensemble"
         description = "Ensemble for bunny runs"
@@ -853,6 +975,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             instances,
             runs,
             clone_runs,
+            managed_inputs,
             input_sets,
             scenario_tests,
             shadow_tests,
@@ -869,13 +992,14 @@ class CloudIntegrationWorkflow(FlowSpec):
         instances: tuple[cloud.Instance, cloud.Instance],
         __unused,  # Unused placeholders for predecessors whose return values we don't need.
         __unused2,
-        input_set: cloud.InputSet,
         __unused3,
+        input_set: cloud.InputSet,
         __unused4,
         __unused5,
         __unused6,
         __unused7,
         __unused8,
+        __unused9,
     ) -> None:
         """Performs cleanup operations."""
 

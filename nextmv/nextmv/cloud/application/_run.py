@@ -526,17 +526,22 @@ class ApplicationRunMixin:
 
         return [RunAsset.from_dict(asset) for asset in assets_data]
 
-    def list_runs(self: "Application", status: StatusV2 | None = None) -> list[Run]:
+    def list_runs(self: "Application", status: StatusV2 | None = None, no_pagination: bool = False) -> list[Run]:
         """
         List all runs.
 
         You can use the optional `status` parameter to filter runs by their
-        status. Is not provided, all runs are returned.
+        status. Is not provided, all runs are returned. Pagination is enabled
+        by default, but you can disable it with the `no_pagination` argument.
+        With pagination enabled, this function will make multiple API calls if
+        necessary to retrieve all entities.
 
         Parameters
         ----------
         status : StatusV2 | None
             Optional status to filter runs by.
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing runs.
 
         Returns
         -------
@@ -549,13 +554,21 @@ class ApplicationRunMixin:
             If the response status code is not 2xx.
         """
 
-        response = self.client.request(
-            method="GET",
-            endpoint=f"{self.endpoint}/runs",
-        )
-
         runs = []
-        for resp_run in response.json().get("runs", []):
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+
+        kwargs = {
+            "method": "GET",
+            "endpoint": f"{self.endpoint}/runs",
+            "items_key": "runs",
+        }
+        if no_pagination:
+            del kwargs["items_key"]
+
+        response = func(**kwargs)
+        response_runs = response.json().get("runs", []) if no_pagination else response
+
+        for resp_run in response_runs or []:
             run = Run.from_dict(resp_run)
             if status is None:
                 runs.append(run)

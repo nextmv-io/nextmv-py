@@ -897,9 +897,13 @@ def _convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:  # noqa:
     return activation_request
 
 
-def list_applications(client: Client) -> list[Application]:
+def list_applications(client: Client, no_pagination: bool = False) -> list[Application]:
     """
     List all Nextmv Cloud applications.
+
+    Pagination is enabled by default, but you can disable it with the
+    `no_pagination` argument. With pagination enabled, this function will make
+    multiple API calls if necessary to retrieve all entities.
 
     You can import the `list_applications` function directly from `cloud`:
 
@@ -911,6 +915,8 @@ def list_applications(client: Client) -> list[Application]:
     ----------
     client : Client
         The Nextmv Cloud client used to make API requests.
+    no_pagination : bool, default=False
+        Whether to disable pagination when listing applications.
 
     Returns
     -------
@@ -923,14 +929,11 @@ def list_applications(client: Client) -> list[Application]:
         If the response status code is not 2xx.
     """
 
-    response = client.request(
+    func = client.request if no_pagination else client.request_with_pagination
+    response = func(
         method="GET",
         endpoint="v1/applications",
     )
+    response_apps = response.json() if no_pagination else response
 
-    applications = []
-    for app_data in response.json() or []:
-        app = Application.from_dict({"client": client} | app_data)
-        applications.append(app)
-
-    return applications
+    return [Application.from_dict({"client": client} | app_data) for app_data in response_apps or []]

@@ -45,9 +45,18 @@ class ApplicationVersionMixin:
             endpoint=f"{self.endpoint}/versions/{version_id}",
         )
 
-    def list_versions(self: "Application") -> list[Version]:
+    def list_versions(self: "Application", no_pagination: bool = False) -> list[Version]:
         """
         List all versions.
+
+        Pagination is enabled by default, but you can disable it with the
+        `no_pagination` argument. With pagination enabled, this function will make
+        multiple API calls if necessary to retrieve all entities.
+
+        Parameters
+        ----------
+        no_pagination : bool, default=False
+            Whether to disable pagination when listing entities.
 
         Returns
         -------
@@ -68,12 +77,14 @@ class ApplicationVersionMixin:
         'v1.1.0'
         """
 
-        response = self.client.request(
+        func = self.client.request if no_pagination else self.client.request_with_pagination
+        response = func(
             method="GET",
             endpoint=f"{self.endpoint}/versions",
         )
+        response_versions = response.json() if no_pagination else response
 
-        return [Version.from_dict(version) for version in response.json()]
+        return [Version.from_dict(version) for version in response_versions or []]
 
     def new_version(
         self: "Application",

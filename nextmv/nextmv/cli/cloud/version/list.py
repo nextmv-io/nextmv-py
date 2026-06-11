@@ -9,7 +9,7 @@ import typer
 
 from nextmv.cli.configuration.config import build_cloud_app
 from nextmv.cli.message import in_progress, print_json, success
-from nextmv.cli.options import AppIDOption, DebugOption, ProfileOption
+from nextmv.cli.options import AppIDOption, DebugOption, NoPaginationOption, ProfileOption
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -18,6 +18,7 @@ app = typer.Typer()
 @app.command()
 def list(
     app_id: AppIDOption,
+    no_pagination: NoPaginationOption = False,
     output: Annotated[
         str | None,
         typer.Option(
@@ -33,6 +34,10 @@ def list(
     """
     List all versions of a Nextmv Cloud application.
 
+    By default this command paginates the list of versions, which means
+    multiple API calls may be made to retrieve all versions. You may use the
+    --no-pagination option to disable pagination.
+
     [bold][underline]Examples[/underline][/bold]
 
     - List all versions of application [magenta]hare-app[/magenta].
@@ -43,11 +48,14 @@ def list(
 
     - List all versions and save the information to a [magenta]versions.json[/magenta] file.
         $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
+
+    - List all versions without pagination.
+        $ [dim]nextmv cloud version list --app-id hare-app --no-pagination[/dim]
     """
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing versions...")
-    versions = cloud_app.list_versions()
+    versions = cloud_app.list_versions(no_pagination)
     versions_dicts = [version.to_dict() for version in versions]
 
     if output is not None and output != "":
