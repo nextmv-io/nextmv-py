@@ -309,6 +309,7 @@ def _create_pkce_profile(  # noqa: C901
 
     sessions = load_sessions()
     oidc_cfg = get_endpoint_oidc_config(endpoint, sessions)
+    oidc_discovery_url = _normalize_oidc_discovery_url(oidc_discovery_url) if oidc_discovery_url else None
 
     if oidc_cfg is None:
         discovery_url, client_id = _resolve_oidc_config(
@@ -485,6 +486,7 @@ def _ensure_token(
                 old_id_token = tokens.get("id_token")
                 tokens = refresh_tokens(
                     refresh_token,
+                    endpoint=endpoint,
                     client_id=client_id,
                     oidc_discovery_url=oidc_discovery_url,
                 )
