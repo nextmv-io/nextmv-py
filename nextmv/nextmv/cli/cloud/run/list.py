@@ -73,7 +73,7 @@ def list(
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
     in_progress(msg="Listing app runs...")
-    runs = cloud_app.list_runs(status=status, no_pagination=no_pagination)
+    runs = cloud_app.list_runs(status, no_pagination)
     runs_dicts = [run.to_dict() for run in runs]
 
     if output is not None and output != "":
