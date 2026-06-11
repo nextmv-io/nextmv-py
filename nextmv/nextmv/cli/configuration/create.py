@@ -189,14 +189,6 @@ def create(
 
     endpoint = _strip_scheme(str(endpoint))
 
-    # Custom endpoints require an explicit auth session to avoid mixing tokens
-    # from different identity providers in the shared default session.
-    if endpoint != DEFAULT_ENDPOINT and auth_session is None:
-        error(
-            f"Custom endpoint [magenta]{endpoint}[/magenta] requires an explicit [magenta]--auth-session[/magenta]. "
-            "The default session is reserved for the default endpoint."
-        )
-
     # Providing custom OIDC config only makes sense for non-default endpoints.
     if (oidc_discovery_url or oidc_client_id) and endpoint == DEFAULT_ENDPOINT:
         error(
@@ -312,6 +304,14 @@ def _create_pkce_profile(  # noqa: C901
     system_certs: bool,
 ) -> None:
     """Ensure OIDC config, resolve team, and save a pkce profile."""
+    # Custom endpoints require an explicit auth session to avoid mixing tokens
+    # from different identity providers in the shared default session.
+    if endpoint != DEFAULT_ENDPOINT and auth_session is None:
+        error(
+            f"Custom endpoint [magenta]{endpoint}[/magenta] requires an explicit [magenta]--auth-session[/magenta]. "
+            "The default session is reserved for the default endpoint."
+        )
+
     if system_certs:
         apply_system_certs()
 
