@@ -418,13 +418,10 @@ class ApplicationRunMixin:
         """
         Compare multiple runs by their IDs.
 
-        The number of provided runs must be between 1 and 20.
-
         Parameters
         ----------
         run_ids: Iterable[str]
-            An iterable of run IDs to compare. The number of provided runs must
-            be between 1 and 20.
+            An iterable of run IDs to compare.
 
         Returns
         -------
@@ -438,9 +435,6 @@ class ApplicationRunMixin:
         requests.HTTPError
             If any of the responses when fetching run information is not 2xx.
         """
-
-        if len(run_ids) < 1 or len(run_ids) > 20:
-            raise ValueError("You must provide between 1 and 20 run IDs to compare.")
 
         unique_run_ids = set(run_ids)
         if len(unique_run_ids) != len(run_ids):

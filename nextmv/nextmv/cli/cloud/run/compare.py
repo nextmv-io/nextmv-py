@@ -27,8 +27,7 @@ def compare(
         typer.Option(
             "--run-ids",
             "-r",
-            help="List of run IDs to compare (max 20). "
-            "Pass multiple run IDs by repeating the flag, or separating with commas.",
+            help="List of run IDs to compare. Pass multiple run IDs by repeating the flag, or separating with commas.",
             metavar="RUN_IDS",
         ),
     ],
@@ -55,13 +54,11 @@ def compare(
     """
     Compare multiple Nextmv Cloud application runs.
 
-    The number of run IDs provided through the --run-ids flag must be between
-    [magenta]1[/magenta] and [magenta]20[/magenta]. By default this command
-    prints a human-readable table to [magenta]stdout[/magenta]. You may use the
-    --flat option to print the comparison result to [magenta]stdout[/magenta]
-    as [magenta]json[/magenta] instead. When the --output option is used, the
-    --flat flag is automatically activated and the result is saved as
-    [magenta]json[/magenta].
+    By default this command prints a human-readable table to
+    [magenta]stdout[/magenta]. You may use the --flat option to print the
+    comparison result to [magenta]stdout[/magenta] as [magenta]json[/magenta]
+    instead. When the --output option is used, the --flat flag is automatically
+    activated and the result is saved as [magenta]json[/magenta].
 
     [bold][underline]Examples[/underline][/bold]
 
@@ -86,9 +83,6 @@ def compare(
         sub_ids = run_id.split(",")
         for sub_id in sub_ids:
             run_id_list.append(sub_id.strip())
-
-    if len(run_id_list) < 1 or len(run_id_list) > 20:
-        error("The number of run IDs to compare must be between [magenta]1[/magenta] and [magenta]20[/magenta].")
 
     found = set()
     for run_id in run_id_list:

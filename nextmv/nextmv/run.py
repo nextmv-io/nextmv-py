@@ -2084,9 +2084,9 @@ class ComparisonValues(BaseModel):
     Parameters
     ----------
     has_differences : bool
-        `True` if the values are not all the same. For example, if
-        we have runs `foo` and `bar` with `execution_class` `fluff` and `tail`,
-        then `has_differences` would be `False`, because `fluff` and `tail` are
+        `True` if the values are not all the same. For example, if we have runs
+        `foo` and `bar` with `execution_class` `fluff` and `tail`, then
+        `has_differences` would be `True`, because `fluff` and `tail` are
         different.
     values : dict[str, Any]
         Maps the run ID with actual value of the field being compared.
@@ -2094,9 +2094,9 @@ class ComparisonValues(BaseModel):
 
     has_differences: bool = False
     """
-    `True` if the values are not all the same. For example, if
-    we have runs `foo` and `bar` with `execution_class` `fluff` and `tail`,
-    then `has_differences` would be `False`, because `fluff` and `tail` are
+    `True` if the values are not all the same. For example, if we have runs
+    `foo` and `bar` with `execution_class` `fluff` and `tail`, then
+    `has_differences` would be `True`, because `fluff` and `tail` are
     different.
     """
     values: dict[str, Any] | None = Field(default_factory=dict)
