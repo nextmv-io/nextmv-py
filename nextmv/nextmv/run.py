@@ -2099,9 +2099,7 @@ class ComparisonValues(BaseModel):
     then `has_differences` would be `False`, because `fluff` and `tail` are
     different.
     """
-    values: dict[str, Any] | None = Field(
-        default_factory=dict,
-    )
+    values: dict[str, Any] | None = Field(default_factory=dict)
     """
     Maps the run ID with actual value of the field being compared.
     """
