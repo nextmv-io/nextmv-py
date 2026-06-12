@@ -2068,3 +2068,166 @@ class TrackedRun:
             return "\\n".join(self.logs)
 
         raise TypeError("Logs must be a string or a list of strings.")
+
+
+class ComparisonValues(BaseModel):
+    """
+    This class holds the comparison values of a field that is part of a
+    `RunComparison`.
+
+    You can import the `ComparisonValues` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ComparisonValues
+    ```
+
+    Parameters
+    ----------
+    has_differences : bool
+        `True` if the values are not all the same. For example, if
+        we have runs `foo` and `bar` with `execution_class` `fluff` and `tail`,
+        then `has_differences` would be `False`, because `fluff` and `tail` are
+        different.
+    values : dict[str, Any]
+        Maps the run ID with actual value of the field being compared.
+    """
+
+    has_differences: bool = False
+    """
+    `True` if the values are not all the same. For example, if
+    we have runs `foo` and `bar` with `execution_class` `fluff` and `tail`,
+    then `has_differences` would be `False`, because `fluff` and `tail` are
+    different.
+    """
+    values: dict[str, Any] | None = Field(
+        default_factory=dict,
+    )
+    """
+    Maps the run ID with actual value of the field being compared.
+    """
+
+    def determine_differences(self) -> None:
+        """
+        Determines whether the values being compared are different across runs
+        and sets the `has_differences` field accordingly.
+        """
+
+        if self.values is None:
+            self.has_differences = False
+            return
+
+        unique_values = set(self.values.values())
+        self.has_differences = len(unique_values) > 1
+
+
+class RunComparison(BaseModel):
+    """
+    This class is a holding object for the results of a run comparison.
+
+    You can import the `RunComparison` class directly from `nextmv`:
+
+    ```python
+    from nextmv import RunComparison
+    ```
+
+    Parameters
+    ----------
+    run_ids : list[str]
+        The list of run IDs that are part of this comparison.
+    information : dict[str, ComparisonValues]
+        The comparison for the information fields. The keys for the dictionary are
+        the names of the information fields. The `ComparisonValues` class holds the
+        actual values of the field for the different runs.
+    metadata : dict[str, ComparisonValues]
+        The comparison for the metadata fields. The keys for the dictionary are
+        the names of the metadata fields. The `ComparisonValues` class holds the
+        actual values of the field for the different runs.
+    metrics : dict[str, ComparisonValues], optional
+        The comparison for the metrics. The keys for the dictionary are
+        the names of the metrics. The `ComparisonValues` class holds the
+        actual values of the metric for the different runs.
+    options : dict[str, ComparisonValues], optional
+        The comparison for the options. The keys for the dictionary are
+        the names of the options. The `ComparisonValues` class holds the
+        actual values of the option for the different runs.
+    """
+
+    run_ids: list[str]
+    """The list of run IDs that are part of this comparison."""
+    information: dict[str, ComparisonValues]
+    """
+    The comparison for the information fields. The keys for the dictionary are
+    the names of the information fields. The `ComparisonValues` class holds the
+    actual values of the field for the different runs.
+    """
+    metadata: dict[str, ComparisonValues]
+    """
+    The comparison for the metadata. The keys for the dictionary are the
+    names of the metadata fields. The `ComparisonValues` class holds the
+    actual values of the field for the different runs.
+    """
+    metrics: dict[str, ComparisonValues] | None = None
+    """
+    The comparison for the metrics. The keys for the dictionary are the
+    names of the metrics. The `ComparisonValues` class holds the
+    actual values of the metric for the different runs.
+    """
+    options: dict[str, ComparisonValues] | None = None
+    """
+    The comparison for the options. The keys for the dictionary are the
+    names of the options. The `ComparisonValues` class holds the
+    actual values of the option for the different runs.
+    """
+
+    def determine_differences(self) -> None:
+        """
+        Determines whether there are differences across runs for each of the
+        fields being compared and sets the `has_differences` field in the
+        corresponding `ComparisonValues` accordingly.
+        """
+
+        for comparison_values in self.information.values():
+            comparison_values.determine_differences()
+
+        for comparison_values in self.metadata.values():
+            comparison_values.determine_differences()
+
+        if self.metrics is not None:
+            for comparison_values in self.metrics.values():
+                comparison_values.determine_differences()
+
+        if self.options is not None:
+            for comparison_values in self.options.values():
+                comparison_values.determine_differences()
+
+    def to_flat_dict(self) -> dict[str, Any]:
+        """
+        Converts the `RunComparison` object to a dictionary that eliminates the
+        nesting caused by the `ComparisonValues` class. It takes the dictionary
+        of values that maps the run ID with its value for a field and assigns
+        it to each of the field keys of an attribute.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary representation of the `RunComparison` object that
+            eliminates the nesting caused by the `ComparisonValues` class.
+        """
+
+        flat_dict = {
+            "run_ids": self.run_ids,
+            "information": {field: comparison_values.values for field, comparison_values in self.information.items()},
+            "metadata": {field: comparison_values.values for field, comparison_values in self.metadata.items()},
+        }
+
+        if self.metrics is not None:
+            flat_dict["metrics"] = {
+                field: comparison_values.values for field, comparison_values in self.metrics.items()
+            }
+
+        if self.options is not None:
+            flat_dict["options"] = {
+                field: comparison_values.values for field, comparison_values in self.options.items()
+            }
+
+        return flat_dict

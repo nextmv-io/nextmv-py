@@ -9,7 +9,8 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from collections.abc import Callable
+from collections import defaultdict
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 import rich
@@ -28,9 +29,11 @@ from nextmv.options import Options
 from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
+    ComparisonValues,
     ExternalRunResult,
     Metadata,
     Run,
+    RunComparison,
     RunConfiguration,
     RunInformation,
     RunLog,
@@ -410,6 +413,81 @@ class ApplicationRunMixin:
             polling_options=polling_options,
             output_dir_path=output_dir_path,
         )
+
+    def compare_runs(self: "Application", run_ids: Iterable[str]) -> RunComparison:
+        """
+        Compare multiple runs by their IDs.
+
+        The number of provided runs must be between 1 and 20.
+
+        Parameters
+        ----------
+        run_ids: Iterable[str]
+            An iterable of run IDs to compare. The number of provided runs must
+            be between 1 and 20.
+
+        Returns
+        -------
+        ComparedRuns
+            An object containing the comparison of the runs.
+
+        Raises
+        ------
+        ValueError
+            If the number of provided runs is less than 1 or greater than 20.
+        requests.HTTPError
+            If any of the responses when fetching run information is not 2xx.
+        """
+
+        if len(run_ids) < 1 or len(run_ids) > 20:
+            raise ValueError("You must provide between 1 and 20 run IDs to compare.")
+
+        unique_run_ids = set(run_ids)
+        if len(unique_run_ids) != len(run_ids):
+            raise ValueError("Duplicate run IDs provided. Please provide unique run IDs for comparison.")
+
+        run_infos = [self.run_information(run_id) for run_id in run_ids]
+
+        compared_metrics = defaultdict(ComparisonValues)
+        compared_options = defaultdict(ComparisonValues)
+        compared_metadata = defaultdict(ComparisonValues)
+        compared_info = defaultdict(ComparisonValues)
+        run_ids = []
+
+        for run_info in run_infos:
+            run_id = run_info.id
+            run_ids.append(run_id)
+
+            # Gather the info and metadata.
+            compared_info = _process_information_comparison(run_id, run_info, compared_info)
+            metadata = run_info.metadata
+            compared_metadata = _process_metadata_comparison(run_id, metadata, compared_metadata)
+
+            # Gather the metrics.
+            metrics = metadata.metrics
+            if metrics:
+                for k, v in metrics.items():
+                    if isinstance(v, (int, float)):
+                        v = round(v, 5)
+
+                    compared_metrics[k].values[run_id] = v
+
+            # Gather the options.
+            options = metadata.options
+            if options:
+                for k, v in options.active_options.items():
+                    compared_options[k].values[run_id] = v
+
+        comp = RunComparison(
+            run_ids=run_ids,
+            information=compared_info,
+            metadata=compared_metadata,
+            metrics=compared_metrics if compared_metrics else None,
+            options=compared_options if compared_options else None,
+        )
+        comp.determine_differences()
+
+        return comp
 
     def download_asset_content(
         self: "Application",
@@ -2288,3 +2366,57 @@ class ApplicationRunMixin:
             return tracking.input_id
 
         return None
+
+
+def _process_information_comparison(
+    run_id: str,
+    run_info: RunInformation,
+    compared_info: dict[str, ComparisonValues],
+) -> dict[str, ComparisonValues]:
+    """
+    Auxiliary function to process the run information of a run and make nice
+    comparisons of the different fields.
+    """
+
+    info_dict = run_info.to_dict()
+    for k, v in info_dict.items():
+        if k in {"metadata", "console_url"}:
+            continue
+
+        compared_info[k].values[run_id] = v
+
+    return compared_info
+
+
+def _process_metadata_comparison(
+    run_id: str,
+    metadata: Metadata,
+    compared_metadata: dict[str, ComparisonValues],
+) -> dict[str, ComparisonValues]:
+    """
+    Auxiliary function to process the metadata of a run and make nice
+    comparisons of the different fields.
+    """
+
+    meta_dict = metadata.to_dict()
+    for key, value in meta_dict.items():
+        if key in {"metrics", "options"}:
+            continue
+        elif key == "format":
+            compared_metadata["content_format"].values[run_id] = metadata.content_format.value
+        elif key == "integration":
+            integ_dict = value
+            for k, v in integ_dict.items():
+                compared_metadata[k].values[run_id] = v
+        elif key == "run_type":
+            compared_metadata[key].values[run_id] = metadata.run_type.run_type.value
+        elif key == "tracking":
+            track_dict = value
+            for k, v in track_dict.items():
+                compared_metadata[k].values[run_id] = v
+        elif key == "status_v2":
+            compared_metadata["status"].values[run_id] = metadata.status_v2.value
+        else:
+            compared_metadata[key].values[run_id] = value
+
+    return compared_metadata

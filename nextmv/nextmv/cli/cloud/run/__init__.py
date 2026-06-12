@@ -6,6 +6,7 @@ import typer
 
 from nextmv.cli.cloud.run.cancel import app as cancel_app
 from nextmv.cli.cloud.run.clone import app as clone_app
+from nextmv.cli.cloud.run.compare import app as compare_app
 from nextmv.cli.cloud.run.create import app as create_app
 from nextmv.cli.cloud.run.delete import app as delete_app
 from nextmv.cli.cloud.run.get import app as get_app
@@ -20,6 +21,7 @@ from nextmv.cli.cloud.run.track import app as track_app
 app = typer.Typer()
 app.add_typer(cancel_app)
 app.add_typer(clone_app)
+app.add_typer(compare_app)
 app.add_typer(create_app)
 app.add_typer(delete_app)
 app.add_typer(get_app)
