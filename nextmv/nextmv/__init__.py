@@ -58,6 +58,7 @@ from .polling import DEFAULT_POLLING_OPTIONS as DEFAULT_POLLING_OPTIONS
 from .polling import PollingOptions as PollingOptions
 from .polling import default_polling_options as default_polling_options
 from .polling import poll as poll
+from .run import ComparisonValues as ComparisonValues
 from .run import ErrorLog as ErrorLog
 from .run import ExternalRunResult as ExternalRunResult
 from .run import Format as Format
@@ -68,6 +69,7 @@ from .run import MetricsIndicator as MetricsIndicator
 from .run import OptionsSummaryItem as OptionsSummaryItem
 from .run import OptionSummary as OptionSummary
 from .run import Run as Run
+from .run import RunComparison as RunComparison
 from .run import RunConfiguration as RunConfiguration
 from .run import RunInfoMetrics as RunInfoMetrics
 from .run import RunInformation as RunInformation
