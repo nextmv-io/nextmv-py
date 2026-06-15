@@ -224,6 +224,12 @@ def _resolve_auth_type(
     """Determine the authentication type from flags or interactive prompt."""
     # Explicit API key always wins.
     if api_key is not None and api_key.strip():
+        if auth_type == AuthType.PKCE:
+            warning(
+                "The [magenta]NEXTMV_API_KEY[/magenta] environment variable is set and takes precedence "
+                "over the requested [magenta]pkce[/magenta] auth type. "
+                "Unset [magenta]NEXTMV_API_KEY[/magenta] to create a [magenta]pkce[/magenta] profile."
+            )
         return AuthType.API_KEY
 
     # Explicit --auth-type flag (already validated by Typer).
@@ -287,7 +293,7 @@ def _create_api_key_profile(
 
     success("Configuration saved successfully.")
     message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-    message(f"[bold]Type[/bold]: [magenta]{AuthType.API_KEY}[/magenta]", indents=1)
+    message(f"[bold]Type[/bold]: [magenta]{AuthType.API_KEY.value}[/magenta]", indents=1)
     message(f"[bold]API Key[/bold]: [magenta]{obscure_api_key(api_key)}[/magenta]", indents=1)
     if endpoint != DEFAULT_ENDPOINT:
         message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
@@ -402,7 +408,7 @@ def _create_pkce_profile(  # noqa: C901
 
     success("Configuration saved successfully.")
     message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
-    message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE}[/magenta]", indents=1)
+    message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE.value}[/magenta]", indents=1)
     message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
     message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
     if endpoint != DEFAULT_ENDPOINT:
