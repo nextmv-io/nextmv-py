@@ -96,12 +96,16 @@ DEFAULT_AUTH_SESSION = "default"
 
 def apply_system_certs() -> None:
     """
-    Patch the Python SSL module to use the operating system's certificate store.
+    Patch the Python SSL module to use the operating system's certificate store
+    and propagate the configuration to child processes.
 
     Calls :func:`truststore.inject_into_ssl`, which replaces the default
     ``ssl.create_default_context`` factory so that all subsequent TLS
     connections (including those made by ``requests``) trust the OS certificate
     store instead of the bundled ``certifi`` CA bundle.
+
+    Also sets ``UV_SYSTEM_CERTS=true`` in the process environment so that
+    ``uv`` child processes also trust the OS certificate store.
 
     This is a global, process-wide side effect.  Calling it multiple times is
     harmless (it is idempotent).
@@ -114,6 +118,10 @@ def apply_system_certs() -> None:
     import truststore
 
     truststore.inject_into_ssl()
+
+    # Propagate to uv child processes — uv respects this env var natively.
+    if "UV_SYSTEM_CERTS" not in os.environ:
+        os.environ["UV_SYSTEM_CERTS"] = "true"
 
 
 # >>> Token storage
