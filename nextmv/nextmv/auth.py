@@ -124,6 +124,41 @@ def apply_system_certs() -> None:
         os.environ["UV_SYSTEM_CERTS"] = "true"
 
 
+def resolve_system_certs(profile: str | None = None) -> bool:
+    """
+    Apply system certificates if enabled via environment variable or profile config.
+
+    Resolution order:
+    1. ``NEXTMV_SYSTEM_CERTS`` env var (``1``, ``true``, ``yes`` → enabled).
+    2. ``system_certs`` flag on the given profile (or the default profile).
+
+    Returns ``True`` if system certificates were applied, ``False`` otherwise.
+
+    Parameters
+    ----------
+    profile : str | None
+        The profile name.  If ``None``, the default (top-level) profile is used.
+
+    Returns
+    -------
+    bool
+        Whether system certificates were applied.
+    """
+    from nextmv.config import get_system_certs, load_config
+
+    env_val = os.environ.get("NEXTMV_SYSTEM_CERTS", "").strip().lower()
+    if env_val in ("1", "true", "yes"):
+        apply_system_certs()
+        return True
+
+    config = load_config()
+    if get_system_certs(config, profile):
+        apply_system_certs()
+        return True
+
+    return False
+
+
 # >>> Token storage
 
 
