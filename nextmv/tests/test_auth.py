@@ -2,6 +2,7 @@
 Unit tests for the PKCE auth helpers in nextmv.auth.
 """
 
+import os
 import tempfile
 import unittest
 import urllib.parse
@@ -173,6 +174,35 @@ class TestApplySystemCerts(unittest.TestCase):
             apply_system_certs()
             apply_system_certs()
             self.assertEqual(mock_inject.call_count, 2)
+
+    def test_sets_uv_system_certs_env_var(self):
+        """UV_SYSTEM_CERTS is set so uv subprocesses trust the system cert store."""
+        import truststore  # noqa: F401
+        from nextmv.auth import apply_system_certs
+
+        old_val = os.environ.pop("UV_SYSTEM_CERTS", None)
+        try:
+            with patch("truststore.inject_into_ssl"):
+                apply_system_certs()
+            self.assertEqual(os.environ.get("UV_SYSTEM_CERTS"), "true")
+        finally:
+            if old_val is not None:
+                os.environ["UV_SYSTEM_CERTS"] = old_val
+            else:
+                os.environ.pop("UV_SYSTEM_CERTS", None)
+
+    def test_does_not_override_existing_uv_system_certs(self):
+        """If UV_SYSTEM_CERTS is already set, apply_system_certs does not overwrite it."""
+        import truststore  # noqa: F401
+        from nextmv.auth import apply_system_certs
+
+        os.environ["UV_SYSTEM_CERTS"] = "false"
+        try:
+            with patch("truststore.inject_into_ssl"):
+                apply_system_certs()
+            self.assertEqual(os.environ["UV_SYSTEM_CERTS"], "false")
+        finally:
+            os.environ.pop("UV_SYSTEM_CERTS", None)
 
 
 class TestValidateTokenResponse(unittest.TestCase):
