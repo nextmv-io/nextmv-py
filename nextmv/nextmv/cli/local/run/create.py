@@ -9,6 +9,7 @@ from typing import Annotated, Any
 
 import typer
 
+from nextmv.auth import resolve_system_certs
 from nextmv.cli.configuration.config import build_local_app
 from nextmv.cli.local.run.get import handle_outputs
 from nextmv.cli.local.run.logs import handle_logs
@@ -229,6 +230,9 @@ def create(
             ),
         )
     run_options = build_run_options(options)
+
+    # Apply system certificates if enabled — must happen before spawning uv.
+    resolve_system_certs()
 
     # Start the run before deciding if we should poll or not.
     input_kwarg = resolve_input_kwarg(stdin=stdin, input=input)

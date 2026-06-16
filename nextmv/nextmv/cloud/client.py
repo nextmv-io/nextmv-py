@@ -34,6 +34,7 @@ from nextmv.auth import (
     is_token_expired,
     load_tokens,
     refresh_tokens,
+    resolve_system_certs,
     save_tokens,
 )
 from nextmv.config import (
@@ -45,7 +46,6 @@ from nextmv.config import (
     get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
-    get_system_certs,
     get_team_id,
     load_config,
     load_sessions,
@@ -299,15 +299,10 @@ class Client:
         self.url = self.__resolve_endpoint(profile)
 
         # Resolve system_certs: explicit constructor arg > env var > config file.
-        if not self.system_certs:
-            env_val = os.environ.get("NEXTMV_SYSTEM_CERTS", "").strip().lower()
-            if env_val in ("1", "true", "yes"):
-                self.system_certs = True
-            else:
-                config = load_config()
-                self.system_certs = get_system_certs(config, profile)
         if self.system_certs:
             apply_system_certs()
+        elif resolve_system_certs(profile):
+            self.system_certs = True
 
         bearer_token, team_id = self.__resolve_bearer_token_for_pkce(profile)
         if bearer_token is not None:
