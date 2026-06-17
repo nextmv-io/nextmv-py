@@ -487,7 +487,7 @@ def _set_or_pop(d: dict, key: str, value: Any) -> None:
         d.pop(key, None)
 
 
-def _ensure_token(
+def _ensure_token(  # noqa: C901
     session: str,
     endpoint: str,
     oidc_discovery_url: str | None,

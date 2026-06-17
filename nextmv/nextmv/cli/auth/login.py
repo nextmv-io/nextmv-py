@@ -121,7 +121,7 @@ def login(
     _run_login(profiles_to_login, config, sessions, force)
 
 
-def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:
+def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:  # noqa: C901
     """Run the login flow for the given list of profiles."""
     failed: list[str] = []
     # Deduplicate: one browser flow per unique (session, endpoint) pair.
