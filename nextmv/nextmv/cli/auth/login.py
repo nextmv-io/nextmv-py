@@ -13,7 +13,7 @@ from typing import Annotated
 
 import typer
 
-from nextmv.auth import apply_system_certs, run_pkce_flow, save_tokens
+from nextmv.auth import apply_system_certs, fetch_sso_provider, run_pkce_flow, save_tokens
 from nextmv.cli.message import error, in_progress, info, success, warning
 from nextmv.config import (
     CLIENT_ID_KEY,
@@ -23,6 +23,7 @@ from nextmv.config import (
     get_auth_type,
     get_endpoint_oidc_config,
     get_profile_endpoint,
+    get_sso_domain,
     get_system_certs,
     list_pkce_profiles,
     load_config,
@@ -120,7 +121,7 @@ def login(
     _run_login(profiles_to_login, config, sessions, force)
 
 
-def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:
+def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:  # noqa: C901
     """Run the login flow for the given list of profiles."""
     failed: list[str] = []
     # Deduplicate: one browser flow per unique (session, endpoint) pair.
@@ -129,6 +130,7 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
     seen_sessions: dict[tuple[str, str], list[str]] = {}  # (session, endpoint) -> [display_name, ...]
     session_oidc: dict[tuple[str, str], tuple[str | None, str | None]] = {}
     session_system_certs: dict[tuple[str, str], bool] = {}
+    session_sso_domain: dict[tuple[str, str], str | None] = {}
 
     for prof in profiles_to_login:
         display_name = prof if prof is not None else "default"
@@ -148,11 +150,26 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
         session_oidc[key] = (oidc_cfg.get(OIDC_DISCOVERY_URL_KEY), oidc_cfg.get(CLIENT_ID_KEY))
         if get_system_certs(config, prof):
             session_system_certs[key] = True
+        sso = get_sso_domain(config, prof)
+        if sso and key not in session_sso_domain:
+            session_sso_domain[key] = sso
 
     for (session, endpoint), profile_names in seen_sessions.items():
         oidc_discovery_url, oidc_client_id = session_oidc[(session, endpoint)]
         if session_system_certs.get((session, endpoint), False):
             apply_system_certs()
+
+        identity_provider: str | None = None
+        sso_domain = session_sso_domain.get((session, endpoint))
+        if sso_domain:
+            try:
+                identity_provider = fetch_sso_provider(sso_domain, endpoint)
+            except Exception:
+                warning(
+                    f"Failed to check SSO status for domain [magenta]{sso_domain}[/magenta]. "
+                    "Falling back to standard login."
+                )
+
         profiles_display = ", ".join(f"[magenta]{n}[/magenta]" for n in profile_names)
         in_progress(
             f"Logging in to session [magenta]{session}[/magenta] "
@@ -164,6 +181,7 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
                 oidc_discovery_url=oidc_discovery_url,
                 client_id=oidc_client_id,
                 force=force,
+                identity_provider=identity_provider,
             )
             save_tokens(session, tokens)
             success(f"Logged in to session [magenta]{session}[/magenta] successfully.")

@@ -57,7 +57,7 @@ from typing import Any
 import yaml
 
 from nextmv.auth import CLIENT_ID as _AUTH_CLIENT_ID
-from nextmv.auth import DEFAULT_AUTH_SESSION
+from nextmv.auth import DEFAULT_AUTH_SESSION, _strip_scheme
 from nextmv.auth import OIDC_DISCOVERY_URL as _AUTH_OIDC_DISCOVERY_URL
 
 # Paths
@@ -72,6 +72,7 @@ AUTH_TYPE_KEY = "auth_type"
 AUTH_SESSION_KEY = "auth_session"
 TEAM_ID_KEY = "team_id"
 SYSTEM_CERTS_KEY = "system_certs"
+SSO_DOMAIN_KEY = "sso_domain"
 
 # Sessions keys
 OIDC_DISCOVERY_URL_KEY = "oidc_discovery_url"
@@ -99,16 +100,6 @@ _BUILTIN_OIDC: dict[str, dict[str, str]] = {
         CLIENT_ID_KEY: _AUTH_CLIENT_ID,
     },
 }
-
-
-def _strip_scheme(url: str) -> str:
-    """Strip a leading ``https://`` or ``http://`` scheme and trailing slash."""
-    s = url.strip()
-    for prefix in ("https://", "http://"):
-        if s.startswith(prefix):
-            s = s[len(prefix) :]
-            break
-    return s.rstrip("/")
 
 
 _OIDC_DISCOVERY_SUFFIX = "/.well-known/openid-configuration"
@@ -268,6 +259,7 @@ def non_profile_keys() -> set[str]:
         AUTH_SESSION_KEY,
         TEAM_ID_KEY,
         SYSTEM_CERTS_KEY,
+        SSO_DOMAIN_KEY,
         DEFAULT_AUTH_SESSION,
     }
 
@@ -391,6 +383,18 @@ def get_system_certs(config: dict, profile: str | None) -> bool:
         profile_data = config.get(profile, {})
         raw = profile_data.get(SYSTEM_CERTS_KEY, False) if isinstance(profile_data, dict) else False
     return bool(raw)
+
+
+def get_sso_domain(config: dict, profile: str | None) -> str | None:
+    """Return the SSO domain stored in *profile*, or ``None`` if not set."""
+    if profile is None:
+        raw = config.get(SSO_DOMAIN_KEY)
+    else:
+        profile_data = config.get(profile, {})
+        raw = profile_data.get(SSO_DOMAIN_KEY) if isinstance(profile_data, dict) else None
+    if raw and isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
 
 
 def get_profile_endpoint(config: dict, profile: str | None) -> str:
