@@ -91,6 +91,14 @@ DEFAULT_AUTH_SESSION = "default"
 # >>> Token storage
 
 
+# >>> Shared helpers
+
+
+def _strip_scheme(url: str) -> str:
+    """Strip a leading ``https://`` or ``http://`` scheme and trailing slash."""
+    return url.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+
+
 # >>> TLS helpers
 
 
@@ -759,6 +767,7 @@ def run_pkce_flow(
     oidc_discovery_url: str | None = None,
     client_id: str | None = None,
     force: bool = False,
+    identity_provider: str | None = None,
 ) -> dict[str, Any]:
     """
     Execute the full PKCE authorization-code flow.
@@ -788,6 +797,10 @@ def run_pkce_flow(
         which clears any active browser session, and chains all authorization
         parameters onto it so that the provider immediately presents the login
         page.  Defaults to ``False``.
+    identity_provider : str | None
+        When set, adds ``identity_provider=<value>`` to the authorization URL
+        so that Cognito delegates to a third-party SSO provider.  Use
+        :func:`fetch_sso_provider` to resolve the identifier from a domain.
 
     Returns
     -------
@@ -823,6 +836,8 @@ def run_pkce_flow(
         "code_challenge": code_challenge,
         "state": state,
     }
+    if identity_provider:
+        auth_params["identity_provider"] = identity_provider
 
     if force:
         # Use the logout endpoint to clear the Cognito session, then chain the
@@ -917,8 +932,8 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
             f"Refusing to send tokens over plain HTTP for endpoint {endpoint!r}. Use https:// or a bare hostname."
         )
     # Strip https:// if present so we always build a consistent URL.
-    bare = endpoint.removeprefix("https://").removeprefix("http://")
-    url = f"https://{bare.rstrip('/')}/v1/internal/me/organization"
+    bare = _strip_scheme(endpoint)
+    url = f"https://{bare}/v1/internal/me/organization"
     resp = requests.get(
         url,
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
@@ -926,3 +941,37 @@ def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def fetch_sso_provider(domain: str, endpoint: str) -> str | None:
+    """
+    Check whether a third-party SSO provider is enabled for *domain*.
+
+    Calls ``GET https://<endpoint>/v1/enterprise/sso/domain?domain=<domain>``
+    (no authentication required).  Returns the ``domain_identifier`` if SSO is
+    enabled, or ``None`` otherwise.
+
+    Parameters
+    ----------
+    domain : str
+        The email domain to check, e.g. ``"nextmv.io"``.
+    endpoint : str
+        The API endpoint hostname, e.g. ``"api.cloud.nextmv.io"``.
+
+    Returns
+    -------
+    str | None
+        The ``domain_identifier`` when SSO is enabled, ``None`` otherwise.
+    """
+    if endpoint.startswith("http://"):
+        raise ValueError(
+            f"Refusing to connect over plain HTTP for endpoint {endpoint!r}. Use https:// or a bare hostname."
+        )
+    bare = _strip_scheme(endpoint)
+    url = f"https://{bare}/v1/enterprise/sso/domain?domain={domain}"
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    body: dict[str, str] = resp.json()
+    if body.get("enabled") and body.get("domain_identifier"):
+        return body["domain_identifier"]
+    return None

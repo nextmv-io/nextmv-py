@@ -2,17 +2,20 @@
 This module defines the configuration create command for the Nextmv CLI.
 """
 
-from typing import Annotated
+import sys
+from typing import Annotated, Any
 
 import typer
 from rich.prompt import Prompt
 
 from nextmv.auth import (
     CLIENT_ID,
+    _strip_scheme,
     _validate_id_token,
     apply_system_certs,
     delete_tokens,
     fetch_organizations,
+    fetch_sso_provider,
     is_invalid_grant_error,
     is_token_expired,
     load_tokens,
@@ -32,11 +35,11 @@ from nextmv.config import (
     DEFAULT_ENDPOINT,
     ENDPOINT_KEY,
     OIDC_DISCOVERY_URL_KEY,
+    SSO_DOMAIN_KEY,
     SYSTEM_CERTS_KEY,
     TEAM_ID_KEY,
     AuthType,
     _normalize_oidc_discovery_url,
-    _strip_scheme,
     get_endpoint_oidc_config,
     load_config,
     load_sessions,
@@ -130,6 +133,14 @@ def create(
             metavar="PROFILE_NAME",
         ),
     ] = None,
+    email: Annotated[
+        str | None,
+        typer.Option(
+            "--email",
+            help="Your login email to detect a third-party SSO provider. Only the domain part is stored.",
+            metavar="EMAIL",
+        ),
+    ] = None,
     system_certs: Annotated[
         bool,
         typer.Option(
@@ -198,10 +209,11 @@ def create(
         )
 
     resolved_type = _resolve_auth_type(api_key, auth_type, oidc_discovery_url, oidc_client_id)
+    sso_domain = _resolve_email_domain(email)
     config = load_config()
 
     if resolved_type == AuthType.API_KEY:
-        _create_api_key_profile(config, profile, endpoint, api_key, system_certs)
+        _create_api_key_profile(config, profile, endpoint, api_key, system_certs, sso_domain)
     else:
         _create_pkce_profile(
             config=config,
@@ -212,6 +224,7 @@ def create(
             oidc_client_id=oidc_client_id,
             team=team,
             system_certs=system_certs,
+            sso_domain=sso_domain,
         )
 
 
@@ -256,6 +269,7 @@ def _create_api_key_profile(
     endpoint: str,
     api_key: str | None,
     system_certs: bool,
+    sso_domain: str | None,
 ) -> None:
     """Collect an API key (interactively if needed) and save the profile."""
     if api_key is None or not api_key.strip():
@@ -274,20 +288,16 @@ def _create_api_key_profile(
         config[API_KEY_KEY] = api_key
         config[ENDPOINT_KEY] = endpoint
         config.pop(AUTH_TYPE_KEY, None)
-        if system_certs:
-            config[SYSTEM_CERTS_KEY] = True
-        else:
-            config.pop(SYSTEM_CERTS_KEY, None)
+        _set_or_pop(config, SYSTEM_CERTS_KEY, system_certs)
+        _set_or_pop(config, SSO_DOMAIN_KEY, sso_domain)
     else:
         if profile not in config:
             config[profile] = {}
         config[profile][API_KEY_KEY] = api_key
         config[profile][ENDPOINT_KEY] = endpoint
         config[profile].pop(AUTH_TYPE_KEY, None)
-        if system_certs:
-            config[profile][SYSTEM_CERTS_KEY] = True
-        else:
-            config[profile].pop(SYSTEM_CERTS_KEY, None)
+        _set_or_pop(config[profile], SYSTEM_CERTS_KEY, system_certs)
+        _set_or_pop(config[profile], SSO_DOMAIN_KEY, sso_domain)
 
     save_config(config)
 
@@ -308,6 +318,7 @@ def _create_pkce_profile(  # noqa: C901
     oidc_client_id: str | None,
     team: str | None,
     system_certs: bool,
+    sso_domain: str | None,
 ) -> None:
     """Ensure OIDC config, resolve team, and save a pkce profile."""
     # Custom endpoints require an explicit auth session to avoid mixing tokens
@@ -367,6 +378,7 @@ def _create_pkce_profile(  # noqa: C901
         endpoint=endpoint,
         oidc_discovery_url=resolved_oidc_url,
         client_id=resolved_oidc_client_id,
+        sso_domain=sso_domain,
     )
 
     team_id = _resolve_team_id(
@@ -380,14 +392,9 @@ def _create_pkce_profile(  # noqa: C901
         config[ENDPOINT_KEY] = endpoint
         config[TEAM_ID_KEY] = team_id
         config.pop(API_KEY_KEY, None)
-        if auth_session:
-            config[AUTH_SESSION_KEY] = auth_session
-        else:
-            config.pop(AUTH_SESSION_KEY, None)
-        if system_certs:
-            config[SYSTEM_CERTS_KEY] = True
-        else:
-            config.pop(SYSTEM_CERTS_KEY, None)
+        _set_or_pop(config, AUTH_SESSION_KEY, auth_session)
+        _set_or_pop(config, SYSTEM_CERTS_KEY, system_certs)
+        _set_or_pop(config, SSO_DOMAIN_KEY, sso_domain)
     else:
         if profile not in config:
             config[profile] = {}
@@ -395,14 +402,9 @@ def _create_pkce_profile(  # noqa: C901
         config[profile][ENDPOINT_KEY] = endpoint
         config[profile][TEAM_ID_KEY] = team_id
         config[profile].pop(API_KEY_KEY, None)
-        if auth_session:
-            config[profile][AUTH_SESSION_KEY] = auth_session
-        else:
-            config[profile].pop(AUTH_SESSION_KEY, None)
-        if system_certs:
-            config[profile][SYSTEM_CERTS_KEY] = True
-        else:
-            config[profile].pop(SYSTEM_CERTS_KEY, None)
+        _set_or_pop(config[profile], AUTH_SESSION_KEY, auth_session)
+        _set_or_pop(config[profile], SYSTEM_CERTS_KEY, system_certs)
+        _set_or_pop(config[profile], SSO_DOMAIN_KEY, sso_domain)
 
     save_config(config)
 
@@ -449,11 +451,48 @@ def _resolve_oidc_config(
     return resolved_discovery_url, resolved_client_id
 
 
-def _ensure_token(
+def _extract_email_domain(raw: str) -> str | None:
+    """Extract the email domain from user input.
+
+    Accepts full email (``user@example.com``), bare domain (``example.com``),
+    or domain with ``@`` (``@example.com``).  Returns ``None`` for empty input.
+    """
+    stripped = raw.strip()
+    if not stripped:
+        return None
+    domain = stripped.lstrip("@").rsplit("@", 1)[-1]
+    return domain.strip() or None
+
+
+def _resolve_email_domain(email_flag: str | None) -> str | None:
+    """Resolve the email domain from the --email flag or interactive prompt."""
+    if email_flag is not None:
+        return _extract_email_domain(email_flag)
+
+    if not sys.stdin.isatty():
+        return None
+
+    raw = Prompt.ask(
+        "Enter your login email (leave empty if no SSO provider)",
+        default="",
+    ).strip()
+    return _extract_email_domain(raw)
+
+
+def _set_or_pop(d: dict, key: str, value: Any) -> None:
+    """Set *key* in *d* when *value* is truthy, otherwise remove it."""
+    if value:
+        d[key] = value
+    else:
+        d.pop(key, None)
+
+
+def _ensure_token(  # noqa: C901
     session: str,
     endpoint: str,
     oidc_discovery_url: str | None,
     client_id: str | None,
+    sso_domain: str | None = None,
 ) -> str:
     """
     Return a valid id_token for *session*, running the PKCE browser flow
@@ -521,6 +560,15 @@ def _ensure_token(
                 # Fall through to full browser flow.
 
     # No usable token — open the browser.
+    identity_provider: str | None = None
+    if sso_domain:
+        try:
+            identity_provider = fetch_sso_provider(sso_domain, endpoint)
+        except Exception:
+            warning(
+                f"Failed to check SSO status for domain [magenta]{sso_domain}[/magenta]. "
+                "Falling back to standard login."
+            )
     message(
         f"Opening browser to authenticate session [magenta]{session}[/magenta] "
         f"against [magenta]{endpoint}[/magenta]...",
@@ -528,6 +576,7 @@ def _ensure_token(
     tokens = run_pkce_flow(
         oidc_discovery_url=oidc_discovery_url,
         client_id=client_id,
+        identity_provider=identity_provider,
     )
     save_tokens(session, tokens)
     token = tokens.get("id_token")
