@@ -13,19 +13,13 @@ from pathlib import Path
 
 import rich
 
+from nextmv._uv_handler import _find_uv_binary
 from nextmv.cache import dep_cache_key, format_bytes, get_cached_dep, store_dep
 from nextmv.logger import log
-from nextmv.manifest import (
-    MANIFEST_FILE_NAME,
-    Manifest,
-    ManifestBuild,
-    ManifestType,
-    ModelConfiguration,
-    find_files,
-    read_pyproject_dependencies,
-)
+from nextmv.manifest import (MANIFEST_FILE_NAME, Manifest, ManifestBuild,
+                             ManifestType, ModelConfiguration, find_files,
+                             read_pyproject_dependencies)
 from nextmv.model import Model, _cleanup_python_model
-from nextmv.uv_handler import _find_uv_binary
 
 _IO_CHUNK_SIZE = 65536
 """
