@@ -492,9 +492,9 @@ def _install_dependencies(
             python_version = manifest.python.version
 
         if not manifest.python.arch or manifest.python.arch == "arm64":
-            uv_platform = "aarch64-unknown-linux-gnu"
+            uv_platform = "aarch64-manylinux_2_34"
         elif manifest.python.arch == "amd64":
-            uv_platform = "x86_64-unknown-linux-gnu"
+            uv_platform = "x86_64-manylinux_2_34"
         else:
             raise Exception(f"unknown architecture '{manifest.python.arch}' specified in manifest")
 
@@ -603,7 +603,7 @@ def _resolve_and_install_deps(
     python_version : str
         The Python version to target, e.g. "3.11".
     uv_platform : str
-        The `uv` platform string to target, e.g. "x86_64-unknown-linux-gnu".
+        The `uv` platform string to target, e.g. "x86_64-manylinux_2_34".
     app_dir : str
         The application directory to use as the working directory for `uv pip`
         commands.
@@ -682,7 +682,7 @@ def _collect_cached_package_tars(
     python_version : str
         The Python version to target, e.g. "3.11".
     uv_platform : str
-        The `uv` platform string to target, e.g. "x86_64-unknown-linux-gnu".
+        The `uv` platform string to target, e.g. "x86_64-manylinux_2_34".
 
     Returns
     -------
@@ -733,7 +733,7 @@ def _fetch_missing_package_tars(
     python_version : str
         The Python version to target, e.g. "3.11".
     uv_platform : str
-        The `uv` platform string to target, e.g. "x86_64-unknown-linux-gnu".
+        The `uv` platform string to target, e.g. "x86_64-manylinux_2_34".
     app_dir : str
         The application directory to use as the working directory for `uv pip`
         commands.
@@ -798,7 +798,7 @@ def _install_and_compress_package(
     python_version : str
         The target Python version string (e.g. `"3.11"`).
     uv_platform : str
-        The target platform string (e.g. `"aarch64-unknown-linux-gnu"`).
+        The target platform string (e.g. `"aarch64-manylinux_2_34"`).
     app_dir : str
         The application directory to use as the working directory for `uv pip`
         commands.
@@ -1049,7 +1049,7 @@ def _compile_lockfile(
     python_version : str
         The Python version to target, e.g. "3.11".
     uv_platform : str
-        The `uv` platform string to target, e.g. "x86_64-unknown-linux-gnu".
+        The `uv` platform string to target, e.g. "x86_64-manylinux_2_34".
     app_dir : str
         The application directory to use as the working directory for `uv pip`
         commands.
