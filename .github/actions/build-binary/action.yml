@@ -40,11 +40,14 @@ runs:
     - name: zip binary directory for distribution
       id: zip
       shell: python
+      env:
+        OS_LABEL: ${{ inputs.os }}
+        ARCH_LABEL: ${{ inputs.arch }}
       run: |
         import zipfile, os, pathlib
 
-        os_label   = "${{ inputs.os }}"
-        arch_label = "${{ inputs.arch }}"
+        os_label   = os.environ["OS_LABEL"]
+        arch_label = os.environ["ARCH_LABEL"]
         zip_name   = f"nextmv-{os_label}-{arch_label}.zip"
 
         src_dir  = pathlib.Path("nextmv/dist/nextmv")

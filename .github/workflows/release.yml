@@ -10,7 +10,7 @@ jobs:
   # >>> 'nextmv' package jobs.
   release-nextmv:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -22,7 +22,10 @@ jobs:
       PACKAGE_LOCATION: ./nextmv
       VERSION_FILE: __about__.py
       VERSION_PREFIX: nextmv-
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
+      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
+      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   release-binaries:
     name: Release ${{ matrix.os }}-${{ matrix.arch }} binaries
@@ -57,7 +60,9 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: build and zip binary
         id: build-binary
@@ -77,8 +82,9 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIP_NAME: ${{ steps.build-binary.outputs.zip-name }}
         run: |
-          gh release upload $VERSION dist/${{ steps.build-binary.outputs.zip-name }} --clobber
+          gh release upload $VERSION dist/$ZIP_NAME --clobber
         working-directory: nextmv/
 
   # Unfortunately, PyPI publishing does not support reusable workflows, so we
@@ -94,12 +100,13 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.ref_name }}
+          persist-credentials: false
 
       - name: set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
 
       - name: install dependencies
         run: |
@@ -111,24 +118,25 @@ jobs:
         working-directory: ./nextmv
 
       - name: python - publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           packages-dir: ./nextmv/dist
 
   notify-nextmv:
     needs: [release-nextmv, publish-nextmv]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     with:
       PACKAGE_NAME: nextmv
       VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
       REPOSITORY: nextmv-py
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
 
   # >>> 'nextmv-gurobipy' package jobs.
   release-nextmv-gurobipy:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -140,7 +148,10 @@ jobs:
       PACKAGE_LOCATION: ./nextmv-gurobipy
       VERSION_FILE: __about__.py
       VERSION_PREFIX: nextmv-gurobipy-
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
+      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
+      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   publish-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy]
@@ -153,12 +164,13 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: git clone ${{ github.ref_name }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.ref_name }}
+          persist-credentials: false
 
       - name: set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
 
       - name: install dependencies
         run: |
@@ -170,24 +182,25 @@ jobs:
         working-directory: ./nextmv-gurobipy
 
       - name: python - publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           packages-dir: ./nextmv-gurobipy/dist
 
   notify-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy, publish-nextmv-gurobipy]
     if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     with:
       PACKAGE_NAME: nextmv_gurobipy
       VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
       REPOSITORY: nextmv-py
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
 
   # >>> 'nextmv-scikit-learn' package jobs.
   release-nextmv-scikit-learn:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@develop
+    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -199,7 +212,10 @@ jobs:
       PACKAGE_LOCATION: ./nextmv-scikit-learn
       VERSION_FILE: __about__.py
       VERSION_PREFIX: nextmv-scikit-learn-
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
+      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
+      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   publish-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn]
@@ -212,10 +228,12 @@ jobs:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
 
       - name: Install dependencies
         run: |
@@ -227,16 +245,17 @@ jobs:
         working-directory: ./nextmv-scikit-learn
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           packages-dir: ./nextmv-scikit-learn/dist
 
   notify-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn, publish-nextmv-scikit-learn]
     if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
     with:
       PACKAGE_NAME: nextmv_sklearn
       VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
       REPOSITORY: nextmv-py
-    secrets: inherit
+    secrets:
+      SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
