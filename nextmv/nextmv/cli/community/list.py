@@ -44,18 +44,23 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List the available community apps.
+
         $ [dim]nextmv community list[/dim]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app.
+
         $ [dim]nextmv community list --app go-nextroute[/dim]
 
     - List the names of the available community apps as a flat list.
+
         $ [dim]nextmv community list --flat[/dim]
 
     - List the available versions of the [magenta]go-nextroute[/magenta] community app as a flat list.
+
         $ [dim]nextmv community list --app go-nextroute --flat[/dim]
 
     - List the available community apps using a profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv community list --profile hare[/dim]
     """
 

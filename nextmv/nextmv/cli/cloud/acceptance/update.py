@@ -58,14 +58,17 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of an acceptance test.
+
         $ [dim]nextmv cloud acceptance update --app-id hare-app \\
             --acceptance-test-id test-123 --name "Updated Test Name"[/dim]
 
     - Update the description of an acceptance test.
+
         $ [dim]nextmv cloud acceptance update --app-id hare-app \\
             --acceptance-test-id test-123 --description "Updated description"[/dim]
 
     - Update both name and description and save the result.
+
         $ [dim]nextmv cloud acceptance update --app-id hare-app \\
             --acceptance-test-id test-123 --name "New Name" \\
             --description "New description" --output updated-test.json[/dim]

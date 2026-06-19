@@ -32,6 +32,7 @@ def list(_: DebugOption = False) -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Show current configuration and all profiles.
+
         $ [dim]nextmv configuration list[/dim]
     """
 

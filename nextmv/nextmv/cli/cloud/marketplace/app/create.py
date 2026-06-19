@@ -100,29 +100,35 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a marketplace application with the title [magenta]Hare Routing[/magenta]. A random ID will be generated.
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing"[/dim]
 
     - Create a marketplace application with a specific ID [magenta]marketplace-hare[/magenta].
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing" --app-id marketplace-hare[/dim]
 
     - Create a marketplace application with a description.
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing" \\
             --description "Advanced routing solution for hare logistics"[/dim]
 
     - Create a marketplace application with categories.
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing" \\
             --categories routing --categories logistics[/dim]
 
     - Create a marketplace application with features.
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing" \\
             --features "real-time optimization" --features "multi-vehicle support"[/dim]
 
     - Create a marketplace application with all options.
+
         $ [dim]nextmv cloud marketplace app create --partner-id fluffy-comrade \\
             --reference-app-id hare-app --title "Hare Routing" --app-id marketplace-hare \\
             --description "Advanced routing solution" --categories routing \\

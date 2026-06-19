@@ -29,9 +29,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the instance with the ID [magenta]prod[/magenta] from application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud instance delete --app-id hare-app --instance-id prod[/dim]
 
     - Delete the instance without confirmation prompt.
+
         $ [dim]nextmv cloud instance delete --app-id hare-app --instance-id prod --yes[/dim]
     """
 

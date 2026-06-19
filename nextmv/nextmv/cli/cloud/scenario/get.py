@@ -60,16 +60,20 @@ def get(
 
     - Get the scenario test with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id carrot-optimization[/dim]
 
     - Get the scenario test and wait for it to complete if necessary.
+
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id bunny-hop-test --wait[/dim]
 
     - Get the scenario test and save the results to a file.
+
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id warren-planning \\
             --output results.json[/dim]
 
     - Get the scenario test using a specific profile.
+
         $ [dim]nextmv cloud scenario get --app-id hare-app --scenario-test-id lettuce-routes --profile prod[/dim]
     """
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)

@@ -90,19 +90,23 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a secrets collection with a single environment variable secret.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets '{"type": "env", "location": "API_KEY", "value": "secret-value"}'[/dim]
 
     - Create a secrets collection with multiple secrets by repeating the flag.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets '{"type": "env", "location": "API_KEY", "value": "secret-value"}' \\
             --secrets '{"type": "env", "location": "DATABASE_URL", "value": "postgres://localhost"}'[/dim]
 
     - Create a secrets collection with multiple secrets in a single JSON array.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets '[{"type": "env", "location": "DB_USER", "value": "admin"}, {...}]'[/dim]
 
     - Create a secrets collection with custom ID, name, and description.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets-collection-id db-creds --name "Database Credentials" \\
             --description "Production database credentials" \\
@@ -110,11 +114,13 @@ def create(
             --secrets '{"type": "env", "location": "DB_PASS", "value": "secure123"}'[/dim]
 
     - Create a secrets collection with file-based secrets.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets-collection-id certs --name "Certificates" \\
             --secrets '{"type": "file", "location": "licenses/acme.lic", "value": "LICENSE_CONTENT_HERE"}'[/dim]
 
     - Mix environment and file-based secrets.
+
         $ [dim]nextmv cloud secrets create --app-id hare-app \\
             --secrets '{"type": "env", "location": "ACME_LICENSE_KEY", "value": "abc123"}' \\
             --secrets '{"type": "file", "location": "config/app.conf", "value": "server=prod\\nport=8080"}'[/dim]

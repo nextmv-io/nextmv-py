@@ -75,23 +75,29 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an SSO configuration using a metadata URL.
+
         $ [dim]nextmv cloud sso create --metadata-url "https://sso.carrotexpress.com/saml/metadata"[/dim]
 
     - Create and enable SSO configuration immediately.
+
         $ [dim]nextmv cloud sso create --metadata-url "https://sso.bunnylogistics.io/metadata" \\
             --enabled[/dim]
 
     - Create SSO configuration allowing non-domain users.
+
         $ [dim]nextmv cloud sso create --metadata-url "https://idp.hopmail.com/saml/metadata" \\
             --allow-non-domain-users[/dim]
 
     - Create SSO configuration using a metadata document string.
+
         $ [dim]nextmv cloud sso create --metadata-document "<EntityDescriptor ...</EntityDescriptor>"[/dim]
 
     - Create SSO configuration using a metadata document file.
+
         $ [dim]nextmv cloud sso create --metadata-document "/path/to/metadata_document.xml"[/dim]
 
     - Create SSO configuration using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud sso create --metadata-url "https://sso.cottontailcouriers.net/metadata" \\
             --profile hare[/dim]
     """

@@ -39,9 +39,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the SSO configuration.
+
         $ [dim]nextmv cloud sso get[/dim]
 
     - Get the SSO configuration and save the information to an [magenta]sso_config.json[/magenta] file.
+
         $ [dim]nextmv cloud sso get --output sso_config.json[/dim]
     """
 

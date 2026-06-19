@@ -63,18 +63,22 @@ def sync(
 
     - Sync the registered local application with the ID [magenta]hare-app[/magenta] to the Cloud application
         with the ID [magenta]hare-cloud-app[/magenta], syncing all runs.
+
         $ [dim]nextmv local app sync --target-app-id hare-cloud-app --app-id hare-app[/dim]
 
     - Sync the local application at source path [magenta]./hare_app[/magenta] to the Cloud application
         with the ID [magenta]hare-cloud-app[/magenta], syncing only runs [magenta]run1, run2[/magenta].
+
         $ [dim]nextmv local app sync --target-app-id hare-cloud-app --app-src ./hare_app \\
             --run-ids run1 --run-ids run2[/dim]
 
     - Sync the registered local application with the ID [magenta]hare-app[/magenta] to the Cloud application
         with the ID [magenta]hare-cloud-app[/magenta], linking runs to instance [magenta]fluffy-inst[/magenta].
+
         $ [dim]nextmv local app sync --target-app-id hare-cloud-app --app-id hare-app --instance-id fluffy-inst[/dim]
 
     - Sync local applications using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv local app sync --target-app-id hare-cloud-app --app-id hare-app --profile hare[/dim]
     """
 

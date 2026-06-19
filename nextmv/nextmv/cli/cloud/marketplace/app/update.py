@@ -88,23 +88,28 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the title of a marketplace application.
+
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
             --app-id marketplace-hare --title "Advanced Hare Routing"[/dim]
 
     - Update the description of a marketplace application.
+
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
             --app-id marketplace-hare --description "Enterprise-grade routing solution"[/dim]
 
     - Update categories and features.
+
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
             --app-id marketplace-hare --categories routing --categories logistics \\
             --features "real-time optimization"[/dim]
 
     - Update the state of a marketplace application.
+
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
             --app-id marketplace-hare --state released[/dim]
 
     - Update multiple fields and save the result to a file.
+
         $ [dim]nextmv cloud marketplace app update --partner-id my-partner \\
             --app-id marketplace-hare --title "New Title" --state released \\
             --output app.json[/dim]

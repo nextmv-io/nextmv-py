@@ -68,22 +68,27 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update an input set's name.
+
         $ [dim]nextmv cloud input-set update --app-id hare-app \\
             --input-set-id hare-input-set --name "New Name"[/dim]
 
     - Update an input set's description.
+
         $ [dim]nextmv cloud input-set update --app-id hare-app \\
             --input-set-id hare-input-set --description "Updated description"[/dim]
 
     - Update an input set's managed inputs.
+
         $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
             --managed-inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Update both name and description.
+
         $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
             --name "New Name" --description "Updated description"[/dim]
 
     - Update and save to a file.
+
         $ [dim]nextmv cloud input-set update --app-id hare-app --input-set-id hare-input-set \\
             --name "New Name" --output updated_input_set.json[/dim]
     """

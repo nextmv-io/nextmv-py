@@ -28,10 +28,12 @@ def exists(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the application with the ID [magenta]hare-app[/magenta] exists.
+
         $ [dim]nextmv cloud app exists --app-id hare-app[/dim]
 
     - Check if the application with the ID [magenta]hare-app[/magenta] exists.
       Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud app exists --app-id hare-app --profile hare[/dim]
     """
 

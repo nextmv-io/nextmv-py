@@ -85,6 +85,7 @@ app = typer.Typer()
     [bold][underline]Examples[/underline][/bold]
 
     - Create an ensemble definition with a single run group and rule.
+
         $ [dim]RUN_GROUP='{{
             "id": "rg1",
             "instance_id": "inst-123"
@@ -99,6 +100,7 @@ app = typer.Typer()
         nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUP" --rules "$RULE"[/dim]
 
     - Create with multiple run groups by repeating the flag.
+
         $ [dim]RUN_GROUP_1='{{
             "id": "rg1",
             "instance_id": "inst-123"
@@ -119,6 +121,7 @@ app = typer.Typer()
             --rules "$RULE"[/dim]
 
     - Create with multiple items in a single JSON array.
+
         $ [dim]RUN_GROUPS='[
             {{"id": "rg1", "instance_id": "inst-123"}},
             {{"id": "rg2", "instance_id": "inst-456"}}
@@ -133,6 +136,7 @@ app = typer.Typer()
         nextmv cloud ensemble create --app-id hare-app --run-groups "$RUN_GROUPS" --rules "$RULES"[/dim]
 
     - Create with custom ID, name, and description.
+
         $ [dim]RUN_GROUP='{{
             "id": "rg1",
             "instance_id": "inst-123"
@@ -150,6 +154,7 @@ app = typer.Typer()
             --run-groups "$RUN_GROUP" --rules "$RULE"[/dim]
 
     - Create with run group repetitions.
+
         $ [dim]RUN_GROUP='{{
             "id": "rg1",
             "instance_id": "inst-123",

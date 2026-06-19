@@ -36,9 +36,11 @@ def disable(
     [bold][underline]Examples[/underline][/bold]
 
     - Disable the SSO configuration.
+
         $ [dim]nextmv cloud sso disable[/dim]
 
     - Disable the SSO configuration without confirmation prompt.
+
         $ [dim]nextmv cloud sso disable --yes[/dim]
     """
 

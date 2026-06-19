@@ -27,9 +27,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete a marketplace subscription.
+
         $ [dim]nextmv cloud marketplace subscription delete --subscription-id my-partner-marketplace-hare[/dim]
 
     - Delete a marketplace subscription without confirmation prompt.
+
         $ [dim]nextmv cloud marketplace subscription delete --subscription-id my-partner-marketplace-hare \\
             --yes[/dim]
     """

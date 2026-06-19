@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all batch experiments for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud batch list --app-id hare-app[/dim]
 
     - List all batch experiments and save to a file.
+
         $ [dim]nextmv cloud batch list --app-id hare-app --output experiments.json[/dim]
 
     - List all batch experiments using a specific profile.
+
         $ [dim]nextmv cloud batch list --app-id hare-app --profile prod[/dim]
 
     - List all experiments without pagination.
+
         $ [dim]nextmv cloud batch list --app-id hare-app --no-pagination[/dim]
     """
 

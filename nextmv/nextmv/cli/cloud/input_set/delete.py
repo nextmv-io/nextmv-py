@@ -31,9 +31,11 @@ def delete(
 
     - Delete the input set with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud input-set delete --app-id hare-app --input-set-id hop-analysis[/dim]
 
     - Delete the input set without confirmation prompt.
+
         $ [dim]nextmv cloud input-set delete --app-id hare-app --input-set-id carrot-routes --yes[/dim]
     """
 

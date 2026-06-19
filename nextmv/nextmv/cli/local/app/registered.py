@@ -30,9 +30,11 @@ def registered(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the application with the ID [magenta]hare-app[/magenta] is registered.
+
         $ [dim]nextmv local app registered --app-id hare-app[/dim]
 
     - Check if the application with source path [magenta]./hare-app/[/magenta] is registered.
+
         $ [dim]nextmv local app registered --app-src ./hare-app/[/dim]
     """
 

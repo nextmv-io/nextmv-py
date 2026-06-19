@@ -44,10 +44,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the marketplace version with the ID [magenta]mkt-v1[/magenta].
+
         $ [dim]nextmv cloud marketplace version get --partner-id my-partner \\
             --app-id marketplace-hare --version-id mkt-v1[/dim]
 
     - Get the marketplace version and save the information to a [magenta]version.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace version get --partner-id my-partner \\
             --app-id marketplace-hare --version-id mkt-v1 --output version.json[/dim]
     """

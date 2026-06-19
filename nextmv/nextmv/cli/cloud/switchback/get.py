@@ -38,9 +38,11 @@ def get(
 
     - Get the switchback test with ID [magenta]carrot-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud switchback get --app-id hare-app --switchback-test-id carrot-optimization[/dim]
 
     - Get the switchback test using a specific profile.
+
         $ [dim]nextmv cloud switchback get --app-id hare-app --switchback-test-id lettuce-routes \\
             --profile prod[/dim]
     """

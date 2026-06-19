@@ -42,9 +42,11 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Subscribe to a marketplace application.
+
         $ [dim]nextmv cloud marketplace subscription create --subscription-id my-partner-marketplace-hare[/dim]
 
     - Subscribe to a marketplace application using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud marketplace subscription create --subscription-id my-partner-marketplace-hare \\
             --profile hare[/dim]
     """

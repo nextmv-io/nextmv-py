@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all ensemble definitions for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud ensemble list --app-id hare-app[/dim]
 
     - List all ensemble definitions and save to a file.
+
         $ [dim]nextmv cloud ensemble list --app-id hare-app --output ensembles.json[/dim]
 
     - List all ensemble definitions using a specific profile.
+
         $ [dim]nextmv cloud ensemble list --app-id hare-app --profile prod[/dim]
 
     - List all ensemble definitions without pagination.
+
         $ [dim]nextmv cloud ensemble list --app-id hare-app --no-pagination[/dim]
     """
 

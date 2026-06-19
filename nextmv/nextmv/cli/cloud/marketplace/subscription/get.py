@@ -36,9 +36,11 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get a marketplace subscription.
+
         $ [dim]nextmv cloud marketplace subscription get --subscription-id my-partner-marketplace-hare[/dim]
 
     - Get a marketplace subscription and save the information to a [magenta]subscription.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace subscription get --subscription-id my-partner-marketplace-hare \\
             --output subscription.json[/dim]
     """

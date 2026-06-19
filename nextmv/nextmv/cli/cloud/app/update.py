@@ -75,26 +75,32 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update an application's name.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "New Hare App"[/dim]
 
     - Update an application's description.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
             --description "An updated description for routing hares"[/dim]
 
     - Update an application's default instance ID.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
             --default-instance-id burrow[/dim]
 
     - Update an application's default experiment instance.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
             --default-experiment-instance experiment-v1[/dim]
 
     - Update multiple application properties at once.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "Hare App" \\
             --description "Updated description" --default-instance-id burrow \\
             --default-experiment-instance experiment-v1[/dim]
 
     - Update an application and save the updated information to an [magenta]updated_app.json[/magenta] file.
+
         $ [dim]nextmv cloud app update --app-id hare-app --name "New Hare App" --output updated_app.json[/dim]
     """
 

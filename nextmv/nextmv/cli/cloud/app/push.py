@@ -124,24 +124,31 @@ def push(
     [bold][underline]Examples[/underline][/bold]
 
     - Push an application, with ID [magenta]hare-app[/magenta], from the current directory.
+
         $ [dim]nextmv cloud app push --app-id hare-app[/dim]
 
     - Push an application, with ID [magenta]hare-app[/magenta], from the [magenta]./my-app[/magenta] directory.
+
         $ [dim]nextmv cloud app push --app-id hare-app --app-dir ./my-app[/dim]
 
     - Push an application, with ID [magenta]hare-app[/magenta], using a custom manifest file.
+
         $ [dim]nextmv cloud app push --app-id hare-app --manifest ./custom-manifest.yaml[/dim]
 
     - Push and automatically create a new version (no prompt).
+
         $ [dim]nextmv cloud app push --app-id hare-app --version-yes[/dim]
 
     - Push and create a new version with a custom version ID (no prompt).
+
         $ [dim]nextmv cloud app push --app-id hare-app --version-id v1.0.0[/dim]
 
     - Push and create a new version, then link it to a new instance with a specific ID (no prompt).
+
         $ [dim]nextmv cloud app push --app-id hare-app --create-instance-id inst-1[/dim]
 
     - Push and create a new version, then link it to an existing instance (no prompt).
+
         $ [dim]nextmv cloud app push --app-id hare-app --update-instance-id inst-1[/dim]
     """
 

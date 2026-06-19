@@ -28,9 +28,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the SSO configuration.
+
         $ [dim]nextmv cloud sso delete[/dim]
 
     - Delete the SSO configuration without confirmation prompt.
+
         $ [dim]nextmv cloud sso delete --yes[/dim]
     """
 

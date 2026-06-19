@@ -42,13 +42,16 @@ def metadata(
 
     - Get metadata for batch experiment [magenta]bunny-warren-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id bunny-warren-optimization[/dim]
 
     - Get metadata and save to a file.
+
         $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id lettuce-delivery \\
             --output metadata.json[/dim]
 
     - Get metadata using a specific profile.
+
         $ [dim]nextmv cloud batch metadata --app-id hare-app --batch-experiment-id hop-schedule --profile prod[/dim]
     """
 

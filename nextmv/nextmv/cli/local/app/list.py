@@ -34,9 +34,11 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all registered applications.
+
         $ [dim]nextmv local app list[/dim]
 
     - List all registered applications and save the information to an [magenta]apps.json[/magenta] file.
+
         $ [dim]nextmv local app list --output apps.json[/dim]
     """
 

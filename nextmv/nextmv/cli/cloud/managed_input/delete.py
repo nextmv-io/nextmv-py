@@ -30,10 +30,12 @@ def delete(
 
     - Delete the managed input with the ID [magenta]inp_123456789[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud managed-input delete --app-id hare-app \
             --managed-input-id inp_123456789[/dim]
 
     - Delete the managed input without confirmation prompt.
+
         $ [dim]nextmv cloud managed-input delete --app-id hare-app --managed-input-id inp_123456789 --yes[/dim]
     """
 

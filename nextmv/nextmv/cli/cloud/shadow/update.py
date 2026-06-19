@@ -58,14 +58,17 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of a shadow test.
+
         $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id carrot-feast \\
             --name "Spring Carrot Harvest"[/dim]
 
     - Update the description of a shadow test.
+
         $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id bunny-hop-routes \\
             --description "Optimizing hop paths through the meadow"[/dim]
 
     - Update both name and description and save the result.
+
         $ [dim]nextmv cloud shadow update --app-id hare-app --shadow-test-id lettuce-delivery \\
             --name "Warren Lettuce Express" --description "Fast lettuce delivery to all burrows" \\
             --output updated-shadow-test.json[/dim]

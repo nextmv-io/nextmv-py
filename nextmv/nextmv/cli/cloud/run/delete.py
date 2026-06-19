@@ -29,10 +29,12 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the run with ID [magenta]burrow-123[/magenta] belonging to an app with ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run delete --app-id hare-app --run-id burrow-123[/dim]
 
     - Delete the run with ID [magenta]burrow-123[/magenta] belonging to an app with ID [magenta]hare-app[/magenta].
       Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud run delete --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 

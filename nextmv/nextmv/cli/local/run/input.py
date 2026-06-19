@@ -45,14 +45,17 @@ def input(
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Input is printed to [magenta]stdout[/magenta].
+
         $ [dim]nextmv local run input --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the input to a [magenta]input.json[/magenta] file.
+
         $ [dim]nextmv local run input --app-id hare-app --run-id burrow-123 --output input.json[/dim]
 
     - Get the input of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv local run input --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 
