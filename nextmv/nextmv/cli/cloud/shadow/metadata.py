@@ -42,13 +42,16 @@ def metadata(
 
     - Get metadata for shadow test [magenta]bunny-warren-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id bunny-warren-optimization[/dim]
 
     - Get metadata and save to a file.
+
         $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id lettuce-delivery \\
             --output metadata.json[/dim]
 
     - Get metadata using a specific profile.
+
         $ [dim]nextmv cloud shadow metadata --app-id hare-app --shadow-test-id hop-schedule --profile prod[/dim]
     """
 

@@ -31,9 +31,11 @@ def delete(
 
     - Delete the switchback test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud switchback delete --app-id hare-app --switchback-test-id hop-analysis[/dim]
 
     - Delete the switchback test without confirmation prompt.
+
         $ [dim]nextmv cloud switchback delete --app-id hare-app --switchback-test-id carrot-routes --yes[/dim]
     """
 

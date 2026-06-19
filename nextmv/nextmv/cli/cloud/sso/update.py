@@ -47,9 +47,11 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the SSO configuration with a new metadata URL.
+
         $ [dim]nextmv cloud sso update --metadata-url "https://example.com/metadata.xml"[/dim]
 
     - Update the SSO configuration with a new metadata document.
+
         $ [dim]nextmv cloud sso update --metadata-document "<xml>...</xml>"[/dim]
     """
 

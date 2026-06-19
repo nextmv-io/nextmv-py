@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all shadow tests for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud shadow list --app-id hare-app[/dim]
 
     - List all shadow tests and save to a file.
+
         $ [dim]nextmv cloud shadow list --app-id hare-app --output tests.json[/dim]
 
     - List all shadow tests using a specific profile.
+
         $ [dim]nextmv cloud shadow list --app-id hare-app --profile prod[/dim]
 
     - List all shadow tests without pagination.
+
         $ [dim]nextmv cloud shadow list --app-id hare-app --no-pagination[/dim]
     """
 

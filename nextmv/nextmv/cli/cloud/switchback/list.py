@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all switchback tests for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud switchback list --app-id hare-app[/dim]
 
     - List all switchback tests and save to a file.
+
         $ [dim]nextmv cloud switchback list --app-id hare-app --output tests.json[/dim]
 
     - List all switchback tests using a specific profile.
+
         $ [dim]nextmv cloud switchback list --app-id hare-app --profile prod[/dim]
 
     - List all switchback tests without pagination.
+
         $ [dim]nextmv cloud switchback list --app-id hare-app --no-pagination[/dim]
     """
 

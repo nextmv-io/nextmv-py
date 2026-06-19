@@ -79,19 +79,24 @@ def upload(
         $ [dim]echo '{"key": "value"}' | nextmv cloud data upload --app-id hare-app --upload-url <URL>[/dim]
 
     - Upload data from a [magenta]JSON[/magenta] file.
+
         $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json[/dim]
 
     - Upload data from a [magenta]text[/magenta] file.
+
         $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.txt[/dim]
 
     - Upload [magenta]multi-file[/magenta] data from a directory.
+
         $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input ./data_directory[/dim]
 
     - Upload [magenta]multi-file[/magenta] data from a
       [magenta].tar.gz[/magenta] file.
+
         $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.tar.gz[/dim]
 
     - Upload data using a specific profile.
+
         $ [dim]nextmv cloud data upload --app-id hare-app --upload-url <URL> --input data.json \\
             --profile production[/dim]
     """

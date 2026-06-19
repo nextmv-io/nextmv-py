@@ -98,26 +98,33 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an application with the name [magenta]Hare App[/magenta]. A random ID will be generated.
+
         $ [dim]nextmv cloud app create --name "Hare App"[/dim]
 
     - Create an application with the specific ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app[/dim]
 
     - Create an application with an ID and description.
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
             --description "An application for routing hares"[/dim]
 
     - Create an application, or get it if it already exists.
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app --exist-ok[/dim]
 
     - Create a workflow application.
+
         $ [dim]nextmv cloud app create --name "Hare Workflow" --app-id hare-workflow --is-workflow[/dim]
 
     - Create an application with a default instance ID.
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
             --default-instance-id burrow[/dim]
 
     - Create an application with a default experiment instance.
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
             --default-experiment-instance experiment-v1[/dim]
     """

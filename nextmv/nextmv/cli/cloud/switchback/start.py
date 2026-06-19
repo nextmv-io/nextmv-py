@@ -32,6 +32,7 @@ def start(
 
     - Start the switchback test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud switchback start --app-id hare-app --switchback-test-id hop-analysis[/dim]
     """
 

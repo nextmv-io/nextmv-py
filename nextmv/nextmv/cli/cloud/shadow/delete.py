@@ -31,9 +31,11 @@ def delete(
 
     - Delete the shadow test with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud shadow delete --app-id hare-app --shadow-test-id hop-analysis[/dim]
 
     - Delete the shadow test without confirmation prompt.
+
         $ [dim]nextmv cloud shadow delete --app-id hare-app --shadow-test-id carrot-routes --yes[/dim]
     """
 

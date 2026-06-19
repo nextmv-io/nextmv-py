@@ -20,6 +20,7 @@ def get(_: DebugOption = False) -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Get cache information.
+
         $ [dim]nextmv cache get[/dim]
     """
 

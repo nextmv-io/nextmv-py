@@ -28,9 +28,11 @@ def exists(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the version with the ID [magenta]v1[/magenta] exists in application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud version exists --app-id hare-app --version-id v1[/dim]
 
     - Check if the version exists using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud version exists --app-id hare-app --version-id v1 --profile hare[/dim]
     """
 

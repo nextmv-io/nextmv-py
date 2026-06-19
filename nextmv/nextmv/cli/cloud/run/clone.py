@@ -239,6 +239,7 @@ def clone(
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
       reusing the original run's input.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
@@ -247,44 +248,53 @@ def clone(
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta],
       overriding the input with an [magenta]input.json[/magenta] file.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input input.json[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --wait[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --tail[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --output output.json[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta].
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --logs logs.log[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta]. Wait for the run to complete. Tail
       the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
       Write the result to an [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --tail --logs logs.log \\
             --output output.json [/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
       [magenta]multi-file[/magenta] directory, using the [magenta]default[/magenta] instance.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input inputs \\
             --instance-id default[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
       [magenta]multi-file[/magenta] directory, using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --input inputs --instance-id burrow \\
             --output outputs[/dim]
 
     - Clone run [magenta]run-123[/magenta] from app [magenta]hare-app[/magenta], overriding the input with a
       [magenta]Nextmv managed[/magenta] input with ID [magenta]carrot-input[/magenta].
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+
         $ [dim]nextmv cloud run clone --app-id hare-app --cloned-run-id run-123 --managed-input-id carrot-input \\
             --output outputs[/dim]
     """

@@ -24,6 +24,7 @@ import requests
 import typer
 from typer import rich_utils
 
+from nextmv._uv_handler import _find_uv_binary
 from nextmv.cli.auth import app as auth_app
 from nextmv.cli.cache import app as cache_app
 from nextmv.cli.cloud import app as cloud_app
@@ -39,7 +40,6 @@ from nextmv.cli.version import version_callback
 from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
 from nextmv.config import CONFIG_DIR, load_config
 from nextmv.deprecated import NextmvDeprecationWarning
-from nextmv.uv_handler import _find_uv_binary
 
 # Disable dim text for the extended help of commands.
 rich_utils.STYLE_HELPTEXT = ""

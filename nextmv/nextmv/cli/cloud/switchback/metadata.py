@@ -42,14 +42,17 @@ def metadata(
 
     - Get metadata for switchback test [magenta]bunny-warren-optimization[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud switchback metadata --app-id hare-app \\
             --switchback-test-id bunny-warren-optimization[/dim]
 
     - Get metadata and save to a file.
+
         $ [dim]nextmv cloud switchback metadata --app-id hare-app --switchback-test-id lettuce-delivery \\
             --output metadata.json[/dim]
 
     - Get metadata using a specific profile.
+
         $ [dim]nextmv cloud switchback metadata --app-id hare-app --switchback-test-id hop-schedule \\
             --profile prod[/dim]
     """

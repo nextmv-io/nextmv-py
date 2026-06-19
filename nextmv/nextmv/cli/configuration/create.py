@@ -171,19 +171,25 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Default configuration (prompts for type and API key or opens browser).
+
         $ [dim]nextmv configuration create[/dim]
 
     - Default API key configuration without prompting.
+
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY[/dim]
 
     - Configure an [magenta]api_key[/magenta] profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv configuration create --api-key NEXTMV_API_KEY --profile hare[/dim]
 
     - Configure a named [magenta]pkce[/magenta] profile.
+
         $ [dim]nextmv configuration create --profile hare --auth-type pkce[/dim]
 
     - Configure two [magenta]pkce[/magenta] profiles that share a single login session.
+
         $ [dim]nextmv configuration create --profile dev --auth-type pkce --auth-session my-work[/dim]
+
         $ [dim]nextmv configuration create --profile staging --auth-type pkce --auth-session my-work[/dim]
     """
 

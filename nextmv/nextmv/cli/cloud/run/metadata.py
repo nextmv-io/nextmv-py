@@ -43,14 +43,17 @@ def metadata(
 
     - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Metadata is printed to [magenta]stdout[/magenta].
+
         $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the metadata to a [magenta]metadata.json[/magenta] file.
+
         $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --output metadata.json[/dim]
 
     - Get the metadata of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud run metadata --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 

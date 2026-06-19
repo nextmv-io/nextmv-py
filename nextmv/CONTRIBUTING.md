@@ -11,8 +11,8 @@ _this_ library, i.e. the directory where the `pyproject.toml` file is located.
 
 Make sure you have the following installed:
 
-- [Python][python]: Python 3.10 or higher.
-- [`uv`][uv]: Python package and project manager.
+* [Python][python]: Python 3.10 or higher.
+* [`uv`][uv]: Python package and project manager.
 
 ## Setup
 
@@ -27,19 +27,19 @@ files. Always commit changes to the `pyproject.toml` and `uv.lock` files.
 
 ## Adding dependencies
 
-- If you need to add a new dependency to the library, add it with:
+* If you need to add a new dependency to the library, add it with:
 
     ```bash
     uv add <PACKAGE_NAME>
     ```
 
-- If you need to add a new _optional_ dependency to the library, add it with:
+* If you need to add a new _optional_ dependency to the library, add it with:
 
     ```bash
     uv add <PACKAGE_NAME> --optional <EXTRA_NAME>
     ```
 
-- If you need to add a _development_ dependency, i.e. a package that is only
+* If you need to add a _development_ dependency, i.e. a package that is only
   needed for development and testing (like `Nextpipe`, which is used in the
   integration tests), add it with:
 
@@ -186,23 +186,23 @@ The logic for command tree organization is based on:
 
 Where:
 
-- Domain separates `cloud` from `local`. If there is no domain, the command
+* Domain separates `cloud` from `local`. If there is no domain, the command
   belongs to the root command tree.
-- Entity refers to resources like `run`, `batch-experiment`,
+* Entity refers to resources like `run`, `batch-experiment`,
   `secrets-collection`, etc.
-- Action details what can be done on the entity: `create`, `get`, `delete`,
+* Action details what can be done on the entity: `create`, `get`, `delete`,
   `list`, etc.
-- Sometimes, it is not practical to follow this logic. Consider the `nextmv
+* Sometimes, it is not practical to follow this logic. Consider the `nextmv
   cloud run` command tree. The available subcommands are:
 
-  - cancel: Cancel a queued/running Nextmv Cloud application run.
-  - create: Create a new Nextmv Cloud application run.
-  - get: Get the result (output) of a Nextmv Cloud application run.
-  - input: Get the input of a Nextmv Cloud application run.
-  - list: Get the list of runs for a Nextmv Cloud application.
-  - logs: Get the logs of a Nextmv Cloud application run.
-  - metadata: Get the metadata of a Nextmv Cloud application run.
-  - track: Track an external run as a Nextmv Cloud application run.
+  * cancel: Cancel a queued/running Nextmv Cloud application run.
+  * create: Create a new Nextmv Cloud application run.
+  * get: Get the result (output) of a Nextmv Cloud application run.
+  * input: Get the input of a Nextmv Cloud application run.
+  * list: Get the list of runs for a Nextmv Cloud application.
+  * logs: Get the logs of a Nextmv Cloud application run.
+  * metadata: Get the metadata of a Nextmv Cloud application run.
+  * track: Track an external run as a Nextmv Cloud application run.
   
   Strictly speaking, `input`, `logs`, and `metadata` are not actions. To avoid
   defining a `nextmv cloud run input get` command, which starts getting
@@ -211,8 +211,8 @@ Where:
   `nextmv cloud run input-delete`, then it is better to define a `nextmv cloud run
   input` command tree, with `get`, `update`, and `delete` subcommands.
 
-- If possible, use single words for command trees and commands.
-- Use the best judgement when deciding how to structure commands. If you
+* If possible, use single words for command trees and commands.
+* Use the best judgement when deciding how to structure commands. If you
   believe a different structure makes more sense, feel free to propose it in
   your pull request, explaining the reasoning behind it.
 
@@ -220,13 +220,13 @@ Where:
 
 Follow these guidelines when organizing files and directories for commands:
 
-- Directories and files should be named following the command names. For
+* Directories and files should be named following the command names. For
   example, the `cloud` directory has the `cloud` command tree, and the
   `cloud/app/create.py` file contains the `nextmv cloud app create` command.
-- Place commands in their own Python files. Take the `community` dir, for
+* Place commands in their own Python files. Take the `community` dir, for
   example. The `clone.py` file hosts the `nextmv community clone` command and
   the `list.py` file has the `nextmv community list` command.
-- Place command trees in their own directories. The main command of the command
+* Place command trees in their own directories. The main command of the command
   tree should live in the `__init__.py` file in the directory. Consider the
   `cloud/app` directory. The `__init__.py` file has the following code, which
   sets up the `nextmv cloud app` command tree and adds seven subcommands to
@@ -265,7 +265,7 @@ Follow these guidelines when organizing files and directories for commands:
   Each of the commands should be in their own file in the same directory, e.g.
   `create.py`, `delete.py`, etc.
 
-- Use the same principle of placing command tree definitions in an
+* Use the same principle of placing command tree definitions in an
   `__init__.py` file for subcommand trees as well. Consider the `cloud`
   directory. It has an `__init__.py` file and subdirectories. The `__init__.py`
   file has the following code, which sets up the `nextmv cloud` command tree
@@ -296,39 +296,39 @@ Follow these guidelines when organizing files and directories for commands:
 When information to the user, i.e., printing to the console, follow these
 guidelines:
 
-- Unless otherwise necessary, always print and log to `stderr`. This ensures
+* Unless otherwise necessary, always print and log to `stderr`. This ensures
   that the CLI's output can be piped and redirected without issues.
-- We embrace the use of emojis. They make the CLI friendlier and more
+* We embrace the use of emojis. They make the CLI friendlier and more
   approachable.
-- The `message.py` file contains helper functions for printing messages, like:
-  - `message`: prints a message. You can give it an emoji for the message. The
+* The `message.py` file contains helper functions for printing messages, like:
+  * `message`: prints a message. You can give it an emoji for the message. The
     other commands have fixed emojis.
-  - `info`: prints an informational message. Use for neutral messages.
-  - `in_progress`: prints an in-progress message. Use before executing an action.
-  - `success`: prints a success message. Use after successfully completing an action.
-  - `warning`: prints a warning message. Use for non-critical issues.
-  - `error`: prints an error and raises an exception. Use for critical issues
+  * `info`: prints an informational message. Use for neutral messages.
+  * `in_progress`: prints an in-progress message. Use before executing an action.
+  * `success`: prints a success message. Use after successfully completing an action.
+  * `warning`: prints a warning message. Use for non-critical issues.
+  * `error`: prints an error and raises an exception. Use for critical issues
     and to return early from commands.
-  - `confirmation`: prompts the user for a yes/no confirmation. Returns the
+  * `confirmation`: prompts the user for a yes/no confirmation. Returns the
     default value in non-interactive sessions.
-  - `choice`: prompts the user to select one option from a list of choices.
+  * `choice`: prompts the user to select one option from a list of choices.
     Returns the default value in non-interactive sessions.
-  - `directory_path`: prompts the user to enter or select a directory path.
+  * `directory_path`: prompts the user to enter or select a directory path.
     Returns the default value in non-interactive sessions.
-- For printing `JSON` information, use the `print_json` function in the
+* For printing `JSON` information, use the `print_json` function in the
   `message.py` file to print JSON output. This ensures consistent formatting
   across the CLI.
-- Emojis should be formatted according to [Rich's emoji guide][rich-emoji].
+* Emojis should be formatted according to [Rich's emoji guide][rich-emoji].
   They are strings enclosed in colons, e.g. `:rocket:`, `:boom:`,
   `:hourglass_flowing_sand:`, etc.
-- When using the `success` function, include the variable or entity that was
+* When using the `success` function, include the variable or entity that was
   affected, formatted with `[magenta]`:
 
   ```python
   success(f"Application [magenta]{app_id}[/magenta] deleted successfully.")
   ```
 
-- When showing the values of an `Enum`, use the `enum_values` function in the
+* When showing the values of an `Enum`, use the `enum_values` function in the
   `message.py` file which will give a nicely colored, comma-separated list of
   the enum values. Consider the following example, where we get the allowed
   values for the `ContentFormat` class.
@@ -346,7 +346,7 @@ guidelines:
     ] = None,
   ```
 
-- When indenting, prefer to use four spaces as opposed to a tab (`\t`) or
+* When indenting, prefer to use four spaces as opposed to a tab (`\t`) or
   less/more spacing.
 
 #### CLI - User prompts
@@ -366,11 +366,11 @@ no input can be provided.
 
 When using confirmation prompts, follow these guidelines:
 
-- The confirmation message should use `[magenta]` for the variable/s being
+* The confirmation message should use `[magenta]` for the variable/s being
   affected.
-- Provide a `--yes` / `-y` flag to skip the confirmation prompt where possible,
+* Provide a `--yes` / `-y` flag to skip the confirmation prompt where possible,
   useful for non-interactive sessions.
-- If the user declines, call `info()` and return early.
+* If the user declines, call `info()` and return early.
 
 Consider the `nextmv cloud app delete` command:
 
@@ -419,11 +419,11 @@ Use these Rich markup colors/styles when formatting help text and messages.
 These are the main colors/styles that can be used for highlighting/contrast (we
 limit colors to keep coloring consistent):
 
-- `[code]`: commands. CLI related variables. - technical things that are CLI
+* `[code]`: commands. CLI related variables. - technical things that are CLI
   commands.
-- `[magenta]`: variable names, values, literals, etc. - mainly short technical things.
-- `[dim]`: examples. - longer technical things.
-- `[yellow]`: emphasis, highlight of special items, type contrast to
+* `[magenta]`: variable names, values, literals, etc. - mainly short technical things.
+* `[dim]`: examples. - longer technical things.
+* `[yellow]`: emphasis, highlight of special items, type contrast to
   `[magenta]`. Use sparingly only.
 
 In any case, the best advice is to follow existing examples in the codebase to
@@ -431,7 +431,7 @@ maintain consistency.
 
 Here are some guidelines for when to use each formatting style.
 
-- When talking about a command use the `[code]` `[/code]` tags. Consider the
+* When talking about a command use the `[code]` `[/code]` tags. Consider the
   help message of the `cloud/shadow/stop.py` file. We tell the user they can
   delete an experiment with the `nextmv cloud shadow delete` command. The
   formatting of that command is done using the `[code]` `[/code]` tags:
@@ -466,7 +466,7 @@ Here are some guidelines for when to use each formatting style.
       )
   ```
 
-- When talking about a command option, there is no formatting needed. Typer
+* When talking about a command option, there is no formatting needed. Typer
   automatically adds coloring to options in the help menu. Take this example
   from the help menu of the `cloud/app/delete.py` file. In the command help,
   when referring to the `--yes` option:
@@ -501,7 +501,7 @@ Here are some guidelines for when to use each formatting style.
       """
   ```
 
-- When talking about a variable (like a filepath, value of an option, a string,
+* When talking about a variable (like a filepath, value of an option, a string,
   etc.), use the `[magenta]` `[/magenta]` tags. Using the same example as
   above, when referring to the application ID `hare-app`, we use
   `[magenta]hare-app[/magenta]` to format it as a variable. Another example is
@@ -511,13 +511,13 @@ Here are some guidelines for when to use each formatting style.
   error(f"Input path [magenta]{input}[/magenta] does not exist.")
   ```
 
-- When talking about longer technical things, like examples for a command
+* When talking about longer technical things, like examples for a command
   usage, or examples of a JSON object, use the `[dim]` `[/dim]` tags. Consider
   the examples section of the `cloud/app/delete.py` file above. The example
   commands are formatted using the `[dim]` `[/dim]` tags. The `[dim]` tag is
   discussed in more detail in the command documentation section below.
 
-- Links to URLs should be formatted using the `[link=URL_LINK][bold]
+* Links to URLs should be formatted using the `[link=URL_LINK][bold]
   [/bold][/link]` tags. Consider the main help message of the `nextmv
   community` command, in the `community/__init__.py` file:
 
@@ -541,22 +541,22 @@ Here are some guidelines for when to use each formatting style.
 Every command should have good-enough documentation that guides the user on how
 to use it.
 
-- Document every command using Python docstrings.
-- Document every option and argument using the `help` parameter of the
+* Document every command using Python docstrings.
+* Document every option and argument using the `help` parameter of the
   `typer.Option` functions.
-- Option documentation should be short and to the point. Avoid long
+* Option documentation should be short and to the point. Avoid long
   explanations. If necessary, you can add more detailed information in the
   command's help.
-- The help of the command should be structured as follows:
-  - A short, one-line description of what the command does.
-  - A blank line.
-  - A more detailed description of what the command does. This can be multiple
+* The help of the command should be structured as follows:
+  * A short, one-line description of what the command does.
+  * A blank line.
+  * A more detailed description of what the command does. This can be multiple
     paragraphs. Only add this section if necessary.
-  - A blank line.
-  - An Examples section, with one or more examples of how to use the command.
+  * A blank line.
+  * An Examples section, with one or more examples of how to use the command.
     Each example should have a short description of what it does, followed by
     the command itself. More on example formatting below.
-- Consider the `nextmv cloud app get` command, under the `cloud/app/get.py` file:
+* Consider the `nextmv cloud app get` command, under the `cloud/app/get.py` file:
   
   ```python
   @app.command()
@@ -609,28 +609,29 @@ to use it.
       print_json(cloud_app_dict)
   ```
 
-  - The short description is: `Get a Nextmv Cloud application.`
-  - The detailed description is:
+  * The short description is: `Get a Nextmv Cloud application.`
+  * The detailed description is:
 
     ```text
     This command is useful to get the attributes of an existing Nextmv Cloud
     application by its ID.
     ```
 
-  - The examples section is fenced with the `[bold][underline]
+  * The examples section is fenced with the `[bold][underline]
     [/underline][/bold]` tags.
-  - Each example is listed as a bullet, using a hyphen (`-`).
-  - Each example has a short description, followed by the command itself in a
+  * Each example is listed as a bullet, using a hyphen (`-`).
+  * Each example has a short description, followed by the command itself in a
     new line, with 4 spaces of indentation in comparison to where the hyphen is.
-  - The command itself should be formatted using the `[dim]` `[/dim]` tags.
-  - The command should start with a dollar sign (`$`), followed by a space, and
+  * The command itself should be formatted using the `[dim]` `[/dim]` tags.
+  * The command should start with a dollar sign (`$`), followed by a space, and
     then the actual command.
-  - When an example command is too long, use a double backslash (`\\`) for line
+  * When an example command is too long, use a double backslash (`\\`) for line
     continuation. It gets rendered as a single backslash. The next line should
     have 4 additional spaces of indentation (8 spaces total from the hyphen):
 
     ```text
     - Create an application with an ID and description.
+
         $ [dim]nextmv cloud app create --name "Hare App" --app-id hare-app \\
             --description "An application for routing hares"[/dim]
     ```
@@ -639,8 +640,8 @@ to use it.
 
 Consider the following guideline when declaring command options:
 
-- We _only_ use command options, we _do not_ use command arguments.
-- Use the `Annotated` type hint from the `typing_extensions` module to declare
+* We _only_ use command options, we _do not_ use command arguments.
+* Use the `Annotated` type hint from the `typing_extensions` module to declare
   options. Consider the `name` option from the `nextmv cloud app create`
   command hosted in the `cloud/app/create.py` file:
 
@@ -659,16 +660,16 @@ Consider the following guideline when declaring command options:
   The type of the option is `str`, and we use `typer.Option` to declare the
   option's properties.
 
-- If possible, provide both a long and short version of the option. In the example
+* If possible, provide both a long and short version of the option. In the example
   above, the long version is `--name` and the short version is `-n`.
-- Always provide a `help` parameter that describes what the option does. Avoid
+* Always provide a `help` parameter that describes what the option does. Avoid
   long-winded explanations here, keep it short and to the point. If you need to
   provide more context about using the option, add that information to the
   command's help docstring.
-- For `str` options, always provide a `metavar` parameter for describing the
+* For `str` options, always provide a `metavar` parameter for describing the
   expected value. In the example above, the `metavar` is `NAME`, indicating
   that the option expects a name string.
-- _Optional_ options are declared using the `| None` type hint and normally
+* _Optional_ options are declared using the `| None` type hint and normally
   have a default value of `None`. Consider the `default_instance_id` option of
   the same command:
 
@@ -686,10 +687,10 @@ Consider the following guideline when declaring command options:
   
   The type hint is `str | None`, and the default value is `None`.
 
-- For `bool` options, always provide at least the long name, to avoid the
+* For `bool` options, always provide at least the long name, to avoid the
   auto-populated `--no-...` version of the option, given by Typer.
-- `bool` options should have a default value of either `True` or `False`.
-- Use the `rich_help_panel` to organize commands that have a large number of
+* `bool` options should have a default value of either `True` or `False`.
+* Use the `rich_help_panel` to organize commands that have a large number of
   options. Consider the `input` option of the `nextmv cloud run create`
   command, hosted in the `cloud/run/create.py` file:
 
@@ -710,11 +711,11 @@ Consider the following guideline when declaring command options:
   The `rich_help_panel` parameter is set to `Input control`, which groups
   this option under the `Input control` panel in the command's help message.
 
-- When an option can be set via an environment variable, use the `envvar`
+* When an option can be set via an environment variable, use the `envvar`
   parameter. Environment variable names should follow the `NEXTMV_<OPTION_NAME>`
   convention, e.g. `NEXTMV_PROFILE`, `NEXTMV_API_KEY`, `NEXTMV_APP_ID`,
   `NEXTMV_RUN_ID`.
-- Place widely-used options in the `options.py` file, and import them into commands
+* Place widely-used options in the `options.py` file, and import them into commands
   that need them. Consider the `profile` option, which is used
   in many `nextmv cloud` commands. It is defined in the `options.py` file:
 
@@ -757,11 +758,11 @@ Consider the following guideline when declaring command options:
   The `profile` option's type is `ProfileOption`, which is imported from the
   `options.py` file.
 
-- If a command outputs `JSON` content, try to always provide an `output` option
+* If a command outputs `JSON` content, try to always provide an `output` option
   to allow the user to save the output to a file. Consider the `nextmv cloud
   app list` command again. It has an `output` option that allows the user to
   save the list of applications to a file.
-- Always order command options alphabetically. Required options (without
+* Always order command options alphabetically. Required options (without
   default values) should be listed first, in alphabetical order. Optional
   options (with default values) should follow, also in alphabetical order. When
   using `rich_help_panel` to group options, maintain alphabetical order within

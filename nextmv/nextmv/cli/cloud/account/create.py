@@ -55,18 +55,22 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an account named [magenta]Bunny Logistics[/magenta] with a single administrator.
+
         $ [dim]nextmv cloud account create --name "Bunny Logistics" \\
             --admins peter.rabbit@carrotexpress.com[/dim]
 
     - Create an account named [magenta]Hare Delivery Co[/magenta] with multiple administrators.
+
         $ [dim]nextmv cloud account create --name "Hare Delivery Co" \\
             --admins bugs@acme.com --admins roger@toontown.com[/dim]
 
     - Create an account using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud account create --name "Cottontail Couriers" \\
             --admins fluffy@hopmail.com --profile hare[/dim]
 
     - Create an account with comma-separated administrators.
+
         $ [dim]nextmv cloud account create --name "Whiskers Warehouse" \\
             --admins "thumper@forestmail.com,flopsy@warren.io"[/dim]
     """

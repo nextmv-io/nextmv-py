@@ -47,10 +47,12 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the account named [magenta]hare-delivery[/magenta] to [magenta]Hare Delivery Co[/magenta].
+
         $ [dim]nextmv cloud account update --account-id hare-delivery \\
             --name "Hare Delivery Co"[/dim]
 
     - Update an account and save the updated information to an [magenta]updated_account.json[/magenta] file.
+
         $ [dim]nextmv cloud account update --account-id cottontail-couriers \\
             --name "Cottontail Express" --output updated_account.json[/dim]
     """

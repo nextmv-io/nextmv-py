@@ -78,12 +78,15 @@ def init(
     [bold][underline]Examples[/underline][/bold]
 
     - Initialize a Python manifest in the current directory.
+
         $ [dim]nextmv manifest init[/dim]
 
     - Initialize a [magenta]json[/magenta] Go manifest in the [magenta]./my-app[/magenta] directory.
+
         $ [dim]nextmv manifest init --type go --content-format json --dirpath ./my-app[/dim]
 
     - Initialize a [magenta]multi-file[/magenta] Java manifest in the [magenta]./my-app[/magenta] directory.
+
         $ [dim]nextmv manifest init --type java --content-format multi-file --dirpath ./my-app[/dim]
     """
 

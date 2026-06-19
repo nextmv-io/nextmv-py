@@ -19,6 +19,7 @@ def version(_: DebugOption = False) -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Show the version.
+
         $ [dim]nextmv version[/dim]
     """
 

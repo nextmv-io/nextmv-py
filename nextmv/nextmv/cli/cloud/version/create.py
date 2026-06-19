@@ -66,19 +66,24 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a version for application [magenta]hare-app[/magenta]. A random ID will be generated.
+
         $ [dim]nextmv cloud version create --app-id hare-app[/dim]
 
     - Create a version with a specific name.
+
         $ [dim]nextmv cloud version create --app-id hare-app --name "v1.0.0"[/dim]
 
     - Create a version with a specific ID.
+
         $ [dim]nextmv cloud version create --app-id hare-app --version-id v1[/dim]
 
     - Create a version with a name and description.
+
         $ [dim]nextmv cloud version create --app-id hare-app --name "v1.0.0" \\
             --description "Initial release with routing optimization"[/dim]
 
     - Create a version, or get it if it already exists.
+
         $ [dim]nextmv cloud version create --app-id hare-app --version-id v1 --exist-ok[/dim]
     """
 

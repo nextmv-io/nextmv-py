@@ -123,18 +123,22 @@ def create(
 
     - Create an input set for application [magenta]hare-app[/magenta] from runs.
       A random input set ID will be generated if one is not provided.
+
         $ [dim]nextmv cloud input-set create --app-id hare-app \\
             --run-ids run-1 --run-ids run-2 --run-ids run-3[/dim]
 
     - Create an input set with a specific ID and name.
+
         $ [dim]nextmv cloud input-set create --app-id hare-app --input-set-id hare-input-set \\
             --name "Hare Input Set" --run-ids run-1 --run-ids run-2 --run-ids run-3[/dim]
 
     - Create an input set using existing managed inputs.
+
         $ [dim]nextmv cloud input-set create --app-id hare-app \\
             --managed-inputs '[{"id": "hare-input-1", "name": "hare input", "description": "hare description"}]'[/dim]
 
     - Create an input set from runs using a specific instance and time range.
+
         $ [dim]nextmv cloud input-set create --app-id hare-app \\
             --instance-id hare-instance --start-time "2024-01-01T00:00:00Z" \\
             --end-time "2024-01-31T23:59:59Z"[/dim]

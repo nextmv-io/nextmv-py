@@ -267,52 +267,62 @@ def create(
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json --wait[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json --output output.json[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json --logs logs.log[/dim]
 
     - Read a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and submit a run to an app with
       ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance. Wait for the run to complete. Tail
       the run's logs, streaming to [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file.
       Write the result to an [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input input.json --tail --logs logs.log \\
             --output output.json [/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]default[/magenta] instance.
       Wait for the run to complete, and save the results to the default location (a directory named after the run ID).
+
         $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id default --wait[/dim]
 
     - Read a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]burrow[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+
         $ [dim]nextmv cloud run create --app-id hare-app --input inputs --instance-id burrow --output outputs[/dim]
 
     - Set the run to use a [magenta]Nextmv managed[/magenta] input with ID [magenta]carrot-input[/magenta],
       and submit a run to an app with ID [magenta]hare-app[/magenta], using the [magenta]latest[/magenta] instance.
       Wait for the run to complete and download the result files to an [magenta]outputs[/magenta] directory.
+
         $ [dim]nextmv cloud run create --app-id hare-app --managed-input-id carrot-input --output outputs[/dim]
     """
 

@@ -37,14 +37,17 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all marketplace versions for an application.
+
         $ [dim]nextmv cloud marketplace version list --partner-id my-partner \\
             --app-id marketplace-hare[/dim]
 
     - List all versions using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud marketplace version list --partner-id my-partner \\
             --app-id marketplace-hare --profile hare[/dim]
 
     - List all versions and save the information to a [magenta]versions.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace version list --partner-id my-partner \\
             --app-id marketplace-hare --output versions.json[/dim]
     """

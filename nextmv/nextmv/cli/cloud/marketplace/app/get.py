@@ -38,10 +38,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the marketplace application with the ID [magenta]marketplace-hare[/magenta].
+
         $ [dim]nextmv cloud marketplace app get --partner-id my-partner \\
             --app-id marketplace-hare[/dim]
 
     - Get the marketplace application and save the information to an [magenta]app.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace app get --partner-id my-partner \\
             --app-id marketplace-hare --output app.json[/dim]
     """

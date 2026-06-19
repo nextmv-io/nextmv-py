@@ -41,15 +41,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all managed inputs of application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud managed-input list --app-id hare-app[/dim]
 
     - List all managed inputs using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud managed-input list --app-id hare-app --profile hare[/dim]
 
     - List all managed inputs and save the information to a [magenta]managed_inputs.json[/magenta] file.
+
         $ [dim]nextmv cloud managed-input list --app-id hare-app --output managed_inputs.json[/dim]
 
     - List all managed inputs without pagination.
+
         $ [dim]nextmv cloud managed-input list --app-id hare-app --no-pagination[/dim]
     """
 

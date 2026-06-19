@@ -73,12 +73,15 @@ def login(
     [bold][underline]Examples[/underline][/bold]
 
     - Log in with the default auth profile.
+
         $ [dim]nextmv auth login[/dim]
 
     - Log in with a specific named profile.
+
         $ [dim]nextmv auth login --profile my-auth-profile[/dim]
 
     - Force re-authentication, bypassing any active browser session.
+
         $ [dim]nextmv auth login --force[/dim]
     """
 

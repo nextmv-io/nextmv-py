@@ -100,16 +100,20 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a managed input from an upload.
+
         $ [dim]nextmv cloud managed-input create --app-id hare-app --upload-id upl_123456789[/dim]
 
     - Create a managed input from a run.
+
         $ [dim]nextmv cloud managed-input create --app-id hare-app --run-id run_123456789[/dim]
 
     - Create a managed input with a specific ID, name, and description.
+
         $ [dim]nextmv cloud managed-input create --app-id hare-app --name "Test Input" \\
             --managed-input-id inp_custom --description "Test case for validation" --upload-id upl_123456789[/dim]
 
     - Create a managed input with custom format.
+
         $ [dim]nextmv cloud managed-input create --app-id hare-app --name "CSV Input" \\
             --upload-id upl_123456789 --content-format csv[/dim]
     """

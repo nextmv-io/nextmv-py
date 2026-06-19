@@ -54,20 +54,25 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta]. List is printed to [magenta]stdout[/magenta].
+
         $ [dim]nextmv cloud run list --app-id hare-app[/dim]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta]. Save the list to a
       [magenta]runs.json[/magenta] file.
+
         $ [dim]nextmv cloud run list --app-id hare-app --output runs.json[/dim]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta].
       Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud run list --app-id hare-app --profile hare[/dim]
 
     - Get the list of [magenta]queued[/magenta] runs for an app with ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run list --app-id hare-app --status queued[/dim]
 
     - Get the list of runs for an app with ID [magenta]hare-app[/magenta] without pagination.
+
         $ [dim]nextmv cloud run list --app-id hare-app --no-pagination[/dim]
     """
 

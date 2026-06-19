@@ -121,6 +121,7 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a shadow test with a baseline and two candidate instances.
+
         $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears",
@@ -131,6 +132,7 @@ def create(
             --comparisons "$COMPARISONS" --termination-maximum-runs 100[/dim]
 
     - Create a shadow test with multiple baselines and candidates.
+
         $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"
@@ -143,6 +145,7 @@ def create(
             --comparisons "$COMPARISONS" --termination-maximum-runs 50[/dim]
 
     - Create a shadow test with a scheduled start and termination time.
+
         $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"
@@ -153,6 +156,7 @@ def create(
             --termination-time '2026-01-23T18:00:00Z' --termination-maximum-runs 20[/dim]
 
     - Create a shadow test with a description.
+
         $ [dim]COMPARISONS='{
             "fluffy-bunny-baseline": [
                 "hopping-candidate-ears"

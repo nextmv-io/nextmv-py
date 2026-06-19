@@ -36,12 +36,15 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all marketplace subscriptions.
+
         $ [dim]nextmv cloud marketplace subscription list[/dim]
 
     - List all subscriptions using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud marketplace subscription list --profile hare[/dim]
 
     - List all subscriptions and save the information to a [magenta]subscriptions.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace subscription list --output subscriptions.json[/dim]
     """
 
