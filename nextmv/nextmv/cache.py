@@ -132,7 +132,7 @@ def dep_cache_key(name: str, version: str, python_version: str, platform: str) -
     python_version : str
         The target Python version string (e.g. `"3.11"`).
     platform : str
-        The target platform string (e.g. `"aarch64-unknown-linux-gnu"`).
+        The target platform string (e.g. `"aarch64-manylinux_2_34"`).
 
     Returns
     -------
@@ -219,7 +219,7 @@ def store_dep(
     python_version : str
         The target Python version string (e.g. `"3.11"`).
     platform : str
-        The target platform string (e.g. `"aarch64-unknown-linux-gnu"`).
+        The target platform string (e.g. `"aarch64-manylinux_2_34"`).
     max_entries : int, optional
         Maximum number of package tarball entries to retain.
     max_bytes : int, optional
