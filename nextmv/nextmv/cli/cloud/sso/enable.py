@@ -36,9 +36,11 @@ def enable(
     [bold][underline]Examples[/underline][/bold]
 
     - Enable the SSO configuration.
+
         $ [dim]nextmv cloud sso enable[/dim]
 
     - Enable the SSO configuration without confirmation prompt.
+
         $ [dim]nextmv cloud sso enable --yes[/dim]
     """
 

@@ -42,16 +42,20 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all scenario tests for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud scenario list --app-id hare-app[/dim]
 
     - List all scenario tests and save to a file.
+
         $ [dim]nextmv cloud scenario list --app-id hare-app --output scenario_tests.json[/dim]
 
     - List all scenario tests using a specific profile.
+
         $ [dim]nextmv cloud scenario list --app-id hare-app --profile
         prod[/dim]
 
     - List all scenario tests without pagination.
+
         $ [dim]nextmv cloud scenario list --app-id hare-app --no-pagination[/dim]
     """
 

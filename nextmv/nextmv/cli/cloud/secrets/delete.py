@@ -30,9 +30,11 @@ def delete(
 
     - Delete the secrets collection with the ID [magenta]api-keys[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys[/dim]
 
     - Delete the secrets collection without confirmation prompt.
+
         $ [dim]nextmv cloud secrets delete --app-id hare-app --secrets-collection-id api-keys --yes[/dim]
     """
 

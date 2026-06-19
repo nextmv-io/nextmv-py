@@ -185,23 +185,27 @@ def track(
       [magenta]input.json[/magenta] file and output from an
       [magenta]output.json[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run including logs from a
       [magenta]logs.log[/magenta] file, for an app with ID
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --logs logs.log[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with assets and metrics
       from [magenta]json[/magenta] files, for an app with ID
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --assets assets.json --metrics metrics.json[/dim]
 
     - Track a [magenta]failed[/magenta] run with an error message, for an app with ID
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status failed --input input.json \\
             --error-msg "Solver timed out"[/dim]
 
@@ -210,16 +214,19 @@ def track(
       [magenta]outputs[/magenta] directory, for an app with ID
       [magenta]hare-app[/magenta], using the [magenta]default[/magenta]
       instance.
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input inputs \\
             --output outputs --content-type multi-file --instance-id default[/dim]
 
     - Track a [magenta]successful[/magenta] run with a name, description, and duration, for an app
       with ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --name "Production run" --description "Weekly optimization" --duration 5000[/dim]
 
     - Track a [magenta]successful[/magenta] [magenta]json[/magenta] run with all available options,
       for an app with ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud run track --app-id hare-app --status succeeded --input input.json \\
             --output output.json --logs logs.log --assets assets.json --metrics metrics.json \\
                 --name "Full run" --description "Complete example" --duration 10000 --instance-id burrow[/dim]

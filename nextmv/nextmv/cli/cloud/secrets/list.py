@@ -41,15 +41,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all secrets collections of application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud secrets list --app-id hare-app[/dim]
 
     - List all secrets collections using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud secrets list --app-id hare-app --profile hare[/dim]
 
     - List all secrets collections and save the information to a [magenta]secrets.json[/magenta] file.
+
         $ [dim]nextmv cloud secrets list --app-id hare-app --output secrets.json[/dim]
 
     - List all secrets collections without pagination.
+
         $ [dim]nextmv cloud secrets list --app-id hare-app --no-pagination[/dim]
     """
 

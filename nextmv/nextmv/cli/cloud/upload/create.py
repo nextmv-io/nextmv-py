@@ -24,9 +24,11 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create an upload URL for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud upload create --app-id hare-app[/dim]
 
     - Create an upload URL for application [magenta]hare-app[/magenta] using profile [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud upload create --app-id hare-app --profile hare[/dim]
     """
 

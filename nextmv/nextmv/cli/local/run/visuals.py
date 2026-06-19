@@ -30,10 +30,12 @@ def visuals(
 
     - Get the visuals of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Visuals are opened in a web browser.
+
         $ [dim]nextmv local run visuals --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the visuals of a run with ID [magenta]burrow-123[/magenta], belonging to an app with source path
       [magenta]./my-app[/magenta].
+
         $ [dim]nextmv local run visuals --app-src ./my-app --run-id burrow-123[/dim]
     """
 

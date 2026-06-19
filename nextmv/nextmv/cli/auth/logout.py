@@ -11,13 +11,7 @@ import typer
 
 from nextmv.auth import delete_tokens
 from nextmv.cli.message import error, info, success, warning
-from nextmv.config import (
-    AuthType,
-    get_auth_session,
-    get_auth_type,
-    list_pkce_profiles,
-    load_config,
-)
+from nextmv.config import AuthType, get_auth_session, get_auth_type, list_pkce_profiles, load_config
 
 # Set up subcommand application.
 app = typer.Typer()
@@ -47,9 +41,11 @@ def logout(
     [bold][underline]Examples[/underline][/bold]
 
     - Log out of all pkce profiles.
+
         $ [dim]nextmv auth logout[/dim]
 
     - Log out of a specific named profile.
+
         $ [dim]nextmv auth logout --profile my-auth-profile[/dim]
     """
 

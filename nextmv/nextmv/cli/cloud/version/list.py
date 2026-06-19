@@ -41,15 +41,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all versions of application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud version list --app-id hare-app[/dim]
 
     - List all versions using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud version list --app-id hare-app --profile hare[/dim]
 
     - List all versions and save the information to a [magenta]versions.json[/magenta] file.
+
         $ [dim]nextmv cloud version list --app-id hare-app --output versions.json[/dim]
 
     - List all versions without pagination.
+
         $ [dim]nextmv cloud version list --app-id hare-app --no-pagination[/dim]
     """
 

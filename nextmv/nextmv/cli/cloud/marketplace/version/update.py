@@ -57,17 +57,20 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update a version's change log with a single entry.
+
         $ [dim]nextmv cloud marketplace version update --partner-id my-partner \\
             --app-id marketplace-hare --version-id mkt-v1 \\
             --change-log "Fixed critical bug in routing algorithm"[/dim]
 
     - Update a version's change log with multiple entries.
+
         $ [dim]nextmv cloud marketplace version update --partner-id my-partner \\
             --app-id marketplace-hare --version-id mkt-v1 \\
             --change-log "Performance improvements" --change-log "Added new features" \\
             --change-log "Updated documentation"[/dim]
 
     - Update a version and save the updated information to a [magenta]updated_version.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace version update --partner-id my-partner \\
             --app-id marketplace-hare --version-id mkt-v1 \\
             --change-log "Bug fixes" --output updated_version.json[/dim]

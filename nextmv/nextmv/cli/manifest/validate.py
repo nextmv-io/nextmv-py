@@ -36,9 +36,11 @@ def validate(
     [bold][underline]Examples[/underline][/bold]
 
     - Validate the manifest in the current directory.
+
         $ [dim]nextmv manifest validate[/dim]
 
     - Validate the manifest in the [magenta]./my-app[/magenta] directory.
+
         $ [dim]nextmv manifest validate --dirpath ./my-app[/dim]
     """
 

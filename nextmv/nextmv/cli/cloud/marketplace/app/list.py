@@ -49,15 +49,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all marketplace applications.
+
         $ [dim]nextmv cloud marketplace app list[/dim]
 
     - List all applications for a specific partner.
+
         $ [dim]nextmv cloud marketplace app list --partner-id my-partner[/dim]
 
     - List all applications using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud marketplace app list --profile hare[/dim]
 
     - List all applications and save the information to an [magenta]apps.json[/magenta] file.
+
         $ [dim]nextmv cloud marketplace app list --output apps.json[/dim]
     """
 

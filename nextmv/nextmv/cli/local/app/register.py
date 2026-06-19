@@ -54,10 +54,12 @@ def register(
     [bold][underline]Examples[/underline][/bold]
 
     - Register a local application with the source path [magenta]./my-app[/magenta].
+
         $ [dim]nextmv local app register --app-src ./my-app[/dim]
 
     - Register a local application with the source path [magenta]./my-app[/magenta] and save the
       information to an [magenta]app.json[/magenta] file.
+
         $ [dim]nextmv local app register --app-src ./my-app --output app.json[/dim]
     """
 

@@ -40,10 +40,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the application with the ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud app get --app-id hare-app[/dim]
 
     - Get the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
+
         $ [dim]nextmv cloud app get --app-id hare-app --output app.json[/dim]
     """
 

@@ -59,19 +59,23 @@ def clone(
 
     - Clone the [magenta]go-nextroute[/magenta] community app (under the
       [magenta]"go-nextroute"[/magenta] directory), using the [magenta]latest[/magenta] version.
+
         $ [dim]nextmv community clone --app go-nextroute[/dim]
 
     - Clone the [magenta]go-nextroute[/magenta] community app under the
       [magenta]"~/sample/my_app"[/magenta] directory, using the [magenta]latest[/magenta] version.
+
         $ [dim]nextmv community clone --app go-nextroute --directory ~/sample/my_app[/dim]
 
     - Clone the [magenta]go-nextroute[/magenta] community app (under the
       [magenta]"go-nextroute"[/magenta] directory), using version [magenta]v1.2.0[/magenta].
+
         $ [dim]nextmv community clone --app go-nextroute --version v1.2.0[/dim]
 
     - Clone the [magenta]go-nextroute[/magenta] community app (under the
       [magenta]"go-nextroute"[/magenta] directory), using the [magenta]latest[/magenta] version
       and a profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv community clone --app go-nextroute --profile hare[/dim]
     """
 

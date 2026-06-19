@@ -28,9 +28,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the application with the ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud app delete --app-id hare-app[/dim]
 
     - Delete the application with the ID [magenta]hare-app[/magenta] without confirmation prompt.
+
         $ [dim]nextmv cloud app delete --app-id hare-app --yes[/dim]
     """
 

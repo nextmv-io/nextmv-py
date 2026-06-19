@@ -29,9 +29,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the version with the ID [magenta]v1[/magenta] from application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud version delete --app-id hare-app --version-id v1[/dim]
 
     - Delete the version without confirmation prompt.
+
         $ [dim]nextmv cloud version delete --app-id hare-app --version-id v1 --yes[/dim]
     """
 

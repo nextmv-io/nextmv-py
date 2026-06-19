@@ -64,16 +64,20 @@ def compare(
 
     - Compare two runs belonging to an app with ID [magenta]hare-app[/magenta]
       repeating the --run-ids flag.
+
         $ [dim]nextmv local run compare --app-id hare-app --run-ids fluff --run-ids white[/dim]
 
     - Compare three runs belonging to an app with ID [magenta]hare-app[/magenta]
       separating the run IDs with commas.
+
         $ [dim]nextmv local run compare --app-id hare-app --run-ids fluff,white,thumper[/dim]
 
     - Compare two runs and print the result as [magenta]json[/magenta].
+
         $ [dim]nextmv local run compare --app-id hare-app --run-ids fluff,white --flat[/dim]
 
     - Compare two runs and save the result to a file named [magenta]comparison.json[/magenta].
+
         $ [dim]nextmv local run compare --app-id hare-app --run-ids fluff,white --output comparison.json[/dim]
     """
 

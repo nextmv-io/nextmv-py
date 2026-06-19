@@ -41,11 +41,13 @@ def get(
 
     - Get the ensemble definition with the ID [magenta]prod-ensemble[/magenta] from
       application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud ensemble get --app-id hare-app \\
         --ensemble-definition-id prod-ensemble[/dim]
 
     - Get the ensemble definition with the ID [magenta]prod-ensemble[/magenta] and
       save the information to an [magenta]ensemble.json[/magenta] file.
+
         $ [dim]nextmv cloud ensemble get --app-id hare-app \\
             --ensemble-definition-id prod-ensemble --output ensemble.json[/dim]
     """

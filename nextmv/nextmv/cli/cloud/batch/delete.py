@@ -31,9 +31,11 @@ def delete(
 
     - Delete the batch experiment with the ID [magenta]hop-analysis[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud batch delete --app-id hare-app --batch-experiment-id hop-analysis[/dim]
 
     - Delete the batch experiment without confirmation prompt.
+
         $ [dim]nextmv cloud batch delete --app-id hare-app --batch-experiment-id carrot-routes --yes[/dim]
     """
 

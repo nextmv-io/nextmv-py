@@ -41,15 +41,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all applications.
+
         $ [dim]nextmv cloud app list[/dim]
 
     - List all applications using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud app list --profile hare[/dim]
 
     - List all applications and save the information to an [magenta]apps.json[/magenta] file.
+
         $ [dim]nextmv cloud app list --output apps.json[/dim]
 
     - List all applications without pagination.
+
         $ [dim]nextmv cloud app list --no-pagination[/dim]
     """
 

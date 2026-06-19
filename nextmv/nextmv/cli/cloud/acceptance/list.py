@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all acceptance tests for application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud acceptance list --app-id hare-app[/dim]
 
     - List all acceptance tests and save to a file.
+
         $ [dim]nextmv cloud acceptance list --app-id hare-app --output tests.json[/dim]
 
     - List all acceptance tests using a specific profile.
+
         $ [dim]nextmv cloud acceptance list --app-id hare-app --profile prod[/dim]
 
     - List all acceptance tests without pagination.
+
         $ [dim]nextmv cloud acceptance list --app-id hare-app --no-pagination[/dim]
     """
 

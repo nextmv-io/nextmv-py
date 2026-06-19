@@ -23,11 +23,11 @@ def delete(yes: YesOption = False, _: DebugOption = False) -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Delete the Nextmv cache.
-        
+
         $ [dim]nextmv cache delete[/dim]
 
     - Delete the Nextmv cache without confirmation prompt.
-        
+
         $ [dim]nextmv cache delete --yes[/dim]
     """
 

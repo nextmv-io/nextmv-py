@@ -40,10 +40,12 @@ def get(
     [bold][underline]Examples[/underline][/bold]
 
     - Get the account with the ID [magenta]bunny-logistics[/magenta].
+
         $ [dim]nextmv cloud account get --account-id bunny-logistics[/dim]
 
     - Get the account with the ID [magenta]cottontail-couriers[/magenta] and save the information to an
       [magenta]account.json[/magenta] file.
+
         $ [dim]nextmv cloud account get --account-id cottontail-couriers --output account.json[/dim]
     """
 

@@ -30,9 +30,11 @@ def delete(
 
     - Delete the ensemble definition with the ID [magenta]prod-ensemble[/magenta] from application
       [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble[/dim]
 
     - Delete the ensemble definition without confirmation prompt.
+
         $ [dim]nextmv cloud ensemble delete --app-id hare-app --ensemble-definition-id prod-ensemble --yes[/dim]
     """
 

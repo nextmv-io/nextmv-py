@@ -28,9 +28,11 @@ def exists(
     [bold][underline]Examples[/underline][/bold]
 
     - Check if the instance with the ID [magenta]prod[/magenta] exists in application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud instance exists --app-id hare-app --instance-id prod[/dim]
 
     - Check if the instance exists using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud instance exists --app-id hare-app --instance-id prod --profile hare[/dim]
     """
 

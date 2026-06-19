@@ -155,6 +155,7 @@ def clone(
     [bold][underline]Examples[/underline][/bold]
 
     - Clone run [magenta]run-123[/magenta] from an app in the current directory.
+
         $ [dim]nextmv local run clone --cloned-run-id run-123[/dim]
 
     - Clone a [magenta]json[/magenta] input via [magenta]stdin[/magenta], from an [magenta]input.json[/magenta] file,
@@ -163,47 +164,56 @@ def clone(
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json[/dim]
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app at path [magenta]./my-app[/magenta].
       Wait for the run to complete and print the result to [magenta]stdout[/magenta].
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --wait[/dim]
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app at path [magenta]./my-app[/magenta].
       Tail the run's logs, streaming to [magenta]stderr[/magenta].
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --tail[/dim]
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and write the result to an [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json \\
             --output output.json[/dim]
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete, and write the logs to a [magenta]logs.log[/magenta] file.
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input input.json --logs logs.log[/dim]
 
     - Clone a [magenta]json[/magenta] input from an [magenta]input.json[/magenta] file, and create a run for an app at
       path [magenta]./my-app[/magenta]. Wait for the run to complete. Tail the run's logs, streaming to
       [magenta]stderr[/magenta]. Write the logs to a [magenta]logs.log[/magenta] file. Write the result to an
       [magenta]output.json[/magenta] file.
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json --tail \\
             --logs logs.log --output output.json[/dim]
 
     - Clone a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       create a run for an app at path [magenta]./my-app[/magenta].
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input inputs \\
             --content-format multi-file[/dim]
 
     - Clone a [magenta]multi-file[/magenta] input from an [magenta]inputs[/magenta] directory, and
       create a run for an app with ID [magenta]hare-app[/magenta].
       Wait for the run to complete and save the result files to an [magenta]outputs[/magenta] directory.
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-id hare-app --input inputs --output outputs[/dim]
 
     - Clone a run with custom options for an app at path [magenta]./my-app[/magenta].
+
         $ [dim]nextmv local run clone --cloned-run-id run-123 --app-src ./my-app --input input.json \\
             --options duration=10s --options verbose=true[/dim]
     """

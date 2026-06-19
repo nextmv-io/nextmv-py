@@ -37,9 +37,11 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete a profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv configuration delete --profile hare[/dim]
 
     - Delete a profile named [magenta]hare[/magenta] without confirmation prompt.
+
         $ [dim]nextmv configuration delete --profile hare --yes[/dim]
     """
     config = load_config()

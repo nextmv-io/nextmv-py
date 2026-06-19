@@ -163,6 +163,7 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a scenario test with a single scenario.
+
         $ [dim]SCENARIO='{
             "instance_id": "warren-planner-v1",
             "scenario_input": {
@@ -176,6 +177,7 @@ def create(
         nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO"[/dim]
 
     - Create with multiple scenarios by repeating the flag.
+
         $ [dim]SCENARIO1='{
             "instance_id": "hop-optimizer",
             "scenario_input": {
@@ -199,6 +201,7 @@ def create(
         nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO1" --scenarios "$SCENARIO2"[/dim]
 
     - Create with multiple scenarios in a single [magenta]json[/magenta] array.
+
         $ [dim]SCENARIOS='[
             {
                 "instance_id": "burrow-builder",
@@ -224,6 +227,7 @@ def create(
         nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIOS"[/dim]
 
     - Create a scenario test and wait for it to complete.
+
         $ [dim]SCENARIO='{
             "instance_id": "foraging-route",
             "scenario_input": {
@@ -237,7 +241,9 @@ def create(
         nextmv cloud scenario create --app-id hare-app --scenarios "$SCENARIO" \\
             --wait[/dim]
 
-    - Create a scenario test and save the results to a file, waiting for completion.
+    - Create a scenario test and save the results to a file, waiting for
+      completion.
+
         $ [dim]SCENARIO='{
             "instance_id": "safe-hopper",
             "scenario_input": {
@@ -252,6 +258,7 @@ def create(
             --output bunny-safety-results.json[/dim]
 
     - Create a scenario test with configuration options.
+
         $ [dim]SCENARIO='{
             "instance_id": "hop-optimizer",
             "scenario_input": {

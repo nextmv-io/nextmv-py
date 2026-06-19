@@ -81,31 +81,37 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the name of a secrets collection.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys --name "Updated API Keys"[/dim]
 
     - Update the description of a secrets collection.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys \\
             --description "Updated collection of API keys"[/dim]
 
     - Update both name and description.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys --name "Production API Keys" \\
             --description "API keys for production environment"[/dim]
 
     - Replace all secrets in a collection with new secrets.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys \\
             --secrets '{"type": "env", "location": "API_KEY", "value": "new-value"}' \\
             --secrets '{"type": "env", "location": "DATABASE_URL", "value": "postgres://newhost"}'[/dim]
 
     - Replace all secrets with a JSON array.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys \\
             --secrets '[{"type": "env", "location": "API_KEY", "value": "new-value"}, {...}]'[/dim]
 
     - Update multiple attributes at once and save the result.
+
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
             --secrets-collection-id api-keys --name "New Name" \\
             --description "New Description" \\

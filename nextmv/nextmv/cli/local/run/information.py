@@ -44,14 +44,17 @@ def information(
 
     - Get the information of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Information is printed to [magenta]stdout[/magenta].
+
         $ [dim]nextmv local run information --app-id hare-app --run-id burrow-123[/dim]
 
     - Get the information of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Save the information to a [magenta]information.json[/magenta] file.
+
         $ [dim]nextmv local run information --app-id hare-app --run-id burrow-123 --output information.json[/dim]
 
     - Get the information of a run with ID [magenta]burrow-123[/magenta], belonging to an app with ID
       [magenta]hare-app[/magenta]. Use the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv local run information --app-id hare-app --run-id burrow-123 --profile hare[/dim]
     """
 

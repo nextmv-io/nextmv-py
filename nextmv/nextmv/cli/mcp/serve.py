@@ -44,9 +44,11 @@ def serve(
     [bold][underline]Examples[/underline][/bold]
 
     - Start the MCP server with stdio transport (default).
+
         $ [dim]nextmv mcp serve[/dim]
 
     - Start the MCP server with HTTP transport on port 9090.
+
         $ [dim]nextmv mcp serve --transport streamable-http --port 9090[/dim]
 
     - Register with Claude Code.

@@ -116,15 +116,18 @@ def create(
     [bold][underline]Examples[/underline][/bold]
 
     - Create a switchback test alternating between two bunny instances.
+
         $ [dim]nextmv cloud switchback create --app-id hare-app --baseline-instance-id fluffy-bunny-baseline \\
             --candidate-instance-id speedy-cottontail --unit-duration-minutes 15 --units 10[/dim]
 
     - Create a switchback test with a scheduled start time.
+
         $ [dim]nextmv cloud switchback create --app-id hare-app --baseline-instance-id wise-old-rabbit \\
             --candidate-instance-id burrow-master --unit-duration-minutes 30 --units 8 \\
             --start '2026-01-23T10:00:00Z'[/dim]
 
     - Create a switchback test with a description.
+
         $ [dim]nextmv cloud switchback create --app-id hare-app --baseline-instance-id fluffy-bunny-baseline \\
             --candidate-instance-id hopping-candidate-ears --unit-duration-minutes 20 --units 12 \\
             --description "Which bunny hops best for carrots?"[/dim]

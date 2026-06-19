@@ -59,13 +59,16 @@ def update(
     [bold][underline]Examples[/underline][/bold]
 
     - Update the application with the ID [magenta]hare-app[/magenta].
+
         $ [dim]nextmv local app update --app-id hare-app --description "New description"[/dim]
 
     - Update the application with the ID [magenta]hare-app[/magenta] and save the information to an
       [magenta]app.json[/magenta] file.
+
         $ [dim]nextmv local app update --app-id hare-app --description "New description" --output app.json[/dim]
 
     - Update the ID of the application located at [magenta]./my-app[/magenta] to [magenta]hare-app[/magenta].
+
         $ [dim]nextmv local app update --app-src ./my-app --new-app-id hare-app --description "New description"[/dim]
     """
 

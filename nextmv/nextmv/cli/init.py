@@ -61,6 +61,7 @@ def init(_: DebugOption = False) -> None:
     [bold][underline]Examples[/underline][/bold]
 
     - Start the tutorial.
+
         $ [dim]nextmv init[/dim]
     """
 

@@ -37,8 +37,7 @@ from nextmv.cli.manifest import app as manifest_app
 from nextmv.cli.message import confirmation, error, info, success, warning
 from nextmv.cli.version import app as version_app
 from nextmv.cli.version import version_callback
-from nextmv.cloud.client import (retrieve_endpoint_from_config,
-                                 retrieve_key_from_config)
+from nextmv.cloud.client import retrieve_endpoint_from_config, retrieve_key_from_config
 from nextmv.config import CONFIG_DIR, load_config
 from nextmv.deprecated import NextmvDeprecationWarning
 

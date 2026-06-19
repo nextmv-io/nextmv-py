@@ -41,15 +41,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all instances of application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud instance list --app-id hare-app[/dim]
 
     - List all instances using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud instance list --app-id hare-app --profile hare[/dim]
 
     - List all instances and save the information to a [magenta]instances.json[/magenta] file.
+
         $ [dim]nextmv cloud instance list --app-id hare-app --output instances.json[/dim]
 
     - List all instances without pagination.
+
         $ [dim]nextmv cloud instance list --app-id hare-app --no-pagination[/dim]
     """
 

@@ -42,6 +42,7 @@ def delete(
     [bold][underline]Examples[/underline][/bold]
 
     - Delete a mapped domain from the SSO configuration.
+
         $ [dim]nextmv cloud sso domain delete --domain "example.com"[/dim]
     """
 

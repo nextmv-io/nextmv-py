@@ -42,15 +42,19 @@ def list(
     [bold][underline]Examples[/underline][/bold]
 
     - List all input sets of application [magenta]hare-app[/magenta].
+
         $ [dim]nextmv cloud input-set list --app-id hare-app[/dim]
 
     - List all input sets using the profile named [magenta]hare[/magenta].
+
         $ [dim]nextmv cloud input-set list --app-id hare-app --profile hare[/dim]
 
     - List all input sets and save the information to a [magenta]input-sets.json[/magenta] file.
+
         $ [dim]nextmv cloud input-set list --app-id hare-app --output input-sets.json[/dim]
 
     - List all input sets without pagination.
+
         $ [dim]nextmv cloud input-set list --app-id hare-app --no-pagination[/dim]
     """
 
