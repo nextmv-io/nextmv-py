@@ -57,13 +57,14 @@ app = typer.Typer(
 
 # Register subcommands. The `name` parameter is required when the subcommand
 # module has a callback function defined.
+# We want to keep the subcommands in alphabetical order.
+app.add_typer(auth_app, name="auth")
 app.add_typer(cache_app, name="cache")
 app.add_typer(cloud_app, name="cloud")
 app.add_typer(community_app, name="community")
 app.add_typer(configuration_app, name="configuration")
 app.add_typer(init_app)
 app.add_typer(local_app, name="local")
-app.add_typer(auth_app, name="auth")
 app.add_typer(manifest_app, name="manifest")
 app.add_typer(version_app)
 
