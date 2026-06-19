@@ -1,5 +1,5 @@
 """
-Unit tests for the _find_uv_binary() function in nextmv.uv_handler.
+Unit tests for the _find_uv_binary() function in nextmv._uv_handler.
 """
 
 import os
