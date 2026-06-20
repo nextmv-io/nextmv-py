@@ -36,11 +36,15 @@ jobs:
     steps:
       - name: resolve tag name
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUTS_VERSION: ${{ inputs.version }}
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.version }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUTS_VERSION"
           else
-            TAG="${{ github.event.release.tag_name }}"
+            TAG="$RELEASE_TAG_NAME"
           fi
           VERSION="${TAG#nextmv-}"  # strip 'nextmv-' prefix if present
           VERSION="${VERSION#v}"     # strip leading 'v' if present
