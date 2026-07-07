@@ -1395,6 +1395,7 @@ class LocalOutputWriter(OutputWriter):
 
         if content_format in {ContentFormat.JSON, OutputFormat.TEXT}:
             self.__write_json(
+                output,
                 options,
                 solution,
                 assets,
@@ -1469,6 +1470,8 @@ class LocalOutputWriter(OutputWriter):
         """
 
         resolved_content_format = None
+        if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
+            resolved_content_format = ContentFormat.JSON
         if content_format is not None:
             resolved_content_format = content_format
         elif manifest is not None:
@@ -1728,7 +1731,7 @@ class LocalOutputWriter(OutputWriter):
 
         return None
 
-    def __resolve_solution(
+    def __resolve_solution(  # noqa: C901
         self,
         content_format: ContentFormat,
         output: Output | dict[str, Any] | BaseModel | None = None,
@@ -1775,6 +1778,7 @@ class LocalOutputWriter(OutputWriter):
             If ``solution_files`` are provided for a non-multi-file format, or
             if a plain ``solution`` is provided for ``ContentFormat.MULTI_FILE``.
         """
+
         if content_format != ContentFormat.MULTI_FILE:
             if solution_files is not None:
                 raise ValueError(
@@ -1782,6 +1786,11 @@ class LocalOutputWriter(OutputWriter):
                     f"`ContentFormat.MULTI_FILE`: {content_format}. If you want to use `solution_files`, "
                     f"set `content_format` to `ContentFormat.MULTI_FILE`."
                 )
+
+            # We need to handle the special case where base model is passed and
+            # we don't extract solutions.
+            if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
+                return output_dict
 
             if solution is not None:
                 return solution
@@ -1911,6 +1920,7 @@ class LocalOutputWriter(OutputWriter):
 
     def __write_json(
         self,
+        output: Output | dict[str, Any] | BaseModel | None = None,
         options: dict[str, Any] | None = None,
         solution: dict[str, Any] | Any | dict[str, list[dict[str, Any]]] | None = None,
         assets: list[dict[str, Any]] | None = None,
@@ -1928,6 +1938,9 @@ class LocalOutputWriter(OutputWriter):
 
         Parameters
         ----------
+        output : Union[Output, dict[str, Any], BaseModel], optional
+            Output data to write. Can be an Output object, a dictionary, or a
+            BaseModel.
         options : dict[str, Any], optional
             Options dictionary to include in the output payload.
         solution : dict[str, Any] or Any, optional
@@ -1957,6 +1970,9 @@ class LocalOutputWriter(OutputWriter):
 
         if statistics is not None:
             output_dict[STATISTICS_KEY] = statistics
+
+        if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
+            output_dict = solution
 
         serialized = serialize_json(
             output_dict,
