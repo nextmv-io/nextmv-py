@@ -1472,7 +1472,7 @@ class LocalOutputWriter(OutputWriter):
         resolved_content_format = None
         if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
             resolved_content_format = ContentFormat.JSON
-        if content_format is not None:
+        elif content_format is not None:
             resolved_content_format = content_format
         elif manifest is not None:
             resolved_content_format = manifest.configuration.content.format
