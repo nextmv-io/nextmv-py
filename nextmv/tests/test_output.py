@@ -509,10 +509,13 @@ class TestOutput(unittest.TestCase):
             # The writer extracts known Output fields from the BaseModel's dict;
             # custom fields are not preserved in the envelope.
             expected = {
-                "options": {},
-                "solution": {},
-                "assets": [],
-                "metrics": {},
+                "output": {
+                    "i_am": "a_crazy_object",
+                    "with": [
+                        {"nested": "values"},
+                        {"and": "more_craziness"},
+                    ],
+                }
             }
 
             self.assertDictEqual(got, expected)

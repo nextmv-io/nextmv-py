@@ -13,13 +13,13 @@ Scenario
 """
 
 import itertools
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from nextmv.base_model import BaseModel
 
-@dataclass
-class ScenarioConfiguration:
+
+class ScenarioConfiguration(BaseModel):
     """
     Configuration for a scenario.
 
@@ -56,7 +56,7 @@ class ScenarioConfiguration:
     values: list[str]
     """List of values for the configuration option."""
 
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """
         Post-initialization method to ensure that the values are unique.
 
@@ -103,8 +103,7 @@ class ScenarioInputType(str, Enum):
     """The data in the scenario is new data."""
 
 
-@dataclass
-class ScenarioInput:
+class ScenarioInput(BaseModel):
     """
     Input to be processed in a scenario.
 
@@ -164,7 +163,7 @@ class ScenarioInput:
     list of input IDs (`list[str]`), or raw data (`list[dict[str, Any]]`).
     """
 
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """
         Post-initialization method to ensure that the input data is valid.
 
@@ -183,8 +182,7 @@ class ScenarioInput:
             raise ValueError("Scenario input type must be a list when using new data.")
 
 
-@dataclass
-class Scenario:
+class Scenario(BaseModel):
     """
     A scenario is a test case that is used to compare a decision model being
     executed with a set of inputs and configurations.

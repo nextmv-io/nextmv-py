@@ -1,6 +1,13 @@
 import unittest
 
-from nextmv.cloud.scenario import Scenario, ScenarioConfiguration, _option_sets, _scenarios_by_id
+from nextmv.cloud.scenario import (
+    Scenario,
+    ScenarioConfiguration,
+    ScenarioInput,
+    ScenarioInputType,
+    _option_sets,
+    _scenarios_by_id,
+)
 
 
 class TestScenarioTest(unittest.TestCase):
@@ -8,7 +15,10 @@ class TestScenarioTest(unittest.TestCase):
         all_option_sets = _option_sets(
             scenarios=[
                 Scenario(
-                    scenario_input="",
+                    scenario_input=ScenarioInput(
+                        scenario_input_type=ScenarioInputType.INPUT_SET,
+                        scenario_input_data="foo",
+                    ),
                     instance_id="",
                     configuration=[
                         ScenarioConfiguration(
@@ -26,7 +36,10 @@ class TestScenarioTest(unittest.TestCase):
                     ],
                 ),
                 Scenario(
-                    scenario_input="",
+                    scenario_input=ScenarioInput(
+                        scenario_input_type=ScenarioInputType.INPUT_SET,
+                        scenario_input_data="foo",
+                    ),
                     instance_id="",
                     configuration=[
                         ScenarioConfiguration(
@@ -75,12 +88,18 @@ class TestScenarioTest(unittest.TestCase):
     def test_scenarios_by_id(self):
         scenarios = [
             Scenario(
-                scenario_input=None,
+                scenario_input=ScenarioInput(
+                    scenario_input_type=ScenarioInputType.INPUT_SET,
+                    scenario_input_data="bar",
+                ),
                 instance_id="foo",
             ),
             Scenario(
-                scenario_input=None,
-                instance_id="bar",
+                scenario_input=ScenarioInput(
+                    scenario_input_type=ScenarioInputType.INPUT_SET,
+                    scenario_input_data="baz",
+                ),
+                instance_id="roh",
             ),
         ]
 
@@ -91,7 +110,10 @@ class TestScenarioTest(unittest.TestCase):
         scenarios.append(
             Scenario(
                 scenario_id="scenario-1",
-                scenario_input=None,
+                scenario_input=ScenarioInput(
+                    scenario_input_type=ScenarioInputType.INPUT_SET,
+                    scenario_input_data="foo",
+                ),
                 instance_id="foo",
             ),
         )
@@ -102,7 +124,10 @@ class TestScenarioTest(unittest.TestCase):
 class TestScenario(unittest.TestCase):
     def test_option_combinations(self):
         scenario = Scenario(
-            scenario_input="",
+            scenario_input=ScenarioInput(
+                scenario_input_type=ScenarioInputType.INPUT_SET,
+                scenario_input_data="foo",
+            ),
             instance_id="",
             configuration=[
                 ScenarioConfiguration(
