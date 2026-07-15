@@ -1,0 +1,93 @@
+name: release-homebrew
+run-name: Homebrew release for ${{ github.event.release.tag_name || inputs.version }}
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to submit (e.g. nextmv-v0.1.2, v0.1.2, or 0.1.2)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release-homebrew:
+    name: Release homebrew formula
+    if: |
+      (
+        github.event_name == 'workflow_dispatch'
+      ) || (
+        github.event_name == 'release' &&
+        github.event.release.prerelease == false &&
+        startsWith(github.event.release.tag_name, 'nextmv-') &&
+        !contains(github.event.release.tag_name, 'gurobipy') &&
+        !contains(github.event.release.tag_name, 'scikit-learn')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: resolve tag name
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUTS_VERSION: ${{ inputs.version }}
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUTS_VERSION"
+          else
+            TAG="$RELEASE_TAG_NAME"
+          fi
+          VERSION="${TAG#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"     # strip leading 'v' if present
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"
+
+      - name: compute sha256 checksums
+        shell: bash
+        run: |
+          BASE_URL="https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}"
+
+          SHA1=$(curl -sL "$BASE_URL/nextmv-macos-arm64.zip" | sha256sum | cut -d ' ' -f 1)
+          SHA2=$(curl -sL "$BASE_URL/nextmv-macos-x64.zip" | sha256sum | cut -d ' ' -f 1)
+          SHA3=$(curl -sL "$BASE_URL/nextmv-linux-arm64.zip" | sha256sum | cut -d ' ' -f 1)
+          SHA4=$(curl -sL "$BASE_URL/nextmv-linux-x64.zip" | sha256sum | cut -d ' ' -f 1)
+
+          echo "MACOS_ARM_SHA256=$SHA1" >> $GITHUB_ENV
+          echo "MACOS_X64_SHA256=$SHA2" >> $GITHUB_ENV
+          echo "LINUX_ARM_SHA256=$SHA3" >> $GITHUB_ENV
+          echo "LINUX_X64_SHA256=$SHA4" >> $GITHUB_ENV
+
+      - name: checkout homebrew tap repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: nextmv-io/homebrew-nextmv
+          token: ${{ secrets.HOMEBREW_TOKEN }}
+          persist-credentials: true
+
+      - name: update formula
+        shell: bash
+        run: |
+          # Update version
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/nextmv.rb
+
+          # Update SHA256 checksums (each must appear exactly once)
+          sed -i "s/sha256 \".*\"/sha256 \"${MACOS_ARM_SHA256}\"/1" Formula/nextmv.rb
+          sed -i "s/sha256 \".*\"/sha256 \"${MACOS_X64_SHA256}\"/2" Formula/nextmv.rb
+          sed -i "s/sha256 \".*\"/sha256 \"${LINUX_ARM_SHA256}\"/3" Formula/nextmv.rb
+          sed -i "s/sha256 \".*\"/sha256 \"${LINUX_X64_SHA256}\"/4" Formula/nextmv.rb
+
+          echo "Updated formula:"
+          cat Formula/nextmv.rb
+
+      - name: commit and push
+        shell: bash
+        run: |
+          git config user.name "nextmvbot"
+          git config user.email "tech@nextmv.io"
+          git add Formula/nextmv.rb
+          git commit -m "nextmv ${VERSION}"
+          git push
