@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           git config user.name "nextmvbot"
-          git config user.email "tech@nextmv.io"
+          git config user.email "support@nextmv.io"
           git add Formula/nextmv.rb
           git commit -m "nextmv ${VERSION}"
           git push
