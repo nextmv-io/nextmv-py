@@ -26,7 +26,7 @@ from nextmv.deprecated import deprecated
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
+from nextmv.output import ASSETS_KEY, METRICS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ComparisonValues,
@@ -459,6 +459,11 @@ class ApplicationRunMixin:
 
             # Gather the metrics.
             metrics = metadata.metrics
+
+            # If metrics come nested, we extract them.
+            if len(metrics.keys()) == 1 and list(metrics.keys())[0] == METRICS_KEY:
+                metrics = metadata.metrics[METRICS_KEY]
+
             if metrics:
                 for k, v in metrics.items():
                     if isinstance(v, (int, float)):
