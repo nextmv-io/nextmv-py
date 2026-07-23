@@ -170,7 +170,7 @@ def clone(
     no_queuing: Annotated[
         bool,
         typer.Option(
-            "--no-queuing",
+            "--no-queuing/--yes-queuing",
             help="Do not queue run. Default is [magenta]False[/magenta], "
             "meaning the run [italic]will[/italic] be queued.",
             rich_help_panel="Run configuration",

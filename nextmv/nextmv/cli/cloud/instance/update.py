@@ -97,7 +97,7 @@ def update(
     no_queuing: Annotated[
         bool | None,
         typer.Option(
-            "--no-queuing",
+            "--no-queuing/--yes-queuing",
             help="Do not queue when running the instance.",
             rich_help_panel="Instance configuration",
         ),
