@@ -98,7 +98,8 @@ def update(
         bool | None,
         typer.Option(
             "--no-queuing/--yes-queuing",
-            help="Do not queue when running the instance.",
+            help="Whether to queue when running the instance. "
+            "Default is [magenta]False[/magenta], meaning the instance's run [italic]will[/italic] be queued.",
             rich_help_panel="Instance configuration",
         ),
     ] = None,
