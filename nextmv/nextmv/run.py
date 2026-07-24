@@ -309,6 +309,8 @@ class RunType(str, Enum):
         External run type.
     ENSEMBLE : str
         Ensemble run type.
+    ENSEMBLE_CHILD : str
+        A child run of an ensemble run type.
 
     Examples
     --------
@@ -323,10 +325,6 @@ class RunType(str, Enum):
     >>> external_type = RunType("external")
     >>> external_type
     <RunType.EXTERNAL: 'external'>
-
-    >>> # All available types
-    >>> list(RunType)
-    [<RunType.STANDARD: 'standard'>, <RunType.EXTERNAL: 'external'>, <RunType.ENSEMBLE: 'ensemble'>]
     """
 
     STANDARD = "standard"
@@ -335,6 +333,8 @@ class RunType(str, Enum):
     """External run type."""
     ENSEMBLE = "ensemble"
     """Ensemble run type."""
+    ENSEMBLE_CHILD = "ensemble-child"
+    """A child run of an ensemble run type."""
 
 
 class RunTypeConfiguration(BaseModel):
@@ -1344,6 +1344,8 @@ class RunResult(RunInformation):
     """Error log of the run. Only available if the run failed."""
     output: dict[str, Any] | None = None
     """Output of the run. Only available if the run succeeded."""
+    ensemble: dict[str, Any] | None = None
+    """Ensemble result of the run. Only available if the run was part of an ensemble run."""
 
 
 class RunLog(BaseModel):

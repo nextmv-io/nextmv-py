@@ -41,6 +41,7 @@ from nextmv.run import (
     RunQueuing,
     RunResult,
     RunTrackingMetadata,
+    RunType,
     TimestampedRunLog,
     TrackedRun,
 )
@@ -1830,6 +1831,14 @@ class ApplicationRunMixin:
         )
         result = RunResult.from_dict(response.json())
         result.console_url = self.__console_url(result.id)
+
+        if result.metadata.run_type.run_type == RunType.ENSEMBLE:
+            ensemble_response = self.client.request(
+                method="GET",
+                endpoint=f"{self.endpoint}/runs/{run_id}/ensemble",
+            )
+            ensemble_result = ensemble_response.json()
+            result.ensemble = ensemble_result
 
         # If we don't need to use a presigned URL, we can return the output
         # directly. Only attempt to download the output once the run has
