@@ -91,9 +91,9 @@ def create(
     no_queuing: Annotated[
         bool,
         typer.Option(
-            "--no-queuing",
-            help="Do not queue when running the instance. Default is [magenta]False[/magenta], "
-            "meaning the instance's run [italic]will[/italic] be queued.",
+            "--no-queuing/--yes-queuing",
+            help="Whether to queue when running the instance. "
+            "Default is [magenta]False[/magenta], meaning the instance's run [italic]will[/italic] be queued.",
             rich_help_panel="Instance configuration",
         ),
     ] = False,

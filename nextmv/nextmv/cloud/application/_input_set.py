@@ -262,7 +262,7 @@ class ApplicationInputSetMixin:
             payload["name"] = name
         if description is not None:
             payload["description"] = description
-        if inputs is not None:
+        if inputs is not None and len(inputs) > 0:
             payload["inputs"] = [input.to_dict() for input in inputs]
 
         response = self.client.request(

@@ -26,7 +26,7 @@ from nextmv.deprecated import deprecated
 from nextmv.input import Input, InputFormat
 from nextmv.logger import log
 from nextmv.options import Options
-from nextmv.output import ASSETS_KEY, STATISTICS_KEY, Asset, Output, Statistics
+from nextmv.output import ASSETS_KEY, METRICS_KEY, STATISTICS_KEY, Asset, Output, Statistics
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.run import (
     ComparisonValues,
@@ -41,6 +41,7 @@ from nextmv.run import (
     RunQueuing,
     RunResult,
     RunTrackingMetadata,
+    RunType,
     TimestampedRunLog,
     TrackedRun,
 )
@@ -459,7 +460,12 @@ class ApplicationRunMixin:
 
             # Gather the metrics.
             metrics = metadata.metrics
+
             if metrics:
+                # If metrics come nested, we extract them.
+                if len(metrics.keys()) == 1 and list(metrics.keys())[0] == METRICS_KEY:
+                    metrics = metadata.metrics[METRICS_KEY]
+
                 for k, v in metrics.items():
                     if isinstance(v, (int, float)):
                         v = round(v, 5)
@@ -1825,6 +1831,14 @@ class ApplicationRunMixin:
         )
         result = RunResult.from_dict(response.json())
         result.console_url = self.__console_url(result.id)
+
+        if result.metadata.run_type.run_type == RunType.ENSEMBLE:
+            ensemble_response = self.client.request(
+                method="GET",
+                endpoint=f"{self.endpoint}/runs/{run_id}/ensemble",
+            )
+            ensemble_result = ensemble_response.json()
+            result.ensemble = ensemble_result
 
         # If we don't need to use a presigned URL, we can return the output
         # directly. Only attempt to download the output once the run has

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 
 from nextmv.cloud.acceptance_test import AcceptanceTest, Metric
-from nextmv.cloud.batch_experiment import BatchExperimentRun, ExperimentStatus
+from nextmv.cloud.batch_experiment import ExperimentStatus, to_runs
 from nextmv.polling import DEFAULT_POLLING_OPTIONS, PollingOptions, poll
 from nextmv.safe import safe_id
 
@@ -242,26 +242,9 @@ class ApplicationAcceptanceMixin:
                     f"batch experiment {id} does not exist, input_set_id must be defined to create a new one"
                 ) from e
         else:
-            # Get all input IDs from the input set.
+            # Build runs from the input set.
             input_set = self.input_set(input_set_id=input_set_id)
-            if not input_set.input_ids:
-                raise ValueError(f"input set {input_set_id} does not contain any inputs")
-            runs = []
-            for input_id in input_set.input_ids:
-                runs.append(
-                    BatchExperimentRun(
-                        instance_id=candidate_instance_id,
-                        input_set_id=input_set_id,
-                        input_id=input_id,
-                    )
-                )
-                runs.append(
-                    BatchExperimentRun(
-                        instance_id=baseline_instance_id,
-                        input_set_id=input_set_id,
-                        input_id=input_id,
-                    )
-                )
+            runs = to_runs(instance_ids=[candidate_instance_id, baseline_instance_id], input_set=input_set)
             batch_experiment_id = self.new_batch_experiment(
                 name=name,
                 description=description,

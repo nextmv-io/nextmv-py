@@ -905,12 +905,13 @@ class CloudIntegrationWorkflow(FlowSpec):
                 cloud.RunGroup(
                     id="run-group-1",
                     instance_id=inst1.id,
+                    repetitions=2,
                 ),
             ],
             rules=[
                 cloud.EvaluationRule(
                     id="eval-rule-1",
-                    statistics_path="result.value",
+                    statistics_path="$.value",
                     objective=cloud.RuleObjective.MAXIMIZE,
                     tolerance=cloud.RuleTolerance(
                         value=0.01,
@@ -962,6 +963,7 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert result.metadata.status_v2 == nextmv.StatusV2.succeeded
         assert result.metadata.run_type.run_type == nextmv.RunType.ENSEMBLE
         assert result.metadata.run_type.definition_id == definition.id
+        assert result.ensemble is not None
 
         # We can delete an ensemble definition.
         app.delete_ensemble_definition(ensemble_definition_id=definition.id)
