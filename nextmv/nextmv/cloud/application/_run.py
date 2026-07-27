@@ -461,11 +461,11 @@ class ApplicationRunMixin:
             # Gather the metrics.
             metrics = metadata.metrics
 
-            # If metrics come nested, we extract them.
-            if len(metrics.keys()) == 1 and list(metrics.keys())[0] == METRICS_KEY:
-                metrics = metadata.metrics[METRICS_KEY]
-
             if metrics:
+                # If metrics come nested, we extract them.
+                if len(metrics.keys()) == 1 and list(metrics.keys())[0] == METRICS_KEY:
+                    metrics = metadata.metrics[METRICS_KEY]
+
                 for k, v in metrics.items():
                     if isinstance(v, (int, float)):
                         v = round(v, 5)
