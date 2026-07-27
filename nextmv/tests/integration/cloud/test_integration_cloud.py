@@ -911,7 +911,7 @@ class CloudIntegrationWorkflow(FlowSpec):
             rules=[
                 cloud.EvaluationRule(
                     id="eval-rule-1",
-                    statistics_path="result.value",
+                    statistics_path="$.value",
                     objective=cloud.RuleObjective.MAXIMIZE,
                     tolerance=cloud.RuleTolerance(
                         value=0.01,
