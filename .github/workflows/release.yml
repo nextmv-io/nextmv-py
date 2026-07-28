@@ -71,20 +71,14 @@ jobs:
           os: ${{ matrix.os }}
           arch: ${{ matrix.arch }}
 
-      - name: determine exact version being released
-        shell: bash
-        run: |
-          VERSION="nextmv-$(cat nextmv/nextmv/__about__.py | grep __version__ | cut -d '"' -f 2)"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION"
-
       - name: attach binary to GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZIP_NAME: ${{ steps.build-binary.outputs.zip-name }}
+          VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
         run: |
-          gh release upload $VERSION dist/$ZIP_NAME --clobber
+          gh release upload "$VERSION" "dist/$ZIP_NAME" --clobber
         working-directory: nextmv/
 
   # Unfortunately, PyPI publishing does not support reusable workflows, so we
@@ -165,6 +159,41 @@ jobs:
         with:
           version: ${{ steps.version.outputs.version }}
           winget-token: ${{ secrets.WINGET_TOKEN }}
+
+  # Trigger the Homebrew tap to update its formula for the nextmv CLI.
+  # We send a repository_dispatch to the tap repo, which then downloads
+  # the binaries, recomputes checksums and commits the updated formula.
+  # Only run for full, stable nextmv releases (SHOULD_NOTIFY_SLACK
+  # filters out dev tags) and once the binaries are attached.
+  dispatch-homebrew:
+    name: Dispatch Homebrew formula update
+    needs: [release-nextmv, release-binaries]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: resolve version
+        id: version
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
+        run: |
+          VERSION="${RELEASE_VERSION#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"                # strip leading 'v' if present
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION"
+
+      - name: send repository_dispatch to homebrew-nextmv
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/nextmv-io/homebrew-nextmv/dispatches \
+            -f event_type=nextmv-cli-release \
+            -f "client_payload[version]=${VERSION}"
 
   # >>> 'nextmv-gurobipy' package jobs.
   release-nextmv-gurobipy:
