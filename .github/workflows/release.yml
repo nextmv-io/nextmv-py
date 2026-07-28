@@ -127,6 +127,39 @@ jobs:
     secrets:
       SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
 
+  # Submit the winget package for the nextmv CLI. We run this here (rather than
+  # reacting to the release event) because releases are created with the
+  # GITHUB_TOKEN, which does not trigger release-triggered workflows. Only run
+  # for full, stable nextmv releases (SHOULD_NOTIFY_SLACK filters out dev tags)
+  # and once the binaries (including the windows zip) are attached.
+  release-winget:
+    name: Release winget package
+    needs: [release-nextmv, release-binaries]
+    if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
+    runs-on: windows-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: resolve version
+        id: version
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
+        run: |
+          VERSION="${RELEASE_VERSION#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"                # strip leading 'v' if present
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION"
+
+      - name: submit winget package
+        uses: ./.github/actions/submit-winget
+        with:
+          version: ${{ steps.version.outputs.version }}
+          winget-token: ${{ secrets.WINGET_TOKEN }}
+
   # Trigger the Homebrew tap to update its formula for the nextmv CLI.
   # We send a repository_dispatch to the tap repo, which then downloads
   # the binaries, recomputes checksums and commits the updated formula.
@@ -144,9 +177,9 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
         run: |
-          VERSION="${RELEASE_VERSION#nextmv-}" # strip 'nextmv-' prefix if present
-          VERSION="${VERSION#v}"               # strip leading 'v' if present
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          VERSION="${RELEASE_VERSION#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"                # strip leading 'v' if present
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version=$VERSION"
 
       - name: send repository_dispatch to homebrew-nextmv

@@ -1,0 +1,41 @@
+name: Submit winget package
+description: >
+  Installs wingetcreate, refreshes the winget-pkgs fork, and submits a pull
+  request to update the Nextmv.CLI winget package to the given version.
+
+inputs:
+  version:
+    description: Version to submit, without prefix (e.g. 1.10.0)
+    required: true
+  winget-token:
+    description: GitHub token with access to the winget-pkgs fork
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: install wingetcreate
+      shell: bash
+      run: |
+        winget install wingetcreate --disable-interactivity --accept-source-agreements
+
+    - name: delete repo fork to avoid sync issues
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.winget-token }}
+      run: |
+        gh repo delete merschformann/winget-pkgs --yes
+        # We have to wait a bit for GitHub to process the deletion before we can fork again.
+        sleep 20
+
+    - name: submit winget PR
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        WINGET_TOKEN: ${{ inputs.winget-token }}
+      run: |
+        wingetcreate update Nextmv.CLI \
+          --version "$VERSION" \
+          --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.zip|x64|zip" \
+          --submit \
+          --token "$WINGET_TOKEN"

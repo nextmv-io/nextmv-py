@@ -1,11 +1,10 @@
 name: release-winget
-run-name: Winget release for ${{ github.event.release.tag_name || inputs.version }}
+run-name: Winget release for ${{ inputs.version }}
 
+# This workflow is a manual escape hatch for (re-)submitting a winget package.
+# The normal, automated path lives in release.yml, which submits winget as part
+# of the release run.
 on:
-  # We are reacting on all release creations ('created').
-  # Pre-releases are filtered out in the job condition below.
-  release:
-    types: [created]
   workflow_dispatch:
     inputs:
       version:
@@ -19,59 +18,26 @@ permissions:
 jobs:
   release-winget:
     name: Release winget package
-    # For release events: only run for full (non-pre-release) nextmv- releases.
-    # (Filter out nextmv-gurobipy- and nextmv-scikit-learn- tags)
-    # For manual dispatch: always run (caller is responsible for passing a stable version).
-    if: |
-      (
-        github.event_name == 'workflow_dispatch'
-      ) || (
-        github.event_name == 'release' &&
-        github.event.release.prerelease == false &&
-        startsWith(github.event.release.tag_name, 'nextmv-') &&
-        !contains(github.event.release.tag_name, 'gurobipy') &&
-        !contains(github.event.release.tag_name, 'scikit-learn')
-      )
     runs-on: windows-latest
     steps:
-      - name: resolve tag name
+      - name: checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: resolve version
+        id: version
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
           INPUTS_VERSION: ${{ inputs.version }}
-          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            TAG="$INPUTS_VERSION"
-          else
-            TAG="$RELEASE_TAG_NAME"
-          fi
-          VERSION="${TAG#nextmv-}"  # strip 'nextmv-' prefix if present
-          VERSION="${VERSION#v}"     # strip leading 'v' if present
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION"
+          VERSION="${INPUTS_VERSION#nextmv-}"  # strip 'nextmv-' prefix if present
+          VERSION="${VERSION#v}"               # strip leading 'v' if present
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION"
 
-      - name: install wingetcreate
-        shell: bash
-        run: |
-          winget install wingetcreate --disable-interactivity --accept-source-agreements
-
-      - name: Delete repo fork to avoid sync issues
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        run: |
-          gh repo delete merschformann/winget-pkgs --yes
-          # We have to wait a bit for GitHub to process the deletion before we can fork again.
-          sleep 20
-
-      - name: submit winget PR
-        shell: bash
-        env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        run: |
-          wingetcreate update Nextmv.CLI \
-            --version "$VERSION" \
-            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.zip|x64|zip" \
-            --submit \
-            --token "$WINGET_TOKEN"
+      - name: submit winget package
+        uses: ./.github/actions/submit-winget
+        with:
+          version: ${{ steps.version.outputs.version }}
+          winget-token: ${{ secrets.WINGET_TOKEN }}
