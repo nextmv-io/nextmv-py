@@ -251,7 +251,7 @@ class TestOutput(unittest.TestCase):
     def test_local_writer_json_stdout_default_dict_output(self):
         output = {
             "solution": {"empanadas": "are_life"},
-            "statistics": {"foo": "bar"},
+            "metrics": {"foo": "bar"},
         }
         output_writer = nextmv.LocalOutputWriter()
 
@@ -261,10 +261,9 @@ class TestOutput(unittest.TestCase):
             got = json.loads(mock_stdout.getvalue())
             expected = {
                 "solution": {"empanadas": "are_life"},
-                "statistics": {"foo": "bar"},
+                "metrics": {"foo": "bar"},
                 "options": {},
                 "assets": [],
-                "metrics": {},
             }
 
             self.assertDictEqual(got, expected)
@@ -478,13 +477,62 @@ class TestOutput(unittest.TestCase):
 
             got = json.loads(mock_stdout.getvalue())
             expected = {
-                "options": {},
-                "solution": {},
-                "assets": [],
-                "metrics": {},
+                "i_am": "a_crazy_object",
+                "with": [
+                    {"nested": "values"},
+                    {"and": "more_craziness"},
+                ],
             }
 
             self.assertDictEqual(got, expected)
+
+    def test_local_write_passthrough_output_to_file(self):
+        """A raw dict written to a file path is also passed through verbatim."""
+        output = {"i_am": "a_crazy_object"}
+        output_writer = nextmv.LocalOutputWriter()
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            fpath = os.path.join(tmp_dir, "out.json")
+            output_writer.write(output, path=fpath, skip_stdout_reset=True)
+
+            with open(fpath) as f:
+                got = json.load(f)
+
+        self.assertDictEqual(got, output)
+
+    def test_local_write_passthrough_dict_with_unknown_and_output_like_keys(self):
+        """A single unrecognized key is enough to treat the whole dict as raw
+        passthrough data, even if other keys look like `Output` fields."""
+        output = {
+            "metrics": {"foo": "bar"},
+            "not_an_output_field": True,
+        }
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_stdout.getvalue())
+
+        self.assertDictEqual(got, output)
+
+    def test_dict_with_only_output_keys_is_treated_as_serialized_output(self):
+        """A dict whose keys are all valid `Output` fields is treated as a
+        serialized `Output`, not as raw passthrough data: missing fields
+        (like `solution` and `assets`) are defaulted."""
+        output = {"options": {"duration": 30}}
+        output_writer = nextmv.LocalOutputWriter()
+
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            output_writer.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_stdout.getvalue())
+
+        expected = {
+            "options": {"duration": 30},
+            "solution": {},
+            "assets": [],
+            "metrics": {},
+        }
+        self.assertDictEqual(got, expected)
 
     def test_local_write_base_model(self):
         class myClass(BaseModel):
@@ -1843,6 +1891,49 @@ class TestWriteManifestFromCwd(unittest.TestCase):
             got = json.loads(mock_out.getvalue())
 
         self.assertEqual(got["solution"]["default"], 1)
+
+    def test_raw_dict_ignores_multi_file_manifest_in_cwd(self):
+        """A raw (non-`Output`) dict is written as pretty JSON to stdout even
+        when app.yaml in cwd configures MULTI_FILE: the manifest is not
+        consulted at all for this kind of output."""
+        manifest = _make_multi_file_manifest()
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        output = {"i_am": "a_crazy_object", "with": [{"nested": "values"}]}
+        with patch("sys.stdout", new=StringIO()) as mock_out:
+            nextmv.write(output, skip_stdout_reset=True)
+            got = json.loads(mock_out.getvalue())
+
+        self.assertDictEqual(got, output)
+        # None of the manifest-configured multi-file output paths were created.
+        self.assertFalse(os.path.exists(os.path.join(self.tmp_dir, "outputs")))
+
+    def test_raw_dict_does_not_resolve_manifest(self):
+        """A raw dict never triggers manifest resolution at all, even when
+        app.yaml is present in cwd."""
+        manifest = _make_json_manifest()
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        output = {"i_am": "a_crazy_object"}
+        with (
+            patch("nextmv.output.resolve_manifest") as mock_resolve_manifest,
+            patch("sys.stdout", new=StringIO()),
+        ):
+            nextmv.write(output, skip_stdout_reset=True)
+
+        mock_resolve_manifest.assert_not_called()
+
+    def test_serialized_output_dict_uses_multi_file_manifest_in_cwd(self):
+        """Unlike a raw dict, a dict that is a serialized `Output` (only
+        `Output`-known keys) is not passed through: it still resolves
+        `content_format` from app.yaml in cwd, so `solution` combined with
+        MULTI_FILE correctly raises."""
+        manifest = _make_multi_file_manifest()
+        _write_app_yaml(self.tmp_dir, manifest)
+
+        output = {"solution": {"cwd_mf": 1}}
+        with self.assertRaises(ValueError):
+            nextmv.write(output)
 
 
 # ---------------------------------------------------------------------------

@@ -79,6 +79,15 @@ OUTPUTS_KEY = "outputs"
 Outputs key constant used for identifying outputs in the run output.
 """
 
+_OUTPUT_ENVELOPE_KEYS = frozenset(
+    {"options", "solution", ASSETS_KEY, METRICS_KEY, STATISTICS_KEY, "csv_configurations", "json_configurations"}
+)
+"""
+Keys that `Output.to_dict()` may produce. A plain `dict` whose keys are all
+contained in this set is treated as an `Output` that was already serialized
+to a dict, rather than as arbitrary user data.
+"""
+
 
 class RunStatistics(BaseModel):
     """
@@ -1377,6 +1386,15 @@ class LocalOutputWriter(OutputWriter):
         if sys.stdout is not sys.__stdout__ and not skip_stdout_reset:
             reset_stdout()
 
+        # A plain `dict` that isn't a serialized `Output` (i.e. it has keys
+        # `Output.to_dict()` would never produce) is arbitrary user data, not
+        # a decision-problem output. We print it as-is, without interpreting
+        # it as an `Output` and without even looking at the app.yaml
+        # manifest, since none of that machinery applies to it.
+        if isinstance(output, dict) and not self.__is_output_dict(output):
+            self.__write_raw_dict(output, path=path, json_configurations=json_configurations)
+            return
+
         output_dict = self.__output_to_dict(output)
         manifest = resolve_manifest(manifest)
         content_format = self.__resolve_content_format(output, manifest, content_format)
@@ -1795,10 +1813,7 @@ class LocalOutputWriter(OutputWriter):
             if solution is not None:
                 return solution
 
-            if "solution" in output_dict.keys():
-                return output_dict["solution"]
-
-            return output_dict
+            return output_dict.get("solution") if output_dict else None
 
         # At this point we are working with multi-file.
         # We do not support a solution with multi-file because we don't know
@@ -1920,6 +1935,60 @@ class LocalOutputWriter(OutputWriter):
 
         raise TypeError(f"unsupported `output` type: {type(output)}, supported types are `Output`, `dict`, `BaseModel`")
 
+    def __is_output_dict(self, output: dict[str, Any]) -> bool:
+        """
+        Determine whether a plain `dict` is a serialized `Output`.
+
+        A `dict` is considered a serialized `Output` when every one of its
+        keys is a key that `Output.to_dict()` could have produced (see
+        `_OUTPUT_ENVELOPE_KEYS`). Any other key means the caller passed
+        arbitrary data rather than an `Output`.
+
+        Parameters
+        ----------
+        output : dict[str, Any]
+            The dict to inspect.
+
+        Returns
+        -------
+        bool
+            `True` if the dict looks like a serialized `Output`, `False`
+            otherwise.
+        """
+
+        return set(output.keys()) <= _OUTPUT_ENVELOPE_KEYS
+
+    def __write_raw_dict(
+        self,
+        output: dict[str, Any],
+        path: str | None = None,
+        json_configurations: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Write a plain `dict` that is not a serialized `Output` as pretty
+        JSON, verbatim.
+
+        Parameters
+        ----------
+        output : dict[str, Any]
+            The raw dict to write, as-is.
+        path : str, optional
+            File path to write the serialized JSON to. When `None` or an
+            empty string, the payload is printed to stdout instead.
+        json_configurations : dict[str, Any], optional
+            Additional keyword arguments forwarded to the JSON serializer
+            (e.g. `{"indent": 2}`).
+        """
+
+        serialized = serialize_json(output, json_configurations=json_configurations)
+
+        if path is None or path == "":
+            print(serialized, file=sys.stdout)
+            return
+
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(serialized + "\n")
+
     def __write_json(
         self,
         output: Output | dict[str, Any] | BaseModel | None = None,
@@ -1974,9 +2043,6 @@ class LocalOutputWriter(OutputWriter):
             output_dict[STATISTICS_KEY] = statistics
 
         if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
-            output_dict = solution
-
-        if output is not None and isinstance(output, dict) and "solution" not in solution.keys():
             output_dict = solution
 
         serialized = serialize_json(
