@@ -1795,8 +1795,10 @@ class LocalOutputWriter(OutputWriter):
             if solution is not None:
                 return solution
 
-            if output_dict:
-                return output_dict.get("solution")
+            if "solution" in output_dict.keys():
+                return output_dict["solution"]
+
+            return output_dict
 
         # At this point we are working with multi-file.
         # We do not support a solution with multi-file because we don't know
@@ -1972,6 +1974,9 @@ class LocalOutputWriter(OutputWriter):
             output_dict[STATISTICS_KEY] = statistics
 
         if output is not None and isinstance(output, BaseModel) and not isinstance(output, Output):
+            output_dict = solution
+
+        if output is not None and isinstance(output, dict) and "solution" not in solution.keys():
             output_dict = solution
 
         serialized = serialize_json(
