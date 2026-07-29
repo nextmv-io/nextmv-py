@@ -24,7 +24,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.winget-token }}
       run: |
-        gh repo delete merschformann/winget-pkgs --yes
+        gh repo delete merschformann/winget-pkgs --yes || true
         # We have to wait a bit for GitHub to process the deletion before we can fork again.
         sleep 20
 
@@ -34,8 +34,17 @@ runs:
         VERSION: ${{ inputs.version }}
         WINGET_TOKEN: ${{ inputs.winget-token }}
       run: |
-        wingetcreate update Nextmv.CLI \
-          --version "$VERSION" \
-          --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.zip|x64|zip" \
-          --submit \
-          --token "$WINGET_TOKEN"
+        for i in 1 2 3; do
+          echo "Attempt $i of 3..."
+          if wingetcreate update Nextmv.CLI \
+            --version "$VERSION" \
+            --urls "https://github.com/nextmv-io/nextmv-py/releases/download/nextmv-v${VERSION}/nextmv-windows-x64.zip|x64|zip" \
+            --submit \
+            --token "$WINGET_TOKEN"; then
+            exit 0
+          fi
+          echo "wingetcreate failed, retrying in 10 seconds..."
+          sleep 10
+        done
+        echo "wingetcreate failed after 3 attempts"
+        exit 1
