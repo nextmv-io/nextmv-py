@@ -1,4 +1,5 @@
 mkdocs>=1.6.1
 mkdocstrings-python>=1.16.10
 mkdocs-material>=9.6.14
+pymdown-extensions>=11.0.1
 ruff>=0.11.11
