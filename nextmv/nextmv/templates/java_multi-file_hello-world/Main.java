@@ -1,7 +1,6 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -81,7 +80,7 @@ public class Main {
 
     // writeJSON writes the given data as JSON to the file at path, creating all
     // necessary parent directories.
-    static void writeJSON(ObjectMapper mapper, String path, Object data) throws IOException {
+    static void writeJSON(ObjectMapper mapper, String path, Object data) {
         File file = new File(path);
         file.getParentFile().mkdirs();
         mapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
