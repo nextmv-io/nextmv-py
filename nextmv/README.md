@@ -1,7 +1,5 @@
 # Nextmv Python SDK
 
-<!-- markdownlint-disable MD033 MD013 -->
-
 <p align="center">
   <a href="https://nextmv.io"><img src="https://cdn.prod.website-files.com/60dee0fad10d14c8ab66dd74/674628a824bc14307c1727aa_blog-prototype-p-2000.png" alt="Nextmv" width="45%"></a>
 </p>
@@ -17,16 +15,22 @@
 </a>
 </p>
 
-<!-- markdownlint-enable MD033 MD013 -->
-
 Welcome to `nextmv`, the general Python SDK for the Nextmv Platform.
 
-📖 To learn more about `nextmv`, visit the [docs][docs].
+📖 To learn more visit the [Python SDK docs][python-sdk-docs].
+
+If you are contributing, please make sure you read the [Contributing Guide][contributing].
 
 ## Installation
 
 Requires Python `>=3.10`. Install using the Python package manager of your
 choice:
+
+- `uv`
+
+    ```bash
+    uv add nextmv
+    ```
 
 - `pip`
 
@@ -40,26 +44,33 @@ choice:
     pipx install nextmv
     ```
 
-- `uv`
-
-    ```bash
-    uv tool install nextmv
-    ```
-
-Install all optional dependencies (recommended) by specifying `"nextmv[all]"`
-instead of just `"nextmv"`.
-
 ## CLI
 
-The Nextmv CLI is installed automatically with the SDK. To verify installation,
-run:
+The Nextmv CLI is built on top of the Python SDK.
+
+📖 To learn more visit the [CLI docs][cli-docs].
+
+### CLI Installation
+
+When using `pip` or `pipx`, use the same command as for installing the SDK.
+When using `uv`, install the CLI with the following command:
+
+```bash
+uv tool install nextmv
+```
+
+To verify installation, run:
 
 ```bash
 nextmv --help
 ```
 
-If you are contributing to the CLI, please make sure you read the [CLI
-Contributing Guide][cli-contributing].
+For a quick start, run:
 
-[docs]: https://nextmv-py.docs.nextmv.io/en/latest/nextmv/
-[cli-contributing]: nextmv/cli/CONTRIBUTING.md
+```bash
+nextmv init
+```
+
+[python-sdk-docs]: https://docs.nextmv.io/python-sdk
+[cli-docs]: https://docs.nextmv.io/cli
+[contributing]: ./CONTRIBUTING.md

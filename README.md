@@ -9,8 +9,8 @@
     <em>Nextmv: The home for all your optimization work</em>
 </p>
 <p align="center">
-<a href="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-test.yml" target="_blank">
-    <img src="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-test.yml/badge.svg?event=push&branch=develop" alt="Test">
+<a href="https://github.com/nextmv-io/nextmv-py/actions/workflows/unit-tests.yml" target="_blank">
+    <img src="https://github.com/nextmv-io/nextmv-py/actions/workflows/unit-tests.yml/badge.svg?event=push&branch=develop" alt="Test">
 </a>
 <a href="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-lint.yml" target="_blank">
     <img src="https://github.com/nextmv-io/nextmv-py/actions/workflows/python-lint.yml/badge.svg?event=push&branch=develop" alt="Test">
@@ -50,4 +50,4 @@ can find the source for the following packages:
 > [!IMPORTANT]  
 > Please review the LICENSE on each package, as they may not all have the same license.
 
-[docs]: https://nextmv-py.docs.nextmv.io/en/latest/
+[docs]: https://docs.nextmv.io
