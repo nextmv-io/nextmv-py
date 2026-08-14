@@ -44,6 +44,7 @@ def logs(
     timeout: Annotated[
         int,
         typer.Option(
+            "--timeout",
             help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
             metavar="TIMEOUT_SECONDS",
         ),

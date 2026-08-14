@@ -83,6 +83,7 @@ def create(
     integration_id: Annotated[
         str | None,
         typer.Option(
+            "--integration-id",
             help="The integration ID to use for the runs of the instance, if applicable.",
             metavar="INTEGRATION_ID",
             rich_help_panel="Instance configuration",
@@ -111,6 +112,7 @@ def create(
     priority: Annotated[
         int,
         typer.Option(
+            "--priority",
             help="The priority of the runs in the instance. "
             "Priority is between 1 and 9, with 1 being the highest priority.",
             metavar="PRIORITY",
