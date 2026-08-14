@@ -13,11 +13,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13"
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "gurobipy>=13.0.1",
-    "nextmv>=0.34.1"
+    "gurobipy==13.0.1",
+    "nextmv>=1.10.1",
 ]
 description = "An SDK for integrating Gurobi with the Nextmv platform"
 dynamic = [
@@ -55,10 +55,6 @@ packages = ["nextmv_gurobipy"]
 [dependency-groups]
 # Dependencies for development and testing.
 dev = [
-    "build>=1.0.3",
-    "ruff>=0.1.7",
-    "twine>=4.0.2",
-    "gurobipy>=13.0.0",
-    "nextmv>=0.34.1",
-    "pytest>=9.0.2",
+    "ruff==0.16.3",
+    "pytest==9.0.2",
 ]
