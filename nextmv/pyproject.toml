@@ -16,17 +16,18 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "pydantic==2.11.0",
-    "urllib3==2.1.0",
-    "requests==2.31.0",
-    "pyyaml==6.0.1",
-    "typer==0.27.1",
-    "folium==0.20.0",
-    "plotly==6.0.1",
-    "questionary==2.1.1",
-    "truststore==0.10.0",
-    "uv==0.9.29",
-    "tomli==2.4.1 ; python_full_version < '3.11'",
+    "pydantic>=2.11.0",
+    "urllib3>=2.1.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+    "typer>=0.27.1",
+    "folium>=0.20.0",
+    "plotly>=6.0.1",
+    "questionary>=2.1.1",
+    "truststore>=0.10.0",
+    "uv>=0.9.29",
+    "tomli>=2.4.1 ; python_full_version < '3.11'",
+    "mcp[cli,mcp]>=1.2.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
@@ -62,10 +63,10 @@ nextmv = "nextmv.cli.main:main"
 # Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
 mcp = [
-    "mcp[cli]==1.2.0",
+    "mcp[cli]>=1.2.0",
 ]
 notebook = [
-    "mlflow==3.9.0",
+    "mlflow>=3.9.0",
 ]
 
 [dependency-groups]

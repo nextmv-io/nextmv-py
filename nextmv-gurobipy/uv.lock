@@ -415,7 +415,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gurobipy", specifier = "==13.0.1" },
+    { name = "gurobipy", specifier = ">=13.0.1" },
     { name = "nextmv", specifier = ">=1.10.1" },
 ]
 
