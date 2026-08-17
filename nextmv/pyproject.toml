@@ -27,7 +27,6 @@ dependencies = [
     "truststore>=0.10.0",
     "uv>=0.9.29",
     "tomli>=2.4.1 ; python_full_version < '3.11'",
-    "mcp[cli,mcp]>=1.2.0",
 ]
 description = "The all-purpose Python SDK for Nextmv"
 dynamic = [
