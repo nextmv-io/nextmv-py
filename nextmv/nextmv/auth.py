@@ -99,6 +99,18 @@ def _strip_scheme(url: str) -> str:
     return url.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
 
 
+def _sanitize_header_value(value: str) -> str:
+    """
+    Strip CR and LF characters from an HTTP header value.
+
+    HTTP header values must never contain line breaks; allowing them enables
+    response-splitting / header-injection (CWE-113).  Defense-in-depth for the
+    local OAuth callback server, whose header values are otherwise derived only
+    from fixed strings and computed content lengths.
+    """
+    return str(value).replace("\r", "").replace("\n", "")
+
+
 # >>> TLS helpers
 
 
@@ -572,8 +584,8 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
             logo=logo,
         ).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Type", _sanitize_header_value("text/html; charset=utf-8"))
+        self.send_header("Content-Length", _sanitize_header_value(str(len(body))))
         self.end_headers()
         self.wfile.write(body)
 
