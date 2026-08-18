@@ -627,6 +627,7 @@ def _resolve_and_install_deps(
 
     lockfile_content = _compile_lockfile(uv_bin, pip_requirements, python_version, uv_platform, app_dir)
     packages = _parse_lockfile(lockfile_content)
+    direct_requirements = _parse_direct_requirements(lockfile_content)
 
     with tempfile.TemporaryDirectory(prefix="nextmv-pkg-tars-") as tars_tmp:
         if no_cache:
@@ -650,7 +651,19 @@ def _resolve_and_install_deps(
             if not no_cache:
                 _store_new_package_tars(pkg_tars=new_pkg_tars, python_version=python_version, uv_platform=uv_platform)
 
-        all_tars = cached_tars + [pkg["tar_path"] for pkg in new_pkg_tars]
+        direct_tars: list[Path] = []
+        if direct_requirements:
+            _log_direct_deps_status(verbose, rich_print, len(direct_requirements))
+            direct_tars = _install_direct_requirement_tars(
+                uv_bin=uv_bin,
+                specs=direct_requirements,
+                python_version=python_version,
+                uv_platform=uv_platform,
+                app_dir=app_dir,
+                out_dir=tars_tmp,
+            )
+
+        all_tars = cached_tars + [pkg["tar_path"] for pkg in new_pkg_tars] + direct_tars
         _, deps_tar = _concat_package_tars(tars=all_tars, out_dir=tars_tmp)
 
         # Move the assembled tar out of the temp dir before it is cleaned up.
@@ -839,34 +852,202 @@ def _install_and_compress_package(
             raise Exception(f"error installing {name}=={version}: {os.linesep}{result.stdout}")
 
         safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", f"{name}-{version}")
-        tar_path = Path(out_dir) / f"{safe_name}.tar.gz"
-        dep_arcname = os.path.join(".nextmv", "python", "deps")
+        return _compress_install_dir(install_dir, install_tmp, out_dir, safe_name)
 
-        # Write tar entries to a temp .tar file, capture the byte offset
-        # where tarfile will write the EOF marker, then gzip-compress only
-        # the entries (no EOF block).  Omitting the EOF block lets these
-        # per-package gzip streams be raw-concatenated without causing tar
-        # to stop at the first end-of-archive marker.
-        tmp_tar_path = os.path.join(install_tmp, "pkg.tar")
 
-        with tarfile.open(tmp_tar_path, mode="w") as tar_obj:
-            tar_obj.add(install_dir, arcname=dep_arcname)
-            # Byte offset where EOF marker begins; captured before close()
-            # appends EOF blocks.
-            entry_end = tar_obj.offset
+def _compress_install_dir(install_dir: str, work_dir: str, out_dir: str, safe_name: str) -> Path:
+    """Compress an installed package tree into a concat-friendly gzip stream.
 
-        with open(tmp_tar_path, "rb") as raw_f:
-            with gzip.open(str(tar_path), "wb") as gz:
-                remaining = entry_end
-                while remaining > 0:
-                    chunk = raw_f.read(min(_IO_CHUNK_SIZE, remaining))
-                    if not chunk:
-                        break
+    The resulting ``<safe_name>.tar.gz`` is a gzip stream of tar entries with no
+    end-of-archive block, so per-package streams can be raw-concatenated
+    (RFC 1952) into the final ``deps.tar.gz`` without a tar decompressor
+    stopping at the first end-of-archive marker.
 
-                    gz.write(chunk)
-                    remaining -= len(chunk)
+    Parameters
+    ----------
+    install_dir : str
+        The directory whose contents (an installed package tree) are archived.
+    work_dir : str
+        A scratch directory for the intermediate uncompressed tar. Should be a
+        temporary directory cleaned up by the caller.
+    out_dir : str
+        The directory to write the ``<safe_name>.tar.gz`` file to.
+    safe_name : str
+        A filesystem-safe base name for the output tarball.
+
+    Returns
+    -------
+    Path
+        The path to the per-package ``<safe_name>.tar.gz`` file.
+    """
+
+    tar_path = Path(out_dir) / f"{safe_name}.tar.gz"
+    dep_arcname = os.path.join(".nextmv", "python", "deps")
+
+    # Write tar entries to a temp .tar file, capture the byte offset
+    # where tarfile will write the EOF marker, then gzip-compress only
+    # the entries (no EOF block).  Omitting the EOF block lets these
+    # per-package gzip streams be raw-concatenated without causing tar
+    # to stop at the first end-of-archive marker.
+    tmp_tar_path = os.path.join(work_dir, "pkg.tar")
+
+    with tarfile.open(tmp_tar_path, mode="w") as tar_obj:
+        tar_obj.add(install_dir, arcname=dep_arcname)
+        # Byte offset where EOF marker begins; captured before close()
+        # appends EOF blocks.
+        entry_end = tar_obj.offset
+
+    with open(tmp_tar_path, "rb") as raw_f:
+        with gzip.open(str(tar_path), "wb") as gz:
+            remaining = entry_end
+            while remaining > 0:
+                chunk = raw_f.read(min(_IO_CHUNK_SIZE, remaining))
+                if not chunk:
+                    break
+
+                gz.write(chunk)
+                remaining -= len(chunk)
 
     return tar_path
+
+
+def _install_and_compress_direct(
+    uv_bin: str,
+    spec: str,
+    index: int,
+    python_version: str,
+    uv_platform: str,
+    app_dir: str,
+    out_dir: str,
+) -> Path:
+    """Install a single non-pinned (local path / direct URL / VCS) requirement.
+
+    `uv pip compile` leaves requirements it cannot pin to an index version —
+    local paths (``../../``), direct URL references (``name @ file://...``),
+    and VCS references — as-is in the lockfile rather than as ``name==version``
+    lines. These are handled here instead of via the index-download path.
+
+    Unlike :func:`_install_and_compress_package`, this does **not** pass
+    ``--only-binary=:all:`` so that `uv` can build a wheel from a local source
+    tree or sdist. `--no-deps` is still used because the lockfile already
+    encodes the complete dependency graph.
+
+    Parameters
+    ----------
+    uv_bin : str
+        Path to the `uv` binary.
+    spec : str
+        The raw requirement line from the lockfile (e.g. ``"../../"`` or
+        ``"nextpipe @ file:///abs/path"``).
+    index : int
+        The position of this spec among all direct requirements. Used only to
+        build a unique output filename, since these specs have no version.
+    python_version : str
+        The target Python version string (e.g. ``"3.11"``).
+    uv_platform : str
+        The target platform string (e.g. ``"aarch64-manylinux_2_34"``).
+    app_dir : str
+        The application directory to use as the working directory for `uv pip`.
+        Relative path specs are resolved against this directory, matching how
+        the lockfile was compiled.
+    out_dir : str
+        The directory to write the per-package ``installed.tar.gz`` file to.
+
+    Returns
+    -------
+    Path
+        The path to the ``installed.tar.gz`` file for the installed requirement.
+    """
+
+    spec = spec.strip()
+    # `-e <path>` / `--editable <path>` must be passed as two argv elements; all
+    # other forms (bare paths, `name @ url`, plain URLs, `git+https://...`) are
+    # a single argument.
+    if spec.startswith(("-e ", "--editable ")):
+        flag, _, target = spec.partition(" ")
+        install_args = [flag, target.strip()]
+    else:
+        install_args = [spec]
+
+    with tempfile.TemporaryDirectory(prefix="nextmv-pkg-install-") as install_tmp:
+        install_dir = os.path.join(install_tmp, "pkg")
+        os.makedirs(install_dir)
+
+        result = subprocess.run(
+            [
+                uv_bin,
+                "pip",
+                "install",
+                *install_args,
+                "--no-deps",
+                "--target",
+                install_dir,
+                "--quiet",
+                f"--python-platform={uv_platform}",
+                f"--python-version={python_version}",
+            ],
+            cwd=app_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise Exception(f"error installing local/direct requirement '{spec}': {os.linesep}{result.stdout}")
+
+        safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", f"direct-{index}-{spec}")
+        return _compress_install_dir(install_dir, install_tmp, out_dir, safe_name)
+
+
+def _install_direct_requirement_tars(
+    uv_bin: str,
+    specs: list[str],
+    python_version: str,
+    uv_platform: str,
+    app_dir: str,
+    out_dir: str,
+) -> list[Path]:
+    """Install and compress each non-pinned (local/direct/VCS) requirement.
+
+    These are always built fresh — never cached — because a local source tree
+    can change between pushes without any version bump, so a version-keyed
+    cache entry would go stale silently.
+
+    Parameters
+    ----------
+    uv_bin : str
+        Path to the `uv` binary.
+    specs : list of str
+        The raw non-pinned requirement lines from the lockfile.
+    python_version : str
+        The target Python version string (e.g. ``"3.11"``).
+    uv_platform : str
+        The target platform string (e.g. ``"aarch64-manylinux_2_34"``).
+    app_dir : str
+        The application directory to use as the working directory for `uv pip`.
+    out_dir : str
+        The directory to write the per-package ``installed.tar.gz`` files to.
+
+    Returns
+    -------
+    list of Path
+        The paths to the per-requirement ``installed.tar.gz`` files.
+    """
+
+    tars: list[Path] = []
+    for index, spec in enumerate(specs):
+        tars.append(
+            _install_and_compress_direct(
+                uv_bin=uv_bin,
+                spec=spec,
+                index=index,
+                python_version=python_version,
+                uv_platform=uv_platform,
+                app_dir=app_dir,
+                out_dir=out_dir,
+            )
+        )
+
+    return tars
 
 
 def _store_new_package_tars(
@@ -991,6 +1172,37 @@ def _log_pkg_cache_status(
             log(f"    🐇 Downloading and compressing {missing_count} {missing_word} from package index.")
 
 
+def _log_direct_deps_status(verbose: bool, rich_print: bool, direct_count: int) -> None:
+    """
+    Emit a verbose message about local/direct requirements built from source.
+
+    These are requirements `uv` could not pin to an index version (local paths,
+    direct URL/VCS references) and are therefore built and bundled from source
+    rather than downloaded from the package index.
+
+    Parameters
+    ----------
+    verbose : bool
+        Whether to print verbose logs.
+    rich_print : bool
+        Whether to use rich printing for verbose logs.
+    direct_count : int
+        The number of local/direct requirements being built from source.
+    """
+
+    if not verbose or direct_count <= 0:
+        return
+
+    if rich_print:
+        rich.print(
+            f"    :hammer_and_wrench: Building and compressing [magenta]{direct_count}[/magenta] local/direct "
+            "requirement(s) from source.",
+            file=sys.stderr,
+        )
+    else:
+        log(f"    🛠️ Building and compressing {direct_count} local/direct requirement(s) from source.")
+
+
 def _parse_lockfile(lockfile_content: str) -> list[dict[str, str]]:
     """
     Parse a `uv pip compile` lockfile and return `(name, version)` pairs.
@@ -1025,6 +1237,43 @@ def _parse_lockfile(lockfile_content: str) -> list[dict[str, str]]:
             packages.append({"name": m.group(1), "version": m.group(2)})
 
     return packages
+
+
+def _parse_direct_requirements(lockfile_content: str) -> list[str]:
+    """
+    Parse a `uv pip compile` lockfile and return non-pinned requirement lines.
+
+    These are top-level requirement lines that `uv` could not (or did not) pin
+    to an index version as ``name==version`` — local path references
+    (``../../``), direct URL references (``name @ file://...``), plain wheel/
+    sdist URLs, and VCS references. They are dropped by :func:`_parse_lockfile`
+    (which matches only ``name==version``) and must be installed directly from
+    their source rather than downloaded from the package index.
+
+    The same line-filtering rules as :func:`_parse_lockfile` apply: comment
+    lines (``#``) and indented annotation lines (``    # via ...``) are skipped.
+
+    Parameters
+    ----------
+    lockfile_content : str
+        The content of the lockfile produced by `uv pip compile`.
+
+    Returns
+    -------
+    list of str
+        The raw, stripped non-pinned requirement lines, in lockfile order.
+    """
+
+    _re_pkg = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;#\[]+)")
+    specs: list[str] = []
+    for line in lockfile_content.splitlines():
+        if not line or line[0] in (" ", "\t", "#"):
+            continue
+
+        if not _re_pkg.match(line):
+            specs.append(line.strip())
+
+    return specs
 
 
 def _compile_lockfile(
