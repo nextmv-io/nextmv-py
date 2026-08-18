@@ -30,7 +30,14 @@ def list(
             metavar="COMMUNITY_APP",
         ),
     ] = None,
-    flat: Annotated[bool, typer.Option("--flat", "-f", help="Flatten the list output.")] = False,
+    flat: Annotated[
+        bool,
+        typer.Option(
+            "--flat",
+            "-f",
+            help="Flatten the list output.",
+        ),
+    ] = False,
     _: DebugOption = False,
     profile: ProfileOption = None,
 ) -> None:

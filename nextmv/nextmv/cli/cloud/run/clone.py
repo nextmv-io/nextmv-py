@@ -126,6 +126,7 @@ def clone(
     description: Annotated[
         str | None,
         typer.Option(
+            "--description",
             help="An optional description for the new run.",
             metavar="DESCRIPTION",
             rich_help_panel="Run configuration",
@@ -144,6 +145,7 @@ def clone(
     instance_id: Annotated[
         str | None,
         typer.Option(
+            "--instance-id",
             help="The instance ID to use for the run.",
             metavar="INSTANCE_ID",
             rich_help_panel="Run configuration",
@@ -152,6 +154,7 @@ def clone(
     integration_id: Annotated[
         str | None,
         typer.Option(
+            "--integration-id",
             help="The integration ID to use for the run, if applicable.",
             metavar="INTEGRATION_ID",
             rich_help_panel="Run configuration",
@@ -190,6 +193,7 @@ def clone(
     priority: Annotated[
         int | None,
         typer.Option(
+            "--priority",
             help="The priority of the run. Priority is between 1 and 9, with 1 being the highest priority.",
             metavar="PRIORITY",
             rich_help_panel="Run configuration",
@@ -217,6 +221,7 @@ def clone(
     timeout: Annotated[
         int,
         typer.Option(
+            "--timeout",
             help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
             metavar="TIMEOUT_SECONDS",
             rich_help_panel="Run configuration",
