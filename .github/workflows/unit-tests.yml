@@ -35,7 +35,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install the project
-        run: uv sync --locked --dev
+        run: uv sync --locked --dev --all-extras
         working-directory: ./${{ matrix.package }}
 
       - name: handle nextmv dependency
@@ -43,7 +43,7 @@ jobs:
         run: |
           uv remove nextmv
           uv add --editable ../nextmv --no-sync
-          uv sync --locked --dev
+          uv sync --locked --dev --all-extras
         working-directory: ./${{ matrix.package }}
 
       - name: unit tests

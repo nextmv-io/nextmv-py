@@ -106,6 +106,7 @@ def clone(
     description: Annotated[
         str | None,
         typer.Option(
+            "--description",
             help="An optional description for the new run.",
             metavar="DESCRIPTION",
             rich_help_panel="Run configuration",
@@ -135,6 +136,7 @@ def clone(
     timeout: Annotated[
         int,
         typer.Option(
+            "--timeout",
             help="The maximum time in seconds to wait for results when polling. Poll indefinitely if not set.",
             metavar="TIMEOUT_SECONDS",
             rich_help_panel="Run configuration",
