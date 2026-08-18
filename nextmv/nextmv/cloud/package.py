@@ -1193,15 +1193,14 @@ def _log_direct_deps_status(verbose: bool, rich_print: bool, direct_count: int) 
     if not verbose or direct_count <= 0:
         return
 
-    dep_word = "requirement" if direct_count == 1 else "requirements"
     if rich_print:
         rich.print(
             f"    :hammer_and_wrench: Building and compressing [magenta]{direct_count}[/magenta] local/direct "
-            f"{dep_word} from source.",
+            "requirement(s) from source.",
             file=sys.stderr,
         )
     else:
-        log(f"    🛠️ Building and compressing {direct_count} local/direct {dep_word} from source.")
+        log(f"    🛠️ Building and compressing {direct_count} local/direct requirement(s) from source.")
 
 
 def _parse_lockfile(lockfile_content: str) -> list[dict[str, str]]:
