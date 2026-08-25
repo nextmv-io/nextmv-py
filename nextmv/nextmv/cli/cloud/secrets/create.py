@@ -161,6 +161,9 @@ def build_secrets(secrets: list[str]) -> list[Secret]:
 
     for secret_str in secrets:
         try:
+            # NOTE: never echo the raw secret string back to the
+            # terminal - it contains the secret value. Reference the
+            # offending entry by index only (CWE-522).
             secret_data = json.loads(secret_str)
 
             # Handle the case where the value is a list of secrets.
@@ -168,10 +171,9 @@ def build_secrets(secrets: list[str]) -> list[Secret]:
                 for ix, item in enumerate(secret_data):
                     if item.get("type") is None or item.get("location") is None or item.get("value") is None:
                         error(
-                            f"Invalid secret format at index [magenta]{ix}[/magenta] in "
-                            f"[magenta]{secret_str}[/magenta]. Each secret must have "
-                            "[magenta]type[/magenta], [magenta]location[/magenta], "
-                            "and [magenta]value[/magenta] fields."
+                            f"Invalid secret format at index [magenta]{ix}[/magenta]. "
+                            "Each secret must have [magenta]type[/magenta], "
+                            "[magenta]location[/magenta], and [magenta]value[/magenta] fields."
                         )
 
                     secret = Secret(
@@ -189,7 +191,7 @@ def build_secrets(secrets: list[str]) -> list[Secret]:
                     or secret_data.get("value") is None
                 ):
                     error(
-                        f"Invalid secret format in [magenta]{secret_str}[/magenta]. "
+                        "Invalid secret format. "
                         "Each secret must have [magenta]type[/magenta], [magenta]location[/magenta], "
                         "and [magenta]value[/magenta] fields."
                     )
@@ -202,12 +204,9 @@ def build_secrets(secrets: list[str]) -> list[Secret]:
                 secrets_list.append(secret)
 
             else:
-                error(
-                    f"Invalid secret format: [magenta]{secret_str}[/magenta]. "
-                    "Expected [magenta]json[/magenta] object or array."
-                )
+                error("Invalid secret format. Expected a [magenta]json[/magenta] object or array.")
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
-            error(f"Invalid secret format: [magenta]{secret_str}[/magenta]. Error: {e}")
+            error(f"Invalid secret format. Error: {e}")
 
     return secrets_list

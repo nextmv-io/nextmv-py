@@ -48,6 +48,7 @@ def track(
     assets: Annotated[
         str | None,
         typer.Option(
+            "--assets",
             help="The assets of the run being tracked. A [magenta]json[/magenta] file to read the assets from.",
             metavar="ASSETS_PATH",
             rich_help_panel="Tracked run configuration",
@@ -66,6 +67,7 @@ def track(
     description: Annotated[
         str | None,
         typer.Option(
+            "--description",
             help="An optional description for the tracked run.",
             metavar="DESCRIPTION",
             rich_help_panel="Tracked run configuration",
@@ -125,6 +127,7 @@ def track(
     statistics: Annotated[
         str | None,
         typer.Option(
+            "--statistics",
             help="[red](deprecated) Use --metrics instead.[/red] The statistics of the run"
             " being tracked. A [magenta]json[/magenta] file to read the statistics from.",
             metavar="STATISTICS_PATH",
@@ -134,6 +137,7 @@ def track(
     metrics: Annotated[
         str | None,
         typer.Option(
+            "--metrics",
             help="The metrics of the run being tracked. A [magenta]json[/magenta] file to read the metrics from.",
             metavar="METRICS_PATH",
             rich_help_panel="Tracked run configuration",
@@ -143,6 +147,7 @@ def track(
     instance_id: Annotated[
         str | None,
         typer.Option(
+            "--instance-id",
             help="The instance ID to use for the run.",
             metavar="INSTANCE_ID",
             rich_help_panel="Run configuration",
