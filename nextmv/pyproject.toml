@@ -53,7 +53,7 @@ requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://www.nextmv.io"
-Documentation = "https://nextmv-py.docs.nextmv.io/en/latest/nextmv/"
+Documentation = "https://docs.nextmv.io/python-sdk"
 Repository = "https://github.com/nextmv-io/nextmv-py"
 
 [project.scripts]

@@ -1,8 +1,0 @@
-// Reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/CustomRules.md#custom-rules
-{
-  // Files ignored by the linter.
-  "ignores": [
-    ".git",
-    "**/.venv"
-  ]
-}
