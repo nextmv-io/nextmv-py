@@ -48,7 +48,15 @@ from typing import Any
 from nextmv.content_format import ContentFormat
 from nextmv.input import INPUTS_KEY, InputFormat, load
 from nextmv.local.geojson_handler import handle_geojson_visual
-from nextmv.local.local import DEFAULT_OUTPUT_JSON_FILE, LOGS_FILE, LOGS_KEY, OUTPUT_KEY, calculate_files_size
+from nextmv.local.local import (
+    DEFAULT_OUTPUT_JSON_FILE,
+    LOGS_FILE,
+    LOGS_KEY,
+    NEXTMV_DIR,
+    OUTPUT_KEY,
+    RUNS_KEY,
+    calculate_files_size,
+)
 from nextmv.local.plotly_handler import handle_plotly_visual
 from nextmv.manifest import MANIFEST_FILE_NAME, Manifest, ManifestType, find_files, read_pyproject_dependencies
 from nextmv.output import (
@@ -78,7 +86,7 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
     (:mod:`nextmv.local.runner`), so in normal operation every field is already
     well-formed. Validating here is defense-in-depth: it ensures a malformed or
     tampered payload cannot be used to traverse the filesystem via a crafted
-    ``run_id`` or ``run_dir`` (path traversal / OS access violation).
+    ``run_id``, ``src`` or ``run_dir`` (path traversal / OS access violation).
 
     Parameters
     ----------
@@ -88,9 +96,10 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
     Raises
     ------
     ValueError
-        If a required field is missing, has the wrong type, ``run_id`` contains
-        path separators or traversal sequences, or ``run_dir`` contains a
-        traversal sequence or does not end in the validated ``run_id``.
+        If a required field is missing or has the wrong type, ``run_id``
+        contains path separators or traversal sequences, ``src`` is not an
+        absolute path, or ``run_dir`` does not resolve to the canonical
+        ``<src>/.nextmv/runs/<run_id>`` location.
     """
     required: dict[str, type] = {
         "run_id": str,
@@ -111,20 +120,29 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
             f"unsafe run_id {run_id!r}: must match [A-Za-z0-9._-]+ and contain no path traversal sequences"
         )
 
+    # `src` is the trusted application root that every execution path (including
+    # `run_dir`) is derived from. The runner always passes it as an absolute
+    # path, so reject anything else; this also anchors the `run_dir` check below.
+    src = data["src"]
+    if "\x00" in src or not os.path.isabs(src):
+        raise ValueError(f"unsafe src {src!r}: must be an absolute path with no null bytes")
+
     # `run_dir` is interpolated into filesystem paths (os.path.join / os.makedirs)
-    # throughout execution. The trusted runner always builds it as
-    # `<src>/.nextmv/runs/<run_id>`, so its final component must equal the
-    # already-validated `run_id`, and it must contain no traversal sequences or
-    # null bytes. Enforcing this severs any path traversal via a tampered
-    # `run_dir` (CWE-77 / path traversal).
+    # throughout execution. The runner always builds it as the canonical
+    # `<src>/.nextmv/runs/<run_id>`, so require `run_dir` to resolve to exactly
+    # that location. Anchoring to `src` (rather than only checking the basename)
+    # stops a tampered payload from redirecting writes to an arbitrary absolute
+    # or CWD-relative directory whose final component happens to match `run_id`
+    # (CWE-77 / path traversal).
     run_dir = data["run_dir"]
-    # Inspect the raw components (splitting on both separators) so an embedded
-    # `..` is caught before `os.path.normpath` can silently collapse it.
-    run_dir_parts = re.split(r"[\\/]", run_dir)
-    if "\x00" in run_dir or os.pardir in run_dir_parts:
-        raise ValueError(f"unsafe run_dir {run_dir!r}: must contain no path traversal sequences")
-    if os.path.basename(os.path.normpath(run_dir)) != run_id:
-        raise ValueError(f"unsafe run_dir {run_dir!r}: final path component must equal the validated run_id {run_id!r}")
+    if "\x00" in run_dir:
+        raise ValueError(f"unsafe run_dir {run_dir!r}: contains a null byte")
+    expected_run_dir = os.path.realpath(os.path.join(src, NEXTMV_DIR, RUNS_KEY, run_id))
+    if os.path.realpath(run_dir) != expected_run_dir:
+        raise ValueError(
+            f"unsafe run_dir {run_dir!r}: must resolve to the canonical "
+            f"<src>/{NEXTMV_DIR}/{RUNS_KEY}/<run_id> path ({expected_run_dir!r})"
+        )
 
 
 def main() -> None:

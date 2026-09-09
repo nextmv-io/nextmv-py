@@ -1362,10 +1362,32 @@ class TestValidateExecutionInput(unittest.TestCase):
         with self.assertRaises(ValueError):
             _validate_execution_input(self._valid_payload(run_dir="/test/src/.nextmv/runs/local-abc123\x00"))
 
-    def test_run_dir_basename_must_match_run_id(self):
-        # A run_dir pointing somewhere other than `<...>/<run_id>` is rejected.
+    def test_run_dir_outside_src_rejected(self):
+        # An absolute run_dir whose basename matches run_id but which does not
+        # live under src must be rejected (must be anchored to src, not just
+        # matched on basename).
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir="/tmp/evil/local-abc123"))
+
+    def test_run_dir_relative_rejected(self):
+        # A CWD-relative run_dir must be rejected: it would resolve against the
+        # executor's working directory rather than under src.
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir="local-abc123"))
+
+    def test_run_dir_not_under_src_rejected(self):
         with self.assertRaises(ValueError):
             _validate_execution_input(self._valid_payload(run_dir="/etc"))
+
+    def test_src_must_be_absolute(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(
+                self._valid_payload(src="relative/src", run_dir="relative/src/.nextmv/runs/local-abc123")
+            )
+
+    def test_src_null_byte_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(src="/test/\x00src"))
 
 
 if __name__ == "__main__":
