@@ -18,6 +18,7 @@ from nextmv.local.executor import (
     _process_run_assets,
     _process_run_solutions,
     _process_run_statistics,
+    _validate_execution_input,
     execute_run,
     main,
     options_args,
@@ -81,13 +82,18 @@ class TestLocalExecutor(unittest.TestCase):
     @patch("nextmv.local.executor.execute_run")
     def test_main_function(self, mock_execute_run, mock_load):
         """Test the main function loads input and calls execute_run."""
+        # Build absolute, canonical paths so the fixture is valid on every OS
+        # (a POSIX-style "/test/src" is not absolute on Windows).
+        src = os.path.abspath(os.path.join("test", "src"))
+        run_dir = os.path.join(src, ".nextmv", "runs", "test_run_id")
+
         # Setup mock input
         mock_input = Mock()
         mock_input.data = {
             "run_id": "test_run_id",
-            "src": "/test/src",
+            "src": src,
             "manifest_dict": {"execution": {"entrypoint": "main.py"}, "type": "python"},
-            "run_dir": "/test/run_dir",
+            "run_dir": run_dir,
             "run_config": {"format": {"input": {"type": "json"}}},
             "inputs_dir_path": None,
             "options": {"duration": "10s"},
@@ -104,9 +110,9 @@ class TestLocalExecutor(unittest.TestCase):
         # Verify execute_run was called with correct parameters
         mock_execute_run.assert_called_once_with(
             run_id="test_run_id",
-            src="/test/src",
+            src=src,
             manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python"},
-            run_dir="/test/run_dir",
+            run_dir=run_dir,
             run_config={"format": {"input": {"type": "json"}}},
             inputs_dir_path=None,
             options={"duration": "10s"},
@@ -1316,6 +1322,87 @@ class TestExecutorEncoding(unittest.TestCase):
         call_kwargs = mock_popen.call_args[1]
         self.assertEqual(call_kwargs.get("encoding"), "utf-8")
         self.assertEqual(call_kwargs.get("errors"), "replace")
+
+
+class TestValidateExecutionInput(unittest.TestCase):
+    """Test cases for the `_validate_execution_input` path-safety guard."""
+
+    # Absolute paths are built with os.path so the fixtures are valid on every
+    # OS (a POSIX-style "/test/src" is not absolute on Windows).
+    SRC = os.path.abspath(os.path.join("test", "src"))
+    RUN_ID = "local-abc123"
+    RUN_DIR = os.path.join(SRC, ".nextmv", "runs", RUN_ID)
+
+    def _valid_payload(self, **overrides):
+        payload = {
+            "run_id": self.RUN_ID,
+            "src": self.SRC,
+            "manifest_dict": {"type": "python"},
+            "run_dir": self.RUN_DIR,
+            "run_config": {"format": {"input": {"type": "json"}}},
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_valid_payload_passes(self):
+        # A well-formed payload from the trusted runner must validate cleanly.
+        _validate_execution_input(self._valid_payload())
+
+    def test_missing_required_field(self):
+        payload = self._valid_payload()
+        del payload["run_dir"]
+        with self.assertRaises(ValueError):
+            _validate_execution_input(payload)
+
+    def test_wrong_type_field(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=123))
+
+    def test_run_id_traversal_rejected(self):
+        for bad in ["../evil", "a/b", "foo/../bar"]:
+            with self.assertRaises(ValueError):
+                _validate_execution_input(self._valid_payload(run_id=bad))
+
+    def test_run_dir_traversal_rejected(self):
+        # A run_dir escaping via `..` must be rejected even if its final
+        # component matches the run_id.
+        bad = os.path.join(self.SRC, ".nextmv", "runs", "..", "..", "..", self.RUN_ID)
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=bad))
+
+    def test_run_dir_null_byte_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=self.RUN_DIR + "\x00"))
+
+    def test_run_dir_outside_src_rejected(self):
+        # An absolute run_dir whose basename matches run_id but which does not
+        # live under src must be rejected (must be anchored to src, not just
+        # matched on basename).
+        bad = os.path.abspath(os.path.join("tmp", "evil", self.RUN_ID))
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=bad))
+
+    def test_run_dir_relative_rejected(self):
+        # A CWD-relative run_dir must be rejected: it would resolve against the
+        # executor's working directory rather than under src.
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=self.RUN_ID))
+
+    def test_run_dir_not_under_src_rejected(self):
+        bad = os.path.abspath(os.sep + "etc")
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=bad))
+
+    def test_src_must_be_absolute(self):
+        rel_src = os.path.join("relative", "src")
+        with self.assertRaises(ValueError):
+            _validate_execution_input(
+                self._valid_payload(src=rel_src, run_dir=os.path.join(rel_src, ".nextmv", "runs", self.RUN_ID))
+            )
+
+    def test_src_null_byte_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(src=self.SRC + "\x00"))
 
 
 if __name__ == "__main__":
