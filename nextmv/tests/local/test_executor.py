@@ -18,6 +18,7 @@ from nextmv.local.executor import (
     _process_run_assets,
     _process_run_solutions,
     _process_run_statistics,
+    _validate_execution_input,
     execute_run,
     main,
     options_args,
@@ -87,7 +88,7 @@ class TestLocalExecutor(unittest.TestCase):
             "run_id": "test_run_id",
             "src": "/test/src",
             "manifest_dict": {"execution": {"entrypoint": "main.py"}, "type": "python"},
-            "run_dir": "/test/run_dir",
+            "run_dir": "/test/src/.nextmv/runs/test_run_id",
             "run_config": {"format": {"input": {"type": "json"}}},
             "inputs_dir_path": None,
             "options": {"duration": "10s"},
@@ -106,7 +107,7 @@ class TestLocalExecutor(unittest.TestCase):
             run_id="test_run_id",
             src="/test/src",
             manifest_dict={"execution": {"entrypoint": "main.py"}, "type": "python"},
-            run_dir="/test/run_dir",
+            run_dir="/test/src/.nextmv/runs/test_run_id",
             run_config={"format": {"input": {"type": "json"}}},
             inputs_dir_path=None,
             options={"duration": "10s"},
@@ -1316,6 +1317,55 @@ class TestExecutorEncoding(unittest.TestCase):
         call_kwargs = mock_popen.call_args[1]
         self.assertEqual(call_kwargs.get("encoding"), "utf-8")
         self.assertEqual(call_kwargs.get("errors"), "replace")
+
+
+class TestValidateExecutionInput(unittest.TestCase):
+    """Test cases for the `_validate_execution_input` path-safety guard."""
+
+    def _valid_payload(self, **overrides):
+        payload = {
+            "run_id": "local-abc123",
+            "src": "/test/src",
+            "manifest_dict": {"type": "python"},
+            "run_dir": "/test/src/.nextmv/runs/local-abc123",
+            "run_config": {"format": {"input": {"type": "json"}}},
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_valid_payload_passes(self):
+        # A well-formed payload from the trusted runner must validate cleanly.
+        _validate_execution_input(self._valid_payload())
+
+    def test_missing_required_field(self):
+        payload = self._valid_payload()
+        del payload["run_dir"]
+        with self.assertRaises(ValueError):
+            _validate_execution_input(payload)
+
+    def test_wrong_type_field(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir=123))
+
+    def test_run_id_traversal_rejected(self):
+        for bad in ["../evil", "a/b", "foo/../bar"]:
+            with self.assertRaises(ValueError):
+                _validate_execution_input(self._valid_payload(run_id=bad))
+
+    def test_run_dir_traversal_rejected(self):
+        # A run_dir escaping via `..` must be rejected even if its final
+        # component matches the run_id.
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir="/test/src/.nextmv/runs/../../../local-abc123"))
+
+    def test_run_dir_null_byte_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir="/test/src/.nextmv/runs/local-abc123\x00"))
+
+    def test_run_dir_basename_must_match_run_id(self):
+        # A run_dir pointing somewhere other than `<...>/<run_id>` is rejected.
+        with self.assertRaises(ValueError):
+            _validate_execution_input(self._valid_payload(run_dir="/etc"))
 
 
 if __name__ == "__main__":

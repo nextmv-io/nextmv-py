@@ -78,7 +78,7 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
     (:mod:`nextmv.local.runner`), so in normal operation every field is already
     well-formed. Validating here is defense-in-depth: it ensures a malformed or
     tampered payload cannot be used to traverse the filesystem via a crafted
-    ``run_id`` (path traversal / OS access violation).
+    ``run_id`` or ``run_dir`` (path traversal / OS access violation).
 
     Parameters
     ----------
@@ -88,8 +88,9 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
     Raises
     ------
     ValueError
-        If a required field is missing, has the wrong type, or ``run_id``
-        contains path separators or traversal sequences.
+        If a required field is missing, has the wrong type, ``run_id`` contains
+        path separators or traversal sequences, or ``run_dir`` contains a
+        traversal sequence or does not end in the validated ``run_id``.
     """
     required: dict[str, type] = {
         "run_id": str,
@@ -109,6 +110,21 @@ def _validate_execution_input(data: dict[str, Any]) -> None:
         raise ValueError(
             f"unsafe run_id {run_id!r}: must match [A-Za-z0-9._-]+ and contain no path traversal sequences"
         )
+
+    # `run_dir` is interpolated into filesystem paths (os.path.join / os.makedirs)
+    # throughout execution. The trusted runner always builds it as
+    # `<src>/.nextmv/runs/<run_id>`, so its final component must equal the
+    # already-validated `run_id`, and it must contain no traversal sequences or
+    # null bytes. Enforcing this severs any path traversal via a tampered
+    # `run_dir` (CWE-77 / path traversal).
+    run_dir = data["run_dir"]
+    # Inspect the raw components (splitting on both separators) so an embedded
+    # `..` is caught before `os.path.normpath` can silently collapse it.
+    run_dir_parts = re.split(r"[\\/]", run_dir)
+    if "\x00" in run_dir or os.pardir in run_dir_parts:
+        raise ValueError(f"unsafe run_dir {run_dir!r}: must contain no path traversal sequences")
+    if os.path.basename(os.path.normpath(run_dir)) != run_id:
+        raise ValueError(f"unsafe run_dir {run_dir!r}: final path component must equal the validated run_id {run_id!r}")
 
 
 def main() -> None:
