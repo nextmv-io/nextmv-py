@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import importlib.util
 import io
 import os
 import runpy
@@ -68,13 +69,28 @@ app.add_typer(local_app, name="local")
 app.add_typer(manifest_app, name="manifest")
 app.add_typer(version_app)
 
-# Register the MCP subcommand only if the mcp extra is installed.
-try:
+
+def _register_mcp(cli_app: typer.Typer) -> None:
+    """
+    Register the MCP subcommand on `cli_app`, only if the mcp extra is
+    installed.
+
+    The extra is detected explicitly, instead of catching the `ImportError`
+    that `nextmv.cli.mcp` raises when the extra is missing. Catching it would
+    also swallow genuine import failures inside the subcommand (a typo, a
+    broken module, an incompatible `mcp` version), making the command silently
+    disappear instead of reporting the error.
+    """
+
+    if importlib.util.find_spec("mcp") is None:
+        return
+
     from nextmv.cli.mcp import app as mcp_app
 
-    app.add_typer(mcp_app, name="mcp")
-except ImportError:
-    pass
+    cli_app.add_typer(mcp_app, name="mcp")
+
+
+_register_mcp(app)
 
 
 @app.callback()

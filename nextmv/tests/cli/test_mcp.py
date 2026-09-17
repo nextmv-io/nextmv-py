@@ -10,10 +10,12 @@ import re
 import shutil
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
-from nextmv.cli.main import app
+import typer
+from nextmv.cli.main import _register_mcp, app
 from nextmv.cli.mcp.server import _get_client, _mask_key, _save_to_json_file, create_server
 from nextmv.cli.mcp.tools._helpers import (
     ProfileSession,
@@ -1885,6 +1887,37 @@ class TestMCPOptionalDependency(unittest.TestCase):
                 self.assertIn("nextmv[mcp]", str(ctx.exception))
             finally:
                 sys.modules.update(saved)
+
+    def test_register_mcp_skipped_when_extra_missing(self):
+        """_register_mcp does not register the subcommand when mcp is missing."""
+
+        cli_app = typer.Typer()
+
+        with patch("importlib.util.find_spec", return_value=None):
+            _register_mcp(cli_app)
+
+        self.assertNotIn("mcp", [group.name for group in cli_app.registered_groups])
+
+    def test_register_mcp_propagates_genuine_import_error(self):
+        """_register_mcp lets a real import failure surface, instead of hiding it.
+
+        When the mcp extra is installed but importing the subcommand fails for
+        another reason, the error must not be silently swallowed. Here the
+        failure is simulated with a stand-in module that has no `app`.
+        """
+
+        cli_app = typer.Typer()
+        broken = types.ModuleType("nextmv.cli.mcp")
+
+        with (
+            patch("importlib.util.find_spec", return_value=MagicMock()),
+            patch.dict(sys.modules, {"nextmv.cli.mcp": broken}),
+            self.assertRaises(ImportError) as ctx,
+        ):
+            _register_mcp(cli_app)
+
+        self.assertIn("app", str(ctx.exception))
+        self.assertNotIn("mcp", [group.name for group in cli_app.registered_groups])
 
     def test_cli_works_without_mcp(self):
         """The CLI still works when the mcp subcommand cannot be imported."""
