@@ -26,14 +26,11 @@ from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestOptionType as ManifestOptionType
 from .manifest import ManifestPython as ManifestPython
 from .manifest import ManifestPythonArch as ManifestPythonArch
-from .manifest import ManifestPythonModel as ManifestPythonModel
 from .manifest import ManifestRuntime as ManifestRuntime
 from .manifest import ManifestType as ManifestType
-from .manifest import ModelConfiguration as ModelConfiguration
 from .manifest import default_python_manifest as default_python_manifest
 from .manifest import find_files as find_files
 from .manifest import initialize_manifest as initialize_manifest
-from .model import Model as Model
 from .options import Option as Option
 from .options import Options as Options
 from .output import Asset as Asset

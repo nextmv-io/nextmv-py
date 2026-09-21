@@ -21,11 +21,9 @@ from nextmv.manifest import (
     Manifest,
     ManifestBuild,
     ManifestType,
-    ModelConfiguration,
     find_files,
     read_pyproject_dependencies,
 )
-from nextmv.model import Model, _cleanup_python_model
 
 _IO_CHUNK_SIZE = 65536
 """
@@ -40,8 +38,6 @@ pressure for sequential reads and writes.
 def package(
     app_dir: str,
     manifest: Manifest,
-    model: Model | None = None,
-    model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
     rich_print: bool = False,
     no_cache: bool = False,
@@ -55,10 +51,6 @@ def package(
         The directory of the application to package.
     manifest : Manifest
         The app manifest describing the application type, files, and dependencies.
-    model : Model, optional
-        The Python model to encode and include in the package.
-    model_configuration : ModelConfiguration, optional
-        The configuration for encoding the Python model.
     verbose : bool, optional
         Whether to print verbose logs.
     rich_print : bool, optional
@@ -86,7 +78,7 @@ def package(
         success = False
         try:
             if manifest.type == ManifestType.PYTHON:
-                deps_tar = _handle_python(app_dir, manifest, model, model_configuration, verbose, rich_print, no_cache)
+                deps_tar = _handle_python(app_dir, manifest, verbose, rich_print, no_cache)
 
             found, missing, files = find_files(app_dir, manifest.files)
             manifest.confirm_mandatory_files(present_files=found)
@@ -96,9 +88,6 @@ def package(
 
             manifest.to_yaml(temp_dir)
             _copy_manifest_files(files, temp_dir, verbose, rich_print)
-
-            if manifest.type == ManifestType.PYTHON:
-                _cleanup_python_model(app_dir, model_configuration, verbose)
 
             output_dir = tempfile.mkdtemp(prefix="nextmv-build-out-")
             tar_file, _ = _compress_and_report(deps_tar, temp_dir, output_dir, verbose, rich_print)
@@ -376,8 +365,6 @@ def _get_shell_command_elements(pre_push_command):
 def _handle_python(
     app_dir: str,
     manifest: Manifest,
-    model: Model | None = None,
-    model_configuration: ModelConfiguration | None = None,
     verbose: bool = False,
     rich_print: bool = False,
     no_cache: bool = False,
@@ -385,11 +372,11 @@ def _handle_python(
     """
     Handles the Python-specific packaging logic.
 
-    This includes encoding the Python model (if provided) and bundling Python
-    dependencies using `uv pip`.  The dependencies are resolved, installed, and
-    cached on a per-package basis to maximize cache hits and efficiency.  The
-    final output is a `deps.tar.gz` file containing the installed dependencies,
-    which is returned for inclusion in the final app tarball.
+    This bundles Python dependencies using `uv pip`.  The dependencies are
+    resolved, installed, and cached on a per-package basis to maximize cache
+    hits and efficiency.  The final output is a `deps.tar.gz` file containing
+    the installed dependencies, which is returned for inclusion in the final
+    app tarball.
 
     Parameters
     ----------
@@ -397,10 +384,6 @@ def _handle_python(
         The directory of the application.
     manifest : Manifest
         The app manifest containing dependency information.
-    model : Model, optional
-        The Python model to encode and include in the package.
-    model_configuration : ModelConfiguration, optional
-        The configuration for encoding the Python model.
     verbose : bool, optional
         Whether to print verbose logs.
     rich_print : bool, optional
@@ -418,15 +401,6 @@ def _handle_python(
         The path to the `deps.tar.gz` file containing the installed dependencies,
         or `None` if no dependencies are specified.
     """
-
-    if model is not None and model_configuration is not None:
-        if verbose:
-            if rich_print:
-                rich.print(":crystal_ball: Encoding Python model.", file=sys.stderr)
-            else:
-                log("🔮 Encoding Python model.")
-
-        model.save(app_dir, model_configuration)
 
     if verbose:
         if rich_print:

@@ -15,8 +15,6 @@ ManifestPythonArch
     Enum for target architecture for bundling Python apps.
 ManifestBuild
     Class for build-specific attributes in the manifest.
-ManifestPythonModel
-    Class for model-specific instructions for Python apps.
 ManifestPython
     Class for Python-specific instructions in the manifest.
 ControlType
@@ -43,8 +41,6 @@ ManifestConfiguration
     Class for configuration settings for the decision model.
 ManifestExecution
     Class for execution configuration for the decision model.
-ModelConfiguration
-    Dataclass for configuration settings for Nextmv models.
 Manifest
     Main class representing an app manifest for Nextmv.
 
@@ -70,7 +66,6 @@ import os
 import re
 import shutil
 import sys
-from dataclasses import dataclass
 from enum import Enum
 from typing import Annotated, Any
 
@@ -113,15 +108,6 @@ Notes
 -----
 All Nextmv applications must include an app.yaml file for proper deployment.
 """
-
-# When working with the `Model`, we expect to be working in a notebook
-# environment, and not interact with the local filesystem a lot. We use the
-# `ModelConfiguration` to specify the dependencies that the `Model` requires.
-# To work with the "push" logic of uploading an app to Nextmv Cloud, we need a
-# requirement file that we use to gather dependencies, install them, and bundle
-# them in the app. This file is used as a placeholder for the dependencies that
-# the model requires and that we install and bundle with the app.
-_REQUIREMENTS_FILE = "model_requirements.txt"
 
 
 class ManifestType(str, Enum):
@@ -334,48 +320,6 @@ class ManifestBuild(BaseModel):
         return {key: str(value) for key, value in self.environment.items()}
 
 
-class ManifestPythonModel(BaseModel):
-    """
-    Model-specific instructions for a Python app.
-
-    You can import the `ManifestPythonModel` class directly from `nextmv`:
-
-    ```python
-    from nextmv import ManifestPythonModel
-    ```
-
-    Parameters
-    ----------
-    name : str
-        The name of the decision model.
-    options : Optional[list[dict[str, Any]]], default=None
-        Options for the decision model. This is a data representation of the
-        `nextmv.Options` class. It consists of a list of dicts. Each dict
-        represents the `nextmv.Option` class. It is used to be able to
-        reconstruct an Options object from data when loading a decision model.
-
-    Examples
-    --------
-    >>> from nextmv import ManifestPythonModel
-    >>> python_model_config = ManifestPythonModel(
-    ...     name="routing_model",
-    ...     options=[{"name": "max_vehicles", "type": "int", "default": 10}]
-    ... )
-    >>> python_model_config.name
-    'routing_model'
-    """
-
-    name: str
-    """The name of the decision model."""
-    options: list[dict[str, Any]] | None = None
-    """
-    Options for the decision model. This is a data representation of the
-    `nextmv.Options` class. It consists of a list of dicts. Each dict
-    represents the `nextmv.Option` class. It is used to be able to
-    reconstruct an Options object from data when loading a decision model.
-    """
-
-
 class ManifestPython(BaseModel):
     """
     Python-specific instructions.
@@ -394,16 +338,12 @@ class ManifestPython(BaseModel):
         list of strings, each representing a package to install, e.g.,
         `["nextmv==0.28.2", "ortools==9.12.4544"]`.
         Aliases: `pip-requirements`.
-    model : Optional[ManifestPythonModel], default=None
-        Information about an encoded decision model as handled via mlflow. This
-        information is used to load the decision model from the app bundle.
 
     Examples
     --------
-    >>> from nextmv import ManifestPython, ManifestPythonModel
+    >>> from nextmv import ManifestPython
     >>> python_config = ManifestPython(
     ...     pip_requirements="requirements.txt",
-    ...     model=ManifestPythonModel(name="my_model")
     ... )
     >>> python_config.pip_requirements
     'requirements.txt'
@@ -429,13 +369,6 @@ class ManifestPython(BaseModel):
     version: str | float | None = None
     """
     The Python version this model is meant to run with. Uses "3.11" if not specified.
-    """
-    model: ManifestPythonModel | None = None
-    """
-    Information about an encoded decision model.
-
-    As handled via mlflow. This information is used to load the decision model
-    from the app bundle.
     """
 
     def model_post_init(self, __context) -> None:
@@ -1322,57 +1255,6 @@ class ManifestExecution(BaseModel):
     """The working directory to set when running the app, e.g.: `./src/`."""
 
 
-@dataclass
-class ModelConfiguration:
-    """
-    Configuration class for Nextmv models.
-
-    You can import the `ModelConfiguration` class directly from `nextmv`:
-
-    ```python
-    from nextmv import ModelConfiguration
-    ```
-
-    This class holds the configuration for a model, defining how a Python model
-    is encoded and loaded for use in Nextmv Cloud.
-
-    Parameters
-    ----------
-    name : str
-        A personalized name for the model. This is required.
-    requirements : list[str], optional
-        A list of Python dependencies that the decision model requires,
-        formatted as they would appear in a requirements.txt file.
-    options : Options, optional
-        Options that the decision model requires.
-    options_enforcement:
-        Enforcement of options for the model. This controls how options
-        are handled when the model is run.
-
-    Examples
-    --------
-    >>> from nextmv import ModelConfiguration, Options
-    >>> config = ModelConfiguration(
-    ...     name="my_routing_model",
-    ...     requirements=["nextroute>=1.0.0"],
-    ...     options=Options({"max_time": 60}),
-    ...     options_enforcement=OptionsEnforcement(
-                strict=True,
-                validation_enforce=True
-            )
-    ... )
-    """
-
-    name: str
-    """The name of the decision model."""
-    requirements: list[str] | None = None
-    """A list of Python dependencies that the decision model requires."""
-    options: Options | None = None
-    """Options that the decision model requires."""
-    options_enforcement: OptionsEnforcement | None = None
-    """Enforcement of options for the model."""
-
-
 class Manifest(BaseModel):
     """
     Represents an app manifest (`app.yaml`) for Nextmv Cloud.
@@ -1652,84 +1534,6 @@ class Manifest(BaseModel):
             opt.parse()
 
         return opt
-
-    @classmethod
-    def from_model_configuration(
-        cls,
-        model_configuration: ModelConfiguration,
-    ) -> "Manifest":
-        """
-        Create a Python manifest from a `nextmv.model.ModelConfiguration`.
-
-        Note that the `ModelConfiguration` is almost always used in
-        conjunction with the `nextmv.Model` class. If you are not
-        implementing an instance of `nextmv.Model`, consider using the
-        `from_options` method instead to initialize the manifest with the
-        options of the model.
-
-        The resulting manifest will have:
-
-        - `files` set to `["main.py", f"{model_configuration.name}/**"]`
-        - `runtime` set to `ManifestRuntime.PYTHON`
-        - `type` set to `ManifestType.PYTHON`
-        - `python.pip_requirements` set to the default requirements file name.
-        - `python.model.name` set to `model_configuration.name`.
-        - `python.model.options` populated from `model_configuration.options`.
-        - `configuration.options` populated from `model_configuration.options`.
-
-        Parameters
-        ----------
-        model_configuration : nextmv.model.ModelConfiguration
-            The model configuration.
-
-        Returns
-        -------
-        Manifest
-            The Python manifest.
-
-        Examples
-        --------
-        >>> from nextmv.model import ModelConfiguration
-        >>> from nextmv.options import Options, Option
-        >>> from nextmv import Manifest
-        >>> opts = Options(Option(name="vehicle_count", option_type=int, default=5))
-        >>> mc = ModelConfiguration(name="vehicle_router", options=opts)
-        >>> manifest = Manifest.from_model_configuration(mc)
-        >>> manifest.python.model.name
-        'vehicle_router'
-        >>> manifest.files
-        ['main.py', 'vehicle_router/**']
-        >>> manifest.configuration.options.items[0].name
-        'vehicle_count'
-        """
-
-        manifest_python_dict = {
-            "pip-requirements": _REQUIREMENTS_FILE,
-            "model": {
-                "name": model_configuration.name,
-            },
-        }
-
-        if model_configuration.options is not None:
-            manifest_python_dict["model"]["options"] = model_configuration.options.options_dict()
-
-        manifest_python = ManifestPython.from_dict(manifest_python_dict)
-        manifest = cls(
-            files=["main.py", f"{model_configuration.name}/**"],
-            runtime=ManifestRuntime.PYTHON,
-            type=ManifestType.PYTHON,
-            python=manifest_python,
-        )
-
-        if model_configuration.options is not None:
-            manifest.configuration = ManifestConfiguration(
-                options=ManifestOptions.from_options(
-                    options=model_configuration.options,
-                    validation=model_configuration.options_enforcement,
-                ),
-            )
-
-        return manifest
 
     @classmethod
     def from_options(cls, options: Options, validation: OptionsEnforcement = None) -> "Manifest":

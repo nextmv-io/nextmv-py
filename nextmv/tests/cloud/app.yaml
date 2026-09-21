@@ -2,14 +2,6 @@ files:
   - main.py
   - super_cool_model/**
 python:
-  model:
-    name: super_cool_model
-    options:
-      - name: duration
-        default: 30
-        description: Max runtime duration (in seconds).
-        param_type: <class 'int'>
-        required: false
   pip-requirements: model_requirements.txt
 runtime: ghcr.io/nextmv-io/runtime/python:3.11
 type: python
