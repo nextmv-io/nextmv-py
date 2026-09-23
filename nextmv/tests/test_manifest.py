@@ -18,7 +18,6 @@ from nextmv.manifest import (
     ManifestRuntime,
     ManifestType,
     ManifestValidation,
-    ModelConfiguration,
     initialize_manifest,
     read_pyproject_dependencies,
 )
@@ -26,92 +25,11 @@ from nextmv.options import Option, Options, OptionsEnforcement
 
 
 class TestManifest(unittest.TestCase):
-    def test_from_model_configuration(self):
-        options = Options(
-            Option("param1", str, ""),
-            Option("param2", str, ""),
-        )
-        model_configuration = ModelConfiguration(
-            name="super_cool_model",
-            requirements=[
-                "one_requirement",
-                "another_requirement",
-            ],
-            options=options,
-        )
-        manifest = Manifest.from_model_configuration(model_configuration)
-
-        self.assertListEqual(
-            manifest.files,
-            ["main.py", f"{model_configuration.name}/**"],
-        )
-        self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON)
-        self.assertEqual(manifest.type, ManifestType.PYTHON)
-
-        manifest_python = ManifestPython.from_dict(
-            {
-                "pip-requirements": "model_requirements.txt",
-                "model": {
-                    "name": model_configuration.name,
-                    "options": model_configuration.options.options_dict(),
-                },
-            }
-        )
-        self.assertEqual(manifest.python, manifest_python)
-        self.assertEqual(manifest_python.pip_requirements, "model_requirements.txt")
-
-    def test_from_model_configuration_with_validation(self):
-        options = Options(
-            Option("param1", str, "default_value", "A description", True),
-            Option("param2", bool, True, "A description", True),
-        )
-
-        validation_config = OptionsEnforcement(
-            strict=True,
-            validation_enforce=True,
-        )
-
-        model_configuration = ModelConfiguration(
-            name="super_cool_model",
-            requirements=[
-                "one_requirement",
-                "another_requirement",
-            ],
-            options=options,
-            options_enforcement=validation_config,
-        )
-        manifest = Manifest.from_model_configuration(model_configuration)
-
-        self.assertListEqual(
-            manifest.files,
-            ["main.py", f"{model_configuration.name}/**"],
-        )
-        self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON)
-        self.assertEqual(manifest.type, ManifestType.PYTHON)
-
-        manifest_python = ManifestPython.from_dict(
-            {
-                "pip-requirements": "model_requirements.txt",
-                "model": {
-                    "name": model_configuration.name,
-                    "options": model_configuration.options.options_dict(),
-                },
-            }
-        )
-        self.assertEqual(manifest.python, manifest_python)
-        self.assertEqual(manifest_python.pip_requirements, "model_requirements.txt")
-        self.assertEqual(manifest.configuration.options.strict, validation_config.strict)
-        self.assertEqual(manifest.configuration.options.validation.enforce, "all")
-        self.assertEqual(manifest.configuration.options.items, ManifestOptions.from_options(options).items)
-
     def test_manifest_python_from_dict(self):
         manifest_python_dict = {
             "pip-requirements": "foo_requirements.txt",
             "version": 3.11,
             "arch": "amd64",
-            "model": {
-                "name": "foo_model",
-            },
         }
 
         manifest_python = ManifestPython.from_dict(manifest_python_dict)
@@ -119,16 +37,13 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest_python.pip_requirements, "foo_requirements.txt")
         self.assertEqual(manifest_python.version, "3.11")
         self.assertEqual(manifest_python.arch, ManifestPythonArch.AMD64)
-        self.assertEqual(manifest_python.model.name, "foo_model")
 
     def test_manifest_python_direct_instantiation(self):
         manifest_python = ManifestPython(
             pip_requirements="foo_requirements.txt",
-            model={"name": "foo_model"},
         )
 
         self.assertEqual(manifest_python.pip_requirements, "foo_requirements.txt")
-        self.assertEqual(manifest_python.model.name, "foo_model")
 
     def test_manifest_from_yaml(self):
         manifest = Manifest.from_yaml("tests/cloud")
@@ -143,19 +58,6 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest.type, ManifestType.PYTHON)
 
         self.assertEqual(manifest.python.pip_requirements, "model_requirements.txt")
-        self.assertEqual(manifest.python.model.name, "super_cool_model")
-        self.assertListEqual(
-            manifest.python.model.options,
-            [
-                {
-                    "default": 30,
-                    "description": "Max runtime duration (in seconds).",
-                    "name": "duration",
-                    "param_type": "<class 'int'>",
-                    "required": False,
-                },
-            ],
-        )
 
         self.assertEqual(manifest.pre_push, "echo 'hello world - pre-push'")
 

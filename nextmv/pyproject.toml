@@ -64,9 +64,6 @@ nextmv = "nextmv.cli.main:main"
 mcp = [
     "mcp[cli]>=1.2.0,<2",
 ]
-notebook = [
-    "mlflow>=3.9.0",
-]
 
 [dependency-groups]
 # Dependencies for development and testing.
