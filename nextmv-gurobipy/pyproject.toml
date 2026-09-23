@@ -56,5 +56,5 @@ packages = ["nextmv_gurobipy"]
 # Dependencies for development and testing.
 dev = [
     "ruff==0.16.3",
-    "pytest==9.0.2",
+    "pytest==9.0.3",
 ]
