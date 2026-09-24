@@ -13,6 +13,7 @@ about the features used here. An example of Rich markup can be found in the
 epilog of the Typer application defined below.
 """
 
+import importlib.metadata
 import importlib.util
 import io
 import os
@@ -22,6 +23,7 @@ import warnings
 from typing import Annotated
 
 import requests
+import rich.markup
 import typer
 from typer import rich_utils
 
@@ -76,18 +78,69 @@ def _register_mcp(cli_app: typer.Typer) -> None:
     installed.
 
     The extra is detected explicitly, instead of catching the `ImportError`
-    that `nextmv.cli.mcp` raises when the extra is missing. Catching it would
-    also swallow genuine import failures inside the subcommand (a typo, a
-    broken module, an incompatible `mcp` version), making the command silently
-    disappear instead of reporting the error.
+    that `nextmv.cli.mcp` raises when the extra is missing. Catching that error
+    to skip registration would also swallow genuine import failures inside the
+    subcommand (a typo, a broken module, an incompatible `mcp` version), making
+    the command silently disappear instead of reporting the error.
+
+    An `mcp` package that is installed but cannot be imported must not take the
+    rest of the CLI down with it, though. `mcp` 2.x, for example, removed the
+    `mcp.server.fastmcp` module that the server is built on, and the package
+    may well be installed for reasons that have nothing to do with Nextmv. In
+    that case the subcommand is registered as a placeholder that reports the
+    failure when it is invoked, leaving every other command working.
     """
 
     if importlib.util.find_spec("mcp") is None:
         return
 
-    from nextmv.cli.mcp import app as mcp_app
+    try:
+        from nextmv.cli.mcp import app as mcp_app
+    except ImportError as reason:
+        _register_unusable_mcp(cli_app, reason)
+        return
 
     cli_app.add_typer(mcp_app, name="mcp")
+
+
+def _register_unusable_mcp(cli_app: typer.Typer, reason: ImportError) -> None:
+    """
+    Register a placeholder `mcp` subcommand on `cli_app` that reports `reason`
+    when it is invoked. Extra arguments are accepted and ignored, so that the
+    error is also reported for invocations such as `nextmv mcp serve`.
+
+    Parameters
+    ----------
+    cli_app : typer.Typer
+        The application to register the placeholder on.
+    reason : ImportError
+        The failure that made the real subcommand unavailable.
+    """
+
+    try:
+        found = f" (found [magenta]{importlib.metadata.version('mcp')}[/magenta])"
+    except importlib.metadata.PackageNotFoundError:
+        found = ""
+
+    @cli_app.command(
+        name="mcp",
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    )
+    def unusable_mcp() -> None:
+        """
+        Model Context Protocol (MCP) server for LLM integrations.
+
+        [red]Unavailable[/red]: the installed [magenta]mcp[/magenta] package
+        cannot be used by the Nextmv MCP server.
+        """
+
+        error(
+            "The [magenta]mcp[/magenta] subcommand is unavailable, because the installed "
+            "[magenta]mcp[/magenta] package could not be imported. The Nextmv MCP server requires "
+            f"[magenta]mcp<2[/magenta]{found}; install a supported version with "
+            r'[code]pip install "nextmv\[mcp]"[/code]. '
+            f"The import failed with: {rich.markup.escape(str(reason))}"
+        )
 
 
 _register_mcp(app)
