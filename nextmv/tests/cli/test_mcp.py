@@ -1872,6 +1872,9 @@ class TestCloudRunCache(unittest.TestCase):
 class TestMCPOptionalDependency(unittest.TestCase):
     """Tests for MCP as an optional dependency."""
 
+    def setUp(self):
+        self.runner = CliRunner()
+
     def test_mcp_init_raises_when_mcp_missing(self):
         """Importing nextmv.cli.mcp raises ImportError when mcp is not installed."""
 
@@ -1898,26 +1901,87 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         self.assertNotIn("mcp", [group.name for group in cli_app.registered_groups])
 
-    def test_register_mcp_propagates_genuine_import_error(self):
-        """_register_mcp lets a real import failure surface, instead of hiding it.
+    def _broken_mcp_app(self) -> typer.Typer:
+        """
+        Build an application on which registering the mcp subcommand failed.
 
-        When the mcp extra is installed but importing the subcommand fails for
-        another reason, the error must not be silently swallowed. Here the
-        failure is simulated with a stand-in module that has no `app`.
+        The failure is simulated with a stand-in module that has no `app`, the
+        way an incompatible `mcp` release (2.x removed `mcp.server.fastmcp`), a
+        broken install, or a typo in our own modules would.
         """
 
         cli_app = typer.Typer()
+
+        @cli_app.command()
+        def unrelated() -> None:
+            """A command that has nothing to do with MCP."""
+
         broken = types.ModuleType("nextmv.cli.mcp")
 
         with (
             patch("importlib.util.find_spec", return_value=MagicMock()),
             patch.dict(sys.modules, {"nextmv.cli.mcp": broken}),
-            self.assertRaises(ImportError) as ctx,
         ):
             _register_mcp(cli_app)
 
-        self.assertIn("app", str(ctx.exception))
+        return cli_app
+
+    def test_register_mcp_registers_placeholder_on_import_error(self):
+        """_register_mcp registers a placeholder when the subcommand cannot be imported.
+
+        The real subcommand is a group; the placeholder is a single command, so
+        it must show up in the registered commands instead.
+        """
+
+        cli_app = self._broken_mcp_app()
+
         self.assertNotIn("mcp", [group.name for group in cli_app.registered_groups])
+        self.assertIn("mcp", [command.name for command in cli_app.registered_commands])
+
+    def test_mcp_placeholder_reports_the_import_error(self):
+        """Invoking the placeholder reports the failure, instead of hiding it."""
+
+        result = self.runner.invoke(self._broken_mcp_app(), ["mcp"])
+        output = " ".join(_strip_ansi(result.stderr).split())
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn("mcp subcommand is unavailable", output)
+        self.assertIn("requires mcp<2", output)
+        self.assertIn('pip install "nextmv[mcp]"', output)
+        self.assertIn("cannot import name 'app'", output)
+
+    def test_mcp_placeholder_reports_the_installed_version(self):
+        """The reported failure names the version that is actually installed."""
+
+        with patch("importlib.metadata.version", return_value="2.2.0"):
+            cli_app = self._broken_mcp_app()
+
+        result = self.runner.invoke(cli_app, ["mcp"])
+        output = " ".join(_strip_ansi(result.stderr).split())
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn("(found 2.2.0)", output)
+
+    def test_mcp_placeholder_accepts_extra_arguments(self):
+        """`nextmv mcp serve` reports the failure, not an unknown argument error."""
+
+        result = self.runner.invoke(self._broken_mcp_app(), ["mcp", "serve", "--transport", "stdio"])
+        output = " ".join(_strip_ansi(result.stderr).split())
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIn("mcp subcommand is unavailable", output)
+
+    def test_other_commands_work_when_mcp_import_fails(self):
+        """An unusable mcp subcommand does not take the rest of the CLI down."""
+
+        cli_app = self._broken_mcp_app()
+
+        result = self.runner.invoke(cli_app, ["unrelated"])
+        self.assertEqual(result.exit_code, 0)
+
+        result = self.runner.invoke(cli_app, ["--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("unrelated", _strip_ansi(result.output))
 
     def test_cli_works_without_mcp(self):
         """The CLI still works when the mcp subcommand cannot be imported."""
