@@ -2,12 +2,12 @@
 
 import os
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 _WORKFLOW_FILE = os.path.join(os.path.dirname(__file__), "WORKFLOW.md")
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register the workflow guide tool."""
 
     @mcp.tool()

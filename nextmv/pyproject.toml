@@ -62,7 +62,7 @@ nextmv = "nextmv.cli.main:main"
 # Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
 mcp = [
-    "mcp[cli]>=1.2.0,<2",
+    "mcp[cli]>=2.2.0,<3",
 ]
 
 [dependency-groups]

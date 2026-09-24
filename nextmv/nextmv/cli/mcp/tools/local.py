@@ -3,7 +3,7 @@
 import os
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.content_format import ContentFormat
@@ -133,7 +133,7 @@ def _manifest_init_impl(
     return f"Manifest initialized at {dst}"
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register local application tools."""
 
     # Split into two functions to stay under the C901 complexity limit
@@ -142,7 +142,7 @@ def register(mcp: FastMCP) -> None:
     _register_management_tools(mcp)
 
 
-def _register_run_tools(mcp: FastMCP) -> None:
+def _register_run_tools(mcp: MCPServer) -> None:
     """Register local run tools."""
 
     @mcp.tool()
@@ -302,7 +302,7 @@ def _register_run_tools(mcp: FastMCP) -> None:
         return f"Data saved to {result_path} — use file-reading tools to inspect the contents."
 
 
-def _register_management_tools(mcp: FastMCP) -> None:
+def _register_management_tools(mcp: MCPServer) -> None:
     """Register local management tools."""
 
     @mcp.tool()

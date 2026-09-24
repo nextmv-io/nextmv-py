@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.cloud import Application
@@ -139,7 +139,7 @@ def _build_ensemble_run_config(
     return app, config
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cloud ensemble definition and run tools."""
 
     @mcp.tool()
