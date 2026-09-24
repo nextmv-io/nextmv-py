@@ -137,7 +137,7 @@ def _register_unusable_mcp(cli_app: typer.Typer, reason: ImportError) -> None:
         error(
             "The [magenta]mcp[/magenta] subcommand is unavailable, because the installed "
             "[magenta]mcp[/magenta] package could not be imported. The Nextmv MCP server requires "
-            f"[magenta]mcp>=2,<3[/magenta]{found}; install a supported version with "
+            f"[magenta]mcp>=2[/magenta]{found}; install a supported version with "
             r'[code]pip install "nextmv\[mcp]"[/code]. '
             f"The import failed with: {rich.markup.escape(str(reason))}"
         )

@@ -1967,7 +1967,7 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 1)
         self.assertIn("mcp subcommand is unavailable", output)
-        self.assertIn("requires mcp>=2,<3", output)
+        self.assertIn("requires mcp>=2", output)
         self.assertIn('pip install "nextmv[mcp]"', output)
         self.assertIn("cannot import name 'app'", output)
 
