@@ -19,8 +19,11 @@ fi
 UV_BIN=$(python -c "from uv import find_uv_bin; print(find_uv_bin())")
 echo "Bundling uv binary from: $UV_BIN"
 
-# Run PyInstaller
-uv run --with pyinstaller pyinstaller \
+# Run PyInstaller. PyInstaller bundles what it can import, and `uv run` builds
+# its environment from uv.lock rather than from any surrounding pip install, so
+# the mcp extra has to be requested here: that is what puts the MCP server into
+# the binary. Optional extras are not part of a `uv run` environment by default.
+uv run --extra mcp --with pyinstaller pyinstaller \
     --name nextmv \
     --onedir \
     --clean \
