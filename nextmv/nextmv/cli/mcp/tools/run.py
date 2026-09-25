@@ -3,7 +3,7 @@
 import os
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.input import INPUTS_KEY
@@ -176,7 +176,7 @@ def _cloud_run_logs_impl(app_id: str, run_id: str) -> str:
     return f"Downloaded: {path}"
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cloud run management tools."""
 
     @mcp.tool()

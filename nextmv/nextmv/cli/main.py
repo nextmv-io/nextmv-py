@@ -84,11 +84,11 @@ def _register_mcp(cli_app: typer.Typer) -> None:
     the command silently disappear instead of reporting the error.
 
     An `mcp` package that is installed but cannot be imported must not take the
-    rest of the CLI down with it, though. `mcp` 2.x, for example, removed the
-    `mcp.server.fastmcp` module that the server is built on, and the package
-    may well be installed for reasons that have nothing to do with Nextmv. In
-    that case the subcommand is registered as a placeholder that reports the
-    failure when it is invoked, leaving every other command working.
+    rest of the CLI down with it, though. The server is built on
+    `mcp.server.mcpserver`, which only exists in `mcp` 2.x, and the package may
+    well be installed at another version for reasons that have nothing to do
+    with Nextmv. In that case the subcommand is registered as a placeholder that
+    reports the failure when it is invoked, leaving every other command working.
     """
 
     if importlib.util.find_spec("mcp") is None:
@@ -137,7 +137,7 @@ def _register_unusable_mcp(cli_app: typer.Typer, reason: ImportError) -> None:
         error(
             "The [magenta]mcp[/magenta] subcommand is unavailable, because the installed "
             "[magenta]mcp[/magenta] package could not be imported. The Nextmv MCP server requires "
-            f"[magenta]mcp<2[/magenta]{found}; install a supported version with "
+            f"[magenta]mcp>=2[/magenta]{found}; install a supported version with "
             r'[code]pip install "nextmv\[mcp]"[/code]. '
             f"The import failed with: {rich.markup.escape(str(reason))}"
         )

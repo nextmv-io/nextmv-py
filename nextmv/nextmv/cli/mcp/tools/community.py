@@ -2,13 +2,13 @@
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.cloud import clone_community_app, list_community_apps
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register community app tools."""
 
     @mcp.tool()

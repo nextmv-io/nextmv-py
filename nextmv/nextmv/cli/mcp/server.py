@@ -5,7 +5,7 @@ tool registration to domain-specific submodules under ``tools/`` and
 re-exports shared helpers so that existing imports continue to work.
 """
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # Import tool registration submodules.
 from nextmv.cli.mcp.tools import (
@@ -46,12 +46,11 @@ from nextmv.cli.mcp.tools._helpers import (  # noqa: F401
 from nextmv.cloud import list_applications  # noqa: F401
 
 
-def create_server() -> FastMCP:
+def create_server() -> MCPServer:
     """Create and return the Nextmv MCP server."""
 
-    mcp = FastMCP(
+    mcp = MCPServer(
         "nextmv",
-        json_response=True,
         instructions=(
             "Nextmv is a platform for deploying and managing decision "
             "models (optimization, routing, scheduling, etc.). Use these "
