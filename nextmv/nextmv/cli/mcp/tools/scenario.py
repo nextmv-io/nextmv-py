@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 
@@ -120,7 +120,7 @@ def _cloud_create_scenario_test_impl(
     return test_id
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cloud scenario test tools."""
 
     @mcp.tool()

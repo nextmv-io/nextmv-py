@@ -1,12 +1,12 @@
 """MCP tools for cloud SSO management."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.cloud.sso import SSOConfiguration
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cloud SSO tools."""
 
     @mcp.tool()
