@@ -62,7 +62,7 @@ nextmv = "nextmv.cli.main:main"
 # Dependencies that are optional for the end user to install.
 [project.optional-dependencies]
 mcp = [
-    "mcp[cli]>=1.2.0,<2",
+    "mcp[cli]>=2.0.0",
 ]
 
 [dependency-groups]
@@ -73,6 +73,21 @@ dev = [
     "openpyxl==3.1.5",
     "pytest==9.0.3",
     "nextpipe==0.7.0",
+]
+
+[tool.uv]
+# `cryptography` arrives transitively, via `mcp` -> `pyjwt[crypto]`, and it
+# publishes arm64-only macOS wheels from 49.0.0 on. On Intel macOS it is
+# therefore built from source against Homebrew's OpenSSL, while PyInstaller
+# bundles the interpreter's older `libssl.3.dylib` alongside it, so the frozen
+# binary cannot load the extension module: `Symbol not found:
+# _SSL_get0_group_name`. 48.0.1 is the last release with a universal2 wheel,
+# which links OpenSSL statically and sidesteps the mismatch entirely.
+#
+# This constrains resolution only — the lockfile, CI, and the single-binary
+# build. The published package caps nothing.
+constraint-dependencies = [
+    "cryptography<49 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [tool.hatch.version]

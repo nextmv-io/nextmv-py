@@ -55,6 +55,12 @@ jobs:
           $BINARY --help
           $BINARY configuration create -a $NEXTMV_API_KEY
           $BINARY version
+          # The MCP server ships with the binary, so check that it both imports
+          # and serves. PyInstaller resolves imports statically while the MCP
+          # stack reaches for modules dynamically, so this has to be verified
+          # per platform.
+          $BINARY mcp --help
+          python "$GITHUB_WORKSPACE/.github/scripts/smoketest-mcp-server.py" "$BINARY"
           $BINARY community clone -a python-highs-knapsack
           cd python-highs-knapsack
           # Use Python to run command with timeout since timeout is not available on macOS.

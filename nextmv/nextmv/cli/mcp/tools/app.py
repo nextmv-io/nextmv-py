@@ -2,13 +2,13 @@
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from nextmv.cli.mcp.tools import _helpers
 from nextmv.cloud import Application, list_applications
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cloud application management tools."""
 
     @mcp.tool()

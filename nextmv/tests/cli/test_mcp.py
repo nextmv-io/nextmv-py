@@ -89,8 +89,8 @@ class TestMCPServeCommand(unittest.TestCase):
 class TestMCPServerTools(unittest.TestCase):
     """Tests for the MCP server tool registration."""
 
-    def test_create_server_returns_fastmcp(self):
-        """Test that create_server returns a FastMCP instance."""
+    def test_create_server_returns_mcpserver(self):
+        """Test that create_server returns an MCPServer instance."""
 
         server = create_server()
         self.assertEqual(server.name, "nextmv")
@@ -274,7 +274,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["nextmv_workflow_guide"]
-        result = asyncio.run(tool.run({}))
+        result = asyncio.run(tool.run({}, None))
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         # Verify key sections are present.
         self.assertIn("Nextmv App Development Workflow", str(text))
@@ -303,7 +303,7 @@ class TestMCPServerTools(unittest.TestCase):
         with patch("nextmv.cli.mcp.tools.app.list_applications", return_value=[mock_app]) as mock_list:
             server = create_server()
             tool = server._tool_manager._tools["cloud_list_apps"]
-            asyncio.run(tool.run({}))
+            asyncio.run(tool.run({}, None))
             mock_list.assert_called_once_with(mock_client)
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
@@ -315,7 +315,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_cancel_run"]
-        asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-123"}))
+        asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-123"}, None))
         mock_app_instance.cancel_run.assert_called_once_with(run_id="run-123")
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
@@ -327,7 +327,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_delete_app"]
-        asyncio.run(tool.run({"app_id": "my-app"}))
+        asyncio.run(tool.run({"app_id": "my-app"}, None))
         mock_app_instance.delete.assert_called_once()
 
     @patch("nextmv.cli.mcp.tools._helpers._get_app")
@@ -342,7 +342,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool = server._tool_manager._tools["cloud_list_runs"]
-        asyncio.run(tool.run({"app_id": "my-app"}))
+        asyncio.run(tool.run({"app_id": "my-app"}, None))
         mock_app_instance.list_runs.assert_called_once_with(status=None)
 
 
@@ -409,7 +409,7 @@ class TestSaveToFile(unittest.TestCase):
 
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             # Result is JSON-encoded string (json_response=True).
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
@@ -434,7 +434,7 @@ class TestSaveToFile(unittest.TestCase):
 
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_result"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
         finally:
@@ -461,7 +461,8 @@ class TestSaveToFile(unittest.TestCase):
                     "app_id": "my-app",
                     "name": "test input",
                     "input": {"stops": [{"id": "s1"}]},
-                }
+                },
+                None,
             )
         )
         mock_app.upload_url.assert_called_once()
@@ -495,7 +496,8 @@ class TestSaveToFile(unittest.TestCase):
                     "app_id": "my-app",
                     "name": "test set",
                     "managed_input_ids": ["mi-1", "mi-2"],
-                }
+                },
+                None,
             )
         )
         call_kwargs = mock_app.new_input_set.call_args[1]
@@ -521,7 +523,8 @@ class TestSaveToFile(unittest.TestCase):
                     "app_id": "my-app",
                     "name": "test set",
                     "run_ids": ["run-1", "run-2"],
-                }
+                },
+                None,
             )
         )
         call_kwargs = mock_app.new_input_set.call_args[1]
@@ -566,7 +569,8 @@ class TestSaveToFile(unittest.TestCase):
                             ],
                         },
                     ],
-                }
+                },
+                None,
             )
         )
         call_kwargs = mock_app.new_scenario_test.call_args[1]
@@ -614,7 +618,7 @@ class TestProfiles(unittest.TestCase):
             get_tool = server._tool_manager._tools["cloud_get_profile"]
 
             # Default profile.
-            result = asyncio.run(get_tool.run({}))
+            result = asyncio.run(get_tool.run({}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("default", str(text))
 
@@ -622,8 +626,8 @@ class TestProfiles(unittest.TestCase):
             # ContextVar state to be visible, since asyncio.run() creates
             # a fresh context each time.
             async def _set_then_get(profile: str) -> str:
-                await set_tool.run({"profile": profile})
-                result = await get_tool.run({})
+                await set_tool.run({"profile": profile}, None)
+                result = await get_tool.run({}, None)
                 return json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
 
             # Switch to a named profile.
@@ -652,7 +656,7 @@ class TestProfiles(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_list_profiles"]
-            result = asyncio.run(tool.run({}))
+            result = asyncio.run(tool.run({}, None))
             profiles = json.loads(result[0].text) if hasattr(result[0], "text") else result
             self.assertEqual(len(profiles), 2)
             self.assertEqual(profiles[0]["name"], "default")
@@ -728,7 +732,8 @@ class TestBugFixes(unittest.TestCase):
                         },
                     ],
                     "name": "test ensemble",
-                }
+                },
+                None,
             )
         )
         mock_app.new_ensemble_definition.assert_called_once()
@@ -769,7 +774,8 @@ class TestBugFixes(unittest.TestCase):
                             "index": 0,
                         },
                     ],
-                }
+                },
+                None,
             )
         )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
@@ -802,7 +808,8 @@ class TestBugFixes(unittest.TestCase):
                             "index": 1,
                         },
                     ],
-                }
+                },
+                None,
             )
         )
         call_kwargs = mock_app.new_ensemble_definition.call_args[1]
@@ -833,7 +840,8 @@ class TestBugFixes(unittest.TestCase):
                             "tolerance": 0.01,
                         },
                     ],
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -855,7 +863,8 @@ class TestBugFixes(unittest.TestCase):
                     "run_groups": [{"id": "grp-1", "instance_id": "prod"}],
                     # Missing 'statistics_path' in rule.
                     "rules": [{"id": "r1", "objective": "min", "tolerance": 0.01}],
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -897,7 +906,8 @@ class TestBugFixes(unittest.TestCase):
                     ],
                     "content_type": "multi-file",
                     "name": "multi-file test",
-                }
+                },
+                None,
             )
         )
 
@@ -926,7 +936,8 @@ class TestBugFixes(unittest.TestCase):
                             # Missing statistics_path and objective.
                         },
                     ],
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -957,7 +968,8 @@ class TestBugFixes(unittest.TestCase):
                         },
                     ],
                     "content_type": "multi-file",
-                }
+                },
+                None,
             )
         )
 
@@ -1001,7 +1013,8 @@ class TestMultiFileRunSupport(unittest.TestCase):
                 {
                     "app_dir": "/some/app",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         mock_app.new_run.assert_called_once()
@@ -1026,7 +1039,8 @@ class TestMultiFileRunSupport(unittest.TestCase):
                     "app_dir": "/some/app",
                     "input_dir_path": "/some/input-dir",
                     "content_format": "multi-file",
-                }
+                },
+                None,
             )
         )
         mock_app.new_run.assert_called_once()
@@ -1051,7 +1065,8 @@ class TestMultiFileRunSupport(unittest.TestCase):
                 {
                     "app_id": "my-app",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         mock_app.new_run.assert_called_once()
@@ -1076,7 +1091,8 @@ class TestMultiFileRunSupport(unittest.TestCase):
                     "app_id": "my-app",
                     "input_dir_path": "/some/input-dir",
                     "content_format": "multi-file",
-                }
+                },
+                None,
             )
         )
         mock_app.new_run.assert_called_once()
@@ -1157,7 +1173,8 @@ class TestEnsembleRunTools(unittest.TestCase):
                     "app_id": "my-app",
                     "ensemble_id": "ens-1",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -1182,7 +1199,8 @@ class TestEnsembleRunTools(unittest.TestCase):
                     "app_id": "my-app",
                     "ensemble_id": "ens-1",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -1201,7 +1219,8 @@ class TestEnsembleRunTools(unittest.TestCase):
                     "app_id": "",
                     "ensemble_id": "ens-1",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -1220,7 +1239,8 @@ class TestEnsembleRunTools(unittest.TestCase):
                     "app_id": "my-app",
                     "ensemble_id": "   ",
                     "input": {"stops": []},
-                }
+                },
+                None,
             )
         )
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -1318,7 +1338,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_result"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Cached:", str(text))
             mock_app.run_result.assert_not_called()
@@ -1350,7 +1370,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_result"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
             mock_app.run_result.assert_called_once()
@@ -1554,7 +1574,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Cached:", str(text))
             mock_app.run_input.assert_not_called()
@@ -1576,7 +1596,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
             mock_app.run_input.assert_called_once()
@@ -1608,7 +1628,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_logs"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Cached:", str(text))
             mock_app.run_logs.assert_not_called()
@@ -1632,7 +1652,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_logs"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
             mock_app.run_logs.assert_called_once()
@@ -1674,7 +1694,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_poll_run_logs"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
 
@@ -1745,7 +1765,8 @@ class TestCloudRunCache(unittest.TestCase):
                         "app_id": "my-app",
                         "input_dir_path": "/some/csvs",
                         "content_format": "multi-file",
-                    }
+                    },
+                    None,
                 )
             )
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
@@ -1791,7 +1812,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
 
@@ -1821,7 +1842,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_input"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Cached:", str(text))
             mock_app.run_input.assert_not_called()
@@ -1856,7 +1877,7 @@ class TestCloudRunCache(unittest.TestCase):
         ):
             server = create_server()
             tool = server._tool_manager._tools["cloud_run_result"]
-            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}))
+            result = asyncio.run(tool.run({"app_id": "my-app", "run_id": "run-1"}, None))
             text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
             self.assertIn("Downloaded:", str(text))
 
@@ -1946,7 +1967,7 @@ class TestMCPOptionalDependency(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 1)
         self.assertIn("mcp subcommand is unavailable", output)
-        self.assertIn("requires mcp<2", output)
+        self.assertIn("requires mcp>=2", output)
         self.assertIn('pip install "nextmv[mcp]"', output)
         self.assertIn("cannot import name 'app'", output)
 

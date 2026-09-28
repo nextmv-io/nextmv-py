@@ -60,7 +60,9 @@ def serve(
     if transport == "stdio":
         server.run(transport="stdio")
     elif transport in ("http", "streamable-http"):
-        server.run(transport="streamable-http", port=port)
+        # Transport settings belong on `run`, not on the server: `json_response`
+        # only means anything for the HTTP transport.
+        server.run(transport="streamable-http", port=port, json_response=True)
     else:
         error(
             f"Unknown transport [magenta]{transport}[/magenta]. "
