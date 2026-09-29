@@ -93,11 +93,21 @@ jobs:
     permissions:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
-      - name: git clone ${{ github.ref_name }}
+      # Check out the tag the release job created, never the branch. This job
+      # starts minutes later (it waits on the binaries), so the branch tip may
+      # have moved on by now and would build a version we never blessed.
+      - name: git clone ${{ needs.release-nextmv.outputs.VERSION }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.release-nextmv.outputs.VERSION }}
           persist-credentials: false
+
+      - name: verify release branch
+        uses: ./.github/actions/verify-release-branch
+        with:
+          version: ${{ needs.release-nextmv.outputs.VERSION }}
+          branch: ${{ github.ref_name }}
+          default-branch: ${{ github.event.repository.default_branch }}
 
       - name: set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -225,11 +235,20 @@ jobs:
     permissions:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
-      - name: git clone ${{ github.ref_name }}
+      # Check out the tag the release job created, never the branch. See the
+      # comment on publish-nextmv for why.
+      - name: git clone ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
           persist-credentials: false
+
+      - name: verify release branch
+        uses: ./.github/actions/verify-release-branch
+        with:
+          version: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
+          branch: ${{ github.ref_name }}
+          default-branch: ${{ github.event.repository.default_branch }}
 
       - name: set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -289,10 +308,20 @@ jobs:
     permissions:
       id-token: write # This is required for trusted publishing to PyPI
     steps:
+      # Check out the tag the release job created, never the branch. See the
+      # comment on publish-nextmv for why.
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
           persist-credentials: false
+
+      - name: Verify release branch
+        uses: ./.github/actions/verify-release-branch
+        with:
+          version: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
+          branch: ${{ github.ref_name }}
+          default-branch: ${{ github.event.repository.default_branch }}
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
