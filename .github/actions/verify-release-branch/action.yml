@@ -1,0 +1,39 @@
+name: Verify release branch
+description: >
+  Fails if a stable version is about to be published from a branch other than
+  the repository default branch. Prereleases may be published from any branch.
+
+inputs:
+  version:
+    description: Release tag being published (e.g. nextmv-v1.11.0)
+    required: true
+  branch:
+    description: Branch the release workflow was triggered from
+    required: true
+  default-branch:
+    description: Branch that stable releases must come from
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: verify the branch may publish this version
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        BRANCH: ${{ inputs.branch }}
+        DEFAULT_BRANCH: ${{ inputs.default-branch }}
+      run: |
+        # Mirrors the IS_DEV_TAG detection in nextmv-io/release, so this guard
+        # always agrees with the job that decided to create the tag.
+        if [[ "$VERSION" =~ (alpha|beta|rc|dev|pre)([^a-z]|$) ]] || [[ "$VERSION" =~ [-\.]([ab][0-9]+)([^a-z]|$) ]]; then
+          echo "$VERSION is a prerelease, publishing from '$BRANCH' is allowed"
+          exit 0
+        fi
+
+        if [ "$BRANCH" != "$DEFAULT_BRANCH" ]; then
+          echo "::error::Refusing to publish stable $VERSION from '$BRANCH', stable releases must come from '$DEFAULT_BRANCH'"
+          exit 1
+        fi
+
+        echo "$VERSION is stable and '$BRANCH' is the default branch, publishing is allowed"
