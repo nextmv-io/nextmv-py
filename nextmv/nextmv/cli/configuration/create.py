@@ -5,6 +5,7 @@ This module defines the configuration create command for the Nextmv CLI.
 import sys
 from typing import Annotated, Any
 
+import requests
 import typer
 from rich.prompt import Prompt
 
@@ -545,7 +546,6 @@ def _ensure_token(  # noqa: C901
                 old_id_token = tokens.get("id_token")
                 tokens = refresh_tokens(
                     refresh_token,
-                    endpoint=endpoint,
                     client_id=client_id,
                     oidc_discovery_url=oidc_discovery_url,
                 )
@@ -557,7 +557,10 @@ def _ensure_token(  # noqa: C901
                 if token:
                     _validate_id_token(token, expected_aud)
                     return token
-            except Exception as exc:
+            except (requests.RequestException, ValueError) as exc:
+                # Only a failed request or an unusable token response falls back
+                # to the browser; anything else is a bug and should surface.
+                #
                 # If the refresh token was revoked or expired (invalid_grant),
                 # delete the stored tokens so they can't be reused.
                 if is_invalid_grant_error(exc):
