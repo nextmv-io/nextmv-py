@@ -3,6 +3,7 @@ This module defines the configuration create command for the Nextmv CLI.
 """
 
 import sys
+import uuid
 from typing import Annotated, Any
 
 import typer
@@ -156,6 +157,18 @@ def create(
             metavar="TEAM_NAME",
         ),
     ] = None,
+    team_id: Annotated[
+        str | None,
+        typer.Option(
+            "--team-id",
+            help=(
+                "Team ID to associate with this [magenta]pkce[/magenta] profile. "
+                "Unlike --team, this does not list your teams, so it also works when "
+                "the team listing is unavailable."
+            ),
+            metavar="TEAM_ID",
+        ),
+    ] = None,
     _: DebugOption = False,
 ) -> None:
     """
@@ -191,6 +204,11 @@ def create(
         $ [dim]nextmv configuration create --profile dev --auth-type pkce --auth-session my-work[/dim]
 
         $ [dim]nextmv configuration create --profile staging --auth-type pkce --auth-session my-work[/dim]
+
+    - Configure a [magenta]pkce[/magenta] profile for a team given by ID, without
+      listing teams.
+
+        $ [dim]nextmv configuration create --auth-type pkce --team-id TEAM_ID[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -214,6 +232,13 @@ def create(
             f"The default endpoint [magenta]{DEFAULT_ENDPOINT}[/magenta] already has built-in OIDC configuration."
         )
 
+    if team is not None and team_id is not None:
+        error(
+            "Pass either [magenta]--team[/magenta] or [magenta]--team-id[/magenta], not both. "
+            "[magenta]--team[/magenta] looks the team up by name, "
+            "[magenta]--team-id[/magenta] uses the ID as given."
+        )
+
     resolved_type = _resolve_auth_type(api_key, auth_type, oidc_discovery_url, oidc_client_id)
     sso_domain = _resolve_email_domain(email)
     config = load_config()
@@ -229,6 +254,7 @@ def create(
             oidc_discovery_url=oidc_discovery_url,
             oidc_client_id=oidc_client_id,
             team=team,
+            team_id=team_id,
             system_certs=system_certs,
             sso_domain=sso_domain,
         )
@@ -323,6 +349,7 @@ def _create_pkce_profile(  # noqa: C901
     oidc_discovery_url: str | None,
     oidc_client_id: str | None,
     team: str | None,
+    team_id: str | None,
     system_certs: bool,
     sso_domain: str | None,
 ) -> None:
@@ -387,16 +414,17 @@ def _create_pkce_profile(  # noqa: C901
         sso_domain=sso_domain,
     )
 
-    team_id = _resolve_team_id(
+    resolved_team_id = _resolve_team_id(
         access_token=access_token,
         endpoint=endpoint,
         team_name=team,
+        team_id=team_id,
     )
 
     if profile is None:
         config[AUTH_TYPE_KEY] = AuthType.PKCE.value
         config[ENDPOINT_KEY] = endpoint
-        config[TEAM_ID_KEY] = team_id
+        config[TEAM_ID_KEY] = resolved_team_id
         config.pop(API_KEY_KEY, None)
         _set_or_pop(config, AUTH_SESSION_KEY, auth_session)
         _set_or_pop(config, SYSTEM_CERTS_KEY, system_certs)
@@ -406,7 +434,7 @@ def _create_pkce_profile(  # noqa: C901
             config[profile] = {}
         config[profile][AUTH_TYPE_KEY] = AuthType.PKCE.value
         config[profile][ENDPOINT_KEY] = endpoint
-        config[profile][TEAM_ID_KEY] = team_id
+        config[profile][TEAM_ID_KEY] = resolved_team_id
         config[profile].pop(API_KEY_KEY, None)
         _set_or_pop(config[profile], AUTH_SESSION_KEY, auth_session)
         _set_or_pop(config[profile], SYSTEM_CERTS_KEY, system_certs)
@@ -418,7 +446,7 @@ def _create_pkce_profile(  # noqa: C901
     message(f"[bold]Profile[/bold]: [magenta]{profile or 'Default'}[/magenta]", indents=1)
     message(f"[bold]Type[/bold]: [magenta]{AuthType.PKCE.value}[/magenta]", indents=1)
     message(f"[bold]Auth session[/bold]: [magenta]{effective_session}[/magenta]", indents=1)
-    message(f"[bold]Team ID[/bold]: [magenta]{team_id}[/magenta]", indents=1)
+    message(f"[bold]Team ID[/bold]: [magenta]{resolved_team_id}[/magenta]", indents=1)
     if endpoint != DEFAULT_ENDPOINT:
         message(f"[bold]Endpoint[/bold]: [magenta]{endpoint}[/magenta]", indents=1)
 
@@ -596,10 +624,12 @@ def _resolve_team_id(
     access_token: str,
     endpoint: str,
     team_name: str | None,
+    team_id: str | None = None,
 ) -> str:
     """
     Resolve the team UUID the user wants to associate with this profile.
 
+    If *team_id* is provided, it is used as given and no teams are fetched.
     If *team_name* is provided, look it up in the org list and return its ID.
     Otherwise fetch the org list and prompt the user to choose.
 
@@ -611,12 +641,18 @@ def _resolve_team_id(
         The API endpoint hostname.
     team_name : str | None
         The team name provided via ``--team``, or ``None`` to prompt.
+    team_id : str | None
+        The team UUID provided via ``--team-id``.  Takes precedence over
+        *team_name* and skips the team listing entirely.
 
     Returns
     -------
     str
         The team UUID.
     """
+    if team_id is not None:
+        return _validated_team_id(team_id)
+
     try:
         orgs = fetch_organizations(access_token, endpoint)
     except Exception as exc:
@@ -643,3 +679,23 @@ def _resolve_team_id(
         choices=sorted_names,
     )
     return name_to_id[selected_name]
+
+
+def _validated_team_id(team_id: str) -> str:
+    """
+    Check that *team_id* is shaped like a team UUID and return it normalised.
+
+    The whole point of ``--team-id`` is to not call the API, so the value
+    cannot be checked against the list of teams the user belongs to.  Checking
+    the shape still catches the likely mistake of passing a team name.
+    """
+    candidate = team_id.strip()
+    try:
+        uuid.UUID(candidate)
+    except ValueError:
+        error(
+            f"[magenta]--team-id[/magenta] expects a team ID, but got [magenta]{candidate}[/magenta]. "
+            "Use [magenta]--team[/magenta] to select a team by name instead."
+        )
+
+    return candidate
