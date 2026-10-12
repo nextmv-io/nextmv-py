@@ -58,6 +58,8 @@ from .scenario import ScenarioConfiguration as ScenarioConfiguration
 from .scenario import ScenarioInput as ScenarioInput
 from .scenario import ScenarioInputType as ScenarioInputType
 from .secrets import Secret as Secret
+from .secrets import SecretOperation as SecretOperation
+from .secrets import SecretOperationType as SecretOperationType
 from .secrets import SecretsCollection as SecretsCollection
 from .secrets import SecretsCollectionSummary as SecretsCollectionSummary
 from .secrets import SecretType as SecretType
