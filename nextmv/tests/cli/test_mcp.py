@@ -222,7 +222,6 @@ class TestMCPServerTools(unittest.TestCase):
             "cloud_list_secrets_collections",
             "cloud_get_secrets_collection",
             "cloud_create_secrets_collection",
-            "cloud_update_secrets_collection",
             "cloud_delete_secrets_collection",
             "cloud_get_account",
             "cloud_get_queue",
@@ -289,7 +288,7 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        self.assertEqual(len(tool_names), 90, f"Expected 90 tools, got {len(tool_names)}")
+        self.assertEqual(len(tool_names), 89, f"Expected 89 tools, got {len(tool_names)}")
 
     @patch("nextmv.cli.mcp.tools._helpers._get_client")
     def test_cloud_list_apps_calls_sdk(self, mock_get_client):
@@ -345,40 +344,6 @@ class TestMCPServerTools(unittest.TestCase):
         tool = server._tool_manager._tools["cloud_list_runs"]
         asyncio.run(tool.run({"app_id": "my-app"}, None))
         mock_app_instance.list_runs.assert_called_once_with(status=None)
-
-    @patch("nextmv.cli.mcp.tools._helpers._get_app")
-    def test_cloud_update_secrets_collection_calls_sdk(self, mock_get_app):
-        """Test that cloud_update_secrets_collection delegates to the PATCH-backed SDK method."""
-
-        mock_app_instance = MagicMock()
-        mock_app_instance.patch_secrets_collection.return_value.to_dict.return_value = {"id": "sc-1"}
-        mock_get_app.return_value = mock_app_instance
-
-        operations = [
-            {"op": "update", "type": "env", "location": "API_KEY", "value": "new-value"},
-            {"op": "delete", "type": "env", "location": "OLD_KEY"},
-        ]
-        server = create_server()
-        tool = server._tool_manager._tools["cloud_update_secrets_collection"]
-        asyncio.run(
-            tool.run(
-                {
-                    "app_id": "my-app",
-                    "secrets_collection_id": "sc-1",
-                    "name": "",
-                    "description": "Rotated keys",
-                    "operations": operations,
-                },
-                None,
-            )
-        )
-        mock_app_instance.patch_secrets_collection.assert_called_once_with(
-            secrets_collection_id="sc-1",
-            name=None,
-            description="Rotated keys",
-            operations=operations,
-        )
-        mock_app_instance.update_secrets_collection.assert_not_called()
 
 
 class TestGetClient(unittest.TestCase):

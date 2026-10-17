@@ -84,50 +84,6 @@ def register(mcp: MCPServer) -> None:
         return collection.to_dict()
 
     @mcp.tool()
-    def cloud_update_secrets_collection(
-        app_id: str,
-        secrets_collection_id: str,
-        name: str | None = None,
-        description: str | None = None,
-        operations: list[dict[str, str]] | None = None,
-    ) -> dict[str, Any]:
-        """Partially update a secrets collection.
-
-        Updates the collection name and/or description, and/or creates,
-        updates, or deletes individual secrets, without resending the
-        values of the secrets that are not changing. Secrets are
-        identified by their ``type`` and ``location``. The changes are
-        applied all together, or not at all. Returns the updated
-        collection without secret values.
-
-        Args:
-            app_id: The application ID.
-            secrets_collection_id: The secrets collection ID to update.
-            name: Optional new name.
-            description: Optional new description.
-            operations: Optional list of secret operations. Each is a
-                dict with keys: ``op`` (``"create"``, ``"update"``, or
-                ``"delete"``), ``type`` (``"env"`` or ``"file"``),
-                ``location`` (env var name or file path), and ``value``
-                (the secret, required for ``create`` and ``update``,
-                omitted for ``delete``). ``create`` fails if the secret
-                already exists, ``update`` fails if it does not, and
-                ``delete`` ignores missing secrets.
-        """
-
-        name = _helpers._none_if_empty(name)
-        description = _helpers._none_if_empty(description)
-
-        app = _helpers._get_app(app_id)
-        collection = app.patch_secrets_collection(
-            secrets_collection_id=secrets_collection_id,
-            name=name,
-            description=description,
-            operations=operations,
-        )
-        return collection.to_dict()
-
-    @mcp.tool()
     def cloud_delete_secrets_collection(
         app_id: str,
         secrets_collection_id: str,

@@ -4,13 +4,7 @@ Application mixin for managing app secrets.
 
 from typing import TYPE_CHECKING, Any
 
-from nextmv.cloud.secrets import (
-    Secret,
-    SecretOperation,
-    SecretOperationType,
-    SecretsCollection,
-    SecretsCollectionSummary,
-)
+from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
 from nextmv.safe import safe_id
 
 if TYPE_CHECKING:
@@ -181,112 +175,6 @@ class ApplicationSecretsMixin:
 
         return SecretsCollectionSummary.from_dict(response.json())
 
-    def patch_secrets_collection(
-        self: "Application",
-        secrets_collection_id: str,
-        name: str | None = None,
-        description: str | None = None,
-        operations: list[SecretOperation | dict[str, Any]] | None = None,
-    ) -> SecretsCollection:
-        """
-        Partially update a secrets collection.
-
-        This method updates the name and/or description of a secrets
-        collection, and/or creates, updates, or deletes individual secrets,
-        without resending the values of the secrets that are not being
-        changed. Secrets are identified by their `(type, location)` pair. The
-        request is applied completely or not at all.
-
-        Parameters
-        ----------
-        secrets_collection_id : str
-            ID of the secrets collection to update.
-        name : Optional[str], default=None
-            Optional new name for the secrets collection.
-        description : Optional[str], default=None
-            Optional new description for the secrets collection.
-        operations : Optional[list[SecretOperation | dict[str, Any]]], default=None
-            Optional list of operations to apply to individual secrets. Each
-            operation should be an instance of the SecretOperation class, or a
-            dict with the same fields.
-
-        Returns
-        -------
-        SecretsCollection
-            The updated secrets collection. Secret values are masked in the
-            response.
-
-        Raises
-        ------
-        ValueError
-            If there is nothing to update, if `operations` is an empty list,
-            if an operation is not a SecretOperation or dict, or if more than
-            one operation targets the same secret.
-        requests.HTTPError
-            If the response status code is not 2xx.
-
-        Examples
-        --------
-        >>> from nextmv.cloud import SecretOperation, SecretOperationType, SecretType
-        >>> # Rename a collection without touching its secrets
-        >>> collection = app.patch_secrets_collection("api-secrets", name="API Secrets")
-        >>> # Rotate one secret and remove another
-        >>> collection = app.patch_secrets_collection(
-        ...     secrets_collection_id="api-secrets",
-        ...     operations=[
-        ...         SecretOperation(
-        ...             op=SecretOperationType.UPDATE,
-        ...             secret_type=SecretType.ENV,
-        ...             location="API_KEY",
-        ...             value="new-api-key",
-        ...         ),
-        ...         SecretOperation(
-        ...             op=SecretOperationType.DELETE,
-        ...             secret_type=SecretType.ENV,
-        ...             location="OLD_API_KEY",
-        ...         ),
-        ...     ],
-        ... )
-        """
-
-        if name is None and description is None and operations is None:
-            raise ValueError("at least one of name, description, or operations must be provided")
-
-        payload: dict[str, Any] = {}
-        if name is not None:
-            payload["name"] = name
-        if description is not None:
-            payload["description"] = description
-
-        if operations is not None:
-            if len(operations) == 0:
-                raise ValueError("operations must not be an empty list")
-
-            operations_dicts = []
-            seen = set()
-            for ix, operation in enumerate(operations):
-                if isinstance(operation, dict):
-                    operation = SecretOperation.from_dict(operation)
-                elif not isinstance(operation, SecretOperation):
-                    raise ValueError(f"operation at index {ix} must be either a SecretOperation or dict object")
-
-                key = (operation.secret_type, operation.location)
-                if key in seen:
-                    raise ValueError(f"operation at index {ix} targets the same secret as a previous operation")
-                seen.add(key)
-
-                operations_dicts.append(operation.to_dict())
-
-            payload["operations"] = operations_dicts
-
-        response = self.client.request(
-            method="PATCH",
-            endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
-            payload=payload,
-        )
-
-        return SecretsCollection.from_dict(response.json())
-
     def secrets_collection(self: "Application", secrets_collection_id: str) -> SecretsCollection:
         """
         Get a secrets collection.
@@ -353,8 +241,6 @@ class ApplicationSecretsMixin:
         `secrets` is provided, all the existing secrets in the collection are
         replaced with the given ones: secrets with a matching type and
         location are updated, new ones are created, and the rest are deleted.
-        To create, update, or delete individual secrets without resending the
-        values of the others, use `patch_secrets_collection` instead.
 
         Parameters
         ----------
@@ -405,52 +291,50 @@ class ApplicationSecretsMixin:
         'api-secrets'
         """
 
-        if secrets is None or len(secrets) == 0:
-            if name is None and description is None:
-                raise ValueError("at least one of name, description, or secrets must be provided")
+        if name is None and description is None and (secrets is None or len(secrets) == 0):
+            raise ValueError("at least one of name, description, or secrets must be provided")
 
-            return self.patch_secrets_collection(
-                secrets_collection_id=secrets_collection_id,
-                name=name,
-                description=description,
+        payload: dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+
+        if secrets is not None and len(secrets) > 0:
+            new_secrets: list[Secret] = []
+            for ix, secret in enumerate(secrets):
+                if isinstance(secret, dict):
+                    new_secrets.append(Secret.from_dict(secret))
+                elif isinstance(secret, Secret):
+                    new_secrets.append(secret)
+                else:
+                    raise ValueError(f"secret at index {ix} must be either a Secret or dict object")
+
+            # Replacing all the secrets is expressed as partial-update
+            # operations against the keys of the existing secrets. Only the
+            # keys of the fetched secrets are used: their values, which are
+            # masked, are never sent back to the server.
+            collection = self.secrets_collection(secrets_collection_id)
+            existing_keys = {(secret.secret_type, secret.location) for secret in collection.secrets}
+            new_keys = {(secret.secret_type, secret.location) for secret in new_secrets}
+
+            operations = [
+                {
+                    "op": "update" if (secret.secret_type, secret.location) in existing_keys else "create",
+                    **secret.to_dict(),
+                }
+                for secret in new_secrets
+            ]
+            operations.extend(
+                {"op": "delete", "type": secret_type.value, "location": location}
+                for secret_type, location in sorted(existing_keys - new_keys)
             )
+            payload["operations"] = operations
 
-        new_secrets: list[Secret] = []
-        for ix, secret in enumerate(secrets):
-            if isinstance(secret, dict):
-                new_secrets.append(Secret.from_dict(secret))
-            elif isinstance(secret, Secret):
-                new_secrets.append(secret)
-            else:
-                raise ValueError(f"secret at index {ix} must be either a Secret or dict object")
-
-        # Replacing all the secrets is expressed as partial-update operations
-        # against the keys of the existing secrets. Only the keys of the
-        # fetched secrets are used: their values, which may be masked, are
-        # never sent back to the server.
-        collection = self.secrets_collection(secrets_collection_id)
-        existing_keys = {(secret.secret_type, secret.location) for secret in collection.secrets}
-        new_keys = {(secret.secret_type, secret.location) for secret in new_secrets}
-
-        operations = [
-            SecretOperation(
-                op=SecretOperationType.UPDATE
-                if (secret.secret_type, secret.location) in existing_keys
-                else SecretOperationType.CREATE,
-                secret_type=secret.secret_type,
-                location=secret.location,
-                value=secret.value,
-            )
-            for secret in new_secrets
-        ]
-        operations.extend(
-            SecretOperation(op=SecretOperationType.DELETE, secret_type=secret_type, location=location)
-            for secret_type, location in sorted(existing_keys - new_keys)
+        response = self.client.request(
+            method="PATCH",
+            endpoint=f"{self.endpoint}/secrets/{secrets_collection_id}",
+            payload=payload,
         )
 
-        return self.patch_secrets_collection(
-            secrets_collection_id=secrets_collection_id,
-            name=name,
-            description=description,
-            operations=operations,
-        )
+        return SecretsCollectionSummary.from_dict(response.json())
