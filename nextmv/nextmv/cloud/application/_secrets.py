@@ -226,6 +226,7 @@ class ApplicationSecretsMixin:
         name: str | None = None,
         description: str | None = None,
         secrets: list[Secret | dict[str, Any]] | None = None,
+        keep_existing: bool = False,
     ) -> SecretsCollectionSummary:
         """
         Update a secrets collection.
@@ -240,7 +241,9 @@ class ApplicationSecretsMixin:
         updated, and the secrets in the collection are left untouched. If
         `secrets` is provided, all the existing secrets in the collection are
         replaced with the given ones: secrets with a matching type and
-        location are updated, new ones are created, and the rest are deleted.
+        location are updated, new ones are created, and the rest are deleted,
+        unless `keep_existing` is set, in which case the existing secrets that
+        are not provided are kept in the collection.
 
         Parameters
         ----------
@@ -254,6 +257,10 @@ class ApplicationSecretsMixin:
             Optional list of secrets that replaces all the existing secrets in
             the collection. Each secret should be an instance of the Secret
             class containing a type, location, and value.
+        keep_existing : bool, default=False
+            Whether to keep the existing secrets that are not provided in
+            `secrets`, instead of deleting them. Has no effect if `secrets` is
+            not provided.
 
         Returns
         -------
@@ -289,6 +296,12 @@ class ApplicationSecretsMixin:
         ... )
         >>> print(updated_collection.id)
         'api-secrets'
+        >>> # Add or update a secret, keeping the rest of the existing secrets
+        >>> updated_collection = app.update_secrets_collection(
+        ...     secrets_collection_id="api-secrets",
+        ...     secrets=[Secret(secret_type=SecretType.ENV, location="NEW_KEY", value="new-value")],
+        ...     keep_existing=True,
+        ... )
         """
 
         if name is None and description is None and (secrets is None or len(secrets) == 0):
@@ -325,10 +338,11 @@ class ApplicationSecretsMixin:
                 }
                 for secret in new_secrets
             ]
-            operations.extend(
-                {"op": "delete", "type": secret_type.value, "location": location}
-                for secret_type, location in sorted(existing_keys - new_keys)
-            )
+            if not keep_existing:
+                operations.extend(
+                    {"op": "delete", "type": secret_type.value, "location": location}
+                    for secret_type, location in sorted(existing_keys - new_keys)
+                )
             payload["operations"] = operations
 
         response = self.client.request(

@@ -30,6 +30,10 @@ def update(
             metavar="DESCRIPTION",
         ),
     ] = None,
+    keep_existing: Annotated[
+        bool,
+        typer.Option("--keep-existing", "-k", help="Keep the existing secrets that are not provided with --secrets."),
+    ] = False,
     name: Annotated[
         str | None,
         typer.Option(
@@ -58,7 +62,8 @@ def update(
             "Allowed values for [magenta]type[/magenta] are: "
             f"{enum_values(SecretType)}. "
             "Object format: [dim]{'type': type, 'location': location, 'value': value}[/dim]. "
-            "This will replace all existing secrets in the collection.",
+            "This will replace all existing secrets in the collection: existing secrets "
+            "not provided here will be removed, unless --keep-existing is set.",
             metavar="SECRETS",
         ),
     ] = None,
@@ -70,7 +75,10 @@ def update(
 
     You can update the name, description, and/or secrets of an existing
     secrets collection. When updating secrets, all existing secrets will be
-    replaced with the new ones provided.
+    replaced with the new ones provided: existing secrets that are not
+    provided will be removed, unless --keep-existing is set. Use
+    --keep-existing to only add or update the provided secrets, keeping the
+    rest of the existing ones.
 
     Secrets are provided as JSON objects using the --secrets flag,
     following the same format as the create command. You can provide secrets as:
@@ -110,6 +118,12 @@ def update(
             --secrets-collection-id api-keys \\
             --secrets '[{"type": "env", "location": "API_KEY", "value": "new-value"}, {...}]'[/dim]
 
+    - Add or update a secret, keeping the rest of the existing secrets.
+
+        $ [dim]nextmv cloud secrets update --app-id hare-app \\
+            --secrets-collection-id api-keys --keep-existing \\
+            --secrets '{"type": "env", "location": "NEW_KEY", "value": "new-value"}'[/dim]
+
     - Update multiple attributes at once and save the result.
 
         $ [dim]nextmv cloud secrets update --app-id hare-app \\
@@ -121,6 +135,9 @@ def update(
 
     if name is None and description is None and secrets is None:
         error("Provide at least one option to update: --name, --description, or --secrets.")
+
+    if keep_existing and secrets is None:
+        error("--keep-existing can only be used together with --secrets.")
 
     cloud_app, _ = build_cloud_app(app_id=app_id, profile=profile)
 
@@ -135,6 +152,7 @@ def update(
         name=name,
         description=description,
         secrets=secrets_list,
+        keep_existing=keep_existing,
     )
     success(
         f"Secrets collection [magenta]{secrets_collection_id}[/magenta] updated successfully "

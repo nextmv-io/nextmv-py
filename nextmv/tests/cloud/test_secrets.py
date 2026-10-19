@@ -87,6 +87,31 @@ class TestUpdateSecretsCollection(unittest.TestCase):
         )
         self.assertNotIn(MASKED_VALUE, str(payload))
 
+    def test_with_secrets_keep_existing_skips_deletes(self):
+        responses = [_response(MASKED_COLLECTION), _response(MASKED_COLLECTION)]
+        with patch.object(Client, "request", side_effect=responses) as mock_request:
+            self.app.update_secrets_collection(
+                "sc-1",
+                secrets=[
+                    Secret(secret_type=SecretType.ENV, location="API_KEY", value="new-api-key"),
+                    {"type": "file", "location": "/cert.pem", "value": "cert"},
+                ],
+                keep_existing=True,
+            )
+
+        _, patch_call = mock_request.call_args_list
+        payload = patch_call.kwargs["payload"]
+        self.assertEqual(
+            payload,
+            {
+                "operations": [
+                    {"op": "update", "type": "env", "location": "API_KEY", "value": "new-api-key"},
+                    {"op": "create", "type": "file", "location": "/cert.pem", "value": "cert"},
+                ],
+            },
+        )
+        self.assertNotIn(MASKED_VALUE, str(payload))
+
     def test_never_uses_put(self):
         responses = [_response(MASKED_COLLECTION), _response(MASKED_COLLECTION), _response(MASKED_COLLECTION)]
         with patch.object(Client, "request", side_effect=responses) as mock_request:
