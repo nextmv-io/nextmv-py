@@ -131,6 +131,17 @@ class TestUpdateSecretsCollection(unittest.TestCase):
 
         mock_request.assert_not_called()
 
+    def test_duplicate_secret_raises_before_any_request(self):
+        secrets = [
+            Secret(secret_type=SecretType.ENV, location="API_KEY", value="v1"),
+            {"type": "env", "location": "API_KEY", "value": "v2"},
+        ]
+        with patch.object(Client, "request") as mock_request:
+            with self.assertRaisesRegex(ValueError, "duplicate secret"):
+                self.app.update_secrets_collection("sc-1", secrets=secrets)
+
+        mock_request.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

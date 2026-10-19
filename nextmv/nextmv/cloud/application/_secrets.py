@@ -2,6 +2,7 @@
 Application mixin for managing app secrets.
 """
 
+from collections import Counter
 from typing import TYPE_CHECKING, Any
 
 from nextmv.cloud.secrets import Secret, SecretsCollection, SecretsCollectionSummary
@@ -270,8 +271,8 @@ class ApplicationSecretsMixin:
         Raises
         ------
         ValueError
-            If there is nothing to update, or if a secret is not a Secret or
-            dict object.
+            If there is nothing to update, if a secret is not a Secret or
+            dict object, or if two secrets share the same type and location.
         requests.HTTPError
             If the response status code is not 2xx.
 
@@ -323,13 +324,22 @@ class ApplicationSecretsMixin:
                 else:
                     raise ValueError(f"secret at index {ix} must be either a Secret or dict object")
 
+            # Each secret becomes its own operation, so duplicated keys are
+            # rejected upfront instead of relying on how the server handles
+            # several operations on the same key.
+            keys = [(secret.secret_type.value, secret.location) for secret in new_secrets]
+            if len(set(keys)) != len(keys):
+                duplicates = sorted(key for key, count in Counter(keys).items() if count > 1)
+                raise ValueError(f"duplicate secrets (type, location) are not allowed: {duplicates}")
+
+            new_keys = {(secret.secret_type, secret.location) for secret in new_secrets}
+
             # Replacing all the secrets is expressed as partial-update
             # operations against the keys of the existing secrets. Only the
             # keys of the fetched secrets are used: their values, which are
             # masked, are never sent back to the server.
             collection = self.secrets_collection(secrets_collection_id)
             existing_keys = {(secret.secret_type, secret.location) for secret in collection.secrets}
-            new_keys = {(secret.secret_type, secret.location) for secret in new_secrets}
 
             operations = [
                 {
