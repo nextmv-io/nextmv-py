@@ -13,8 +13,15 @@ from typing import Annotated
 
 import typer
 
-from nextmv.auth import apply_system_certs, fetch_sso_provider, run_pkce_flow, save_tokens
-from nextmv.cli.message import error, in_progress, info, success, warning
+from nextmv.auth import (
+    apply_system_certs,
+    fetch_sso_provider,
+    identity_mismatch,
+    run_pkce_flow,
+    save_tokens,
+    token_identity,
+)
+from nextmv.cli.message import error, in_progress, info, message, success, warning
 from nextmv.config import (
     CLIENT_ID_KEY,
     OIDC_DISCOVERY_URL_KEY,
@@ -43,8 +50,20 @@ def login(
             "-f",
             help=(
                 "Force re-authentication even if an active browser session exists. "
-                "Opens the identity provider's logout endpoint first to clear any "
-                "existing session before starting the login flow."
+                "Clears the existing Nextmv sign-in session before starting the login "
+                "flow. Has no effect on a single sign-on session, which only your "
+                "identity provider can end; use --no-browser for that."
+            ),
+        ),
+    ] = False,
+    no_browser: Annotated[
+        bool,
+        typer.Option(
+            "--no-browser",
+            help=(
+                "Print the sign-in URL instead of opening a browser. Use this to "
+                "open it in a private window or a different browser profile, so no "
+                "cached session from a previous login is reused."
             ),
         ),
     ] = False,
@@ -70,6 +89,11 @@ def login(
     If no profile is given, all [magenta]pkce[/magenta] profiles found in
     [magenta]~/.nextmv/config.yaml[/magenta] are logged in sequentially.
 
+    Your browser may still hold a session from an earlier login and reuse it,
+    which signs you back in as the previous user. [code]--force[/code] clears
+    that session for a Nextmv login; for single sign-on, only
+    [code]--no-browser[/code] with a private window is reliable.
+
     [bold][underline]Examples[/underline][/bold]
 
     - Log in with the default auth profile.
@@ -83,6 +107,10 @@ def login(
     - Force re-authentication, bypassing any active browser session.
 
         $ [dim]nextmv auth login --force[/dim]
+
+    - Print the sign-in URL to open in a private window.
+
+        $ [dim]nextmv auth login --no-browser[/dim]
     """
 
     if profile is not None and profile.strip().lower() == "default":
@@ -121,10 +149,16 @@ def login(
         return
 
     # Run the login flow for the selected profiles.
-    _run_login(profiles_to_login, config, sessions, force)
+    _run_login(profiles_to_login, config, sessions, force, no_browser)
 
 
-def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict, force: bool) -> None:  # noqa: C901
+def _run_login(  # noqa: C901
+    profiles_to_login: list[str | None],
+    config: dict,
+    sessions: dict,
+    force: bool,
+    no_browser: bool = False,
+) -> None:
     """Run the login flow for the given list of profiles."""
     failed: list[str] = []
     # Deduplicate: one browser flow per unique (session, endpoint) pair.
@@ -177,21 +211,97 @@ def _run_login(profiles_to_login: list[str | None], config: dict, sessions: dict
         in_progress(
             f"Logging in to session [magenta]{session}[/magenta] "
             f"(used by profile(s): {profiles_display}). "
-            "Your browser will open — please complete the sign-in flow there."
+            + (
+                "Open the URL below to complete the sign-in flow."
+                if no_browser
+                else "Your browser will open — please complete the sign-in flow there."
+            )
         )
+
+        if force and identity_provider:
+            warning(
+                "[code]--force[/code] only clears a Nextmv sign-in session, and this profile "
+                f"signs in through [magenta]{identity_provider}[/magenta]. If you are signed back "
+                "in as the wrong user, re-run with [code]--no-browser[/code] and open the URL in a "
+                "private window."
+            )
+
         try:
             tokens = run_pkce_flow(
                 oidc_discovery_url=oidc_discovery_url,
                 client_id=oidc_client_id,
                 force=force,
                 identity_provider=identity_provider,
+                open_browser=not no_browser,
+                url_callback=(lambda url: message(f"[magenta]{url}[/magenta]")) if no_browser else None,
             )
-            save_tokens(session, tokens)
-            success(f"Logged in to session [magenta]{session}[/magenta] successfully.")
         except Exception as exc:
             warning(f"Login failed for session [magenta]{session}[/magenta]: {exc}")
             failed.extend(profile_names)
+            continue
+
+        # The provider can return a token for a different identity than the one
+        # requested, by replaying a session the browser still holds from an
+        # earlier login.  Verify before storing, so a stale session surfaces
+        # here instead of as a confusing failure on a later command.
+        id_token = tokens.get("id_token")
+        if id_token and not _identity_verified(session, id_token, identity_provider, sso_domain, no_browser):
+            failed.extend(profile_names)
+            continue
+
+        save_tokens(session, tokens)
+        signed_in_as = ""
+        if id_token:
+            try:
+                email = token_identity(id_token).email
+            except ValueError:
+                email = None
+            if email:
+                signed_in_as = f" as [magenta]{email}[/magenta]"
+        success(f"Logged in to session [magenta]{session}[/magenta]{signed_in_as} successfully.")
 
     if failed:
         names = ", ".join(f"[magenta]{n}[/magenta]" for n in failed)
         error(f"Login failed for the following profile(s): {names}.")
+
+
+def _identity_verified(
+    session: str,
+    id_token: str,
+    identity_provider: str | None,
+    sso_domain: str | None,
+    no_browser: bool,
+) -> bool:
+    """
+    Check that *id_token* belongs to the identity the flow asked for.
+
+    A wrong identity provider means the login did not go through the configured
+    provider at all, so the tokens are rejected.  A merely unexpected email
+    domain is reported but accepted, since a profile can legitimately be used
+    with a secondary address.
+
+    Returns ``True`` when the tokens are safe to store.
+    """
+    try:
+        mismatch = identity_mismatch(
+            id_token,
+            expected_provider=identity_provider,
+            expected_domain=sso_domain,
+        )
+    except ValueError as exc:
+        warning(f"Login failed for session [magenta]{session}[/magenta]: {exc}")
+        return False
+
+    if mismatch is None:
+        return True
+
+    if mismatch.kind == "provider":
+        warning(
+            f"Login failed for session [magenta]{session}[/magenta]: {mismatch.reason}. "
+            "Your browser most likely reused a sign-in session from an earlier login."
+            + ("" if no_browser else " Re-run with [code]--no-browser[/code] and open the URL in a private window.")
+        )
+        return False
+
+    warning(f"Logged in to session [magenta]{session}[/magenta], but {mismatch.reason}.")
+    return True

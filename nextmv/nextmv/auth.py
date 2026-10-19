@@ -59,9 +59,10 @@ import secrets
 import threading
 import urllib.parse
 import webbrowser
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import requests
 
@@ -80,6 +81,7 @@ _COGNITO_DOMAIN = "https://auth.cloud.nextmv.io"
 _FALLBACK_AUTH_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/authorize"
 _FALLBACK_TOKEN_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/token"
 _FALLBACK_LOGOUT_ENDPOINT = f"{_COGNITO_DOMAIN}/logout"
+_FALLBACK_REVOKE_ENDPOINT = f"{_COGNITO_DOMAIN}/oauth2/revoke"
 
 # Timeout (seconds) to wait for the user to complete the browser auth step.
 _BROWSER_TIMEOUT = 300
@@ -378,6 +380,40 @@ def _validate_token_response(tokens: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported token_type {token_type!r}; only 'bearer' is supported.")
 
 
+def _decode_jwt_claims(id_token: str) -> dict[str, Any]:
+    """
+    Decode the claims of a JWT without verifying its signature.
+
+    The TLS-protected token exchange response is the trust anchor, not the JWT
+    signature, so the payload is read directly.
+
+    Parameters
+    ----------
+    id_token : str
+        The raw JWT id_token string.
+
+    Returns
+    -------
+    dict[str, Any]
+        The decoded claims.
+
+    Raises
+    ------
+    ValueError
+        If the token cannot be decoded.
+    """
+    try:
+        payload_b64 = id_token.split(".")[1]
+        # Restore base64url padding.
+        payload_b64 += "=" * (4 - len(payload_b64) % 4)
+        payload_bytes = base64.urlsafe_b64decode(payload_b64)
+        claims: dict[str, Any] = json.loads(payload_bytes)
+    except Exception as exc:
+        raise ValueError(f"Failed to decode id_token: {exc}") from exc
+
+    return claims
+
+
 def _validate_id_token(id_token: str, client_id: str) -> None:
     """
     Validate the JWT *id_token* claims.
@@ -403,14 +439,7 @@ def _validate_id_token(id_token: str, client_id: str) -> None:
         If the token cannot be decoded, ``aud`` does not match, or the token
         has expired.
     """
-    try:
-        payload_b64 = id_token.split(".")[1]
-        # Restore base64url padding.
-        payload_b64 += "=" * (4 - len(payload_b64) % 4)
-        payload_bytes = base64.urlsafe_b64decode(payload_b64)
-        claims = json.loads(payload_bytes)
-    except Exception as exc:
-        raise ValueError(f"Failed to decode id_token: {exc}") from exc
+    claims = _decode_jwt_claims(id_token)
 
     aud = claims.get("aud")
     if aud != client_id:
@@ -424,10 +453,169 @@ def _validate_id_token(id_token: str, client_id: str) -> None:
         raise ValueError("id_token has expired.")
 
 
-def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str, str]:
+# >>> Identity checks
+
+
+class TokenIdentity(NamedTuple):
+    """The identity an ``id_token`` was issued for."""
+
+    email: str | None
+    """The ``email`` claim, or ``None`` when the token carries no email."""
+
+    providers: tuple[str, ...]
     """
-    Fetch the OIDC discovery document and return
-    ``(authorization_endpoint, token_endpoint, logout_endpoint)``.
+    The ``providerName`` values of the ``identities`` claim.  Empty for a user
+    that authenticated directly against the user pool rather than through a
+    federated identity provider.
+    """
+
+
+def token_identity(id_token: str) -> TokenIdentity:
+    """
+    Extract the identity an *id_token* was issued for.
+
+    Parameters
+    ----------
+    id_token : str
+        The raw JWT id_token string.
+
+    Returns
+    -------
+    TokenIdentity
+        The email and federated identity providers found in the claims.
+
+    Raises
+    ------
+    ValueError
+        If the token cannot be decoded.
+    """
+    claims = _decode_jwt_claims(id_token)
+
+    email = claims.get("email")
+    if not isinstance(email, str) or not email.strip():
+        email = None
+
+    # Federated users carry an `identities` claim listing the upstream provider
+    # that authenticated them.  Cognito serializes it either as a JSON array or
+    # as a string containing one, depending on how the token was minted.
+    raw = claims.get("identities")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            raw = None
+    if isinstance(raw, dict):
+        raw = [raw]
+
+    providers: list[str] = []
+    if isinstance(raw, list):
+        for entry in raw:
+            if isinstance(entry, dict):
+                name = entry.get("providerName")
+                if isinstance(name, str) and name.strip():
+                    providers.append(name.strip())
+
+    return TokenIdentity(email=email, providers=tuple(providers))
+
+
+class IdentityMismatch(NamedTuple):
+    """A difference between the requested identity and the one in a token."""
+
+    kind: str
+    """
+    ``"provider"`` when the token did not come from the requested identity
+    provider, ``"domain"`` when its email is outside the expected domain.
+    """
+
+    reason: str
+    """A human-readable description of the difference."""
+
+
+def identity_mismatch(
+    id_token: str,
+    expected_provider: str | None = None,
+    expected_domain: str | None = None,
+) -> IdentityMismatch | None:
+    """
+    Check that *id_token* was issued for the identity the caller asked for.
+
+    The identity provider may return a token for a *different* identity than
+    the one that was requested: a browser that still holds a session cookie
+    from an earlier login can be replayed, in which case the flow completes
+    successfully but yields a token for the previous login context.  Comparing
+    the token's claims against what was requested is what makes that case
+    visible instead of silent.
+
+    Parameters
+    ----------
+    id_token : str
+        The raw JWT id_token string returned by the flow.
+    expected_provider : str | None
+        The federated identity provider the flow was started with, if any.
+        When set, the token must name it in its ``identities`` claim.
+    expected_domain : str | None
+        The email domain configured for the profile, if any.  When set, the
+        token's ``email`` claim must belong to it.
+
+    Returns
+    -------
+    IdentityMismatch | None
+        The mismatch, or ``None`` when the identity matches.  Callers decide
+        how to surface it.
+
+    Raises
+    ------
+    ValueError
+        If the token cannot be decoded.
+    """
+    if not expected_provider and not expected_domain:
+        return None
+
+    identity = token_identity(id_token)
+
+    if expected_provider and expected_provider not in identity.providers:
+        if not identity.providers:
+            detail = "was issued for a user that signed in directly against the user pool"
+        else:
+            found = ", ".join(repr(p) for p in identity.providers)
+            detail = f"was issued through {found}"
+        return IdentityMismatch(
+            kind="provider",
+            reason=(f"the flow requested single sign-on through {expected_provider!r}, but the token {detail}"),
+        )
+
+    if expected_domain and identity.email:
+        domain = identity.email.rpartition("@")[2].casefold()
+        if domain != expected_domain.strip().casefold():
+            return IdentityMismatch(
+                kind="domain",
+                reason=(
+                    f"the profile is configured for the domain {expected_domain!r}, but the token "
+                    f"was issued for an address in {domain!r}"
+                ),
+            )
+
+    return None
+
+
+class _Endpoints(NamedTuple):
+    """
+    The OIDC endpoints resolved from a discovery document.
+
+    Fields are accessed by name rather than by position: the endpoints are all
+    plain strings, so a mis-ordered tuple unpacking is silently wrong instead
+    of raising.
+    """
+
+    authorization: str
+    token: str
+    logout: str
+    revocation: str
+
+
+def _discover_endpoints(oidc_discovery_url: str | None = None) -> _Endpoints:
+    """
+    Fetch the OIDC discovery document and return the resolved endpoints.
 
     Falls back to the hard-coded endpoints if the default discovery URL is
     unreachable or returns an unexpected response.  Raises on failure when an
@@ -443,31 +631,39 @@ def _discover_endpoints(oidc_discovery_url: str | None = None) -> tuple[str, str
 
     Returns
     -------
-    tuple[str, str, str]
-        ``(authorization_endpoint, token_endpoint, logout_endpoint)``
+    _Endpoints
+        The authorization, token, logout and revocation endpoints.
 
     Raises
     ------
     RuntimeError
         If an explicit *oidc_discovery_url* is provided and the request fails.
     """
+    fallback = _Endpoints(
+        authorization=_FALLBACK_AUTH_ENDPOINT,
+        token=_FALLBACK_TOKEN_ENDPOINT,
+        logout=_FALLBACK_LOGOUT_ENDPOINT,
+        revocation=_FALLBACK_REVOKE_ENDPOINT,
+    )
     is_custom = oidc_discovery_url is not None
     discovery_url = oidc_discovery_url or OIDC_DISCOVERY_URL
     try:
         resp = requests.get(discovery_url, timeout=10)
         resp.raise_for_status()
         doc = resp.json()
-        auth_ep = doc.get("authorization_endpoint", _FALLBACK_AUTH_ENDPOINT)
-        token_ep = doc.get("token_endpoint", _FALLBACK_TOKEN_ENDPOINT)
-        logout_ep = doc.get("end_session_endpoint", _FALLBACK_LOGOUT_ENDPOINT)
-        return auth_ep, token_ep, logout_ep
+        return _Endpoints(
+            authorization=doc.get("authorization_endpoint", fallback.authorization),
+            token=doc.get("token_endpoint", fallback.token),
+            logout=doc.get("end_session_endpoint", fallback.logout),
+            revocation=doc.get("revocation_endpoint", fallback.revocation),
+        )
     except Exception as exc:
         if is_custom:
             raise RuntimeError(
                 f"Failed to fetch OIDC discovery document from {discovery_url!r}: {exc}. "
                 "Check the URL or register the endpoint via `nextmv configuration create`."
             ) from exc
-        return _FALLBACK_AUTH_ENDPOINT, _FALLBACK_TOKEN_ENDPOINT, _FALLBACK_LOGOUT_ENDPOINT
+        return fallback
 
 
 def _generate_pkce_pair() -> tuple[str, str]:
@@ -744,7 +940,7 @@ def refresh_tokens(
         If the token endpoint returns a non-2xx response.
     """
     if token_endpoint is None:
-        _, _, token_endpoint = _discover_endpoints(oidc_discovery_url)
+        token_endpoint = _discover_endpoints(oidc_discovery_url).token
 
     cid = client_id or CLIENT_ID
     payload = {
@@ -775,11 +971,98 @@ def refresh_tokens(
     return tokens
 
 
+def revoke_refresh_token(
+    refresh_token: str,
+    client_id: str | None = None,
+    oidc_discovery_url: str | None = None,
+) -> None:
+    """
+    Revoke a refresh token at the identity provider.
+
+    Revoking invalidates the refresh token and every access token derived from
+    it, server side.  This is independent of the browser session: deleting the
+    local token file alone leaves the refresh token usable until it expires.
+
+    Parameters
+    ----------
+    refresh_token : str
+        The refresh token to revoke.
+    client_id : str | None
+        The OAuth2 client ID.  When ``None`` the module-level :data:`CLIENT_ID`
+        constant is used.
+    oidc_discovery_url : str | None
+        The OIDC discovery document URL used to resolve the revocation
+        endpoint.  When ``None`` the module-level :data:`OIDC_DISCOVERY_URL`
+        is used.
+
+    Raises
+    ------
+    requests.HTTPError
+        If the revocation endpoint returns a non-2xx response.
+    """
+    endpoint = _discover_endpoints(oidc_discovery_url).revocation
+    resp = requests.post(
+        endpoint,
+        data={"token": refresh_token, "client_id": client_id or CLIENT_ID},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=30,
+    )
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        raise requests.HTTPError(f"Token revocation failed ({resp.status_code}): {resp.text}") from exc
+
+
+def browser_logout_url(
+    client_id: str | None = None,
+    oidc_discovery_url: str | None = None,
+) -> str:
+    """
+    Build the URL that clears the identity provider's browser session.
+
+    Opening this URL drops the session cookie the provider set during an
+    earlier login, so the next login has to authenticate from scratch rather
+    than replaying that session.  The provider finishes by showing its own
+    sign-in page, which can simply be closed.
+
+    Note that this clears the session at the Nextmv user pool only.  A user who
+    signs in through a third-party single sign-on provider also holds a session
+    with *that* provider, which only the provider's own sign-out page can end.
+
+    Parameters
+    ----------
+    client_id : str | None
+        The OAuth2 client ID.  When ``None`` the module-level :data:`CLIENT_ID`
+        constant is used.
+    oidc_discovery_url : str | None
+        The OIDC discovery document URL used to resolve the logout endpoint.
+        When ``None`` the module-level :data:`OIDC_DISCOVERY_URL` is used.
+
+    Returns
+    -------
+    str
+        The sign-out URL to open in a browser.
+    """
+    endpoint = _discover_endpoints(oidc_discovery_url).logout
+    # The logout endpoint needs somewhere to land afterwards.  `redirect_uri`
+    # has to be an allowed callback URL, which the local callback already is;
+    # `logout_uri` would need a separate sign-out URL registered on the client.
+    params = {
+        "client_id": client_id or CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": f"http://127.0.0.1:{CALLBACK_PORT}",
+        "scope": SCOPES,
+    }
+    return endpoint + "?" + urllib.parse.urlencode(params)
+
+
 def run_pkce_flow(
     oidc_discovery_url: str | None = None,
     client_id: str | None = None,
     force: bool = False,
     identity_provider: str | None = None,
+    open_browser: bool = True,
+    url_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """
     Execute the full PKCE authorization-code flow.
@@ -789,9 +1072,8 @@ def run_pkce_flow(
     1. Resolves the OIDC endpoints.
     2. Generates a PKCE pair.
     3. Listens for the redirect callback on the fixed port ``CALLBACK_PORT`` (``56734``).
-    4. Opens the system browser at the authorization URL (or the logout URL when
-       ``force=True``, which clears the identity provider session and chains
-       into a fresh login).
+    4. Opens the system browser at the authorization URL (or, when ``force=True``,
+       at the logout URL that clears the session and chains into a fresh login).
     5. Waits for the redirect callback (up to ``_BROWSER_TIMEOUT`` seconds).
     6. Exchanges the authorization code for tokens.
 
@@ -805,14 +1087,22 @@ def run_pkce_flow(
         The OAuth2 client ID for the identity provider.  When ``None`` the
         module-level :data:`CLIENT_ID` constant is used.
     force : bool
-        When ``True``, opens the identity provider's logout endpoint first,
-        which clears any active browser session, and chains all authorization
-        parameters onto it so that the provider immediately presents the login
-        page.  Defaults to ``False``.
+        When ``True``, chains the authorization request onto the identity
+        provider's logout endpoint so that any active session is cleared before
+        the login page is presented.  Ignored when *identity_provider* is set,
+        because the logout endpoint does not carry the provider redirect
+        through.  Defaults to ``False``.
     identity_provider : str | None
         When set, adds ``identity_provider=<value>`` to the authorization URL
         so that Cognito delegates to a third-party SSO provider.  Use
         :func:`fetch_sso_provider` to resolve the identifier from a domain.
+    open_browser : bool
+        Whether to open the authorization URL in the system browser.  Set to
+        ``False`` to let the user open it themselves, which is the only way to
+        choose a browser profile or a private window.  Defaults to ``True``.
+    url_callback : Callable[[str], None] | None
+        Invoked with the authorization URL before the flow starts waiting for
+        the callback.  Use it to show the URL to the user.
 
     Returns
     -------
@@ -830,7 +1120,7 @@ def run_pkce_flow(
     requests.HTTPError
         If the token exchange request fails.
     """
-    auth_endpoint, token_endpoint, logout_endpoint = _discover_endpoints(oidc_discovery_url)
+    endpoints = _discover_endpoints(oidc_discovery_url)
     cid = client_id or CLIENT_ID
     code_verifier, code_challenge = _generate_pkce_pair()
     redirect_uri = f"http://127.0.0.1:{CALLBACK_PORT}"
@@ -851,20 +1141,27 @@ def run_pkce_flow(
     if identity_provider:
         auth_params["identity_provider"] = identity_provider
 
-    if force:
+    if force and not identity_provider:
         # Use the logout endpoint to clear the Cognito session, then chain the
         # full authorization request onto it.  Cognito will log the user out
         # and immediately redirect to the login page with all auth params intact.
         # The redirect_uri must be registered as an Allowed Callback URL (same
         # requirement as the normal authorization flow - no additional sign-out
         # URL registration is needed).
+        #
+        # This is skipped for a federated login: the logout endpoint redirects
+        # to the login page, which ignores `identity_provider` and offers the
+        # user pool's own sign-in form instead of the configured provider.
+        # Clearing the user pool session would buy nothing there anyway, since
+        # the provider redirect bypasses it and only the provider itself can
+        # end its own session.
         logout_params = {
             "client_id": cid,
             **auth_params,
         }
-        open_url = logout_endpoint + "?" + urllib.parse.urlencode(logout_params)
+        open_url = endpoints.logout + "?" + urllib.parse.urlencode(logout_params)
     else:
-        open_url = auth_endpoint + "?" + urllib.parse.urlencode(auth_params)
+        open_url = endpoints.authorization + "?" + urllib.parse.urlencode(auth_params)
 
     # Start the callback listener in a background thread so we can open the
     # browser on the main thread without blocking.
@@ -881,7 +1178,11 @@ def run_pkce_flow(
     listener = threading.Thread(target=_listen, daemon=True)
     listener.start()
 
-    webbrowser.open(open_url)
+    if url_callback is not None:
+        url_callback(open_url)
+
+    if open_browser:
+        webbrowser.open(open_url)
 
     listener.join(timeout=_BROWSER_TIMEOUT + 5)
 
@@ -901,7 +1202,7 @@ def run_pkce_flow(
     if not code:
         raise RuntimeError("No authorization code received. Please try running `nextmv auth login` again.")
 
-    return _exchange_code_for_tokens(token_endpoint, code, code_verifier, redirect_uri, cid)
+    return _exchange_code_for_tokens(endpoints.token, code, code_verifier, redirect_uri, cid)
 
 
 def fetch_organizations(access_token: str, endpoint: str) -> list[dict[str, Any]]:
