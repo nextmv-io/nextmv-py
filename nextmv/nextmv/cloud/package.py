@@ -32,6 +32,11 @@ Package-index options `uv pip compile` emits into the lockfile, which are
 passed on to every `uv pip install`.
 """
 
+_RE_INDEX_OPTION = re.compile(r"^(--[a-z-]+)(?:=|\s+)(\S.*)$")
+"""
+Matches a package-index option line, capturing the flag and its value.
+"""
+
 _DEFAULT_INDEX_ARGS = ["--index-url", "https://pypi.org/simple"]
 """
 The index options `uv pip compile` emits when no custom index is configured.
@@ -1329,10 +1334,11 @@ def _parse_index_options(lockfile_content: str) -> list[str]:
         if not line.startswith(_INDEX_OPTIONS):
             continue
 
-        # uv emits `--flag value`; also accept the `--flag=value` form.
-        flag, _, value = line.strip().replace("=", " ", 1).partition(" ")
-        if value.strip():
-            args.extend([flag, value.strip()])
+        # uv emits `--flag value`; also accept the `--flag=value` form. Only the
+        # separator right after the flag is split on, as URLs can contain `=`.
+        m = _RE_INDEX_OPTION.match(line.strip())
+        if m:
+            args.extend([m.group(1), m.group(2)])
 
     return args
 

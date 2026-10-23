@@ -100,6 +100,24 @@ class TestParseIndexOptions(unittest.TestCase):
             ["--index-url", "https://example.com/simple"],
         )
 
+    def test_parse_index_options_keeps_equals_in_url(self):
+        lockfile = (
+            "--index-url https://example.com/simple?x=1\n"
+            "--extra-index-url https://user:tok=en@example.com/simple\n"
+            "--find-links=https://example.com/links?a=b\n"
+        )
+        self.assertEqual(
+            _parse_index_options(lockfile),
+            [
+                "--index-url",
+                "https://example.com/simple?x=1",
+                "--extra-index-url",
+                "https://user:tok=en@example.com/simple",
+                "--find-links",
+                "https://example.com/links?a=b",
+            ],
+        )
+
     def test_parse_index_options_none(self):
         self.assertEqual(_parse_index_options(_LOCKFILE), [])
 
