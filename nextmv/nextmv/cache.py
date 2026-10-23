@@ -115,13 +115,14 @@ def clear_cache() -> tuple[int, int]:
     return num_deps, total_bytes
 
 
-def dep_cache_key(name: str, version: str, python_version: str, platform: str) -> str:
+def dep_cache_key(name: str, version: str, python_version: str, platform: str, index: str = "") -> str:
     """
     Return a SHA-256 hex digest that uniquely identifies a single package wheel.
 
     The key is derived from the normalised package name, version, target Python
-    version, and platform.  Name normalisation follows PEP 503 so that
-    `pydantic-core` and `pydantic_core` map to the same key.
+    version, platform, and package-index configuration.  Name normalisation
+    follows PEP 503 so that `pydantic-core` and `pydantic_core` map to the same
+    key.
 
     Parameters
     ----------
@@ -133,6 +134,9 @@ def dep_cache_key(name: str, version: str, python_version: str, platform: str) -
         The target Python version string (e.g. `"3.11"`).
     platform : str
         The target platform string (e.g. `"aarch64-manylinux_2_34"`).
+    index : str, default=""
+        A description of the package indexes the package was resolved against.
+        Empty for the default index, which keeps existing keys unchanged.
 
     Returns
     -------
@@ -142,6 +146,8 @@ def dep_cache_key(name: str, version: str, python_version: str, platform: str) -
 
     normalized = re.sub(r"[-_.]+", "_", name.lower())
     raw = f"{normalized}=={version}|{python_version}|{platform}"
+    if index:
+        raw += f"|{index}"
 
     return hashlib.sha256(raw.encode()).hexdigest()
 

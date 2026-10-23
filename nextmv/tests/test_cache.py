@@ -103,6 +103,16 @@ class TestPackageCacheKey(unittest.TestCase):
         k2 = dep_cache_key("pydantic", "2.9.2", "3.11", "x86_64-unknown-linux-gnu")
         self.assertNotEqual(k1, k2)
 
+    def test_differs_on_index(self):
+        k1 = dep_cache_key("pydantic", "2.9.2", "3.11", "aarch64-unknown-linux-gnu")
+        k2 = dep_cache_key("pydantic", "2.9.2", "3.11", "aarch64-unknown-linux-gnu", "--index-url https://example.com")
+        self.assertNotEqual(k1, k2)
+
+    def test_empty_index_keeps_key(self):
+        k1 = dep_cache_key("pydantic", "2.9.2", "3.11", "aarch64-unknown-linux-gnu")
+        k2 = dep_cache_key("pydantic", "2.9.2", "3.11", "aarch64-unknown-linux-gnu", "")
+        self.assertEqual(k1, k2)
+
     def test_returns_hex_string(self):
         k = dep_cache_key("pydantic", "2.9.2", "3.11", "aarch64-unknown-linux-gnu")
         self.assertEqual(len(k), 64)
