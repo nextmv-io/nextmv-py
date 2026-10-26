@@ -187,8 +187,13 @@ class ManifestRuntime(str, Enum):
         This runtime is used to run Java applications.
     PYOMO : str
         This runtime provisions Python packages to run Pyomo applications.
-    HEXALY : str
-        This runtime provisions Python packages to run Hexaly applications.
+    CUOPT : str
+        This runtime provides the NVIDIA cuOpt solver.
+    GAMSPY : str
+        This runtime provisions the GAMS Python API and supported solvers.
+    PYTHON_CUDA : str
+        This runtime is used to run Python applications that use CUDA on GPU
+        execution classes.
 
     Examples
     --------
@@ -212,6 +217,8 @@ class ManifestRuntime(str, Enum):
     """A runtime providing the NVIDIA cuOpt solver."""
     GAMSPY = "ghcr.io/nextmv-io/runtime/gamspy:latest"
     """A runtime provisioning the GAMS Python API and supported solvers."""
+    PYTHON_CUDA = "ghcr.io/nextmv-io/runtime/python-cuda:3.11-13.0"
+    """A runtime used to run Python applications with CUDA 13.0 on GPUs."""
 
 
 class ManifestPythonArch(str, Enum):
@@ -1307,7 +1314,8 @@ class Manifest(BaseModel):
     entrypoint : Optional[str], default=None
         Optional entrypoint for the decision model. When not specified, the
         following default entrypoints are used, according to the `.runtime`:
-        - `ManifestRuntime.PYTHON`, `ManifestRuntime.HEXALY`, `ManifestRuntime.PYOMO`: `./main.py`
+        - `ManifestRuntime.PYTHON`, `ManifestRuntime.PYOMO`,
+          `ManifestRuntime.PYTHON_CUDA`: `./main.py`
         - `ManifestRuntime.DEFAULT`: `./main`
         - Java: `./main.jar`
 

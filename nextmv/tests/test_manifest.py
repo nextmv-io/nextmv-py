@@ -197,6 +197,19 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest.execution.entrypoint, "./binary")
         self.assertEqual(manifest.execution.cwd, "./build/")
 
+    def test_manifest_from_dict_python_cuda_runtime(self):
+        manifest_dict = {
+            "type": "python",
+            "runtime": "ghcr.io/nextmv-io/runtime/python-cuda:3.11-13.0",
+            "files": ["main.py"],
+            "python": {"arch": "amd64"},
+        }
+
+        manifest = Manifest.from_dict(manifest_dict)
+
+        self.assertEqual(manifest.runtime, ManifestRuntime.PYTHON_CUDA)
+        self.assertEqual(manifest.python.arch, ManifestPythonArch.AMD64)
+
     def test_manifest_content_from_dict(self):
         manifest_content_dict = {
             "format": "multi-file",
