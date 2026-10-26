@@ -844,7 +844,10 @@ class CloudIntegrationWorkflow(FlowSpec):
         assert collection is not None
         assert len(collection.secrets) == 1
         assert collection.secrets[0].location == secrets[0].location
-        assert collection.secrets[0].value == secrets[0].value
+        # Secret values are masked when reading a collection, the plaintext
+        # value is never returned.
+        assert collection.secrets[0].value != secrets[0].value
+        assert set(collection.secrets[0].value) == {"*"}
 
         # We can list secret collections.
         collections = app.list_secrets_collections()

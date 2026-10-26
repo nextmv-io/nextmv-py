@@ -19,7 +19,6 @@ jobs:
             ubuntu-24.04-arm,
             windows-latest,
             macos-latest,
-            macos-15-intel,
           ]
         package: ["nextmv", "nextmv-gurobipy", "nextmv-scikit-learn"]
     steps:

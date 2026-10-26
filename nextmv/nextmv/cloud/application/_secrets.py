@@ -192,8 +192,9 @@ class ApplicationSecretsMixin:
         Returns
         -------
         SecretsCollection
-            The requested secrets collection, including all secret values
-            and metadata.
+            The requested secrets collection, including its metadata and
+            secrets. Secret values are masked; the plaintext values are never
+            returned.
 
         Raises
         ------
