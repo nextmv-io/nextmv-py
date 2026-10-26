@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.parse
 from pathlib import Path
 
 import rich
@@ -24,6 +25,22 @@ from nextmv.manifest import (
     find_files,
     read_pyproject_dependencies,
 )
+
+_INDEX_OPTIONS = ("--index-url", "--extra-index-url", "--find-links")
+"""
+Package-index options `uv pip compile` emits into the lockfile, which are
+passed on to every `uv pip install`.
+"""
+
+_RE_INDEX_OPTION = re.compile(r"^(--[a-z-]+)(?:=|\s+)(\S.*)$")
+"""
+Matches a package-index option line, capturing the flag and its value.
+"""
+
+_DEFAULT_INDEX_ARGS = ["--index-url", "https://pypi.org/simple"]
+"""
+The index options `uv pip compile` emits when no custom index is configured.
+"""
 
 _IO_CHUNK_SIZE = 65536
 """
@@ -602,13 +619,17 @@ def _resolve_and_install_deps(
     lockfile_content = _compile_lockfile(uv_bin, pip_requirements, python_version, uv_platform, app_dir)
     packages = _parse_lockfile(lockfile_content)
     direct_requirements = _parse_direct_requirements(lockfile_content)
+    index_args = _parse_index_options(lockfile_content)
+    index_key = _index_cache_fingerprint(index_args)
 
     with tempfile.TemporaryDirectory(prefix="nextmv-pkg-tars-") as tars_tmp:
         if no_cache:
             cached_tars: list[Path] = []
             missing_packages = packages
         else:
-            cached_tars, missing_packages = _collect_cached_package_tars(packages, python_version, uv_platform)
+            cached_tars, missing_packages = _collect_cached_package_tars(
+                packages, python_version, uv_platform, index_key
+            )
 
         _log_pkg_cache_status(verbose, rich_print, len(cached_tars), len(packages), len(missing_packages))
 
@@ -621,6 +642,8 @@ def _resolve_and_install_deps(
                 uv_platform=uv_platform,
                 app_dir=app_dir,
                 out_dir=tars_tmp,
+                index_args=index_args,
+                index_key=index_key,
             )
             if not no_cache:
                 _store_new_package_tars(pkg_tars=new_pkg_tars, python_version=python_version, uv_platform=uv_platform)
@@ -635,6 +658,7 @@ def _resolve_and_install_deps(
                 uv_platform=uv_platform,
                 app_dir=app_dir,
                 out_dir=tars_tmp,
+                index_args=index_args,
             )
 
         all_tars = cached_tars + [pkg["tar_path"] for pkg in new_pkg_tars] + direct_tars
@@ -656,6 +680,7 @@ def _collect_cached_package_tars(
     packages: list[dict[str, str]],
     python_version: str,
     uv_platform: str,
+    index_key: str = "",
 ) -> tuple[list[Path], list[dict[str, str]]]:
     """
     Check the cache for each package and collect paths to cached tars,
@@ -670,6 +695,8 @@ def _collect_cached_package_tars(
         The Python version to target, e.g. "3.11".
     uv_platform : str
         The `uv` platform string to target, e.g. "x86_64-manylinux_2_34".
+    index_key : str, default=""
+        The package-index fingerprint from :func:`_index_cache_fingerprint`.
 
     Returns
     -------
@@ -685,7 +712,7 @@ def _collect_cached_package_tars(
 
     for package in packages:
         name, version = package["name"], package["version"]
-        pkg_key = dep_cache_key(name, version, python_version, uv_platform)
+        pkg_key = dep_cache_key(name, version, python_version, uv_platform, index_key)
         cached_tar = get_cached_dep(pkg_key)
         if cached_tar is not None:
             cached_tars.append(cached_tar)
@@ -702,6 +729,8 @@ def _fetch_missing_package_tars(
     uv_platform: str,
     app_dir: str,
     out_dir: str,
+    index_args: list[str] | None = None,
+    index_key: str = "",
 ) -> list[dict[str, Path]]:
     """
     Download, install, and compress each missing package into *out_dir*.
@@ -727,6 +756,11 @@ def _fetch_missing_package_tars(
     out_dir : str
         The directory to write the per-package `installed.tar.gz` files to.
         This should be a temporary directory that is cleaned up by the caller.
+    index_args : list of str, optional
+        Package-index options from :func:`_parse_index_options`, passed to
+        every install.
+    index_key : str, default=""
+        The package-index fingerprint from :func:`_index_cache_fingerprint`.
 
     Returns
     -------
@@ -738,7 +772,7 @@ def _fetch_missing_package_tars(
     results: list[dict[str, Path]] = []
     for package in missing_packages:
         name, version = package["name"], package["version"]
-        pkg_key = dep_cache_key(name, version, python_version, uv_platform)
+        pkg_key = dep_cache_key(name, version, python_version, uv_platform, index_key)
         tar_path = _install_and_compress_package(
             uv_bin=uv_bin,
             name=name,
@@ -747,6 +781,7 @@ def _fetch_missing_package_tars(
             uv_platform=uv_platform,
             app_dir=app_dir,
             out_dir=out_dir,
+            index_args=index_args,
         )
         results.append(
             {
@@ -768,6 +803,7 @@ def _install_and_compress_package(
     uv_platform: str,
     app_dir: str,
     out_dir: str,
+    index_args: list[str] | None = None,
 ) -> Path:
     """Install a single package from the package index and compress its installed tree.
 
@@ -792,6 +828,9 @@ def _install_and_compress_package(
     out_dir : str
         The directory to write the per-package `installed.tar.gz` files to.
         This should be a temporary directory that is cleaned up by the caller.
+    index_args : list of str, optional
+        Package-index options from :func:`_parse_index_options`, so the package
+        is installed from the same index it was resolved against.
 
     Returns
     -------
@@ -816,6 +855,7 @@ def _install_and_compress_package(
                 "--quiet",
                 f"--python-platform={uv_platform}",
                 f"--python-version={python_version}",
+                *(index_args or []),
             ],
             cwd=app_dir,
             stdout=subprocess.PIPE,
@@ -893,6 +933,7 @@ def _install_and_compress_direct(
     uv_platform: str,
     app_dir: str,
     out_dir: str,
+    index_args: list[str] | None = None,
 ) -> Path:
     """Install a single non-pinned (local path / direct URL / VCS) requirement.
 
@@ -905,6 +946,10 @@ def _install_and_compress_direct(
     ``--only-binary=:all:`` so that `uv` can build a wheel from a local source
     tree or sdist. `--no-deps` is still used because the lockfile already
     encodes the complete dependency graph.
+
+    Editable requirements (``-e <path>``) are installed as regular, non-editable
+    installs: an editable install only writes a ``.pth`` file pointing at the
+    source tree on this machine, which does not exist where the app runs.
 
     Parameters
     ----------
@@ -926,6 +971,9 @@ def _install_and_compress_direct(
         the lockfile was compiled.
     out_dir : str
         The directory to write the per-package ``installed.tar.gz`` file to.
+    index_args : list of str, optional
+        Package-index options from :func:`_parse_index_options`, used to fetch
+        build dependencies.
 
     Returns
     -------
@@ -934,12 +982,11 @@ def _install_and_compress_direct(
     """
 
     spec = spec.strip()
-    # `-e <path>` / `--editable <path>` must be passed as two argv elements; all
-    # other forms (bare paths, `name @ url`, plain URLs, `git+https://...`) are
-    # a single argument.
+    # Drop `-e` / `--editable` so the source is copied into the bundle instead
+    # of being referenced by path. All forms (bare paths, `name @ url`, plain
+    # URLs, `git+https://...`) are then a single argument.
     if spec.startswith(("-e ", "--editable ")):
-        flag, _, target = spec.partition(" ")
-        install_args = [flag, target.strip()]
+        install_args = [spec.partition(" ")[2].strip()]
     else:
         install_args = [spec]
 
@@ -959,6 +1006,7 @@ def _install_and_compress_direct(
                 "--quiet",
                 f"--python-platform={uv_platform}",
                 f"--python-version={python_version}",
+                *(index_args or []),
             ],
             cwd=app_dir,
             stdout=subprocess.PIPE,
@@ -979,6 +1027,7 @@ def _install_direct_requirement_tars(
     uv_platform: str,
     app_dir: str,
     out_dir: str,
+    index_args: list[str] | None = None,
 ) -> list[Path]:
     """Install and compress each non-pinned (local/direct/VCS) requirement.
 
@@ -1000,6 +1049,8 @@ def _install_direct_requirement_tars(
         The application directory to use as the working directory for `uv pip`.
     out_dir : str
         The directory to write the per-package ``installed.tar.gz`` files to.
+    index_args : list of str, optional
+        Package-index options from :func:`_parse_index_options`.
 
     Returns
     -------
@@ -1018,6 +1069,7 @@ def _install_direct_requirement_tars(
                 uv_platform=uv_platform,
                 app_dir=app_dir,
                 out_dir=out_dir,
+                index_args=index_args,
             )
         )
 
@@ -1226,6 +1278,8 @@ def _parse_direct_requirements(lockfile_content: str) -> list[str]:
 
     The same line-filtering rules as :func:`_parse_lockfile` apply: comment
     lines (``#``) and indented annotation lines (``    # via ...``) are skipped.
+    Package-index option lines (``--index-url ...``) are skipped too; see
+    :func:`_parse_index_options`.
 
     Parameters
     ----------
@@ -1244,10 +1298,85 @@ def _parse_direct_requirements(lockfile_content: str) -> list[str]:
         if not line or line[0] in (" ", "\t", "#"):
             continue
 
+        if line.startswith(_INDEX_OPTIONS):
+            continue
+
         if not _re_pkg.match(line):
             specs.append(line.strip())
 
     return specs
+
+
+def _parse_index_options(lockfile_content: str) -> list[str]:
+    """
+    Parse a `uv pip compile` lockfile and return its package-index options.
+
+    The lockfile is compiled with ``--emit-index-url`` and ``--emit-find-links``,
+    so the index options from the requirements (``--index-url``,
+    ``--extra-index-url``, ``--find-links``) appear as top-level lines. They are
+    returned as `uv pip install` arguments, so each package is installed from
+    the same index it was resolved against.
+
+    Parameters
+    ----------
+    lockfile_content : str
+        The content of the lockfile produced by `uv pip compile`.
+
+    Returns
+    -------
+    list of str
+        The index options as argv elements, e.g.
+        ``["--index-url", "https://pypi.org/simple"]``, in lockfile order.
+    """
+
+    args: list[str] = []
+    for line in lockfile_content.splitlines():
+        if not line.startswith(_INDEX_OPTIONS):
+            continue
+
+        # uv emits `--flag value`; also accept the `--flag=value` form. Only the
+        # separator right after the flag is split on, as URLs can contain `=`.
+        m = _RE_INDEX_OPTION.match(line.strip())
+        if m:
+            args.extend([m.group(1), m.group(2)])
+
+    return args
+
+
+def _index_cache_fingerprint(index_args: list[str]) -> str:
+    """
+    Return a cache-key component identifying the package indexes in use.
+
+    Packages resolved against different indexes can share a name and version
+    but differ in content, so the index configuration is part of each
+    package's cache key. The default (PyPI only) yields an empty string, which
+    keeps cache keys unchanged for the common case. Credentials embedded in
+    index URLs are removed, so they never end up in the cache.
+
+    Parameters
+    ----------
+    index_args : list of str
+        The index options from :func:`_parse_index_options`.
+
+    Returns
+    -------
+    str
+        An empty string for the default index, otherwise a stable,
+        credential-free description of the index options.
+    """
+
+    if index_args in ([], _DEFAULT_INDEX_ARGS):
+        return ""
+
+    parts = []
+    for i in range(0, len(index_args) - 1, 2):
+        flag, value = index_args[i], index_args[i + 1]
+        parsed = urllib.parse.urlsplit(value)
+        if parsed.netloc and "@" in parsed.netloc:
+            value = urllib.parse.urlunsplit(parsed._replace(netloc=parsed.netloc.rpartition("@")[2]))
+        parts.append(f"{flag} {value}")
+
+    return "\n".join(parts)
 
 
 def _compile_lockfile(
@@ -1291,6 +1420,8 @@ def _compile_lockfile(
             "compile",
             pip_requirements,
             "--quiet",
+            "--emit-index-url",
+            "--emit-find-links",
             f"--python-platform={uv_platform}",
             f"--python-version={python_version}",
         ],
