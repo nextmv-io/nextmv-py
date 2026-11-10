@@ -2,6 +2,8 @@
 Unit tests for the PKCE auth helpers in nextmv.auth.
 """
 
+import base64
+import json
 import os
 import tempfile
 import unittest
@@ -307,18 +309,20 @@ class TestDiscoverEndpoints(unittest.TestCase):
             "authorization_endpoint": "https://idp.example.com/authorize",
             "token_endpoint": "https://idp.example.com/token",
             "end_session_endpoint": "https://idp.example.com/logout",
+            "revocation_endpoint": "https://idp.example.com/revoke",
         }
         mock_response = MagicMock()
         mock_response.json.return_value = mock_doc
         mock_response.raise_for_status.return_value = None
 
         with patch("nextmv.auth.requests.get", return_value=mock_response) as mock_get:
-            auth_ep, token_ep, logout_ep = _discover_endpoints(custom_url)
+            endpoints = _discover_endpoints(custom_url)
 
         mock_get.assert_called_once_with(custom_url, timeout=10)
-        self.assertEqual(auth_ep, "https://idp.example.com/authorize")
-        self.assertEqual(token_ep, "https://idp.example.com/token")
-        self.assertEqual(logout_ep, "https://idp.example.com/logout")
+        self.assertEqual(endpoints.authorization, "https://idp.example.com/authorize")
+        self.assertEqual(endpoints.token, "https://idp.example.com/token")
+        self.assertEqual(endpoints.logout, "https://idp.example.com/logout")
+        self.assertEqual(endpoints.revocation, "https://idp.example.com/revoke")
 
     def test_custom_url_logout_fallback_when_absent(self):
         """end_session_endpoint absent from discovery doc -> falls back to hardcoded value."""
@@ -331,9 +335,10 @@ class TestDiscoverEndpoints(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
 
         with patch("nextmv.auth.requests.get", return_value=mock_response):
-            _, _, logout_ep = _discover_endpoints("https://idp.example.com/.well-known/openid-configuration")
+            endpoints = _discover_endpoints("https://idp.example.com/.well-known/openid-configuration")
 
-        self.assertEqual(logout_ep, auth_module._FALLBACK_LOGOUT_ENDPOINT)
+        self.assertEqual(endpoints.logout, auth_module._FALLBACK_LOGOUT_ENDPOINT)
+        self.assertEqual(endpoints.revocation, auth_module._FALLBACK_REVOKE_ENDPOINT)
 
     def test_none_uses_module_level_constant(self):
         mock_doc = {
@@ -352,10 +357,9 @@ class TestDiscoverEndpoints(unittest.TestCase):
     def test_fallback_on_default_url_failure(self):
         """Default URL failure falls back to hardcoded endpoints."""
         with patch("nextmv.auth.requests.get", side_effect=Exception("network error")):
-            auth_ep, token_ep, logout_ep = _discover_endpoints(None)
-        self.assertTrue(auth_ep.startswith("http"))
-        self.assertTrue(token_ep.startswith("http"))
-        self.assertTrue(logout_ep.startswith("http"))
+            endpoints = _discover_endpoints(None)
+        for endpoint in endpoints:
+            self.assertTrue(endpoint.startswith("http"))
 
     def test_custom_url_failure_raises(self):
         """Explicit URL failure raises instead of falling back silently."""
@@ -426,8 +430,9 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
     _AUTH_EP = "https://auth.example.com/oauth2/authorize"
     _TOKEN_EP = "https://auth.example.com/oauth2/token"
     _LOGOUT_EP = "https://auth.example.com/logout"
+    _REVOKE_EP = "https://auth.example.com/oauth2/revoke"
 
-    def _run(self, force: bool) -> str:
+    def _run(self, force: bool, **kwargs) -> str:
         """Run the flow and return the URL that was opened in the browser."""
         import threading
 
@@ -435,7 +440,7 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
         state_holder: list[str] = []
         ready = threading.Event()
 
-        def fake_open(url: str) -> None:
+        def record(url: str) -> None:
             opened_urls.append(url)
             qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
             state_holder.append(qs.get("state", ""))
@@ -455,15 +460,24 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
             "expires_in": 3600,
         }
 
+        endpoints = auth_module._Endpoints(
+            authorization=self._AUTH_EP,
+            token=self._TOKEN_EP,
+            logout=self._LOGOUT_EP,
+            revocation=self._REVOKE_EP,
+        )
+
         with (
-            patch("nextmv.auth._discover_endpoints", return_value=(self._AUTH_EP, self._TOKEN_EP, self._LOGOUT_EP)),
-            patch("nextmv.auth.webbrowser.open", side_effect=fake_open),
+            patch("nextmv.auth._discover_endpoints", return_value=endpoints),
+            patch("nextmv.auth.webbrowser.open", side_effect=record),
             patch("nextmv.auth._wait_for_callback", side_effect=fake_wait_for_callback),
             patch("nextmv.auth.requests.post", return_value=mock_token_resp),
         ):
             from nextmv.auth import run_pkce_flow
 
-            run_pkce_flow(force=force)
+            # `url_callback` keeps the state available when the browser is not
+            # opened, so the fake callback can echo it back.
+            run_pkce_flow(force=force, url_callback=record, **kwargs)
 
         return opened_urls[0]
 
@@ -485,6 +499,285 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
         qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
         for key in ("client_id", "redirect_uri", "response_type", "scope", "code_challenge", "state"):
             self.assertIn(key, qs, f"Missing param: {key}")
+
+    def test_force_with_identity_provider_keeps_authorize_endpoint(self):
+        """
+        The logout chain is skipped for a federated login.
+
+        The logout endpoint redirects to the login page, which drops
+        `identity_provider` and offers the user pool's own sign-in form.
+        """
+        url = self._run(force=True, identity_provider="Okta")
+        self.assertTrue(url.startswith(self._AUTH_EP), url)
+        qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
+        self.assertEqual(qs["identity_provider"], "Okta")
+        self.assertIn("code_challenge", qs)
+
+    def test_open_browser_false_does_not_open_a_browser(self):
+        """With open_browser=False the URL is reported but no browser is opened."""
+        import threading
+
+        reported: list[str] = []
+        ready = threading.Event()
+
+        def report(url: str) -> None:
+            reported.append(url)
+            ready.set()
+
+        def fake_wait_for_callback(port):
+            ready.wait(timeout=5)
+            qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(reported[0]).query))
+            return {"code": "authcode123", "state": qs.get("state", "")}
+
+        mock_token_resp = MagicMock()
+        mock_token_resp.raise_for_status.return_value = None
+        mock_token_resp.json.return_value = {
+            "access_token": "acc",
+            "token_type": "Bearer",
+            "expires_in": 3600,
+        }
+
+        endpoints = auth_module._Endpoints(
+            authorization=self._AUTH_EP,
+            token=self._TOKEN_EP,
+            logout=self._LOGOUT_EP,
+            revocation=self._REVOKE_EP,
+        )
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=endpoints),
+            patch("nextmv.auth.webbrowser.open") as mock_open,
+            patch("nextmv.auth._wait_for_callback", side_effect=fake_wait_for_callback),
+            patch("nextmv.auth.requests.post", return_value=mock_token_resp),
+        ):
+            from nextmv.auth import run_pkce_flow
+
+            run_pkce_flow(open_browser=False, url_callback=report)
+
+        mock_open.assert_not_called()
+        self.assertTrue(reported[0].startswith(self._AUTH_EP), reported[0])
+
+
+class TestRefreshTokens(unittest.TestCase):
+    """Tests for refresh_tokens."""
+
+    _TOKEN_EP = "https://auth.example.com/oauth2/token"
+    _LOGOUT_EP = "https://auth.example.com/logout"
+
+    def _mock_post(self, payload=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.return_value = None
+        mock_resp.json.return_value = payload or {
+            "access_token": "new-acc",
+            "token_type": "Bearer",
+            "expires_in": 3600,
+        }
+        return mock_resp
+
+    def test_discovered_token_endpoint_is_used(self):
+        """
+        The grant is posted to the token endpoint.
+
+        Regression test: the endpoints were unpacked positionally, which sent
+        the grant to the logout endpoint and made every refresh fail.
+        """
+        endpoints = auth_module._Endpoints(
+            authorization="https://auth.example.com/oauth2/authorize",
+            token=self._TOKEN_EP,
+            logout=self._LOGOUT_EP,
+            revocation="https://auth.example.com/oauth2/revoke",
+        )
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=endpoints),
+            patch("nextmv.auth.requests.post", return_value=self._mock_post()) as mock_post,
+        ):
+            auth_module.refresh_tokens("my-refresh-token")
+
+        self.assertEqual(mock_post.call_args[0][0], self._TOKEN_EP)
+
+    def test_explicit_token_endpoint_skips_discovery(self):
+        with (
+            patch("nextmv.auth._discover_endpoints") as mock_discover,
+            patch("nextmv.auth.requests.post", return_value=self._mock_post()) as mock_post,
+        ):
+            auth_module.refresh_tokens("my-refresh-token", token_endpoint=self._TOKEN_EP)
+
+        mock_discover.assert_not_called()
+        self.assertEqual(mock_post.call_args[0][0], self._TOKEN_EP)
+
+    def test_refresh_grant_payload(self):
+        with patch("nextmv.auth.requests.post", return_value=self._mock_post()) as mock_post:
+            auth_module.refresh_tokens("my-refresh-token", token_endpoint=self._TOKEN_EP, client_id="cid-1")
+
+        payload = mock_post.call_args[1]["data"]
+        self.assertEqual(payload["grant_type"], "refresh_token")
+        self.assertEqual(payload["refresh_token"], "my-refresh-token")
+        self.assertEqual(payload["client_id"], "cid-1")
+
+    def test_existing_refresh_token_is_preserved(self):
+        """The provider omits the refresh token on refresh; it must be kept."""
+        with patch("nextmv.auth.requests.post", return_value=self._mock_post()):
+            tokens = auth_module.refresh_tokens("my-refresh-token", token_endpoint=self._TOKEN_EP)
+
+        self.assertEqual(tokens["refresh_token"], "my-refresh-token")
+        self.assertIn("expires_at", tokens)
+
+    def test_http_error_is_wrapped(self):
+        import requests as req_lib
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 400
+        mock_resp.text = '{"error":"invalid_grant"}'
+        mock_resp.raise_for_status.side_effect = req_lib.HTTPError("400")
+
+        with patch("nextmv.auth.requests.post", return_value=mock_resp):
+            with self.assertRaises(req_lib.HTTPError) as ctx:
+                auth_module.refresh_tokens("stale", token_endpoint=self._TOKEN_EP)
+
+        self.assertIn("Token refresh failed", str(ctx.exception))
+
+
+class TestRevokeRefreshToken(unittest.TestCase):
+    """Tests for revoke_refresh_token."""
+
+    _REVOKE_EP = "https://auth.example.com/oauth2/revoke"
+
+    def _endpoints(self):
+        return auth_module._Endpoints(
+            authorization="https://auth.example.com/oauth2/authorize",
+            token="https://auth.example.com/oauth2/token",
+            logout="https://auth.example.com/logout",
+            revocation=self._REVOKE_EP,
+        )
+
+    def test_posts_token_to_revocation_endpoint(self):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.return_value = None
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=self._endpoints()),
+            patch("nextmv.auth.requests.post", return_value=mock_resp) as mock_post,
+        ):
+            auth_module.revoke_refresh_token("my-refresh-token", client_id="cid-1")
+
+        self.assertEqual(mock_post.call_args[0][0], self._REVOKE_EP)
+        payload = mock_post.call_args[1]["data"]
+        self.assertEqual(payload["token"], "my-refresh-token")
+        self.assertEqual(payload["client_id"], "cid-1")
+
+    def test_http_error_is_wrapped(self):
+        import requests as req_lib
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 400
+        mock_resp.text = "nope"
+        mock_resp.raise_for_status.side_effect = req_lib.HTTPError("400")
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=self._endpoints()),
+            patch("nextmv.auth.requests.post", return_value=mock_resp),
+        ):
+            with self.assertRaises(req_lib.HTTPError) as ctx:
+                auth_module.revoke_refresh_token("my-refresh-token")
+
+        self.assertIn("Token revocation failed", str(ctx.exception))
+
+
+class TestBrowserLogoutUrl(unittest.TestCase):
+    """Tests for browser_logout_url."""
+
+    def test_url_targets_logout_endpoint_with_allowed_callback(self):
+        endpoints = auth_module._Endpoints(
+            authorization="https://auth.example.com/oauth2/authorize",
+            token="https://auth.example.com/oauth2/token",
+            logout="https://auth.example.com/logout",
+            revocation="https://auth.example.com/oauth2/revoke",
+        )
+
+        with patch("nextmv.auth._discover_endpoints", return_value=endpoints):
+            url = auth_module.browser_logout_url(client_id="cid-1")
+
+        self.assertTrue(url.startswith("https://auth.example.com/logout?"), url)
+        qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
+        self.assertEqual(qs["client_id"], "cid-1")
+        # The landing URL has to be an allowed callback URL, which the local
+        # callback already is.
+        self.assertEqual(qs["redirect_uri"], f"http://127.0.0.1:{auth_module.CALLBACK_PORT}")
+        self.assertEqual(qs["response_type"], "code")
+
+
+class TestTokenIdentity(unittest.TestCase):
+    """Tests for token_identity and identity_mismatch."""
+
+    @staticmethod
+    def _jwt(claims: dict) -> str:
+        payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
+        return f"header.{payload}.signature"
+
+    def test_local_user_has_no_providers(self):
+        identity = auth_module.token_identity(self._jwt({"email": "user@example.com"}))
+        self.assertEqual(identity.email, "user@example.com")
+        self.assertEqual(identity.providers, ())
+
+    def test_federated_user_providers_are_read(self):
+        jwt = self._jwt(
+            {
+                "email": "user@example.com",
+                "identities": [{"providerName": "Okta", "providerType": "SAML"}],
+            }
+        )
+        self.assertEqual(auth_module.token_identity(jwt).providers, ("Okta",))
+
+    def test_identities_claim_encoded_as_string(self):
+        jwt = self._jwt({"identities": json.dumps([{"providerName": "Okta"}])})
+        self.assertEqual(auth_module.token_identity(jwt).providers, ("Okta",))
+
+    def test_identities_claim_as_single_object(self):
+        jwt = self._jwt({"identities": {"providerName": "Okta"}})
+        self.assertEqual(auth_module.token_identity(jwt).providers, ("Okta",))
+
+    def test_missing_email_is_none(self):
+        self.assertIsNone(auth_module.token_identity(self._jwt({"sub": "abc"})).email)
+
+    def test_undecodable_token_raises(self):
+        with self.assertRaises(ValueError):
+            auth_module.token_identity("not.a.jwt")
+
+    def test_no_expectations_means_no_mismatch(self):
+        jwt = self._jwt({"email": "user@example.com"})
+        self.assertIsNone(auth_module.identity_mismatch(jwt))
+
+    def test_matching_provider_and_domain(self):
+        jwt = self._jwt({"email": "user@example.com", "identities": [{"providerName": "Okta"}]})
+        self.assertIsNone(auth_module.identity_mismatch(jwt, expected_provider="Okta", expected_domain="example.com"))
+
+    def test_sso_requested_but_local_login_returned(self):
+        """The stale browser session case: no federated identity in the token."""
+        jwt = self._jwt({"email": "user@example.com"})
+        mismatch = auth_module.identity_mismatch(jwt, expected_provider="Okta")
+        self.assertEqual(mismatch.kind, "provider")
+        self.assertIn("directly against the user pool", mismatch.reason)
+
+    def test_sso_requested_but_other_provider_returned(self):
+        jwt = self._jwt({"email": "user@example.com", "identities": [{"providerName": "Google"}]})
+        mismatch = auth_module.identity_mismatch(jwt, expected_provider="Okta")
+        self.assertEqual(mismatch.kind, "provider")
+        self.assertIn("Google", mismatch.reason)
+
+    def test_domain_mismatch_is_reported(self):
+        jwt = self._jwt({"email": "user@other.com"})
+        mismatch = auth_module.identity_mismatch(jwt, expected_domain="example.com")
+        self.assertEqual(mismatch.kind, "domain")
+        self.assertIn("other.com", mismatch.reason)
+
+    def test_domain_comparison_is_case_insensitive(self):
+        jwt = self._jwt({"email": "User@Example.COM"})
+        self.assertIsNone(auth_module.identity_mismatch(jwt, expected_domain="example.com"))
+
+    def test_domain_not_checked_without_email(self):
+        jwt = self._jwt({"sub": "abc"})
+        self.assertIsNone(auth_module.identity_mismatch(jwt, expected_domain="example.com"))
 
 
 if __name__ == "__main__":
