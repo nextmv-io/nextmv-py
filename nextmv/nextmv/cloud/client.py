@@ -919,7 +919,7 @@ class Client:
                     oidc_discovery_url=oidc_cfg.get(OIDC_DISCOVERY_URL_KEY) if oidc_cfg else None,
                     client_id=oidc_cfg.get(CLIENT_ID_KEY) if oidc_cfg else None,
                 )
-                # Cognito refresh does not include a new id_token; preserve the old one.
+                # Preserve the old id_token if the refresh response omits one.
                 if "id_token" not in tokens and old_id_token:
                     tokens["id_token"] = old_id_token
                 save_tokens(session, tokens)

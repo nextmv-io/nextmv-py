@@ -487,5 +487,28 @@ class TestRunPkceFlowForceParam(unittest.TestCase):
             self.assertIn(key, qs, f"Missing param: {key}")
 
 
+class TestRefreshTokens(unittest.TestCase):
+    """Tests for refresh_tokens endpoint resolution."""
+
+    _AUTH_EP = "https://idp.example.com/oauth2/authorize"
+    _TOKEN_EP = "https://idp.example.com/oauth2/token"
+    _LOGOUT_EP = "https://idp.example.com/logout"
+
+    def test_posts_to_discovered_token_endpoint(self):
+        """Without an explicit token endpoint, the discovered token endpoint is used."""
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.return_value = None
+        mock_resp.json.return_value = {"access_token": "acc", "token_type": "Bearer", "expires_in": 3600}
+
+        with (
+            patch("nextmv.auth._discover_endpoints", return_value=(self._AUTH_EP, self._TOKEN_EP, self._LOGOUT_EP)),
+            patch("nextmv.auth.requests.post", return_value=mock_resp) as mock_post,
+        ):
+            tokens = auth_module.refresh_tokens("ref")
+
+        self.assertEqual(mock_post.call_args.args[0], self._TOKEN_EP)
+        self.assertEqual(tokens["refresh_token"], "ref")
+
+
 if __name__ == "__main__":
     unittest.main()

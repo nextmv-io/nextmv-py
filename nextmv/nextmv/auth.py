@@ -744,7 +744,7 @@ def refresh_tokens(
         If the token endpoint returns a non-2xx response.
     """
     if token_endpoint is None:
-        _, _, token_endpoint = _discover_endpoints(oidc_discovery_url)
+        _, token_endpoint, _ = _discover_endpoints(oidc_discovery_url)
 
     cid = client_id or CLIENT_ID
     payload = {
