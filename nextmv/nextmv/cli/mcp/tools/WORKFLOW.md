@@ -1,44 +1,181 @@
-# Nextmv App Development Workflow
+# FICO Platform DecisionOps App Development Workflow
 
 ## Rules
 
+- **Existing models — manifest first**: When the user asks to connect their own
+  existing model to Nextmv / FICO Platform DecisionOps, **minimize code
+  changes**. Adapt `app.yaml` to the model before touching the model code, and
+  only change code when the manifest cannot cover the gap. See
+  [Connecting an Existing Model](#connecting-an-existing-model). The rest of this
+  guide (Steps 1-9) describes building a **new** app.
+- **Language**: Python and Java apps are supported. For a new app, ask the user
+  which language to use. For an existing model, use the model's language.
 - **Solver**: Ask the user which solver or modeling library to use (e.g.,
   Pyomo, OR-Tools, HiGHS, SimPy, Gurobi, Xpress, CPLEX, AMPL, Hexaly,
   scikit-learn, Timefold, CVXPY, and others).
-- **Metrics**: Every app must report metrics via `nextmv.Output(metrics={...})`.
+- **Content format**: Ask the user whether the app should use the
+  **multi-file** format or the **JSON** format. Do not pick one for them.
+  - **multi-file**: input is a directory of CSV files; output is files written
+    to disk (solutions, `metrics.json`, `assets.json`), wired up in `app.yaml`.
+  - **JSON**: input is a single JSON document read from stdin; output is a
+    single JSON document written to stdout.
+- **Keep the model platform-agnostic**: The model code should be plain code that
+  reads files / stdin and writes files / stdout. Everything platform-specific
+  (content format, input/output locations, metrics/assets files, options,
+  build command) belongs in `app.yaml`.
+  - **Python**: the **only** use of the `nextmv` SDK in model code is loading
+    options from the manifest
+    (`nextmv.Manifest.from_yaml(...).extract_options()`). Visualization code
+    (`visuals.py`) may also use the SDK to build assets (`nextmv.Asset`). JSON
+    apps may use `nextmv.redirect_stdout()` / `nextmv.reset_stdout()` and
+    `nextmv.log` to keep logs off stdout.
+  - **Java**: there is no SDK dependency. Options arrive as command-line
+    arguments (see [Options at runtime](#options-at-runtime)); everything else
+    is plain Java (e.g. Gson / Jackson for JSON).
+- **Do NOT** use `nextmv.load`, `nextmv.write`, `nextmv.Output`, or any other
+  SDK input/output helpers.
+- **Do NOT** add `input` / `output` options to `app.yaml`.
+- **Metrics**: Every app must write metrics. For multi-file apps, write them to
+  `metrics.json` at the path declared in `app.yaml` as flat key-value pairs
+  (no `metrics` wrapper); for JSON apps, put them under the `metrics` key of
+  the stdout output.
   - **Optimization apps** (MIP, LP, CP, heuristics): use `status` (`optimal` | `suboptimal` | `infeasible` | `unbounded`) and `result_value` (objective value).
   - **ML classifier apps**: use `accuracy`, `precision`, `recall`, `f1_score`, `roc_auc`, `log_loss`, and confusion matrix counts. Do NOT use `status`/`result_value`.
   - **ML regression / forecasting apps**: use `rmse`, `mae`, `r2`, and domain-relevant metrics. Do NOT use `status`/`result_value`.
   - **Simulation / rules-engine apps**: use domain-specific metrics (throughput, utilization, queue length, etc.).
-- **Visualization**: Every app must include at least one Plotly visualization rendered as a `nextmv.Asset`.
+- **Visualization**: Every app must include at least one Plotly visualization
+  written as an asset (`nextmv.Asset` in Python; the equivalent JSON structure in
+  Java — see Step 4).
 - **Configuration**: Every app must expose user-facing options via `app.yaml`. Apps that use a random seed must expose a `random_seed` option (`option_type: int`, not required, no default).
+
+---
+
+## Connecting an Existing Model
+
+When the user already has a model and wants to run it on Nextmv / FICO Platform
+DecisionOps, the goal is to **fit the manifest to the code, not the code to the
+manifest**. Work through these steps in order and stop as soon as the model
+runs.
+
+1. **Read the model first.** Find out how it gets input (stdin, a directory, file
+   names), where it writes output (files, stdout), how it takes parameters
+   (CLI flags, config file, constants), what it prints and where, and — for
+   Java — how it is built (Maven / Gradle) and what jar the build produces.
+2. **Pick the content format that matches what the model already does**, then
+   confirm with the user:
+   - Reads/writes files on disk → `multi-file`.
+   - Reads JSON from stdin and writes JSON to stdout → `json`.
+3. **Adapt `app.yaml` to the existing layout — no code changes:**
+   - `type` / `runtime`: `python` + `ghcr.io/nextmv-io/runtime/python:3.11`, or
+     `java` + `ghcr.io/nextmv-io/runtime/java:latest`.
+   - `files`: list the model's existing files/directories (globs are supported).
+     For Java, list the built jar (e.g. `main.jar` or
+     `target/my-model-1.0-jar-with-dependencies.jar`).
+   - `execution.entrypoint`: point at the existing entry point instead of
+     renaming it — e.g. `./src/solve.py` (Python) or the jar the build already
+     produces (Java, run with `java -jar`). Defaults are `./main.py` and
+     `./main.jar`.
+   - `execution.cwd`: set the working directory if the model uses paths
+     relative to a sub-directory.
+   - Python: `python.pip-requirements` — point at the existing
+     `requirements.txt` / `pyproject.toml`.
+   - Java: `pre-push` — use the project's existing build command (e.g.
+     `mvn package`, `./gradlew shadowJar`). It runs before `cloud_push_app`.
+   - `configuration.content.multi-file.input.path`: set to the directory the
+     model already reads from.
+   - `configuration.content.multi-file.output.solutions` / `metrics` / `assets`:
+     set to the paths the model already writes to.
+   - `configuration.options.items`: declare the parameters the model already
+     takes, using the **same names** as its existing CLI flags (see
+     [Options at runtime](#options-at-runtime)). A model that already parses
+     those flags needs no code change.
+4. **Only then make minimal, additive changes** for what the manifest cannot
+   cover, e.g.:
+   - Writing a `metrics.json` (flat key-value pairs) or adding a `metrics` key
+     to the JSON output if the model doesn't produce metrics anywhere. (Older
+     apps may emit a deprecated `statistics` block; add `metrics` alongside it
+     rather than restructuring.)
+   - Python: loading options with
+     `nextmv.Manifest.from_yaml(".").extract_options()` if the model has
+     hard-coded parameters the user wants exposed.
+   - Java: making the argument parser accept both `-name value` and
+     `-name=value` if it only handles one form.
+   - JSON apps: keeping logs off stdout — `nextmv.redirect_stdout()` /
+     `nextmv.reset_stdout()` (Python) or `System.err` / `System.setOut(System.err)`
+     (Java).
+   - Java: if the build does not produce a runnable fat jar, add the
+     `maven-assembly-plugin` (`jar-with-dependencies`, with `mainClass` set) or
+     Gradle Shadow plugin — a build-config change, not a model change.
+   - Adding a small visuals module for a Plotly asset.
+   Keep the solver logic and data handling untouched. Do not restructure the
+   project, rename files, or convert I/O formats unless the user asks.
+5. **Tell the user** which changes went into `app.yaml` and which (if any)
+   required code or build edits, and why.
 
 ---
 
 ## File Structure
 
+### Python
+
 ```
 my-app/
-├── app.yaml          # Nextmv manifest (required)
+├── app.yaml          # App manifest (required)
 ├── main.py           # Entry point
 ├── visuals.py        # Plotly visualization(s)
 ├── requirements.txt  # Pinned Python dependencies
-├── input.json        # Default sample input
-├── inputs/           # 3-5 inputs of varying size/scenario
-│   ├── small.json
-│   ├── medium.json
-│   └── large.json
+├── <inputs>          # See "Input layout" below
 └── README.md         # Short description and usage
 ```
+
+### Java
+
+```
+my-app/
+├── app.yaml          # App manifest (required)
+├── pom.xml           # Maven build; produces ./main.jar
+├── src/main/java/com/example/
+│   ├── Main.java     # Entry point
+│   └── Visuals.java  # Plotly visualization(s)
+├── <inputs>          # See "Input layout" below
+└── README.md         # Short description and usage
+```
+
+### Input layout
+
+- **Multi-file format**:
+
+  ```
+  inputs/             # Default sample input (CSV files)
+  ├── orders.csv
+  └── vehicles.csv
+  scenarios/          # 3-5 input directories of varying size/scenario
+  ├── small/
+  ├── medium/
+  └── large/
+  ```
+
+- **JSON format**:
+
+  ```
+  input.json          # Default sample input
+  inputs/             # 3-5 inputs of varying size/scenario
+  ├── small.json
+  ├── medium.json
+  └── large.json
+  ```
 
 ---
 
 ## Step 1: Create the App Manifest
 
-Use `manifest_init` to scaffold an `app.yaml`:
+Use `manifest_init` to scaffold an `app.yaml`, passing the language
+(`"python"` or `"java"`) and the content format the user chose
+(`"multi-file"` or `"json"`):
 
 ```
-manifest_init(manifest_type="python", content_format="json", dirpath="my-app")
+manifest_init(manifest_type="python", content_format="multi-file", dirpath="my-app")
+manifest_init(manifest_type="java", content_format="json", dirpath="my-app")
 ```
 
 Then edit it to add your app's actual options.
@@ -47,9 +184,13 @@ Then edit it to add your app's actual options.
 
 ## Step 2: Write app.yaml
 
-### JSON format (default)
+`app.yaml` is where everything platform-specific lives: the language/runtime,
+the build, the content format, where input is read from, where solutions /
+metrics / assets are written to, and the options the app exposes.
 
-Input is a single JSON file via stdin; output is a single JSON object via stdout.
+### Language header
+
+**Python:**
 
 ```yaml
 type: python
@@ -60,55 +201,38 @@ python:
 files:
   - main.py
   - visuals.py
-
-configuration:
-  options:
-    strict: false
-    items:
-      - name: input
-        option_type: string
-        default: ''
-        required: false
-        ui:
-          control_type: input
-          hidden_from:
-            - operator
-      - name: output
-        option_type: string
-        default: ''
-        required: false
-        ui:
-          control_type: input
-          hidden_from:
-            - operator
 ```
 
-The `input` and `output` options are required so that `nextmv.load(options=options, path=options.input)` works correctly.
+**Java:**
+
+```yaml
+type: java
+runtime: ghcr.io/nextmv-io/runtime/java:latest
+
+# Build the jar before pushing. Runs on cloud_push_app only, not on local runs.
+pre-push: mvn package
+
+files:
+  - main.jar
+```
 
 ### Multi-file format
 
-Input and output are directories of files. Use when the solver writes its own output files or when you need CSV/Excel/text output.
+Input is a directory of CSV files; output is files written to disk. The
+`output` block wires up the files the model writes so that FICO Platform
+DecisionOps picks them up.
 
 ```yaml
-type: python
-runtime: ghcr.io/nextmv-io/runtime/python:3.11
-python:
-  pip-requirements: pyproject.toml # Can be a requirements.txt
-
-files:
-  - main.py
-  - visuals.py
-
 configuration:
   content:
     format: multi-file
     multi-file:
       input:
-        path: .
+        path: inputs                    # Directory the model reads CSVs from
       output:
-        solutions: .
-        metrics: metrics.json
-        assets: assets.json
+        solutions: outputs/solutions    # Directory the model writes solution files to
+        metrics: outputs/metrics.json   # File the model writes metrics to
+        assets: outputs/assets.json     # File the model writes visual assets to
   options:
     strict: true
     validation:
@@ -118,6 +242,29 @@ configuration:
         option_type: int
         default: 10
         required: true
+        ui:
+          control_type: slider
+          display_name: My Option
+```
+
+The paths in the model code must match the paths declared here.
+
+### JSON format
+
+Input is a single JSON document via stdin; output is a single JSON document via
+stdout. Do NOT add `input` / `output` options.
+
+```yaml
+configuration:
+  content:
+    format: json
+  options:
+    strict: false
+    items:
+      - name: my_option
+        option_type: int
+        default: 10
+        required: false
         ui:
           control_type: slider
           display_name: My Option
@@ -143,11 +290,26 @@ configuration:
 | `float` | `input`, `slider` | Same as int |
 | `bool` | `toggle` | No additional attributes needed |
 
+### Options at runtime
+
+Option values set on a run are passed to the entrypoint as command-line
+arguments named after the option. Depending on where the app runs they arrive
+as `-my_option 20` or `-my_option=20`, so parsers must accept **both** forms
+(and `--my_option` for good measure).
+
+- **Python**: `nextmv.Manifest.from_yaml(".").extract_options()` handles this
+  and applies the manifest defaults.
+- **Java**: parse `args` yourself (see Step 3). Only options set on the run are
+  passed — manifest defaults are **not** — so the code's fallback defaults must
+  match the `default` values in `app.yaml`.
+
 ---
 
-## Step 3: Write main.py
+## Step 3: Write the Entry Point
 
-### Load manifest and options
+### Python — load options from the manifest
+
+This is the only SDK call the model code makes.
 
 ```python
 import nextmv
@@ -156,81 +318,232 @@ manifest = nextmv.Manifest.from_yaml(".")
 options = manifest.extract_options()
 ```
 
-### JSON format — load and write
+Pass plain values (e.g. `options.my_option`) into the solver code so the model
+itself does not depend on the SDK.
+
+### Python — multi-file format
+
+Read CSVs from the input directory and write output files to the paths declared
+in `app.yaml`. Use plain `print(...)` for logs — stdout is captured as run logs
+for multi-file apps, so `nextmv.log` is not needed.
 
 ```python
-input = nextmv.load(options=options, path=options.input)
-data = input.data
+import csv
+import json
+import os
 
-nextmv.redirect_stdout()  # redirect solver logs away from stdout
+import nextmv
 
-output = nextmv.Output(
-    solution={"assignments": [...]},
-    assets=[chart],
-    metrics={
-        "result_value": objective_value,
-        "status": "optimal",
-    },
-)
-nextmv.write(output, path=options.output)
+from visuals import build_chart
+
+# Must match configuration.content.multi-file in app.yaml.
+INPUT_DIR = "inputs"
+SOLUTIONS_DIR = os.path.join("outputs", "solutions")
+METRICS_FILE = os.path.join("outputs", "metrics.json")
+ASSETS_FILE = os.path.join("outputs", "assets.json")
+
+
+def main():
+    options = nextmv.Manifest.from_yaml(".").extract_options()
+
+    with open(os.path.join(INPUT_DIR, "orders.csv"), newline="") as f:
+        orders = list(csv.DictReader(f))
+
+    print(f"Loaded {len(orders)} orders")
+
+    results, objective, status = solve(orders, my_option=options.my_option)
+
+    # Solution files.
+    os.makedirs(SOLUTIONS_DIR, exist_ok=True)
+    with open(os.path.join(SOLUTIONS_DIR, "results.csv"), "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[...])
+        writer.writeheader()
+        writer.writerows(results)
+
+    # Metrics — flat key-value pairs, no wrapper.
+    with open(METRICS_FILE, "w") as f:
+        json.dump({"result_value": objective, "status": status}, f, indent=2)
+
+    # Assets — top level MUST be {"assets": [...]}.
+    # Use asset.to_dict() (NOT asset.model_dump(), which breaks the schema/type fields).
+    charts = [build_chart(results, orders)]
+    with open(ASSETS_FILE, "w") as f:
+        json.dump({"assets": [a.to_dict() for a in charts]}, f)
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-### Multi-file format — load and write
+### Python — JSON format
 
-Read input files directly; write output files to disk. Do NOT call `nextmv.load`.
-
-```python
-import csv, json, os
-
-with open("orders.csv", newline="") as f:
-    rows = list(csv.DictReader(f))
-
-# ... solver ...
-
-os.makedirs("output", exist_ok=True)
-with open("output/results.csv", "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=[...])
-    writer.writeheader()
-    writer.writerows(results)
-
-with open("metrics.json", "w") as f:
-    json.dump({"result_value": obj, "status": "optimal"}, f)
-
-# assets.json — top level MUST be {"assets": [...]}
-# Inside each asset: visual.schema and visual.type (NOT visual_schema/visual_type)
-# content stays as a list (do not unwrap with [0])
-# Do NOT use asset.model_dump() — it breaks the schema field
-with open("assets.json", "w") as f:
-    json.dump({"assets": [
-        {
-            "name": a.name,
-            "content_type": a.content_type,
-            "visual": {
-                "schema": a.visual.visual_schema.value,
-                "type": a.visual.visual_type,
-                "label": a.visual.label,
-            },
-            "content": a.content,
-        }
-        for a in charts
-    ]}, f)
-```
-
-### Logging
-
-Use `nextmv.log(...)` (writes to stderr) for progress messages.
-
----
-
-## Step 4: Write visuals.py
+Read the input from stdin and write a single JSON document to stdout with
+`solution`, `metrics`, and `assets` keys. stdout is reserved for the output, so
+all logs must go to stderr: call `nextmv.redirect_stdout()` up front so any
+`print` / solver chatter goes to stderr, use `nextmv.log(...)` for progress
+messages, and call `nextmv.reset_stdout()` right before writing the output.
 
 ```python
 import json
+import sys
+
+import nextmv
+
+from visuals import build_chart
+
+
+def main():
+    nextmv.redirect_stdout()  # send prints / solver logs to stderr
+    options = nextmv.Manifest.from_yaml(".").extract_options()
+
+    data = json.load(sys.stdin)
+    nextmv.log(f"Loaded {len(data['orders'])} orders")
+
+    solution, objective, status = solve(data, my_option=options.my_option)
+    charts = [build_chart(solution, data)]
+
+    output = {
+        "solution": solution,
+        "metrics": {"result_value": objective, "status": status},
+        "assets": [a.to_dict() for a in charts],
+    }
+    nextmv.reset_stdout()  # restore stdout for the output document
+    json.dump(output, sys.stdout)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### Java — parse options
+
+There is no SDK in Java; read options from `args`. Keep fallback defaults in
+sync with `app.yaml`.
+
+```java
+// Accepts -name value, -name=value, --name value, --name=value.
+static Map<String, String> parseOptions(String[] args) {
+  Map<String, String> opts = new HashMap<>();
+  for (int i = 0; i < args.length; i++) {
+    if (!args[i].startsWith("-")) continue;
+    String key = args[i].replaceFirst("^-{1,2}", "");
+    int eq = key.indexOf('=');
+    if (eq >= 0) {
+      opts.put(key.substring(0, eq), key.substring(eq + 1));
+    } else if (i + 1 < args.length) {
+      opts.put(key, args[++i]);
+    }
+  }
+  return opts;
+}
+
+// In main():
+Map<String, String> opts = parseOptions(args);
+int myOption = Integer.parseInt(opts.getOrDefault("my_option", "10")); // default must match app.yaml
+```
+
+### Java — multi-file format
+
+Read CSVs from the input directory and write output files to the paths declared
+in `app.yaml`. Plain `System.out.println` is fine for logs — stdout is captured
+as run logs for multi-file apps. For CSV parsing with quoted fields, use a
+permissively licensed library such as Apache Commons CSV or OpenCSV.
+
+```java
+package com.example;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public final class Main {
+  // Must match configuration.content.multi-file in app.yaml.
+  static final Path INPUT_DIR = Paths.get("inputs");
+  static final Path SOLUTIONS_DIR = Paths.get("outputs", "solutions");
+  static final Path METRICS_FILE = Paths.get("outputs", "metrics.json");
+  static final Path ASSETS_FILE = Paths.get("outputs", "assets.json");
+
+  public static void main(String[] args) throws IOException {
+    Map<String, String> opts = parseOptions(args);
+    int myOption = Integer.parseInt(opts.getOrDefault("my_option", "10"));
+
+    List<Map<String, String>> orders = readCsv(INPUT_DIR.resolve("orders.csv"));
+    System.out.println("Loaded " + orders.size() + " orders");
+
+    Result result = solve(orders, myOption);
+
+    // Solution files.
+    Files.createDirectories(SOLUTIONS_DIR);
+    writeCsv(SOLUTIONS_DIR.resolve("results.csv"), result.rows());
+
+    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    // Metrics — flat key-value pairs, no wrapper.
+    Map<String, Object> metrics = new LinkedHashMap<>();
+    metrics.put("result_value", result.objective());
+    metrics.put("status", result.status());
+    Files.writeString(METRICS_FILE, gson.toJson(metrics));
+
+    // Assets — top level MUST be {"assets": [...]}.
+    Files.writeString(ASSETS_FILE, gson.toJson(Map.of("assets", List.of(Visuals.buildChart(result, "Solution")))));
+  }
+}
+```
+
+### Java — JSON format
+
+Read the input from stdin and write a single JSON document to stdout with
+`solution`, `metrics`, and `assets` keys. stdout is reserved for the output, so
+all logs go to `System.err`. If the solver library prints to stdout, swap
+`System.out` for `System.err` during the solve and restore it before writing
+the output (the Java equivalent of `nextmv.redirect_stdout()`).
+
+```java
+public static void main(String[] args) {
+  PrintStream stdout = System.out;
+  System.setOut(System.err); // send prints / solver logs to stderr
+
+  Map<String, String> opts = parseOptions(args);
+  int myOption = Integer.parseInt(opts.getOrDefault("my_option", "10"));
+
+  Gson gson = new Gson();
+  Input input = gson.fromJson(new InputStreamReader(System.in, StandardCharsets.UTF_8), Input.class);
+  System.err.println("Loaded " + input.orders.size() + " orders");
+
+  Result result = solve(input, myOption);
+
+  Map<String, Object> output = new LinkedHashMap<>();
+  output.put("solution", result.solution());
+  output.put("metrics", Map.of("result_value", result.objective(), "status", result.status()));
+  output.put("assets", List.of(Visuals.buildChart(result, "Solution")));
+
+  System.setOut(stdout); // restore stdout for the output document
+  System.out.println(gson.toJson(output));
+}
+```
+
+---
+
+## Step 4: Write the Visualization
+
+### Python — visuals.py
+
+Visualization code may use the SDK to build assets.
+
+```python
+import json
+
 import nextmv
 import plotly.graph_objects as go
 
 
-def build_chart(solution, input_data, label="Solution", tab_order=1):
+def build_chart(solution, input_data, label="Solution"):
     fig = go.Figure()
     fig.add_trace(go.Scatter(...))
     fig.update_layout(title=label)
@@ -239,46 +552,94 @@ def build_chart(solution, input_data, label="Solution", tab_order=1):
         name=label,
         content_type="json",
         visual=nextmv.Visual(
-            visual_schema=nextmv.VisualSchema(value="plotly"),
+            visual_schema=nextmv.VisualSchema.PLOTLY,
             visual_type="custom-tab",
             label=label,
-            tab_order=tab_order,
         ),
         content=[json.loads(fig.to_json())],
     )
 ```
 
-Use `tab_order=1` for the first chart, incrementing for each additional.
+### Java — Visuals.java
+
+Build the Plotly figure (`data` + `layout`) as plain maps and wrap it in the
+asset structure. The keys must be exactly `name`, `content_type`,
+`visual.schema`, `visual.type`, `visual.label`, and `content` (a list).
+
+```java
+static Map<String, Object> buildChart(Result result, String label) {
+  Map<String, Object> trace = new LinkedHashMap<>();
+  trace.put("type", "bar");
+  trace.put("x", result.labels());
+  trace.put("y", result.values());
+
+  Map<String, Object> figure = new LinkedHashMap<>();
+  figure.put("data", List.of(trace));
+  figure.put("layout", Map.of("title", Map.of("text", label)));
+
+  Map<String, Object> visual = new LinkedHashMap<>();
+  visual.put("schema", "plotly");
+  visual.put("type", "custom-tab");
+  visual.put("label", label);
+
+  Map<String, Object> asset = new LinkedHashMap<>();
+  asset.put("name", label);
+  asset.put("content_type", "json");
+  asset.put("visual", visual);
+  asset.put("content", List.of(figure));
+  return asset;
+}
+```
 
 ---
 
-## Step 5: Write requirements.txt
+## Step 5: Declare Dependencies
 
-Pin all dependencies. Always include `nextmv` and `plotly`.
+- **Python** — `requirements.txt`: pin all dependencies. Always include
+  `nextmv` and `plotly`.
+- **Java** — `pom.xml`: pin all dependency versions (solver, Gson/Jackson, CSV
+  library). Use the `maven-assembly-plugin` with `jar-with-dependencies`,
+  `mainClass` set to your entry class, `outputDirectory` `.`, `finalName`
+  `main`, and `appendAssemblyId` `false` so `mvn package` produces `./main.jar`
+  (see the [java-ortools-knapsack](https://github.com/nextmv-io/community-apps/tree/develop/java-ortools-knapsack)
+  community app for a working `pom.xml`).
 
 ---
 
 ## Step 6: Create Input Files
 
-Include `input.json` (default) plus an `inputs/` directory with 3-5 files varying problem size, constraint tightness, or scenario type.
+- **Multi-file format**: inputs are **CSV files**. Put the default sample input
+  in `inputs/` (the directory declared in `app.yaml`) and add a `scenarios/`
+  directory with 3-5 sub-directories of CSVs varying problem size, constraint
+  tightness, or scenario type.
+- **JSON format**: inputs are **JSON files**. Include `input.json` (default) plus
+  an `inputs/` directory with 3-5 JSON files varying problem size, constraint
+  tightness, or scenario type.
 
 ---
 
 ## Step 7: Local Testing
 
+### Build (Java only)
+
+`pre-push` only runs on `cloud_push_app`, so build the jar before every local
+run (e.g. `mvn package`). Local runs execute `java -jar <entrypoint>` and
+require a local JDK.
+
 ### Run locally
+
+**Multi-file format:**
+
+```
+local_run(app_dir=".", input_dir_path="inputs", content_format="multi-file")
+local_run(app_dir=".", input_dir_path="scenarios/large", content_format="multi-file", run_options={"my_option": "20"})
+```
 
 **JSON format:**
 
 ```
 local_run(app_dir=".", input=<parsed input.json>)
-local_run(app_dir=".", input=<parsed inputs/large.json>, run_options={"solve.duration": "30s"})
-```
-
-**Multi-file format:**
-
-```
-local_run(app_dir=".", input_dir_path="input", content_format="multi-file")
+local_run(app_dir=".", input=<parsed inputs/large.json>, run_options={"my_option": "20"})
 ```
 
 ### Inspect runs
@@ -289,7 +650,12 @@ local_run_logs(app_dir=".", run_id="<run-id>")
 local_run_result(app_dir=".", run_id="<run-id>")
 ```
 
-### Sync to Cloud
+Confirm that metrics and assets show up in the run result. For multi-file apps,
+if they are missing, check that the paths in the model code match the
+`multi-file.output` paths in `app.yaml`. If a run with `run_options` fails with
+an argument error, check that the parser accepts `-name value`.
+
+### Sync to FICO Platform DecisionOps
 
 ```
 local_sync(app_dir=".", cloud_app_id="<app-id>")
@@ -299,13 +665,13 @@ local_sync(app_dir=".", cloud_app_id="<app-id>")
 
 ## Step 8: Write README.md
 
-Include these sections: App Name (one-sentence description), Approach, Configuration Options (table), Input Format, Output (solution, metrics, visualizations), Running Locally (tool calls), Syncing to Cloud.
+Include these sections: App Name (one-sentence description), Approach, Configuration Options (table), Input Format, Output (solution, metrics, visualizations), Building (Java), Running Locally (tool calls), Syncing to FICO Platform DecisionOps.
 
 ---
 
-## Step 9: Deploy to Nextmv Cloud
+## Step 9: Deploy to FICO Platform DecisionOps
 
-### 1. Create the Cloud app (first time)
+### 1. Create the app (first time)
 
 ```
 cloud_create_app(name="My App", app_id="my-app", description="...")
@@ -313,12 +679,23 @@ cloud_create_app(name="My App", app_id="my-app", description="...")
 
 ### 2. Push and create a version
 
+`cloud_push_app` runs the manifest's `pre-push` command (e.g. `mvn package`)
+before uploading.
+
 ```
 cloud_push_app(app_id="<app-id>", app_dir=".")
 cloud_create_version(app_id="<app-id>", name="v1.0")
 ```
 
 ### 3. Create runs from all inputs
+
+**Multi-file format:**
+
+```
+cloud_run(app_id="<app-id>", instance_id="latest", input_dir_path="scenarios/small", content_format="multi-file")
+```
+
+**JSON format:**
 
 ```
 cloud_run(app_id="<app-id>", instance_id="latest", input=<parsed input>)
@@ -361,15 +738,21 @@ cloud_update_instance(app_id="<app-id>", instance_id="production", version_id="<
 
 ## Checklist
 
-- [ ] `app.yaml` has user-facing configuration options
-- [ ] `main.py` loads manifest and options via `nextmv.Manifest.from_yaml`
-- [ ] Metrics reported via `nextmv.Output(metrics={...})`
-- [ ] At least one Plotly visualization as `nextmv.Asset`
+- [ ] User chose the language (Python or Java) and content format (multi-file or JSON)
+- [ ] Existing model: changes made in `app.yaml` first; code changes kept to a minimum
+- [ ] `app.yaml` has user-facing configuration options and no `input` / `output` options
+- [ ] Multi-file: `app.yaml` wires up input dir, solutions dir, `metrics.json`, and `assets.json`
+- [ ] Python: model code uses the SDK only to load options via `nextmv.Manifest.from_yaml(...).extract_options()` (plus `redirect_stdout` / `reset_stdout` / `log` for JSON)
+- [ ] Java: options parsed from `args` (both `-name value` and `-name=value`), defaults match `app.yaml`; `pre-push` builds the jar listed in `files`
+- [ ] No `nextmv.load`, `nextmv.write`, or `nextmv.Output`
+- [ ] Metrics written to `metrics.json` as flat key-value pairs (multi-file) or under the `metrics` key of stdout output (JSON)
+- [ ] At least one Plotly visualization asset (`nextmv.Asset` + `to_dict()` in Python; equivalent JSON in Java)
+- [ ] Logging: stdout is fine for multi-file; stderr only for JSON
 - [ ] Dependencies are Apache 2.0 / MIT / BSD licensed
-- [ ] `input.json` and `inputs/` directory with 3-5 varied inputs
-- [ ] `requirements.txt` with pinned versions
-- [ ] Local runs succeed with expected metrics
+- [ ] Sample inputs: CSVs in `inputs/` + `scenarios/` (multi-file) or `input.json` + `inputs/` (JSON), 3-5 varied
+- [ ] Dependencies pinned (`requirements.txt` / `pom.xml`)
+- [ ] Local runs succeed with expected metrics and assets (Java: jar rebuilt first)
 - [ ] At least one non-default option tested
-- [ ] Synced to Cloud, pushed version, created instances
+- [ ] Synced to FICO Platform DecisionOps, pushed version, created instances
 - [ ] Acceptance test comparing staging vs production reviewed
 - [ ] **User confirmed** before promoting to production
