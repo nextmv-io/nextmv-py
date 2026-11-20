@@ -160,6 +160,34 @@ class TestLocalExecutor(unittest.TestCase):
         self.assertIn("-timeout", result)
         self.assertIn("30.5", result)
 
+    def test_options_args_with_format_double_dash(self):
+        """Test options_args with a double dash, separate value format."""
+        options = {"duration": "10s", "iterations": 100}
+        result = options_args(options, format=["--{{name}}", "{{value}}"])
+        self.assertEqual(result, ["--duration", "10s", "--iterations", "100"])
+
+    def test_options_args_with_format_equals(self):
+        """Test options_args with a single argument name=value format."""
+        options = {"duration": "10s"}
+        result = options_args(options, format=["-{{name}}={{value}}"])
+        self.assertEqual(result, ["-duration=10s"])
+
+    def test_options_args_with_format_omits_empty_values(self):
+        """Test that empty resulting arguments are omitted, e.g. bool flags."""
+        options = {"verbose": "", "duration": "10s"}
+        result = options_args(options, format=["--{{name}}", "{{value}}"])
+        self.assertEqual(result, ["--verbose", "--duration", "10s"])
+
+    def test_options_args_with_empty_format_uses_default(self):
+        """Test that an empty or missing format falls back to the default."""
+        options = {"duration": "10s"}
+        self.assertEqual(options_args(options, format=[]), ["-duration", "10s"])
+        self.assertEqual(options_args(options, format=None), ["-duration", "10s"])
+
+    def test_options_args_with_format_and_none_options(self):
+        """Test options_args with a format but no options."""
+        self.assertEqual(options_args(None, format=["--{{name}}", "{{value}}"]), [])
+
     def test_process_run_input_json_format_with_dict(self):
         """Test process_run_input with JSON format and dict input."""
         input_data = {"test": "data", "value": 42}
