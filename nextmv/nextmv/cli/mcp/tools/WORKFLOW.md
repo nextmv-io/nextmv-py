@@ -5,9 +5,16 @@
 - **Existing models — manifest first**: When the user asks to connect their own
   existing model to Nextmv / FICO Platform DecisionOps, **minimize code
   changes**. Adapt `app.yaml` to the model before touching the model code, and
-  only change code when the manifest cannot cover the gap. See
+  only change code when the manifest cannot cover the gap. **Translate only what
+  the model already produces** — existing plots become assets, existing summary
+  statistics become metrics, existing parameters become options. Do not invent
+  real ones; for anything missing, expose a clearly labeled **placeholder**
+  (placeholder slider, placeholder metric, placeholder asset) that does not
+  change how the model runs. See
   [Connecting an Existing Model](#connecting-an-existing-model). The rest of this
-  guide (Steps 1-9) describes building a **new** app.
+  guide (Steps 1-9) describes building a **new** app; the "every app must"
+  rules for metrics, visualization, and configuration below apply to new apps
+  only.
 - **Language**: Python and Java apps are supported. For a new app, ask the user
   which language to use. For an existing model, use the model's language.
 - **Solver**: Ask the user which solver or modeling library to use (e.g.,
@@ -35,7 +42,7 @@
 - **Do NOT** use `nextmv.load`, `nextmv.write`, `nextmv.Output`, or any other
   SDK input/output helpers.
 - **Do NOT** add `input` / `output` options to `app.yaml`.
-- **Metrics**: Every app must write metrics. For multi-file apps, write them to
+- **Metrics**: Every new app must write metrics. For multi-file apps, write them to
   `metrics.json` at the path declared in `app.yaml` as flat key-value pairs
   (no `metrics` wrapper); for JSON apps, put them under the `metrics` key of
   the stdout output.
@@ -43,10 +50,16 @@
   - **ML classifier apps**: use `accuracy`, `precision`, `recall`, `f1_score`, `roc_auc`, `log_loss`, and confusion matrix counts. Do NOT use `status`/`result_value`.
   - **ML regression / forecasting apps**: use `rmse`, `mae`, `r2`, and domain-relevant metrics. Do NOT use `status`/`result_value`.
   - **Simulation / rules-engine apps**: use domain-specific metrics (throughput, utilization, queue length, etc.).
-- **Visualization**: Every app must include at least one Plotly visualization
-  written as an asset (`nextmv.Asset` in Python; the equivalent JSON structure in
-  Java — see Step 4).
-- **Configuration**: Every app must expose user-facing options via `app.yaml`. Apps that use a random seed must expose a `random_seed` option (`option_type: int`, not required, no default).
+- **Visualization**: Every new app must include at least one visualization written
+  as an asset (`nextmv.Asset` in Python; the equivalent JSON structure in Java —
+  see Step 4). Use Plotly for charts.
+- **Maps**: For anything geographic (locations, routes, regions), use a
+  **GeoJSON** asset (`schema: geojson`), NOT a Plotly map. Plotly map traces
+  (`scattergeo`, `scattermap`, `scattermapbox`, `choropleth`, `choroplethmap`,
+  `choroplethmapbox`, `densitymap`, `densitymapbox`) fetch basemaps / topojson
+  from external servers, which the Console's Content Security Policy blocks
+  ("Failed to fetch ... violates the document's Content Security Policy").
+- **Configuration**: Every new app must expose user-facing options via `app.yaml`. Apps that use a random seed must expose a `random_seed` option (`option_type: int`, not required, no default).
 
 ---
 
@@ -85,19 +98,13 @@ runs.
      model already reads from.
    - `configuration.content.multi-file.output.solutions` / `metrics` / `assets`:
      set to the paths the model already writes to.
-   - `configuration.options.items`: declare the parameters the model already
-     takes, using the **same names** as its existing CLI flags (see
-     [Options at runtime](#options-at-runtime)). A model that already parses
-     those flags needs no code change.
-4. **Only then make minimal, additive changes** for what the manifest cannot
+   - `configuration.options.items`: declare **only** the parameters the model
+     already takes (CLI flags, config values it reads), using the **same
+     names** (see [Options at runtime](#options-at-runtime)). A model that
+     already parses those flags needs no code change. Do not turn hard-coded
+     constants into options.
+4. **Make only the code changes needed to run** for what the manifest cannot
    cover, e.g.:
-   - Writing a `metrics.json` (flat key-value pairs) or adding a `metrics` key
-     to the JSON output if the model doesn't produce metrics anywhere. (Older
-     apps may emit a deprecated `statistics` block; add `metrics` alongside it
-     rather than restructuring.)
-   - Python: loading options with
-     `nextmv.Manifest.from_yaml(".").extract_options()` if the model has
-     hard-coded parameters the user wants exposed.
    - Java: making the argument parser accept both `-name value` and
      `-name=value` if it only handles one form.
    - JSON apps: keeping logs off stdout — `nextmv.redirect_stdout()` /
@@ -106,11 +113,138 @@ runs.
    - Java: if the build does not produce a runnable fat jar, add the
      `maven-assembly-plugin` (`jar-with-dependencies`, with `mainClass` set) or
      Gradle Shadow plugin — a build-config change, not a model change.
-   - Adding a small visuals module for a Plotly asset.
    Keep the solver logic and data handling untouched. Do not restructure the
    project, rename files, or convert I/O formats unless the user asks.
-5. **Tell the user** which changes went into `app.yaml` and which (if any)
-   required code or build edits, and why.
+5. **Translate what the model already produces — nothing more:**
+   - **Summary statistics → metrics.** If the model already computes or prints
+     summary values (objective, status, KPIs, counts), write those same values
+     to `metrics.json` (multi-file, flat key-value pairs) or the `metrics` key
+     (JSON). If it emits a deprecated `statistics` block, add `metrics`
+     alongside it rather than restructuring. Do not compute new statistics.
+   - **Plots → assets.** If the model already makes plots (matplotlib, Plotly,
+     etc.), recreate those same plots from the same data as Plotly assets
+     (GeoJSON for maps). Leave the model's existing plot output in place. Do not
+     design new charts.
+   - **If the model has none of these, do not invent real ones.** Expose a
+     placeholder instead (see below).
+6. **Expose placeholders** for any options, metrics, or visuals the model does
+   not have, so the user sees them in the Console and knows where to add their
+   own. Every placeholder must be **visibly labeled as a placeholder** and must
+   **not change how the model runs** (no changes to solver logic, inputs, or
+   real outputs). See [Placeholders](#placeholders-for-existing-models).
+7. **Tell the user** what went into `app.yaml`, what (if any) required code or
+   build edits and why, what was translated from existing output, and which
+   placeholders were added and how to replace them.
+
+### Placeholders for existing models
+
+Add only the placeholders for what is missing — e.g. if the model already has
+real metrics, add a placeholder asset but no placeholder metric. Use the names
+below so placeholders are obvious in the Console.
+
+| Placeholder | Name / label | What the user sees |
+| --- | --- | --- |
+| Option | `placeholder_slider`, display name "Placeholder slider" | A slider in the run options |
+| Metric | `placeholder_metric` | A metric on the run |
+| Asset | label "Placeholder asset" | A custom tab with a labeled placeholder chart |
+
+**Placeholder option (`app.yaml`)** — declare it, but the model does not read
+it:
+
+```yaml
+  options:
+    items:
+      - name: placeholder_slider
+        option_type: int
+        default: 5
+        required: false
+        description: Placeholder - not used by the model. Replace with a real parameter.
+        additional_attributes:
+          min: 0
+          max: 10
+          step: 1
+        ui:
+          control_type: slider
+          display_name: Placeholder slider
+```
+
+Sliders require `min`, `max`, and `step`. If a user changes the placeholder on
+a run, it is passed to the model as `-placeholder_slider <value>`. Check how the
+model parses arguments: if it rejects unknown flags (e.g. Python `argparse`
+`parse_args()`, or a Java parser that exits on unknown arguments), tell the user
+that changing the placeholder will fail the run until they wire it up.
+
+**Placeholder metric and asset — multi-file (no code changes).** Ship static
+placeholder files with the app and point the manifest's output paths at them:
+
+```
+placeholders/
+├── metrics.json
+└── assets.json
+```
+
+`placeholders/metrics.json`:
+
+```json
+{"placeholder_metric": 0}
+```
+
+`placeholders/assets.json`:
+
+```json
+{
+  "assets": [
+    {
+      "name": "Placeholder asset",
+      "content_type": "json",
+      "visual": {"schema": "plotly", "type": "custom-tab", "label": "Placeholder asset"},
+      "content": [
+        {
+          "data": [{"type": "bar", "x": ["placeholder"], "y": [1]}],
+          "layout": {
+            "title": {"text": "Placeholder asset - replace with your model's visuals"}
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+`app.yaml`:
+
+```yaml
+files:
+  - src/              # the model's existing files
+  - placeholders/     # placeholder metrics / assets
+configuration:
+  content:
+    format: multi-file
+    multi-file:
+      input:
+        path: data/in
+      output:
+        solutions: data/out
+        metrics: placeholders/metrics.json  # Placeholder - point at the model's metrics file once it writes one.
+        assets: placeholders/assets.json    # Placeholder - point at the model's assets file once it writes one.
+```
+
+If the model already writes real metrics (or assets), point that path at the
+model's file and only use the placeholder file for the missing one.
+
+**Placeholder metric and asset — JSON format.** JSON apps report metrics and
+assets on stdout, so add them to the output document where it is built — an
+additive change that does not touch the solve:
+
+```python
+output["metrics"] = {"placeholder_metric": 0}  # Placeholder - replace with real KPIs.
+output["assets"] = [placeholder_asset]          # Placeholder - same structure as placeholders/assets.json.
+```
+
+```java
+output.put("metrics", Map.of("placeholder_metric", 0)); // Placeholder - replace with real KPIs.
+output.put("assets", List.of(placeholderAsset));          // Placeholder - same structure as above.
+```
 
 ---
 
@@ -591,6 +725,70 @@ static Map<String, Object> buildChart(Result result, String label) {
 }
 ```
 
+### Maps — GeoJSON asset
+
+Do NOT use Plotly map traces (`scattergeo`, `scattermap`, `scattermapbox`,
+`choropleth*`, `densitymap*`) — they load basemaps from external servers and are
+blocked by the Console's Content Security Policy. Render maps as a GeoJSON
+`FeatureCollection` instead; the Console draws it on its own basemap.
+
+- Coordinates are **`[longitude, latitude]`** (GeoJSON order — not lat/lon).
+- Geometries: `Point` (locations), `LineString` (routes), `Polygon` (regions).
+- `properties.style` sets the look (`color`, `fillColor`, `fillOpacity`,
+  `weight`, `opacity`).
+- `properties.metadata` is a list of `{"key", "value"}` pairs shown when the
+  feature is clicked.
+- `content` is the FeatureCollection itself (a dict, not wrapped in a list).
+
+**Python:**
+
+```python
+import nextmv
+
+
+def build_map(routes, label="Routes"):
+    features = [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[stop["lon"], stop["lat"]] for stop in route["stops"]],
+            },
+            "properties": {
+                "name": route["id"],
+                "style": {"color": route["color"], "weight": 3, "opacity": 0.9},
+                "metadata": [
+                    {"key": "Vehicle", "value": route["id"]},
+                    {"key": "Stops", "value": len(route["stops"])},
+                ],
+            },
+        }
+        for route in routes
+    ]
+
+    return nextmv.Asset(
+        name=label,
+        content_type="json",
+        visual=nextmv.Visual(
+            visual_schema=nextmv.VisualSchema.GEOJSON,
+            visual_type="custom-tab",
+            label=label,
+        ),
+        content={"type": "FeatureCollection", "features": features},
+    )
+```
+
+**Java:** build the same structure with maps — `visual.schema` is `"geojson"`
+and `content` is the `FeatureCollection` map:
+
+```java
+Map<String, Object> asset = new LinkedHashMap<>();
+asset.put("name", label);
+asset.put("content_type", "json");
+asset.put("visual", Map.of("schema", "geojson", "type", "custom-tab", "label", label));
+asset.put("content", Map.of("type", "FeatureCollection", "features", features));
+```
+
 ---
 
 ## Step 5: Declare Dependencies
@@ -740,13 +938,16 @@ cloud_update_instance(app_id="<app-id>", instance_id="production", version_id="<
 
 - [ ] User chose the language (Python or Java) and content format (multi-file or JSON)
 - [ ] Existing model: changes made in `app.yaml` first; code changes kept to a minimum
+- [ ] Existing model: only existing plots / summary stats / parameters translated to assets / metrics / options
+- [ ] Existing model: anything missing exposed as a labeled placeholder (`placeholder_slider`, `placeholder_metric`, "Placeholder asset") that does not change how the model runs; user told about any argument-parsing risk
 - [ ] `app.yaml` has user-facing configuration options and no `input` / `output` options
 - [ ] Multi-file: `app.yaml` wires up input dir, solutions dir, `metrics.json`, and `assets.json`
 - [ ] Python: model code uses the SDK only to load options via `nextmv.Manifest.from_yaml(...).extract_options()` (plus `redirect_stdout` / `reset_stdout` / `log` for JSON)
 - [ ] Java: options parsed from `args` (both `-name value` and `-name=value`), defaults match `app.yaml`; `pre-push` builds the jar listed in `files`
 - [ ] No `nextmv.load`, `nextmv.write`, or `nextmv.Output`
 - [ ] Metrics written to `metrics.json` as flat key-value pairs (multi-file) or under the `metrics` key of stdout output (JSON)
-- [ ] At least one Plotly visualization asset (`nextmv.Asset` + `to_dict()` in Python; equivalent JSON in Java)
+- [ ] At least one visualization asset (`nextmv.Asset` + `to_dict()` in Python; equivalent JSON in Java)
+- [ ] Maps use a GeoJSON asset (`[lon, lat]`), never Plotly map traces
 - [ ] Logging: stdout is fine for multi-file; stderr only for JSON
 - [ ] Dependencies are Apache 2.0 / MIT / BSD licensed
 - [ ] Sample inputs: CSVs in `inputs/` + `scenarios/` (multi-file) or `input.json` + `inputs/` (JSON), 3-5 varied
