@@ -13,7 +13,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def community_list() -> list[dict[str, Any]]:
-        """List all available Nextmv community apps.
+        """List all available DecisionOps community apps.
 
         Community apps are pre-built decision models for common
         optimization problems like vehicle routing, knapsack, shift
@@ -27,7 +27,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def community_clone(app_name: str, target_dir: str = ".") -> str:
-        """Clone a Nextmv community app to a local directory.
+        """Clone a DecisionOps community app to a local directory.
 
         Downloads the community app source code into the target
         directory. The app is ready to run locally after cloning.

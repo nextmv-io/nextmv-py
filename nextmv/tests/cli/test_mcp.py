@@ -70,7 +70,7 @@ class TestMCPServeCommand(unittest.TestCase):
         result = self.runner.invoke(app, ["mcp", "serve", "--help"])
         self.assertEqual(result.exit_code, 0)
         output = _strip_ansi(result.output)
-        self.assertIn("Start the Nextmv MCP server", output)
+        self.assertIn("Start the DecisionOps MCP server", output)
         self.assertIn("--transport", output)
         self.assertIn("--port", output)
 
@@ -93,7 +93,7 @@ class TestMCPServerTools(unittest.TestCase):
         """Test that create_server returns an MCPServer instance."""
 
         server = create_server()
-        self.assertEqual(server.name, "nextmv")
+        self.assertEqual(server.name, "decisionops")
 
     def test_server_has_all_profile_tools(self):
         """Test that profile tools are registered."""
@@ -267,17 +267,17 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        self.assertIn("nextmv_workflow_guide", tool_names)
+        self.assertIn("decisionops_workflow_guide", tool_names)
 
     def test_workflow_guide_returns_content(self):
         """Test that the workflow guide tool returns the guide content."""
 
         server = create_server()
-        tool = server._tool_manager._tools["nextmv_workflow_guide"]
+        tool = server._tool_manager._tools["decisionops_workflow_guide"]
         result = asyncio.run(tool.run({}, None))
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         # Verify key sections are present.
-        self.assertIn("Nextmv App Development Workflow", str(text))
+        self.assertIn("FICO Platform DecisionOps Workflow", str(text))
         self.assertIn("app.yaml", str(text))
         self.assertIn("local_run", str(text))
         self.assertIn("cloud_create_app", str(text))
@@ -371,7 +371,7 @@ class TestGetClient(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             _get_client()
-        self.assertIn("Could not build a Nextmv client", str(ctx.exception))
+        self.assertIn("Could not build a DecisionOps client", str(ctx.exception))
 
 
 class TestSaveToFile(unittest.TestCase):

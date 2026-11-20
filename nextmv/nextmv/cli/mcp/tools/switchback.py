@@ -13,7 +13,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_switchback_tests(app_id: str) -> list[dict[str, Any]]:
-        """List switchback tests for a Nextmv Cloud application.
+        """List switchback tests for a DecisionOps application.
 
         A switchback test alternates live traffic between baseline and
         candidate instances over fixed time periods, providing a
@@ -58,7 +58,7 @@ def register(mcp: MCPServer) -> None:
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Create a switchback test for a Nextmv Cloud application.
+        """Create a switchback test for a DecisionOps application.
 
         A switchback test alternates live traffic between baseline and
         candidate instances over fixed time periods (units). The total

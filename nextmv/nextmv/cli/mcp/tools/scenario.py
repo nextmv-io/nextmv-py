@@ -125,7 +125,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_scenario_tests(app_id: str) -> list[dict[str, Any]]:
-        """List scenario tests for a Nextmv Cloud application.
+        """List scenario tests for a DecisionOps application.
 
         Scenario tests run the application with multiple
         configurations (scenarios) to compare different solver
@@ -169,7 +169,7 @@ def register(mcp: MCPServer) -> None:
         repetitions: int = 0,
         content_type: str | None = None,
     ) -> str:
-        """Create a scenario test for a Nextmv Cloud application.
+        """Create a scenario test for a DecisionOps application.
 
         A scenario test runs the app with multiple scenario configurations
         to compare different setups.

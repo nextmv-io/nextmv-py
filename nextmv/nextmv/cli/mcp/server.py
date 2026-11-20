@@ -1,4 +1,4 @@
-"""Nextmv MCP server definition.
+"""DecisionOps MCP server definition.
 
 This module is the public entry point for the MCP server. It delegates
 tool registration to domain-specific submodules under ``tools/`` and
@@ -47,14 +47,15 @@ from nextmv.cloud import list_applications  # noqa: F401
 
 
 def create_server() -> MCPServer:
-    """Create and return the Nextmv MCP server."""
+    """Create and return the DecisionOps MCP server."""
 
     mcp = MCPServer(
-        "nextmv",
+        "decisionops",
         instructions=(
-            "Nextmv is a platform for deploying and managing decision "
-            "models (optimization, routing, scheduling, etc.). Use these "
-            "tools to interact with Nextmv Cloud apps: list apps, submit "
+            "FICO Platform DecisionOps is a platform for deploying and "
+            "managing decision models (optimization, routing, scheduling, "
+            "etc.). Use these "
+            "tools to interact with DecisionOps apps: list apps, submit "
             "runs, check results, manage versions/instances, run experiments, "
             "and work with local applications.\n\n"
             "IMPORTANT: Always use these MCP tools instead of shelling out "
@@ -78,9 +79,10 @@ def create_server() -> MCPServer:
             "exists there, it will not be re-downloaded. You can read "
             "cached cloud run data directly from these paths without "
             "calling the cloud tools again.\n\n"
-            "WORKFLOW GUIDE: When creating a new app, deploying to Cloud, "
-            "or running experiments, call the nextmv_workflow_guide tool "
-            "first to get the step-by-step workflow and coding patterns."
+            "DECISIONOPS WORKFLOW: When creating a new app, connecting an "
+            "existing model, deploying to Cloud, or running experiments, "
+            "call the decisionops_workflow_guide tool first to get the "
+            "DecisionOps workflow and coding patterns."
         ),
     )
 
