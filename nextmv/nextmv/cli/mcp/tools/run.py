@@ -189,7 +189,7 @@ def register(mcp: MCPServer) -> None:
         run_options: dict[str, str] | None = None,
         managed_input_id: str | None = None,
     ) -> str:
-        """Run a Nextmv Cloud application and wait for the result.
+        """Run a DecisionOps application and wait for the result.
 
         Submits the input to the application, polls until the run
         completes, and saves the full result (solution output and
@@ -240,7 +240,7 @@ def register(mcp: MCPServer) -> None:
         run_options: dict[str, str] | None = None,
         managed_input_id: str | None = None,
     ) -> str:
-        """Submit a run to a Nextmv Cloud application without waiting.
+        """Submit a run to a DecisionOps application without waiting.
 
         Returns the run ID immediately. Use ``cloud_run_status`` or
         ``cloud_run_result`` to check on the run later.
@@ -287,7 +287,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_run_status(app_id: str, run_id: str) -> dict[str, Any]:
-        """Get the status and metadata of a Nextmv Cloud run.
+        """Get the status and metadata of a DecisionOps run.
 
         Returns a dictionary with run metadata including status
         (``"queued"``, ``"running"``, ``"succeeded"``, ``"failed"``,
@@ -304,7 +304,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_run_result(app_id: str, run_id: str) -> str:
-        """Get the full result of a completed Nextmv Cloud run.
+        """Get the full result of a completed DecisionOps run.
 
         Saves the result (solution output, statistics, and metadata)
         to a local temp file. Use file-reading tools to inspect the
@@ -319,7 +319,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_cancel_run(app_id: str, run_id: str) -> str:
-        """Cancel a queued or running Nextmv Cloud run.
+        """Cancel a queued or running DecisionOps run.
 
         The run must be in ``"queued"`` or ``"running"`` status.
         Already completed or canceled runs cannot be canceled.
@@ -338,7 +338,7 @@ def register(mcp: MCPServer) -> None:
         app_id: str,
         status: str | None = None,
     ) -> list[dict[str, Any]]:
-        """List runs for a Nextmv Cloud application.
+        """List runs for a DecisionOps application.
 
         Returns a list of run metadata dictionaries. Optionally filter
         by status to retrieve only runs in a specific state.
@@ -356,7 +356,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_run_input(app_id: str, run_id: str) -> str:
-        """Get the input data that was submitted to a Nextmv Cloud run.
+        """Get the input data that was submitted to a DecisionOps run.
 
         Saves the input to a local temp file. Use file-reading tools
         to inspect the contents.
@@ -370,7 +370,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_run_logs(app_id: str, run_id: str) -> str:
-        """Get a snapshot of the logs from a Nextmv Cloud run.
+        """Get a snapshot of the logs from a DecisionOps run.
 
         Fetches the current log entries and saves them to a local temp
         file. For runs still in progress, use ``cloud_poll_run_logs``
@@ -386,7 +386,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_poll_run_logs(app_id: str, run_id: str) -> str:
-        """Poll logs from an active Nextmv Cloud run until it completes.
+        """Poll logs from an active DecisionOps run until it completes.
 
         Unlike ``cloud_run_logs`` (which fetches a single snapshot),
         this tool polls the run continuously until it finishes and

@@ -70,7 +70,7 @@ class TestMCPServeCommand(unittest.TestCase):
         result = self.runner.invoke(app, ["mcp", "serve", "--help"])
         self.assertEqual(result.exit_code, 0)
         output = _strip_ansi(result.output)
-        self.assertIn("Start the Nextmv MCP server", output)
+        self.assertIn("Start the DecisionOps MCP server", output)
         self.assertIn("--transport", output)
         self.assertIn("--port", output)
 
@@ -93,7 +93,7 @@ class TestMCPServerTools(unittest.TestCase):
         """Test that create_server returns an MCPServer instance."""
 
         server = create_server()
-        self.assertEqual(server.name, "nextmv")
+        self.assertEqual(server.name, "decisionops")
 
     def test_server_has_all_profile_tools(self):
         """Test that profile tools are registered."""
@@ -371,7 +371,7 @@ class TestGetClient(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             _get_client()
-        self.assertIn("Could not build a Nextmv client", str(ctx.exception))
+        self.assertIn("Could not build a DecisionOps client", str(ctx.exception))
 
 
 class TestSaveToFile(unittest.TestCase):
