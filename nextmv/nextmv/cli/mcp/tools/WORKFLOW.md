@@ -103,10 +103,15 @@ runs.
      names** (see [Options at runtime](#options-at-runtime)). A model that
      already parses those flags needs no code change. Do not turn hard-coded
      constants into options.
+   - `configuration.options.format`: set it to the argument style the model's
+     parser already expects — e.g. `["--{{name}}", "{{value}}"]` for
+     `--time_limit 60`, or `["--{{name}}={{value}}"]` for `--time_limit=60`.
+     Do not change the model's argument parser to fit the platform.
 4. **Make only the code changes needed to run** for what the manifest cannot
    cover, e.g.:
-   - Java: making the argument parser accept both `-name value` and
-     `-name=value` if it only handles one form.
+   - Reading parameters from the command line, only if the model takes them
+     some other way `options.format` cannot express (e.g. positional
+     arguments or a config file) and the user wants them exposed.
    - JSON apps: keeping logs off stdout — `nextmv.redirect_stdout()` /
      `nextmv.reset_stdout()` (Python) or `System.err` / `System.setOut(System.err)`
      (Java).
@@ -153,6 +158,7 @@ it:
 
 ```yaml
   options:
+    format: ["--{{name}}", "{{value}}"]  # Match the model's existing argument style.
     items:
       - name: placeholder_slider
         option_type: int
@@ -169,8 +175,9 @@ it:
 ```
 
 Sliders require `min`, `max`, and `step`. If a user changes the placeholder on
-a run, it is passed to the model as `-placeholder_slider <value>`. Check how the
-model parses arguments: if it rejects unknown flags (e.g. Python `argparse`
+a run, it is passed to the model as a command-line argument in the
+`options.format` style (e.g. `--placeholder_slider 7`). Check how the model
+parses arguments: if it rejects unknown flags (e.g. Python `argparse`
 `parse_args()`, or a Java parser that exits on unknown arguments), tell the user
 that changing the placeholder will fail the run until they wire it up.
 
@@ -348,6 +355,10 @@ pre-push: mvn package
 
 files:
   - main.jar
+
+configuration:
+  options:
+    format: ["--{{name}}", "{{value}}"]  # How options are passed to the jar.
 ```
 
 ### Multi-file format
@@ -427,15 +438,40 @@ configuration:
 ### Options at runtime
 
 Option values set on a run are passed to the entrypoint as command-line
-arguments named after the option. Depending on where the app runs they arrive
-as `-my_option 20` or `-my_option=20`, so parsers must accept **both** forms
-(and `--my_option` for good measure).
+arguments named after the option. Use `configuration.options.format` to control
+exactly how they are passed. Each entry becomes one argument; `{{name}}` is
+replaced with the option name and `{{value}}` with its value, and empty
+resulting arguments are dropped (so a bool option with an empty value becomes a
+bare flag):
 
-- **Python**: `nextmv.Manifest.from_yaml(".").extract_options()` handles this
-  and applies the manifest defaults.
-- **Java**: parse `args` yourself (see Step 3). Only options set on the run are
-  passed — manifest defaults are **not** — so the code's fallback defaults must
-  match the `default` values in `app.yaml`.
+```yaml
+configuration:
+  options:
+    format: ["--{{name}}", "{{value}}"]   # → --my_option 20
+    items:
+      - name: my_option
+        option_type: int
+        default: 10
+```
+
+| `format` | Arguments for `my_option=20` |
+| --- | --- |
+| `["--{{name}}", "{{value}}"]` | `--my_option 20` |
+| `["--{{name}}={{value}}"]` | `--my_option=20` |
+| `["-{{name}}", "{{value}}"]` | `-my_option 20` |
+| not set | Cloud: `-my_option=20`; local runs: `-my_option 20` |
+
+**Always set `format` for non-Python apps and for existing models**, so the app
+gets the same arguments locally and on FICO Platform DecisionOps. Without it,
+Cloud and local runs pass different styles. Local runs follow `format` with a
+`nextmv` version that includes the local options-format fix; older versions
+ignore it and always pass `-my_option 20`.
+
+- **Python**: `nextmv.Manifest.from_yaml(".").extract_options()` accepts all of
+  these styles and applies the manifest defaults, so `format` is optional.
+- **Java**: set `format` and parse that one style (see Step 3). Only options set
+  on the run are passed — manifest defaults are **not** — so the code's fallback
+  defaults must match the `default` values in `app.yaml`.
 
 ---
 
@@ -551,22 +587,20 @@ if __name__ == "__main__":
 
 ### Java — parse options
 
-There is no SDK in Java; read options from `args`. Keep fallback defaults in
-sync with `app.yaml`.
+There is no SDK in Java; read options from `args`. Set
+`configuration.options.format: ["--{{name}}", "{{value}}"]` in `app.yaml` so the
+parser only has to handle one style, and keep fallback defaults in sync with
+`app.yaml`.
 
 ```java
-// Accepts -name value, -name=value, --name value, --name=value.
+// Parses --name value, matching options.format ["--{{name}}", "{{value}}"].
 static Map<String, String> parseOptions(String[] args) {
   Map<String, String> opts = new HashMap<>();
-  for (int i = 0; i < args.length; i++) {
-    if (!args[i].startsWith("-")) continue;
-    String key = args[i].replaceFirst("^-{1,2}", "");
-    int eq = key.indexOf('=');
-    if (eq >= 0) {
-      opts.put(key.substring(0, eq), key.substring(eq + 1));
-    } else if (i + 1 < args.length) {
-      opts.put(key, args[++i]);
+  for (int i = 0; i + 1 < args.length; i += 2) {
+    if (!args[i].startsWith("--")) {
+      throw new IllegalArgumentException("unexpected argument: " + args[i]);
     }
+    opts.put(args[i].substring(2), args[i + 1]);
   }
   return opts;
 }
@@ -851,7 +885,9 @@ local_run_result(app_dir=".", run_id="<run-id>")
 Confirm that metrics and assets show up in the run result. For multi-file apps,
 if they are missing, check that the paths in the model code match the
 `multi-file.output` paths in `app.yaml`. If a run with `run_options` fails with
-an argument error, check that the parser accepts `-name value`.
+an argument error, check that `configuration.options.format` matches the style
+the model's parser expects. If it does, the installed `nextmv` may predate
+local support for `options.format` and is passing `-name value`; upgrade it.
 
 ### Sync to FICO Platform DecisionOps
 
@@ -943,7 +979,8 @@ cloud_update_instance(app_id="<app-id>", instance_id="production", version_id="<
 - [ ] `app.yaml` has user-facing configuration options and no `input` / `output` options
 - [ ] Multi-file: `app.yaml` wires up input dir, solutions dir, `metrics.json`, and `assets.json`
 - [ ] Python: model code uses the SDK only to load options via `nextmv.Manifest.from_yaml(...).extract_options()` (plus `redirect_stdout` / `reset_stdout` / `log` for JSON)
-- [ ] Java: options parsed from `args` (both `-name value` and `-name=value`), defaults match `app.yaml`; `pre-push` builds the jar listed in `files`
+- [ ] `configuration.options.format` set to the model's argument style (required for Java and existing models)
+- [ ] Java: options parsed from `args` in the `options.format` style, defaults match `app.yaml`; `pre-push` builds the jar listed in `files`
 - [ ] No `nextmv.load`, `nextmv.write`, or `nextmv.Output`
 - [ ] Metrics written to `metrics.json` as flat key-value pairs (multi-file) or under the `metrics` key of stdout output (JSON)
 - [ ] At least one visualization asset (`nextmv.Asset` + `to_dict()` in Python; equivalent JSON in Java)
