@@ -95,7 +95,13 @@ runs.
    - Java: `pre-push` — use the project's existing build command (e.g.
      `mvn package`, `./gradlew shadowJar`). It runs before `cloud_push_app`.
    - `configuration.content.multi-file.input.path`: set to the directory the
-     model already reads from.
+     model already reads from, relative to the working directory — e.g. if
+     the model reads `data/orders.csv`, use `path: data`. **Do not move,
+     rename, or copy the model's data into an `inputs/` folder**, and do not
+     change the paths in the model code. The platform places each run's input
+     files into whatever directory `input.path` names. The data directory does
+     not need to be listed in `files`; it is supplied per run (locally via
+     `local_run(input_dir_path="data", ...)`).
    - `configuration.content.multi-file.output.solutions` / `metrics` / `assets`:
      set to the paths the model already writes to.
    - `configuration.options.items`: declare **only** the parameters the model
@@ -229,9 +235,9 @@ configuration:
     format: multi-file
     multi-file:
       input:
-        path: data/in
+        path: data          # The folder the model already reads from.
       output:
-        solutions: data/out
+        solutions: results  # The folder the model already writes to.
         metrics: placeholders/metrics.json  # Placeholder - point at the model's metrics file once it writes one.
         assets: placeholders/assets.json    # Placeholder - point at the model's assets file once it writes one.
 ```
@@ -284,7 +290,12 @@ my-app/
 
 ### Input layout
 
-- **Multi-file format**:
+This layout is for **new** apps. For an existing model, keep its data where it
+already is and point `input.path` at that folder (see
+[Connecting an Existing Model](#connecting-an-existing-model)).
+
+- **Multi-file format** — the input folder name is up to you; it just has to
+  match `input.path` in `app.yaml` (`inputs` is used below):
 
   ```
   inputs/             # Default sample input (CSV files)
@@ -841,9 +852,10 @@ asset.put("content", Map.of("type", "FeatureCollection", "features", features));
 ## Step 6: Create Input Files
 
 - **Multi-file format**: inputs are **CSV files**. Put the default sample input
-  in `inputs/` (the directory declared in `app.yaml`) and add a `scenarios/`
-  directory with 3-5 sub-directories of CSVs varying problem size, constraint
-  tightness, or scenario type.
+  in the directory declared as `input.path` in `app.yaml` and add a
+  `scenarios/` directory with 3-5 sub-directories of CSVs varying problem size,
+  constraint tightness, or scenario type. For an existing model, use its
+  existing data folder as the default input and do not reorganize it.
 - **JSON format**: inputs are **JSON files**. Include `input.json` (default) plus
   an `inputs/` directory with 3-5 JSON files varying problem size, constraint
   tightness, or scenario type.
@@ -866,6 +878,10 @@ require a local JDK.
 local_run(app_dir=".", input_dir_path="inputs", content_format="multi-file")
 local_run(app_dir=".", input_dir_path="scenarios/large", content_format="multi-file", run_options={"my_option": "20"})
 ```
+
+`input_dir_path` is the folder whose contents are supplied to the run; they are
+placed in the `input.path` directory. For an existing model that reads from
+`data/`, use `input_dir_path="data"`.
 
 **JSON format:**
 
@@ -987,7 +1003,8 @@ cloud_update_instance(app_id="<app-id>", instance_id="production", version_id="<
 - [ ] Maps use a GeoJSON asset (`[lon, lat]`), never Plotly map traces
 - [ ] Logging: stdout is fine for multi-file; stderr only for JSON
 - [ ] Dependencies are Apache 2.0 / MIT / BSD licensed
-- [ ] Sample inputs: CSVs in `inputs/` + `scenarios/` (multi-file) or `input.json` + `inputs/` (JSON), 3-5 varied
+- [ ] Existing model (multi-file): `input.path` points at the folder the model already reads from; data not moved or renamed
+- [ ] Sample inputs: CSVs in the `input.path` folder + `scenarios/` (multi-file) or `input.json` + `inputs/` (JSON), 3-5 varied
 - [ ] Dependencies pinned (`requirements.txt` / `pom.xml`)
 - [ ] Local runs succeed with expected metrics and assets (Java: jar rebuilt first)
 - [ ] At least one non-default option tested
