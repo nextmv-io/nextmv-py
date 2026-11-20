@@ -1,4 +1,4 @@
-# FICO Platform DecisionOps Workflow
+# FICO Platform DecisionOps App Development Workflow
 
 ## Rules
 

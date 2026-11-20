@@ -267,17 +267,17 @@ class TestMCPServerTools(unittest.TestCase):
 
         server = create_server()
         tool_names = list(server._tool_manager._tools.keys())
-        self.assertIn("decisionops_workflow_guide", tool_names)
+        self.assertIn("nextmv_workflow_guide", tool_names)
 
     def test_workflow_guide_returns_content(self):
         """Test that the workflow guide tool returns the guide content."""
 
         server = create_server()
-        tool = server._tool_manager._tools["decisionops_workflow_guide"]
+        tool = server._tool_manager._tools["nextmv_workflow_guide"]
         result = asyncio.run(tool.run({}, None))
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         # Verify key sections are present.
-        self.assertIn("FICO Platform DecisionOps Workflow", str(text))
+        self.assertIn("FICO Platform DecisionOps App Development Workflow", str(text))
         self.assertIn("app.yaml", str(text))
         self.assertIn("local_run", str(text))
         self.assertIn("cloud_create_app", str(text))

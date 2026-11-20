@@ -1,4 +1,4 @@
-"""MCP tool that returns the DecisionOps workflow guide."""
+"""MCP tool that returns the Nextmv app development workflow guide."""
 
 import os
 
@@ -8,16 +8,15 @@ _WORKFLOW_FILE = os.path.join(os.path.dirname(__file__), "WORKFLOW.md")
 
 
 def register(mcp: MCPServer) -> None:
-    """Register the DecisionOps workflow guide tool."""
+    """Register the workflow guide tool."""
 
     @mcp.tool()
-    def decisionops_workflow_guide() -> str:
-        """Get the DecisionOps workflow for creating and deploying apps.
+    def nextmv_workflow_guide() -> str:
+        """Get the step-by-step workflow for creating and deploying Nextmv apps.
 
-        Returns the full DecisionOps workflow guide covering app structure,
-        manifest configuration, connecting existing models, entry point
-        patterns, visualizations, local testing, deployment to FICO Platform
-        DecisionOps, and experiment workflows.
+        Returns the full development guide covering app structure,
+        manifest configuration, main.py patterns, visualizations,
+        local testing, Cloud deployment, and experiment workflows.
 
         Call this tool before starting any new app or deployment.
         """
