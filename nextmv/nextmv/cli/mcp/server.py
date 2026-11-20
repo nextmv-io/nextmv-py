@@ -78,9 +78,10 @@ def create_server() -> MCPServer:
             "exists there, it will not be re-downloaded. You can read "
             "cached cloud run data directly from these paths without "
             "calling the cloud tools again.\n\n"
-            "WORKFLOW GUIDE: When creating a new app, deploying to Cloud, "
-            "or running experiments, call the nextmv_workflow_guide tool "
-            "first to get the step-by-step workflow and coding patterns."
+            "DECISIONOPS WORKFLOW: When creating a new app, connecting an "
+            "existing model, deploying to Cloud, or running experiments, "
+            "call the decisionops_workflow_guide tool first to get the "
+            "DecisionOps workflow and coding patterns."
         ),
     )
 
