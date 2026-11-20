@@ -1,9 +1,9 @@
-# FICO Platform DecisionOps App Development Workflow
+# Nextmv App Development Workflow
 
 ## Rules
 
 - **Existing models — manifest first**: When the user asks to connect their own
-  existing model to Nextmv / FICO Platform DecisionOps, **minimize code
+  existing model to Nextmv, **minimize code
   changes**. Adapt `app.yaml` to the model before touching the model code, and
   only change code when the manifest cannot cover the gap. **Translate only what
   the model already produces** — existing plots become assets, existing summary
@@ -65,8 +65,7 @@
 
 ## Connecting an Existing Model
 
-When the user already has a model and wants to run it on Nextmv / FICO Platform
-DecisionOps, the goal is to **fit the manifest to the code, not the code to the
+When the user already has a model and wants to run it on Nextmv, the goal is to **fit the manifest to the code, not the code to the
 manifest**. Work through these steps in order and stop as soon as the model
 runs.
 
@@ -375,8 +374,8 @@ configuration:
 ### Multi-file format
 
 Input is a directory of CSV files; output is files written to disk. The
-`output` block wires up the files the model writes so that FICO Platform
-DecisionOps picks them up.
+`output` block wires up the files the model writes so that Nextmv picks them
+up.
 
 ```yaml
 configuration:
@@ -473,7 +472,7 @@ configuration:
 | not set | Cloud: `-my_option=20`; local runs: `-my_option 20` |
 
 **Always set `format` for non-Python apps and for existing models**, so the app
-gets the same arguments locally and on FICO Platform DecisionOps. Without it,
+gets the same arguments locally and on Nextmv Cloud. Without it,
 Cloud and local runs pass different styles. Local runs follow `format` with a
 `nextmv` version that includes the local options-format fix; older versions
 ignore it and always pass `-my_option 20`.
@@ -905,7 +904,7 @@ an argument error, check that `configuration.options.format` matches the style
 the model's parser expects. If it does, the installed `nextmv` may predate
 local support for `options.format` and is passing `-name value`; upgrade it.
 
-### Sync to FICO Platform DecisionOps
+### Sync to Nextmv Cloud
 
 ```
 local_sync(app_dir=".", cloud_app_id="<app-id>")
@@ -915,11 +914,11 @@ local_sync(app_dir=".", cloud_app_id="<app-id>")
 
 ## Step 8: Write README.md
 
-Include these sections: App Name (one-sentence description), Approach, Configuration Options (table), Input Format, Output (solution, metrics, visualizations), Building (Java), Running Locally (tool calls), Syncing to FICO Platform DecisionOps.
+Include these sections: App Name (one-sentence description), Approach, Configuration Options (table), Input Format, Output (solution, metrics, visualizations), Building (Java), Running Locally (tool calls), Syncing to Nextmv Cloud.
 
 ---
 
-## Step 9: Deploy to FICO Platform DecisionOps
+## Step 9: Deploy to Nextmv Cloud
 
 ### 1. Create the app (first time)
 
@@ -1008,6 +1007,6 @@ cloud_update_instance(app_id="<app-id>", instance_id="production", version_id="<
 - [ ] Dependencies pinned (`requirements.txt` / `pom.xml`)
 - [ ] Local runs succeed with expected metrics and assets (Java: jar rebuilt first)
 - [ ] At least one non-default option tested
-- [ ] Synced to FICO Platform DecisionOps, pushed version, created instances
+- [ ] Synced to Cloud, pushed version, created instances
 - [ ] Acceptance test comparing staging vs production reviewed
 - [ ] **User confirmed** before promoting to production

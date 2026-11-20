@@ -277,7 +277,7 @@ class TestMCPServerTools(unittest.TestCase):
         result = asyncio.run(tool.run({}, None))
         text = json.loads(result[0].text) if hasattr(result[0], "text") else str(result)
         # Verify key sections are present.
-        self.assertIn("FICO Platform DecisionOps App Development Workflow", str(text))
+        self.assertIn("Nextmv App Development Workflow", str(text))
         self.assertIn("app.yaml", str(text))
         self.assertIn("local_run", str(text))
         self.assertIn("cloud_create_app", str(text))
