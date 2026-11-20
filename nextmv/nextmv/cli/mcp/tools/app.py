@@ -13,7 +13,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_apps() -> list[dict[str, Any]]:
-        """List all DecisionOps applications in the current account.
+        """List all Nextmv Cloud applications in the current account.
 
         Returns a list of application dictionaries containing each
         application's ID, name, description, and default instance.
@@ -25,7 +25,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_app(app_id: str) -> dict[str, Any]:
-        """Get details of a specific DecisionOps application.
+        """Get details of a specific Nextmv Cloud application.
 
         Returns the full application object including its name,
         description, default instance, and creation timestamp.
@@ -44,7 +44,7 @@ def register(mcp: MCPServer) -> None:
         app_id: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Create a new DecisionOps application.
+        """Create a new Nextmv Cloud application.
 
         Returns the created application object. A version and default
         instance are automatically provisioned.
@@ -70,7 +70,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_delete_app(app_id: str) -> str:
-        """Delete a DecisionOps application permanently.
+        """Delete a Nextmv Cloud application permanently.
 
         This action cannot be undone. All versions, instances, and
         run history associated with the application will be removed.
@@ -85,7 +85,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_app_exists(app_id: str) -> bool:
-        """Check whether a DecisionOps application exists.
+        """Check whether a Nextmv Cloud application exists.
 
         Returns True if an application with the given ID exists in
         the current account, False otherwise.
@@ -104,7 +104,7 @@ def register(mcp: MCPServer) -> None:
         description: str | None = None,
         default_instance_id: str | None = None,
     ) -> dict[str, Any]:
-        """Update attributes of a DecisionOps application.
+        """Update attributes of a Nextmv Cloud application.
 
         Only the provided fields are updated; omitted fields remain
         unchanged. Returns the updated application object.
@@ -131,7 +131,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_push_app(app_id: str, app_dir: str) -> str:
-        """Push local application code to a DecisionOps application.
+        """Push local application code to a Nextmv Cloud application.
 
         Uploads the contents of a local directory as a new version of
         the application. The directory must contain an ``app.yaml``

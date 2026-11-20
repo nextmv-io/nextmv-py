@@ -11,7 +11,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_profiles() -> list[dict[str, str | None]]:
-        """List available DecisionOps profiles.
+        """List available Nextmv Cloud profiles.
 
         Reads profiles from ``~/.nextmv/config.yaml``. Each returned
         profile contains a name, endpoint URL, and a masked API key
@@ -57,7 +57,7 @@ def register(mcp: MCPServer) -> None:
     # thread inherits the context, so it observes the profile set here.
     @mcp.tool()
     async def cloud_set_profile(profile: str) -> str:
-        """Set the active DecisionOps profile for this session.
+        """Set the active Nextmv Cloud profile for this session.
 
         All subsequent cloud tool calls will use this profile's API
         key and endpoint unless explicitly overridden. Use
@@ -82,7 +82,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_profile() -> str:
-        """Get the name of the currently active DecisionOps profile.
+        """Get the name of the currently active Nextmv Cloud profile.
 
         Returns ``"default"`` if no named profile has been set.
         """

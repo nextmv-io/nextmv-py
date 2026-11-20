@@ -153,9 +153,9 @@ def _register_run_tools(mcp: MCPServer) -> None:
         content_format: str | None = None,
         run_options: dict[str, str] | None = None,
     ) -> str:
-        """Run a local DecisionOps application and wait for the result.
+        """Run a local Nextmv application and wait for the result.
 
-        Executes the application using the `nextmv` SDK and polls until the
+        Executes the application using the Nextmv SDK and polls until the
         run completes. The result is stored in the local run directory at
         ``{app_dir}/.nextmv/runs/{run_id}/``. Use file-reading tools to
         inspect the result file.
@@ -198,7 +198,7 @@ def _register_run_tools(mcp: MCPServer) -> None:
     ) -> str:
         """Submit a local run without waiting for completion.
 
-        Executes the application using the `nextmv` SDK and returns the run
+        Executes the application using the Nextmv SDK and returns the run
         ID immediately. Use ``local_run_poll_result`` or
         ``local_run_status`` to check on the run later.
 
@@ -310,7 +310,7 @@ def _register_management_tools(mcp: MCPServer) -> None:
         app_dir: str,
         app_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        """List all runs for a local DecisionOps application.
+        """List all runs for a local Nextmv application.
 
         Returns a list of run metadata dictionaries, each containing
         the run ID, status, timestamps, and other metadata.
@@ -372,7 +372,7 @@ def _register_management_tools(mcp: MCPServer) -> None:
         instance_id: str | None = None,
         run_ids: list[str] | None = None,
     ) -> str:
-        """Sync local runs to a DecisionOps application.
+        """Sync local runs to a Nextmv Cloud application.
 
         Uploads local run data (inputs, outputs, metadata) to a cloud
         application for tracking, comparison, and experiment purposes.
@@ -402,7 +402,7 @@ def _register_management_tools(mcp: MCPServer) -> None:
     ) -> str:
         """Initialize an app.yaml manifest file in a local directory.
 
-        Creates a sample app.yaml manifest file for a DecisionOps application.
+        Creates a sample app.yaml manifest file for a Nextmv application.
         If the directory does not exist it will be created. An existing
         manifest file in the directory will be overwritten.
 

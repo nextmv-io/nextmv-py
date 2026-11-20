@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_instances(app_id: str) -> list[dict[str, Any]]:
-        """List all instances of a DecisionOps application.
+        """List all instances of a Nextmv Cloud application.
 
         Instances represent deployed configurations of a specific
         version (e.g., ``"latest"``, ``"production"``, ``"staging"``).
@@ -29,7 +29,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_instance(app_id: str, instance_id: str) -> dict[str, Any]:
-        """Get details of a specific instance of a DecisionOps application.
+        """Get details of a specific instance of a Nextmv Cloud application.
 
         Returns the instance configuration including the version it
         points to, execution class, options, and secrets collection.
@@ -52,7 +52,7 @@ def register(mcp: MCPServer) -> None:
         description: str | None = None,
         configuration: dict[str, Any] | None = None,
     ) -> dict[str, Any] | str:
-        """Create a new instance for a DecisionOps application.
+        """Create a new instance for a Nextmv Cloud application.
 
         An instance points to a specific version and can be configured
         with its own execution class, solver options, and secrets.
@@ -98,7 +98,7 @@ def register(mcp: MCPServer) -> None:
         description: str | None = None,
         configuration: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Update an instance of a DecisionOps application.
+        """Update an instance of a Nextmv Cloud application.
 
         Only the provided fields are updated; omitted fields remain
         unchanged. Returns the updated instance object.
@@ -128,7 +128,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_delete_instance(app_id: str, instance_id: str) -> str:
-        """Delete an instance of a DecisionOps application permanently.
+        """Delete an instance of a Nextmv Cloud application permanently.
 
         Args:
             app_id: The application ID.

@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_secrets_collections(app_id: str) -> list[dict[str, Any]]:
-        """List secrets collections for a DecisionOps application.
+        """List secrets collections for a Nextmv Cloud application.
 
         Secrets collections provide environment variables and files
         to application instances at runtime (e.g., solver licenses,
@@ -54,7 +54,7 @@ def register(mcp: MCPServer) -> None:
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Create a secrets collection for a DecisionOps application.
+        """Create a secrets collection for a Nextmv Cloud application.
 
         Secrets are injected into the application instance at runtime
         as environment variables or files.

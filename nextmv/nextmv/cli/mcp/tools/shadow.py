@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_shadow_tests(app_id: str) -> list[dict[str, Any]]:
-        """List shadow tests for a DecisionOps application.
+        """List shadow tests for a Nextmv Cloud application.
 
         A shadow test mirrors live production traffic to a candidate
         instance running alongside the baseline, allowing side-by-side
@@ -56,7 +56,7 @@ def register(mcp: MCPServer) -> None:
         description: str | None = None,
         start_events: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Create a shadow test for a DecisionOps application.
+        """Create a shadow test for a Nextmv Cloud application.
 
         A shadow test mirrors live traffic to candidate instances for
         comparison against the baseline without affecting production.

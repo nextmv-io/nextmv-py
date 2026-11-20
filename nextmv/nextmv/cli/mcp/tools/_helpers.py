@@ -19,7 +19,7 @@ DEFAULT_NEXTMV_ENDPOINT = "https://api.cloud.nextmv.io"
 
 
 class ProfileSession:
-    """Manages the active DecisionOps profile for the current async context.
+    """Manages the active Nextmv Cloud profile for the current async context.
 
     Uses ``contextvars.ContextVar`` internally so that each async task
     (and therefore each concurrent HTTP request in streamable-http
@@ -43,7 +43,7 @@ class ProfileSession:
         self._profile.set(value)
 
     def get_client(self, profile: str | None = None) -> Client:
-        """Build a DecisionOps client from env var or CLI config.
+        """Build a Nextmv Cloud client from env var or CLI config.
 
         Checks for credentials in the following order:
 
@@ -71,7 +71,7 @@ class ProfileSession:
             return Client(profile=p)
         except Exception as e:
             raise ValueError(
-                f"Could not build a DecisionOps client: {e}. Either set the "
+                f"Could not build a Nextmv client: {e}. Either set the "
                 "NEXTMV_API_KEY environment variable or configure the "
                 "CLI with: nextmv configuration create"
             ) from e

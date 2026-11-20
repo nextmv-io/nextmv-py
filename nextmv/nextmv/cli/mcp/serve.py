@@ -1,4 +1,4 @@
-"""MCP server command for the `nextmv` CLI."""
+"""MCP server command for the Nextmv CLI."""
 
 from typing import Annotated
 
@@ -34,9 +34,9 @@ def serve(
     _: DebugOption = False,
 ) -> None:
     """
-    Start the DecisionOps MCP server.
+    Start the Nextmv MCP server.
 
-    The MCP server exposes FICO Platform DecisionOps functionality as tools that any
+    The MCP server exposes Nextmv Cloud functionality as tools that any
     MCP-compatible client can use. The default transport is
     [magenta]stdio[/magenta], which is what Claude Code, Cursor, and most
     local clients expect.
@@ -52,7 +52,7 @@ def serve(
         $ [dim]nextmv mcp serve --transport streamable-http --port 9090[/dim]
 
     - Register with Claude Code.
-        $ [dim]claude mcp add decisionops -- nextmv mcp serve[/dim]
+        $ [dim]claude mcp add nextmv -- nextmv mcp serve[/dim]
     """
 
     server = create_server()

@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_input_sets(app_id: str) -> list[dict[str, Any]]:
-        """List input sets for a DecisionOps application.
+        """List input sets for a Nextmv Cloud application.
 
         Input sets are reusable collections of inputs used in batch
         experiments, scenario tests, and acceptance tests. Each entry
@@ -53,7 +53,7 @@ def register(mcp: MCPServer) -> None:
         run_ids: list[str] | None = None,
         managed_input_ids: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Create a new input set for a DecisionOps application.
+        """Create a new input set for a Nextmv Cloud application.
 
         An input set collects inputs (from historical runs or managed
         inputs) for use in batch experiments and acceptance tests.

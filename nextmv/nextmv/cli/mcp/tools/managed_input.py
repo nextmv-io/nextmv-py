@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_managed_inputs(app_id: str) -> list[dict[str, Any]]:
-        """List managed inputs for a DecisionOps application.
+        """List managed inputs for a Nextmv Cloud application.
 
         Managed inputs are reusable input data objects stored on the
         platform. They can be referenced by ID when creating runs or
@@ -54,7 +54,7 @@ def register(mcp: MCPServer) -> None:
         run_id: str | None = None,
         input: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Create a managed input for a DecisionOps application.
+        """Create a managed input for a Nextmv Cloud application.
 
         Provide exactly one of ``run_id`` (to copy the input from an
         existing run) or ``input`` (to upload raw JSON data directly).

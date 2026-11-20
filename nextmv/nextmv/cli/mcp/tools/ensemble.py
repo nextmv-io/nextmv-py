@@ -144,7 +144,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_ensembles(app_id: str) -> list[dict[str, Any]]:
-        """List ensemble definitions for a DecisionOps application.
+        """List ensemble definitions for a Nextmv Cloud application.
 
         An ensemble runs multiple instances or configurations in
         parallel and selects the best result based on evaluation
@@ -187,7 +187,7 @@ def register(mcp: MCPServer) -> None:
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any] | str:
-        """Create an ensemble definition for a DecisionOps application.
+        """Create an ensemble definition for a Nextmv Cloud application.
 
         An ensemble runs multiple instances/configurations and picks the
         best result based on evaluation rules.
@@ -243,7 +243,7 @@ def register(mcp: MCPServer) -> None:
         run_options: dict[str, str] | None = None,
         managed_input_id: str | None = None,
     ) -> str:
-        """Run a DecisionOps ensemble and wait for the result.
+        """Run a Nextmv Cloud ensemble and wait for the result.
 
         Submits input to an ensemble definition, which runs multiple
         instances/configurations in parallel and selects the best

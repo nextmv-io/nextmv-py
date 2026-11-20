@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_acceptance_tests(app_id: str) -> list[dict[str, Any]]:
-        """List acceptance tests for a DecisionOps application.
+        """List acceptance tests for a Nextmv Cloud application.
 
         Acceptance tests compare a candidate instance against a
         baseline using defined metrics. Returns a list of test

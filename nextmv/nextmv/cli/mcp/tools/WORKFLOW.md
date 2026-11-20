@@ -3,7 +3,7 @@
 ## Rules
 
 - **Existing models — manifest first**: When the user asks to connect their own
-  existing model to FICO Platform DecisionOps, **minimize code
+  existing model to Nextmv / FICO Platform DecisionOps, **minimize code
   changes**. Adapt `app.yaml` to the model before touching the model code, and
   only change code when the manifest cannot cover the gap. **Translate only what
   the model already produces** — existing plots become assets, existing summary
@@ -65,7 +65,7 @@
 
 ## Connecting an Existing Model
 
-When the user already has a model and wants to run it on FICO Platform
+When the user already has a model and wants to run it on Nextmv / FICO Platform
 DecisionOps, the goal is to **fit the manifest to the code, not the code to the
 manifest**. Work through these steps in order and stop as soon as the model
 runs.

@@ -18,7 +18,7 @@ def register(mcp: MCPServer) -> None:
         description: str | None = None,
         option_sets: dict[str, dict[str, str]] | None = None,
     ) -> str:
-        """Create a batch experiment for a DecisionOps application.
+        """Create a batch experiment for a Nextmv Cloud application.
 
         A batch experiment runs the application against every input in
         an input set, optionally with multiple option sets to compare
@@ -66,7 +66,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_batches(app_id: str) -> list[dict[str, Any]]:
-        """List all batch experiments for a DecisionOps application.
+        """List all batch experiments for a Nextmv Cloud application.
 
         Returns a list of batch experiment summaries including ID,
         name, status, and creation timestamp.
