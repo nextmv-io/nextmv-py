@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_list_versions(app_id: str) -> list[dict[str, Any]]:
-        """List all versions of a Nextmv Cloud application.
+        """List all versions of a DecisionOps application.
 
         Each version represents a snapshot of the application code
         that was pushed. Returns version ID, name, description, and
@@ -28,7 +28,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_version(app_id: str, version_id: str) -> dict[str, Any]:
-        """Get details of a specific version of a Nextmv Cloud application.
+        """Get details of a specific version of a DecisionOps application.
 
         Args:
             app_id: The application ID.
@@ -46,7 +46,7 @@ def register(mcp: MCPServer) -> None:
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Create a new version for a Nextmv Cloud application.
+        """Create a new version for a DecisionOps application.
 
         If ``version_id`` is provided and a version with that ID
         already exists, the existing version is returned (idempotent).
@@ -80,7 +80,7 @@ def register(mcp: MCPServer) -> None:
         name: str | None = None,
         description: str | None = None,
     ) -> dict[str, Any]:
-        """Update a version of a Nextmv Cloud application.
+        """Update a version of a DecisionOps application.
 
         Only the provided fields are updated; omitted fields remain
         unchanged. Returns the updated version object.
@@ -101,7 +101,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_delete_version(app_id: str, version_id: str) -> str:
-        """Delete a version of a Nextmv Cloud application permanently.
+        """Delete a version of a DecisionOps application permanently.
 
         Args:
             app_id: The application ID.

@@ -12,7 +12,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_account(account_id: str) -> dict[str, Any]:
-        """Get details of a Nextmv Cloud account.
+        """Get details of a DecisionOps account.
 
         Returns account information including organization name,
         plan details, and usage limits.
@@ -29,7 +29,7 @@ def register(mcp: MCPServer) -> None:
 
     @mcp.tool()
     def cloud_get_queue(account_id: str) -> dict[str, Any]:
-        """Get the run queue for a Nextmv Cloud account.
+        """Get the run queue for a DecisionOps account.
 
         Returns information about currently queued and running runs
         across all applications in the account, including queue
