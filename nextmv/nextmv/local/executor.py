@@ -239,7 +239,11 @@ def execute_run(
             # Start a subprocess to execute the entrypoint based on the application type.
             entrypoint = os.path.join(temp_src, __determine_entrypoint(manifest))
             cwd = __determine_cwd(manifest, default=temp_src)
-            args = __determine_command(manifest) + [entrypoint] + options_args(options)
+            args = (
+                __determine_command(manifest)
+                + [entrypoint]
+                + options_args(options, format=_manifest_options_format(manifest))
+            )
 
             # Determine whether stdout should be streamed live to the log file.
             # For MULTI_FILE format, stdout carries log output and must be streamed
@@ -365,7 +369,10 @@ def execute_run(
             f.truncate()
 
 
-def options_args(options: dict[str, Any] | None = None) -> list[str]:
+def options_args(
+    options: dict[str, Any] | None = None,
+    format: list[str] | None = None,
+) -> list[str]:
     """
     Converts options dictionary to a list of command-line arguments.
 
@@ -373,6 +380,14 @@ def options_args(options: dict[str, Any] | None = None) -> list[str]:
     ----------
     options : Optional[dict[str, Any]], optional
         Additional options for the run, by default None.
+    format : Optional[list[str]], optional
+        The `configuration.options.format` from the app manifest: a list of
+        templates that define how each option is translated into command-line
+        arguments. `{{name}}` is replaced with the option name and `{{value}}`
+        with the option value, e.g. `["--{{name}}", "{{value}}"]` produces
+        `--duration 10s`. Empty resulting arguments are omitted, so a boolean
+        flag with an empty value becomes just `--verbose`. When not given, the
+        options are passed as `-{name} {value}`.
 
     Returns
     -------
@@ -381,12 +396,37 @@ def options_args(options: dict[str, Any] | None = None) -> list[str]:
     """
     option_args = []
 
-    if options is not None:
+    if options is None:
+        return option_args
+
+    if not format:
         for key, value in options.items():
             option_args.append(f"-{key}")
             option_args.append(str(value))
 
+        return option_args
+
+    for key, value in options.items():
+        for template in format:
+            arg = template.replace("{{name}}", str(key)).replace("{{value}}", str(value))
+            if arg != "":
+                option_args.append(arg)
+
     return option_args
+
+
+def _manifest_options_format(manifest: Manifest) -> list[str] | None:
+    """
+    Returns the `configuration.options.format` of the manifest, if set.
+    """
+    if (
+        manifest.configuration is not None
+        and manifest.configuration.options is not None
+        and manifest.configuration.options.format
+    ):
+        return manifest.configuration.options.format
+
+    return None
 
 
 def process_run_input(
