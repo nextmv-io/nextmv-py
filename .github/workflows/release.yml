@@ -10,10 +10,9 @@ jobs:
   # >>> 'nextmv' package jobs.
   release-nextmv:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     permissions:
       contents: write
-      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -123,7 +122,7 @@ jobs:
   notify-nextmv:
     needs: [release-nextmv, publish-nextmv]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     with:
       PACKAGE_NAME: nextmv
       VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
@@ -202,10 +201,9 @@ jobs:
   # >>> 'nextmv-gurobipy' package jobs.
   release-nextmv-gurobipy:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     permissions:
       contents: write
-      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -262,7 +260,7 @@ jobs:
   notify-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy, publish-nextmv-gurobipy]
     if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     with:
       PACKAGE_NAME: nextmv_gurobipy
       VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
@@ -273,10 +271,9 @@ jobs:
   # >>> 'nextmv-scikit-learn' package jobs.
   release-nextmv-scikit-learn:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     permissions:
       contents: write
-      pull-requests: write
     with:
       BRANCH: ${{ github.ref_name }}
       REPOSITORY: nextmv-py
@@ -333,7 +330,7 @@ jobs:
   notify-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn, publish-nextmv-scikit-learn]
     if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@55db7c4e696ba9b86c9dee55624e9cad41b58b39 # develop
     with:
       PACKAGE_NAME: nextmv_sklearn
       VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
