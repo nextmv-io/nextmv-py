@@ -10,7 +10,7 @@ jobs:
   # >>> 'nextmv' package jobs.
   release-nextmv:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -24,8 +24,6 @@ jobs:
       VERSION_PREFIX: nextmv-
     secrets:
       SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
-      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
-      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   release-binaries:
     name: Release ${{ matrix.os }}-${{ matrix.arch }} binaries
@@ -125,7 +123,7 @@ jobs:
   notify-nextmv:
     needs: [release-nextmv, publish-nextmv]
     if: ${{ needs.release-nextmv.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     with:
       PACKAGE_NAME: nextmv
       VERSION: ${{ needs.release-nextmv.outputs.VERSION }}
@@ -204,7 +202,7 @@ jobs:
   # >>> 'nextmv-gurobipy' package jobs.
   release-nextmv-gurobipy:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -218,8 +216,6 @@ jobs:
       VERSION_PREFIX: nextmv-gurobipy-
     secrets:
       SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
-      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
-      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   publish-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy]
@@ -266,7 +262,7 @@ jobs:
   notify-nextmv-gurobipy:
     needs: [release-nextmv-gurobipy, publish-nextmv-gurobipy]
     if: ${{ needs.release-nextmv-gurobipy.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-gurobipy.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     with:
       PACKAGE_NAME: nextmv_gurobipy
       VERSION: ${{ needs.release-nextmv-gurobipy.outputs.VERSION }}
@@ -277,7 +273,7 @@ jobs:
   # >>> 'nextmv-scikit-learn' package jobs.
   release-nextmv-scikit-learn:
     if: ${{ github.ref_type == 'branch' }}
-    uses: nextmv-io/release/.github/workflows/release.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/release.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     permissions:
       contents: write
       pull-requests: write
@@ -291,8 +287,6 @@ jobs:
       VERSION_PREFIX: nextmv-scikit-learn-
     secrets:
       SLACK_URL_MISSION_CONTROL: ${{ secrets.SLACK_URL_MISSION_CONTROL }}
-      NEXTMVBOT_SSH_KEY: ${{ secrets.NEXTMVBOT_SSH_KEY }}
-      NEXTMVBOT_SIGNING_KEY: ${{ secrets.NEXTMVBOT_SIGNING_KEY }}
 
   publish-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn]
@@ -339,7 +333,7 @@ jobs:
   notify-nextmv-scikit-learn:
     needs: [release-nextmv-scikit-learn, publish-nextmv-scikit-learn]
     if: ${{ needs.release-nextmv-scikit-learn.outputs.RELEASE_NEEDED == 'true' && needs.release-nextmv-scikit-learn.outputs.SHOULD_NOTIFY_SLACK == 'true' }}
-    uses: nextmv-io/release/.github/workflows/notify-slack.yml@949cbb3b90ab294f8da42cf9c314637deaa578f5 # develop
+    uses: nextmv-io/release/.github/workflows/notify-slack.yml@5c6f430394d66a872d32ef892b660feed8811358 # develop
     with:
       PACKAGE_NAME: nextmv_sklearn
       VERSION: ${{ needs.release-nextmv-scikit-learn.outputs.VERSION }}
