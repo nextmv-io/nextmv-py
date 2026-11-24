@@ -146,9 +146,9 @@ class Client:
         configuration file (in that order). Defaults to
         `"https://api.cloud.nextmv.io"` when not set anywhere.
     console_url : str
-        URL of the Nextmv Cloud web console. When not set, it is derived from
-        the resolved API endpoint. Not used for API requests; provided for
-        convenience when constructing deep-links into the console.
+        URL of the Nextmv Cloud web console. Defaults to
+        `"https://cloud.nextmv.io"`. Not used for API requests; provided
+        for convenience when constructing deep-links into the console.
 
     Examples
     --------
