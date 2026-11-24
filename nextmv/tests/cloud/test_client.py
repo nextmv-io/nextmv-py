@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import requests
-from nextmv.cloud import Client
+from nextmv.cloud import Application, Client
 
 
 def _make_id_token(aud: str = "test-client-id") -> str:
@@ -198,6 +198,78 @@ class TestResolveEndpoint(unittest.TestCase):
                 env.pop("NEXTMV_ENDPOINT", None)
                 client = Client(profile="my-profile")
                 self.assertEqual(client.url, "https://api.profile.io")
+
+
+class TestConsoleUrl(unittest.TestCase):
+    """Tests for the Client.console_url default and the run console link."""
+
+    PRODUCTION_CONSOLE = "https://cloud.nextmv.io"
+
+    def _env(self):
+        env_patch = patch.dict(os.environ, {"NEXTMV_API_KEY": "k"})
+        env = env_patch.start()
+        self.addCleanup(env_patch.stop)
+        env.pop("NEXTMV_PROFILE", None)
+        env.pop("NEXTMV_ENDPOINT", None)
+
+    def test_production_endpoint_sets_production_console(self):
+        """The production API host gets the production console URL."""
+        self._env()
+        client = Client(url="https://api.cloud.nextmv.io")
+        self.assertEqual(client.console_url, self.PRODUCTION_CONSOLE)
+
+    def test_production_host_without_scheme_sets_production_console(self):
+        """The production API host is detected when given without a scheme."""
+        self._env()
+        client = Client(url="api.cloud.nextmv.io")
+        self.assertEqual(client.console_url, self.PRODUCTION_CONSOLE)
+
+    def test_default_endpoint_sets_production_console(self):
+        """The hardcoded default endpoint is the production host."""
+        self._env()
+        with patch("nextmv.cloud.client.load_config", return_value={"apikey": "k"}):
+            client = Client()
+        self.assertEqual(client.url, "https://api.cloud.nextmv.io")
+        self.assertEqual(client.console_url, self.PRODUCTION_CONSOLE)
+
+    def test_non_production_endpoint_leaves_console_empty(self):
+        """A non-production API host does not get the production console URL."""
+        self._env()
+        client = Client(url="https://api.example.com")
+        self.assertEqual(client.console_url, "")
+
+    def test_lookalike_host_leaves_console_empty(self):
+        """A host that only contains the production host name is not production."""
+        self._env()
+        client = Client(url="https://api.cloud.nextmv.io.example.com")
+        self.assertEqual(client.console_url, "")
+
+    def test_explicit_console_url_is_honored_for_non_production(self):
+        """An explicit console_url is kept for a non-production endpoint."""
+        self._env()
+        client = Client(url="https://api.example.com", console_url="https://console.example.com")
+        self.assertEqual(client.console_url, "https://console.example.com")
+
+    def test_explicit_console_url_is_honored_for_production(self):
+        """An explicit console_url is kept for the production endpoint."""
+        self._env()
+        client = Client(url="https://api.cloud.nextmv.io", console_url="https://console.example.com")
+        self.assertEqual(client.console_url, "https://console.example.com")
+
+    def test_run_console_url_production(self):
+        """Run links start with the production console URL on production."""
+        self._env()
+        app = Application(client=Client(url="https://api.cloud.nextmv.io"), id="app-1")
+        link = app._ApplicationRunMixin__console_url("run-1")
+        self.assertEqual(link, f"{self.PRODUCTION_CONSOLE}/app/app-1/run/run-1?view=details")
+
+    def test_run_console_url_non_production_is_path_only(self):
+        """Run links are the path only on a non-production endpoint."""
+        self._env()
+        app = Application(client=Client(url="https://api.example.com"), id="app-1")
+        link = app._ApplicationRunMixin__console_url("run-1")
+        self.assertEqual(link, "/app/app-1/run/run-1?view=details")
+        self.assertNotIn("nextmv.io", link)
 
 
 class TestResolveApiKey(unittest.TestCase):
