@@ -13,7 +13,7 @@ def register(mcp: MCPServer) -> None:
     def cloud_sso_delete_domain(domain: str) -> str:
         """Delete a domain mapping from the SSO configuration.
 
-        Removes a domain from the current Nextmv Cloud organization's
+        Removes a domain from the current DecisionOps organization's
         SSO configuration. After deletion, users with email addresses
         in that domain will no longer be redirected to the SSO
         identity provider.
