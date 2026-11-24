@@ -1854,8 +1854,7 @@ class ApplicationRunMixin:
         return result
 
     def __console_url(self: "Application", run_id: str) -> str:
-        """Auxiliary method to get the console URL for a run. The result has no
-        host when the client has no console URL (non-production endpoints)."""
+        """Auxiliary method to get the console URL for a run."""
 
         return f"{self.client.console_url}/app/{self.id}/run/{run_id}?view=details"
 

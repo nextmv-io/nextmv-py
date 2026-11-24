@@ -53,7 +53,7 @@ from nextmv.config import (
 )
 
 _PRODUCTION_CONSOLE_URL: str = "https://cloud.nextmv.io"
-"""str: URL of the production Nextmv Cloud console."""
+"""str: URL of the Nextmv Cloud console."""
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -146,13 +146,9 @@ class Client:
         configuration file (in that order). Defaults to
         `"https://api.cloud.nextmv.io"` when not set anywhere.
     console_url : str
-        URL of the Nextmv Cloud web console. Defaults to an empty string,
-        which is replaced by `"https://cloud.nextmv.io"` only when the
-        resolved API host is the production host `api.cloud.nextmv.io`. For
-        any other endpoint it stays empty, so console links contain only the
-        path. An explicit value always takes precedence. Not used for API
-        requests; provided for convenience when constructing deep-links into
-        the console.
+        URL of the Nextmv Cloud web console. When not set, it is derived from
+        the resolved API endpoint. Not used for API requests; provided for
+        convenience when constructing deep-links into the console.
 
     Examples
     --------
@@ -261,13 +257,7 @@ class Client:
     `https://api.cloud.nextmv.io` is used.
     """
     console_url: str = ""
-    """
-    URL of the Nextmv Cloud console.
-
-    If empty, it is set to `https://cloud.nextmv.io` only when the resolved API
-    host is `api.cloud.nextmv.io`. For any other endpoint it stays empty. An
-    explicit value is always honored.
-    """
+    """URL of the Nextmv Cloud console."""
     profile: str | None = None
     """
     Profile to use from the configuration file. Profiles allow you to configure
