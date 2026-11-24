@@ -52,7 +52,7 @@ from nextmv.config import (
     load_sessions,
 )
 
-_PRODUCTION_CONSOLE_URL: str = "https://cloud.nextmv.io"
+_DEFAULT_CONSOLE_URL: str = "https://cloud.nextmv.io"
 """str: URL of the Nextmv Cloud console."""
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
@@ -303,7 +303,7 @@ class Client:
         self.url = self.__resolve_endpoint(profile)
 
         if not self.console_url and urlparse(self.url).hostname == DEFAULT_ENDPOINT:
-            self.console_url = _PRODUCTION_CONSOLE_URL
+            self.console_url = _DEFAULT_CONSOLE_URL
 
         # Resolve system_certs: explicit constructor arg > env var > config file.
         if self.system_certs:
