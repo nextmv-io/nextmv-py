@@ -18,7 +18,7 @@ import os
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import IO, Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -40,6 +40,7 @@ from nextmv.auth import (
 from nextmv.config import (
     CLIENT_ID_KEY,
     CONFIG_FILE,
+    DEFAULT_ENDPOINT,
     OIDC_DISCOVERY_URL_KEY,
     AuthType,
     get_auth_session,
@@ -50,6 +51,9 @@ from nextmv.config import (
     load_config,
     load_sessions,
 )
+
+_PRODUCTION_CONSOLE_URL: str = "https://cloud.nextmv.io"
+"""str: URL of the production Nextmv Cloud console."""
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -142,9 +146,13 @@ class Client:
         configuration file (in that order). Defaults to
         `"https://api.cloud.nextmv.io"` when not set anywhere.
     console_url : str
-        URL of the Nextmv Cloud web console. Defaults to
-        `"https://cloud.nextmv.io"`. Not used for API requests; provided
-        for convenience when constructing deep-links into the console.
+        URL of the Nextmv Cloud web console. Defaults to an empty string,
+        which is replaced by `"https://cloud.nextmv.io"` only when the
+        resolved API host is the production host `api.cloud.nextmv.io`. For
+        any other endpoint it stays empty, so console links contain only the
+        path. An explicit value always takes precedence. Not used for API
+        requests; provided for convenience when constructing deep-links into
+        the console.
 
     Examples
     --------
@@ -252,8 +260,14 @@ class Client:
     6. If all of the above lookups fail, the hardcoded default URL of
     `https://api.cloud.nextmv.io` is used.
     """
-    console_url: str = "https://cloud.nextmv.io"
-    """URL of the Nextmv Cloud console."""
+    console_url: str = ""
+    """
+    URL of the Nextmv Cloud console.
+
+    If empty, it is set to `https://cloud.nextmv.io` only when the resolved API
+    host is `api.cloud.nextmv.io`. For any other endpoint it stays empty. An
+    explicit value is always honored.
+    """
     profile: str | None = None
     """
     Profile to use from the configuration file. Profiles allow you to configure
@@ -297,6 +311,9 @@ class Client:
 
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
+
+        if not self.console_url and urlparse(self.url).hostname == DEFAULT_ENDPOINT:
+            self.console_url = _PRODUCTION_CONSOLE_URL
 
         # Resolve system_certs: explicit constructor arg > env var > config file.
         if self.system_certs:
