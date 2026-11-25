@@ -18,7 +18,7 @@ import os
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import IO, Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -40,6 +40,7 @@ from nextmv.auth import (
 from nextmv.config import (
     CLIENT_ID_KEY,
     CONFIG_FILE,
+    DEFAULT_ENDPOINT,
     OIDC_DISCOVERY_URL_KEY,
     AuthType,
     get_auth_session,
@@ -50,6 +51,9 @@ from nextmv.config import (
     load_config,
     load_sessions,
 )
+
+_DEFAULT_CONSOLE_URL: str = "https://cloud.nextmv.io"
+"""str: URL of the Nextmv Cloud console."""
 
 _MAX_LAMBDA_PAYLOAD_SIZE: int = 500 * 1024 * 1024
 """int: Maximum size of the payload handled by the Nextmv Cloud API.
@@ -252,7 +256,7 @@ class Client:
     6. If all of the above lookups fail, the hardcoded default URL of
     `https://api.cloud.nextmv.io` is used.
     """
-    console_url: str = "https://cloud.nextmv.io"
+    console_url: str = ""
     """URL of the Nextmv Cloud console."""
     profile: str | None = None
     """
@@ -297,6 +301,9 @@ class Client:
 
         profile = self.__resolve_profile()
         self.url = self.__resolve_endpoint(profile)
+
+        if not self.console_url and urlparse(self.url).hostname == DEFAULT_ENDPOINT:
+            self.console_url = _DEFAULT_CONSOLE_URL
 
         # Resolve system_certs: explicit constructor arg > env var > config file.
         if self.system_certs:
