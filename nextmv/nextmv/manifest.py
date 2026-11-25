@@ -70,7 +70,7 @@ from enum import Enum
 from typing import Annotated, Any
 
 import yaml
-from pydantic import AliasChoices, BeforeValidator, Field
+from pydantic import AliasChoices, BeforeValidator, ConfigDict, Field
 
 from nextmv.account import AccountMemberRole
 from nextmv.base_model import BaseModel
@@ -1081,6 +1081,106 @@ class ManifestContentMultiFile(BaseModel):
             )
 
 
+class ManifestInputValidationEnforce(str, Enum):
+    """
+    How validation findings on the run input are handled.
+
+    You can import the `ManifestInputValidationEnforce` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestInputValidationEnforce
+    ```
+
+    Attributes
+    ----------
+    NONE : str
+        The rules are ignored.
+    WARN : str
+        Findings are reported, but runs can still be created.
+    BLOCK : str
+        Runs are not created when the input has error findings.
+    """
+
+    NONE = "none"
+    """The rules are ignored."""
+    WARN = "warn"
+    """Findings are reported, but runs can still be created."""
+    BLOCK = "block"
+    """Runs are not created when the input has error findings."""
+
+
+class ManifestInputValidation(BaseModel):
+    """
+    Validation rules for the run input data.
+
+    The rules are checked against the input before a run is created. Only the
+    top-level structure is checked here. The bodies of `sources` and `rules`
+    are kept as they are, so new kinds of checks don't need a new release of
+    this package. Unknown top-level keys are kept as well.
+
+    You can import the `ManifestInputValidation` class directly from `nextmv`:
+
+    ```python
+    from nextmv import ManifestInputValidation
+    ```
+
+    Parameters
+    ----------
+    enforce : ManifestInputValidationEnforce, default="warn"
+        How findings are handled: `none`, `warn` or `block`.
+    max_findings : Optional[int], default=None
+        Maximum number of findings reported per rule.
+    sources : Optional[dict[str, dict[str, Any]]], default=None
+        Named tables (for example a sheet of an Excel file) that rules refer to.
+    rules : Optional[list[dict[str, Any]]], default=None
+        The validation rules. Each rule needs a unique, non-empty `name`.
+
+    Examples
+    --------
+    >>> from nextmv import ManifestInputValidation
+    >>> validation = ManifestInputValidation(
+    ...     enforce="block",
+    ...     rules=[{"name": "lon-range", "path": ".stops[*].location.lon", "range": [-180, 180]}],
+    ... )
+    >>> validation.rules[0]["name"]
+    'lon-range'
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    enforce: ManifestInputValidationEnforce = ManifestInputValidationEnforce.WARN
+    """How findings are handled: `none`, `warn` or `block`."""
+    max_findings: int | None = None
+    """Maximum number of findings reported per rule."""
+    sources: dict[str, dict[str, Any]] | None = None
+    """Named tables (for example a sheet of an Excel file) that rules refer to."""
+    rules: list[dict[str, Any]] | None = None
+    """The validation rules. Each rule needs a unique, non-empty `name`."""
+
+    def model_post_init(self, __context) -> None:
+        """
+        Validate the structure of the rules.
+
+        Raises
+        ------
+        ValueError
+            If `max_findings` is not positive, or a rule has a missing, empty
+            or duplicate `name`.
+        """
+
+        if self.max_findings is not None and self.max_findings < 1:
+            raise ValueError(f"Invalid max_findings value {self.max_findings}. Must be a positive integer.")
+
+        seen: set[str] = set()
+        for index, rule in enumerate(self.rules or []):
+            name = rule.get("name")
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError(f"Input validation rule at index {index} must have a non-empty 'name'.")
+            if name in seen:
+                raise ValueError(f"Duplicate input validation rule name '{name}'. Rule names must be unique.")
+            seen.add(name)
+
+
 class ManifestContent(BaseModel):
     """
     Content configuration for specifying how the app input/output is handled.
@@ -1097,6 +1197,8 @@ class ManifestContent(BaseModel):
         The format of the content. Must be one of "json", "multi-file", or "csv-archive".
     multi_file : Optional[ManifestContentMultiFile], default=None
         Configuration for multi-file content format.
+    validation : Optional[ManifestInputValidation], default=None
+        Validation rules for the run input data.
 
     Examples
     --------
@@ -1132,6 +1234,8 @@ class ManifestContent(BaseModel):
         default=None,
     )
     """Configuration for multi-file content format."""
+    validation: ManifestInputValidation | None = None
+    """Validation rules for the run input data."""
 
     def model_post_init(self, __context) -> None:
         """

@@ -793,6 +793,8 @@ def _convert_manifest_to_payload(manifest: Manifest) -> dict[str, Any]:  # noqa:
                     output_config["assets_path"] = content.multi_file.output.assets
                 if content.multi_file.output.solutions:
                     output_config["solutions_path"] = content.multi_file.output.solutions
+        if content.validation is not None:
+            io_config["input_validation"] = content.validation.to_dict()
         activation_request["requirements"]["io_configuration"] = io_config
 
     if manifest.configuration is not None and manifest.configuration.options is not None:

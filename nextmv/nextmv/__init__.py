@@ -22,6 +22,8 @@ from .manifest import ControlType as ControlType
 from .manifest import Manifest as Manifest
 from .manifest import ManifestBuild as ManifestBuild
 from .manifest import ManifestExecution as ManifestExecution
+from .manifest import ManifestInputValidation as ManifestInputValidation
+from .manifest import ManifestInputValidationEnforce as ManifestInputValidationEnforce
 from .manifest import ManifestOption as ManifestOption
 from .manifest import ManifestOptionType as ManifestOptionType
 from .manifest import ManifestPython as ManifestPython
